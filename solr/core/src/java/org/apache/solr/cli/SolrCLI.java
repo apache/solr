@@ -51,24 +51,17 @@ public class SolrCLI implements CLIO {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static void exit(int exitStatus) {
-    try {
-      System.exit(exitStatus);
-    } catch (java.lang.SecurityException secExc) {
-      if (exitStatus != 0)
-        throw new RuntimeException("SolrCLI failed to exit with status " + exitStatus);
-    }
-  }
-
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
+    ToolRuntime runtime = new DefaultToolRuntime();
+
     final boolean hasNoCommand =
         args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
     final boolean isHelpCommand = !hasNoCommand && Arrays.asList("-h", "--help").contains(args[0]);
 
     if (hasNoCommand || isHelpCommand) {
       printHelp();
-      exit(1);
+      runtime.exit(1);
     }
 
     if (Arrays.asList("-v", "--version").contains(args[0])) {
@@ -111,18 +104,18 @@ public class SolrCLI implements CLIO {
 
     Tool tool = null;
     try {
-      tool = findTool(args);
+      tool = findTool(args, runtime);
     } catch (IllegalArgumentException iae) {
       CLIO.err(iae.getMessage());
-      System.exit(1);
+      runtime.exit(1);
     }
     CommandLine cli = parseCmdLine(tool, args);
-    System.exit(tool.runTool(cli));
+    runtime.exit(tool.runTool(cli));
   }
 
-  public static Tool findTool(String[] args) throws Exception {
+  public static Tool findTool(String[] args, ToolRuntime runtime) throws Exception {
     String toolType = args[0].trim().toLowerCase(Locale.ROOT);
-    return newTool(toolType);
+    return newTool(toolType, runtime);
   }
 
   public static CommandLine parseCmdLine(Tool tool, String[] args) {
@@ -131,7 +124,7 @@ public class SolrCLI implements CLIO {
     List<String> dashDList = new ArrayList<>();
     for (int a = 1; a < args.length; a++) {
       String arg = args[a];
-      if (arg.startsWith("-D")) {
+      if (!args[a - 1].equals("--jvm-opts") && arg.startsWith("-D")) {
         dashDList.add(arg);
       } else {
         toolArgList.add(arg);
@@ -179,38 +172,38 @@ public class SolrCLI implements CLIO {
   }
 
   // Creates an instance of the requested tool, using classpath scanning if necessary
-  private static Tool newTool(String toolType) throws Exception {
-    if ("healthcheck".equals(toolType)) return new HealthcheckTool();
-    else if ("status".equals(toolType)) return new StatusTool();
-    else if ("api".equals(toolType)) return new ApiTool();
-    else if ("create".equals(toolType)) return new CreateTool();
-    else if ("delete".equals(toolType)) return new DeleteTool();
-    else if ("config".equals(toolType)) return new ConfigTool();
-    else if ("run_example".equals(toolType)) return new RunExampleTool();
-    else if ("upconfig".equals(toolType)) return new ConfigSetUploadTool();
-    else if ("downconfig".equals(toolType)) return new ConfigSetDownloadTool();
-    else if ("zk-tool-help".equals(toolType)) return new ZkToolHelp();
-    else if ("rm".equals(toolType)) return new ZkRmTool();
-    else if ("mv".equals(toolType)) return new ZkMvTool();
-    else if ("cp".equals(toolType)) return new ZkCpTool();
-    else if ("ls".equals(toolType)) return new ZkLsTool();
-    else if ("cluster".equals(toolType)) return new ClusterTool();
-    else if ("updateacls".equals(toolType)) return new UpdateACLTool();
-    else if ("linkconfig".equals(toolType)) return new LinkConfigTool();
-    else if ("mkroot".equals(toolType)) return new ZkMkrootTool();
-    else if ("assert".equals(toolType)) return new AssertTool();
-    else if ("auth".equals(toolType)) return new AuthTool();
-    else if ("export".equals(toolType)) return new ExportTool();
-    else if ("package".equals(toolType)) return new PackageTool();
-    else if ("post".equals(toolType)) return new PostTool();
-    else if ("postlogs".equals(toolType)) return new PostLogsTool();
-    else if ("version".equals(toolType)) return new VersionTool();
-    else if ("stream".equals(toolType)) return new StreamTool();
-    else if ("snapshot-create".equals(toolType)) return new SnapshotCreateTool();
-    else if ("snapshot-delete".equals(toolType)) return new SnapshotDeleteTool();
-    else if ("snapshot-list".equals(toolType)) return new SnapshotListTool();
-    else if ("snapshot-describe".equals(toolType)) return new SnapshotDescribeTool();
-    else if ("snapshot-export".equals(toolType)) return new SnapshotExportTool();
+  private static Tool newTool(String toolType, ToolRuntime runtime) throws Exception {
+    if ("healthcheck".equals(toolType)) return new HealthcheckTool(runtime);
+    else if ("status".equals(toolType)) return new StatusTool(runtime);
+    else if ("api".equals(toolType)) return new ApiTool(runtime);
+    else if ("create".equals(toolType)) return new CreateTool(runtime);
+    else if ("delete".equals(toolType)) return new DeleteTool(runtime);
+    else if ("config".equals(toolType)) return new ConfigTool(runtime);
+    else if ("run_example".equals(toolType)) return new RunExampleTool(runtime);
+    else if ("upconfig".equals(toolType)) return new ConfigSetUploadTool(runtime);
+    else if ("downconfig".equals(toolType)) return new ConfigSetDownloadTool(runtime);
+    else if ("zk-tool-help".equals(toolType)) return new ZkToolHelp(runtime);
+    else if ("rm".equals(toolType)) return new ZkRmTool(runtime);
+    else if ("mv".equals(toolType)) return new ZkMvTool(runtime);
+    else if ("cp".equals(toolType)) return new ZkCpTool(runtime);
+    else if ("ls".equals(toolType)) return new ZkLsTool(runtime);
+    else if ("cluster".equals(toolType)) return new ClusterTool(runtime);
+    else if ("updateacls".equals(toolType)) return new UpdateACLTool(runtime);
+    else if ("linkconfig".equals(toolType)) return new LinkConfigTool(runtime);
+    else if ("mkroot".equals(toolType)) return new ZkMkrootTool(runtime);
+    else if ("assert".equals(toolType)) return new AssertTool(runtime);
+    else if ("auth".equals(toolType)) return new AuthTool(runtime);
+    else if ("export".equals(toolType)) return new ExportTool(runtime);
+    else if ("package".equals(toolType)) return new PackageTool(runtime);
+    else if ("post".equals(toolType)) return new PostTool(runtime);
+    else if ("postlogs".equals(toolType)) return new PostLogsTool(runtime);
+    else if ("version".equals(toolType)) return new VersionTool(runtime);
+    else if ("stream".equals(toolType)) return new StreamTool(runtime);
+    else if ("snapshot-create".equals(toolType)) return new SnapshotCreateTool(runtime);
+    else if ("snapshot-delete".equals(toolType)) return new SnapshotDeleteTool(runtime);
+    else if ("snapshot-list".equals(toolType)) return new SnapshotListTool(runtime);
+    else if ("snapshot-describe".equals(toolType)) return new SnapshotDescribeTool(runtime);
+    else if ("snapshot-export".equals(toolType)) return new SnapshotExportTool(runtime);
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -258,6 +251,7 @@ public class SolrCLI implements CLIO {
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
     Options options = tool.getOptions();
+    ToolRuntime runtime = tool.getRuntime();
 
     CommandLine cli = null;
     try {
@@ -280,16 +274,16 @@ public class SolrCLI implements CLIO {
       if (!hasHelpArg) {
         CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage() + "\n");
         printToolHelp(tool);
-        exit(1);
+        runtime.exit(1);
       } else {
         printToolHelp(tool);
-        exit(0);
+        runtime.exit(0);
       }
     }
 
     if (cli.hasOption(CommonCLIOptions.HELP_OPTION)) {
       printToolHelp(tool);
-      exit(0);
+      runtime.exit(0);
     }
 
     return cli;
@@ -405,26 +399,30 @@ public class SolrCLI implements CLIO {
   private static void printHelp() {
 
     print("Usage: solr COMMAND OPTIONS");
-    print("       where COMMAND is one of: start, stop, restart, status, ");
+    print("       where COMMAND is one of: start, stop, restart, status, healthcheck, ");
     print(
-        "                                healthcheck, create, delete, auth, assert, config, export, api, package, post, stream,");
+        "                                create, delete, auth, assert, config, cluster, export, api, package, post, stream,");
     print(
         "                                zk ls, zk cp, zk rm , zk mv, zk mkroot, zk upconfig, zk downconfig,");
     print(
-        "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export, snapshot-prepare-export");
+        "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export");
     print("");
-    print("  Standalone server example (start Solr running in the background on port 8984):");
+    print("  Start Solr in SolrCloud mode on default port 8983:");
     print("");
-    printGreen("    ./solr start -p 8984");
+    printGreen("    ./solr start");
     print("");
     print(
-        "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):");
+        "  Start Solr in SolrCloud mode using an external Zookeeper at localhost:2181, with 1g max heap size and remote Java debug options enabled:");
     print("");
     printGreen(
         "    ./solr start -m 1g -z localhost:2181 --jvm-opts \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
     print("");
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
+    print("");
+    print("  Start Solr in User Managed (aka Standalone) mode:");
+    print("");
+    printGreen("    ./solr start --user-managed");
     print("");
     print("Global Options:");
     print("  -v,  --version           Print version information and quit");

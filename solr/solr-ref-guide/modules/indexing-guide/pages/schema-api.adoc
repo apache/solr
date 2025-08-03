@@ -122,12 +122,11 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "add-field":{
-     "name":"sell_by",
-     "type":"pdate",
-     "stored":true }
-}' http://localhost:8983/api/collections/techproducts/schema
+curl -X PUT -H 'Content-type:application/json' --data-binary '
+{
+  "type":"pdate",
+  "stored":true
+}' http://localhost:8983/api/collections/techproducts/schema/fields/sell_by
 ----
 ====
 ======
@@ -137,7 +136,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 The `delete-field` command removes a field definition from your schema.
 If the field does not exist in the schema, or if the field is the source or destination of a copy field rule, an error is thrown.
 
-For example, to delete a field named "sell_by", you would POST the following request:
+For example, to delete a field named "sell_by", you would send the following request:
 
 [tabs#delete-request]
 ======
@@ -157,9 +156,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "delete-field" : { "name":"sell_by" }
-}' http://localhost:8983/api/collections/techproducts/schema
+curl -X DELETE "http://localhost:8983/api/collections/techproducts/schema/fields/sell_by"
 ----
 ====
 ======
@@ -196,12 +193,10 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "replace-field":{
-     "name":"sell_by",
-     "type":"date",
-     "stored":false }
-}' http://localhost:8983/api/collections/techproducts/schema
+curl -X PUT -H 'Content-type:application/json' --data-binary '{
+   "type":"date",
+   "stored":false
+}' http://localhost:8983/api/collections/techproducts/schema/fields/sell_by
 ----
 ====
 ======
@@ -236,12 +231,10 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "add-dynamic-field":{
-     "name":"*_s",
-     "type":"string",
-     "stored":true }
-}' http://localhost:8983/api/collections/techproducts/schema
+curl -X PUT -H 'Content-type:application/json' --data-binary '{
+   "type":"string",
+   "stored":true
+}' "http://localhost:8983/api/collections/techproducts/schema/dynamicfields/*_s"
 ----
 ====
 ======
@@ -251,7 +244,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 The `delete-dynamic-field` command deletes a dynamic field rule from your schema.
 If the dynamic field rule does not exist in the schema, or if the schema contains a copy field rule with a target or destination that matches only this dynamic field rule, an error is thrown.
 
-For example, to delete a dynamic field rule matching "*_s", you can POST a request like this:
+For example, to delete a dynamic field rule matching "*_s", you can send a request like this:
 
 [tabs#delete-dynamic-request]
 ======
@@ -271,9 +264,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "delete-dynamic-field":{ "name":"*_s" }
-}' http://localhost:8983/api/collections/techproducts/schema
+curl -X DELETE "http://localhost:8983/api/collections/techproducts/schema/dynamicfields/*_s"
 ----
 ====
 ======
@@ -310,12 +301,10 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "replace-dynamic-field":{
-     "name":"*_s",
-     "type":"text_general",
-     "stored":false }
-}' http://localhost:8983/solr/techproducts/schema
+curl -X PUT -H 'Content-type:application/json' --data-binary '{
+   "type": "text_general",
+   "stored": false
+}' "http://localhost:8983/api/collections/techproducts/schema/dynamicfields/*_s"
 ----
 ====
 ======
@@ -387,18 +376,16 @@ V2 API with Two Analyzers::
 To define two analyzers with the V2 API, we just use a different endpoint:
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "add-field-type":{
-     "name":"myNewTextField",
-     "class":"solr.TextField",
-     "indexAnalyzer":{
-        "tokenizer":{
-           "name":"pathHierarchy",
-           "delimiter":"/" }},
-     "queryAnalyzer":{
-        "tokenizer":{
-           "name":"keyword" }}}
-}' http://localhost:8983/api/collections/techproducts/schema
+curl -X PUT -H 'Content-type:application/json' --data-binary '{
+   "class":"solr.TextField",
+   "indexAnalyzer":{
+      "tokenizer":{
+         "name":"pathHierarchy",
+         "delimiter":"/" }},
+   "queryAnalyzer":{
+      "tokenizer":{
+         "name":"keyword" }}
+}' http://localhost:8983/api/collections/techproducts/schema/fieldtypes/myNewTextField
 ----
 ====
 ======
@@ -428,9 +415,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "delete-field-type":{ "name":"myNewTxtField" }
-}' http://localhost:8983/api/collections/techproducts/schema
+curl -X DELETE "http://localhost:8983/api/collections/techproducts/schema/fieldtypes/myNewTxtField"
 ----
 ====
 ======
@@ -471,15 +456,13 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "replace-field-type":{
-     "name":"myNewTxtField",
-     "class":"solr.TextField",
-     "positionIncrementGap":"100",
-     "analyzer":{
-        "tokenizer":{
-           "name":"standard" }}}
-}' http://localhost:8983/api/collections/techproducts/schema
+curl -X PUT -H 'Content-type:application/json' --data-binary '{
+   "class":"solr.TextField",
+   "positionIncrementGap":"100",
+   "analyzer":{
+      "tokenizer":{
+         "name":"standard" }}
+}' http://localhost:8983/api/collections/techproducts/schema/fieldtypes/myNewTxtField
 ----
 ====
 ======
@@ -592,7 +575,7 @@ The commands are executed in the order in which they are specified.
 This means that if you want to create a new field type and in the same request use the field type on a new field, the section of the request that creates the field type must come before the section that creates the new field.
 Similarly, since a field must exist for it to be used in a copy field rule, a request to add a field must come before a request for the field to be used as either the source or the destination for a copy field rule.
 
-The syntax for making multiple requests supports several approaches.
+The v1 syntax for making multiple requests supports several approaches.
 First, the commands can simply be made serially, as in this request to create a new field type and then a field that uses that type:
 
 [source,bash]
@@ -619,7 +602,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/solr/techproducts/schema
 ----
 
-Or, the same command can be repeated, as in this example:
+Multiple commands of the same type may be repeated, as in this example:
 
 [source,bash]
 ----
@@ -638,7 +621,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/solr/techproducts/schema
 ----
 
-Finally, repeated commands can be sent as an array:
+Commands sharing a type can also be grouped together within a list:
 
 [source,bash]
 ----
@@ -651,6 +634,33 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
        "type":"myNewTxtField",
        "stored":true }]
 }' http://localhost:8983/solr/techproducts/schema
+----
+
+Bulk schema operations are also supported in Solr's v2 API, using a slightly different syntax.
+Individual operations are specified as elements within a list, with the operation name (e.g. `add-field`, `delete-field-type`) specified as a `"operationType"` property on each operation object:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '
+  [
+    {
+      "operationType": "add-field"
+      "name": "shelf",
+      "type": "myNewTxtField",
+      "stored": true 
+    },
+    {
+      "operationType": "add-field"
+      "name": "location",
+      "type": "myNewTxtField",
+      "stored": true 
+    },
+    {
+      "operationType": "add-copy-field"
+      "source": "shelf",
+      "destinations": ["location", "catchall"]
+    }
+  ]' http://localhost:8983/solr/techproducts/schema/bulk
 ----
 
 === Schema Changes Among Replicas
@@ -1608,7 +1618,7 @@ The query parameters can be added to the API request after a '?'.
 Defines the format of the response.
 The options are `json` or `xml`.
 
-==== Show Global Similary Response
+==== Show Global Similarity Response
 
 The output will include the class name of the global similarity defined (if any).
 

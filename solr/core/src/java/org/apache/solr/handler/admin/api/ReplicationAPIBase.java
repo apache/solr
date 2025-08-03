@@ -27,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -51,6 +50,7 @@ import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.FastOutputStream;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -160,13 +160,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       List<FileMetaData> result = new ArrayList<>();
       Directory dir = null;
       try {
-        dir =
-            solrCore
-                .getDirectoryFactory()
-                .get(
-                    solrCore.getNewIndexDir(),
-                    DirectoryFactory.DirContext.DEFAULT,
-                    solrCore.getSolrConfig().indexConfig.lockType);
+        dir = getDirectory();
         SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
         for (SegmentCommitInfo commitInfo : infos) {
           for (String file : commitInfo.files()) {
@@ -246,6 +240,15 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return filesResponse;
   }
 
+  private Directory getDirectory() throws IOException {
+    return solrCore
+        .getDirectoryFactory()
+        .get(
+            solrCore.getNewIndexDir(),
+            DirectoryFactory.DirContext.REPLICATION,
+            solrCore.getSolrConfig().indexConfig.lockType);
+  }
+
   /** This class is used to read and send files in the lucene index */
   protected class DirectoryFileStream implements SolrCore.RawWriter, StreamingOutput {
     protected FastOutputStream fos;
@@ -314,7 +317,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     // Throw exception on directory traversal attempts
     protected String validateFilenameOrError(String fileName) {
       if (fileName != null) {
-        Path filePath = Paths.get(fileName);
+        Path filePath = Path.of(fileName);
         filePath.forEach(
             subpath -> {
               if ("..".equals(subpath.toString())) {
@@ -373,11 +376,12 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     public void write(OutputStream out) throws IOException {
       createOutputStream(out);
 
+      Directory dir = null;
       IndexInput in = null;
       try {
         initWrite();
 
-        Directory dir = solrCore.withSearcher(searcher -> searcher.getIndexReader().directory());
+        dir = getDirectory();
         in = dir.openInput(fileName, IOContext.READONCE);
         // if offset is mentioned move the pointer to that point
         if (offset != -1) in.seek(offset);
@@ -426,10 +430,16 @@ public abstract class ReplicationAPIBase extends JerseyResource {
             sLen,
             compress,
             indexGen,
-            useChecksum);
+            useChecksum,
+            e);
       } finally {
-        if (in != null) {
-          in.close();
+        IOUtils.closeQuietly(in);
+        if (dir != null) {
+          try {
+            solrCore.getDirectoryFactory().release(dir);
+          } catch (IOException e) {
+            log.error("Could not release directory after streaming file", e);
+          }
         }
         extendReserveAndReleaseCommitPoint();
       }
@@ -507,7 +517,8 @@ public abstract class ReplicationAPIBase extends JerseyResource {
             sLen,
             compress,
             indexGen,
-            useChecksum);
+            useChecksum,
+            e);
       } finally {
         extendReserveAndReleaseCommitPoint();
       }

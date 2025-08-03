@@ -25,12 +25,11 @@ import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
@@ -48,12 +47,15 @@ import org.slf4j.LoggerFactory;
  * org.apache.solr.handler.admin.MetricsHandler}
  */
 @SuppressWarnings(value = "unchecked")
-public class PrometheusResponseWriter extends RawResponseWriter {
+public class PrometheusResponseWriter implements QueryResponseWriter {
+  // not TextQueryResponseWriter because Prometheus libs work with an OutputStream
+
   private static final String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
+  public void write(
+      OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException {
     NamedList<Object> prometheusRegistries =
         (NamedList<Object>) response.getValues().get("metrics");
@@ -115,8 +117,10 @@ public class PrometheusResponseWriter extends RawResponseWriter {
             Metric dropwizardMetric = dropwizardMetrics.get(metricName);
             formatter.exportDropwizardMetric(dropwizardMetric, metricName);
           } catch (Exception e) {
-            // Do not fail entirely for metrics exporting. Log and try to export next metric
-            log.warn("Error occurred exporting Dropwizard Metric to Prometheus", e);
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Error occurred exporting Dropwizard Metric to Prometheus",
+                e);
           }
         });
 
@@ -124,21 +128,11 @@ public class PrometheusResponseWriter extends RawResponseWriter {
   }
 
   public static SolrPrometheusFormatter getFormatterType(String registryName) {
-    String coreName;
-    boolean cloudMode = false;
     String[] parsedRegistry = registryName.split("\\.");
 
     switch (parsedRegistry[1]) {
       case "core":
-        if (parsedRegistry.length == 3) {
-          coreName = parsedRegistry[2];
-        } else if (parsedRegistry.length == 5) {
-          coreName = Arrays.stream(parsedRegistry).skip(1).collect(Collectors.joining("_"));
-          cloudMode = true;
-        } else {
-          coreName = registryName;
-        }
-        return new SolrPrometheusCoreFormatter(coreName, cloudMode);
+        return new SolrPrometheusCoreFormatter();
       case "jvm":
         return new SolrPrometheusJvmFormatter();
       case "jetty":

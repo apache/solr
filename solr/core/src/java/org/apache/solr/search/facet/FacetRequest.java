@@ -329,7 +329,8 @@ public abstract class FacetRequest {
         // does...
         wrappedFromQuery.setCache(false);
 
-        GraphQueryParser graphParser = new GraphQueryParser(null, localParams, null, fcontext.req);
+        GraphQueryParser graphParser =
+            new GraphQueryParser(null, localParams, fcontext.req.getParams(), fcontext.req);
         try {
           GraphQuery graphQuery = (GraphQuery) graphParser.parse();
           graphQuery.setQ(wrappedFromQuery);

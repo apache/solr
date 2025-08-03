@@ -30,7 +30,7 @@ This file and where to put it is described in detail in the section xref:authent
 If running in cloud mode, you can use the `bin/solr auth` command-line utility to enable security for a new installation, see: `bin/solr auth --help` for more details.
 
 For Basic authentication, `security.json` must have an `authentication` block which defines the class being used for authentication.
-Usernames and passwords (Format: `base64(sha256(sha256(salt+password))) base64(salt)`) could be added when the file is created, or can be added later with the Authentication API, described below.
+Usernames and passwords could be added when the file is created, or can be added later with the Authentication API, described below.
 
 An example `security.json` showing `authentication` and `authorization` blocks is shown below to show how authentication and authorization plugins can work together:
 
@@ -58,7 +58,7 @@ There are several options defined in this example:
 <2> The parameter `"blockUnknown":true` means that unauthenticated requests are not allowed to pass through.
 <3> A user called 'solr', with a password `'SolrRocks'`, in the encoded format detailed above, has been defined.
 <4> We override the `realm` property to display another text on the login prompt.
-<5> The parameter `"forwardCredentials":false` means we let Solr's PKI authenticaion handle distributed request instead of forwarding the Basic Auth header.
+<5> The parameter `"forwardCredentials":false` means we let Solr's PKI authentication handle distributed request instead of forwarding the Basic Auth header.
 
 Save your settings to a file called `security.json` locally.
 If you are using Solr in single-node installation, you should put this file in `$SOLR_HOME`.
@@ -80,6 +80,14 @@ If `realm` is not defined, it will default to `solr`.
 
 If you are using SolrCloud, you must upload `security.json` to ZooKeeper.
 An example command and more information about securing your setup can be found at xref:authentication-and-authorization-plugins#in-a-solrcloud-cluster[Authentication and Authorization Plugins In a SolrCloud Cluster].
+
+=== Password Encoding
+
+Solr stores the passwords in the format: `base64(sha256(sha256(salt+password))) base64(salt)`.  
+
+If you edit `security.json` directly then you need to encode the password yourself.  
+You can visit https://clemente-biondo.github.io/ to use a simple web utility that does the encoding for you.
+
 
 === Caveats
 
@@ -341,9 +349,9 @@ httpBasicAuthPassword=secretPassword
 == Using the Solr Control Script with Basic Auth
 
 Once Basic authentication is enabled, all requests to the Solr Control Script (`bin/solr`) must contain user credentials.
-To ensure this, add the following line to the `solr.in.sh` or `solr.in.cmd` file.
+While you can pass credentials into `bin/solr` directly when invoking a command, you can also globally define the credentials in the `solr.in.sh` or `solr.in.cmd` file.
 
-This example tells the `bin/solr` command line to to use "basic" as the type of authentication, and to pass credentials with the user-name "solr" and password "SolrRocks":
+Add the following line to the `solr.in.sh` or `solr.in.cmd` file:
 
 [source,bash]
 ----
@@ -351,7 +359,9 @@ SOLR_AUTH_TYPE="basic"
 SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
 ----
 
-Alternatively, the `SOLR_AUTHENTICATION_OPTS` can take a path to a file, as in:
+This tells the `bin/solr` command line to to use "basic" as the type of authentication, and to pass credentials with the user-name "solr" and password "SolrRocks".
+
+Alternatively, the `SOLR_AUTHENTICATION_OPTS` can take a path to a configuration file, as in:
 
 [source,bash,subs="attributes"]
 ----

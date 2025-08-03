@@ -19,7 +19,6 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
-import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 
 import java.io.IOException;
@@ -27,7 +26,6 @@ import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.exec.OS;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -45,7 +44,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -71,7 +70,7 @@ public final class CLIUtils {
   public static String getDefaultSolrUrl() {
     // note that ENV_VAR syntax (and the env vars too) are mapped to env.var sys props
     String scheme = EnvUtils.getProperty("solr.url.scheme", "http");
-    String host = EnvUtils.getProperty("solr.tool.host", "localhost");
+    String host = EnvUtils.getProperty("solr.host", "localhost");
     String port = EnvUtils.getProperty("jetty.port", "8983"); // from SOLR_PORT env
     return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
@@ -234,8 +233,7 @@ public final class CLIUtils {
               new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
 
       // convert raw JSON into user-friendly output
-      StatusTool statusTool = new StatusTool();
-      Map<String, Object> status = statusTool.reportStatus(systemInfo, solrClient);
+      Map<String, Object> status = StatusTool.reportStatus(systemInfo, solrClient);
       @SuppressWarnings("unchecked")
       Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
       if (cloud != null) {
@@ -321,16 +319,15 @@ public final class CLIUtils {
           final int clamPeriodForStatusPollMs = 1000;
           Thread.sleep(clamPeriodForStatusPollMs);
         }
-        NamedList<Object> existsCheckResult =
-            CoreAdminRequest.getStatus(coreName, solrClient).getResponse();
-        NamedList<Object> status = (NamedList<Object>) existsCheckResult.get("status");
-        NamedList<Object> coreStatus = (NamedList<Object>) status.get(coreName);
-        Map<String, Object> failureStatus =
-            (Map<String, Object>) existsCheckResult.get("initFailures");
-        String errorMsg = (String) failureStatus.get(coreName);
-        final boolean hasName = coreStatus != null && coreStatus.get(NAME) != null;
-        exists = hasName || errorMsg != null;
-        wait = hasName && errorMsg == null && "true".equals(coreStatus.get("isLoading"));
+        final var coreStatusReq = new CoresApi.GetCoreStatus(coreName);
+        final var coreStatusRsp = coreStatusReq.process(solrClient);
+        final var coreStatusByName = coreStatusRsp.status;
+        final var coreStatus = coreStatusByName.get(coreName);
+        final var failureStatus = coreStatusRsp.initFailures;
+        final var initFailureForCore = failureStatus.get(coreName);
+        final boolean hasName = coreStatus != null && coreStatus.name != null;
+        exists = hasName || initFailureForCore != null;
+        wait = hasName && initFailureForCore == null && Boolean.TRUE.equals(coreStatus.isLoading);
       } while (wait && System.nanoTime() - startWaitAt < MAX_WAIT_FOR_CORE_LOAD_NANOS);
     } catch (Exception exc) {
       // just ignore it since we're only interested in a positive result here
@@ -345,7 +342,10 @@ public final class CLIUtils {
   }
 
   public static Path getConfigSetsDir(Path solrInstallDir) {
-    Path configSetsPath = Paths.get("server/solr/configsets/");
-    return solrInstallDir.resolve(configSetsPath);
+    return solrInstallDir.resolve("server/solr/configsets");
+  }
+
+  public static boolean isWindows() {
+    return (OS.isFamilyDOS() || OS.isFamilyWin9x() || OS.isFamilyWindows());
   }
 }

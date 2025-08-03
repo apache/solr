@@ -16,37 +16,41 @@
  */
 package org.apache.solr.metrics.prometheus.core;
 
-import static org.apache.solr.metrics.prometheus.core.PrometheusCoreFormatterInfo.CLOUD_CORE_PATTERN;
-
 import com.codahale.metrics.Metric;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 
 /** Base class is a wrapper to export a solr.core {@link com.codahale.metrics.Metric} */
 public abstract class SolrCoreMetric extends SolrMetric {
+
+  public static Pattern CLOUD_CORE_PATTERN =
+      Pattern.compile(
+          "(?<core>^core_(?<collection>.*)_(?<shard>shard[0-9]+)_(?<replica>replica_.[0-9]+)).(.*)$");
+  public static Pattern STANDALONE_CORE_PATTERN = Pattern.compile("^core_(?<core>.*?)\\.(.*)$");
+
   public String coreName;
 
-  public SolrCoreMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, metricName);
-    this.coreName = coreName;
-    labels.put("core", coreName);
-    if (cloudMode) {
-      appendCloudModeLabels();
-    }
-  }
-
-  private void appendCloudModeLabels() {
-    Matcher m = CLOUD_CORE_PATTERN.matcher(coreName);
-    if (m.find()) {
-      labels.put("collection", m.group(1));
-      labels.put("shard", m.group(2));
-      labels.put("replica", m.group(3));
+  public SolrCoreMetric(Metric dropwizardMetric, String metricName) {
+    // Remove Core Name prefix from metric as it is no longer needed for tag parsing from this point
+    super(dropwizardMetric, metricName.substring(metricName.indexOf(".") + 1));
+    Matcher cloudPattern = CLOUD_CORE_PATTERN.matcher(metricName);
+    Matcher standalonePattern = STANDALONE_CORE_PATTERN.matcher(metricName);
+    if (cloudPattern.find()) {
+      coreName = cloudPattern.group("core");
+      cloudPattern
+          .namedGroups()
+          .forEach((key, value) -> labels.put(key, cloudPattern.group(value)));
+    } else if (standalonePattern.find()) {
+      coreName = standalonePattern.group("core");
+      standalonePattern
+          .namedGroups()
+          .forEach((key, value) -> labels.put(key, standalonePattern.group(value)));
     } else {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "Core name does not match pattern for parsing " + coreName);
+          "Core name does not match pattern for parsing in metric " + metricName);
     }
   }
 }

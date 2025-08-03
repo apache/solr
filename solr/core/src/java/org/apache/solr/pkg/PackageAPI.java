@@ -35,11 +35,15 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -249,13 +253,27 @@ public class PackageAPI {
       }
       // first refresh my own
       packageLoader.notifyListeners(p);
+
+      final var solrParams = new ModifiableSolrParams();
+      solrParams.add("omitHeader", "true");
+      solrParams.add("refreshPackage", p);
+
+      final var request =
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/cluster/package", solrParams);
+      request.setResponseParser(new JavaBinResponseParser());
+
       for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
-        Utils.executeGET(
-            coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-            coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode)
-                + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage="
-                + p,
-            Utils.JAVABINCONSUMER);
+        final var baseUrl =
+            coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
+        try {
+          var solrClient = coreContainer.getDefaultHttpSolrClient();
+          solrClient.requestWithBaseUrl(baseUrl, request::process);
+        } catch (SolrServerException | IOException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Failed to refresh package on node: " + liveNode,
+              e);
+        }
       }
     }
 
@@ -417,13 +435,26 @@ public class PackageAPI {
   }
 
   void notifyAllNodesToSync(int expected) {
+
+    final var solrParams = new ModifiableSolrParams();
+    solrParams.add("omitHeader", "true");
+    solrParams.add("expectedVersion", String.valueOf(expected));
+
+    final var request =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/cluster/package", solrParams);
+    request.setResponseParser(new JavaBinResponseParser());
+
     for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
-      Utils.executeGET(
-          coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-          coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode)
-              + "/cluster/package?wt=javabin&omitHeader=true&expectedVersion"
-              + expected,
-          Utils.JAVABINCONSUMER);
+      var baseUrl = coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
+      try {
+        var solrClient = coreContainer.getDefaultHttpSolrClient();
+        solrClient.requestWithBaseUrl(baseUrl, request::process);
+      } catch (SolrServerException | IOException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Failed to notify node: " + liveNode + " to sync expected package version: " + expected,
+            e);
+      }
     }
   }
 

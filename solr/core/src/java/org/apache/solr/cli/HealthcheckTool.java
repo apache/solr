@@ -20,7 +20,6 @@ package org.apache.solr.cli;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,7 +40,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -79,12 +77,8 @@ public class HealthcheckTool extends ToolBase {
   }
 
   /** Requests health information about a specific collection in SolrCloud. */
-  public HealthcheckTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public HealthcheckTool(PrintStream stdout) {
-    super(stdout);
+  public HealthcheckTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -92,7 +86,7 @@ public class HealthcheckTool extends ToolBase {
     String zkHost = CLIUtils.getZkHost(cli);
     if (zkHost == null) {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
-      System.exit(1);
+      runtime.exit(1);
     }
     try (CloudHttp2SolrClient cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
@@ -155,12 +149,11 @@ public class HealthcheckTool extends ToolBase {
         String replicaStatus;
         long numDocs = -1L;
 
-        ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(r);
-        String coreUrl = replicaCoreProps.getCoreUrl();
+        String coreUrl = r.getCoreUrl();
         boolean isLeader = coreUrl.equals(leaderUrl);
 
         // if replica's node is not live, its status is DOWN
-        String nodeName = replicaCoreProps.getNodeName();
+        String nodeName = r.getNodeName();
         if (nodeName == null || !liveNodes.contains(nodeName)) {
           replicaStatus = Replica.State.DOWN.toString();
         } else {
@@ -175,20 +168,20 @@ public class HealthcheckTool extends ToolBase {
             numDocs = qr.getResults().getNumFound();
             try (var solrClient =
                 CLIUtils.getSolrClient(
-                    replicaCoreProps.getBaseUrl(),
-                    cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+                    r.getBaseUrl(), cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
               NamedList<Object> systemInfo =
                   solrClient.request(
                       new GenericSolrRequest(
                           SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-              uptime = SolrCLI.uptime((Long) systemInfo.findRecursive("jvm", "jmx", "upTimeMS"));
-              String usedMemory = (String) systemInfo.findRecursive("jvm", "memory", "used");
-              String totalMemory = (String) systemInfo.findRecursive("jvm", "memory", "total");
+              uptime =
+                  SolrCLI.uptime((Long) systemInfo._get(List.of("jvm", "jmx", "upTimeMS"), null));
+              String usedMemory = systemInfo._getStr(List.of("jvm", "memory", "used"), null);
+              String totalMemory = systemInfo._getStr(List.of("jvm", "memory", "total"), null);
               memory = usedMemory + " of " + totalMemory;
             }
 
             // if we get here, we can trust the state
-            replicaStatus = replicaCoreProps.getState();
+            replicaStatus = String.valueOf(r.getState());
           } catch (Exception exc) {
             log.error("ERROR: {} when trying to reach: {}", exc, coreUrl);
 

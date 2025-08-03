@@ -16,11 +16,9 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -50,12 +48,8 @@ public class ConfigSetDownloadTool extends ToolBase {
           .desc("Local directory with configs.")
           .build();
 
-  public ConfigSetDownloadTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ConfigSetDownloadTool(PrintStream stdout) {
-    super(stdout);
+  public ConfigSetDownloadTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -86,11 +80,11 @@ public class ConfigSetDownloadTool extends ToolBase {
 
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
-      Path configSetPath = Paths.get(confDir);
+      Path configSetPath = Path.of(confDir);
       // we try to be nice about having the "conf" in the directory, and we create it if it's not
       // there.
       if (!configSetPath.endsWith("/conf")) {
-        configSetPath = Paths.get(configSetPath.toString(), "conf");
+        configSetPath = configSetPath.resolve("conf");
       }
       Files.createDirectories(configSetPath);
       echo(

@@ -22,7 +22,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_ST
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.client.solrj.SolrClient;
@@ -32,7 +31,6 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -190,34 +188,26 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
         PerReplicaStates.State st = prs.get(replicaName);
         assertNotEquals(Replica.State.ACTIVE, st.state);
         @SuppressWarnings("unchecked")
-        NavigableObject rsp =
-            new MapWriterMap(
-                (Map<String, Object>)
-                    Utils.fromJSON(
-                        SolrCloudTestCase.cluster
-                            .getZkClient()
-                            .getData(
-                                DocCollection.getCollectionPath(testCollection),
-                                null,
-                                null,
-                                true)));
+        var rsp =
+            NavigableObject.wrap(
+                Utils.fromJSON(
+                    SolrCloudTestCase.cluster
+                        .getZkClient()
+                        .getData(
+                            DocCollection.getCollectionPath(testCollection), null, null, true)));
 
         assertNull(
             rsp._get(
-                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/leader",
-                null));
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/leader"));
         assertNull(
             rsp._get(
-                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/state",
-                null));
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/state"));
         assertNull(
             rsp._get(
-                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/leader",
-                null));
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/leader"));
         assertNull(
             rsp._get(
-                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/state",
-                null));
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/state"));
 
         jsr.start();
         cluster.waitForActiveCollection(testCollection, 1, 2);
@@ -245,7 +235,6 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
                     .resolve("streaming")
                     .resolve("conf"))
             .configure();
-    PerReplicaStates original = null;
     try {
       CollectionAdminRequest.createCollection(COLL, "conf", 3, 1)
           .setPerReplicaState(Boolean.TRUE)
@@ -253,42 +242,39 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       cluster.waitForActiveCollection(COLL, 3, 3);
 
       PerReplicaStates prs1 =
-          original =
-              PerReplicaStatesOps.fetch(
-                  DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
+          PerReplicaStatesOps.fetch(
+              DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
       log.info("prs1 : {}", prs1);
 
       CollectionAdminRequest.modifyCollection(
               COLL, Collections.singletonMap(PER_REPLICA_STATE, "false"))
           .process(cluster.getSolrClient());
-      cluster
-          .getZkStateReader()
-          .waitForState(
-              COLL,
-              5,
-              TimeUnit.SECONDS,
-              (liveNodes, collectionState) ->
-                  "false".equals(collectionState.getProperties().get(PER_REPLICA_STATE)));
+      waitForState(
+          "Waiting for PRS property",
+          COLL,
+          5,
+          TimeUnit.SECONDS,
+          collectionState ->
+              "false".equals(collectionState.getProperties().get(PER_REPLICA_STATE)));
       CollectionAdminRequest.modifyCollection(
               COLL, Collections.singletonMap(PER_REPLICA_STATE, "true"))
           .process(cluster.getSolrClient());
-      cluster
-          .getZkStateReader()
-          .waitForState(
-              COLL,
-              5,
-              TimeUnit.SECONDS,
-              (liveNodes, collectionState) -> {
-                AtomicBoolean anyFail = new AtomicBoolean(false);
-                PerReplicaStates prs2 =
-                    PerReplicaStatesOps.fetch(
-                        DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
-                prs2.states.forEach(
-                    (r, newState) -> {
-                      if (newState.getDuplicate() != null) anyFail.set(true);
-                    });
-                return !anyFail.get();
-              });
+      waitForState(
+          "Waiting for PRS property",
+          COLL,
+          5,
+          TimeUnit.SECONDS,
+          collectionState -> {
+            AtomicBoolean anyFail = new AtomicBoolean(false);
+            PerReplicaStates prs2 =
+                PerReplicaStatesOps.fetch(
+                    DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
+            prs2.states.forEach(
+                (r, newState) -> {
+                  if (newState.getDuplicate() != null) anyFail.set(true);
+                });
+            return !anyFail.get();
+          });
 
     } finally {
       cluster.shutdown();

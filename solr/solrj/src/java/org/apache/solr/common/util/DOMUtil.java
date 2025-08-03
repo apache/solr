@@ -25,13 +25,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-/** */
+/** XML DOM utilities */
 public class DOMUtil {
 
   public static final String XML_RESERVED_PREFIX = "xml";
@@ -41,21 +40,6 @@ public class DOMUtil {
 
   public static Map<String, String> toMap(NamedNodeMap attrs) {
     return toMapExcept(attrs);
-  }
-
-  public static Map<String, String> toMap(ConfigNode node) {
-    return toMapExcept(node);
-  }
-
-  public static Map<String, String> toMapExcept(ConfigNode node, String... exclusions) {
-    Map<String, String> args = new HashMap<>();
-    node.attributes()
-        .forEach(
-            (k, v) -> {
-              for (String ex : exclusions) if (ex.equals(k)) return;
-              args.put(k, v);
-            });
-    return args;
   }
 
   public static Map<String, String> toMapExcept(NamedNodeMap attrs, String... exclusions) {
@@ -109,15 +93,6 @@ public class DOMUtil {
     return val;
   }
 
-  public static String getAttr(ConfigNode node, String name, String missing_err) {
-    String attr = node.attributes().get(name);
-    if (attr == null) {
-      if (missing_err == null) return null;
-      throw new RuntimeException(missing_err + ": missing mandatory attribute '" + name + "'");
-    }
-    return attr;
-  }
-
   public static String getAttr(Node node, String name, String missing_err) {
     return getAttr(node.getAttributes(), name, missing_err);
   }
@@ -133,10 +108,6 @@ public class DOMUtil {
 
   public static List<Object> childNodesToList(Node nd) {
     return nodesToList(nd.getChildNodes());
-  }
-
-  public static NamedList<Object> childNodesToNamedList(ConfigNode node) {
-    return readNamedListChildren(node);
   }
 
   public static NamedList<Object> nodesToNamedList(NodeList nlst) {
@@ -189,7 +160,10 @@ public class DOMUtil {
     if (arr != null) arr.add(val);
   }
 
-  private static Object parseVal(String type, String name, String textValue) {
+  /**
+   * @lucene.internal
+   */
+  public static Object parseVal(String type, String name, String textValue) {
     Object val = null;
     try {
       if ("str".equals(type)) {
@@ -222,35 +196,6 @@ public class DOMUtil {
           nfe);
     }
     return val;
-  }
-
-  public static NamedList<Object> readNamedListChildren(ConfigNode configNode) {
-    NamedList<Object> result = new NamedList<>();
-    configNode.forEachChild(
-        it -> {
-          String tag = it.name();
-          String varName = it.attributes().get("name");
-          if (NL_TAGS.contains(tag)) {
-            result.add(varName, parseVal(tag, varName, it.txt()));
-          }
-          if ("lst".equals(tag)) {
-            result.add(varName, readNamedListChildren(it));
-          } else if ("arr".equals(tag)) {
-            List<Object> l = new ArrayList<>();
-            result.add(varName, l);
-            it.forEachChild(
-                n -> {
-                  if (NL_TAGS.contains(n.name())) {
-                    l.add(parseVal(n.name(), null, n.txt()));
-                  } else if ("lst".equals(n.name())) {
-                    l.add(readNamedListChildren(n));
-                  }
-                  return Boolean.TRUE;
-                });
-          }
-          return Boolean.TRUE;
-        });
-    return result;
   }
 
   /**

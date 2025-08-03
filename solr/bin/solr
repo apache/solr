@@ -202,10 +202,6 @@ SOLR_URL_SCHEME=http
 SOLR_JETTY_CONFIG=()
 SOLR_SSL_OPTS=""
 
-if [ -n "${SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH:-}" ]; then
-  SOLR_SSL_OPTS+=" -Dhadoop.security.credential.provider.path=$SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH"
-fi
-
 if [ -z "${SOLR_SSL_ENABLED:-}" ]; then
   if [ -n "${SOLR_SSL_KEY_STORE:-}" ]; then
     SOLR_SSL_ENABLED="true" # implicitly from earlier behaviour
@@ -304,6 +300,11 @@ else
 fi
 export SOLR_URL_SCHEME
 
+# Gracefully wait for existing requests on shutdown
+if [ "${SOLR_JETTY_GRACEFUL:-false}" == "true" ]; then
+  SOLR_JETTY_CONFIG+=("--module=graceful")
+fi
+
 # Requestlog options
 if [ "${SOLR_REQUESTLOG_ENABLED:-true}" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=requestlog")
@@ -312,6 +313,16 @@ fi
 # Jetty gzip module enabled by default
 if [ "${SOLR_GZIP_ENABLED:-true}" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=gzip")
+fi
+
+# Jetty configuration for new Admin UI
+if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ] ||
+   [ "${SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED:-false}" == "true" ]; then
+  # Do not enable new Admin UI
+  echo -e "New Admin UI not enabled"
+else
+  # Enable new Admin UI
+  SOLR_JETTY_CONFIG+=("--module=new-ui")
 fi
 
 # Authentication options
@@ -349,10 +360,6 @@ if [ -n "${SOLR_AUTHENTICATION_CLIENT_BUILDER:-}" ]; then
 fi
 # This looks strange, but it is to avoid extra spaces when we have only one of the values set
 AUTHC_OPTS="${AUTHC_OPTS:-}${SOLR_AUTHENTICATION_OPTS:+ $SOLR_AUTHENTICATION_OPTS}"
-
-# Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
-SOLR_TOOL_HOST="${SOLR_HOST:-localhost}"
-export SOLR_TOOL_HOST
 
 function print_usage() {
   CMD="${1:-}"
@@ -411,7 +418,7 @@ function print_usage() {
     echo "                          you could pass: --jvm-opts \"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983\""
     echo "                          In most cases, you should wrap the additional parameters in double quotes."
     echo ""
-    echo "  -j <jettyParams>      Additional parameters to pass to Jetty when starting Solr."
+    echo "  -j/--jettyconfig <jettyParams> Additional parameters to pass to Jetty when starting Solr."
     echo "                          For example, to add configuration folder that jetty should read"
     echo "                          you could pass: -j \"--include-jetty-dir=/etc/jetty/custom/server/\""
     echo "                          In most cases, you should wrap the additional parameters in double quotes."
@@ -606,22 +613,11 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
     fi
   fi
 
-  if [ -z "${AUTH_PORT:-}" ]; then
-    for ID in $(ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r)
-      do
-        port=$(jetty_port "$ID")
-        if [ "$port" != "" ]; then
-          AUTH_PORT=$port
-          break
-        fi
-      done
-  fi
-
-  run_tool auth $@ --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}" --auth-conf-dir "$SOLR_HOME" "--solr-include-file" "$SOLR_INCLUDE"
+  run_tool auth $@ --auth-conf-dir "$SOLR_HOME" "--solr-include-file" "$SOLR_INCLUDE"
   exit $?
 fi
 
-# at this point all tools that have a custom run process, like "status" and "auth" have been run and exited.
+# at this point the only tool that has a custom run process, "auth" has been run and exited.
 # Unless a command is one of the ones in the if clause below, we will just run it with the default run_tool function and then exit.
 if [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "restart" ]; then
   # hand off the command to the SolrCLI and let it handle the option parsing and validation
@@ -718,13 +714,14 @@ if [ $# -gt 0 ]; then
             fi
 
             SOLR_HOME="$2"
+            PASS_TO_RUN_EXAMPLE+=("--solr-home" "$SOLR_HOME")
             shift 2
         ;;
         --data-home)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Data home directory is required when using the $1 option!"
               exit 1
-            fi        
+            fi
             SOLR_DATA_HOME="$2"
             shift 2
         ;;
@@ -734,6 +731,14 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             EXAMPLE="$2"
+            shift 2
+        ;;
+        --example-dir)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_usage "$SCRIPT_CMD" "Example directory is required when using the $1 option!"
+              exit 1
+            fi
+            PASS_TO_RUN_EXAMPLE+=("--example-dir" "$2")
             shift 2
         ;;
         -f|--foreground)
@@ -787,7 +792,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -j|--jettyconfig)
-            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+            if [[ -z "$2" ]]; then
               print_usage "$SCRIPT_CMD" "Jetty config is required when using the $1 option!"
               exit 1
             fi

@@ -89,6 +89,7 @@ public interface ConfigsetsApi {
 
     @PUT
     @Path("{filePath:.+}")
+    @Operation(summary = "Create a new configset.", tags = "configsets")
     SolrJerseyResponse uploadConfigSetFile(
         @PathParam("configSetName") String configSetName,
         @PathParam("filePath") String filePath,

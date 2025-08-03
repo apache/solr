@@ -29,13 +29,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.NamedThreadFactory;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -105,8 +105,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
         client.deleteById("id");
       } catch (SolrClient.RemoteSolrException ignored) {
       }
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
     }
@@ -122,8 +120,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
         client.deleteByQuery("*:*");
       } catch (SolrClient.RemoteSolrException ignored) {
       }
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
     }
@@ -143,6 +139,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", MUST_ENCODE);
+    q.setParam("case_sensitive_param", "lowercase");
+    q.setParam("CASE_SENSITIVE_PARAM", "uppercase");
     HttpJdkSolrClient.Builder b = builder(url);
     if (rp != null) {
       b.withResponseParser(rp);
@@ -150,7 +148,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client = b.build()) {
       client.query(q, method);
       assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+          client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
     }
   }
 
@@ -165,11 +163,11 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     q.setParam("a", MUST_ENCODE);
 
     HttpJdkSolrClient.Builder b =
-        builder(someOtherUrl).withResponseParser(new BinaryResponseParser());
+        builder(someOtherUrl).withResponseParser(new JavaBinResponseParser());
     try (HttpJdkSolrClient client = b.build()) {
       client.requestWithBaseUrl(intendedUrl, new QueryRequest(q, SolrRequest.METHOD.GET), null);
       assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+          client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
     }
   }
 
@@ -323,7 +321,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
     try (HttpJdkSolrClient client =
         builder(url)
-            .withRequestWriter(new RequestWriter())
+            .withRequestWriter(new XMLRequestWriter())
             .withResponseParser(new XMLResponseParser())
             .useHttp1_1(http11)
             .build()) {
@@ -345,8 +343,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     try (HttpJdkSolrClient client =
         builder(url)
-            .withRequestWriter(new BinaryRequestWriter())
-            .withResponseParser(new BinaryResponseParser())
+            .withRequestWriter(new JavaBinRequestWriter())
+            .withResponseParser(new JavaBinResponseParser())
             .build()) {
       testUpdate(client, WT.JAVABIN, "application/javabin", MUST_ENCODE);
       assertNoHeadRequestWithSsl(client);
@@ -438,7 +436,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       queryToHelpJdkReleaseThreads(client);
     }
 
-    rp = new BinaryResponseParser();
+    rp = new JavaBinResponseParser();
     try (HttpJdkSolrClient client = builder(getBaseUrl()).withResponseParser(rp).build()) {
       assertTrue(
           client.processorAcceptsMimeType(
@@ -498,6 +496,21 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     }
   }
 
+  @Test
+  public void testMaybeTryHeadRequestHasContentType() throws Exception {
+    DebugServlet.clear();
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    try (HttpJdkSolrClient client = builder(url).build()) {
+      assertTrue(client.maybeTryHeadRequest(url));
+
+      // if https, the client won't attempt a HEAD request
+      if (client.headRequested) {
+        assertEquals("head", DebugServlet.lastMethod);
+        assertTrue(DebugServlet.headers.containsKey("content-type"));
+      }
+    }
+  }
+
   /**
    * This is not required for any test, but there appears to be a bug in the JDK client where it
    * does not release all threads if the client has not performed any queries, even after a forced
@@ -517,7 +530,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Override
   protected String expectedUserAgent() {
-    return "Solr[" + HttpJdkSolrClient.class.getName() + "] 1.0";
+    return "Solr[" + HttpJdkSolrClient.class.getName() + "] " + SolrVersion.LATEST_STRING;
   }
 
   @Override

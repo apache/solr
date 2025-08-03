@@ -33,6 +33,8 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
 import io.opentelemetry.api.trace.Span;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,13 +52,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -74,6 +75,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
@@ -109,7 +111,6 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditEvent.EventType;
@@ -145,6 +146,8 @@ public class HttpSolrCall {
   protected final HttpServletRequest req;
   protected final HttpServletResponse response;
   protected final boolean retry;
+  private final SolrVersion userAgentSolrVersion; // of the client
+  private final Span span;
   protected SolrCore core = null;
   protected SolrQueryRequest solrReq = null;
   private boolean mustClearSolrRequestInfo = false;
@@ -176,18 +179,30 @@ public class HttpSolrCall {
     this.response = response;
     this.retry = retry;
     this.requestType = RequestType.UNKNOWN;
+    this.userAgentSolrVersion = parseUserAgentSolrVersion();
+    this.span = Optional.ofNullable(TraceUtils.getSpan(req)).orElse(Span.getInvalid());
+    this.path = ServletUtils.getPathAfterContext(req);
+
     req.setAttribute(HttpSolrCall.class.getName(), this);
     // set a request timer which can be reused by requests if needed
     req.setAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE, new RTimerTree());
     // put the core container in request attribute
     req.setAttribute("org.apache.solr.CoreContainer", cores);
-    path = ServletUtils.getPathAfterContext(req);
   }
 
   public String getPath() {
     return path;
   }
 
+  /**
+   * WARNING: This method returns a non-null {@link HttpServletRequest}, but calling certain methods
+   * on it — such as {@link HttpServletRequest#getAttribute(String)} — may throw {@link
+   * NullPointerException} if accessed outside the original servlet thread (e.g., in asynchronous
+   * tasks).
+   *
+   * <p>Always cache required request data early during request handling if it needs to be accessed
+   * later.
+   */
   public HttpServletRequest getReq() {
     return req;
   }
@@ -639,12 +654,7 @@ public class HttpSolrCall {
 
   /** Get the Span for this request. Not null. */
   public Span getSpan() {
-    var s = TraceUtils.getSpan(req);
-    if (s != null) {
-      return s;
-    } else {
-      return Span.getInvalid();
-    }
+    return span;
   }
 
   // called after init().
@@ -999,8 +1009,7 @@ public class HttpSolrCall {
       }
 
       if (Method.HEAD != reqMethod) {
-        OutputStream out = response.getOutputStream();
-        QueryResponseWriterUtil.writeQueryResponse(out, responseWriter, solrReq, solrRsp, ct);
+        responseWriter.write(response.getOutputStream(), solrReq, solrRsp, ct);
       }
       // else http HEAD request, nothing to write out, waited this long just to get ContentType
     } catch (EOFException e) {
@@ -1060,7 +1069,7 @@ public class HttpSolrCall {
       if (core != null) return core;
     }
 
-    List<Replica> replicas = collection.getReplicas(cores.getZkController().getNodeName());
+    List<Replica> replicas = collection.getReplicasOnNode(cores.getZkController().getNodeName());
     return randomlyGetSolrCore(liveNodes, replicas);
   }
 
@@ -1168,6 +1177,28 @@ public class HttpSolrCall {
 
   protected Object _getHandler() {
     return handler;
+  }
+
+  /**
+   * Gets the client (user-agent) SolrJ version, or null if isn't SolrJ. Note that older SolrJ
+   * clients prior to 9.9 present themselves as 1.0 or 2.0.
+   */
+  public SolrVersion getUserAgentSolrVersion() {
+    return userAgentSolrVersion;
+  }
+
+  private SolrVersion parseUserAgentSolrVersion() {
+    String header = req.getHeader("User-Agent");
+    if (header == null || !header.startsWith("Solr")) {
+      return null;
+    }
+    try {
+      return SolrVersion.valueOf(header.substring(header.lastIndexOf(' ') + 1));
+    } catch (Exception e) {
+      // unexpected but let's not freak out
+      assert false : e.toString();
+      return null;
+    }
   }
 
   private AuthorizationContext getAuthCtx() {

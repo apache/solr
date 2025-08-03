@@ -18,6 +18,7 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -238,6 +239,15 @@ public class NamedList<T>
     return -1;
   }
 
+  /***
+   * Scans the names of the list sequentially beginning at index 0 and returns the index of the first
+   * pair with the specified name.
+   * @see #indexOf(String, int)
+   */
+  public int indexOf(String name) {
+    return indexOf(name, 0);
+  }
+
   /**
    * Gets the value for the first instance of the specified name found.
    *
@@ -268,7 +278,9 @@ public class NamedList<T>
    *
    * @return null if not found or if the value stored was null.
    * @see #indexOf
+   * @deprecated Use {@link #indexOf(String, int)} then {@link #getVal(int)}.
    */
+  @Deprecated
   public T get(String name, int start) {
     int sz = size();
     for (int i = start; i < sz; i++) {
@@ -316,68 +328,6 @@ public class NamedList<T>
     }
   }
 
-  /**
-   * Recursively parses the NamedList structure to arrive at a specific element. As you descend the
-   * NamedList tree, the last element can be any type, including NamedList, but the previous
-   * elements MUST be NamedList objects themselves. A null value is returned if the indicated
-   * hierarchy doesn't exist, but NamedList allows null values so that could be the actual value at
-   * the end of the path.
-   *
-   * <p>This method is particularly useful for parsing the response from Solr's /admin/mbeans
-   * handler, but it also works for any complex structure.
-   *
-   * <p>Explicitly casting the return value is recommended. An even safer option is to accept the
-   * return value as an object and then check its type.
-   *
-   * <p>Usage examples:
-   *
-   * <p>String coreName = (String) response.findRecursive ("solr-mbeans", "CORE", "core", "stats",
-   * "coreName"); long numDoc = (long) response.findRecursive ("solr-mbeans", "CORE", "searcher",
-   * "stats", "numDocs");
-   *
-   * @param args One or more strings specifying the tree to navigate.
-   * @return the last entry in the given path hierarchy, null if not found.
-   */
-  public Object findRecursive(String... args) {
-    NamedList<?> currentList = null;
-    Object value = null;
-    for (int i = 0; i < args.length; i++) {
-      String key = args[i];
-      /*
-       * The first time through the loop, the current list is null, so we assign
-       * it to this list. Then we retrieve the first key from this list and
-       * assign it to value.
-       *
-       * On the next loop, we check whether the retrieved value is a NamedList.
-       * If it is, then we drop to that NamedList, grab the value of the
-       * next key, and start the loop over. If it is not a NamedList, then we
-       * assign the value to null and break out of the loop.
-       *
-       * Assigning the value to null and then breaking out of the loop seems
-       * like the wrong thing to do, but there's a very simple reason that it
-       * works: If we have reached the last key, then the loop ends naturally
-       * after we retrieve the value, and that code is never executed.
-       */
-      if (currentList == null) {
-        currentList = this;
-      } else {
-        if (value instanceof NamedList) {
-          currentList = (NamedList<?>) value;
-        } else {
-          value = null;
-          break;
-        }
-      }
-      /*
-       * We do not need to do a null check on currentList for the following
-       * assignment. The instanceof check above will fail if the current list is
-       * null, and if that happens, the loop will end before this point.
-       */
-      value = currentList.get(key, 0);
-    }
-    return value;
-  }
-
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -399,12 +349,20 @@ public class NamedList<T>
     return new NamedList<>(Collections.unmodifiableList(copy.nvPairs));
   }
 
+  /**
+   * @deprecated Use {@link SimpleOrderedMap} instead.
+   */
+  @Deprecated
   public Map<String, T> asShallowMap() {
     return asShallowMap(false);
   }
 
+  /**
+   * @deprecated use {@link SimpleOrderedMap} instead of NamedList when a Map is required.
+   */
+  @Deprecated
   public Map<String, T> asShallowMap(boolean allowDps) {
-    return new Map<String, T>() {
+    return new Map<>() {
       @Override
       public int size() {
         return NamedList.this.size();
@@ -553,35 +511,11 @@ public class NamedList<T>
    * Helper class implementing Map.Entry&lt;String, T&gt; to store the key-value relationship in
    * NamedList (the keys of which are String-s)
    */
-  public static final class NamedListEntry<T> implements Map.Entry<String, T> {
-
-    public NamedListEntry() {}
-
+  @Deprecated // use AbstractMap.SimpleEntry or Map.entry() (albeit no nulls)
+  public static final class NamedListEntry<T> extends AbstractMap.SimpleEntry<String, T> {
     public NamedListEntry(String _key, T _value) {
-      key = _key;
-      value = _value;
+      super(_key, _value);
     }
-
-    @Override
-    public String getKey() {
-      return key;
-    }
-
-    @Override
-    public T getValue() {
-      return value;
-    }
-
-    @Override
-    public T setValue(T _value) {
-      T oldValue = value;
-      value = _value;
-      return oldValue;
-    }
-
-    private String key;
-
-    private T value;
   }
 
   /** Iterates over the Map and sequentially adds its key/value pairs */
@@ -614,53 +548,63 @@ public class NamedList<T>
   /** Support the Iterable interface */
   @Override
   public Iterator<Map.Entry<String, T>> iterator() {
+    return new Iterator<>() {
 
-    final NamedList<T> list = this;
+      int idx = 0;
 
-    Iterator<Map.Entry<String, T>> iter =
-        new Iterator<Map.Entry<String, T>>() {
+      @Override
+      public boolean hasNext() {
+        return idx < NamedList.this.size();
+      }
 
-          int idx = 0;
+      @Override
+      public Map.Entry<String, T> next() {
+        return new Map.Entry<>() {
+          final int index = idx++;
 
           @Override
-          public boolean hasNext() {
-            return idx < list.size();
+          public String getKey() {
+            return NamedList.this.getName(index);
           }
 
           @Override
-          public Map.Entry<String, T> next() {
-            final int index = idx++;
-            Map.Entry<String, T> nv =
-                new Map.Entry<String, T>() {
-                  @Override
-                  public String getKey() {
-                    return list.getName(index);
-                  }
-
-                  @Override
-                  public T getValue() {
-                    return list.getVal(index);
-                  }
-
-                  @Override
-                  public String toString() {
-                    return getKey() + "=" + getValue();
-                  }
-
-                  @Override
-                  public T setValue(T value) {
-                    return list.setVal(index, value);
-                  }
-                };
-            return nv;
+          public T getValue() {
+            return NamedList.this.getVal(index);
           }
 
           @Override
-          public void remove() {
-            throw new UnsupportedOperationException();
+          public T setValue(T value) {
+            return NamedList.this.setVal(index, value);
+          }
+
+          // The following implement the Map.Entry specification:
+
+          @Override
+          public boolean equals(Object o) {
+            return o instanceof Map.Entry<?, ?> e
+                && Objects.equals(getKey(), e.getKey())
+                && Objects.equals(getValue(), e.getValue());
+          }
+
+          @Override
+          public int hashCode() {
+            var key = getKey();
+            var value = getValue();
+            return (key == null ? 0 : key.hashCode()) ^ (value == null ? 0 : value.hashCode());
+          }
+
+          @Override
+          public String toString() {
+            return getKey() + "=" + getValue();
           }
         };
-    return iter;
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+    };
   }
 
   /**
@@ -799,7 +743,7 @@ public class NamedList<T>
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, err + o.getClass());
     }
 
-    if (collection.size() > 0) {
+    if (!collection.isEmpty()) {
       killAll(name);
     }
 
@@ -817,7 +761,11 @@ public class NamedList<T>
 
   @Override
   public boolean equals(Object obj) {
+    if (obj == this) return true;
     if (!(obj instanceof NamedList<?> nl)) return false;
+    if (obj instanceof SimpleOrderedMap<?>) {
+      return false;
+    }
     return this.nvPairs.equals(nl.nvPairs);
   }
 
@@ -845,7 +793,7 @@ public class NamedList<T>
     }
   }
 
-  public void forEach(BiConsumer<String, ? super T> action) {
+  public void forEach(BiConsumer<? super String, ? super T> action) {
     int sz = size();
     for (int i = 0; i < sz; i++) {
       action.accept(getName(i), getVal(i));

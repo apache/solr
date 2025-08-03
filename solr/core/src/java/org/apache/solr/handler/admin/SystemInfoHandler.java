@@ -146,7 +146,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
     }
     if (cc != null) {
       rsp.add("solr_home", cc.getSolrHome());
-      rsp.add("core_root", cc.getCoreRootDirectory().toString());
+      rsp.add("core_root", cc.getCoreRootDirectory());
     }
 
     rsp.add("lucene", getLuceneInfo());

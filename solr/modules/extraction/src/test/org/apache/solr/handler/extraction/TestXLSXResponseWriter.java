@@ -47,8 +47,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false");
-    initCore(
-        "solrconfig.xml", "schema.xml", getFile("extraction/solr").toAbsolutePath().toString());
+    initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr").toAbsolutePath());
     createIndex();
     // find a reference to the default response writer so we can redirect its output later
     SolrCore testCore = h.getCore();
