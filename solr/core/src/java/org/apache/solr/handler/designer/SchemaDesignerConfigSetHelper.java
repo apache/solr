@@ -487,12 +487,11 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   // I don't like this guy just hanging out here to support retrieveSampleDocs.
   List<SolrInputDocument> docs = Collections.emptyList();
 
+  @SuppressWarnings("unchecked")
   List<SolrInputDocument> retrieveSampleDocs(final String configSet) throws IOException {
 
-    String path =
-        "blob" + "/" + configSet
-            + "_sample"; //  needs to be made unique to support multiple uploads.  Maybe hash the
-    // docs?
+    //  needs to be made unique to support multiple uploads.  Maybe hash the docs?  Is this true???
+    String path = "blob" + "/" + configSet + "_sample";
 
     try {
       cc.getFileStore()
