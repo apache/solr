@@ -24,8 +24,6 @@ import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import io.ktor.client.HttpClient
 import io.ktor.http.Url
-import kotlin.test.Test
-import kotlin.test.assertNotNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
@@ -38,6 +36,8 @@ import org.apache.solr.ui.components.auth.AuthenticationComponent.Output
 import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.DefaultAppComponentContext
+import kotlin.test.Test
+import kotlin.test.assertNotNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DefaultAuthenticationComponentIntegrationTest {

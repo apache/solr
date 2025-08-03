@@ -31,7 +31,7 @@ import org.apache.solr.ui.components.auth.store.BasicAuthStore.State
 import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.errors.InvalidCredentialsException
 import org.apache.solr.ui.errors.UnauthorizedException
-import org.apache.solr.ui.errors.parseError
+import org.apache.solr.ui.utils.parseError
 import kotlin.coroutines.CoroutineContext
 
 class BasicAuthStoreProvider(

@@ -39,7 +39,8 @@ class DefaultStartComponent(
     storeFactory: StoreFactory,
     httpClient: HttpClient,
     output: (StartComponent.Output) -> Unit,
-) : StartComponent, AppComponentContext by componentContext {
+) : StartComponent,
+    AppComponentContext by componentContext {
 
     private val mainScope = coroutineScope(SupervisorJob() + mainContext)
     private val ioScope = coroutineScope(SupervisorJob() + ioContext)
@@ -63,7 +64,7 @@ class DefaultStartComponent(
                     StartComponent.Output.OnAuthRequired(
                         url = label.url,
                         methods = label.methods,
-                    )
+                    ),
                 )
                 is StartStore.Label.Connected ->
                     output(StartComponent.Output.OnConnected(url = label.url))

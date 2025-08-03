@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.errors
+package org.apache.solr.ui.utils
 
-actual fun parseError(error: Throwable): Throwable {
-    // In JavaScript the errors do not have any type to distinguish them, so we strongly
-    // rely on the error message.
-    if (error.message?.contains(other = "Fail to fetch") == true) return HostNotFoundException(cause = error)
-
-    // fallback
-    return error
-}
+/**
+ * Parsing function for mapping platform-specific errors.
+ *
+ * @param error The error to try to parse
+ * @return A mapped error or [error] if it could not be parsed.
+ */
+expect fun parseError(error: Throwable): Throwable

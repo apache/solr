@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.start.StartComponent
 import org.apache.solr.ui.components.start.StartComponent.Model
 
-class TestStartComponent(model: Model = Model()): StartComponent {
+class TestStartComponent(model: Model = Model()) : StartComponent {
 
     override val model: StateFlow<Model> = MutableStateFlow(model)
 
