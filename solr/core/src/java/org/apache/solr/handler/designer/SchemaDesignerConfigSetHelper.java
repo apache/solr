@@ -27,6 +27,7 @@ import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
 import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -499,18 +500,14 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
               path,
               entry -> {
                 try (InputStream is = entry.getInputStream()) {
-                  byte[] bytes = is.readAllBytes();
-                  if (bytes.length > 0) {
-                    docs = (List<SolrInputDocument>) Utils.fromJavabin(bytes);
-                  }
-                  // Do something with content...
+                  docs = (List<SolrInputDocument>) Utils.fromJavabin(is);
                 } catch (IOException e) {
                   log.error("Error reading file content", e);
                 }
               },
               true);
-    } catch (java.io.FileNotFoundException e) {
-      log.warn("File at path {} not found.", path);
+    } catch (FileNotFoundException e) {
+      log.info("File at path {} not found.", path);
     }
 
     return docs != null ? docs : Collections.emptyList();
