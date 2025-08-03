@@ -15,12 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.errors
+package org.apache.solr.ui.utils
+
+import javax.swing.SwingUtilities
 
 /**
- * Parsing function for mapping platform-specific errors.
- *
- * @param error The error to try to parse
- * @return A mapped error or [error] if it could not be parsed.
+ * Ensures that a code [block] is executed on the UI thread.
  */
-expect fun parseError(error: Throwable): Throwable
+internal fun <T> runOnUiThread(block: () -> T): T {
+    if (SwingUtilities.isEventDispatchThread()) {
+        return block()
+    }
+
+    var error: Throwable? = null
+    var result: T? = null
+
+    SwingUtilities.invokeAndWait {
+        try {
+            result = block()
+        } catch (e: Throwable) {
+            error = e
+        }
+    }
+
+    error?.also { throw it }
+
+    @Suppress("UNCHECKED_CAST")
+    return result as T
+}

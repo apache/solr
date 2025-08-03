@@ -23,11 +23,11 @@ import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import io.ktor.http.Url
-import kotlin.coroutines.CoroutineContext
 import org.apache.solr.ui.components.auth.store.AuthenticationStore.Intent
 import org.apache.solr.ui.components.auth.store.AuthenticationStore.Label
 import org.apache.solr.ui.components.auth.store.AuthenticationStore.State
 import org.apache.solr.ui.domain.AuthMethod
+import kotlin.coroutines.CoroutineContext
 
 /**
  * The store provider that holds the business logic of the [AuthenticationStore].

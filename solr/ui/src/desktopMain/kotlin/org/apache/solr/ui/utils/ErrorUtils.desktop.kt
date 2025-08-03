@@ -15,31 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui
+package org.apache.solr.ui.utils
 
-import javax.swing.SwingUtilities
+import org.apache.solr.ui.errors.HostNotFoundException
+import java.net.ConnectException
 
-/**
- * Ensures that a code [block] is executed on the UI thread.
- */
-internal fun <T> runOnUiThread(block: () -> T): T {
-    if (SwingUtilities.isEventDispatchThread()) {
-        return block()
-    }
-
-    var error: Throwable? = null
-    var result: T? = null
-
-    SwingUtilities.invokeAndWait {
-        try {
-            result = block()
-        } catch (e: Throwable) {
-            error = e
-        }
-    }
-
-    error?.also { throw it }
-
-    @Suppress("UNCHECKED_CAST")
-    return result as T
+actual fun parseError(error: Throwable): Throwable = when (error) {
+    is ConnectException -> HostNotFoundException(error)
+    else -> error
 }

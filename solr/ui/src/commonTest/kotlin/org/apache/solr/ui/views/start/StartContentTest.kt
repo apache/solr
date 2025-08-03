@@ -26,13 +26,13 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import org.apache.solr.ui.components.start.StartComponent.Model
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.error_invalid_url
 import org.jetbrains.compose.resources.stringResource
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
 class StartContentTest {
@@ -43,11 +43,14 @@ class StartContentTest {
             StartContent(createComponent())
         }
 
-        assertEquals("", onNodeWithTag("solr_url_input")
-            .assertExists()
-            .fetchSemanticsNode()
-            .config[SemanticsProperties.EditableText]
-            .text)
+        assertEquals(
+            "",
+            onNodeWithTag("solr_url_input")
+                .assertExists()
+                .fetchSemanticsNode()
+                .config[SemanticsProperties.EditableText]
+                .text,
+        )
     }
 
     @Test

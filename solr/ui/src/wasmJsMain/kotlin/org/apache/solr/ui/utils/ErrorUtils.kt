@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.errors
+package org.apache.solr.ui.utils
 
-import java.net.ConnectException
+import org.apache.solr.ui.errors.HostNotFoundException
 
 actual fun parseError(error: Throwable): Throwable {
-    return when (error) {
-        is ConnectException -> HostNotFoundException(error)
-        else -> error
-    }
+    // In JavaScript the errors do not have any type to distinguish them, so we strongly
+    // rely on the error message.
+    if (error.message?.contains(other = "Fail to fetch") == true) return HostNotFoundException(cause = error)
+
+    // fallback
+    return error
 }
