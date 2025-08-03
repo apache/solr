@@ -60,9 +60,6 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, ExternalPaths.DEFAULT_CONFIGSET)
         .configure();
-    // SchemaDesignerConfigSetHelper depends on the blob store
-    CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(BLOB_STORE_ID, 1, 1);
   }
 
   @AfterClass

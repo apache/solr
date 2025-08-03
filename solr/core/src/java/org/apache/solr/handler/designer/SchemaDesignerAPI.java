@@ -87,7 +87,7 @@ import org.slf4j.LoggerFactory;
 public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
   private static final Set<String> excludeConfigSetNames =
-      new HashSet<>(Arrays.asList(DEFAULT_CONFIGSET_NAME, BLOB_STORE_ID));
+      new HashSet<>(Arrays.asList(DEFAULT_CONFIGSET_NAME));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
