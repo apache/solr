@@ -348,6 +348,19 @@ ij_java_wrap_first_method_in_call_chain = false
 ij_java_wrap_long_lines = true
 ij_java_wrap_semicolon_after_call_chain = false
 
+[{*.kt,*.kts}]
+indent_size = 4
+ij_kotlin_code_style_defaults = KOTLIN_OFFICIAL
+
+#  Disable wildcard imports entirely
+ij_kotlin_name_count_to_use_star_import = 2147483647
+ij_kotlin_name_count_to_use_star_import_for_members = 2147483647
+ij_kotlin_packages_to_use_import_on_demand = unset
+
+ktlint_code_style = intellij_idea
+ktlint_function_naming_ignore_when_annotated_with = Composable
+compose_allowed_composition_locals = LocalExtendedColorScheme, LocalExtendedTypography
+
 [*.adoc]
 indent_size = 4
 ij_asciidoc_blank_lines_after_header = 1
