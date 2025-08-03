@@ -69,12 +69,14 @@ import org.jetbrains.compose.resources.stringResource
  * sections.
  *
  * @param onNavigate Navigation handler function.
+ * @param onLogout Logout handler function.
  * @param selectedItem The currently selected navigation item.
  * @param modifier Modifier to apply to the root composable.
  */
 @Composable
 fun NavigationSideBar(
     onNavigate: (MainMenu) -> Unit,
+    onLogout: () -> Unit,
     selectedItem: MainMenu? = null,
     modifier: Modifier = Modifier,
 ) = Row(modifier = modifier) {
@@ -105,7 +107,7 @@ fun NavigationSideBar(
                 text = stringResource(Res.string.action_logout),
                 imageVector = Icons.AutoMirrored.Rounded.Logout,
                 modifier = Modifier.fillMaxWidth(),
-                onClick = {}, // TODO Call logout on auth component
+                onClick = onLogout,
             )
         }
     }

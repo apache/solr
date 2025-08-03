@@ -39,6 +39,13 @@ fun PreviewStartContentWithError() = PreviewContainer {
     StartContent(component = PreviewStartComponentWithError)
 }
 
+
+@Preview
+@Composable
+fun PreviewStartContentWithConnecting() = PreviewContainer {
+    StartContent(component = PreviewStartComponentWithConnecting)
+}
+
 private object PreviewStartComponent: StartComponent {
     override val model: StateFlow<StartComponent.Model> =
         MutableStateFlow(StartComponent.Model())
@@ -52,6 +59,18 @@ private object PreviewStartComponentWithError: StartComponent {
         StartComponent.Model(
             url = "some-invalid-url!",
             error = Res.string.error_invalid_url,
+        )
+    )
+
+    override fun onSolrUrlChange(url: String) = Unit
+    override fun onConnect() = Unit
+}
+
+
+private object PreviewStartComponentWithConnecting: StartComponent {
+    override val model: StateFlow<StartComponent.Model> = MutableStateFlow(
+        StartComponent.Model(
+            isConnecting = true,
         )
     )
 

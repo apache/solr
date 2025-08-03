@@ -15,22 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.errors
+package org.apache.solr.ui.domain
 
-import io.ktor.http.Url
-import org.apache.solr.ui.domain.AuthMethod
+import kotlinx.serialization.Serializable
 
 /**
- * Exception that is thrown for unauthorized access to the API.
+ * The authentication method is used for determining what methods of authenticating are available.
+ * These methods hold information for displaying and trying to authenticate.
  *
- * This is usually used when a response has HTTP status code 401.
- *
- * @property url The URL that threw the unauthorized response.
- * @property methods The authentication methods the unauthorized response contains.
- * This can be used for further redirecting and authenticating the user.
+ * @see AuthOption
  */
-class UnauthorizedException(
-    val url: Url? = null,
-    val methods: List<AuthMethod> = emptyList(),
-    message: String? = null,
-): Exception(message)
+@Serializable
+sealed interface AuthMethod {
+
+    /**
+     * Basic authentication method that uses username and password for
+     * authenticating.
+     *
+     * @property realm The realm of the basic auth.
+     */
+    @Serializable
+    data class BasicAuthMethod(val realm: String = "") : AuthMethod
+}

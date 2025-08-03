@@ -15,30 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.auth
+package org.apache.solr.ui
 
-import io.ktor.http.Url
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 
-interface UnauthenticatedComponent {
-
-    /**
-     * Aborts the authentication attempt.
-     */
-    fun onAbort()
-
-    sealed interface Output {
-
-        /**
-         * Emitted when the user successfully authenticated against
-         * the Solr instance.
-         *
-         * @property url The URL the connection was established with
-         */
-        data class OnConnected(val url: Url): Output
-
-        /**
-         * Emitted when the user aborts the authentication flow.
-         */
-        data object OnAbort: Output
+/**
+ * Checks if a node contains at least one error property.
+ */
+val isErrorSemantics = SemanticsMatcher(
+    description = "Node contains error",
+    matcher = { node ->
+        node.config[SemanticsProperties.Error].isNotEmpty()
     }
-}
+)
