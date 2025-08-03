@@ -22,13 +22,13 @@ import com.arkivanov.mvikotlin.core.store.SimpleBootstrapper
 import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.environment.data.JavaProperty
 import org.apache.solr.ui.components.environment.data.SystemData
 import org.apache.solr.ui.components.environment.store.EnvironmentStore.Intent
 import org.apache.solr.ui.components.environment.store.EnvironmentStore.State
-import kotlin.coroutines.CoroutineContext
 
 /**
  * Store provider that [provide]s instances of [EnvironmentStore].

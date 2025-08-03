@@ -29,6 +29,7 @@ import com.arkivanov.decompose.extensions.compose.lifecycle.LifecycleController
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.mvikotlin.core.utils.setMainThreadId
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
+import java.awt.Dimension
 import kotlinx.coroutines.Dispatchers
 import org.apache.solr.ui.components.root.RootComponent
 import org.apache.solr.ui.components.root.integration.SimpleRootComponent
@@ -37,7 +38,6 @@ import org.apache.solr.ui.utils.getDefaultClient
 import org.apache.solr.ui.utils.runOnUiThread
 import org.apache.solr.ui.views.root.RootContent
 import org.apache.solr.ui.views.theme.SolrTheme
-import java.awt.Dimension
 
 /**
  * Entry point of the Compose application for all JVM-based (desktop) targets.

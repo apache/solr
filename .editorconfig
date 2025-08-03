@@ -360,6 +360,7 @@ ij_kotlin_packages_to_use_import_on_demand = unset
 ktlint_code_style = intellij_idea
 ktlint_function_naming_ignore_when_annotated_with = Composable
 compose_allowed_composition_locals = LocalExtendedColorScheme, LocalExtendedTypography
+ij_kotlin_imports_layout=*,^
 
 [*.adoc]
 indent_size = 4
