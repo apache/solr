@@ -20,7 +20,10 @@ package org.apache.solr.ui.domain
 import kotlinx.serialization.Serializable
 
 /**
- * A sealed interface that represents an authentication method.
+ * The authentication method is used for determining what methods of authenticating are available.
+ * These methods hold information for displaying and trying to authenticate.
+ *
+ * @see AuthOption
  */
 @Serializable
 sealed interface AuthMethod {
@@ -29,7 +32,7 @@ sealed interface AuthMethod {
      * Basic authentication method that uses username and password for
      * authenticating.
      *
-     * Note that additional params like realm etc. are currently ignored in basic auth.
+     * @property realm The realm of the basic auth.
      */
     @Serializable
     data class BasicAuthMethod(val realm: String = "") : AuthMethod

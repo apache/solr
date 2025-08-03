@@ -54,6 +54,11 @@ import kotlin.test.assertIs
 class DefaultBasicAuthComponentTest {
 
     /**
+     * A normal basic auth method with the realm "solr".
+     */
+    private val method = AuthMethod.BasicAuthMethod(realm = "solr")
+
+    /**
      * Valid username used for authentication.
      */
     private val validUsername = "Player1"
@@ -96,7 +101,7 @@ class DefaultBasicAuthComponentTest {
         advanceUntilIdle()
 
         assertContains(outputs, Output.Authenticating)
-        assertContains(outputs, Output.Authenticated(validUsername, validPassword))
+        assertContains(outputs, Output.Authenticated(method, validUsername, validPassword))
     }
 
     @Test

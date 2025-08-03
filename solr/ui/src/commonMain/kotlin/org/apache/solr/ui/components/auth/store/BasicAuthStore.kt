@@ -56,10 +56,15 @@ interface BasicAuthStore : Store<Intent, State, Label> {
         /**
          * Label that is published when the user successfully authenticated to the Solr instance.
          *
+         * @property method The method that was used for authentication.
          * @property username The username that was used for authentication.
          * @property password The password that was used for authentication.
          */
-        data class Authenticated(val username: String, val password: String) : Label
+        data class Authenticated(
+            val method: BasicAuthMethod,
+            val username: String,
+            val password: String,
+        ) : Label
 
         /**
          * Label that is published when the authentication process failed with an error.

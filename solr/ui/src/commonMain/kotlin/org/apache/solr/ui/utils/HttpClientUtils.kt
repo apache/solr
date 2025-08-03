@@ -27,6 +27,7 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.Url
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import org.apache.solr.ui.domain.AuthOption
 
 /**
  * Function that returns a simple HTTP client that is preconfigured with a base
@@ -50,6 +51,15 @@ fun getDefaultClient(
     }
 
     block()
+}
+
+fun getHttpClientWithAuthOption(option: AuthOption) = when (option) {
+    is AuthOption.None -> getDefaultClient(option.url)
+    is AuthOption.BasicAuthOption -> getHttpClientWithCredentials(
+        url = option.url,
+        username = option.username,
+        password = option.password,
+    )
 }
 
 fun getHttpClientWithCredentials(

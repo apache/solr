@@ -33,13 +33,14 @@ import kotlinx.coroutines.SupervisorJob
 import org.apache.solr.ui.components.auth.AuthenticationComponent
 import org.apache.solr.ui.components.auth.AuthenticationComponent.BasicAuthConfiguration
 import org.apache.solr.ui.components.auth.AuthenticationComponent.Output
-import org.apache.solr.ui.components.auth.AuthenticationComponent.Output.OnAuthenticatedWithBasicAuth
+import org.apache.solr.ui.components.auth.AuthenticationComponent.Output.OnAuthenticated
 import org.apache.solr.ui.components.auth.BasicAuthComponent
 import org.apache.solr.ui.components.auth.store.AuthenticationStore.Intent
 import org.apache.solr.ui.components.auth.store.AuthenticationStore.Intent.FailAuthentication
 import org.apache.solr.ui.components.auth.store.AuthenticationStore.Intent.ResetError
 import org.apache.solr.ui.components.auth.store.AuthenticationStoreProvider
 import org.apache.solr.ui.domain.AuthMethod
+import org.apache.solr.ui.domain.AuthOption
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.coroutineScope
 import org.apache.solr.ui.utils.map
@@ -59,7 +60,7 @@ class DefaultAuthenticationComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     httpClient: HttpClient,
-    url: Url,
+    private val url: Url,
     methods: List<AuthMethod>,
     private val output: (Output) -> Unit,
 ) : AuthenticationComponent,
@@ -116,9 +117,13 @@ class DefaultAuthenticationComponent(
      */
     private fun basicAuthOutput(output: BasicAuthComponent.Output): Unit = when (output) {
         is BasicAuthComponent.Output.Authenticated -> output(
-            OnAuthenticatedWithBasicAuth(
-                username = output.username,
-                password = output.password,
+            OnAuthenticated(
+                option = AuthOption.BasicAuthOption(
+                    url = url,
+                    method = output.method,
+                    username = output.username,
+                    password = output.password,
+                ),
             ),
         )
 

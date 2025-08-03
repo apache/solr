@@ -65,7 +65,11 @@ class DefaultBasicAuthComponent(
         store.labels.onEach { label ->
             when (label) {
                 is BasicAuthStore.Label.Authenticated -> output(
-                    Output.Authenticated(username = label.username, password = label.password),
+                    Output.Authenticated(
+                        method = label.method,
+                        username = label.username,
+                        password = label.password,
+                    ),
                 )
 
                 is BasicAuthStore.Label.AuthenticationFailed -> output(

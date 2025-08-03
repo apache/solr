@@ -19,9 +19,11 @@ package org.apache.solr.ui.components.auth
 
 import com.arkivanov.decompose.router.slot.ChildSlot
 import com.arkivanov.decompose.value.Value
+import io.ktor.http.Url
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
 import org.apache.solr.ui.domain.AuthMethod
+import org.apache.solr.ui.domain.AuthOption
 import org.jetbrains.compose.resources.StringResource
 
 /**
@@ -69,13 +71,9 @@ interface AuthenticationComponent {
         /**
          * Emitted when the user successfully authenticated against the Solr instance.
          *
-         * @property username The username to use for further authenticated requests.
-         * @property password The password to use for further authenticated requests.
+         * @property option The final authentication option that succeeded.
          */
-        data class OnAuthenticatedWithBasicAuth(
-            val username: String,
-            val password: String,
-        ) : Output
+        data class OnAuthenticated(val option: AuthOption) : Output
 
         /**
          * Emitted when the user aborts the authentication flow.

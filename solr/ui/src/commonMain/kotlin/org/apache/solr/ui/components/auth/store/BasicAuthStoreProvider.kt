@@ -98,7 +98,7 @@ class BasicAuthStoreProvider(
                     client.authenticate(username, password)
                 }.onSuccess {
                     // Authentication succeeded with the given credentials
-                    publish(Label.Authenticated(username, password))
+                    publish(Label.Authenticated(method, username, password))
                 }.onFailure { error ->
                     handleConnectionError(error)
                 }

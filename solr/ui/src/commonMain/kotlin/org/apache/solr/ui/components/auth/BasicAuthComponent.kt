@@ -18,6 +18,7 @@
 package org.apache.solr.ui.components.auth
 
 import kotlinx.coroutines.flow.StateFlow
+import org.apache.solr.ui.domain.AuthMethod
 
 /**
  * Component interface that is handling basic authentication with username and password.
@@ -71,10 +72,15 @@ interface BasicAuthComponent {
          * The username and password are passed to the parent to configure a client
          * with basic auth and pass it to other instances for further use.
          *
+         * @property method The method that was used for authentication.
          * @property username The username that was used for authentication.
          * @property password The password that was used for authentication.
          */
-        data class Authenticated(val username: String, val password: String) : Output
+        data class Authenticated(
+            val method: AuthMethod.BasicAuthMethod,
+            val username: String,
+            val password: String,
+        ) : Output
 
         /**
          * Output that is emitted when an authentication error occurs, for example, in case

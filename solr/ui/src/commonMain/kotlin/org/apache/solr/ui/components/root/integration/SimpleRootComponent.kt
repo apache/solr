@@ -39,9 +39,10 @@ import org.apache.solr.ui.components.root.RootComponent.Child.Start
 import org.apache.solr.ui.components.start.StartComponent
 import org.apache.solr.ui.components.start.integration.DefaultStartComponent
 import org.apache.solr.ui.domain.AuthMethod
+import org.apache.solr.ui.domain.AuthOption
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.getDefaultClient
-import org.apache.solr.ui.utils.getHttpClientWithCredentials
+import org.apache.solr.ui.utils.getHttpClientWithAuthOption
 
 /**
  * A simple root component implementation that does not check the user's access level and redirects
@@ -54,8 +55,7 @@ class SimpleRootComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     private val startComponent: (AppComponentContext, (StartComponent.Output) -> Unit) -> StartComponent,
-    private val mainComponent: (AppComponentContext, Url) -> MainComponent,
-    private val mainComponentWithBasicAuth: (AppComponentContext, Url, String, String) -> MainComponent,
+    private val mainComponent: (AppComponentContext, AuthOption, (MainComponent.Output) -> Unit) -> MainComponent,
     private val authenticationComponent: AuthenticationComponentProducer,
 ) : RootComponent,
     AppComponentContext by componentContext {
@@ -87,20 +87,13 @@ class SimpleRootComponent(
                 output = output,
             )
         },
-        mainComponent = { childContext, url ->
+        mainComponent = { childContext, authOption, output ->
             DefaultMainComponent(
                 componentContext = childContext,
                 storeFactory = storeFactory,
-                httpClient = getDefaultClient(url),
+                httpClient = getHttpClientWithAuthOption(authOption),
                 destination = destination,
-            )
-        },
-        mainComponentWithBasicAuth = { childContext, url, username, password ->
-            DefaultMainComponent(
-                componentContext = childContext,
-                storeFactory = storeFactory,
-                httpClient = getHttpClientWithCredentials(url, username, password),
-                destination = destination,
+                output = output,
             )
         },
         authenticationComponent = { childContext, url, methods, output ->
@@ -120,24 +113,14 @@ class SimpleRootComponent(
         componentContext: AppComponentContext,
     ): RootComponent.Child = when (configuration) {
         is Configuration.Start -> Start(startComponent(componentContext, ::startOutput))
-        is Configuration.Main -> Main(mainComponent(componentContext, configuration.url))
-        is Configuration.MainWithBasicAuth -> Main(
-            component = mainComponentWithBasicAuth(
-                componentContext,
-                configuration.url,
-                configuration.username,
-                configuration.password,
-            ),
-        )
+        is Configuration.Main -> Main(mainComponent(componentContext, configuration.authOption, ::mainOutput))
 
         is Configuration.Authentication -> Authentication(
             authenticationComponent(
                 componentContext,
                 configuration.url,
                 configuration.methods,
-            ) { output ->
-                authenticationOutput(output, configuration.url)
-            },
+            ) { output -> authenticationOutput(output) },
         )
     }
 
@@ -155,7 +138,16 @@ class SimpleRootComponent(
         )
 
         is StartComponent.Output.OnConnected ->
-            navigation.replaceAll(Configuration.Main(url = output.url))
+            navigation.replaceAll(Configuration.Main(authOption = AuthOption.None(url = output.url)))
+    }
+
+    /**
+     * Output handler for any output returned by the [MainComponent].
+     *
+     * @param output The output returned by the main component implementation.
+     */
+    private fun mainOutput(output: MainComponent.Output) = when (output) {
+        is MainComponent.Output.UserLoggedOut -> navigation.replaceAll(Configuration.Start)
     }
 
     /**
@@ -163,15 +155,9 @@ class SimpleRootComponent(
      *
      * @param output The output returned by the authentication component implementation.
      */
-    private fun authenticationOutput(output: AuthenticationComponent.Output, url: Url) = when (output) {
-        is AuthenticationComponent.Output.OnAuthenticatedWithBasicAuth ->
-            navigation.replaceAll(
-                Configuration.MainWithBasicAuth(
-                    url = url,
-                    username = output.username,
-                    password = output.password,
-                ),
-            )
+    private fun authenticationOutput(output: AuthenticationComponent.Output) = when (output) {
+        is AuthenticationComponent.Output.OnAuthenticated ->
+            navigation.replaceAll(Configuration.Main(authOption = output.option))
 
         is AuthenticationComponent.Output.OnAbort -> navigation.pop()
     }
@@ -193,14 +179,7 @@ class SimpleRootComponent(
         data class Authentication(val url: Url, val methods: List<AuthMethod>) : Configuration
 
         @Serializable
-        data class Main(val url: Url) : Configuration
-
-        @Serializable
-        data class MainWithBasicAuth(
-            val url: Url,
-            val username: String,
-            val password: String,
-        ) : Configuration
+        data class Main(val authOption: AuthOption) : Configuration
     }
 }
 
