@@ -21,10 +21,10 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.runComposeUiTest
+import kotlin.test.Test
 import org.apache.solr.ui.components.auth.AuthenticationComponent.Model
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.error_invalid_credentials
-import kotlin.test.Test
 
 @OptIn(ExperimentalTestApi::class)
 class UserAuthenticationContentTest {

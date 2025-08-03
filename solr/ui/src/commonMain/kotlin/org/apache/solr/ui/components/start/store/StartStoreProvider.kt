@@ -25,6 +25,7 @@ import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import io.ktor.http.URLParserException
 import io.ktor.http.Url
 import io.ktor.http.parseUrl
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,7 +35,6 @@ import org.apache.solr.ui.components.start.store.StartStore.State
 import org.apache.solr.ui.errors.UnauthorizedException
 import org.apache.solr.ui.utils.DEFAULT_SOLR_URL
 import org.apache.solr.ui.utils.parseError
-import kotlin.coroutines.CoroutineContext
 
 /**
  * Store provider that [provide]s instances of [StartStore].
