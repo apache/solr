@@ -60,8 +60,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -79,7 +77,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -520,26 +517,6 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     return docs != null ? docs : Collections.emptyList();
   }
 
-  @SuppressWarnings("unchecked")
-  List<SolrInputDocument> getStoredSampleDocs(final String configSet) throws IOException {
-    var request = new GenericSolrRequest(SolrRequest.METHOD.GET, "/blob/" + configSet + "_sample");
-    request.setRequiresCollection(true);
-    request.setResponseParser(new InputStreamResponseParser("filestream"));
-    InputStream inputStream = null;
-    try {
-      var resp = request.process(cloudClient(), BLOB_STORE_ID).getResponse();
-      inputStream = (InputStream) resp.get("stream");
-      var bytes = inputStream.readAllBytes();
-      if (bytes.length > 0) {
-        return (List<SolrInputDocument>) Utils.fromJavabin(bytes);
-      } else return Collections.emptyList();
-    } catch (SolrServerException e) {
-      throw new IOException("Failed to lookup stored docs for " + configSet + " due to: " + e);
-    } finally {
-      IOUtils.closeQuietly(inputStream);
-    }
-  }
-
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
     docs.forEach(d -> d.removeField(VERSION_FIELD)); // remove _version_ field before storing ...
     storeSampleDocs(configSet + "_sample", readAllBytes(() -> toJavabin(docs)));
@@ -557,18 +534,6 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   static byte[] readAllBytes(IOSupplier<InputStream> hasStream) throws IOException {
     try (InputStream in = hasStream.get()) {
       return in.readAllBytes();
-    }
-  }
-
-  protected void postDataToBlobStore(CloudSolrClient cloudClient, String blobName, byte[] bytes)
-      throws IOException {
-    var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/blob/" + blobName);
-    request.withContent(bytes, JavaBinResponseParser.JAVABIN_CONTENT_TYPE);
-    request.setRequiresCollection(true);
-    try {
-      request.process(cloudClient, BLOB_STORE_ID);
-    } catch (SolrServerException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
 
