@@ -241,12 +241,15 @@ client.add(Arrays.asList(d1, d2));
 ======
 
 === ScalarQuantizedDenseVectorField
-Because dense vectors can have a costly storage footprint, it may be worthwhile to use a technique called "quantization"
-to reduce the stored representation size at the cost of some precision.
+Because dense vectors can have a costly size, it may be worthwhile to use a technique called "quantization"
+which creates a compressed representation of the original vectors. This allows more of the index to be stored in faster memory
+at the cost of some precision.
 
 This dense vector type uses a conversion that projects a 32 bit float precision feature down to an 8 bit int (or smaller)
-by linearly mapping the float range down to evenly sized "buckets" of values that fit into an int. A more detailed explanation
-can be found in this https://www.elastic.co/search-labs/blog/scalar-quantization-101[blog post].
+by linearly mapping the float range of each dimension down to evenly sized "buckets" of values that fit into an int. For example:
+with 8 bits we can store up to 256 discrete values, so a float dimension with values from 0.0 to 1.0 may be mapped as
+
+[0.0, 0.0039) => 0, [0.0039, 0.0078) => 1 ... etc
 
 As a specific type of DenseVectorField, this field type supports all the same configurable properties outlined above as well
 as some additional ones.
@@ -296,7 +299,7 @@ If set to true, enables dynamically determining confidence interval (per dimensi
 +
 `NOTE: when this is enabled, it will take precedence over any value configured for confidenceInterval`
 +
-Accepted values: `FLOAT32`  (within 0.9 and 1.0) or 0 for dynamically adjusted confidence interval
+Accepted values: `BOOLEAN`
 
 `compress`::
 +
