@@ -69,6 +69,9 @@ dependencies {
   implementation libs.dropwizard.metrics.jetty10
   implementation libs.commonscli.commonscli
   permitUnusedDeclared libs.commonscli.commonscli
+  implementation libs.picocli
+  permitUnusedDeclared libs.picocli
+  annotationProcessor libs.picocli.codegen
   implementation libs.apache.httpcomponents.httpclient
   implementation libs.apache.httpcomponents.httpcore
   implementation libs.opentelemetry.api
