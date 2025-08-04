@@ -325,6 +325,7 @@ eclipse-jetty-alpnserver = { module = "org.eclipse.jetty:jetty-alpn-server", ver
 eclipse-jetty-client = { module = "org.eclipse.jetty:jetty-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-deploy = { module = "org.eclipse.jetty:jetty-deploy", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee = { module = "org.eclipse.jetty:jetty-ee", version.ref = "eclipse-jetty" }
+eclipse-jetty-ee10-proxy = { module = "org.eclipse.jetty.ee10:jetty-ee10-proxy", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee10-servlet = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlet", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee10-servlets = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlets", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee10-webapp = { module = "org.eclipse.jetty.ee10:jetty-ee10-webapp", version.ref = "eclipse-jetty" }

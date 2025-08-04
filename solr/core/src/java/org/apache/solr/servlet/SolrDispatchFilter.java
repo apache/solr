@@ -100,9 +100,9 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
     RETURN,
     RETRY,
     ADMIN,
-    REMOTEQUERY,
+    REMOTEPROXY,
     PROCESS,
-    ADMIN_OR_REMOTEQUERY
+    ADMIN_OR_REMOTEPROXY
   }
 
   public SolrDispatchFilter() {}
@@ -121,6 +121,7 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
 
   @Override
   public void init(FilterConfig config) throws ServletException {
+    super.init(config);
     try {
       containerProvider = CoreContainerProvider.serviceForContext(config.getServletContext());
       boolean isCoordinator =
@@ -236,8 +237,8 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
           break;
         case ADMIN:
         case PROCESS:
-        case REMOTEQUERY:
-        case ADMIN_OR_REMOTEQUERY:
+        case REMOTEPROXY:
+        case ADMIN_OR_REMOTEPROXY:
         case RETURN:
           break;
       }

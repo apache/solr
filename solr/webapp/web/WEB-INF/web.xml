@@ -54,6 +54,11 @@
     <url-pattern>/index.html</url-pattern>
   </servlet-mapping>
 
+  <servlet>
+    <servlet-name>proxy</servlet-name>
+    <servlet-class>org.apache.solr.servlet.SolrJettyProxyServlet</servlet-class>
+  </servlet>
+
   <mime-mapping>
     <extension>.xsl</extension>
     <!-- per http://www.w3.org/TR/2006/PR-xslt20-20061121/ -->

@@ -28,16 +28,18 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEPROXY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
 import io.opentelemetry.api.trace.Span;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.EOFException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -110,7 +112,6 @@ import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
-import org.eclipse.jetty.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MarkerFactory;
@@ -275,7 +276,7 @@ public class HttpSolrCall {
           // if we couldn't find it locally, look on other nodes
           if (idx > 0) {
             extractRemotePath(collectionName);
-            if (action == REMOTEQUERY) {
+            if (action == REMOTEPROXY) {
               path = path.substring(idx);
               return;
             }
@@ -471,7 +472,7 @@ public class HttpSolrCall {
             SolrException.ErrorCode.INVALID_STATE,
             new String(Utils.toJSON(invalidStates), StandardCharsets.UTF_8));
       }
-      action = REMOTEQUERY;
+      action = REMOTEPROXY;
     } else {
       if (!retry) {
         // we couldn't find a core to work with, try reloading aliases & this collection
@@ -523,7 +524,7 @@ public class HttpSolrCall {
       // able to perform the authorization.
       if (cores.getAuthorizationPlugin() != null
           && shouldAuthorize()
-          && !(action == REMOTEQUERY || action == FORWARD)) {
+          && !(action == REMOTEPROXY || action == FORWARD)) {
         final AuthorizationContext authzContext = getAuthCtx();
         AuthorizationUtils.AuthorizationFailure authzFailure =
             AuthorizationUtils.authorize(req, response, cores, authzContext);
@@ -535,14 +536,14 @@ public class HttpSolrCall {
 
       HttpServletResponse resp = response;
       switch (action) {
-        case ADMIN_OR_REMOTEQUERY:
+        case ADMIN_OR_REMOTEPROXY:
           handleAdminOrRemoteRequest();
           return RETURN;
         case ADMIN:
           handleAdminRequest();
           return RETURN;
-        case REMOTEQUERY:
-          sendRemoteQuery();
+        case REMOTEPROXY:
+          sendRemoteProxy();
           return RETURN;
         case PROCESS:
           final Method reqMethod = Method.getMethod(req.getMethod());
@@ -614,7 +615,7 @@ public class HttpSolrCall {
 
   /**
    * Handle a request whose "type" could not be discerned in advance and may be either "admin" or
-   * "remotequery".
+   * "remoteproxy".
    *
    * <p>Some implementations (such as {@link V2HttpCall}) may find it difficult to differentiate all
    * request types in advance. This method serves as a hook; allowing those implementations to
@@ -709,19 +710,51 @@ public class HttpSolrCall {
     }
   }
 
-  protected void sendRemoteQuery() throws IOException {
-    SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse(), action));
-    mustClearSolrRequestInfo = true;
-
-    HttpClient httpClient = cores.getDefaultHttpSolrClient().getHttpClient();
-
+  protected void sendRemoteProxy() throws IOException {
     ModifiableSolrParams updatedQueryParams = new ModifiableSolrParams(queryParams);
     int forwardCount = queryParams.getInt(INTERNAL_REQUEST_COUNT, 0) + 1;
     updatedQueryParams.set(INTERNAL_REQUEST_COUNT, forwardCount);
     String queryStr = updatedQueryParams.toQueryString();
 
     try {
-      HttpSolrProxy.doHttpProxy(httpClient, req, response, coreUrl + path + queryStr);
+      var rewriteUriReq =
+          new HttpServletRequestWrapper(req) {
+            // Not overriding more methods even though we "should" to be correct.
+            // We know what ProxyServlet accesses that matters.
+
+            URI uri = URI.create(coreUrl + path);
+
+            @Override
+            public String getRequestURI() {
+              return uri.toString();
+            }
+
+            @Override
+            public String getScheme() {
+              return uri.getScheme();
+            }
+
+            @Override
+            public int getServerPort() {
+              return uri.getPort();
+            }
+
+            @Override
+            public StringBuffer getRequestURL() {
+              return new StringBuffer(getRequestURI()); // no query param
+            }
+
+            @Override
+            public String getQueryString() {
+              return queryStr.substring(1); // skip '?'
+            }
+          };
+
+      response.reset(); // clear all headers and status
+      solrDispatchFilter
+          .getServletContext()
+          .getNamedDispatcher("proxy")
+          .forward(rewriteUriReq, response);
     } catch (Exception e) {
       // note: don't handle interruption differently; we are stopping
       sendError(

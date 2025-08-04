@@ -67,6 +67,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.SolrJettyProxyServlet;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -408,6 +409,10 @@ public class JettySolrRunner {
       dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
       // Map dispatchFilter in same path as in web.xml
       root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+
+      // Register SolrJettyProxyServlet by name only (not at a path) for RequestDispatcher to
+      // dispatch to
+      root.getServletHandler().addServlet(new ServletHolder("proxy", SolrJettyProxyServlet.class));
 
       // Default servlet as a fall-through
       root.addServlet(Servlet404.class, "/");

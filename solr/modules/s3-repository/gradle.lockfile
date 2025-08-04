@@ -146,6 +146,7 @@ org.eclipse.jetty.ee10.websocket:jetty-ee10-websocket-jetty-server:12.0.9=jarVal
 org.eclipse.jetty.ee10.websocket:jetty-ee10-websocket-servlet:12.0.9=jarValidation,testCompileClasspath,testRuntimeClasspath
 org.eclipse.jetty.ee10:jetty-ee10-annotations:12.0.9=jarValidation,testCompileClasspath,testRuntimeClasspath
 org.eclipse.jetty.ee10:jetty-ee10-plus:12.0.9=jarValidation,testCompileClasspath,testRuntimeClasspath
+org.eclipse.jetty.ee10:jetty-ee10-proxy:12.0.19=apiHelper,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 org.eclipse.jetty.ee10:jetty-ee10-servlet:12.0.19=jarValidation,testCompileClasspath,testRuntimeClasspath
 org.eclipse.jetty.ee10:jetty-ee10-servlets:12.0.19=jarValidation,testCompileClasspath,testRuntimeClasspath
 org.eclipse.jetty.ee10:jetty-ee10-webapp:12.0.19=jarValidation,testCompileClasspath,testRuntimeClasspath
