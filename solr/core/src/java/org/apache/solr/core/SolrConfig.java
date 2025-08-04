@@ -382,6 +382,9 @@ public class SolrConfig implements MapSerializable {
       }
 
       handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
+      if (handleSelect) {
+        DeprecationLog.log("handleSelect", "handleSelect is deprecated");
+      }
       addHttpRequestToContext = requestParsersNode.boolAttr("addHttpRequestToContext", false);
       if (addHttpRequestToContext) {
         DeprecationLog.log("addHttpRequestToContext", "addHttpRequestToContext is deprecated");

@@ -31,6 +31,7 @@ dependencies {
   implementation(group: 'software.amazon.awssdk', name: 'aws-core')
   implementation(group: 'software.amazon.awssdk', name: 'regions')
   implementation(group: 'software.amazon.awssdk', name: 'http-client-spi')
+  implementation(group: 'software.amazon.awssdk', name: 'retries-spi')
   implementation(group: 'software.amazon.awssdk', name: 's3') {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
@@ -49,6 +50,7 @@ dependencies {
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
+  testImplementation 'software.amazon.awssdk:profiles'
 
   testImplementation 'org.hamcrest:hamcrest'
 

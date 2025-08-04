@@ -317,7 +317,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertNotNull(docIds);
     assertEquals(100, docIds.size()); // designer limits the doc ids to top 100
 
-    String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM, null);
+    String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM);
     assertNotNull(idField);
   }
 
@@ -368,7 +368,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertNotNull(rsp.getValues().get("fields"));
     assertNotNull(rsp.getValues().get("fieldTypes"));
     assertNotNull(rsp.getValues().get("docIds"));
-    String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM, null);
+    String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM);
     assertNotNull(idField);
     assertDesignerSettings(expSettings, rsp.getValues());
 

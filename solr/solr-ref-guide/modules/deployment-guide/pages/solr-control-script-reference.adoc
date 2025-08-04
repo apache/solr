@@ -69,7 +69,7 @@ If you are passing JVM parameters that begin with `-D`, you can omit the `--jvm-
 [source,bash]
 bin/solr start --jvm-opts "-Xdebug -Xrunjdwp:transport=dt_socket, server=y,suspend=n,address=1044"
 
-`-j "<jettyParams>"`::
+`-j <jettyParams>` or `--jettyconfig <jettyParams>`::
 +
 [%autowidth,frame=none]
 |===

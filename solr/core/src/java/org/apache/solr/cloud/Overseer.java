@@ -861,7 +861,6 @@ public class Overseer implements SolrCloseable {
             new Http2SolrClient.Builder()
                 .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
                 .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
-                .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
                 .build();
         var client =
             new CloudHttp2SolrClient.Builder(

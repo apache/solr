@@ -387,7 +387,7 @@ public class AssertTool extends ToolBase {
         System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
     try (SolrClient solrClient = SolrCLI.getSolrClient(url)) {
       NamedList<Object> response = solrClient.request(new HealthCheckRequest());
-      Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
+      Integer statusCode = (Integer) response._get(List.of("responseHeader", "status"), null);
       SolrCLI.checkCodeForAuthError(statusCode);
     } catch (IOException | SolrServerException e) {
       log.debug("Opening connection to {} failed, Solr does not seem to be running", url, e);

@@ -392,7 +392,7 @@ goto done
 @echo                 you could pass: --jvm-opts "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983"
 @echo                 In most cases, you should wrap the additional parameters in double quotes.
 @echo.
-@echo   -j opts       Additional parameters to pass to Jetty when starting Solr.
+@echo   -j/--jettyconfig opts Additional parameters to pass to Jetty when starting Solr.
 @echo                 For example, to add configuration folder that jetty should read
 @echo                 you could pass: -j "--include-jetty-dir=/etc/jetty/custom/server/"
 @echo                 In most cases, you should wrap the additional parameters in double quotes.
@@ -1102,6 +1102,8 @@ REM Vector optimizations are only supported for Java 20 and 21 for now.
 REM This will need to change as Lucene is upgraded and newer Java versions are released
 if !JAVA_MAJOR_VERSION! GEQ 20 if !JAVA_MAJOR_VERSION! LEQ 21 (
   set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
+  REM Support native madvise for MemorySegmentIndexInputProvider
+  set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --enable-native-access=ALL-UNNAMED
   echo Java %JAVA_MAJOR_VERSION% detected. Incubating Panama Vector APIs have been enabled
 )
 
@@ -1278,7 +1280,7 @@ REM Run the requested example
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -Dsolr.install.symDir="%SOLR_TIP%" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI run_example --script "%SDIR%\solr.cmd" -e %EXAMPLE% --server-dir "%SOLR_SERVER_DIR%" ^
+  org.apache.solr.cli.SolrCLI run_example --script "%SDIR%\solr.cmd" -e %EXAMPLE% --server-dir "%SOLR_SERVER_DIR%" --jvm-opts "%SOLR_ADDL_ARGS%" ^
   --url-scheme !SOLR_URL_SCHEME! !PASS_TO_RUN_EXAMPLE!
 
 REM End of run_example

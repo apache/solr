@@ -28,6 +28,7 @@ import com.codahale.metrics.Timer;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
+import io.prometheus.metrics.model.snapshots.SummarySnapshot;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,11 +85,11 @@ public class SolrPrometheusFormatterTest extends SolrTestCaseJ4 {
 
     Labels expectedLabels = Labels.of("test", "test-value");
     testFormatter.exportTimer(expectedMetricName, metric, expectedLabels);
-    assertTrue(testFormatter.getMetricGauges().containsKey(expectedMetricName));
+    assertTrue(testFormatter.getMetricSummaries().containsKey(expectedMetricName));
 
-    GaugeSnapshot.GaugeDataPointSnapshot actual =
-        testFormatter.getMetricGauges().get("test_metric").get(0);
-    assertEquals(5000000000L, actual.getValue(), 500000000L);
+    SummarySnapshot.SummaryDataPointSnapshot actual =
+        testFormatter.getMetricSummaries().get("test_metric").get(0);
+    assertEquals(5000L, actual.getSum(), 500L);
     assertEquals(expectedLabels, actual.getLabels());
   }
 
@@ -198,6 +199,10 @@ public class SolrPrometheusFormatterTest extends SolrTestCaseJ4 {
 
     public Map<String, List<GaugeSnapshot.GaugeDataPointSnapshot>> getMetricGauges() {
       return metricGauges;
+    }
+
+    public Map<String, List<SummarySnapshot.SummaryDataPointSnapshot>> getMetricSummaries() {
+      return metricSummaries;
     }
   }
 }

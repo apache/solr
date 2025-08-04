@@ -142,7 +142,7 @@ public class ConfigTool extends ToolBase {
 
     try (SolrClient solrClient = SolrCLI.getSolrClient(solrUrl)) {
       NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
-      Integer statusCode = (Integer) result.findRecursive("responseHeader", "status");
+      Integer statusCode = (Integer) result._get(List.of("responseHeader", "status"), null);
       if (statusCode == 0) {
         if (value != null) {
           echo("Successfully " + action + " " + property + " to " + value);

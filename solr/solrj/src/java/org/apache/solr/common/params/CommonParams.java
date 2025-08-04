@@ -37,9 +37,11 @@ public interface CommonParams {
 
   /**
    * the Request Handler (formerly known as the Query Type) - which Request Handler should handle
-   * the request
+   * the request.
+   *
+   * @deprecated route requests by path instead, not using this parameter
    */
-  String QT = "qt";
+  @Deprecated String QT = "qt";
 
   /** the response writer type - the format of the response */
   String WT = "wt";
