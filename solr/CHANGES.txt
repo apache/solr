@@ -21,6 +21,8 @@ Bug Fixes
 ---------------------
 * SOLR-17824: RecoveryStrategy.pingLeader could NPE when there's no shard leader (David Smiley)
 
+* SOLR-17717: Starting solr on newer Windows 11 Home complained about missing wmic (Jan Høydahl)
+
 * SOLR-17721: NPE can occur when doing Atomic Update using Add Distinct on documents with a null field value. (puneetSharma via Eric Pugh)
 
 * SOLR-17789: When Solr forwards/proxies requests to another node that can service the request, it needs to pass authorization headers.
@@ -155,8 +157,6 @@ Bug Fixes
 
 * SOLR-12831: Clean up shard metadata in ZooKeeper nodes after shard deletion is invoked. This makes sure Zookeeper
  nodes for leader election and terms are not left behind (Andy Vuong, Pierre Salagnac).
-
-* SOLR-17717: Starting solr on newer Windows 11 Home complained about missing wmic (Jan Høydahl)
 
 * SOLR-17740: When the V2 API is receiving raw files, it could sometimes skip the first byte. (David Smiley)
 
