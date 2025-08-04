@@ -17,9 +17,13 @@
 package org.apache.solr.highlight;
 
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.text.BreakIterator;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -27,12 +31,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.uhighlight.CustomSeparatorBreakIterator;
 import org.apache.lucene.search.uhighlight.DefaultPassageFormatter;
+import org.apache.lucene.search.uhighlight.FieldHighlighter;
+import org.apache.lucene.search.uhighlight.FieldOffsetStrategy;
 import org.apache.lucene.search.uhighlight.LengthGoalBreakIterator;
+import org.apache.lucene.search.uhighlight.Passage;
 import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.PassageScorer;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
@@ -41,6 +50,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
@@ -458,6 +468,61 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       }
 
       return NOT_REQUIRED_FIELD_MATCH_PREDICATE;
+    }
+
+    @Override
+    protected FieldHighlighter newFieldHighlighter(
+        String field,
+        FieldOffsetStrategy fieldOffsetStrategy,
+        BreakIterator breakIterator,
+        PassageScorer passageScorer,
+        int maxPassages,
+        int maxNoHighlightPassages,
+        PassageFormatter passageFormatter,
+        Comparator<Passage> passageSortComparator) {
+      if (!"stripHTML".equals(params.getFieldParam(field, HighlightParams.ENCODER, "simple"))) {
+        return super.newFieldHighlighter(
+            field,
+            fieldOffsetStrategy,
+            breakIterator,
+            passageScorer,
+            maxPassages,
+            maxNoHighlightPassages,
+            passageFormatter,
+            passageSortComparator);
+      }
+
+      return new FieldHighlighter(
+          field,
+          fieldOffsetStrategy,
+          breakIterator,
+          passageScorer,
+          maxPassages,
+          maxNoHighlightPassages,
+          passageFormatter,
+          passageSortComparator) {
+
+        @Override
+        public Object highlightFieldForDoc(LeafReader reader, int docId, String content)
+            throws IOException {
+          return super.highlightFieldForDoc(reader, docId, stripHTML(content));
+        }
+
+        private String stripHTML(String s) {
+          StringWriter result = new StringWriter(s.length());
+          Reader in = null;
+          try {
+            in = new HTMLStripCharFilter(new StringReader(s.toString()));
+            in.transferTo(result);
+            return result.toString();
+          } catch (IOException e) {
+            // we tried and failed
+            return s;
+          } finally {
+            IOUtils.closeQuietly(in);
+          }
+        }
+      };
     }
   }
 }
