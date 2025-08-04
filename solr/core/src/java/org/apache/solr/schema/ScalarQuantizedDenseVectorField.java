@@ -37,10 +37,6 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   static final int DEFAULT_BITS = 7; // use signed byte as default when unspecified
   static final Float DEFAULT_CONFIDENCE_INTERVAL = null; // use dimension scaled confidence interval
 
-  // lucene does not expose these so we are duplicating them here
-  static final Float MINIMUM_CONFIDENCE_INTERVAL = 0.9f;
-  static final Float MAXIMUM_CONFIDENCE_INTERVAL = 1f;
-
   /**
    * Number of bits to use for storage Must be 4 (half-byte) or 7 (signed-byte) per Lucene codec
    * spec
@@ -113,30 +109,11 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   public void checkSchemaField(final SchemaField field) throws SolrException {
     super.checkSchemaField(field);
 
-    if (confidenceInterval != null
-        && confidenceInterval != Lucene99ScalarQuantizedVectorsFormat.DYNAMIC_CONFIDENCE_INTERVAL
-        && (confidenceInterval < MINIMUM_CONFIDENCE_INTERVAL
-            || confidenceInterval > MAXIMUM_CONFIDENCE_INTERVAL)) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          getClass().getSimpleName()
-              + " fields must have non-dynamic confidence interval between 0.9 and 1.0 "
-              + field.getName());
-    }
-    if (getBits() != 4 && getBits() != 7) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          getClass().getSimpleName()
-              + " fields must have bit size of 4 (half-byte) or 7 (signed-byte) "
-              + field.getName());
-    }
-
-    if (useCompression() && getBits() != 4) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          getClass().getSimpleName()
-              + " fields must have bit size of 4 to enable compression "
-              + field.getName());
+    try {
+      // constructing the format should run lucene level argument validation
+      buildKnnVectorsFormat();
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
   }
 
