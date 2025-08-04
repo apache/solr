@@ -110,7 +110,8 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
     super.checkSchemaField(field);
 
     try {
-      // constructing the format should run lucene level argument validation
+      // format does not expose any validation, however by constructing
+      // we will run lucene level argument validation
       buildKnnVectorsFormat();
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);

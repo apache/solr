@@ -308,7 +308,9 @@ Accepted values: `BOOLEAN`
 s|Optional |Default: `false`
 |===
 +
-If set to true, this will further pack multiple dimension values within a one byte alignment. This further decreases the storage size by 50% at some decode penalty.
+If set to true, this will further pack multiple dimension values within a one byte alignment. This further decreases the
+quantized vector disk storage size by 50% at some decode penalty. This does not affect the raw vector which is always
+preserved when `stored` is true.
 +
 `NOTE: this can only be enabled when bits=4`
 +
