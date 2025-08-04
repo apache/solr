@@ -34,12 +34,10 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
 import io.opentelemetry.api.trace.Span;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.EOFException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -716,45 +714,14 @@ public class HttpSolrCall {
     updatedQueryParams.set(INTERNAL_REQUEST_COUNT, forwardCount);
     String queryStr = updatedQueryParams.toQueryString();
 
+    req.setAttribute(SolrJettyProxyServlet.PROXY_TO_ATTRIBUTE, coreUrl + path + queryStr);
+
     try {
-      var rewriteUriReq =
-          new HttpServletRequestWrapper(req) {
-            // Not overriding more methods even though we "should" to be correct.
-            // We know what ProxyServlet accesses that matters.
-
-            URI uri = URI.create(coreUrl + path);
-
-            @Override
-            public String getRequestURI() {
-              return uri.toString();
-            }
-
-            @Override
-            public String getScheme() {
-              return uri.getScheme();
-            }
-
-            @Override
-            public int getServerPort() {
-              return uri.getPort();
-            }
-
-            @Override
-            public StringBuffer getRequestURL() {
-              return new StringBuffer(getRequestURI()); // no query param
-            }
-
-            @Override
-            public String getQueryString() {
-              return queryStr.substring(1); // skip '?'
-            }
-          };
-
       response.reset(); // clear all headers and status
       solrDispatchFilter
           .getServletContext()
           .getNamedDispatcher("proxy")
-          .forward(rewriteUriReq, response);
+          .forward(req, response);
     } catch (Exception e) {
       // note: don't handle interruption differently; we are stopping
       sendError(
