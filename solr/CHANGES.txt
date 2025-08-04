@@ -394,6 +394,8 @@ Bug Fixes
 
 * SOLR-17819: Disable http2 request cancellation for Jetty 10, the cancellation can bleed across to other requests. (Houston Putman)
 
+* SOLR-17599: CrossDC should not use the MirroringUpdateHandler when replaying updates from the transaction log or when doing PeerSync. (Mark Miller)
+
 Dependency Upgrades
 ---------------------
 * PR#3078: chore(deps): update apache.kafka to v3.9.0 (solrbot)
