@@ -592,6 +592,14 @@ public class LTRScoringQuery extends Query implements Accountable {
         public float getMaxScore(int upTo) {
           return Float.POSITIVE_INFINITY;
         }
+      }
+
+      private class FeatureExtractor {
+        private final FeatureTraversalScorer traversalScorer;
+
+        private FeatureExtractor(FeatureTraversalScorer traversalScorer) {
+          this.traversalScorer = traversalScorer;
+        }
 
         protected float[] initFeatureVector(FeatureInfo[] featuresInfos) {
           float[] featureVector = new float[allFeaturesInStore.length];
@@ -603,14 +611,41 @@ public class LTRScoringQuery extends Query implements Accountable {
           return featureVector;
         }
 
-        protected abstract float[] extractFeatureVector() throws IOException;
-      }
+        private float[] extractFeatureVector() throws IOException {
+          if (traversalScorer instanceof MultiFeaturesScorer) {
+            MultiFeaturesScorer multiFeaturesScorer = (MultiFeaturesScorer) traversalScorer;
+            return extractMultiFeaturesVector(multiFeaturesScorer.getSubScorers());
+          } else {
+            SingleFeatureScorer singleFeatureScorer = (SingleFeatureScorer) traversalScorer;
+            return extractSingleFeatureVector(singleFeatureScorer.getFeatureScorers());
+          }
+        }
 
-      private class FeatureExtractor {
-        private final FeatureTraversalScorer traversalScorer;
+        protected float[] extractSingleFeatureVector(List<Feature.FeatureWeight.FeatureScorer> featureScorers) throws IOException {
+          float[] featureVector = initFeatureVector(allFeaturesInStore);
+          for (int i = 0; i < featureScorers.size(); i++) {
+            Scorer scorer = featureScorers.get(i);
+            if (scorer.docID() == traversalScorer.activeDoc) {
+              Feature.FeatureWeight scFW = (Feature.FeatureWeight) scorer.getWeight();
+              final int featureId = scFW.getIndex();
+              float featureValue = scorer.score();
+              featureVector[featureId] = featureValue;
+            }
+          }
+          return featureVector;
+        }
 
-        private FeatureExtractor(FeatureTraversalScorer traversalScorer) {
-          this.traversalScorer = traversalScorer;
+        protected float[] extractMultiFeaturesVector(DisiPriorityQueue subScorers) throws IOException {
+          final DisiWrapper topList = subScorers.topList();
+          float[] featureVector = initFeatureVector(allFeaturesInStore);
+          for (DisiWrapper w = topList; w != null; w = w.next) {
+            final Scorer subScorer = w.scorer;
+            Feature.FeatureWeight feature = (Feature.FeatureWeight) subScorer.getWeight();
+            final int featureId = feature.getIndex();
+            float featureValue = subScorer.score();
+            featureVector[featureId] = featureValue;
+          }
+          return featureVector;
         }
 
         private void fillFeaturesInfo() throws IOException {
@@ -625,11 +660,11 @@ public class LTRScoringQuery extends Query implements Accountable {
               int fvCacheKey = computeFeatureVectorCacheKey(traversalScorer.docID());
               featureVector = featureVectorCache.get(fvCacheKey);
               if (featureVector == null) {
-                featureVector = traversalScorer.extractFeatureVector();
+                featureVector = extractFeatureVector();
                 featureVectorCache.put(fvCacheKey, featureVector);
               }
             } else {
-              featureVector = traversalScorer.extractFeatureVector();
+              featureVector = extractFeatureVector();
             }
 
             for (int i = 0; i < extractedFeatureWeights.length; i++) {
@@ -693,22 +728,13 @@ public class LTRScoringQuery extends Query implements Accountable {
           sparseIterator = new ScoringQuerySparseIterator(subScorers);
         }
 
+        private DisiPriorityQueue getSubScorers() {
+          return this.subScorers;
+        }
+
         @Override
         public int docID() {
           return sparseIterator.docID();
-        }
-
-        protected float[] extractFeatureVector() throws IOException {
-          final DisiWrapper topList = subScorers.topList();
-          float[] featureVector = initFeatureVector(allFeaturesInStore);
-          for (DisiWrapper w = topList; w != null; w = w.next) {
-            final Scorer subScorer = w.scorer;
-            Feature.FeatureWeight feature = (Feature.FeatureWeight) subScorer.getWeight();
-            final int featureId = feature.getIndex();
-            float featureValue = subScorer.score();
-            featureVector[featureId] = featureValue;
-          }
-          return featureVector;
         }
 
         @Override
@@ -767,23 +793,13 @@ public class LTRScoringQuery extends Query implements Accountable {
           this.featureScorers = featureScorers;
         }
 
+        private List<Feature.FeatureWeight.FeatureScorer> getFeatureScorers() {
+          return this.featureScorers;
+        }
+
         @Override
         public int docID() {
           return targetDoc;
-        }
-
-        protected float[] extractFeatureVector() throws IOException {
-          float[] featureVector = initFeatureVector(allFeaturesInStore);
-          for (int i = 0; i < featureScorers.size(); i++) {
-            Scorer scorer = featureScorers.get(i);
-            if (scorer.docID() == activeDoc) {
-              Feature.FeatureWeight scFW = (Feature.FeatureWeight) scorer.getWeight();
-              final int featureId = scFW.getIndex();
-              float featureValue = scorer.score();
-              featureVector[featureId] = featureValue;
-            }
-          }
-          return featureVector;
         }
 
         @Override
