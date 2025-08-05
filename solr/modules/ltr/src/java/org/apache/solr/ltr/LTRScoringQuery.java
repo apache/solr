@@ -497,7 +497,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       // score on the model for every document, since 0 features matching could
       // return a
       // non 0 score for a given model.
-      ModelScorer mscorer = new ModelScorer(this, featureScorers, context);
+      ModelScorer mscorer = new ModelScorer(this, featureScorers);
       return mscorer;
     }
 
@@ -515,7 +515,9 @@ public class LTRScoringQuery extends Query implements Accountable {
         return docInfo;
       }
 
-      public ModelScorer(Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers, LeafReaderContext leafContext) {
+      public ModelScorer(
+          Weight weight,
+          List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
         isLogging = false;
         docInfo = new DocInfo();
         for (final Feature.FeatureWeight.FeatureScorer subScorer : featureScorers) {
@@ -523,9 +525,9 @@ public class LTRScoringQuery extends Query implements Accountable {
         }
         if (featureScorers.size() <= 1) {
           // future enhancement: allow the use of dense features in other cases
-          featureTraversalScorer = new SingleFeatureScorer(weight, featureScorers, leafContext);
+          featureTraversalScorer = new SingleFeatureScorer(weight, featureScorers);
         } else {
-          featureTraversalScorer = new MultiFeaturesScorer(weight, featureScorers, leafContext);
+          featureTraversalScorer = new MultiFeaturesScorer(weight, featureScorers);
         }
       }
 
@@ -568,11 +570,9 @@ public class LTRScoringQuery extends Query implements Accountable {
       private abstract class FeatureTraversalScorer extends Scorer {
         protected int targetDoc = -1;
         protected int activeDoc = -1;
-        protected LeafReaderContext leafContext;
         protected FeatureExtractor featureExtractor;
 
-        protected FeatureTraversalScorer(Weight weight, LeafReaderContext leafContext) {
-          this.leafContext = leafContext;
+        protected FeatureTraversalScorer(Weight weight) {
           this.featureExtractor = new FeatureExtractor(this);
         }
 
@@ -625,8 +625,7 @@ public class LTRScoringQuery extends Query implements Accountable {
               featureVectorCache = request.getSearcher().getFeatureVectorCache();
             }
             if (featureVectorCache != null) {
-              int docId = traversalScorer.activeDoc + traversalScorer.leafContext.docBase;
-              int fvCacheKey = computeFeatureVectorCacheKey(docId);
+              int fvCacheKey = computeFeatureVectorCacheKey(traversalScorer.docID());
               featureVector = featureVectorCache.get(fvCacheKey);
               if (featureVector == null) {
                 featureVector = traversalScorer.extractFeatureVector();
@@ -684,9 +683,8 @@ public class LTRScoringQuery extends Query implements Accountable {
 
         private MultiFeaturesScorer(
             Weight unusedWeight,
-            List<Feature.FeatureWeight.FeatureScorer> featureScorers,
-            LeafReaderContext leafContext) {
-          super(unusedWeight, leafContext);
+            List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+          super(unusedWeight);
           if (featureScorers.size() <= 1) {
             throw new IllegalArgumentException("There must be at least 2 subScorers");
           }
@@ -834,9 +832,8 @@ public class LTRScoringQuery extends Query implements Accountable {
 
         private SingleFeatureScorer(
             Weight unusedWeight,
-            List<Feature.FeatureWeight.FeatureScorer> featureScorers,
-            LeafReaderContext leafContext) {
-          super(unusedWeight, leafContext);
+            List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+          super(unusedWeight);
           this.featureScorers = featureScorers;
         }
 
