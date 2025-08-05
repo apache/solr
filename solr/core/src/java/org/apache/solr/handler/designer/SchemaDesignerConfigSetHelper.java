@@ -476,7 +476,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   String getSampleDocsPathFromConfigSet(String configSet) {
-    String path = "schemadesigner" + "/" + configSet + "_sampledocs";
+    String path = "schemadesigner" + "/" + configSet + "_sampledocs.javabin";
     return path;
   }
 
