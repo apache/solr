@@ -25,7 +25,7 @@
   <fieldType name="high_dimensional_float_knn_vector" class="solr.DenseVectorField" vectorDimension="2048" similarityFunction="cosine" vectorEncoding="FLOAT32"/>
   <fieldType name="high_dimensional_byte_knn_vector" class="solr.DenseVectorField" vectorDimension="2048" similarityFunction="cosine" vectorEncoding="BYTE"/>
   <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
-
+  
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="vector" type="knn_vector" indexed="true" stored="true"/>
   <field name="vector2" type="knn_vector" indexed="true" stored="true"/>
