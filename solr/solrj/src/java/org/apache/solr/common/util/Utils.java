@@ -215,6 +215,7 @@ public class Utils {
       return jbc.unmarshal(bytes);
     }
   }
+
   public static Object fromJavabin(InputStream is) throws IOException {
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       return jbc.unmarshal(is);
