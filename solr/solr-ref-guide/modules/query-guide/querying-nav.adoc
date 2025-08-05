@@ -26,6 +26,7 @@
 ** xref:local-params.adoc[]
 ** xref:json-request-api.adoc[]
 *** xref:json-query-dsl.adoc[]
+*** xref:json-combined-query-dsl.adoc[]
 ** xref:searching-nested-documents.adoc[]
 ** xref:block-join-query-parser.adoc[]
 ** xref:join-query-parser.adoc[]
