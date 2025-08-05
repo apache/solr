@@ -259,7 +259,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     helper.deleteStoredSampleDocs(configSet);
 
-    String path = helper.getPathFromConfigSet(configSet);
+    String path = helper.getSampleDocsPathFromConfigSet(configSet);
     FileStore.FileType type = cc.getFileStore().getType(path, true);
     assertEquals(FileStore.FileType.NOFILE, type);
   }
