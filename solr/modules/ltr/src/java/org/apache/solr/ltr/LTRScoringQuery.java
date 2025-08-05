@@ -516,7 +516,6 @@ public class LTRScoringQuery extends Query implements Accountable {
       }
 
       public ModelScorer(
-          Weight weight,
           List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
         isLogging = false;
         docInfo = new DocInfo();
@@ -564,9 +563,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         featureTraversalScorer.fillFeaturesInfo();
       }
 
-      /**
-       * This class is responsible for extracting features and using them to score the document.
-       */
+      /** This class is responsible for extracting features and using them to score the document. */
       private abstract class FeatureTraversalScorer extends Scorer {
         protected int targetDoc = -1;
         protected int activeDoc = -1;
@@ -839,7 +836,8 @@ public class LTRScoringQuery extends Query implements Accountable {
           }
         }
 
-        protected float[] extractSingleFeatureVector(List<Feature.FeatureWeight.FeatureScorer> featureScorers) throws IOException {
+        protected float[] extractSingleFeatureVector(
+            List<Feature.FeatureWeight.FeatureScorer> featureScorers) throws IOException {
           float[] featureVector = initFeatureVector(allFeaturesInStore);
           for (int i = 0; i < featureScorers.size(); i++) {
             Scorer scorer = featureScorers.get(i);
@@ -853,7 +851,8 @@ public class LTRScoringQuery extends Query implements Accountable {
           return featureVector;
         }
 
-        protected float[] extractMultiFeaturesVector(DisiPriorityQueue subScorers) throws IOException {
+        protected float[] extractMultiFeaturesVector(DisiPriorityQueue subScorers)
+            throws IOException {
           final DisiWrapper topList = subScorers.topList();
           float[] featureVector = initFeatureVector(allFeaturesInStore);
           for (DisiWrapper w = topList; w != null; w = w.next) {
@@ -901,8 +900,8 @@ public class LTRScoringQuery extends Query implements Accountable {
           int prime = 31;
           int result = docId;
           if (Objects.equals(
-              ltrScoringModel.getName(),
-              LTRFeatureLoggerTransformerFactory.DEFAULT_LOGGING_MODEL_NAME)
+                  ltrScoringModel.getName(),
+                  LTRFeatureLoggerTransformerFactory.DEFAULT_LOGGING_MODEL_NAME)
               || (isLogging && logger.isLoggingAll())) {
             result = (prime * result) + ltrScoringModel.getFeatureStoreName().hashCode();
           } else {
