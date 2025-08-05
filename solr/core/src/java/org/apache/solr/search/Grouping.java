@@ -36,6 +36,7 @@ import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
@@ -298,7 +299,7 @@ public class Grouping {
 
     SolrIndexSearcher.ProcessedFilter pf = searcher.getProcessedFilter(cmd.getFilterList());
 
-    final Query filterQuery = pf.filter == null ? new MatchAllDocsQuery() : pf.filter;
+    final Query searchQuery = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
     maxDoc = searcher.maxDoc();
 
     needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
@@ -355,7 +356,7 @@ public class Grouping {
     }
 
     if (allCollectors != null) {
-      searchWithTimeLimiter(filterQuery, allCollectors);
+      searchWithTimeLimiter(searchQuery, allCollectors);
 
       if (allCollectors instanceof DelegatingCollector) {
         ((DelegatingCollector) allCollectors).complete();
@@ -388,14 +389,14 @@ public class Grouping {
                     "The grouping cache is active, but not used because it exceeded the max cache limit of %d percent",
                     maxDocsPercentageToCache));
             log.warn("Please increase cache size or disable group caching.");
-            searchWithTimeLimiter(filterQuery, secondPhaseCollectors);
+            searchWithTimeLimiter(searchQuery, secondPhaseCollectors);
           }
         } else {
           if (pf.postFilter != null) {
             pf.postFilter.setLastDelegate(secondPhaseCollectors);
             secondPhaseCollectors = pf.postFilter;
           }
-          searchWithTimeLimiter(filterQuery, secondPhaseCollectors);
+          searchWithTimeLimiter(searchQuery, secondPhaseCollectors);
         }
         if (secondPhaseCollectors instanceof DelegatingCollector) {
           ((DelegatingCollector) secondPhaseCollectors).complete();
@@ -425,9 +426,9 @@ public class Grouping {
    * Invokes search with the specified filter and collector. If a time limit has been specified,
    * wrap the collector in a TimeLimitingCollector
    */
-  private void searchWithTimeLimiter(final Query filterQuery, Collector collector)
+  private void searchWithTimeLimiter(final Query searchQuery, Collector collector)
       throws IOException {
-    searcher.search(filterQuery, collector);
+    searcher.search(searchQuery, collector);
   }
 
   /**
@@ -724,7 +725,7 @@ public class Grouping {
       groupSort = groupSort == null ? Sort.RELEVANCE : groupSort;
       firstPass =
           new FirstPassGroupingCollector<>(
-              new TermGroupSelector(groupBy), groupSort, actualGroupsToFind);
+              new TermGroupSelector(groupBy), searcher.weightSort(groupSort), actualGroupsToFind);
       return firstPass;
     }
 
