@@ -475,11 +475,13 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     }
   }
 
+  public String getPathFromConfigSet(String configSet) {
+    String path = "blob" + "/" + configSet + "_sample";
+    return path;
+  }
+
   void deleteStoredSampleDocs(String configSet) {
-    String path =
-        "blob" + "/" + configSet
-            + "_sample"; //  needs to be made unique to support multiple uploads.  Maybe hash the
-    // docs?
+    String path = getPathFromConfigSet(configSet);
     // why do I have to do this in two stages?
     DistribFileStore.deleteZKFileEntry(cc.getZkController().getZkClient(), path);
     cc.getFileStore().delete(path);
@@ -491,8 +493,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   @SuppressWarnings("unchecked")
   List<SolrInputDocument> retrieveSampleDocs(final String configSet) throws IOException {
 
-    //  needs to be made unique to support multiple uploads.  Maybe hash the docs?  Is this true???
-    String path = "blob" + "/" + configSet + "_sample";
+    String path = getPathFromConfigSet(configSet);
 
     try {
       cc.getFileStore()
@@ -515,15 +516,15 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
     docs.forEach(d -> d.removeField(VERSION_FIELD)); // remove _version_ field before storing ...
-    storeSampleDocs(configSet + "_sample", readAllBytes(() -> toJavabin(docs)));
+    storeSampleDocs(configSet, readAllBytes(() -> toJavabin(docs)));
   }
 
-  protected void storeSampleDocs(String blobName, byte[] bytes) throws IOException {
-    String filePath = "blob" + "/" + blobName;
+  protected void storeSampleDocs(String configSet, byte[] bytes) throws IOException {
+    String path = getPathFromConfigSet(configSet);
 
     FileStoreAPI.MetaData meta = ClusterFileStore._createJsonMetaData(bytes, null);
 
-    cc.getFileStore().put(new FileStore.FileEntry(ByteBuffer.wrap(bytes), meta, filePath));
+    cc.getFileStore().put(new FileStore.FileEntry(ByteBuffer.wrap(bytes), meta, path));
   }
 
   /** Gets the stream, reads all the bytes, closes the stream. */
