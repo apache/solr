@@ -594,6 +594,159 @@ public class LTRScoringQuery extends Query implements Accountable {
         }
       }
 
+      private class SingleFeatureScorer extends FeatureTraversalScorer {
+        private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
+
+        private SingleFeatureScorer(
+            Weight weight,
+            List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+          super(weight);
+          this.featureScorers = featureScorers;
+        }
+
+        private List<Feature.FeatureWeight.FeatureScorer> getFeatureScorers() {
+          return this.featureScorers;
+        }
+
+        @Override
+        public int docID() {
+          return targetDoc;
+        }
+
+        @Override
+        public final Collection<ChildScorable> getChildren() {
+          final ArrayList<ChildScorable> children = new ArrayList<>();
+          for (final Scorer scorer : featureScorers) {
+            children.add(new ChildScorable(scorer, "SHOULD"));
+          }
+          return children;
+        }
+
+        @Override
+        public DocIdSetIterator iterator() {
+          return new SingleFeatureIterator();
+        }
+
+        private class SingleFeatureIterator extends DocIdSetIterator {
+
+          @Override
+          public int docID() {
+            return targetDoc;
+          }
+
+          @Override
+          public int nextDoc() throws IOException {
+            if (activeDoc <= targetDoc) {
+              activeDoc = NO_MORE_DOCS;
+              for (final Scorer scorer : featureScorers) {
+                if (scorer.docID() != NO_MORE_DOCS) {
+                  activeDoc = Math.min(activeDoc, scorer.iterator().nextDoc());
+                }
+              }
+            }
+            return ++targetDoc;
+          }
+
+          @Override
+          public int advance(int target) throws IOException {
+            if (activeDoc < target) {
+              activeDoc = NO_MORE_DOCS;
+              for (final Scorer scorer : featureScorers) {
+                if (scorer.docID() != NO_MORE_DOCS) {
+                  activeDoc = Math.min(activeDoc, scorer.iterator().advance(target));
+                }
+              }
+            }
+            targetDoc = target;
+            return target;
+          }
+
+          @Override
+          public long cost() {
+            long sum = 0;
+            for (int i = 0; i < featureScorers.size(); i++) {
+              sum += featureScorers.get(i).iterator().cost();
+            }
+            return sum;
+          }
+        }
+      }
+
+      private class MultiFeaturesScorer extends FeatureTraversalScorer {
+        private final DisiPriorityQueue subScorers;
+        private final MultiFeaturesIterator multiFeaturesIteratorIterator;
+
+        private MultiFeaturesScorer(
+            Weight weight,
+            List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+          super(weight);
+          if (featureScorers.size() <= 1) {
+            throw new IllegalArgumentException("There must be at least 2 subScorers");
+          }
+          subScorers = new DisiPriorityQueue(featureScorers.size());
+          for (final Scorer scorer : featureScorers) {
+            final DisiWrapper w = new DisiWrapper(scorer);
+            subScorers.add(w);
+          }
+
+          multiFeaturesIteratorIterator = new MultiFeaturesIterator(subScorers);
+        }
+
+        private DisiPriorityQueue getSubScorers() {
+          return this.subScorers;
+        }
+
+        @Override
+        public int docID() {
+          return multiFeaturesIteratorIterator.docID();
+        }
+
+        @Override
+        public DocIdSetIterator iterator() {
+          return multiFeaturesIteratorIterator;
+        }
+
+        @Override
+        public final Collection<ChildScorable> getChildren() {
+          final ArrayList<ChildScorable> children = new ArrayList<>();
+          for (final DisiWrapper scorer : subScorers) {
+            children.add(new ChildScorable(scorer.scorer, "SHOULD"));
+          }
+          return children;
+        }
+
+        private class MultiFeaturesIterator extends DisjunctionDISIApproximation {
+
+          public MultiFeaturesIterator(DisiPriorityQueue subIterators) {
+            super(subIterators);
+          }
+
+          @Override
+          public final int nextDoc() throws IOException {
+            if (activeDoc == targetDoc) {
+              activeDoc = super.nextDoc();
+            } else if (activeDoc < targetDoc) {
+              activeDoc = super.advance(targetDoc + 1);
+            }
+            return ++targetDoc;
+          }
+
+          @Override
+          public final int advance(int target) throws IOException {
+            // If target doc we wanted to advance to match the actual doc
+            // the underlying features advanced to, perform the feature
+            // calculations,
+            // otherwise just continue with the model's scoring process with
+            // empty features.
+            if (activeDoc < target) {
+              activeDoc = super.advance(target);
+            }
+            targetDoc = target;
+            return targetDoc;
+          }
+        }
+      }
+
       private class FeatureExtractor {
         private final FeatureTraversalScorer traversalScorer;
 
@@ -705,159 +858,6 @@ public class LTRScoringQuery extends Query implements Accountable {
             }
           }
           return result;
-        }
-      }
-
-      private class MultiFeaturesScorer extends FeatureTraversalScorer {
-        private final DisiPriorityQueue subScorers;
-        private final ScoringQuerySparseIterator sparseIterator;
-
-        private MultiFeaturesScorer(
-            Weight weight,
-            List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-          super(weight);
-          if (featureScorers.size() <= 1) {
-            throw new IllegalArgumentException("There must be at least 2 subScorers");
-          }
-          subScorers = new DisiPriorityQueue(featureScorers.size());
-          for (final Scorer scorer : featureScorers) {
-            final DisiWrapper w = new DisiWrapper(scorer);
-            subScorers.add(w);
-          }
-
-          sparseIterator = new ScoringQuerySparseIterator(subScorers);
-        }
-
-        private DisiPriorityQueue getSubScorers() {
-          return this.subScorers;
-        }
-
-        @Override
-        public int docID() {
-          return sparseIterator.docID();
-        }
-
-        @Override
-        public DocIdSetIterator iterator() {
-          return sparseIterator;
-        }
-
-        @Override
-        public final Collection<ChildScorable> getChildren() {
-          final ArrayList<ChildScorable> children = new ArrayList<>();
-          for (final DisiWrapper scorer : subScorers) {
-            children.add(new ChildScorable(scorer.scorer, "SHOULD"));
-          }
-          return children;
-        }
-
-        private class ScoringQuerySparseIterator extends DisjunctionDISIApproximation {
-
-          public ScoringQuerySparseIterator(DisiPriorityQueue subIterators) {
-            super(subIterators);
-          }
-
-          @Override
-          public final int nextDoc() throws IOException {
-            if (activeDoc == targetDoc) {
-              activeDoc = super.nextDoc();
-            } else if (activeDoc < targetDoc) {
-              activeDoc = super.advance(targetDoc + 1);
-            }
-            return ++targetDoc;
-          }
-
-          @Override
-          public final int advance(int target) throws IOException {
-            // If target doc we wanted to advance to match the actual doc
-            // the underlying features advanced to, perform the feature
-            // calculations,
-            // otherwise just continue with the model's scoring process with
-            // empty features.
-            if (activeDoc < target) {
-              activeDoc = super.advance(target);
-            }
-            targetDoc = target;
-            return targetDoc;
-          }
-        }
-      }
-
-      private class SingleFeatureScorer extends FeatureTraversalScorer {
-        private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
-
-        private SingleFeatureScorer(
-            Weight weight,
-            List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-          super(weight);
-          this.featureScorers = featureScorers;
-        }
-
-        private List<Feature.FeatureWeight.FeatureScorer> getFeatureScorers() {
-          return this.featureScorers;
-        }
-
-        @Override
-        public int docID() {
-          return targetDoc;
-        }
-
-        @Override
-        public final Collection<ChildScorable> getChildren() {
-          final ArrayList<ChildScorable> children = new ArrayList<>();
-          for (final Scorer scorer : featureScorers) {
-            children.add(new ChildScorable(scorer, "SHOULD"));
-          }
-          return children;
-        }
-
-        @Override
-        public DocIdSetIterator iterator() {
-          return new DenseIterator();
-        }
-
-        private class DenseIterator extends DocIdSetIterator {
-
-          @Override
-          public int docID() {
-            return targetDoc;
-          }
-
-          @Override
-          public int nextDoc() throws IOException {
-            if (activeDoc <= targetDoc) {
-              activeDoc = NO_MORE_DOCS;
-              for (final Scorer scorer : featureScorers) {
-                if (scorer.docID() != NO_MORE_DOCS) {
-                  activeDoc = Math.min(activeDoc, scorer.iterator().nextDoc());
-                }
-              }
-            }
-            return ++targetDoc;
-          }
-
-          @Override
-          public int advance(int target) throws IOException {
-            if (activeDoc < target) {
-              activeDoc = NO_MORE_DOCS;
-              for (final Scorer scorer : featureScorers) {
-                if (scorer.docID() != NO_MORE_DOCS) {
-                  activeDoc = Math.min(activeDoc, scorer.iterator().advance(target));
-                }
-              }
-            }
-            targetDoc = target;
-            return target;
-          }
-
-          @Override
-          public long cost() {
-            long sum = 0;
-            for (int i = 0; i < featureScorers.size(); i++) {
-              sum += featureScorers.get(i).iterator().cost();
-            }
-            return sum;
-          }
         }
       }
     }
