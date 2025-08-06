@@ -320,7 +320,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     return result;
   }
 
-  private String getRootTraceId(List<SpanData> finishedSpans) {
+  static String getRootTraceId(List<SpanData> finishedSpans) {
     assertEquals(1, finishedSpans.stream().filter(TestDistributedTracing::isRootSpan).count());
     return finishedSpans.stream()
         .filter(TestDistributedTracing::isRootSpan)
