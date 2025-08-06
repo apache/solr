@@ -23,6 +23,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.apache.solr.schema.FieldType;
 import org.junit.Test;
@@ -33,7 +34,7 @@ public class SolrMetricReporterTest extends SolrTestCaseJ4 {
   public void testInit() throws Exception {
     Random random = random();
 
-    SolrMetricManager metricManager = new SolrMetricManager();
+    SolrMetricManager metricManager = new SolrMetricManager(new NoopMetricExporter());
 
     final String registryName = TestUtil.randomSimpleString(random);
     final MockMetricReporter reporter = new MockMetricReporter(metricManager, registryName);
