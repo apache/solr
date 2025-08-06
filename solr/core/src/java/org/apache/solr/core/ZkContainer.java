@@ -38,7 +38,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.zookeeper.KeeperException;
@@ -141,18 +140,82 @@ public class ZkContainer {
         }
 
         this.zkController = zkController;
-        MetricsMap metricsMap = new MetricsMap(zkController.getZkClient().getMetrics());
+
         metricProducer =
             new SolrMetricProducer() {
               SolrMetricsContext ctx;
 
-              // TODO SOLR-17458: Migrate to Otel
               @Override
               public void initializeMetrics(
                   SolrMetricsContext parentContext, Attributes attributes, String scope) {
                 ctx = parentContext.getChildContext(this);
-                ctx.gauge(
-                    metricsMap, true, scope, null, SolrInfoBean.Category.CONTAINER.toString());
+
+                var metricsListener = zkController.getZkClient().getMetrics();
+
+                ctx.observableLongCounter(
+                    "solr_zk_ops",
+                    "Total number of ZooKeeper operations",
+                    measurement -> {
+                      measurement.record(
+                          metricsListener.getReads(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "read").build());
+                      measurement.record(
+                          metricsListener.getDeletes(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "delete").build());
+                      measurement.record(
+                          metricsListener.getWrites(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "write").build());
+                      measurement.record(
+                          metricsListener.getMultiOps(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "multi").build());
+                      measurement.record(
+                          metricsListener.getExistsChecks(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "exists").build());
+                    });
+
+                ctx.observableLongCounter(
+                    "solr_zk_bytes_read",
+                    "Total bytes read from ZooKeeper",
+                    measurement -> {
+                      measurement.record(metricsListener.getBytesRead(), attributes);
+                    },
+                    "By");
+
+                ctx.observableLongCounter(
+                    "solr_zk_watches_fired",
+                    "Total number of ZooKeeper watches fired",
+                    measurement -> {
+                      measurement.record(metricsListener.getWatchesFired(), attributes);
+                    });
+
+                ctx.observableLongCounter(
+                    "solr_zk_bytes_written_total",
+                    "Total bytes written to ZooKeeper",
+                    measurement -> {
+                      measurement.record(metricsListener.getBytesWritten());
+                    },
+                    "By");
+
+                ctx.observableLongCounter(
+                    "solr_zk_cumulative_multi_ops_total",
+                    "Total cumulative multi-operations count",
+                    measurement -> {
+                      measurement.record(metricsListener.getCumulativeMultiOps());
+                    });
+
+                ctx.observableLongCounter(
+                    "solr_zk_child_fetches_total",
+                    "Total number of ZooKeeper child node fetches",
+                    measurement -> {
+                      measurement.record(metricsListener.getChildFetches());
+                    });
+
+                ctx.observableLongCounter(
+                    "solr_zk_cumulative_children_fetched_total",
+                    "Total cumulative children fetched count",
+                    measurement -> {
+                      measurement.record(metricsListener.getCumulativeChildrenFetched());
+                    });
               }
 
               @Override
