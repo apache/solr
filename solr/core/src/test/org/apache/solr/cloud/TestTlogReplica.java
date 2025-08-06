@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import static org.apache.solr.cloud.TestPullReplica.getHypotheticalTlogDir;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.codahale.metrics.Meter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -1239,11 +1238,11 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   private long getTimesCopyOverOldUpdates(SolrCore core) {
-    return ((Meter)
-            core.getSolrMetricsContext()
-                .getMetricRegistry()
-                .getMetrics()
-                .get("TLOG.copyOverOldUpdates.ops"))
-        .getCount();
+    var metric =
+        SolrMetricTestUtils.getCounterDatapoint(
+            core,
+            "solr_core_update_log_old_updates_copied",
+            SolrMetricTestUtils.newCloudLabelsBuilder(core).label("category", "TLOG").build());
+    return (metric != null) ? (long) metric.getValue() : 0L;
   }
 }
