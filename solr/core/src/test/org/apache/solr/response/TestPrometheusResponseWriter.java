@@ -17,7 +17,9 @@
 package org.apache.solr.response;
 
 import com.codahale.metrics.SharedMetricRegistries;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +30,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -116,6 +119,65 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
               assertTrue(VALID_PROMETHEUS_VALUES.contains(actualValue));
             }
           });
+    }
+  }
+
+  @Test
+  public void testAcceptHeaderOpenMetricsFormat() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+
+    // NOCOMMIT: Remove this prometheus writer type after Dropwizard is removed
+    req.setResponseParser(new InputStreamResponseParser("prometheus"));
+
+    req.addHeader("Accept", "application/openmetrics-text;version=1.0.0");
+
+    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
+      NamedList<Object> res = adminClient.request(req);
+
+      try (InputStream in = (InputStream) res.get("stream")) {
+        String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        assertTrue(
+            "Should use OpenMetrics format when Accept header is set",
+            output.trim().endsWith("# EOF"));
+      }
+    }
+  }
+
+  @Test
+  public void testWtParameterOpenMetricsFormat() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+    req.setResponseParser(new InputStreamResponseParser("openmetrics"));
+
+    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
+      NamedList<Object> res = adminClient.request(req);
+
+      try (InputStream in = (InputStream) res.get("stream")) {
+        String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        assertTrue(
+            "Should use OpenMetrics format when Accept header is set",
+            output.trim().endsWith("# EOF"));
+      }
+    }
+  }
+
+  @Test
+  public void testDefaultPrometheusFormat() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+    // NOCOMMIT: Remove this prometheus writer type after Dropwizard is removed
+    req.setResponseParser(new InputStreamResponseParser("prometheus"));
+
+    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
+      NamedList<Object> res = adminClient.request(req);
+
+      try (InputStream in = (InputStream) res.get("stream")) {
+        String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        assertFalse(
+            "Should default to Prometheus format when no Accept header or wt=openmetrics is set",
+            output.trim().endsWith("# EOF"));
+      }
     }
   }
 }
