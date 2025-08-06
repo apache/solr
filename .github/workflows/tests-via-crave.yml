@@ -3,8 +3,7 @@ name: Solr Tests
 on:
   pull_request:
     branches:
-      - 'main'
-      - 'branch_*'
+      - '*'
 
 jobs:
   test:
