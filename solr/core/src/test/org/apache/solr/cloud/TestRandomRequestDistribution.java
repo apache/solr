@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import com.codahale.metrics.Counter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,7 +41,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,23 +83,23 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
     ZkStateReader.from(cloudClient).forceUpdateCollection("b1x1");
 
-    // get direct access to the metrics counters for each core/replica we're interested to monitor
-    // them
-    final Map<String, Counter> counters = new LinkedHashMap<>();
+    // get direct access to the SolrCore objects for each core/replica we're interested to monitor
+    final Map<String, SolrCore> cores = new LinkedHashMap<>();
     for (JettySolrRunner runner : jettys) {
       CoreContainer container = runner.getCoreContainer();
-      SolrMetricManager metricManager = container.getMetricManager();
       for (SolrCore core : container.getCores()) {
         if ("a1x2".equals(core.getCoreDescriptor().getCollectionName())) {
-          String registry = core.getCoreMetricManager().getRegistryName();
-          Counter cnt = metricManager.counter(null, registry, "requests", "QUERY./select");
-          // sanity check
-          assertEquals(core.getName() + " has already received some requests?", 0, cnt.getCount());
-          counters.put(core.getName(), cnt);
+          cores.put(core.getName(), core);
         }
       }
     }
-    assertEquals("Sanity Check: we know there should be 2 replicas", 2, counters.size());
+    assertEquals("Sanity Check: we know there should be 2 replicas", 2, cores.size());
+
+    // Sanity check - all cores should start with 0 requests
+    for (Map.Entry<String, SolrCore> entry : cores.entrySet()) {
+      double initialCount = getSelectRequestCount(entry.getValue());
+      assertEquals(entry.getKey() + " has already received some requests?", 0L, initialCount, 0.0);
+    }
 
     // send queries to the node that doesn't host any core/replica and see where it routes them
     ClusterState clusterState = cloudClient.getClusterState();
@@ -120,22 +119,23 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       Set<String> uniqueCoreNames = new LinkedHashSet<>();
 
       log.info("Making requests to {} a1x2", baseUrl);
-      while (uniqueCoreNames.size() < counters.keySet().size() && expectedTotalRequests < 1000L) {
+      while (uniqueCoreNames.size() < cores.size() && expectedTotalRequests < 1000L) {
         expectedTotalRequests++;
         client.query(new SolrQuery("*:*"));
 
-        long actualTotalRequests = 0;
-        for (Map.Entry<String, Counter> e : counters.entrySet()) {
-          final long coreCount = e.getValue().getCount();
+        double actualTotalRequests = 0;
+        for (Map.Entry<String, SolrCore> entry : cores.entrySet()) {
+          final double coreCount = getSelectRequestCount(entry.getValue());
           actualTotalRequests += coreCount;
           if (0 < coreCount) {
-            uniqueCoreNames.add(e.getKey());
+            uniqueCoreNames.add(entry.getKey());
           }
         }
         assertEquals(
             "Sanity Check: Num Queries So Far Doesn't Match Total????",
             expectedTotalRequests,
-            actualTotalRequests);
+            actualTotalRequests,
+            0.0);
       }
       log.info("Total requests: {}", expectedTotalRequests);
       assertEquals(
@@ -144,7 +144,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
               + expectedTotalRequests
               + " requests",
           uniqueCoreNames.size(),
-          counters.size());
+          cores.size());
     }
   }
 
@@ -242,10 +242,6 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       }
       assertNotNull(leaderCore);
 
-      SolrMetricManager leaderMetricManager = leaderCore.getCoreContainer().getMetricManager();
-      String leaderRegistry = leaderCore.getCoreMetricManager().getRegistryName();
-      Counter cnt = leaderMetricManager.counter(null, leaderRegistry, "requests", "QUERY./select");
-
       // All queries should be served by the active replica to make sure that's true we keep
       // querying the down replica. If queries are getting processed by the down replica then the
       // cluster state hasn't updated for that replica locally. So we keep trying till it has
@@ -255,7 +251,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         count++;
         client.query(new SolrQuery("*:*"));
 
-        long c = cnt.getCount();
+        double c = getSelectRequestCount(leaderCore);
 
         if (c == 1) {
           break; // cluster state has got update locally
@@ -276,10 +272,21 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         client.query(new SolrQuery("*:*"));
         count++;
 
-        long c = cnt.getCount();
+        double c = getSelectRequestCount(leaderCore);
 
-        assertEquals("Query wasn't served by leader", count, c);
+        assertEquals("Query wasn't served by leader", count, c, 0.0);
       }
     }
+  }
+
+  private Double getSelectRequestCount(SolrCore core) {
+    var labels =
+        SolrMetricTestUtils.getCloudLabelsBase(core)
+            .label("category", "QUERY")
+            .label("handler", "/select")
+            .label("internal", "false")
+            .build();
+    var datapoint = SolrMetricTestUtils.getCounterDatapoint(core, "solr_core_requests", labels);
+    return datapoint != null ? datapoint.getValue() : 0.0;
   }
 }

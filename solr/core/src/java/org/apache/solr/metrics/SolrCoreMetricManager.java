@@ -16,6 +16,8 @@
  */
 package org.apache.solr.metrics;
 
+import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
+
 import com.codahale.metrics.MetricRegistry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -39,7 +41,6 @@ public class SolrCoreMetricManager implements Closeable {
   public static final AttributeKey<String> CORE_ATTR = AttributeKey.stringKey("core");
   public static final AttributeKey<String> SHARD_ATTR = AttributeKey.stringKey("shard");
   public static final AttributeKey<String> REPLICA_ATTR = AttributeKey.stringKey("replica");
-  public static final AttributeKey<String> HANDLER_ATTR = AttributeKey.stringKey("handler");
   public static final AttributeKey<String> SCOPE_ATTR = AttributeKey.stringKey("scope");
 
   private final SolrCore core;
@@ -146,18 +147,16 @@ public class SolrCoreMetricManager implements Closeable {
               + producer);
     }
 
-    // NOCOMMIT SOLR-17458: These attributes may not work for standalone mode
-    // use deprecated method for back-compat, remove in 9.0
-    producer.initializeMetrics(
-        solrMetricsContext,
+    // NOCOMMIT SOLR-17458: These attributes may not work for standalone mode and maybe make the
+    // scope attribute optional
+    var attributesBuilder =
         Attributes.builder()
             .put(CORE_ATTR, core.getCoreDescriptor().getName())
             .put(COLLECTION_ATTR, collectionName)
             .put(SHARD_ATTR, shardName)
-            .put(REPLICA_ATTR, replicaName)
-            .put((scope.startsWith("/")) ? HANDLER_ATTR : SCOPE_ATTR, scope)
-            .build(),
-        scope);
+            .put(REPLICA_ATTR, replicaName);
+    if (scope.startsWith("/")) attributesBuilder.put(HANDLER_ATTR, scope);
+    producer.initializeMetrics(solrMetricsContext, attributesBuilder.build(), scope);
   }
 
   /** Return the registry used by this SolrCore. */
