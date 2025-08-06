@@ -429,9 +429,8 @@ public class DocValuesFacets {
         } while ((term = (int) si.nextOrd()) >= 0);*/
         for (int o = 0; o < si.docValueCount(); o++) {
           long ord = si.nextOrd();
-          if (ord == DocIdSetIterator.NO_MORE_DOCS)
-            break; // nocommit this shouldn't have been needed, but without this the
-          // TestRandomDVFaceting is failing. Why?
+          if (ord == -1) // NO_MORE_ORDS
+            break;
           int term = (int) ord;
           if (map != null) {
             term = (int) ordMap.get(term);
@@ -465,9 +464,8 @@ public class DocValuesFacets {
       if (si.advanceExact(doc)) {
         for (int o = 0; o < si.docValueCount(); o++) {
           long ord = si.nextOrd();
-          if (ord == DocIdSetIterator.NO_MORE_DOCS)
-            break; // nocommit this shouldn't have been needed, but without this the
-          // TestRandomDVFaceting is failing. Why?
+          if (ord == -1) // NO_MORE_ORDS
+            break;
           int term = (int) ord;
           segCounts[1 + term]++;
         }
