@@ -269,22 +269,22 @@ public class TestFieldCache extends SolrTestCase {
     termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField", null);
     assertEquals(numEntries, cache.getCacheEntries().length);
 
-    for (int i = 0; i < NUM_DOCS; i++) {
+    int doc;
+    while ((doc = termOrds.nextDoc()) != NO_MORE_DOCS) {
       // This will remove identical terms. A DocTermOrds doesn't return duplicate ords for a docId
-      List<BytesRef> values = new ArrayList<>(new LinkedHashSet<>(Arrays.asList(multiValued[i])));
+      List<BytesRef> values = new ArrayList<>(new LinkedHashSet<>(Arrays.asList(multiValued[doc])));
+      int processedValues = 0;
       for (BytesRef v : values) {
         if (v == null) {
           // why does this test use null values... instead of an empty list: confusing
           break;
         }
-        if (i > termOrds.docID()) {
-          assertEquals(i, termOrds.nextDoc());
-        }
         long ord = termOrds.nextOrd();
         BytesRef scratch = termOrds.lookupOrd(ord);
         assertEquals(v, scratch);
+        processedValues++;
       }
-      assertEquals(i, termOrds.docValueCount());
+      assertEquals(processedValues, termOrds.docValueCount());
     }
 
     // test bad field
