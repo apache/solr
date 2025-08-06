@@ -36,7 +36,6 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 public class TestReplicaProperties extends ReplicaPropertiesBase {
-
   public static final String COLLECTION_NAME = "testcollection";
 
   public TestReplicaProperties() {
@@ -49,11 +48,11 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
   public void test() throws Exception {
 
     try (CloudSolrClient client = createCloudClient(null)) {
-      // Mix up a bunch of different combinations of shards and replicas in order to exercise
-      // boundary cases. shards, replicationFactor
-      int shards = random().nextInt(5) + 2;
-      int replicationFactor = random().nextInt(2) + 2;
-      createCollection(null, COLLECTION_NAME, shards, replicationFactor, client, null, "conf1");
+      int shards = 5;
+      int tlogNodes = 4;
+      int pullNodes = 4;
+      Map<String, Object> replicaProps = createReplicaProps(0, tlogNodes, pullNodes, shards);
+      createCollection(null, COLLECTION_NAME, replicaProps, client, "conf1");
     }
 
     waitForCollection(ZkStateReader.from(cloudClient), COLLECTION_NAME, 2);
@@ -249,6 +248,14 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
         for (Replica replica : slice.getReplicas()) {
           boolean isLeader = replica.getBool("leader", false);
           boolean isPreferred = replica.getBool("property.preferredleader", false);
+          if (!replica.getType().leaderEligible && isPreferred) {
+            lastFailMsg =
+                "Replica "
+                    + replica.getName()
+                    + " of type "
+                    + replica.getType()
+                    + ", that cannot be elected leader, should NOT be marked as a preferred leader";
+          }
           if (isLeader != isPreferred) {
             lastFailMsg =
                 "Replica should NOT have preferredLeader != leader. Preferred: "
@@ -279,4 +286,14 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     }
     fail(lastFailMsg);
   }
+
+  @Override
+  protected boolean useTlogReplicas() {
+    return true;
+  }
+
+  /*@Override
+  protected int getPullReplicaCount() {
+   return 4;
+  }*/
 }

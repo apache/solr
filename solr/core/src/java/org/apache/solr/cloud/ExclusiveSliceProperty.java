@@ -153,7 +153,8 @@ class ExclusiveSliceProperty {
         }
         // omit replicas that cannot potentially be leader from preferredLeader
         // candidates
-        if (SliceMutator.PREFERRED_LEADER_PROP.equals(property) && !replica.getType().leaderEligible) {
+        if (SliceMutator.PREFERRED_LEADER_PROP.equals(property)
+            && !replica.getType().leaderEligible) {
           continue;
         }
         allHosts.add(replica.getNodeName());
