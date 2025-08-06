@@ -187,6 +187,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   private RequestHandlerBase.HandlerMetrics createHandlerMetrics() {
     final SolrMetricsContext metricsContext = mock(SolrMetricsContext.class);
 
+    when(metricsContext.getRegistryName()).thenReturn("solr.core");
     when(metricsContext.timer(any(), any())).thenReturn(mock(Timer.class));
     when(metricsContext.meter(any(), any())).then(invocation -> mock(Meter.class));
     when(metricsContext.counter(any(), any())).thenReturn(mock(Counter.class));
@@ -195,8 +196,6 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
     when(metricsContext.longHistogram(any(), any())).thenReturn(mockLongHistogram);
 
     return new RequestHandlerBase.HandlerMetrics(
-        metricsContext,
-        Attributes.of(AttributeKey.stringKey("scope"), "someBaseMetricPath"),
-        "someBaseMetricPath");
+        metricsContext, Attributes.of(AttributeKey.stringKey("/handler"), "/someBaseMetricPath"));
   }
 }
