@@ -112,7 +112,7 @@ If only one node is exposed to a client, and if the client uses the bin/solr exp
 
 === Modern NLP Models from Apache OpenNLP with Solr
 
-Solr now lets you access models encoded in ONNX format, commonly sourced from HuggingFace.  
+Solr now lets you access models encoded in ONNX format, commonly sourced from HuggingFace.
 The DocumentCategorizerUpdateProcessorFactorythat lets you perform sentiment and other classification tasks on fields.
 It is available as part of the `analysis-extras` module.
 
@@ -168,6 +168,7 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * BlobHandler and the `.system` collection have been removed in favour of FileStore API.  (SOLR-17851).
 
+* JMX, SLF4J and Graphite metric reporters have been removed. Users should migrate to using OTLP or the /admin/metrics endpoint with external tools to get metrics to their preferred backend.
 
 === Security
 
