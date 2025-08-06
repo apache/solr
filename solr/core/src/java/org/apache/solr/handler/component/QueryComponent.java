@@ -90,6 +90,7 @@ import org.apache.solr.search.Grouping;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryCommand;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.QueryUtils;
@@ -1792,6 +1793,11 @@ public class QueryComponent extends SearchComponent {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
     rb.setResult(result);
+
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    if (queryLimits.maybeExitWithPartialResults("QueryComponent")) {
+      return;
+    }
 
     ResultContext ctx = new BasicResultContext(rb);
     rsp.addResponse(ctx);
