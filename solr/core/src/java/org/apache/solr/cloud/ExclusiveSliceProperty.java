@@ -129,10 +129,6 @@ class ExclusiveSliceProperty {
     return replica.getState() == Replica.State.ACTIVE;
   }
 
-  private boolean canBeLeader(Replica replica) {
-    return replica.getType() == Replica.Type.NRT || replica.getType() == Replica.Type.TLOG;
-  }
-
   // Collect a list of all the nodes that _can_ host the indicated property. Along the way, also
   // collect any of the replicas on that node that _already_ host the property as well as any slices
   // that do _not_ have the property hosted.
@@ -155,10 +151,9 @@ class ExclusiveSliceProperty {
           }
           continue;
         }
-        if (SliceMutator.PREFERRED_LEADER_PROP.equals(property)
-            && !canBeLeader(
-                replica)) { // omit replicas that cannot potentially be leader from preferredLeader
-          // candidates
+        // omit replicas that cannot potentially be leader from preferredLeader
+        // candidates
+        if (SliceMutator.PREFERRED_LEADER_PROP.equals(property) && !replica.getType().leaderEligible) {
           continue;
         }
         allHosts.add(replica.getNodeName());
