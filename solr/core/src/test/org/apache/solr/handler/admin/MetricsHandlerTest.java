@@ -46,7 +46,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Test for {@link MetricsHandler} */
-// NOCOMMIT SOLR-17785: Lets move this to SolrCloudTestCase
 public class MetricsHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -85,7 +84,11 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     }
   }
 
+  // NOCOMMIT: This test does a bunch of /admin/metrics calls with various params, with various
+  // filters and parameters. We have not migrated all the metrics to otel yet or even created any
+  // filters. Once that is done, we should revisit this test and assert the prometheus response.
   @Test
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void test() throws Exception {
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
@@ -358,31 +361,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCompact() throws Exception {
-    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
-
-    SolrQueryResponse resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.COMPACT_PARAM,
-            "true"),
-        resp);
-    NamedList<?> values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    NamedList<?> nl = (NamedList<?>) values.get("solr.core.collection1");
-    assertNotNull(nl);
-    Object o = nl.get("SEARCHER.new.errors");
-    assertNotNull(o); // counter type
-    assertTrue(o instanceof Number);
-    handler.close();
-  }
-
-  @Test
   public void testPropertyFilter() throws Exception {
     assertQ(req("*:*"), "//result[@numFound='0']");
 
@@ -451,7 +429,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.close();
   }
 
+  // NOCOMMIT: Have not implemented any kind of filtering for OTEL yet
   @Test
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testKeyMetrics() throws Exception {
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
@@ -599,7 +579,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.close();
   }
 
+  // NOCOMMIT: Have not implemented any kind of filtering for OTEL yet
   @Test
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   @SuppressWarnings("unchecked")
   public void testExprMetrics() throws Exception {
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());

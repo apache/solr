@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler;
 
-import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -80,11 +79,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
 
     verify(mockLongCounter, never())
         .add(
-            eq(1L),
-            argThat(
-                attrs ->
-                    "errors".equals(attrs.get(TYPE_ATTR))
-                        && "source".equals(attrs.get(AttributeKey.stringKey("client")))));
+            eq(1L), argThat(attrs -> "source".equals(attrs.get(AttributeKey.stringKey("client")))));
   }
 
   @Test
@@ -95,19 +90,9 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
     RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
     verify(mockLongCounter, never())
-        .add(
-            eq(1L),
-            argThat(
-                attrs ->
-                    "errors".equals(attrs.get(TYPE_ATTR))
-                        && "client".equals(attrs.get(SOURCE_ATTR))));
+        .add(eq(1L), argThat(attrs -> "client".equals(attrs.get(SOURCE_ATTR))));
     verify(mockLongCounter, never())
-        .add(
-            eq(1L),
-            argThat(
-                attrs ->
-                    "errors".equals(attrs.get(TYPE_ATTR))
-                        && "server".equals(attrs.get(SOURCE_ATTR))));
+        .add(eq(1L), argThat(attrs -> "server".equals(attrs.get(SOURCE_ATTR))));
   }
 
   @Test
@@ -118,20 +103,10 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
     RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
     verify(mockLongCounter, times(1))
-        .add(
-            eq(1L),
-            argThat(
-                attrs ->
-                    "errors".equals(attrs.get(TYPE_ATTR))
-                        && "client".equals(attrs.get(SOURCE_ATTR))));
+        .add(eq(1L), argThat(attrs -> "client".equals(attrs.get(SOURCE_ATTR))));
 
     verify(mockLongCounter, never())
-        .add(
-            eq(1L),
-            argThat(
-                attrs ->
-                    "errors".equals(attrs.get(TYPE_ATTR))
-                        && "server".equals(attrs.get(SOURCE_ATTR))));
+        .add(eq(1L), argThat(attrs -> "server".equals(attrs.get(SOURCE_ATTR))));
   }
 
   @Test
@@ -212,6 +187,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   private RequestHandlerBase.HandlerMetrics createHandlerMetrics() {
     final SolrMetricsContext metricsContext = mock(SolrMetricsContext.class);
 
+    when(metricsContext.getRegistryName()).thenReturn("solr.core");
     when(metricsContext.timer(any(), any())).thenReturn(mock(Timer.class));
     when(metricsContext.meter(any(), any())).then(invocation -> mock(Meter.class));
     when(metricsContext.counter(any(), any())).thenReturn(mock(Counter.class));
@@ -220,8 +196,6 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
     when(metricsContext.longHistogram(any(), any())).thenReturn(mockLongHistogram);
 
     return new RequestHandlerBase.HandlerMetrics(
-        metricsContext,
-        Attributes.of(AttributeKey.stringKey("scope"), "someBaseMetricPath"),
-        "someBaseMetricPath");
+        metricsContext, Attributes.of(AttributeKey.stringKey("/handler"), "/someBaseMetricPath"));
   }
 }

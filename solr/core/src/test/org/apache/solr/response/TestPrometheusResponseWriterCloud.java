@@ -26,7 +26,7 @@ import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -65,16 +65,13 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
   public void testPrometheusCloudLabels() throws Exception {
     var solrClient = cluster.getSolrClient();
 
-    // Increment solr_metrics_core_requests metric for /select
+    // Increment solr_core_requests metric for /select
     SolrQuery query = new SolrQuery("*:*");
     solrClient.query("collection1", query);
 
     var req =
         new GenericSolrRequest(
-            METHOD.GET,
-            "/admin/metrics",
-            SolrRequestType.ADMIN,
-            new ModifiableSolrParams().set("wt", "prometheus"));
+            METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, SolrParams.of("wt", "prometheus"));
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     NamedList<Object> resp = solrClient.request(req);
@@ -86,13 +83,12 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
               .lines()
               .anyMatch(
                   line ->
-                      line.startsWith("solr_metrics_core_requests_total")
+                      line.startsWith("solr_core_requests_total")
                           && line.contains("handler=\"/select\"")
                           && line.contains("collection=\"collection1\"")
                           && line.contains("core=\"collection1_shard1_replica_n1\"")
                           && line.contains("replica=\"replica_n1\"")
-                          && line.contains("shard=\"shard1\"")
-                          && line.contains("type=\"requests\"")));
+                          && line.contains("shard=\"shard1\"")));
     }
   }
 
@@ -100,17 +96,14 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
   public void testCollectionDeletePrometheusOutput() throws Exception {
     var solrClient = cluster.getSolrClient();
 
-    // Increment solr_metrics_core_requests metric for /select and assert it exists
+    // Increment solr_core_requests metric for /select and assert it exists
     SolrQuery query = new SolrQuery("*:*");
     solrClient.query("collection1", query);
     solrClient.query("collection2", query);
 
     var req =
         new GenericSolrRequest(
-            METHOD.GET,
-            "/admin/metrics",
-            SolrRequestType.ADMIN,
-            new ModifiableSolrParams().set("wt", "prometheus"));
+            METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, SolrParams.of("wt", "prometheus"));
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     NamedList<Object> resp = solrClient.request(req);
@@ -119,21 +112,17 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
       String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
 
       assertTrue(
-          "Prometheus output should contains solr_metrics_core_requests for collection1",
+          "Prometheus output should contains solr_core_requests for collection1",
           output
               .lines()
               .anyMatch(
-                  line ->
-                      line.startsWith("solr_metrics_core_requests")
-                          && line.contains("collection1")));
+                  line -> line.startsWith("solr_core_requests") && line.contains("collection1")));
       assertTrue(
-          "Prometheus output should contains solr_metrics_core_requests for collection2",
+          "Prometheus output should contains solr_core_requests for collection2",
           output
               .lines()
               .anyMatch(
-                  line ->
-                      line.startsWith("solr_metrics_core_requests")
-                          && line.contains("collection2")));
+                  line -> line.startsWith("solr_core_requests") && line.contains("collection2")));
     }
 
     // Delete collection and assert metrics have been removed
@@ -144,21 +133,17 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
     try (InputStream in = (InputStream) resp.get("stream")) {
       String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
       assertFalse(
-          "Prometheus output should not contain solr_metrics_core_requests after collection was deleted",
+          "Prometheus output should not contain solr_core_requests after collection was deleted",
           output
               .lines()
               .anyMatch(
-                  line ->
-                      line.startsWith("solr_metrics_core_requests")
-                          && line.contains("collection1")));
+                  line -> line.startsWith("solr_core_requests") && line.contains("collection1")));
       assertTrue(
-          "Prometheus output should contains solr_metrics_core_requests for collection2",
+          "Prometheus output should contains solr_core_requests for collection2",
           output
               .lines()
               .anyMatch(
-                  line ->
-                      line.startsWith("solr_metrics_core_requests")
-                          && line.contains("collection2")));
+                  line -> line.startsWith("solr_core_requests") && line.contains("collection2")));
     }
   }
 }
