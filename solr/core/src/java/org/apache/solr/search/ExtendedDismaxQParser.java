@@ -192,7 +192,7 @@ public class ExtendedDismaxQParser extends QParser {
     // a MatchAllDocsQuery. Using MatchAllDocsQuery by itself enables later optimizations
     BooleanQuery topQueryBoolean = (BooleanQuery) topQuery;
     if (topQueryBoolean.clauses().size() == 1) {
-      Query onlyQuery = topQueryBoolean.clauses().get(0).getQuery();
+      Query onlyQuery = topQueryBoolean.clauses().get(0).query();
       if (onlyQuery instanceof MatchAllDocsQuery) {
         topQuery = onlyQuery;
       }
