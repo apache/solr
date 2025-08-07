@@ -286,14 +286,4 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     }
     fail(lastFailMsg);
   }
-
-  @Override
-  protected boolean useTlogReplicas() {
-    return true;
-  }
-
-  /*@Override
-  protected int getPullReplicaCount() {
-   return 4;
-  }*/
 }
