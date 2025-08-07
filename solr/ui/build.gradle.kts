@@ -42,7 +42,7 @@ kotlin {
     // Add targets to support
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        moduleName = "composeApp"
+        outputModuleName = provider { "composeApp" }
         browser {
             commonWebpackConfig {
                 outputFileName = "composeApp.js"
