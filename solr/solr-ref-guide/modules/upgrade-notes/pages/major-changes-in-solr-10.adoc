@@ -132,6 +132,8 @@ Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-lif
 
 Due to Lucene 10 changes (https://github.com/apache/lucene/pull/12875), `PathHierarchyTokenizer` now produces sequential tokens (position increment = 1) instead of overlapping tokens (position increment = 0). This affects ancestor queries that relied on overlapping token matching. Users should test existing queries and update configurations if needed.
 
+* In Lucene 10, the `OrdinalIterator` class has been moved from the main `lucene-facet` module to the `lucene-sandbox` module. This requires Solr core to now include a dependency on `lucene-sandbox` to support faceting operations that use this class.
+
 *Example configuration change:*
 [source,xml]
 ----

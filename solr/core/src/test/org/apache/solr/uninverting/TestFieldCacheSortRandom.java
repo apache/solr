@@ -258,20 +258,23 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
                   + s.storedFields().document(fd.doc).get("id"));
         }
       }
-      
+
       // For STRING_VAL type (using BinaryDocValues), we cannot manually compare the sorted order
-      // because Lucene 10+ changed the internal sorting behavior for BinaryDocValues. 
-      // The manual BytesRef.compareTo() used in this test doesn't match the actual Lucene sort order.
+      // because Lucene 10+ changed the internal sorting behavior for BinaryDocValues.
+      // The manual BytesRef.compareTo() used in this test doesn't match the actual Lucene sort
+      // order.
       // Instead, we just validate that the uninverting is working correctly by checking that:
       // 1. No exceptions are thrown
       // 2. Returned values are valid BytesRef or null
-      // This ensures doc values uninverting works without assuming specific sort implementation details.
+      // This ensures doc values uninverting works without assuming specific sort implementation
+      // details.
       if (type == SortField.Type.STRING_VAL) {
         for (int hitIDX = 0; hitIDX < hits.scoreDocs.length; hitIDX++) {
           final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
           Object sortValue = fd.fields[0];
-          assertTrue("Sort value should be BytesRef or null", 
-                     sortValue == null || sortValue instanceof BytesRef);
+          assertTrue(
+              "Sort value should be BytesRef or null",
+              sortValue == null || sortValue instanceof BytesRef);
         }
         continue; // Skip the exact comparison for STRING_VAL
       }

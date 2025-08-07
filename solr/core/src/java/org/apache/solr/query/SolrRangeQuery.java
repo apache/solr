@@ -540,11 +540,15 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
     public Scorer scorerInternal(LeafReaderContext context) throws IOException {
       final SegState weightOrBitSet = getSegState(context);
-      log.info("Query: " + getQuery());
-      log.info("weight: " + weightOrBitSet.weight);
-      if (weightOrBitSet.weight != null)
-        log.info("weight's scorer: " + weightOrBitSet.weight.scorer(context));
-      log.info("set: " + weightOrBitSet.set);
+      if (log.isDebugEnabled()) {
+        log.debug("Query: {}", getQuery());
+        log.debug("weight: {}", weightOrBitSet.weight);
+        if (weightOrBitSet.weight != null) {
+          Scorer scorer = weightOrBitSet.weight.scorer(context);
+          log.debug("weight's scorer: {}", scorer);
+        }
+        log.debug("set: {}", weightOrBitSet.set);
+      }
       if (weightOrBitSet.weight != null) {
         Scorer ret = weightOrBitSet.weight.scorer(context);
         return ret;

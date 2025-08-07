@@ -88,10 +88,12 @@ public class PathHierarchyTokenizerFactoryTest extends SolrTestCaseJ4 {
   }
 
   public void testAncestors() {
-    // NOTE: In Lucene 10+, PathHierarchyTokenizer produces sequential tokens instead of overlapping tokens.
-    // This changes the behavior of ancestor queries - they now match based on sequential token positions
+    // NOTE: In Lucene 10+, PathHierarchyTokenizer produces sequential tokens instead of overlapping
+    // tokens.
+    // This changes the behavior of ancestor queries - they now match based on sequential token
+    // positions
     // rather than overlapping positions, so ancestor matching behavior has changed.
-    
+
     assertQ(
         req("{!field f=cat_ancestor}Books/NonFic/Science"),
         "//*[@numFound='2']",

@@ -32,7 +32,6 @@ import java.util.concurrent.Semaphore;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
-import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -662,7 +661,7 @@ public class LTRScoringQuery extends Query implements Accountable {
               targetDoc = activeDoc;
               return targetDoc;
             }
-            
+
             if (activeDoc == targetDoc) {
               // Advance the underlying disjunction
               DisiWrapper top = subScorers.top();
@@ -690,7 +689,7 @@ public class LTRScoringQuery extends Query implements Accountable {
             targetDoc = target;
             return targetDoc;
           }
-          
+
           private int advanceInternal(int target) throws IOException {
             // Advance the underlying disjunction to the target
             DisiWrapper top;

@@ -30,13 +30,11 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
@@ -299,7 +297,8 @@ public class Grouping {
 
     SolrIndexSearcher.ProcessedFilter pf = searcher.getProcessedFilter(cmd.getFilterList());
 
-    final Query searchQuery = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
+    final Query searchQuery =
+        QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
     maxDoc = searcher.maxDoc();
 
     needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
@@ -569,7 +568,9 @@ public class Grouping {
     protected void populateScoresIfNecessary() throws IOException {
       if (needScores) {
         for (GroupDocs<?> groups : result.groups) {
-          log.info("Group score is 1: " + groups.maxScore());
+          if (log.isDebugEnabled()) {
+            log.debug("Group score is 1: {}", groups.maxScore());
+          }
           TopFieldCollector.populateScores(groups.scoreDocs(), searcher, query);
         }
       }
@@ -612,7 +613,9 @@ public class Grouping {
 
       float score = groups.maxScore();
       maxScore = maxAvoidNaN(score, maxScore);
-      log.info("Here, score is " + score + " and maxScore is " + maxScore);
+      if (log.isDebugEnabled()) {
+        log.debug("Here, score is {} and maxScore is {}", score, maxScore);
+      }
       DocSlice docs =
           new DocSlice(
               off,
@@ -900,7 +903,9 @@ public class Grouping {
         maxScore = topDocs.scoreDocs.length == 0 ? Float.NaN : topDocs.scoreDocs[0].score;
       } else if (needScores) {
         // use top-level query to populate the scores
-        log.info("Group score is 2: " + maxScoreCollector.getMaxScore());
+        if (log.isDebugEnabled()) {
+          log.debug("Group score is 2: {}", maxScoreCollector.getMaxScore());
+        }
         TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, Grouping.this.query);
         maxScore = maxScoreCollector.getMaxScore();
       } else {

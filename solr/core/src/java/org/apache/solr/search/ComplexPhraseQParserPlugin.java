@@ -78,13 +78,13 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       protected org.apache.lucene.search.Query getWildcardQuery(String field, String termStr)
           throws SyntaxError {
         Query q = super.getWildcardQuery(field, termStr);
-        
+
         // For complex phrase queries, we need to ensure wildcard queries and automaton queries
         // use SCORING_BOOLEAN_REWRITE to avoid the new constant score wrappers in Lucene 10
         if (q instanceof WildcardQuery) {
           WildcardQuery wq = (WildcardQuery) q;
           return new WildcardQuery(
-              wq.getTerm(), 
+              wq.getTerm(),
               Operations.DEFAULT_DETERMINIZE_WORK_LIMIT,
               MultiTermQuery.SCORING_BOOLEAN_REWRITE);
         } else if (q instanceof AutomatonQuery) {
@@ -93,12 +93,12 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
           // We can't access the term directly, but for reversed wildcard queries,
           // we can use a placeholder term since the automaton contains the actual matching logic
           return new AutomatonQuery(
-              new Term(field, ""), 
+              new Term(field, ""),
               aq.getAutomaton(),
               aq.isAutomatonBinary(),
               MultiTermQuery.SCORING_BOOLEAN_REWRITE);
         }
-        
+
         return q;
       }
 
@@ -155,17 +155,17 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
                 // Get the wildcard query from the reverse-aware parser
                 org.apache.lucene.search.Query wildcardQuery =
                     reverseAwareParser.getWildcardQuery(t.field(), t.text());
-                
+
                 // In Lucene 10, we need to ensure wildcard queries use SCORING_BOOLEAN_REWRITE
                 // for complex phrase queries to work properly
                 if (wildcardQuery instanceof WildcardQuery) {
                   WildcardQuery wq = (WildcardQuery) wildcardQuery;
                   return new WildcardQuery(
-                      wq.getTerm(), 
+                      wq.getTerm(),
                       Operations.DEFAULT_DETERMINIZE_WORK_LIMIT,
                       MultiTermQuery.SCORING_BOOLEAN_REWRITE);
                 }
-                
+
                 return wildcardQuery;
               } catch (SyntaxError e) {
                 throw new RuntimeException(e);

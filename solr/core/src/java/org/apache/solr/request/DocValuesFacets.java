@@ -430,7 +430,7 @@ public class DocValuesFacets {
         for (int o = 0; o < si.docValueCount(); o++) {
           long ord = si.nextOrd();
           if (ord == -1) // NO_MORE_ORDS
-            break;
+          break;
           int term = (int) ord;
           if (map != null) {
             term = (int) ordMap.get(term);
@@ -465,7 +465,7 @@ public class DocValuesFacets {
         for (int o = 0; o < si.docValueCount(); o++) {
           long ord = si.nextOrd();
           if (ord == -1) // NO_MORE_ORDS
-            break;
+          break;
           int term = (int) ord;
           segCounts[1 + term]++;
         }
