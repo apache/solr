@@ -764,7 +764,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // Extract the elevated terms into a list
       match = new ArrayList<>(elevation.includeQuery.clauses().size());
       for (BooleanClause clause : elevation.includeQuery.clauses()) {
-        TermQuery tq = (TermQuery) clause.getQuery();
+        TermQuery tq = (TermQuery) clause.query();
         match.add(tq.getTerm().text());
       }
     }

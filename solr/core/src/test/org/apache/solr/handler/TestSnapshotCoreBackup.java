@@ -452,7 +452,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
           Files.exists(backup.resolve(expectedSegmentsFileName)));
     }
     try (Directory dir = FSDirectory.open(backup)) {
-      TestUtil.checkIndex(dir, true, true, true, null);
+      TestUtil.checkIndex(dir, 0, true, true, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
         assertEquals("numDocs in " + backup, numDocs, r.numDocs());
         if (null != expectedSegmentsFileName) {

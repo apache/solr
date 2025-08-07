@@ -16,6 +16,8 @@
  */
 package org.apache.solr.uninverting;
 
+import static org.apache.lucene.sandbox.facet.iterators.OrdinalIterator.NO_MORE_ORDS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;

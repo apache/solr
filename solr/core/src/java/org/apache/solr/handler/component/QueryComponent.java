@@ -555,7 +555,13 @@ public class QueryComponent extends SearchComponent {
             }
 
             doc -= currentLeaf.docBase; // adjust for what segment this is in
-            leafComparator.setScorer(new ScoreAndDoc(doc, score));
+            leafComparator.setScorer(
+                new Scorable() {
+                  @Override
+                  public float score() {
+                    return score;
+                  }
+                });
             leafComparator.copy(0, doc);
             Object val = comparator.value(0);
             if (null != ft) val = ft.marshalSortValue(val);
@@ -1828,31 +1834,5 @@ public class QueryComponent extends SearchComponent {
     }
 
     return localQueryID;
-  }
-
-  /**
-   * Fake scorer for a single document
-   *
-   * <p>TODO: when SOLR-5595 is fixed, this wont be needed, as we dont need to recompute sort values
-   * here from the comparator
-   */
-  protected static class ScoreAndDoc extends Scorable {
-    final int docid;
-    final float score;
-
-    ScoreAndDoc(int docid, float score) {
-      this.docid = docid;
-      this.score = score;
-    }
-
-    @Override
-    public int docID() {
-      return docid;
-    }
-
-    @Override
-    public float score() throws IOException {
-      return score;
-    }
   }
 }
