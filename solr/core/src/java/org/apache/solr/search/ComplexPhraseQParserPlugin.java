@@ -16,9 +16,14 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
+import org.apache.lucene.search.AutomatonQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -72,11 +77,33 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       @Override
       protected org.apache.lucene.search.Query getWildcardQuery(String field, String termStr)
           throws SyntaxError {
-        return super.getWildcardQuery(field, termStr);
+        Query q = super.getWildcardQuery(field, termStr);
+        
+        // For complex phrase queries, we need to ensure wildcard queries and automaton queries
+        // use SCORING_BOOLEAN_REWRITE to avoid the new constant score wrappers in Lucene 10
+        if (q instanceof WildcardQuery) {
+          WildcardQuery wq = (WildcardQuery) q;
+          return new WildcardQuery(
+              wq.getTerm(), 
+              Operations.DEFAULT_DETERMINIZE_WORK_LIMIT,
+              MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+        } else if (q instanceof AutomatonQuery) {
+          AutomatonQuery aq = (AutomatonQuery) q;
+          // For AutomatonQuery, we need to create a new one with the desired rewrite method
+          // We can't access the term directly, but for reversed wildcard queries,
+          // we can use a placeholder term since the automaton contains the actual matching logic
+          return new AutomatonQuery(
+              new Term(field, ""), 
+              aq.getAutomaton(),
+              aq.isAutomatonBinary(),
+              MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+        }
+        
+        return q;
       }
 
       @Override
-      protected org.apache.lucene.search.Query getRangeQuery(
+      protected Query getRangeQuery(
           String field, String part1, String part2, boolean startInclusive, boolean endInclusive)
           throws SyntaxError {
         return super.getRangeQuery(field, part1, part2, startInclusive, endInclusive);
@@ -125,10 +152,20 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
             @Override
             protected Query newWildcardQuery(org.apache.lucene.index.Term t) {
               try {
+                // Get the wildcard query from the reverse-aware parser
                 org.apache.lucene.search.Query wildcardQuery =
                     reverseAwareParser.getWildcardQuery(t.field(), t.text());
-                // TBD . We may not need this as the constructor is invoked with the rewite method
-                //                setRewriteMethod(wildcardQuery);
+                
+                // In Lucene 10, we need to ensure wildcard queries use SCORING_BOOLEAN_REWRITE
+                // for complex phrase queries to work properly
+                if (wildcardQuery instanceof WildcardQuery) {
+                  WildcardQuery wq = (WildcardQuery) wildcardQuery;
+                  return new WildcardQuery(
+                      wq.getTerm(), 
+                      Operations.DEFAULT_DETERMINIZE_WORK_LIMIT,
+                      MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+                }
+                
                 return wildcardQuery;
               } catch (SyntaxError e) {
                 throw new RuntimeException(e);
