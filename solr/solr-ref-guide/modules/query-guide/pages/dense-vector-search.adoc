@@ -316,6 +316,70 @@ preserved when `stored` is true.
 +
 Accepted values: `BOOLEAN`
 
+=== BinaryBitQuantizedDenseVectorField
+
+Binary bit quantization is a different quantization technique that is even more aggressive in its compression and is able
+to reduce each dimension from a 32 bit float down to a single bit. This is done by normalizing each dimension of a vector
+relative to a centroid (mid-point pre-calculated against all vectors in the index) with the stored bit
+representing whether the actual value is positive or negative of the centroid's value. A further "corrective factor" is computed
+and stored to help compensate accuracy in the estimated distance. For more details, the original white paper can be viewed
+https://arxiv.org/pdf/2405.12497[here].
+
+This vector type is best utilized for data sets consisting of large amounts of high dimensionality vectors.
+
+Here is how a BinaryBitQuantizedDenseVectorField can be defined in the schema:
+
+[source,xml]
+<fieldType name="binary_bit_quantized_vector" class="solr.BinaryBitQuantizedDenseVectorField" vectorDimension="4"/>
+<field name="vector" type="binary_bit_quantized_vector" indexed="true" stored="true"/>
+
+BinaryBitQuantizedDenseVectorField accepts the following parameters (similar to `DenseVectorField`), however note the omission
+of `similarityFunction` as bit quantization uses its own distance calculation.
+
+`vectorDimension`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The dimension of the dense vector to pass in.
++
+Accepted values:
+Any integer.
+
+`hnswMaxConnections`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `16`
+|===
++
+(advanced) This parameter is specific for the `hnsw` knn algorithm:
++
+Controls how many of the nearest neighbor candidates are connected to the new node.
++
+It has the same meaning as `M` from the 2018 paper.
++
+Accepted values:
+Any integer.
+
+`hnswBeamWidth`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `100`
+|===
++
+(advanced) This parameter is specific for the `hnsw` knn algorithm:
++
+It is the number of nearest neighbor candidates to track while searching the graph for each newly inserted node.
++
+It has the same meaning as `efConstruction` from the 2018 paper.
++
+Accepted values:
+Any integer.
+
 == Query Time
 
 Apache Solr provides three query parsers that work with dense vector fields, that each support different ways of matching documents based on vector similarity: The `knn` query parser, the `vectorSimilarity` query parser and the `knn_text_to_vector` query parser.
