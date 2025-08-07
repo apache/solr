@@ -70,7 +70,7 @@ public class TestMessageProcessor {
   public void setUp() {
     MockitoAnnotations.initMocks(this);
 
-    processor = Mockito.spy(new SolrMessageProcessor(solrClient, backoffPolicy));
+    processor = Mockito.spy(new SolrMessageProcessor(() -> solrClient, backoffPolicy));
     Mockito.doNothing().when(processor).uncheckedSleep(anyLong());
   }
 

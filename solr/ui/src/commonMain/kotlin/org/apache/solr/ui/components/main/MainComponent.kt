@@ -45,6 +45,11 @@ interface MainComponent : NavigationComponent {
     fun onNavigate(menuItem: MainMenu)
 
     /**
+     * Handles logout requests.
+     */
+    fun onLogout()
+
+    /**
      * Child interface that defines all available children of the [MainComponent].
      */
     sealed interface Child {
@@ -86,5 +91,13 @@ interface MainComponent : NavigationComponent {
 
         // TODO Uncomment once ThreadDump available
         // data class ThreadDump(val component: ThreadDumpComponent): Child
+    }
+
+    sealed interface Output {
+
+        /**
+         * Output that is returned when the user logs out.
+         */
+        data object UserLoggedOut : Output
     }
 }

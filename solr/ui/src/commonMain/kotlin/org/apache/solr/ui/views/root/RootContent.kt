@@ -24,8 +24,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.arkivanov.decompose.extensions.compose.stack.Children
 import org.apache.solr.ui.components.root.RootComponent
+import org.apache.solr.ui.views.auth.UserAuthenticationContent
 import org.apache.solr.ui.views.main.MainContent
 import org.apache.solr.ui.views.navigation.Footer
+import org.apache.solr.ui.views.start.StartContent
 
 /**
  * The root composable of the Compose application. This function is used as the shared entry
@@ -45,7 +47,17 @@ fun RootContent(
             modifier = Modifier.weight(1f),
         ) {
             when(val child = it.instance) {
+                is RootComponent.Child.Start -> StartContent(
+                    component = child.component,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
                 is RootComponent.Child.Main -> MainContent(
+                    component = child.component,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                is RootComponent.Child.Authentication -> UserAuthenticationContent(
                     component = child.component,
                     modifier = Modifier.fillMaxSize(),
                 )

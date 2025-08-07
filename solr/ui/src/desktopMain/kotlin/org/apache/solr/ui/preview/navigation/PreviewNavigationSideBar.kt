@@ -25,5 +25,8 @@ import org.apache.solr.ui.views.navigation.NavigationSideBar
 @Preview
 @Composable
 fun PreviewNavigationSideBar() = PreviewContainer {
-    NavigationSideBar(onNavigate = {})
+    NavigationSideBar(
+        onNavigate = {},
+        onLogout = {},
+    )
 }

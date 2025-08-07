@@ -14,7 +14,7 @@
 # limitations under the License.
 [versions]
 adobe-testing-s3mock = "3.9.1"
-amazon-awssdk = "2.28.11"
+amazon-awssdk = "2.31.77"
 # @keep Antora version used in ref-guide
 antora = "3.1.4"
 # @keep Most recent commit as of 2022-06-24, this repo does not have tags
@@ -37,13 +37,13 @@ apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
 apache-kafka = "3.9.0"
 apache-log4j = "2.21.0"
-apache-lucene = "9.12.1"
+apache-lucene = "9.12.2"
 apache-opennlp = "1.9.4"
 apache-poi = "5.2.2"
 apache-rat = "0.15"
 apache-tika = "1.28.5"
 apache-tomcat = "6.0.53"
-apache-zookeeper = "3.9.2"
+apache-zookeeper = "3.9.3"
 # @keep for version alignment
 apiguardian = "1.1.2"
 aqute-bnd = "6.4.1"
@@ -150,7 +150,7 @@ kotlinx-browser = "0.3"
 kotlinx-coroutines = "1.10.1"
 kotlinx-datetime = "0.6.2"
 kotlinx-serialization = "1.8.0"
-ktor = "3.1.0"
+ktor = "3.2.2"
 langchain4j = "0.35.0"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
@@ -438,7 +438,9 @@ kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere", version.ref = "langchain4j" }
 langchain4j-core = { module = "dev.langchain4j:langchain4j-core", version.ref = "langchain4j" }

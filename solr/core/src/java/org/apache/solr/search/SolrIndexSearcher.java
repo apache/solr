@@ -51,6 +51,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.QueryTimeout;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -137,15 +138,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   public static final String STATS_SOURCE = "org.apache.solr.stats_source";
   public static final String STATISTICS_KEY = "searcher";
+
+  public static final String EXITABLE_READER_PROPERTY = "solr.useExitableDirectoryReader";
+
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
   private static final Map<String, SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
   private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
-
-  // If you find this useful, let us know in dev@solr.apache.org.  Likely to be removed eventually.
-  private static final boolean useExitableDirectoryReader =
-      Boolean.getBoolean("solr.useExitableDirectoryReader");
 
   public static final int EXECUTOR_MAX_CPU_THREADS = Runtime.getRuntime().availableProcessors();
 
@@ -207,14 +207,31 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
 
+  private static final class QueryLimitsTimeout implements QueryTimeout {
+    private static final QueryLimitsTimeout INSTANCE = new QueryLimitsTimeout();
+
+    private QueryLimitsTimeout() {}
+
+    @Override
+    public boolean shouldExit() {
+      return QueryLimits.getCurrentLimits().shouldExit();
+    }
+
+    @Override
+    public String toString() {
+      return QueryLimits.getCurrentLimits().limitStatusMessage();
+    }
+  }
+
   // TODO: wrap elsewhere and return a "map" from the schema that overrides get() ?
   // this reader supports reopen
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader)
       throws IOException {
     assert reader != null;
     reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
-    if (useExitableDirectoryReader) { // SOLR-16693 legacy; may be removed.  Probably inefficient.
-      reader = ExitableDirectoryReader.wrap(reader, QueryLimits.getCurrentLimits());
+    // see SOLR-16693 and SOLR-17831 for more details
+    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY, Boolean.FALSE)) {
+      reader = ExitableDirectoryReader.wrap(reader, QueryLimitsTimeout.INSTANCE);
     }
     return reader;
   }
@@ -775,7 +792,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
       throws IOException {
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-    if (useExitableDirectoryReader || !queryLimits.isLimitsEnabled()) {
+    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY, Boolean.FALSE)
+        || !queryLimits.isLimitsEnabled()) {
       // no timeout.  Pass through to super class
       super.search(leaves, weight, collector);
     } else {
@@ -1895,18 +1913,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final Collector collector;
 
       if (!needScores) {
-        collector =
-            new SimpleCollector() {
-              @Override
-              public void collect(int doc) {
-                numHits[0]++;
-              }
-
-              @Override
-              public ScoreMode scoreMode() {
-                return ScoreMode.COMPLETE_NO_SCORES;
-              }
-            };
+        collector = new TotalHitCountCollector();
       } else {
         collector =
             new SimpleCollector() {
@@ -1934,6 +1941,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
       totalHits = numHits[0];
+      if (collector instanceof TotalHitCountCollector) {
+        totalHits = ((TotalHitCountCollector) collector).getTotalHits();
+      } else {
+        totalHits = numHits[0];
+      }
       maxScore = totalHits > 0 ? topscore[0] : 0.0f;
       docList =
           new DocSlice(

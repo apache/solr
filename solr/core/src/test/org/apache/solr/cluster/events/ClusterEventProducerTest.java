@@ -100,7 +100,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     V2Request readPluginState =
         new V2Request.Builder("/cluster/plugin").forceV2(true).withMethod(GET).build();
     V2Response rsp = readPluginState.process(cluster.getSolrClient());
-    if (rsp._getStr("/plugin/" + ClusterEventProducer.PLUGIN_NAME + "/class", null) != null) {
+    if (rsp._getStr("/plugin/" + ClusterEventProducer.PLUGIN_NAME + "/class") != null) {
       V2Request req =
           new V2Request.Builder("/cluster/plugin")
               .withMethod(POST)
@@ -362,7 +362,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     V2Request readPluginState =
         new V2Request.Builder("/cluster/plugin").forceV2(true).withMethod(GET).build();
     rsp = readPluginState.process(cluster.getSolrClient());
-    assertEquals(DummyEventListener.class.getName(), rsp._getStr("/plugin/testplugin/class", null));
+    assertEquals(DummyEventListener.class.getName(), rsp._getStr("/plugin/testplugin/class"));
 
     String collection = "testListenerPlugins_collection";
     CollectionAdminRequest.Create create =
