@@ -37,12 +37,12 @@ import org.apache.solr.util.TestInjection;
  * or other resource limits. Exceeding any specified limit will cause {@link #shouldExit()} to
  * return true the next time it is checked (it may be checked in either Lucene code or Solr code)
  */
-public class QueryLimits implements QueryTimeout {
+public final class QueryLimits implements QueryTimeout {
   public static final String UNLIMITED = "This request is unlimited.";
   private final List<QueryLimit> limits =
       new ArrayList<>(3); // timeAllowed, cpu, and memory anticipated
 
-  public static QueryLimits NONE = new QueryLimits();
+  public static final QueryLimits NONE = new QueryLimits();
 
   private final SolrQueryResponse rsp;
   private final boolean allowPartialResults;

@@ -130,7 +130,7 @@ class ClassificationUpdateProcessor extends UpdateRequestProcessor {
           classifier.getClasses(luceneDocument, maxOutputClasses);
       if (assignedClassifications != null) {
         for (ClassificationResult<BytesRef> singleClassification : assignedClassifications) {
-          String assignedClass = singleClassification.getAssignedClass().utf8ToString();
+          String assignedClass = singleClassification.assignedClass().utf8ToString();
           doc.addField(predictedClassField, assignedClass);
         }
       }

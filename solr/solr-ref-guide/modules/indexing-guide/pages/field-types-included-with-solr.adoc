@@ -59,10 +59,6 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 
 |PointType |A single-valued n-dimensional point. It's both for sorting spatial data that is _not_ lat-lon, and for some more rare use-cases. (NOTE: this is _not_ related to the "Point" based numeric fields). See xref:query-guide:spatial-search.adoc[] for more information.
 
-|PreAnalyzedField |Provides a way to send to Solr serialized token streams, optionally with independent stored values of a field, and have this information stored and indexed without any additional text processing.
-
-Configuration and usage of PreAnalyzedField is documented in the section  xref:external-files-processes.adoc#the-preanalyzedfield-type[PreAnalyzedField Type].
-
 |RandomSortField |Does not contain a value. Queries that sort on this field type will return results in random order. Use a dynamic field to use this feature.
 
 |RankField |Can be used to store scoring factors to improve document ranking. To be used in combination with xref:query-guide:other-parsers.adoc#ranking-query-parser[RankQParserPlugin].
@@ -73,7 +69,7 @@ Configuration and usage of PreAnalyzedField is documented in the section  xref:e
 
 |SpatialRecursivePrefixTreeFieldType |(RPT for short) Accepts latitude comma longitude strings or other shapes in WKT format. See xref:query-guide:spatial-search.adoc[] for more information.
 
-|StrField |String (UTF-8 encoded string or Unicode). Indexed `indexed="true"` strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K. Non-indexed `indexed="false"` and non-DocValues `docValues="false"` strings are suitable for storing large strings. 
+|StrField |String (UTF-8 encoded string or Unicode). Indexed `indexed="true"` strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K. Non-indexed `indexed="false"` and non-DocValues `docValues="false"` strings are suitable for storing large strings.
 
 |TextField |Text, usually multiple words or tokens. In normal usage, only fields of type TextField or SortableTextField will specify an xref:analyzers.adoc[analyzer].
 
@@ -92,6 +88,8 @@ This shortcoming may be addressed in a future release.
 [cols="25,75",options="header"]
 |===
 |Class |Description
+
+|CurrencyField |Use CurrencyFieldType instead.
 
 |EnumField |Use EnumFieldType instead.
 

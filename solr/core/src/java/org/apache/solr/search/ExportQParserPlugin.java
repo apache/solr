@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
@@ -94,10 +93,10 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Query rewrite(IndexReader reader) throws IOException {
-      Query q = mainQuery.rewrite(reader);
+    public Query rewrite(IndexSearcher searcher) throws IOException {
+      Query q = mainQuery.rewrite(searcher);
       if (q.equals(mainQuery)) {
-        return super.rewrite(reader);
+        return super.rewrite(searcher);
       } else {
         return clone().wrap(q);
       }

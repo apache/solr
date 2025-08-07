@@ -50,7 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.logout
+import org.apache.solr.ui.generated.resources.action_logout
 import org.apache.solr.ui.generated.resources.nav_cluster
 import org.apache.solr.ui.generated.resources.nav_collections
 import org.apache.solr.ui.generated.resources.nav_configsets
@@ -69,12 +69,14 @@ import org.jetbrains.compose.resources.stringResource
  * sections.
  *
  * @param onNavigate Navigation handler function.
+ * @param onLogout Logout handler function.
  * @param selectedItem The currently selected navigation item.
  * @param modifier Modifier to apply to the root composable.
  */
 @Composable
 fun NavigationSideBar(
     onNavigate: (MainMenu) -> Unit,
+    onLogout: () -> Unit,
     selectedItem: MainMenu? = null,
     modifier: Modifier = Modifier,
 ) = Row(modifier = modifier) {
@@ -102,10 +104,10 @@ fun NavigationSideBar(
 
             // TODO Add condition for displaying logout button if user identity / auth present
             MenuElement(
-                text = stringResource(Res.string.logout),
+                text = stringResource(Res.string.action_logout),
                 imageVector = Icons.AutoMirrored.Rounded.Logout,
                 modifier = Modifier.fillMaxWidth(),
-                onClick = {}, // TODO Call logout on auth component
+                onClick = onLogout,
             )
         }
     }

@@ -45,9 +45,9 @@ public class LinkedHashMapWriter<V> extends LinkedHashMap<String, V> implements 
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public Object _get(String path, Object def) {
-    if (path.indexOf('/') == -1) return getOrDefault(path, (V) def);
-    return MapWriter.super._get(path, def);
+  public Object _get(String path) {
+    if (path.indexOf('/') == -1) return get(path);
+    return MapWriter.super._get(path);
   }
 
   @Override

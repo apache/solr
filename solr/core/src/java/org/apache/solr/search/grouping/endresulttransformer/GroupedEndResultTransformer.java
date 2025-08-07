@@ -73,16 +73,17 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         FieldType groupFieldType = groupField.getType();
         for (GroupDocs<BytesRef> group : topGroups.groups) {
           SimpleOrderedMap<Object> groupResult = new SimpleOrderedMap<>();
-          if (group.groupValue != null) {
+          if (group.groupValue() != null) {
             // use createFields so that fields having doc values are also supported
-            List<IndexableField> fields = groupField.createFields(group.groupValue.utf8ToString());
+            List<IndexableField> fields =
+                groupField.createFields(group.groupValue().utf8ToString());
             if (fields != null && !fields.isEmpty()) {
               groupResult.add("groupValue", groupFieldType.toObject(fields.get(0)));
             } else {
               throw new SolrException(
                   ErrorCode.INVALID_STATE,
                   "Couldn't create schema field for grouping, group value: "
-                      + group.groupValue.utf8ToString()
+                      + group.groupValue().utf8ToString()
                       + ", field: "
                       + groupField);
             }
@@ -90,13 +91,13 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
             groupResult.add("groupValue", null);
           }
           SolrDocumentList docList = new SolrDocumentList();
-          assert group.totalHits.relation == TotalHits.Relation.EQUAL_TO;
-          docList.setNumFound(group.totalHits.value);
-          if (!Float.isNaN(group.maxScore)) {
-            docList.setMaxScore(group.maxScore);
+          assert group.totalHits().relation() == TotalHits.Relation.EQUAL_TO;
+          docList.setNumFound(group.totalHits().value());
+          if (!Float.isNaN(group.maxScore())) {
+            docList.setMaxScore(group.maxScore());
           }
           docList.setStart(withinGroupSortSpec.getOffset());
-          retrieveAndAdd(docList, solrDocumentSource, group.scoreDocs);
+          retrieveAndAdd(docList, solrDocumentSource, group.scoreDocs());
           groupResult.add("doclist", docList);
           groups.add(groupResult);
         }
@@ -108,8 +109,8 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         command.add("matches", queryCommandResult.getMatches());
         SolrDocumentList docList = new SolrDocumentList();
         TopDocs topDocs = queryCommandResult.getTopDocs();
-        assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
-        docList.setNumFound(topDocs.totalHits.value);
+        assert topDocs.totalHits.relation() == TotalHits.Relation.EQUAL_TO;
+        docList.setNumFound(topDocs.totalHits.value());
         if (!Float.isNaN(queryCommandResult.getMaxScore())) {
           docList.setMaxScore(queryCommandResult.getMaxScore());
         }
