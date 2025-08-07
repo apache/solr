@@ -137,6 +137,8 @@ Deprecation Removals
 
 * SOLR-17779: Removed obsolete 'roles' and 'numShards' core properties, which were persisted with but unused (Pierre Salagnac).
 
+* SOLR-17839: Removed PreAnalyzedFields (Ishan Chattopadhyaya)
+
 Dependency Upgrades
 ---------------------
 

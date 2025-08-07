@@ -116,6 +116,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * EnumField has been removed.  Users should migrate to the `EnumFieldType` implementation.
 
+* PreAnalyzedField and PreAnalyzedUpdateProcessor have been removed due to incompatibility with Lucene 10 (SOLR-17839).
+
 
 === Security
 
