@@ -25,7 +25,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.DenseVectorField;
+import org.apache.solr.schema.neural.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;

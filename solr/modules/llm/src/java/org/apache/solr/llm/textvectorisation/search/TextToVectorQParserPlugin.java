@@ -31,7 +31,7 @@ import org.apache.solr.llm.textvectorisation.store.rest.ManagedTextToVectorModel
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
-import org.apache.solr.schema.DenseVectorField;
+import org.apache.solr.schema.neural.DenseVectorField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;

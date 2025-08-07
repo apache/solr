@@ -27,7 +27,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ByteVectorSimilarityFunction;
 import org.apache.lucene.queries.function.valuesource.FloatVectorSimilarityFunction;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.schema.DenseVectorField;
+import org.apache.solr.schema.neural.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 

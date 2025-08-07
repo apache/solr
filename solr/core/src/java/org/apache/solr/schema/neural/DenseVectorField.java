@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
+package org.apache.solr.schema.neural;
 
 import static java.util.Optional.ofNullable;
 import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
@@ -44,6 +44,9 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.schema.FloatPointField;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;

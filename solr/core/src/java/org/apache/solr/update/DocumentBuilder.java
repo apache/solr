@@ -30,7 +30,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.schema.CopyField;
-import org.apache.solr.schema.DenseVectorField;
+import org.apache.solr.schema.neural.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
