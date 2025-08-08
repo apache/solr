@@ -37,6 +37,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryResult;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
 
@@ -201,10 +202,11 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
     DocList combinedDocList = combinedRankedList.getDocList();
 
     DocIterator iterator = combinedDocList.iterator();
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     for (int i = 0; i < combinedDocList.size(); i++) {
       int docId = iterator.nextDoc();
       Integer[] rankPerQuery = docIdToRanks.get(docId);
-      Document doc = searcher.doc(docId);
+      Document doc = docFetcher.doc(docId);
       String docUniqueKey = schema.printableUniqueKey(doc);
       List<Explanation> originalExplanations = new ArrayList<>(queryKeys.length);
       for (int queryIndex = 0; queryIndex < queryKeys.length; queryIndex++) {
