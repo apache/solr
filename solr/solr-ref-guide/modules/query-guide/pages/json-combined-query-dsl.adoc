@@ -1,0 +1,113 @@
+= JSON Combined Query DSL
+:tabs-sync-option:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Combined Query feature aims to execute multiple queries of multiple kinds across multiple shards of a collection and combine their result basis an algorithm (like Reciprocal Rank Fusion).
+It is extending JSON Query DSL ultimately enabling Hybrid Search.
+
+[NOTE]
+====
+This feature is currently unsupported for non-distributed and grouping query.
+====
+
+== Query DSL Structure
+The query structure is similar to JSON Query DSL except for how multiple queries are defined along with their parameters.
+
+* Multiple queries can be defined under the `queries` key by providing their name with the same syntax as a single query is defined with the key `query`.
+* In addition to the other supported parameters, there are several parameters which can be defined under `params` key as below:
+`combiner.enable` | Default: `false`::
+   Enables the combined query mode when set to `true`.
+`combiner.query`::
+   The list of queries to be executed as defined in the `queries` key. Example: `["query1", "query2"]`
+`combiner.algorithm` | Default: `rrf`::
+   The algorithm to be used for combining the results. Reciprocal Rank Fusion (RRF) is the in-built fusion algorithm.
+   Any other algorithm can be configured using xref:json-combined-query-dsl.adoc#combiner-algorithm-plugin[plugin].
+`combiner.rrf.k` | Default: `60`::
+   The k parameter in the RRF algorithm.
+
+=== Example
+
+Below is a sample JSON query payload:
+
+```
+{
+    "queries": {
+        "lexical1": {
+            "lucene": {
+                "query": "title:sales"
+            }
+        },
+        "lexical2": {
+            "lucene": {
+                "query": "title:report"
+            }
+        },
+        "vector": {
+            "knn": {
+                "f": "vector",
+                "topK" :5,
+                "query": "[0.1,-0.34,0.89,0.02]"
+            }
+        }
+    },
+    "limit": 5,
+    "fields": ["id", "score", "title"],
+    "params": {
+        "combiner": true,
+        "combiner.query": ["lexical1", "vector"],
+        "combiner.algorithm": "rrf",
+        "combiner.rrf.k": "15"
+    }
+}
+```
+
+== Search Handler Configuration
+
+Combined Query Feature has a separate handler with class `solr.CombinedQuerySearchHandler` which can be configured as below:
+
+```
+<requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
+<bool name="httpCaching">true</bool>
+.....
+</requestHandler>
+```
+
+The Search Handler also accepts parameters as below:
+
+`maxCombinerQueries`::
+  This parameter can be set to put upper limit check on the maximum number of queries can be executed defined in `combiner.query`.
+  It defaults to `5` if not set.
+
+=== Combiner Algorithm Plugin
+
+As mentioned xref:json-combined-query-dsl.adoc#query-dsl-structure[above], custom algorithms can be configured to combine the results across multiple queries.
+The Combined Query Search Handler definition takes parameter `combiners` where a custom class can be used to define the algorithm by giving a name and the parameters required.
+
+Example of the Search Handler as below:
+```
+<searchComponent class="solr.CombinedQueryComponent" name="combined_query">
+        <int name="maxCombinerQueries">2</int>
+        <lst name="combiners">
+            <lst name="customAlgorithm">
+                <str name="class">org.apache.solr.search.combine.CustomCombiner</str>
+                <int name="var1">35</int>
+                <str name="var2">customValue</str>
+            </lst>
+        </lst>
+    </searchComponent>
+```
