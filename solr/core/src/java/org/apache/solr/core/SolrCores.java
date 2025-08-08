@@ -257,12 +257,8 @@ public class SolrCores {
       cores.put(n1, c0);
       c0.setName(n1);
       c1.setName(n0);
-
-      container
-          .getMetricManager()
-          .swapRegistries(
-              c0.getCoreMetricManager().getRegistryName(),
-              c1.getCoreMetricManager().getRegistryName());
+      c0.getCoreMetricManager().reregisterCoreMetrics();
+      c1.getCoreMetricManager().reregisterCoreMetrics();
     }
   }
 

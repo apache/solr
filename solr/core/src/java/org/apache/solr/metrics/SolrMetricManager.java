@@ -629,14 +629,7 @@ public class SolrMetricManager {
    * @param name registry name
    * @return true if this name points to a registry that already exists, false otherwise
    */
-  // TODO SOLR-17458: We may not need
   public boolean hasRegistry(String name) {
-    Set<String> names = registryNames();
-    name = enforcePrefix(name);
-    return names.contains(name);
-  }
-
-  public boolean hasMeterProvider(String name) {
     return meterProviderAndReaders.containsKey(enforcePrefix(name));
   }
 
@@ -755,66 +748,13 @@ public class SolrMetricManager {
    *
    * @param registry name of the registry to remove
    */
-  // TODO SOLR-17458: You can't delete OTEL meters
   public void removeRegistry(String registry) {
-    // NOCOMMIT Remove all closing Dropwizard registries
-    // close any reporters for this registry first
-    closeReporters(registry, null);
-    // make sure we use a name with prefix
-    registry = enforcePrefix(registry);
-    if (isSharedRegistry(registry)) {
-      SharedMetricRegistries.remove(registry);
-    } else {
-      swapLock.lock();
-      try {
-        registries.remove(registry);
-      } finally {
-        swapLock.unlock();
-      }
-    }
     meterProviderAndReaders.computeIfPresent(
-        registry,
+        enforcePrefix(registry),
         (key, meterAndReader) -> {
           meterAndReader.sdkMeterProvider().close();
           return null;
         });
-  }
-
-  /**
-   * Swap registries. This is useful eg. during {@link org.apache.solr.core.SolrCore} rename or swap
-   * operations. NOTE: this operation is not supported for shared registries.
-   *
-   * @param registry1 source registry
-   * @param registry2 target registry. Note: when used after core rename the target registry doesn't
-   *     exist, so the swap operation will only rename the existing registry without creating an
-   *     empty one under the previous name.
-   */
-  // NOCOMMIT SOLR-17458: Don't think we need
-  public void swapRegistries(String registry1, String registry2) {
-    registry1 = enforcePrefix(registry1);
-    registry2 = enforcePrefix(registry2);
-    if (isSharedRegistry(registry1) || isSharedRegistry(registry2)) {
-      throw new UnsupportedOperationException(
-          "Cannot swap shared registry: " + registry1 + ", " + registry2);
-    }
-    swapLock.lock();
-    try {
-      MetricRegistry from = registries.get(registry1);
-      MetricRegistry to = registries.get(registry2);
-      if (from == to) {
-        return;
-      }
-      MetricRegistry reg1 = registries.remove(registry1);
-      MetricRegistry reg2 = registries.remove(registry2);
-      if (reg2 != null) {
-        registries.put(registry1, reg2);
-      }
-      if (reg1 != null) {
-        registries.put(registry2, reg1);
-      }
-    } finally {
-      swapLock.unlock();
-    }
   }
 
   /**
@@ -1237,6 +1177,7 @@ public class SolrMetricManager {
    * @param group selected group, not null
    * @param registryNames optional child registry name elements
    */
+  // NOCOMMIT: Come back and cleanup and remove all reporters code
   public void loadReporters(
       PluginInfo[] pluginInfos,
       SolrResourceLoader loader,
