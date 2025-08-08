@@ -151,7 +151,7 @@ kotlinx-coroutines = "1.10.1"
 kotlinx-datetime = "0.6.2"
 kotlinx-serialization = "1.8.0"
 ktor = "3.2.2"
-langchain4j = "0.35.0"
+langchain4j = "0.36.2"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "0.8.4"
