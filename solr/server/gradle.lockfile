@@ -104,6 +104,7 @@ org.apache.zookeeper:zookeeper-jute:3.9.3=jarValidation,runtimeClasspath,solrCor
 org.apache.zookeeper:zookeeper:3.9.3=jarValidation,runtimeClasspath,solrCore
 org.checkerframework:checker-qual:3.44.0=annotationProcessor,errorprone,jarValidation,runtimeClasspath,solrCore,testAnnotationProcessor
 org.codehaus.woodstox:stax2-api:4.2.2=jarValidation,runtimeClasspath,solrCore
+org.eclipse.jetty.ee10:jetty-ee10-proxy:12.0.19=jarValidation,runtimeClasspath,solrCore
 org.eclipse.jetty.ee10:jetty-ee10-servlet:12.0.19=jarValidation,runtimeClasspath,serverLib
 org.eclipse.jetty.ee10:jetty-ee10-servlets:12.0.19=jarValidation,runtimeClasspath,serverLib
 org.eclipse.jetty.ee10:jetty-ee10-webapp:12.0.19=jarValidation,runtimeClasspath,serverLib
