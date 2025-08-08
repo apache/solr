@@ -553,7 +553,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     assert this.name != null;
     assert coreDescriptor.getCloudDescriptor() == null : "Cores are not renamed in SolrCloud";
     this.name = Objects.requireNonNull(v);
-    coreMetricManager.afterCoreRename();
   }
 
   /**
