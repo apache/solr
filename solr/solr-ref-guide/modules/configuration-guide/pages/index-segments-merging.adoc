@@ -221,7 +221,7 @@ This must be less than `maxMergeCount`.
 |===
 +
 A Boolean value (`true` or `false`) to explicitly control I/O throttling.
-By default throttling is enabled and the CMS will limit I/O throughput when merging to leave other (search, indexing) some room.
+By default throttling is disabled and the CMS will not limit I/O throughput when merging to leave other (search, indexing) some room.
 
 .Example: Dynamic defaults
 [source,xml]
