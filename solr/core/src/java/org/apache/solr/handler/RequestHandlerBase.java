@@ -250,11 +250,6 @@ public abstract class RequestHandlerBase
       numTimeouts = new AttributedLongCounter(timeoutRequestMetric, attributes);
 
       requestTimes = new AttributedLongTimer(requestTimeMetric, attributes);
-      // NOCOMMIT: Temporary to see metrics
-      requests.add(0L);
-      numTimeouts.add(0L);
-      numClientErrors.add(0L);
-      numServerErrors.add(0L);
     }
   }
 

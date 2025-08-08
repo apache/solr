@@ -26,6 +26,7 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
+import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
 import static org.apache.solr.search.SolrIndexSearcher.EXECUTOR_MAX_CPU_THREADS;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
@@ -899,10 +900,12 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       solrClientCache.setDefaultZKHost(getZkController().getZkServerAddress());
       // initialize ZkClient metrics
-      // NOCOMMIT SOLR-17458: Add Otel
       zkSys
           .getZkMetricsProducer()
-          .initializeMetrics(solrMetricsContext, Attributes.empty(), "zkClient");
+          .initializeMetrics(
+              solrMetricsContext,
+              Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CONTAINER.toString()),
+              "zkClient");
       pkiAuthenticationSecurityBuilder =
           new PKIAuthenticationPlugin(
               this,

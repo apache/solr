@@ -281,7 +281,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
   private Double getSelectRequestCount(SolrCore core) {
     var labels =
-        SolrMetricTestUtils.getCloudLabelsBase(core)
+        SolrMetricTestUtils.newCloudLabelsBuilder(core)
             .label("category", "QUERY")
             .label("handler", "/select")
             .label("internal", "false")
