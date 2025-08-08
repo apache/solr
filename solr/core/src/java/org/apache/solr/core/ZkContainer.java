@@ -174,7 +174,7 @@ public class ZkContainer {
                     });
 
                 ctx.observableLongCounter(
-                    "solr_zk_bytes_read",
+                    "solr_zk_read",
                     "Total bytes read from ZooKeeper",
                     measurement -> {
                       measurement.record(metricsListener.getBytesRead(), attributes);
@@ -189,7 +189,7 @@ public class ZkContainer {
                     });
 
                 ctx.observableLongCounter(
-                    "solr_zk_bytes_written_total",
+                    "solr_zk_written",
                     "Total bytes written to ZooKeeper",
                     measurement -> {
                       measurement.record(metricsListener.getBytesWritten());
@@ -204,14 +204,14 @@ public class ZkContainer {
                     });
 
                 ctx.observableLongCounter(
-                    "solr_zk_child_fetches_total",
+                    "solr_zk_child_fetches",
                     "Total number of ZooKeeper child node fetches",
                     measurement -> {
                       measurement.record(metricsListener.getChildFetches());
                     });
 
                 ctx.observableLongCounter(
-                    "solr_zk_cumulative_children_fetched_total",
+                    "solr_zk_cumulative_children_fetched",
                     "Total cumulative children fetched count",
                     measurement -> {
                       measurement.record(metricsListener.getCumulativeChildrenFetched());
