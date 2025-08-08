@@ -227,6 +227,8 @@ Bug Fixes
 * SOLR-17789: When Solr forwards/proxies requests to another node that can service the request, it needs to pass authorization headers.
   (Timo Crabbé)
 
+* SOLR-17837: PULL replica nodes could be marked as "preferredLeader" by BALANCESHARDUNIQUE despite never being able to be elected leader (Kevin Liang)
+
 Dependency Upgrades
 ---------------------
 (No changes)
