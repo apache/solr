@@ -27,12 +27,7 @@ develocity {
     buildScan {
         uploadInBackground = !isCIBuild
 
-        publishing.onlyIf { buildScan ->
-          println "Entered into build scan module..."
-          println "buildScan: ${buildScan}"
-          println "Develocity Authenticated: ${buildScan.authenticated}"
-          buildScan.authenticated
-        }
+        publishing.onlyIf { it.authenticated }
         obfuscation {
             ipAddresses { addresses -> addresses.collect { address -> "0.0.0.0"} }
         }
