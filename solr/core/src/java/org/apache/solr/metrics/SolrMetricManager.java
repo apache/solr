@@ -633,6 +633,13 @@ public class SolrMetricManager {
     return meterProviderAndReaders.containsKey(enforcePrefix(name));
   }
 
+  // NOCOMMIT: Used in filtering. Will remove later
+  public boolean hasDropwizardRegistry(String name) {
+    Set<String> names = registryNames();
+    name = enforcePrefix(name);
+    return names.contains(name);
+  }
+
   /**
    * Return set of existing registry names that match a regex pattern
    *
