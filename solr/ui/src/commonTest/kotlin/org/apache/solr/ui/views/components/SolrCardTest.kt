@@ -34,7 +34,7 @@ class SolrCardTest {
             SolrCard {
                 Text(
                     text = "My Text",
-                    modifier = Modifier.testTag("text")
+                    modifier = Modifier.testTag("text"),
                 )
             }
         }

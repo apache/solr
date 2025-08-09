@@ -27,5 +27,5 @@ val isErrorSemantics = SemanticsMatcher(
     description = "Node contains error",
     matcher = { node ->
         node.config[SemanticsProperties.Error].isNotEmpty()
-    }
+    },
 )

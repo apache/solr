@@ -33,4 +33,4 @@ class UnauthorizedException(
     val url: Url? = null,
     val methods: List<AuthMethod> = emptyList(),
     message: String? = null,
-): Exception(message)
+) : Exception(message)

@@ -29,13 +29,14 @@ import org.apache.solr.ui.views.theme.SolrTheme
  * This preview container can be used for applying the basic app theme on existing components.
  */
 @Composable
-fun PreviewContainer(content: @Composable () -> Unit) {
-    SolrTheme(useDarkTheme = false) {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            Surface(
-                modifier = Modifier.padding(16.dp),
-                content = content,
-            )
-        }
+fun PreviewContainer(
+    modifier: Modifier = Modifier.fillMaxSize(),
+    content: @Composable () -> Unit,
+) = SolrTheme(useDarkTheme = false) {
+    Surface(modifier = modifier) {
+        Surface(
+            modifier = Modifier.padding(16.dp),
+            content = content,
+        )
     }
 }

@@ -23,4 +23,6 @@ import com.arkivanov.decompose.GenericComponentContext
  * The application component context that provides basic functionality to all components, including
  * a lifecycle, state preservation, navigation handling and coroutine contexts.
  */
-interface AppComponentContext : GenericComponentContext<AppComponentContext>, CoroutineContextOwner
+interface AppComponentContext :
+    GenericComponentContext<AppComponentContext>,
+    CoroutineContextOwner

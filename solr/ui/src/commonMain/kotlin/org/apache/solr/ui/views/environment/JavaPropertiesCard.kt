@@ -47,7 +47,7 @@ internal fun JavaPropertiesCard(
     modifier: Modifier = Modifier,
 ) = SolrCard(
     modifier = modifier,
-    verticalArrangement = Arrangement.spacedBy(16.dp)
+    verticalArrangement = Arrangement.spacedBy(16.dp),
 ) {
     Text(
         text = "Java Properties",
@@ -56,7 +56,7 @@ internal fun JavaPropertiesCard(
     )
     Column(
         modifier = Modifier.fillMaxWidth()
-            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant))
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)),
     ) {
         properties.forEachIndexed { index, property ->
             JavaPropertyEntry(
@@ -84,7 +84,7 @@ private fun JavaPropertyEntry(
     modifier = modifier.background(
         MaterialTheme.colorScheme.surfaceColorAtElevation(
             if (isOdd) 1.dp else 0.dp,
-        )
+        ),
     ).padding(horizontal = 8.dp, vertical = 4.dp),
 ) {
     Text(
