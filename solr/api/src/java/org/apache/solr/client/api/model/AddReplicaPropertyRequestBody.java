@@ -27,7 +27,9 @@ public class AddReplicaPropertyRequestBody {
     this.value = value;
   }
 
-  @Schema(description = "The value to assign to the property.", required = true)
+  @Schema(
+      description = "The value to assign to the property.",
+      requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("value")
   public String value;
 
