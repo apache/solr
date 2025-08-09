@@ -25,6 +25,7 @@ import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import io.prometheus.metrics.model.snapshots.SummarySnapshot;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -276,9 +277,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(1, values.size());
     assertNotNull(values.get("solr.node"));
     values = (NamedList<?>) values.get("solr.node");
-    assertEquals(27, values.size());
+    assertEquals(15, values.size());
     assertNotNull(values.get("CONTAINER.cores.lazy")); // this is a gauge node
-    assertNotNull(values.get("CONTAINER.threadPool.coreContainerWorkExecutor.completed"));
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
 
     resp = new SolrQueryResponse();
@@ -300,8 +300,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = (NamedList<?>) values.get("metrics");
     assertNotNull(values.get("solr.node"));
     values = (NamedList<?>) values.get("solr.node");
-    assertEquals(7, values.size());
-    assertNotNull(values.get("CONTAINER.threadPool.coreContainerWorkExecutor.completed"));
+    assertEquals(5, values.size());
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
 
     resp = new SolrQueryResponse();
@@ -732,12 +731,12 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(actualSnapshots);
 
     MetricSnapshot actualSnapshot =
-        getMetricSnapshot(actualSnapshots, "solr_metrics_core_average_request_time");
-    GaugeSnapshot.GaugeDataPointSnapshot actualGaugeDataPoint =
-        getGaugeDatapointSnapshot(
+        getMetricSnapshot(actualSnapshots, "solr_metrics_core_request_time_ms");
+    SummarySnapshot.SummaryDataPointSnapshot actualSummaryDataPoint =
+        getSummaryDataPointSnapshot(
             actualSnapshot,
             Labels.of("category", "QUERY", "core", "collection1", "handler", "/select[shard]"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+    assertEquals(0, (float) actualSummaryDataPoint.getCount(), 0);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_requests");
     CounterSnapshot.CounterDataPointSnapshot actualCounterDataPoint =
@@ -755,7 +754,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(0, actualCounterDataPoint.getValue(), 0);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_cache");
-    actualGaugeDataPoint =
+    GaugeSnapshot.GaugeDataPointSnapshot actualGaugeDataPoint =
         getGaugeDatapointSnapshot(
             actualSnapshot,
             Labels.of("cacheType", "fieldValueCache", "core", "collection1", "item", "hits"));
@@ -766,13 +765,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
         getCounterDatapointSnapshot(
             actualSnapshot,
             Labels.of("item", "default", "core", "collection1", "type", "SolrFragmenter"));
-    assertEquals(0, actualCounterDataPoint.getValue(), 0);
-
-    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_requests_time");
-    actualCounterDataPoint =
-        getCounterDatapointSnapshot(
-            actualSnapshot,
-            Labels.of("category", "QUERY", "core", "collection1", "handler", "/select[shard]"));
     assertEquals(0, actualCounterDataPoint.getValue(), 0);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_searcher_documents");
@@ -797,11 +789,11 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(0, actualGaugeDataPoint.getValue(), 0);
 
     actualSnapshot =
-        getMetricSnapshot(actualSnapshots, "solr_metrics_core_average_searcher_warmup_time");
-    actualGaugeDataPoint =
-        getGaugeDatapointSnapshot(
+        getMetricSnapshot(actualSnapshots, "solr_metrics_core_searcher_warmup_time_ms");
+    actualSummaryDataPoint =
+        getSummaryDataPointSnapshot(
             actualSnapshot, Labels.of("core", "collection1", "type", "warmup"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+    assertEquals(0, (float) actualSummaryDataPoint.getCount(), 0);
 
     handler.close();
   }
@@ -1179,6 +1171,15 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   private CounterSnapshot.CounterDataPointSnapshot getCounterDatapointSnapshot(
       MetricSnapshot snapshot, Labels labels) {
     return (CounterSnapshot.CounterDataPointSnapshot)
+        snapshot.getDataPoints().stream()
+            .filter(ss -> ss.getLabels().hasSameValues(labels))
+            .findAny()
+            .get();
+  }
+
+  private SummarySnapshot.SummaryDataPointSnapshot getSummaryDataPointSnapshot(
+      MetricSnapshot snapshot, Labels labels) {
+    return (SummarySnapshot.SummaryDataPointSnapshot)
         snapshot.getDataPoints().stream()
             .filter(ss -> ss.getLabels().hasSameValues(labels))
             .findAny()
