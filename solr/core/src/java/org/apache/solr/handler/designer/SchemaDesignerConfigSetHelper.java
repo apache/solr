@@ -500,7 +500,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
                 try (InputStream is = entry.getInputStream()) {
                   docs.set((List<SolrInputDocument>) Utils.fromJavabin(is));
                 } catch (IOException e) {
-                  log.error("Error reading file content for path " + path, e);
+                  log.error("Error reading file content at path {}", path, e);
                 }
               },
               true);
