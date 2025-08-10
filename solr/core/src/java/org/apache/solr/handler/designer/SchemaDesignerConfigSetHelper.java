@@ -51,6 +51,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -476,8 +477,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   String getSampleDocsPathFromConfigSet(String configSet) {
-    String path = "schemadesigner" + "/" + configSet + "_sampledocs.javabin";
-    return path;
+    return "schemadesigner" + "/" + configSet + "_sampledocs.javabin";
   }
 
   void deleteStoredSampleDocs(String configSet) {
@@ -487,12 +487,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     cc.getFileStore().delete(path);
   }
 
-  // I don't like this guy just hanging out here to support retrieveSampleDocs.
-  List<SolrInputDocument> docs = Collections.emptyList();
 
   @SuppressWarnings("unchecked")
   List<SolrInputDocument> retrieveSampleDocs(final String configSet) throws IOException {
-
+    AtomicReference<List<SolrInputDocument>> docs = new AtomicReference<>(List.of());
     String path = getSampleDocsPathFromConfigSet(configSet);
 
     try {
@@ -501,7 +499,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
               path,
               entry -> {
                 try (InputStream is = entry.getInputStream()) {
-                  docs = (List<SolrInputDocument>) Utils.fromJavabin(is);
+                  docs.set((List<SolrInputDocument>) Utils.fromJavabin(is));
                 } catch (IOException e) {
                   log.error("Error reading file content", e);
                 }
@@ -511,7 +509,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       log.info("File at path {} not found.", path);
     }
 
-    return docs != null ? docs : Collections.emptyList();
+    return docs.get();
   }
 
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {

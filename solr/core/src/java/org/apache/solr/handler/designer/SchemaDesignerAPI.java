@@ -86,8 +86,7 @@ import org.slf4j.LoggerFactory;
 /** All V2 APIs have a prefix of /api/schema-designer/ */
 public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
-  private static final Set<String> excludeConfigSetNames =
-      new HashSet<>(Arrays.asList(DEFAULT_CONFIGSET_NAME));
+  private static final Set<String> excludeConfigSetNames = Set.of(DEFAULT_CONFIGSET_NAME);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
