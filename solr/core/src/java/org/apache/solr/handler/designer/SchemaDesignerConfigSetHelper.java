@@ -487,7 +487,6 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     cc.getFileStore().delete(path);
   }
 
-
   @SuppressWarnings("unchecked")
   List<SolrInputDocument> retrieveSampleDocs(final String configSet) throws IOException {
     AtomicReference<List<SolrInputDocument>> docs = new AtomicReference<>(List.of());
