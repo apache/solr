@@ -19,11 +19,6 @@ package org.apache.solr.servlet;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
@@ -56,8 +51,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.Header;
@@ -107,7 +100,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
@@ -301,8 +293,6 @@ public class HttpSolrCall {
               return;
             }
           }
-          // core is not available locally or remotely
-          autoCreateSystemColl(collectionName);
           if (action != null) return;
         }
       }
@@ -374,50 +364,6 @@ public class HttpSolrCall {
       // don't propagate exception on purpose
     }
     return logic.get();
-  }
-
-  protected void autoCreateSystemColl(String corename) throws Exception {
-    if (core == null
-        && SYSTEM_COLL.equals(corename)
-        && "POST".equals(req.getMethod())
-        && !cores.getZkController().getClusterState().hasCollection(SYSTEM_COLL)) {
-      log.info("Going to auto-create {} collection", SYSTEM_COLL);
-      SolrQueryResponse rsp = new SolrQueryResponse();
-      String repFactor =
-          String.valueOf(
-              Math.min(3, cores.getZkController().getClusterState().getLiveNodes().size()));
-      cores
-          .getCollectionsHandler()
-          .handleRequestBody(
-              new LocalSolrQueryRequest(
-                  null,
-                  new ModifiableSolrParams()
-                      .add(ACTION, CREATE.toString())
-                      .add(NAME, SYSTEM_COLL)
-                      .add(REPLICATION_FACTOR, repFactor)),
-              rsp);
-      if (rsp.getValues().get("success") == null) {
-        throw new SolrException(
-            ErrorCode.SERVER_ERROR,
-            "Could not auto-create "
-                + SYSTEM_COLL
-                + " collection: "
-                + Utils.toJSONString(rsp.getValues()));
-      }
-
-      try {
-        cores
-            .getZkController()
-            .getZkStateReader()
-            .waitForState(SYSTEM_COLL, 3, TimeUnit.SECONDS, Objects::nonNull);
-      } catch (TimeoutException e) {
-        throw new SolrException(
-            ErrorCode.SERVER_ERROR,
-            "Could not find " + SYSTEM_COLL + " collection even after 3 seconds");
-      }
-
-      action = RETRY;
-    }
   }
 
   /**
