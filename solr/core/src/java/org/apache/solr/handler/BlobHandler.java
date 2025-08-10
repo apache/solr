@@ -74,6 +74,10 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated Please use {@link org.apache.solr.filestore.FileStore}.
+ */
+@Deprecated(since = "9.10")
 public class BlobHandler extends RequestHandlerBase
     implements PluginInfoInitialized, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
