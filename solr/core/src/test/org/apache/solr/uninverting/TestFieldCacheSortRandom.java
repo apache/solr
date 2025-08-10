@@ -266,23 +266,25 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       }
 
       // For both STRING and STRING_VAL types in Lucene 10+, the internal sorting behavior
-      // has changed and can return different types (String vs BytesRef) depending on load conditions.
-      // The manual BytesRef.compareTo() used in this test doesn't reliably match the actual Lucene sort
-      // order under all conditions.
+      // has changed and can return different types (String vs BytesRef) depending on load
+      // conditions.
+      // The manual BytesRef.compareTo() used in this test doesn't reliably match the actual Lucene
+      // sort order under all conditions.
       // Instead, we validate that the sorting is working correctly by checking that:
       // 1. No exceptions are thrown during sorting
       // 2. Returned values are valid String, BytesRef or null
       // 3. The number of results matches expectations
-      // This ensures field cache sorting works without assuming specific sort implementation details.
+      // This ensures field cache sorting works without assuming specific sort implementation
+      // details.
       for (int hitIDX = 0; hitIDX < hits.scoreDocs.length; hitIDX++) {
         final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
         Object sortValue = fd.fields[0];
         assertTrue(
-            "Sort value should be String, BytesRef or null, but was: " + 
-            (sortValue == null ? "null" : sortValue.getClass().getSimpleName()),
+            "Sort value should be String, BytesRef or null, but was: "
+                + (sortValue == null ? "null" : sortValue.getClass().getSimpleName()),
             sortValue == null || sortValue instanceof BytesRef || sortValue instanceof String);
       }
-      
+
       // Skip exact order comparison for both STRING and STRING_VAL due to Lucene 10 changes
       continue;
     }
