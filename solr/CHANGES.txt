@@ -49,6 +49,8 @@ Improvements
 
 * SOLR-17739: Uploading a config sets with forbidden file types will produces a Exception. Previously it was just ignoring those files and logging a WARN. (Abhishek Umarjikar via Eric Pugh)
 
+* SOLR-17852: Migrate Schema Designer to use FileStore API instead of BlobHandler for persisting working data. (Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
