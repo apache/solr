@@ -269,8 +269,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       // has changed and can return different types (String vs BytesRef) depending on load
       // conditions.
       // The manual BytesRef.compareTo() used in this test doesn't reliably match the actual Lucene
-      // sort
-      // order under all conditions.
+      // sort order under all conditions.
       // Instead, we validate that the sorting is working correctly by checking that:
       // 1. No exceptions are thrown during sorting
       // 2. Returned values are valid String, BytesRef or null
