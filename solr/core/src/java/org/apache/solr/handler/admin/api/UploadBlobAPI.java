@@ -30,7 +30,10 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * <p>This API (POST /v2/collections/.system/blob/blobName) is analogous to the v1 POST
  * /solr/.system/blob/blobName API.
+ *
+ * @deprecated Please use {@link org.apache.solr.client.api.endpoint.ClusterFileStoreApis}.
  */
+@Deprecated(since = "9.10")
 public class UploadBlobAPI {
   private final BlobHandler blobHandler;
 

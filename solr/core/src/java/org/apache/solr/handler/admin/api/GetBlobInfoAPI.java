@@ -30,7 +30,10 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * <p>These APIs (GET /v2/collections/.system/blob/*) is analogous to the v1 GET
  * /solr/.system/blob/* APIs.
+ *
+ * @deprecated Please use {@link org.apache.solr.client.api.endpoint.ClusterFileStoreApis}.
  */
+@Deprecated(since = "9.10")
 public class GetBlobInfoAPI {
   private BlobHandler blobHandler;
 
