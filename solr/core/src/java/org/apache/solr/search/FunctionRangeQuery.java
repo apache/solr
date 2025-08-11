@@ -50,24 +50,16 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
   @Override
   public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
     Map<Object, Object> fcontext = ValueSource.newContext(searcher);
-    Weight weight = null;
-    try {
-      weight = rangeFilt.createWeight(searcher, ScoreMode.COMPLETE, 1);
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-    return new FunctionRangeCollector(fcontext, weight);
+    return new FunctionRangeCollector(fcontext);
   }
 
   class FunctionRangeCollector extends DelegatingCollector {
     final Map<Object, Object> fcontext;
-    final Weight weight;
     ValueSourceScorer valueSourceScorer;
     int maxdoc;
 
-    public FunctionRangeCollector(Map<Object, Object> fcontext, Weight weight) {
+    public FunctionRangeCollector(Map<Object, Object> fcontext) {
       this.fcontext = fcontext;
-      this.weight = weight;
     }
 
     @Override
