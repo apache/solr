@@ -17,11 +17,10 @@
 package org.apache.solr.metrics.otel;
 
 /**
- * Standard metric units for OpenTelemetry instruments based on UCUM (Unified Code
- * for Units of Measure).
+ * Standard metric units for OpenTelemetry instruments based on UCUM (Unified Code for Units of
+ * Measure).
  */
 public enum OtelUnit {
-  // Time units
   NANOSECONDS("ns"),
   MICROSECONDS("us"),
   MILLISECONDS("ms"),
@@ -30,7 +29,6 @@ public enum OtelUnit {
   HOURS("h"),
   DAYS("d"),
 
-  // Byte units
   BYTES("By"),
   KILOBYTES("kBy"),
   MEGABYTES("MBy"),

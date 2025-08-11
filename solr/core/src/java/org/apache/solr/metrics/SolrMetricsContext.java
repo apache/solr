@@ -178,6 +178,15 @@ public class SolrMetricsContext {
     return metricManager.doubleCounter(registryName, metricName, description, unit);
   }
 
+  public DoubleUpDownCounter doubleUpDownCounter(String metricName, String description) {
+    return doubleUpDownCounter(metricName, description, null);
+  }
+
+  public DoubleUpDownCounter doubleUpDownCounter(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.doubleUpDownCounter(registryName, metricName, description, unit);
+  }
+
   public DoubleHistogram doubleHistogram(String metricName, String description) {
     return metricManager.doubleHistogram(registryName, metricName, description, null);
   }
@@ -208,15 +217,6 @@ public class SolrMetricsContext {
 
   public DoubleGauge doubleGauge(String metricName, String description, OtelUnit unit) {
     return metricManager.doubleGauge(registryName, metricName, description, unit);
-  }
-
-  public DoubleUpDownCounter doubleUpDownCounter(String metricName, String description) {
-    return doubleUpDownCounter(metricName, description, null);
-  }
-
-  public DoubleUpDownCounter doubleUpDownCounter(
-      String metricName, String description, OtelUnit unit) {
-    return metricManager.doubleUpDownCounter(registryName, metricName, description, unit);
   }
 
   public ObservableLongGauge observableLongGauge(
