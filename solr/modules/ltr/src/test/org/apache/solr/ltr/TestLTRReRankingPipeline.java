@@ -120,7 +120,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       final SolrIndexSearcher searcher = solrQueryRequest.getSearcher();
       // first run the standard query
       TopDocs hits = searcher.search(bqBuilder.build(), 10);
-      assertEquals(2, hits.totalHits.value);
+      assertEquals(2, hits.totalHits.value());
       assertEquals("0", searcher.getDocFetcher().doc(hits.scoreDocs[0].doc).get("id"));
       assertEquals("1", searcher.getDocFetcher().doc(hits.scoreDocs[1].doc).get("id"));
 
@@ -171,7 +171,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
 
       // first run the standard query
       TopDocs hits = searcher.search(bqBuilder.build(), 10);
-      assertEquals(5, hits.totalHits.value);
+      assertEquals(5, hits.totalHits.value());
 
       assertEquals("0", searcher.getDocFetcher().doc(hits.scoreDocs[0].doc).get("id"));
       assertEquals("1", searcher.getDocFetcher().doc(hits.scoreDocs[1].doc).get("id"));
@@ -245,11 +245,13 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       LTRScoringQuery query = new LTRScoringQuery(ltrScoringModel);
       query.setRequest(solrQueryRequest);
       LTRScoringQuery.ModelWeight wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
-      LTRScoringQuery.ModelWeight.ModelScorer modelScr = wgt.scorer(null);
+      LTRScoringQuery.ModelWeight.ModelScorer modelScr = wgt.modelScorer(null);
       modelScr.getDocInfo().setOriginalDocScore(1f);
       for (final Scorable.ChildScorable feat : modelScr.getChildren()) {
         assertNotNull(
-            ((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
+            ((Feature.FeatureWeight.FeatureScorer) feat.child())
+                .getDocInfo()
+                .getOriginalDocScore());
       }
 
       features = makeFieldValueFeatures(new int[] {0, 1, 2}, "finalScore");
@@ -261,11 +263,13 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       query = new LTRScoringQuery(ltrScoringModel);
       query.setRequest(solrQueryRequest);
       wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
-      modelScr = wgt.scorer(null);
+      modelScr = wgt.modelScorer(null);
       modelScr.getDocInfo().setOriginalDocScore(1f);
       for (final Scorable.ChildScorable feat : modelScr.getChildren()) {
         assertNotNull(
-            ((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
+            ((Feature.FeatureWeight.FeatureScorer) feat.child())
+                .getDocInfo()
+                .getOriginalDocScore());
       }
     }
   }

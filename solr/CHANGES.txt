@@ -49,6 +49,8 @@ Improvements
 
 * SOLR-17739: Uploading a config sets with forbidden file types will produces a Exception. Previously it was just ignoring those files and logging a WARN. (Abhishek Umarjikar via Eric Pugh)
 
+* SOLR-17852: Migrate Schema Designer to use FileStore API instead of BlobHandler for persisting working data. (Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -137,10 +139,14 @@ Deprecation Removals
 
 * SOLR-17779: Removed obsolete 'roles' and 'numShards' core properties, which were persisted with but unused (Pierre Salagnac).
 
+* SOLR-17839: Removed PreAnalyzedFields (Ishan Chattopadhyaya)
+
 Dependency Upgrades
 ---------------------
 
 * SOLR-16984: Upgraded Jetty to 12 (Jakarta EE 10 namespace). Updated related dependencies including amazon-awssdk to 2.28.11. (Sanjay Dutt, David Smiley, Kevin Risden)
+
+* SOLR-17631: Upgrade to Lucene 10.2.1 (Ishan Chattopadhyaya, noble, Jason Gerlowski, Eric Pugh, janhoy, Christine Poerschke)
 
 Other Changes
 ---------------------
