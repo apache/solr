@@ -1172,7 +1172,13 @@ public class HttpSolrCall {
       return null;
     }
     try {
-      return SolrVersion.valueOf(header.substring(header.lastIndexOf(' ') + 1));
+      String userAgent = header.substring(header.lastIndexOf(' ') + 1);
+      if ("1.0".equals(userAgent)) {
+        userAgent = "1.0.0";
+      } else if ("2.0".equals(userAgent)) {
+        userAgent = "2.0.0";
+      }
+      return SolrVersion.valueOf(userAgent);
     } catch (Exception e) {
       // unexpected but let's not freak out
       assert false : e.toString();
