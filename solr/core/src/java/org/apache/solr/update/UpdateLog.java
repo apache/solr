@@ -79,6 +79,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrPaths;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -658,7 +659,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         (observableLongMeasurement -> {
           observableLongMeasurement.record(getTotalLogsSize(), baseAttributes);
         }),
-        "By");
+        OtelUnit.BYTES);
 
     // NOCOMMIT: Do we want to keep this? Metric was just state with the numeric enum value.
     // Without context this doesn't mean anything and can be very confusing. Maybe keep the numeric
