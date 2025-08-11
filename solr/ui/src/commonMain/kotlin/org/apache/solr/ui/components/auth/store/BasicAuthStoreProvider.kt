@@ -22,6 +22,7 @@ import com.arkivanov.mvikotlin.core.store.SimpleBootstrapper
 import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,8 +32,7 @@ import org.apache.solr.ui.components.auth.store.BasicAuthStore.State
 import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.errors.InvalidCredentialsException
 import org.apache.solr.ui.errors.UnauthorizedException
-import org.apache.solr.ui.errors.parseError
-import kotlin.coroutines.CoroutineContext
+import org.apache.solr.ui.utils.parseError
 
 class BasicAuthStoreProvider(
     private val storeFactory: StoreFactory,

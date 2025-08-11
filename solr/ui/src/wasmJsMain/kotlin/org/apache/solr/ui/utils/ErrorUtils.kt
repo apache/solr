@@ -15,31 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui
+package org.apache.solr.ui.utils
 
-import javax.swing.SwingUtilities
+import org.apache.solr.ui.errors.HostNotFoundException
 
-/**
- * Ensures that a code [block] is executed on the UI thread.
- */
-internal fun <T> runOnUiThread(block: () -> T): T {
-    if (SwingUtilities.isEventDispatchThread()) {
-        return block()
-    }
+actual fun parseError(error: Throwable): Throwable {
+    // In JavaScript the errors do not have any type to distinguish them, so we strongly
+    // rely on the error message.
+    if (error.message?.contains(other = "Fail to fetch") == true) return HostNotFoundException(cause = error)
 
-    var error: Throwable? = null
-    var result: T? = null
-
-    SwingUtilities.invokeAndWait {
-        try {
-            result = block()
-        } catch (e: Throwable) {
-            error = e
-        }
-    }
-
-    error?.also { throw it }
-
-    @Suppress("UNCHECKED_CAST")
-    return result as T
+    // fallback
+    return error
 }

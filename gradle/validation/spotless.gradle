@@ -87,6 +87,21 @@ configure(allprojects) { prj ->
     }
   }
 
+  // Configure spotless for kotlin sources
+  plugins.withId("org.jetbrains.kotlin.multiplatform") {
+    prj.apply plugin: libs.plugins.diffplug.spotless.get().pluginId
+
+    spotless {
+      kotlin {
+        // Apply to all Kotlin and Kotlin DSL files
+        target "**/*.kt", "**/*.kts"
+
+        ktlint(libs.versions.ktlint.get())
+            .customRuleSets([libs.nlopez.compose.ktlintrules.get().toString()])
+      }
+    }
+  }
+
   // Emit a custom message about how to fix formatting errors.
   tasks.matching { task -> task.name == "spotlessJavaCheck" }.configureEach {
     it.runToFixMessage.set("\nIMPORTANT: run the top-level './gradlew tidy' to format code automatically (see help/formatting.txt for more info).")
