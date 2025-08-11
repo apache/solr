@@ -32,7 +32,6 @@
 *** xref:currencies-exchange-rates.adoc[]
 *** xref:date-formatting-math.adoc[]
 *** xref:enum-fields.adoc[]
-*** xref:external-files-processes.adoc[]
 *** xref:field-properties-by-use-case.adoc[]
 ** xref:copy-fields.adoc[]
 ** xref:dynamic-fields.adoc[]

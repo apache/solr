@@ -380,7 +380,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         BooleanQuery.Builder newQ = new BooleanQuery.Builder();
         newQ.setMinimumNumberShouldMatch(boostedQuery.getMinimumNumberShouldMatch());
         for (BooleanClause clause : boostedQuery) {
-          Query q = clause.getQuery();
+          Query q = clause.query();
           float originalBoost = 1f;
           if (q instanceof BoostQuery bq) {
             q = bq.getQuery();
@@ -390,8 +390,8 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           q =
               ((fieldBoost != null)
                   ? new BoostQuery(q, fieldBoost * originalBoost)
-                  : clause.getQuery());
-          newQ.add(q, clause.getOccur());
+                  : clause.query());
+          newQ.add(q, clause.occur());
         }
         boostedQuery = newQ.build();
       }
@@ -478,7 +478,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         if (maxTerms > -1 && output.size() >= maxTerms) {
           break;
         }
-        Query q = o.getQuery();
+        Query q = o.query();
         float boost = 1f;
         if (q instanceof BoostQuery bq) {
           q = bq.getQuery();

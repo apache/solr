@@ -85,13 +85,14 @@ class DefaultBasicAuthComponentTest {
     }
 
     @Test
-    fun `GIVEN valid credentials WHEN authenticate THEN OnAuthenticatedWithBasicAuth outputted`() = runTest {
+    fun `GIVEN valid credentials WHEN authenticate THEN Authenticated with BasicAuthMethod outputted`() = runTest {
         val engine = createMockEngine(authenticationResponseHandler)
         val outputs = mutableListOf<Output>()
 
         val component = createComponent(
             httpClient = HttpClient(engine),
             output = { outputs.add(it) },
+            method = method,
         )
         component.onChangeUsername(validUsername)
         component.onChangePassword(validPassword)

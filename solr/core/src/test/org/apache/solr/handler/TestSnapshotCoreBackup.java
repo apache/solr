@@ -452,7 +452,8 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
           Files.exists(backup.resolve(expectedSegmentsFileName)));
     }
     try (Directory dir = FSDirectory.open(backup)) {
-      TestUtil.checkIndex(dir, true, true, true, null);
+      // Lucene 10 changed CheckIndex levels from 0-3 to 1-3, so we use 1 (minimum level)
+      TestUtil.checkIndex(dir, 1, true, true, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
         assertEquals("numDocs in " + backup, numDocs, r.numDocs());
         if (null != expectedSegmentsFileName) {

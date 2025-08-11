@@ -20,6 +20,7 @@ import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.queryparser.xml.builders.PointRangeQueryBuilder;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.solr.legacy.LegacyNumericUtils;
@@ -112,7 +113,8 @@ public class LegacyNumericRangeQueryBuilder implements QueryBuilder {
                 (lowerTerm == null ? null : Integer.valueOf(lowerTerm)),
                 (upperTerm == null ? null : Integer.valueOf(upperTerm)),
                 lowerInclusive,
-                upperInclusive);
+                upperInclusive,
+                MultiTermQuery.CONSTANT_SCORE_REWRITE);
       } else if (type.equalsIgnoreCase("long")) {
         filter =
             LegacyNumericRangeQuery.newLongRange(
@@ -121,7 +123,8 @@ public class LegacyNumericRangeQueryBuilder implements QueryBuilder {
                 (lowerTerm == null ? null : Long.valueOf(lowerTerm)),
                 (upperTerm == null ? null : Long.valueOf(upperTerm)),
                 lowerInclusive,
-                upperInclusive);
+                upperInclusive,
+                MultiTermQuery.CONSTANT_SCORE_REWRITE);
       } else if (type.equalsIgnoreCase("double")) {
         filter =
             LegacyNumericRangeQuery.newDoubleRange(
