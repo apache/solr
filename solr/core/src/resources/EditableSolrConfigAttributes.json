@@ -48,5 +48,6 @@
   "requestDispatcher":{
      "requestParsers":{
       "multipartUploadLimitInKB":0,
-      "formdataUploadLimitInKB":0}}
+      "formdataUploadLimitInKB":0}
+  }
 }
