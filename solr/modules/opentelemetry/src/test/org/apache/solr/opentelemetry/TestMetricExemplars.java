@@ -79,14 +79,12 @@ public class TestMetricExemplars extends SolrCloudTestCase {
               .lines()
               .filter(
                   l ->
-                      l.startsWith("solr_metrics_core_requests_total")
+                      l.startsWith("solr_core_requests_total")
                           && l.contains("handler=\"/update\"")
                           && l.contains("collection=\"collection1\""))
               .findFirst()
               .orElseThrow(
-                  () ->
-                      new AssertionError(
-                          "Could not find /update solr_metrics_core_requests_total"));
+                  () -> new AssertionError("Could not find /update solr_core_requests_total"));
 
       String actualExemplarTrace = line.split("trace_id=\"")[1].split("\"")[0];
       assertEquals(actualExemplarTrace, expectedTrace);

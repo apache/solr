@@ -55,6 +55,9 @@ import org.slf4j.LoggerFactory;
  * {@link javax.management.openmbean.OpenType#ALLOWED_CLASSNAMES_LIST}, otherwise only their
  * toString() representation will be shown in JConsole.
  */
+// NOCOMMIT: This MetricMap appears to be a shim for MapWriter for responses and a way to shim
+// gauges into Dropwizard and JXM which is being removed. This should be removed completely as it is
+// no longer needed with OTEL
 public class MetricsMap implements Gauge<Map<String, Object>>, MapWriter, DynamicMBean {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
