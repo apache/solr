@@ -34,7 +34,6 @@ import java.util.concurrent.Semaphore;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
-import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -597,8 +596,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       private class SingleFeatureScorer extends FeatureTraversalScorer {
         private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
 
-        private SingleFeatureScorer(
-            List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+        private SingleFeatureScorer(List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
           this.featureScorers = featureScorers;
         }
 
