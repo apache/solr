@@ -597,8 +597,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       private class SingleFeatureScorer extends FeatureTraversalScorer {
         private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
 
-        private SingleFeatureScorer(
-            List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+        private SingleFeatureScorer(List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
           this.featureScorers = featureScorers;
         }
 

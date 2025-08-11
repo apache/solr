@@ -416,7 +416,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       final int n = ReaderUtil.subIndex(docid, leafContexts);
       final LeafReaderContext atomicContext = leafContexts.get(n);
       final int deBasedDoc = docid - atomicContext.docBase;
-      final LTRScoringQuery.ModelWeight.ModelScorer r = modelWeight.scorer(atomicContext);
+      final LTRScoringQuery.ModelWeight.ModelScorer r = modelWeight.modelScorer(atomicContext);
       if ((r == null) || (r.iterator().advance(deBasedDoc) != deBasedDoc)) {
         return new LTRScoringQuery.FeatureInfo[0];
       } else {
