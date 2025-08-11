@@ -198,7 +198,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
         assertTrue(
             SolrMetricTestUtils.getHistogramDatapoint(
                     core,
-                    "solr_core_leader_sync_time_milliseconds",
+                    "solr_core_sync_with_leader_time_milliseconds",
                     SolrMetricTestUtils.newCloudLabelsBuilder(core)
                         .label("category", "REPLICATION")
                         .build())
@@ -206,7 +206,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
         assertNull(
             SolrMetricTestUtils.getCounterDatapoint(
                 core,
-                "solr_core_leader_sync_errors",
+                "solr_core_sync_with_leader_sync_errors",
                 SolrMetricTestUtils.newCloudLabelsBuilder(core)
                     .label("category", "REPLICATION")
                     .build()));
