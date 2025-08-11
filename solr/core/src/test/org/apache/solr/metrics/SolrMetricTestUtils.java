@@ -27,6 +27,7 @@ import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
@@ -74,12 +75,7 @@ public final class SolrMetricTestUtils {
    * metric names to their expected increment values.
    */
   public static Map<String, Long> getRandomPrometheusMetrics(Random random) {
-    return getRandomPrometheusMetrics(random, random.nextBoolean());
-  }
-
-  public static Map<String, Long> getRandomPrometheusMetrics(
-      Random random, boolean shouldDefineMetrics) {
-    return shouldDefineMetrics
+    return random.nextBoolean()
         ? getRandomPrometheusMetricsWithReplacements(random, new HashMap<>())
         : null;
   }
@@ -87,7 +83,7 @@ public final class SolrMetricTestUtils {
   public static Map<String, Long> getRandomPrometheusMetricsWithReplacements(
       Random random, Map<String, Long> existing) {
     HashMap<String, Long> metrics = new HashMap<>();
-    ArrayList<String> existingKeys = new ArrayList<>(existing.keySet());
+    List<String> existingKeys = List.copyOf(existing.keySet());
 
     int numMetrics = TestUtil.nextInt(random, 1, MAX_ITERATIONS);
     for (int i = 0; i < numMetrics; ++i) {
@@ -98,7 +94,7 @@ public final class SolrMetricTestUtils {
               : TestUtil.randomSimpleString(random, 5, 10)
                   + SUFFIX; // must be simple string for JMX publishing
 
-      Long incrementValue = Math.abs(random.nextLong() % 1000) + 1;
+      Long incrementValue = TestUtil.nextLong(random, 1L, 1000L);
       metrics.put(name, incrementValue);
     }
 
@@ -107,6 +103,7 @@ public final class SolrMetricTestUtils {
 
   public static final String SUFFIX = "_testing";
 
+  // NOCOMMIT: This will get replaced by getRandomPrometheusMetricsWithReplacements
   public static Map<String, Counter> getRandomMetricsWithReplacements(
       Random random, Map<String, Counter> existing) {
     HashMap<String, Counter> metrics = new HashMap<>();
@@ -231,7 +228,7 @@ public final class SolrMetricTestUtils {
         core, metricName, labels, HistogramSnapshot.HistogramDataPointSnapshot.class);
   }
 
-  public static CounterSnapshot.CounterDataPointSnapshot getStandaloneSelectRequestsDatapoint(
+  public static CounterSnapshot.CounterDataPointSnapshot newStandaloneSelectRequestsDatapoint(
       SolrCore core) {
     return SolrMetricTestUtils.getCounterDatapoint(
         core,
@@ -243,7 +240,7 @@ public final class SolrMetricTestUtils {
             .build());
   }
 
-  public static CounterSnapshot.CounterDataPointSnapshot getCloudSelectRequestsDatapoint(
+  public static CounterSnapshot.CounterDataPointSnapshot newCloudSelectRequestsDatapoint(
       SolrCore core) {
     return SolrMetricTestUtils.getCounterDatapoint(
         core,
@@ -255,7 +252,7 @@ public final class SolrMetricTestUtils {
             .build());
   }
 
-  public static CounterSnapshot.CounterDataPointSnapshot getStandaloneUpdateRequestsDatapoint(
+  public static CounterSnapshot.CounterDataPointSnapshot newStandaloneUpdateRequestsDatapoint(
       SolrCore core) {
     return SolrMetricTestUtils.getCounterDatapoint(
         core,
@@ -267,7 +264,7 @@ public final class SolrMetricTestUtils {
             .build());
   }
 
-  public static CounterSnapshot.CounterDataPointSnapshot getCloudUpdateRequestsDatapoint(
+  public static CounterSnapshot.CounterDataPointSnapshot newCloudUpdateRequestsDatapoint(
       SolrCore core) {
     return SolrMetricTestUtils.getCounterDatapoint(
         core,

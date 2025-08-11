@@ -177,7 +177,8 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   public void testReregisterMetrics() {
     Random random = random();
 
-    Map<String, Long> initialMetrics = SolrMetricTestUtils.getRandomPrometheusMetrics(random, true);
+    Map<String, Long> initialMetrics =
+        SolrMetricTestUtils.getRandomPrometheusMetricsWithReplacements(random, new HashMap<>());
     var initialProducer = new SolrMetricTestUtils.TestSolrMetricProducer(coreName, initialMetrics);
     coreMetricManager.registerMetricProducer(
         SolrMetricTestUtils.getRandomScope(random, true), initialProducer);

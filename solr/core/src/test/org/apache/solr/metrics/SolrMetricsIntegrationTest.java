@@ -177,7 +177,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
       assertTrue("Original registry should exist", metricManager.hasRegistry(originalRegistryName));
       assertQ(req("q", "*:*"), "//result[@numFound='0']");
       assertEquals(
-          1.0, SolrMetricTestUtils.getStandaloneSelectRequestsDatapoint(core).getValue(), 0.0);
+          1.0, SolrMetricTestUtils.newStandaloneSelectRequestsDatapoint(core).getValue(), 0.0);
     }
 
     cc.rename(DEFAULT_TEST_CORENAME, newCoreName);
@@ -192,7 +192,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
       assertQ(req("q", "*:*"), "//result[@numFound='0']");
       assertEquals(
           1.0,
-          SolrMetricTestUtils.getStandaloneSelectRequestsDatapoint(h.getCore()).getValue(),
+          SolrMetricTestUtils.newStandaloneSelectRequestsDatapoint(h.getCore()).getValue(),
           0.0);
     }
   }
