@@ -83,7 +83,7 @@ eclipse-ecj = "3.39.0"
 eclipse-jetty = "12.0.19"
 eclipse-jettytoolchain = "5.0.2"
 # @keep jgit version used by git-status.gradle
-eclipse-jgit = "6.7.0.202309050840-r"
+eclipse-jgit = "6.10.1.202505221210-r"
 essenty = "2.5.0"
 fasterxml = "2.18.2"
 fasterxml-woodstox = "7.0.0"
