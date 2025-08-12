@@ -17,7 +17,32 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.core.AbstractBadConfigTestBase;
+import org.junit.Test;
 
 public class BinaryBitQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBase {
+  @Test
+  public void fieldDefinition_correctConfiguration_shouldLoadSchemaField() throws Exception {
+    try {
+      initCore("solrconfig-basic.xml", "schema-densevector-bbq.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
 
+      SchemaField vector = schema.getField("v_bbq");
+      assertNotNull(vector);
+
+      BinaryBitQuantizedDenseVectorField type =
+          (BinaryBitQuantizedDenseVectorField) vector.getType();
+      assertEquals(4, type.getDimension());
+      assertTrue(vector.indexed());
+      assertTrue(vector.stored());
+    } finally {
+      deleteCore();
+    }
+  }
+
+  // there are no major interface differences between BinaryBitQuantizedDenseVectorField and
+  // DenseVectorField
+  // so we can rely on those tests for validation cases
+  //
+  // as for behavior, there are no externally visible state differences. Internal implementation
+  // is tested at Lucene level
 }
