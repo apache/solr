@@ -210,7 +210,7 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-17860: DocBasedVersionConstraintsProcessorFactory now supports PULL replicas. (Houston Putman)
 
 Optimizations
 ---------------------
