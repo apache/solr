@@ -240,10 +240,6 @@ public class HighlightComponent extends SearchComponent
     }
   }
 
-  ////////////////////////////////////////////
-  ///  SolrInfoBean
-  ////////////////////////////////////////////
-
   @Override
   public String getDescription() {
     return "Highlighting";
