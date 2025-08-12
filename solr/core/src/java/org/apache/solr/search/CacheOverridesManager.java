@@ -7,13 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A manager that gets and subscribes to ZK clusterprops.json on field "cacheOverrides" <br>
+ * A manager that gets and subscribes to ZK clusterprops.json on field "ext.cacheOverrides" <br>
  * <br>
  * The value of the field defines a list of cache overrides, each override is a map with cache name
  * as key and a map of properties as value. An extra "collections" key can be used to apply the
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * <pre>
  *   {
  * ...
- *  "cacheOverrides" : [
+ *  "ext.cacheOverrides" : [
  *    {
  *      "filterCache" :  {
  *        "size": 9999
@@ -65,6 +66,8 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("unchecked")
 public class CacheOverridesManager {
+  public static final String CACHE_OVERRIDE_KEY =
+      ClusterProperties.EXT_PROPRTTY_PREFIX + "cacheOverrides";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private volatile Map<String, List<CacheOverrides>> overridesByCacheName = Map.of();
 
@@ -96,7 +99,7 @@ public class CacheOverridesManager {
   public CacheOverridesManager(ZkStateReader zkStateReader) {
     zkStateReader.registerClusterPropertiesListener(
         (Map<String, Object> properties) -> {
-          processCacheOverrides(properties.get("cacheOverrides"));
+          processCacheOverrides(properties.get(CACHE_OVERRIDE_KEY));
           return false;
         });
   }

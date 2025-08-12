@@ -39,7 +39,7 @@ public class CacheOverridesManagerTest extends SolrTestCaseJ4 {
     String jsonString =
         "{\n"
             + " \"legacyCloud\": \"false\",\n"
-            + " \"cacheOverrides\" :\n"
+            + " \"ext.cacheOverrides\" :\n"
             + "   {\n"
             + "     \"filterCache\" :  {\n"
             + "       \"size\": 9999\n"
@@ -67,7 +67,7 @@ public class CacheOverridesManagerTest extends SolrTestCaseJ4 {
     jsonString =
         "{\n"
             + " \"legacyCloud\": \"false\",\n"
-            + " \"cacheOverrides\" : [ \n"
+            + " \"ext.cacheOverrides\" : [ \n"
             + "   {\n"
             + "     \"filterCache\" :  {\n"
             + "       \"size\": 9999\n"
@@ -96,7 +96,7 @@ public class CacheOverridesManagerTest extends SolrTestCaseJ4 {
     String jsonString =
         "{\n"
             + " \"legacyCloud\": \"false\",\n"
-            + " \"cacheOverrides\" : [ \n"
+            + " \"ext.cacheOverrides\" : [ \n"
             + "   {\n"
             + "     \"filterCache\" :  {\n"
             + "       \"size\": 9999\n"
@@ -186,7 +186,7 @@ public class CacheOverridesManagerTest extends SolrTestCaseJ4 {
     String jsonString =
         "{\n"
             + " \"legacyCloud\": \"false\",\n"
-            + " \"cacheOverrides\" : [ \n"
+            + " \"ext.cacheOverrides\" : [ \n"
             + "   {\n"
             + "     \"filterCache\" :  {\n"
             + "       \"size\": 9999\n"
@@ -231,7 +231,7 @@ public class CacheOverridesManagerTest extends SolrTestCaseJ4 {
     jsonString =
         "{\n"
             + " \"legacyCloud\": \"false\",\n"
-            + " \"cacheOverrides\" : [ \n"
+            + " \"ext.cacheOverrides\" : [ \n"
             + "   {\n"
             + "     \"filterCache\" :  {\n"
             + "       \"size\": 1111\n"
@@ -296,7 +296,7 @@ public class CacheOverridesManagerTest extends SolrTestCaseJ4 {
     String jsonString =
         "{\n"
             + " \"legacyCloud\": \"false\",\n"
-            + " \"cacheOverrides\" : [ \n"
+            + " \"ext.cacheOverrides\" : [ \n"
             + "   {\n"
             + "     \"filterCache\" :  {\n"
             + "       \"size\": 9999\n"
