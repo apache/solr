@@ -36,11 +36,11 @@
 // I don't know how to untie these two cleanly.
 //
 
-configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules:") || project.path == ":solr:prometheus-exporter" || project.path == ":solr:cross-dc-manager" }) {
+configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules:") || project.path == ":solr:cross-dc-manager" }) {
   plugins.withType(JavaPlugin) {
     project.ext {
       packagingDir = file("${buildDir}/packaging")
-      if (project.path.startsWith(":solr:prometheus-exporter") || project.path.startsWith(":solr:cross-dc-manager")) {
+      if (project.path.startsWith(":solr:cross-dc-manager")) {
         deps = packagingDir
       } else {
         deps = file("${packagingDir}/${project.name}")

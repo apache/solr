@@ -65,7 +65,6 @@ include "solr:documentation"
 include "solr:packaging"
 include "solr:distribution"
 include "solr:docker"
-include "solr:prometheus-exporter"
 
 def disableUiModuleValue = providers.gradleProperty('disableUiModule').orNull
 gradle.ext.withUiModule = disableUiModuleValue == null || disableUiModuleValue != 'true'

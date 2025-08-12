@@ -30,8 +30,8 @@ Download the latest release https://solr.apache.org/downloads.html.
 
 There are three separate packages:
 
-* `solr-{solr-full-version}.tgz` the full binary package, for all operating systems. This package includes all first-party Solr modules and accessories (e.g. the `prometheus-exporter`).
-* `solr-{solr-full-version}-slim.tgz` the slim binary package, for all operating systems. This package only includes what is necessary to run Solr. Modules and accessories (e.g. the `prometheus-exporter`) are not included.
+* `solr-{solr-full-version}.tgz` the full binary package, for all operating systems. This package includes all first-party Solr modules and accessories.
+* `solr-{solr-full-version}-slim.tgz` the slim binary package, for all operating systems. This package only includes what is necessary to run Solr. Modules and accessories are not included.
 * `solr-{solr-full-version}-src.tgz` the package Solr source code.
 This is useful if you want to develop on Solr without using the official Git repository.
 
@@ -100,11 +100,6 @@ It is described in more detail in the section xref:taking-solr-to-production.ado
 modules/::
 Solr's `modules` directory includes 1st-party add-ons for specialized features that enhance Solr.
 See the section xref:configuration-guide:solr-modules.adoc[] for more information.
-*This is not included in the `slim` distribution.*
-
-prometheus-exporter/::
-A standalone application, included under `bin/`, that monitors Solr instances and produces Prometheus metrics.
-See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc[] for more information.
 *This is not included in the `slim` distribution.*
 
 cross-dc-manager/::
