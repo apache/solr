@@ -176,3 +176,21 @@ tasks.matching { task ->
     // and you will see the test tasks being listed there as well, but they will be skipped as
     // expected
 }
+
+// Explicitly enable or disable development tasks based on the build variant
+// This prevents any invalid task dependencies on assemble task execution
+tasks.matching {
+    val taskName = it.name.lowercase()
+    taskName.contains("wasmjs") && taskName.contains("development")
+}.configureEach {
+    onlyIf { rootProject.ext["development"] as Boolean }
+}
+
+// Explicitly enable or disable production tasks based on the build variant
+// This prevents any invalid task dependencies on assemble task execution
+tasks.matching {
+    val taskName = it.name.lowercase()
+    taskName.contains("wasmjs") && taskName.contains("production")
+}.configureEach {
+    onlyIf { !(rootProject.ext["development"] as Boolean) }
+}
