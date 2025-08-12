@@ -36,7 +36,7 @@ import org.apache.solr.schema.SchemaField;
  * @lucene.experimental
  * @since 8.6
  */
-public class RankQParserPlugin extends QParserPlugin {
+public class RankQParserPlugin extends QParserPlugin implements AutoCloseable {
 
   public static final String NAME = "rank";
   public static final String FIELD = "f";
@@ -168,5 +168,10 @@ public class RankQParserPlugin extends QParserPlugin {
       }
       return f;
     }
+  }
+
+  @Override
+  public void close() {
+    // No resources to close
   }
 }

@@ -249,11 +249,6 @@ public class HighlightComponent extends SearchComponent
     return "Highlighting";
   }
 
-  @Override
-  public Category getCategory() {
-    return Category.HIGHLIGHTER;
-  }
-
   ////////////////////////////////////////////
   ///  highlighting response collation
   ////////////////////////////////////////////

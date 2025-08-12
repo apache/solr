@@ -17,18 +17,16 @@
 package org.apache.solr.highlight;
 
 import com.codahale.metrics.Counter;
-import io.opentelemetry.api.common.Attributes;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 
 /**
  * @since solr 1.3
  */
-public abstract class HighlightingPluginBase implements SolrInfoBean {
+public abstract class HighlightingPluginBase {
   protected Counter numRequests;
   protected SolrParams defaults;
   protected Set<String> metricNames = ConcurrentHashMap.newKeySet(1);
@@ -41,33 +39,5 @@ public abstract class HighlightingPluginBase implements SolrInfoBean {
         defaults = ((NamedList) o).toSolrParams();
       }
     }
-  }
-
-  //////////////////////// SolrInfoMBeans methods //////////////////////
-
-  @Override
-  public String getName() {
-    return this.getClass().getName();
-  }
-
-  @Override
-  public abstract String getDescription();
-
-  @Override
-  public Category getCategory() {
-    return Category.HIGHLIGHTER;
-  }
-
-  @Override
-  public SolrMetricsContext getSolrMetricsContext() {
-    return solrMetricsContext;
-  }
-
-  // TODO SOLR-17458: Migrate to OTEL
-  @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
-    numRequests = solrMetricsContext.counter("requests", getCategory().toString(), scope);
   }
 }
