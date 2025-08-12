@@ -142,9 +142,9 @@ jetbrains-annotations = "26.0.2"
 joda-time = "2.13.0"
 junit = "4.13.2"
 junit-jupiter = "5.8.1"
-kotlin = "2.1.10"
+kotlin = "2.2.0"
 # @keep for version alignment
-kotlinx-atomicfu = "0.27.0"
+kotlinx-atomicfu = "0.29.0"
 # @keep for version alignment
 kotlinx-browser = "0.3"
 kotlinx-coroutines = "1.10.1"
