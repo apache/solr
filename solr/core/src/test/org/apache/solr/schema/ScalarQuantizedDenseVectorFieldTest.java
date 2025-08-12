@@ -21,7 +21,6 @@ import static org.hamcrest.core.Is.is;
 import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.core.AbstractBadConfigTestBase;
-import org.apache.solr.schema.neural.ScalarQuantizedDenseVectorField;
 import org.junit.Before;
 import org.junit.Test;
 

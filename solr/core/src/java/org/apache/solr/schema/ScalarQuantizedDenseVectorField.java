@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema.neural;
+package org.apache.solr.schema;
 
 import static java.util.Optional.ofNullable;
 import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_NUM_MERGE_WORKER;
@@ -26,8 +26,6 @@ import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 
 public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   public static final String BITS_PARAM = "bits"; //

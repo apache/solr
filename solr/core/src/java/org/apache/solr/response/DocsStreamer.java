@@ -31,7 +31,7 @@ import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.schema.BinaryField;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.DatePointField;
-import org.apache.solr.schema.neural.DenseVectorField;
+import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.DoublePointField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.FloatPointField;
