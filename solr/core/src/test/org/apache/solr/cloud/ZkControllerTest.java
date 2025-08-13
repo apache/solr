@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -548,5 +549,24 @@ public class ZkControllerTest extends SolrCloudTestCase {
     public SolrMetricManager getMetricManager() {
       return metricManager;
     }
+  }
+
+  @Test
+  public void testClusterSolrVersionIsSet() throws Exception {
+    configureCluster(1).configure();
+    String KEY = "clusterSolrVersion"; // not using the constant to ensure it's stable
+
+    // test the cluster has the latest Solr version:
+    assertEquals(
+        SolrVersion.LATEST_STRING, cluster.getZkStateReader().getClusterProperty(KEY, null));
+
+    // Ideally we would do the following via Docker to run an older Solr.
+    // stop the cluster, remove the version (pretend is a legacy cluster).
+    // Test that the version is not re-initialized after starting.
+    cluster.getJettySolrRunner(0).stop();
+    cluster.getZkClient().delete(ZkStateReader.CLUSTER_PROPS, -1, true);
+    cluster.getJettySolrRunner(0).start();
+
+    assertNull(cluster.getZkStateReader().getClusterProperty(KEY, null));
   }
 }
