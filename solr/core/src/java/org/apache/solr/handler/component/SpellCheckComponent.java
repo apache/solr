@@ -875,17 +875,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     return Collections.unmodifiableMap(spellCheckers);
   }
 
-  // ///////////////////////////////////////////
-  // / SolrInfoBean
-  // //////////////////////////////////////////
-
-  @Override
   public String getDescription() {
     return "A Spell Checker component";
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.SPELLCHECKER;
   }
 }
