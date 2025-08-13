@@ -117,6 +117,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.pkg.PackageListeners;
@@ -1337,7 +1338,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
             .build();
 
     var baseSearcherTimerMetric =
-        parentContext.longHistogram("solr_searcher_timer", "Timer for opening new searchers", "ms");
+        parentContext.longHistogram(
+            "solr_searcher_timer", "Timer for opening new searchers", OtelUnit.MILLISECONDS);
 
     newSearcherCounter =
         new AttributedLongCounter(
@@ -1407,7 +1409,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
             observableLongMeasurement.record(0L, usableSpaceAttributes);
           }
         }),
-        "By");
+        OtelUnit.BYTES);
 
     parentContext.observableLongGauge(
         "solr_core_index_size",
@@ -1416,7 +1418,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
           if (!isClosed())
             observableLongMeasurement.record(getIndexSize(), baseGaugeCoreAttributes);
         }),
-        "By");
+        OtelUnit.BYTES);
 
     parentContext.observableLongGauge(
         "solr_core_segment_count",

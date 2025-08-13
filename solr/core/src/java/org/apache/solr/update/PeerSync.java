@@ -49,6 +49,7 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -163,7 +164,8 @@ public class PeerSync implements SolrMetricProducer {
             baseAttributes);
     syncTime =
         new AttributedLongTimer(
-            solrMetricsContext.longHistogram("solr_core_peer_sync_time", "Peer sync times", "ms"),
+            solrMetricsContext.longHistogram(
+                "solr_core_peer_sync_time", "Peer sync times", OtelUnit.MILLISECONDS),
             baseAttributes);
   }
 
