@@ -46,6 +46,7 @@ import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
@@ -223,7 +224,7 @@ public abstract class RequestHandlerBase
                 "solr_node_requests_timeout", "HTTP Solr node request timeouts");
         requestTimeMetric =
             solrMetricsContext.longHistogram(
-                "solr_node_requests_times", "HTTP Solr node request times", "ms");
+                "solr_node_requests_times", "HTTP Solr node request times", OtelUnit.MILLISECONDS);
       } else {
         requestMetric =
             solrMetricsContext.longCounter("solr_core_requests", "HTTP Solr core requests");
@@ -235,7 +236,7 @@ public abstract class RequestHandlerBase
                 "solr_core_requests_timeout", "HTTP Solr core request timeouts");
         requestTimeMetric =
             solrMetricsContext.longHistogram(
-                "solr_core_requests_times", "HTTP Solr core request times", "ms");
+                "solr_core_requests_times", "HTTP Solr core request times", OtelUnit.MILLISECONDS);
       }
 
       requests = new AttributedLongCounter(requestMetric, attributes);
