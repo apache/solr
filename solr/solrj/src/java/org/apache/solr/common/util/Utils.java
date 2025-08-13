@@ -915,6 +915,15 @@ public class Utils {
    * @return a serializable version of the object
    */
   public static Object getReflectWriter(Object o) {
+    // Defensive: Avoid reflective serialization for Lucene Point types (e.g., LongPoint)
+    // which are not meant to be serialized this way and can cause IllegalAccessException.
+    String lucenePointPkg = "org.apache.lucene.document.";
+    if (o != null
+        && o.getClass().getName().startsWith(lucenePointPkg)
+        && o.getClass().getSimpleName().endsWith("Point")) {
+      // Fallback to string representation
+      return o.getClass().getName() + ':' + o.toString();
+    }
     List<FieldWriter> fieldWriters = null;
     try {
       fieldWriters =
