@@ -81,7 +81,7 @@ dependencies {
 
   testImplementation 'commons-io:commons-io'
 
-  testRuntimeOnly 'org.eclipse.jetty:jetty-webapp'
+  testRuntimeOnly 'org.eclipse.jetty.ee8:jetty-ee8-webapp'
 
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
