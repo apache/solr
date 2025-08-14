@@ -229,6 +229,8 @@ Bug Fixes
 * SOLR-17789: When Solr forwards/proxies requests to another node that can service the request, it needs to pass authorization headers.
   (Timo Crabbé)
 
+* SOLR-17863: Fix race condition in SolrCore's perSegmentFingerprintCache. (Luke Kot-Zaniewski, Matthew Biscocho)
+
 Dependency Upgrades
 ---------------------
 (No changes)
