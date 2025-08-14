@@ -904,16 +904,6 @@
     <processor class="solr.DistributedUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
-  
-  <updateRequestProcessorChain name="textToVector">
-    <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
-     <str name="inputField">name_s</str>
-     <str name="additionalInputField">manu_s</str>
-     <str name="outputField">vector_en</str>
-     <str name="model">customLocal</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory"/>
-   </updateRequestProcessorChain>
 
   <!-- Deduplication
 
@@ -983,7 +973,6 @@
      <queryParser name="myparser" class="com.mycompany.MyQParserPlugin"/>
     -->
 
-  <queryParser name="knn_text_to_vector" class="org.apache.solr.llm.textvectorisation.search.TextToVectorQParserPlugin"/>
   <!-- Function Parsers
 
        https://solr.apache.org/guide/solr/latest/query-guide/function-queries.html
