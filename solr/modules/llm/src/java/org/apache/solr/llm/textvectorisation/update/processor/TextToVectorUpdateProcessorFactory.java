@@ -49,37 +49,32 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
  */
 public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   private static final String INPUT_FIELD_PARAM = "inputField";
-  private static final String ADDITIONAL_INPUT_FIELDS_PARAM = "additionalInputField";
   private static final String OUTPUT_FIELD_PARAM = "outputField";
   private static final String MODEL_NAME = "model";
 
   private String inputField;
   private String outputField;
   private String modelName;
-  private String[] additionalInputFields;
+  private SolrParams params;
 
   @Override
   public void init(final NamedList<?> args) {
-    SolrParams params = args.toSolrParams();
+    params = args.toSolrParams();
     RequiredSolrParams required = params.required();
     inputField = required.get(INPUT_FIELD_PARAM);
     outputField = required.get(OUTPUT_FIELD_PARAM);
     modelName = required.get(MODEL_NAME);
-    String inputFields = params.get(ADDITIONAL_INPUT_FIELDS_PARAM);
-    additionalInputFields = inputFields != null ? inputFields.split(",") : null;
   }
 
   @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     IndexSchema latestSchema = req.getCore().getLatestSchema();
-
-    if (!latestSchema.isDynamicField(inputField) && !latestSchema.hasExplicitField(inputField)) {
+    if (!latestSchema.hasExplicitField(inputField)) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + inputField + "\"");
     }
-
-    if (!latestSchema.isDynamicField(outputField) && !latestSchema.hasExplicitField(outputField)) {
+    if (!latestSchema.hasExplicitField(outputField)) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + outputField + "\"");
     }
@@ -99,8 +94,7 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
               + ManagedTextToVectorModelStore.REST_END_POINT);
     }
 
-    return new TextToVectorUpdateProcessor(
-        inputField, additionalInputFields, outputField, textToVector, req, next);
+    return new TextToVectorUpdateProcessor(inputField, outputField, textToVector, req, next);
   }
 
   protected void assertIsDenseVectorField(SchemaField schemaField) {
