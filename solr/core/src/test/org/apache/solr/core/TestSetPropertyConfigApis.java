@@ -334,6 +334,7 @@ public class TestSetPropertyConfigApis extends SolrCloudTestCase {
 
         core.addCloseHook(
             new CloseHook() {
+              @Override
               public void postClose(SolrCore core) {
                 latch.countDown();
               }
