@@ -49,6 +49,8 @@ Improvements
 
 * SOLR-17739: Uploading a config sets with forbidden file types will produces a Exception. Previously it was just ignoring those files and logging a WARN. (Abhishek Umarjikar via Eric Pugh)
 
+* SOLR-17852: Migrate Schema Designer to use FileStore API instead of BlobHandler for persisting working data. (Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -135,10 +137,16 @@ Deprecation Removals
 
 * SOLR-17778: Removed no-op core admin operation FORCEPREPAREFORLEADERSHIP and its SolrJ peer OverrideLastPublished. (Pierre Salagnac)
 
+* SOLR-17779: Removed obsolete 'roles' and 'numShards' core properties, which were persisted with but unused (Pierre Salagnac).
+
+* SOLR-17839: Removed PreAnalyzedFields (Ishan Chattopadhyaya)
+
 Dependency Upgrades
 ---------------------
 
 * SOLR-16984: Upgraded Jetty to 12 (Jakarta EE 10 namespace). Updated related dependencies including amazon-awssdk to 2.28.11. (Sanjay Dutt, David Smiley, Kevin Risden)
+
+* SOLR-17631: Upgrade to Lucene 10.2.1 (Ishan Chattopadhyaya, noble, Jason Gerlowski, Eric Pugh, janhoy, Christine Poerschke)
 
 Other Changes
 ---------------------
@@ -210,7 +218,16 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17294: ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. (Mark Miller, Jason Gerlowski)
+
+* SOLR-17717: Starting solr on newer Windows 11 Home complained about missing wmic (Jan Høydahl)
+
+* SOLR-17824: RecoveryStrategy.pingLeader could NPE when there's no shard leader (David Smiley)
+
+* SOLR-17721: NPE can occur when doing Atomic Update using Add Distinct on documents with a null field value. (puneetSharma via Eric Pugh)
+
+* SOLR-17789: When Solr forwards/proxies requests to another node that can service the request, it needs to pass authorization headers.
+  (Timo Crabbé)
 
 Dependency Upgrades
 ---------------------
@@ -220,13 +237,21 @@ Other Changes
 ---------------------
 (No changes)
 
+==================  9.9.1 ==================
+Bug Fixes
+---------------------
+* SOLR-17831: ExitableDirectoryReader always initialized with QueryLimits.NONE (Andrzej Białecki)
+
+* SOLR-17834: Fixed a bug preventing Config API set properties (aka: configoverlay.json) from being used in config file property
+  substitution (hossman)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
 ==================  9.9.0 ==================
 New Features
 ---------------------
-* SOLR-17582: The CLUSTERSTATUS API will now stream each collection's status to the response,
-  fetching and computing it on the fly.  To avoid a backwards compatibility concern, this won't work
-  for wt=javabin.  (Matthew Biscocho, David Smiley)
-
 * SOLR-17626: Add RawTFSimilarityFactory class. (Christine Poerschke)
 
 * SOLR-17656: New 'skipLeaderRecovery' replica property allows PULL replicas with existing indexes to immediately become ACTIVE (hossman)
@@ -242,6 +267,10 @@ New Features
 * SOLR-17447: Support terminating a search early based on maxHitsAllowed per shard. (Siju Varghese, Houston Putman, David Smiley, Gus Heck)
 
 * SOLR-17749: Added linear function support for RankField via RankQParserPlugin. (Christine Poerschke)
+
+* SOLR-5707: New ExpressionValueSourceParser that allows custom function queries / VSPs to be defined in a
+  subset of JavaScript, pre-compiled, and that which can access the score and fields. It's powered by
+  the Lucene Expressions module. (hossman, David Smiley, Ryan Ernst, Kevin Risden)
 
 Improvements
 ---------------------
@@ -291,6 +320,10 @@ Improvements
 
 Optimizations
 ---------------------
+* SOLR-17582: The CLUSTERSTATUS API will now stream each collection's status to the response,
+  fetching and computing it on the fly.  To avoid a backwards compatibility concern, this won't work
+  for wt=javabin.  (Matthew Biscocho, David Smiley)
+
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
 
 * SOLR-17669: Reduced memory usage in SolrJ getBeans() method when handling dynamic fields with wildcards. (Martin Anzinger)
@@ -329,11 +362,7 @@ Bug Fixes
 * SOLR-12831: Clean up shard metadata in ZooKeeper nodes after shard deletion is invoked. This makes sure Zookeeper
  nodes for leader election and terms are not left behind (Andy Vuong, Pierre Salagnac).
 
-* SOLR-17717: Starting solr on newer Windows 11 Home complained about missing wmic (Jan Høydahl)
-
 * SOLR-17740: When the V2 API is receiving raw files, it could sometimes skip the first byte. (David Smiley)
-
-* SOLR-17294: ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. (Mark Miller, Jason Gerlowski)
 
 * SOLR-17720: Fix rare deadlock in CollectionProperties internals.  (Aparna Suresh, Houston Putman)
 
@@ -368,8 +397,22 @@ Bug Fixes
 
 * SOLR-17777: Fix a very minor memory leak in metrics reporting code when a core is deleted. (Pierre Salagnac)
 
+* SOLR-17792: Fix deadlocks in ParallelHttpShardHandler, re-implement synchronization in HttpShardHandler (Houston Putman)
+
+* GITHUB#3426: Improving check in TextToVectorUpdateProcessorFactory, which breaks update for new dynamic fields. (Renato Haeberli via Alessandro Benedetti)
+
+* SOLR-17819: Disable http2 request cancellation for Jetty 10, the cancellation can bleed across to other requests. (Houston Putman)
+
 Dependency Upgrades
 ---------------------
+* PR#3078: chore(deps): update apache.kafka to v3.9.0 (solrbot)
+
+* PR#3234: Update mockito to v5.16.1 (solrbot)
+
+* PR#3061: Update apache.zookeeper to v3.9.3 (solrbot)
+
+* PR#3228: Update amazon.awssdk to v2.31.77 (solrbot)
+
 * SOLR-17795: Upgrade Lucene to 9.12.2. (Pierre Salagnac, Christine Poerschke, Houston Putman)
 
 * Upgrade forbiddenapis to 3.9. (Uwe Schindler)
@@ -407,11 +450,13 @@ Other Changes
 
 * SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
 
-* SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
+* SOLR-17518: Deprecate UpdateRequest.getXml(). Usage of XMLRequestWriter is now preferred. (Pierre Salagnac)
 
 * SOLR-17716: Handle interrupted exception in SolrCores.waitAddPendingCoreOps. (Bruno Roustant)
 
 * SOLR-17651: Add System.exit() in forbidden APIs, and make sure CLI unit tests never call it. (Pierre Salagnac)
+
+* SOLR-17741: Deprecated 'addHttpRequestToContext', removed in 10.  (David Smiley)
 
 * SOLR-17625: Replaced NamedList.findRecursive usages with _get, which can do Map traversal, and
   thus makes it easier to transition intermediate NamedLists to Maps. (Gaurav Tuli)

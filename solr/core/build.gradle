@@ -91,6 +91,7 @@ dependencies {
   implementation libs.apache.lucene.join
   implementation libs.apache.lucene.misc
   implementation libs.apache.lucene.queryparser
+  implementation libs.apache.lucene.sandbox
   implementation libs.apache.lucene.spatialextras
   implementation libs.apache.lucene.suggest
 
