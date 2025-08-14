@@ -19,8 +19,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
-// import lombok.Builder;
-
 public class CustomModel extends DimensionAwareEmbeddingModel {
 
   private final boolean waitForModel;
@@ -42,7 +40,7 @@ public class CustomModel extends DimensionAwareEmbeddingModel {
 
   @Override
   public Response<List<Embedding>> embedAll(List<TextSegment> textSegments) {
-    
+
     List<Embedding> embeddings =
         textSegments.stream()
             .map(TextSegment::text)
@@ -77,7 +75,6 @@ public class CustomModel extends DimensionAwareEmbeddingModel {
   }
 
   public List<Float> parseFloatArray(String json) {
-    // You can also use double[].class or List<Double> if you prefer
     try {
       return mapper.readValue(
           json, mapper.getTypeFactory().constructCollectionType(List.class, Float.class));
@@ -87,9 +84,6 @@ public class CustomModel extends DimensionAwareEmbeddingModel {
   }
 
   public static CustomModelBuilder builder() {
-    /*      for (HuggingFaceEmbeddingModelBuilderFactory factory : loadFactories(CustomModel.class)) {
-        return factory.get();
-    }*/
     return new CustomModelBuilder();
   }
 
@@ -98,8 +92,7 @@ public class CustomModel extends DimensionAwareEmbeddingModel {
     private String fieldName;
 
     public CustomModelBuilder() {
-      // This is public so it can be extended
-      // By default with Lombok it becomes package private
+
     }
 
     public CustomModel build() {
