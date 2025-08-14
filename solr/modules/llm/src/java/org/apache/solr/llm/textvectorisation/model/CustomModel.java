@@ -42,7 +42,7 @@ public class CustomModel extends DimensionAwareEmbeddingModel {
 
   @Override
   public Response<List<Embedding>> embedAll(List<TextSegment> textSegments) {
-
+    
     List<Embedding> embeddings =
         textSegments.stream()
             .map(TextSegment::text)
