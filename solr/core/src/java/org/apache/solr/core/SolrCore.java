@@ -21,6 +21,8 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -54,7 +56,6 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -66,9 +67,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
-
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
@@ -274,9 +272,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   private final Cache<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache =
-      Caffeine.newBuilder()
-          .weakKeys()
-          .build();
+      Caffeine.newBuilder().weakKeys().build();
 
   public long getStartNanoTime() {
     return startNanoTime;
