@@ -55,6 +55,7 @@ fun MainContent(
                 .width(224.dp),
             selectedItem = childStack.active.instance.asMainMenu,
             onNavigate = component::onNavigate,
+            onLogout = component::onLogout,
         )
 
         Children(

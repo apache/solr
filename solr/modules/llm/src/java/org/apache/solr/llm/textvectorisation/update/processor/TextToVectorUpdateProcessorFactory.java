@@ -83,7 +83,6 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + outputField + "\"");
     }
-
     final SchemaField outputFieldSchema = latestSchema.getField(outputField);
     assertIsDenseVectorField(outputFieldSchema);
 

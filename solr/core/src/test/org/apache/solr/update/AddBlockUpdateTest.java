@@ -206,7 +206,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertSingleParentOf(searcher, one("ab"), dubbed);
 
     final TopDocs docs = searcher.search(join(one("cd")), 10);
-    assertEquals(2, docs.totalHits.value);
+    assertEquals(2, docs.totalHits.value());
     final String pAct =
         searcher.getDocFetcher().doc(docs.scoreDocs[0].doc).get(parent)
             + searcher.getDocFetcher().doc(docs.scoreDocs[1].doc).get(parent);
@@ -1028,7 +1028,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       final SolrIndexSearcher searcher, final String childTerm, String parentExp)
       throws IOException {
     final TopDocs docs = searcher.search(join(childTerm), 10);
-    assertEquals(1, docs.totalHits.value);
+    assertEquals(1, docs.totalHits.value());
     final String pAct = searcher.getDocFetcher().doc(docs.scoreDocs[0].doc).get(parent);
     assertEquals(parentExp, pAct);
   }
