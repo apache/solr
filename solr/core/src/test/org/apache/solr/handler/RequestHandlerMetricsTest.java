@@ -52,7 +52,6 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
     System.clearProperty("metricsEnabled");
   }
 
-  // Test for dual registry metrics (core + node level aggregation)
   @Test
   public void testAggregateNodeLevelMetrics() throws SolrServerException, IOException {
     String collection1 = "testRequestHandlerMetrics1";
@@ -122,10 +121,8 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
 
     assertNotNull("Node select requests should be recorded", nodeSelectRequests);
     assertNotNull("Node update requests should be recorded", nodeUpdateRequests);
-    assertEquals(
-        "Node should have 2 select requests total", 2.0, nodeSelectRequests.getValue(), 0.0);
-    assertEquals(
-        "Node should have 2 update requests total", 2.0, nodeUpdateRequests.getValue(), 0.0);
+    assertEquals(2.0, nodeSelectRequests.getValue(), 0.0);
+    assertEquals(2.0, nodeUpdateRequests.getValue(), 0.0);
 
     core1.close();
     core2.close();
