@@ -141,6 +141,8 @@ Deprecation Removals
 
 * SOLR-17839: Removed PreAnalyzedFields (Ishan Chattopadhyaya)
 
+* SOLR-17851: Removed BlobHandler and .system collection support (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 
