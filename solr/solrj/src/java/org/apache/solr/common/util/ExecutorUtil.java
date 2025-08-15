@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -65,8 +66,8 @@ public class ExecutorUtil {
   }
 
   /**
-   * Any class which wants to carry forward the threadlocal values to the threads run by threadpools
-   * must implement this interface and the implementation should be registered here
+   * Any class which wants to carry forward the thread local values to the threads run by thread
+   * pools must implement this interface and the implementation should be registered here
    */
   public interface InheritableThreadLocalProvider {
     /**
@@ -76,13 +77,13 @@ public class ExecutorUtil {
     void store(AtomicReference<Object> ctx);
 
     /**
-     * This is invoked in the Threadpool thread. set the appropriate values in the threadlocal of
+     * This is invoked in the thread pool thread. set the appropriate values in the thread local of
      * this thread.
      */
     void set(AtomicReference<Object> ctx);
 
     /**
-     * This method is invoked in the threadpool thread after the execution clean all the variables
+     * This method is invoked in the thread pool thread after the execution clean all the variables
      * set in the set method
      */
     void clean(AtomicReference<Object> ctx);
@@ -110,7 +111,7 @@ public class ExecutorUtil {
    * Shutdown the {@link ExecutorService} and wait for 60 seconds for the threads to complete. More
    * detail on the waiting can be found in {@link #awaitTermination(ExecutorService)}.
    *
-   * @param pool The ExecutorService to shutdown and wait on
+   * @param pool The ExecutorService to shut down and wait on
    */
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
@@ -122,13 +123,13 @@ public class ExecutorUtil {
    * Shutdown the {@link ExecutorService} and wait forever for the threads to complete. More detail
    * on the waiting can be found in {@link #awaitTerminationForever(ExecutorService)}.
    *
-   * <p>This should likely not be used in {@code close()} methods, as we want to timebound when
+   * <p>This should likely not be used in {@code close()} methods, as we want to time bound when
    * shutting down. However, sometimes {@link ExecutorService}s are used to submit a list of tasks
    * and awaiting termination is akin to waiting on the list of {@link Future}s to complete. In that
    * case, this method should be used as there is no inherent time bound to waiting on those tasks
    * to complete.
    *
-   * @param pool The ExecutorService to shutdown and wait on
+   * @param pool The ExecutorService to shut down and wait on
    */
   public static void shutdownAndAwaitTerminationForever(ExecutorService pool) {
     if (pool == null) return;
@@ -201,18 +202,6 @@ public class ExecutorUtil {
         nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
   }
 
-  public static ExecutorService newMDCAwareFixedThreadPool(
-      int nThreads, int queueCapacity, ThreadFactory threadFactory, Runnable beforeExecute) {
-    return new MDCAwareThreadPoolExecutor(
-        nThreads,
-        nThreads,
-        0L,
-        TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<>(queueCapacity),
-        threadFactory,
-        beforeExecute);
-  }
-
   /**
    * See {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)}. Note the
    * thread is always active, even if no tasks are submitted to the executor.
@@ -275,10 +264,8 @@ public class ExecutorUtil {
   public static class MDCAwareThreadPoolExecutor extends ThreadPoolExecutor {
 
     private static final int MAX_THREAD_NAME_LEN = 512;
-    public static final Runnable NOOP = () -> {};
 
     private final boolean enableSubmitterStackTrace;
-    private final Runnable beforeExecuteTask;
 
     public MDCAwareThreadPoolExecutor(
         int corePoolSize,
@@ -290,7 +277,6 @@ public class ExecutorUtil {
         RejectedExecutionHandler handler) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
       this.enableSubmitterStackTrace = true;
-      this.beforeExecuteTask = NOOP;
     }
 
     public MDCAwareThreadPoolExecutor(
@@ -301,7 +287,6 @@ public class ExecutorUtil {
         BlockingQueue<Runnable> workQueue) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
       this.enableSubmitterStackTrace = true;
-      this.beforeExecuteTask = NOOP;
     }
 
     public MDCAwareThreadPoolExecutor(
@@ -311,8 +296,7 @@ public class ExecutorUtil {
         TimeUnit unit,
         BlockingQueue<Runnable> workQueue,
         ThreadFactory threadFactory) {
-      this(
-          corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, true, NOOP);
+      this(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, true);
     }
 
     public MDCAwareThreadPoolExecutor(
@@ -322,30 +306,9 @@ public class ExecutorUtil {
         TimeUnit unit,
         BlockingQueue<Runnable> workQueue,
         ThreadFactory threadFactory,
-        Runnable beforeExecuteTask) {
-      this(
-          corePoolSize,
-          maximumPoolSize,
-          keepAliveTime,
-          unit,
-          workQueue,
-          threadFactory,
-          true,
-          beforeExecuteTask);
-    }
-
-    public MDCAwareThreadPoolExecutor(
-        int corePoolSize,
-        int maximumPoolSize,
-        long keepAliveTime,
-        TimeUnit unit,
-        BlockingQueue<Runnable> workQueue,
-        ThreadFactory threadFactory,
-        boolean enableSubmitterStackTrace,
-        Runnable beforeExecuteTask) {
+        boolean enableSubmitterStackTrace) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory);
       this.enableSubmitterStackTrace = enableSubmitterStackTrace;
-      this.beforeExecuteTask = beforeExecuteTask;
     }
 
     public MDCAwareThreadPoolExecutor(
@@ -357,37 +320,6 @@ public class ExecutorUtil {
         RejectedExecutionHandler handler) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
       this.enableSubmitterStackTrace = true;
-      this.beforeExecuteTask = NOOP;
-    }
-
-    public MDCAwareThreadPoolExecutor(
-        int corePoolSize,
-        int maximumPoolSize,
-        int keepAliveTime,
-        TimeUnit timeUnit,
-        BlockingQueue<Runnable> blockingQueue,
-        SolrNamedThreadFactory httpShardExecutor,
-        boolean enableSubmitterStackTrace) {
-      super(
-          corePoolSize, maximumPoolSize, keepAliveTime, timeUnit, blockingQueue, httpShardExecutor);
-      this.enableSubmitterStackTrace = enableSubmitterStackTrace;
-      this.beforeExecuteTask = NOOP;
-    }
-
-    public MDCAwareThreadPoolExecutor(
-        int i,
-        int maxValue,
-        long l,
-        TimeUnit timeUnit,
-        BlockingQueue<Runnable> es,
-        SolrNamedThreadFactory testExecutor,
-        boolean b) {
-      this(i, maxValue, l, timeUnit, es, testExecutor, b, NOOP);
-    }
-
-    @Override
-    protected void beforeExecute(Thread t, Runnable r) {
-      this.beforeExecuteTask.run();
     }
 
     @Override
@@ -447,6 +379,7 @@ public class ExecutorUtil {
             }
             try {
               command.run();
+            } catch (CancellationException ignored) {
             } catch (Throwable t) {
               if (t instanceof OutOfMemoryError) {
                 throw t;

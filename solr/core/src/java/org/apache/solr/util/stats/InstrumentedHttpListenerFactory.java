@@ -24,12 +24,13 @@ import io.opentelemetry.api.trace.Span;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.tracing.TraceUtils;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Result;
 
 /**
  * A HttpListenerFactory tracking metrics and distributed tracing. The Metrics are inspired and
@@ -132,5 +133,18 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
+  }
+
+  public static NameStrategy getNameStrategy(String name) {
+    var nameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(name);
+    if (nameStrategy == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Unknown metricNameStrategy: "
+              + name
+              + " found. Must be one of: "
+              + KNOWN_METRIC_NAME_STRATEGIES.keySet());
+    }
+    return nameStrategy;
   }
 }

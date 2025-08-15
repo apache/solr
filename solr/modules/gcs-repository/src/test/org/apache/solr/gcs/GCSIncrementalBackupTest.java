@@ -73,7 +73,7 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
   public static void setupClass() throws Exception {
 
     configureCluster(NUM_NODES) // nodes
-        .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
+        .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())
         .withSolrXml(SOLR_XML)
         .configure();
   }

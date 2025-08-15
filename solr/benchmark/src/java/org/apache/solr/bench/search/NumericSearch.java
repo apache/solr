@@ -101,8 +101,8 @@ public class NumericSearch {
       q.setParam("facet.field", "numbers_i_dv", "term_low_s", "term_high_s");
       q.setParam("facet.limit", String.valueOf(maxCardinality));
       QueryRequest req = new QueryRequest(q);
-      req.setBasePath(basePath);
-      QueryResponse response = req.process(miniClusterState.client, COLLECTION);
+      QueryResponse response =
+          miniClusterState.client.requestWithBaseUrl(basePath, COLLECTION, req);
       Set<String> numbers =
           response.getFacetField("numbers_i_dv").getValues().stream()
               .map(FacetField.Count::getName)
@@ -144,8 +144,7 @@ public class NumericSearch {
         throws SolrServerException, IOException {
       // Reload the collection/core to drop existing caches
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
-      reload.setBasePath(miniClusterState.nodes.get(0));
-      miniClusterState.client.request(reload);
+      miniClusterState.client.requestWithBaseUrl(miniClusterState.nodes.get(0), null, reload);
     }
 
     public QueryRequest intSetQuery(boolean dvs) {
@@ -169,10 +168,9 @@ public class NumericSearch {
           new QueryRequest(
               new SolrQuery(
                   "q",
-                  termQueryField + ":" + lowCardTerms.next(),
+                  termQueryField + ":\"" + lowCardTerms.next() + "\"",
                   "fq",
                   "{!terms cache=false f='" + field + "'}" + queries.next()));
-      q.setBasePath(basePath);
       return q;
     }
   }

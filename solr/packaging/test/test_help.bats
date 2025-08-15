@@ -60,10 +60,8 @@ setup() {
 
 @test "status help flag prints help" {
   run solr status --help
-  assert_output --partial 'usage: status'
+  assert_output --partial 'usage: bin/solr status'
   refute_output --partial 'ERROR'
-  # Make sure custom selection of options for status help works.
-  refute_output --partial '--solr-url'
 }
 
 @test "healthcheck help flag prints help" {
@@ -84,15 +82,10 @@ setup() {
   refute_output --partial 'ERROR'
 }
 
-@test "version help flag prints help" {
-  run solr version -h
-  assert_output --partial 'usage: bin/solr version'
-  refute_output --partial 'ERROR'
-}
-
 @test "zk help flag prints help" {
   run solr zk --help
-  assert_output --partial 'Usage: solr zk'
+  assert_output --partial 'usage:'
+  assert_output --partial 'bin/solr zk ls'
   refute_output --partial 'ERROR'
 }
 

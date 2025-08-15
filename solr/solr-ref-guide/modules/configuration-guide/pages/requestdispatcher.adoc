@@ -69,21 +69,11 @@ A value of `-1` means MAX_INT, which is also the system default if omitted.
 This attribute sets a limit in kilobytes on the size of form data (`application/x-www-form-urlencoded`) submitted in a HTTP POST request, which can be used to pass request parameters that will not fit in a URL.
 A value of `-1` means MAX_INT, which is also the system default if omitted.
 
-`addHttpRequestToContext`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-This attribute can be used to indicate that the original `HttpServletRequest` object should be included in the context map of the `SolrQueryRequest` using the key `httpRequest`.
-This `HttpServletRequest` is not used by any Solr component, but may be useful when developing custom plugins.
 
 [source,xml]
 ----
 <requestParsers multipartUploadLimitInKB="2048"
-                formdataUploadLimitInKB="2048"
-                addHttpRequestToContext="false" />
+                formdataUploadLimitInKB="2048" />
 ----
 
 == httpCaching Element
@@ -146,7 +136,7 @@ The content of this element will be sent as the value of the Cache-Control heade
 This header is used to modify the default caching behavior of the requesting client.
 The possible values for the Cache-Control header are defined by the HTTP 1.1 specification in http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9[Section 14.9].
 
-Setting the max-age field controls how long a client may re-use a cached response before requesting it again from the server.
+Setting the max-age field controls how long a client may reuse a cached response before requesting it again from the server.
 This time interval should be set according to how often you update your index and whether or not it is acceptable for your application to use content that is somewhat out of date.
 Setting `must-revalidate` will tell the client to validate with the server that its cached copy is still good before re-using it.
 This will ensure that the most timely result is used, while avoiding a second fetch of the content if it isn't needed, at the cost of a request to the server to do the check.

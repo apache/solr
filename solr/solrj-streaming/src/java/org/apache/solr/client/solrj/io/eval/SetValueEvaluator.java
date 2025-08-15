@@ -40,8 +40,7 @@ public class SetValueEvaluator extends RecursiveObjectEvaluator implements ManyV
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if (values[0] instanceof Tuple) {
-      Tuple tuple = (Tuple) values[0];
+    if (values[0] instanceof Tuple tuple) {
       String key = (String) values[1];
       Object value = values[2];
       if (value instanceof String) {

@@ -85,13 +85,13 @@ public class OriginalScoreFeature extends Feature {
     }
 
     @Override
-    public FeatureScorer scorer(LeafReaderContext context) throws IOException {
+    public FeatureScorer featureScorer(LeafReaderContext context) throws IOException {
 
       final Scorer originalScorer = w.scorer(context);
       return new OriginalScoreScorer(this, originalScorer);
     }
 
-    public class OriginalScoreScorer extends FilterFeatureScorer {
+    public static class OriginalScoreScorer extends FilterFeatureScorer {
 
       public OriginalScoreScorer(FeatureWeight weight, Scorer originalScorer) {
         super(weight, originalScorer);

@@ -18,13 +18,12 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -101,18 +100,15 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
           }
 
           @Override
-          public NamedList<Object> processResponse(InputStream body, String encoding) {
-            try {
-              if (body.read() >= 0) readFile.set(true);
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
+          public NamedList<Object> processResponse(InputStream body, String encoding)
+              throws IOException {
+            if (body.read() >= 0) readFile.set(true);
             return null;
           }
 
           @Override
-          public NamedList<Object> processResponse(Reader reader) {
-            throw new UnsupportedOperationException("TODO unimplemented"); // TODO
+          public Set<String> getContentTypes() {
+            return Set.of(); // don't enforce
           }
         });
 
@@ -149,7 +145,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     QueryRequest request =
         new QueryRequest(params("file", "managed-schema", "contentType", "not/known"));
     request.setPath("/admin/file");
-    request.setResponseParser(new NoOpResponseParser());
+    request.setResponseParser(new NoOpResponseParser("xml"));
     expectThrows(SolrException.class, () -> client.request(request));
   }
 
@@ -158,7 +154,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     final QueryRequest request =
         new QueryRequest(params("file", "/etc/passwd", "contentType", "text/plain; charset=utf-8"));
     request.setPath("/admin/file"); // absolute path not allowed
-    request.setResponseParser(new NoOpResponseParser());
+    request.setResponseParser(new NoOpResponseParser("xml"));
     expectThrows(SolrException.class, () -> client.request(request));
   }
 
@@ -168,9 +164,9 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
         new QueryRequest(
             params("file", "../../solr.xml", "contentType", "application/xml; charset=utf-8"));
     request.setPath("/admin/file");
-    request.setResponseParser(new NoOpResponseParser());
+    request.setResponseParser(new NoOpResponseParser("xml"));
     var ex = expectThrows(SolrException.class, () -> client.request(request));
-    assertTrue(ex instanceof BaseHttpSolrClient.RemoteSolrException);
+    assertTrue(ex instanceof SolrClient.RemoteSolrException);
   }
 
   public void testPathTraversalFilename() {
@@ -183,7 +179,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
                 "contentType",
                 "text/plain; charset=utf-8"));
     request.setPath("/admin/file");
-    request.setResponseParser(new NoOpResponseParser());
+    request.setResponseParser(new NoOpResponseParser("xml"));
     expectThrows(SolrException.class, () -> client.request(request));
   }
 

@@ -24,8 +24,6 @@ import com.carrotsearch.hppc.LongSet;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
@@ -57,12 +55,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
@@ -351,8 +351,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   public static Path ulogToTlogDir(
       String coreName, Path ulogDirPath, Path instancePath, String coreDataDir) {
+    final Path coreDataPath = ulogDirPath.getFileSystem().getPath(coreDataDir);
     boolean unscopedDataDir =
-        !ulogDirPath.startsWith(instancePath) && !ulogDirPath.startsWith(coreDataDir);
+        !ulogDirPath.startsWith(instancePath) && !ulogDirPath.startsWith(coreDataPath);
 
     // if the ulog dataDir is unscoped (neither under core instanceDir, nor core dataDir),
     // then we must scope it to the core; otherwise, scope to purpose (TLOG_NAME).
@@ -390,7 +391,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
     int timeoutMs =
         objToInt(
-            info.initArgs.get("docLockTimeoutMs", info.initArgs.get("versionBucketLockTimeoutMs")),
+            info.initArgs.getOrDefault(
+                "docLockTimeoutMs", info.initArgs.get("versionBucketLockTimeoutMs")),
             EnvUtils.getPropertyAsLong("solr.update.docLockTimeoutMs", 0L).intValue());
     updateLocks = new UpdateLocks(timeoutMs);
 
@@ -579,7 +581,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not set up tlogs", e);
     }
-    tlogFiles = getLogList(tlogDir.toFile());
+    tlogFiles = getLogList(tlogDir);
     id = getLastLogId() + 1; // add 1 since we will create a new log for the next update
 
     if (debug) {
@@ -730,18 +732,24 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     return (cmd.getFlags() & UpdateCommand.REPLAY) != 0 && state == State.REPLAYING;
   }
 
-  public String[] getLogList(File directory) {
+  public String[] getLogList(Path directory) {
     final String prefix = TLOG_NAME + '.';
-    String[] names = directory.list((dir, name) -> name.startsWith(prefix));
-    if (names == null) {
-      throw new RuntimeException(new FileNotFoundException(directory.getAbsolutePath()));
+    try (Stream<Path> files = Files.list(directory)) {
+      return files
+          .map((file) -> file.getFileName().toString())
+          .filter((name) -> name.startsWith(prefix))
+          .sorted()
+          .toArray(String[]::new);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
-    Arrays.sort(names);
-    return names;
   }
 
   public long getLastLogId() {
-    if (id != -1) return id;
+    return id == -1 ? scanLastLogId(tlogFiles) : id;
+  }
+
+  static long scanLastLogId(String[] tlogFiles) {
     if (tlogFiles.length == 0) return -1;
     String last = tlogFiles[tlogFiles.length - 1];
     return Long.parseLong(last.substring(TLOG_NAME.length() + 1));
@@ -1214,8 +1222,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 lookupVersion);
           }
 
-          if (obj != null && obj instanceof List) {
-            List<?> tmpEntry = (List<?>) obj;
+          if (obj != null && obj instanceof List<?> tmpEntry) {
             if (tmpEntry.size() >= 2
                 &&
                 // why not Objects.equals(lookupVersion, tmpEntry.get())?
@@ -1588,10 +1595,45 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
+  /**
+   * Ensures a transaction log is ready. It is either the current one, or a new one. This method
+   * must be called with the synchronization monitor on this {@link UpdateLog}.
+   */
   protected void ensureLog() {
     if (tlog == null) {
-      String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
-      tlog = newTransactionLog(tlogDir.resolve(newLogName), globalStrings, false);
+      Path newLogPath;
+      int numAttempts = 0;
+      while (true) {
+        String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
+        newLogPath = tlogDir.resolve(newLogName);
+        // We expect that the log file does not exist since id is designed to give the index of the
+        // next transaction log to create. But in very rare cases, the log files listed in the
+        // init() method may be stale here (file system delay?), and id may point to an existing
+        // file.
+        if (!Files.exists(newLogPath)) {
+          break;
+        }
+        // If the "new" log file already exists, refresh the log list and recompute id.
+        // Ideally we would want to include the missing log in the old logs tracking (see init()),
+        // but the init() method is not designed to be executed twice. Given that in the rare cases
+        // we have seen this missing log, the log was always empty (file size 0), then we simply
+        // refresh log list and update the id.
+        try {
+          log.error(
+              "New transaction log already exists {} size={}, skipping it",
+              newLogPath,
+              Files.size(newLogPath));
+        } catch (IOException e) {
+          log.error("New transaction log already exists {} size unknown, skipping it", newLogPath);
+        }
+        if (++numAttempts >= 2) {
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR, "Cannot recover from already existing logs");
+        }
+        tlogFiles = getLogList(tlogDir);
+        id = scanLastLogId(tlogFiles) + 1; // add 1 since we create a new log
+      }
+      tlog = newTransactionLog(newLogPath, globalStrings, false);
     }
   }
 
@@ -1998,6 +2040,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected RecoveryInfo recoveryInfo;
 
   class LogReplayer implements Runnable {
+    private final SolrParams BASE_REPLAY_PARAMS =
+        new MapSolrParams(
+            Map.of(
+                DISTRIB_UPDATE_PARAM,
+                FROMLEADER.toString(),
+                DistributedUpdateProcessor.LOG_REPLAY,
+                "true"));
+
     private Logger loglog = log; // set to something different?
 
     Deque<TransactionLog> translogs;
@@ -2024,10 +2074,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     @Override
     public void run() {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());
-      params.set(DistributedUpdateProcessor.LOG_REPLAY, "true");
-      req = new LocalSolrQueryRequest(uhandler.core, params);
+      req = new LocalSolrQueryRequest(uhandler.core, BASE_REPLAY_PARAMS);
       rsp = new SolrQueryResponse();
       // setting request info will help logging
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -2100,7 +2147,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         ThreadLocal<UpdateRequestProcessor> procThreadLocal =
             ThreadLocal.withInitial(
                 () -> {
-                  var proc = processorChain.createProcessor(req, rsp);
+                  // SolrQueryRequest is not thread-safe, so use a copy when creating URPs
+                  final var localRequest =
+                      new LocalSolrQueryRequest(uhandler.core, BASE_REPLAY_PARAMS);
+                  var proc = processorChain.createProcessor(localRequest, rsp);
                   procPool.add(proc);
                   return proc;
                 });
@@ -2428,7 +2478,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     if (!success) {
       try {
-        file.toFile().deleteOnExit();
+        PathUtils.deleteOnExit(file);
       } catch (Exception e) {
         log.error("Error deleting file on exit: {}", file, e);
       }

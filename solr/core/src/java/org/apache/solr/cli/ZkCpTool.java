@@ -16,17 +16,17 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
+import static org.apache.solr.packagemanager.PackageUtils.format;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -42,44 +42,25 @@ import org.slf4j.LoggerFactory;
 public class ZkCpTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public ZkCpTool() {
-    this(CLIO.getOutStream());
-  }
+  private static final Option SOLR_HOME_OPTION =
+      Option.builder()
+          .longOpt("solr-home")
+          .hasArg()
+          .argName("DIR")
+          .desc("Required to look up configuration for compressing state.json.")
+          .build();
 
-  public ZkCpTool(PrintStream stdout) {
-    super(stdout);
+  public ZkCpTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder()
-            .longOpt("source")
-            .hasArg()
-            .argName("SRC")
-            .required(true)
-            .desc("Source file or directory, may be local or a Znode.")
-            .build(),
-        Option.builder()
-            .longOpt("destination")
-            .hasArg()
-            .argName("DST")
-            .required(true)
-            .desc("Destination of copy, may be local or a Znode.")
-            .build(),
-        Option.builder()
-            .longOpt("solr-home")
-            .argName("DIR")
-            .hasArg()
-            .required(false)
-            .desc("Required to look up configuration for compressing state.json.")
-            .build(),
-        SolrCLI.OPTION_RECURSE,
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(SOLR_HOME_OPTION)
+        .addOption(CommonCLIOptions.RECURSIVE_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
@@ -88,14 +69,61 @@ public class ZkCpTool extends ToolBase {
   }
 
   @Override
-  public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String zkHost = SolrCLI.getZkHost(cli);
+  public String getUsage() {
+    return "bin/solr zk cp [-r ] [-s <HOST>] [--solr-home <DIR>] [-u <credentials>] [-z <HOST>] source destination";
+  }
 
-    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-    String src = cli.getOptionValue("source");
-    String dst = cli.getOptionValue("destination");
-    Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
+  @Override
+  public String getHeader() {
+    StringBuilder sb = new StringBuilder();
+    format(sb, "cp copies files or folders to/from Zookeeper or Zookeeper -> Zookeeper");
+    format(sb, "");
+    format(sb, "<src>, <dest> : [file:][/]path/to/local/file or zk:/path/to/zk/node");
+    format(
+        sb,
+        "                NOTE: <src> and <dest> may both be Zookeeper resources prefixed by 'zk:'");
+    format(sb, "When <src> is a zk resource, <dest> may be '.'");
+    format(
+        sb,
+        "If <dest> ends with '/', then <dest> will be a local folder or parent znode and the last");
+    format(sb, "element of the <src> path will be appended unless <src> also ends in a slash. ");
+    format(
+        sb, "<dest> may be zk:, which may be useful when using the cp -r form to backup/restore ");
+    format(sb, "the entire zk state.");
+    format(sb, "You must enclose local paths that end in a wildcard in quotes or just");
+    format(sb, "end the local path in a slash. That is,");
+    format(sb, "'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181' is equivalent to");
+    format(sb, "'bin/solr zk cp -r \"/some/dir/*\" zk:/ -z localhost:2181'");
+    format(sb, "but 'bin/solr zk cp -r /some/dir/* zk:/ -z localhost:2181' will throw an error");
+    format(sb, "");
+    format(sb, "to copy to local: 'bin/solr zk cp -r zk:/ /some/dir -z localhost:2181'");
+    format(sb, "to restore to ZK: 'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181'");
+    format(sb, "");
+    format(
+        sb,
+        "The 'file:' prefix is stripped, thus 'file:/wherever' specifies an absolute local path and");
+    format(
+        sb,
+        "'file:somewhere' specifies a relative local path. All paths on Zookeeper are absolute.");
+    format(sb, "");
+    format(sb, "Zookeeper nodes CAN have data, so moving a single file to a parent znode");
+    format(sb, "will overlay the data on the parent Znode so specifying the trailing slash");
+    format(sb, "can be important.");
+    format(sb, "");
+    format(
+        sb, "Wildcards are supported when copying from local, trailing only and must be quoted.");
+    format(sb, "\nList of options:");
+    return sb.toString();
+  }
+
+  @Override
+  public void runImpl(CommandLine cli) throws Exception {
+    String zkHost = CLIUtils.getZkHost(cli);
+
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
+    String src = cli.getArgs()[0];
+    String dst = cli.getArgs()[1];
+    boolean recursive = cli.hasOption(CommonCLIOptions.RECURSIVE_OPTION);
     echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
 
     boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");
@@ -124,19 +152,19 @@ public class ZkCpTool extends ToolBase {
     Compressor compressor = new ZLibCompressor();
 
     if (dstIsZk) {
-      String solrHome = cli.getOptionValue("solr-home");
+      String solrHome = cli.getOptionValue(SOLR_HOME_OPTION);
       if (StrUtils.isNullOrEmpty(solrHome)) {
         solrHome = System.getProperty("solr.home");
       }
 
       if (solrHome != null) {
-        echoIfVerbose("Using SolrHome: " + solrHome, cli);
+        echoIfVerbose("Using SolrHome: " + solrHome);
         try {
           // Be aware that if you start Solr and pass in some variables via -D like
           // solr start -DminStateByteLenForCompression=0 -c, this logic will not
           // know about the -DminStateByteLenForCompression and only return the
           // version set in the solr.xml.  So you must edit solr.xml directly.
-          Path solrHomePath = Paths.get(solrHome);
+          Path solrHomePath = Path.of(solrHome);
           Properties props = new Properties();
           props.put(SolrXmlConfig.ZK_HOST, zkHost);
           NodeConfig nodeConfig = NodeConfig.loadNodeConfig(solrHomePath, props);
@@ -163,7 +191,7 @@ public class ZkCpTool extends ToolBase {
       }
     }
     if (minStateByteLenForCompression > -1) {
-      echoIfVerbose("Compression of state.json has been enabled", cli);
+      echoIfVerbose("Compression of state.json has been enabled");
     }
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
@@ -172,7 +200,7 @@ public class ZkCpTool extends ToolBase {
             .withStateFileCompression(minStateByteLenForCompression, compressor)
             .build()) {
 
-      zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recurse);
+      zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recursive);
 
     } catch (Exception e) {
       log.error("Could not complete the zk operation for reason: ", e);

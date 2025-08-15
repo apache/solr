@@ -133,6 +133,7 @@ public class UpdateShardHandler implements SolrInfoBean {
       recoveryOnlyClientBuilder
           .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
           .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
+          .withRequestTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
           .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
 
@@ -236,7 +237,17 @@ public class UpdateShardHandler implements SolrInfoBean {
     return solrMetricsContext;
   }
 
-  // if you are looking for a client to use, it's probably this one.
+  /**
+   * Returns the default HTTP client for general-purpose usage.
+   *
+   * <p>This method is deprecated as the default client is now provided by {@link
+   * org.apache.solr.core.CoreContainer#getDefaultHttpSolrClient()}. Users should prefer that method
+   * to retrieve the default Solr client.
+   *
+   * @return the default {@link HttpClient}.
+   * @deprecated Use {@link org.apache.solr.core.CoreContainer#getDefaultHttpSolrClient()} instead.
+   */
+  @Deprecated
   public HttpClient getDefaultHttpClient() {
     return defaultClient;
   }

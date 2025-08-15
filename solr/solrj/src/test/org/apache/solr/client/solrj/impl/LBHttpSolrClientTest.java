@@ -47,7 +47,7 @@ public class LBHttpSolrClientTest extends SolrTestCase {
       HttpClientUtil.close(httpClient);
     }
 
-    ResponseParser parser = new BinaryResponseParser();
+    ResponseParser parser = new JavaBinResponseParser();
     httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
     try {
       try (LBHttpSolrClient testClient =

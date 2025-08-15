@@ -20,34 +20,38 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+
+    includeBuild("build-tools/build-infra")
 }
 
 plugins {
-    id 'com.gradle.enterprise' version '3.15.1'
-    id 'com.gradle.common-custom-user-data-gradle-plugin' version '1.12'
+    id 'com.gradle.develocity' version '3.18.2'
+    id 'com.gradle.common-custom-user-data-gradle-plugin' version '2.0.2'
 }
 
-apply from: file('gradle/ge.gradle')
+apply from: file('gradle/develocity.gradle')
 
 rootProject.name = "solr-root"
 
-includeBuild("dev-tools/solr-missing-doclet")
+includeBuild("build-tools/missing-doclet")
 
+include ":platform"
 include "solr:api"
 include "solr:solrj"
 include "solr:solrj-zookeeper"
 include "solr:solrj-streaming"
 include "solr:core"
+include "solr:cross-dc-manager"
 include "solr:server"
 include "solr:modules:analysis-extras"
 include "solr:modules:clustering"
+include "solr:modules:cross-dc"
 include "solr:modules:opentelemetry"
 include "solr:modules:extraction"
 include "solr:modules:gcs-repository"
-include "solr:modules:hadoop-auth"
-include "solr:modules:hdfs"
 include "solr:modules:jwt-auth"
 include "solr:modules:langid"
+include "solr:modules:llm"
 include "solr:modules:ltr"
 include "solr:modules:s3-repository"
 include "solr:modules:scripting"
@@ -62,6 +66,12 @@ include "solr:packaging"
 include "solr:distribution"
 include "solr:docker"
 include "solr:prometheus-exporter"
+
+def disableUiModuleValue = providers.gradleProperty('disableUiModule').orNull
+gradle.ext.withUiModule = disableUiModuleValue == null || disableUiModuleValue != 'true'
+if (gradle.ext.withUiModule) {
+    include(":solr:ui")
+}
 
 // Configures development for joint Lucene/ Solr composite build.
 apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')

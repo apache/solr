@@ -60,7 +60,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
     solrRule.startSolr(home);
 
     Path configSet = createTempDir("configSet");
-    copyMinConf(configSet.toFile());
+    copyMinConf(configSet);
     // insert a special filterCache configuration
     Path solrConfig = configSet.resolve("conf/solrconfig.xml");
     Files.writeString(

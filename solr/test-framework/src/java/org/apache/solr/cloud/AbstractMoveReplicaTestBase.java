@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -376,17 +377,16 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
       }
       // filter size by collection name
       int size = 0;
-      for (Map.Entry<String, NamedList<Object>> stringNamedListEntry : status.getCoreStatus()) {
+      for (Map.Entry<String, CoreStatusResponse.SingleCoreData> coreStatusEntry :
+          status.getCoreStatus().entrySet()) {
         if (collectionName != null) {
-          String coll =
-              (String) stringNamedListEntry.getValue().findRecursive("cloud", "collection");
+          String coll = coreStatusEntry.getValue().cloud.collection;
           if (!collectionName.equals(coll)) {
             continue;
           }
         }
         if (replicaType != null) {
-          String type =
-              (String) stringNamedListEntry.getValue().findRecursive("cloud", "replicaType");
+          String type = coreStatusEntry.getValue().cloud.replicaType;
           if (!replicaType.equals(type)) {
             continue;
           }

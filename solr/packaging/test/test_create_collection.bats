@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -c
+  solr start
 }
 
 teardown_file() {
@@ -99,7 +99,7 @@ teardown() {
 }
 
 @test "create multisharded collections when s provided" {
-  run -0 solr create -c COLL_NAME -s 2 --solr-url http://localhost:${SOLR_PORT}
+  run -0 solr create -c COLL_NAME --shards 2 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Created collection 'COLL_NAME'"
   assert_output --partial "2 shard(s)"
 }

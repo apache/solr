@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.nio.charset.CharacterCodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -256,7 +255,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   @SuppressWarnings("deprecation")
   public void testLoadDeprecatedFactory() throws Exception {
     SolrResourceLoader loader =
-        new SolrResourceLoader(Paths.get("solr/collection1").toAbsolutePath());
+        new SolrResourceLoader(Path.of("solr/collection1").toAbsolutePath());
     // ensure we get our exception
     loader.newInstance(
         DeprecatedTokenFilterFactory.class.getName(),

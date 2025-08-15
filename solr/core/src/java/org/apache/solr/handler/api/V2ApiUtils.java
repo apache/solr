@@ -17,9 +17,9 @@
 
 package org.apache.solr.handler.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.impl.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
 import static org.apache.solr.common.params.CommonParams.WT;
-import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -101,7 +101,7 @@ public class V2ApiUtils {
       case "xml":
         return "application/xml";
       case "javabin":
-        return BINARY_CONTENT_TYPE_V2;
+        return JAVABIN_CONTENT_TYPE_V2;
       case FILE_STREAM:
         return RawResponseWriter.CONTENT_TYPE;
       default:

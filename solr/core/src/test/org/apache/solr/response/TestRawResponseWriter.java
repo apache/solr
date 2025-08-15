@@ -19,11 +19,10 @@ package org.apache.solr.response;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.common.util.ContentStreamBase.ByteArrayStream;
 import org.apache.solr.common.util.ContentStreamBase.StringStream;
 import org.apache.solr.common.util.NamedList;
@@ -104,9 +103,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
       assertEquals(stream.getContentType(), writer.getContentType(req(), rsp));
 
       // we should have the same string if we use a Writer
-      StringWriter sout = new StringWriter();
-      writer.write(sout, req(), rsp);
-      assertEquals(data, sout.toString());
+      assertEquals(data, writer.writeToString(req(), rsp));
 
       // we should have UTF-8 Bytes if we use an OutputStream
       ByteArrayOutputStream bout = new ByteArrayOutputStream();
@@ -139,28 +136,25 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
             + "<str name=\"content\">test</str>\n"
             + "<str name=\"foo\">bar</str>\n"
             + "</response>\n";
-    StringWriter xmlSout = new StringWriter();
-    writerXmlBase.write(xmlSout, req(), rsp);
-    assertEquals(xml, xmlSout.toString());
+    assertEquals(xml, writerXmlBase.writeToString(req(), rsp));
     ByteArrayOutputStream xmlBout = new ByteArrayOutputStream();
     writerXmlBase.write(xmlBout, req(), rsp);
     assertEquals(xml, xmlBout.toString(StandardCharsets.UTF_8.toString()));
+
     //
-    StringWriter noneSout = new StringWriter();
-    writerNoBase.write(noneSout, req(), rsp);
-    assertEquals(xml, noneSout.toString());
+    assertEquals(xml, writerNoBase.writeToString(req(), rsp));
     ByteArrayOutputStream noneBout = new ByteArrayOutputStream();
     writerNoBase.write(noneBout, req(), rsp);
     assertEquals(xml, noneBout.toString(StandardCharsets.UTF_8.toString()));
 
     // json
     String json = "{\n" + "  \"content\":\"test\",\n" + "  \"foo\":\"bar\"}\n";
-    assertJSONEquals(json, writerJsonBase.serializeResponse(req(), rsp));
+    assertJSONEquals(json, writerJsonBase.writeToString(req(), rsp));
 
     // javabin
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     writerBinBase.write(bytes, req(), rsp);
-    BinaryResponseParser parser = new BinaryResponseParser();
+    JavaBinResponseParser parser = new JavaBinResponseParser();
     NamedList<Object> out =
         parser.processResponse(
             new ByteArrayInputStream(bytes.toByteArray()), /* encoding irrelevant */ null);

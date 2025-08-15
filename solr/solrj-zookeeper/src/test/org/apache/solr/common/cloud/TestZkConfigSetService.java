@@ -20,17 +20,18 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.AuthInfo;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
@@ -102,6 +103,19 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       assertEquals("testconfig", configs.get(0));
       assertTrue(configSetService.checkConfigExists("testconfig"));
 
+      Path tempConfigForbidden = createTempDir("config");
+      Files.createFile(tempConfigForbidden.resolve("Test.java"));
+      Files.createFile(tempConfigForbidden.resolve("file1"));
+      Files.createDirectory(tempConfigForbidden.resolve("dir"));
+
+      Exception ex =
+          assertThrows(
+              SolrException.class,
+              () -> {
+                configSetService.uploadConfig("_testconf", tempConfigForbidden);
+              });
+      assertTrue(ex.getMessage().contains("is forbidden for use in uploading configsets."));
+
       // check downloading
       Path downloadPath = createTempDir("download");
       configSetService.downloadConfig("testconfig", downloadPath);
@@ -120,7 +134,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       Files.write(tempConfig.resolve("file1"), overwritten);
       configSetService.uploadConfig("testconfig", tempConfig);
 
-      assertEquals(1, configSetService.listConfigs().size());
+      assertEquals(2, configSetService.listConfigs().size());
       Path download2 = createTempDir("download2");
       configSetService.downloadConfig("testconfig", download2);
       byte[] checkdata2 = Files.readAllBytes(download2.resolve("file1"));
@@ -128,7 +142,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
       // uploading same files to a new name creates a new config
       configSetService.uploadConfig("config2", tempConfig);
-      assertEquals(2, configSetService.listConfigs().size());
+      assertEquals(3, configSetService.listConfigs().size());
 
       // Test copying a config works in both flavors
       configSetService.copyConfig("config2", "config2copy");
@@ -140,7 +154,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUploadWithACL() throws IOException {
+  public void testUploadWithACL() throws IOException, NoSuchAlgorithmException {
 
     zkServer.ensurePathExists("/acl");
 
@@ -149,59 +163,36 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     final String writeableUsername = "writeable";
     final String writeablePassword = "writeable";
 
-    ZkACLProvider aclProvider =
-        new DefaultZkACLProvider() {
-          @Override
-          protected List<ACL> createGlobalACLsToAdd() {
-            try {
-              List<ACL> result = new ArrayList<>();
-              result.add(
-                  new ACL(
-                      ZooDefs.Perms.ALL,
-                      new Id(
-                          "digest",
-                          DigestAuthenticationProvider.generateDigest(
-                              writeableUsername + ":" + writeablePassword))));
-              result.add(
-                  new ACL(
-                      ZooDefs.Perms.READ,
-                      new Id(
-                          "digest",
-                          DigestAuthenticationProvider.generateDigest(
-                              readOnlyUsername + ":" + readOnlyPassword))));
-              return result;
-            } catch (NoSuchAlgorithmException e) {
-              throw new RuntimeException(e);
-            }
-          }
-        };
-
-    ZkCredentialsProvider readonly =
-        new DefaultZkCredentialsProvider() {
-          @Override
-          protected Collection<ZkCredentials> createCredentials() {
-            List<ZkCredentials> credentials = new ArrayList<>();
-            credentials.add(
-                new ZkCredentials(
+    // Must be Arrays.asList(), Zookeeper does not allow for immutable list types for ACLs
+    List<ACL> acls =
+        Arrays.asList(
+            new ACL(
+                ZooDefs.Perms.ALL,
+                new Id(
                     "digest",
-                    (readOnlyUsername + ":" + readOnlyPassword).getBytes(StandardCharsets.UTF_8)));
-            return credentials;
-          }
-        };
-
-    ZkCredentialsProvider writeable =
-        new DefaultZkCredentialsProvider() {
-          @Override
-          protected Collection<ZkCredentials> createCredentials() {
-            List<ZkCredentials> credentials = new ArrayList<>();
-            credentials.add(
-                new ZkCredentials(
+                    DigestAuthenticationProvider.generateDigest(
+                        writeableUsername + ":" + writeablePassword))),
+            new ACL(
+                ZooDefs.Perms.READ,
+                new Id(
                     "digest",
-                    (writeableUsername + ":" + writeablePassword)
-                        .getBytes(StandardCharsets.UTF_8)));
-            return credentials;
-          }
-        };
+                    DigestAuthenticationProvider.generateDigest(
+                        readOnlyUsername + ":" + readOnlyPassword))));
+    ACLProvider aclProvider = new DefaultZkACLProvider(acls);
+
+    List<AuthInfo> credentials =
+        List.of(
+            new AuthInfo(
+                "digest",
+                (readOnlyUsername + ":" + readOnlyPassword).getBytes(StandardCharsets.UTF_8)));
+    ZkCredentialsProvider readonly = new DefaultZkCredentialsProvider(credentials);
+
+    List<AuthInfo> writeableCredentials =
+        List.of(
+            new AuthInfo(
+                "digest",
+                (writeableUsername + ":" + writeablePassword).getBytes(StandardCharsets.UTF_8)));
+    ZkCredentialsProvider writeable = new DefaultZkCredentialsProvider(writeableCredentials);
 
     Path configPath = createTempDir("acl-config");
     Files.createFile(configPath.resolve("file1"));
@@ -240,9 +231,9 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
   @Test
   public void testBootstrapConf() throws IOException, KeeperException, InterruptedException {
 
-    String solrHome = legacyExampleCollection1SolrHome();
+    Path solrHome = legacyExampleCollection1SolrHome();
 
-    CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
+    CoreContainer cc = new CoreContainer(solrHome, new Properties());
     System.setProperty("zkHost", zkServer.getZkAddress());
 
     SolrZkClient zkClient =
@@ -261,7 +252,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
   static SolrZkClient buildZkClient(
       String zkAddress,
-      final ZkACLProvider aclProvider,
+      final ACLProvider aclProvider,
       final ZkCredentialsProvider credentialsProvider) {
     return new SolrZkClient(
         new SolrZkClient.Builder().withUrl(zkAddress).withTimeout(10000, TimeUnit.MILLISECONDS)) {
@@ -271,7 +262,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       }
 
       @Override
-      protected ZkACLProvider createZkACLProvider() {
+      protected ACLProvider createACLProvider() {
         return aclProvider;
       }
     };

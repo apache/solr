@@ -13,6 +13,8 @@
 @rem See the License for the specific language governing permissions and
 @rem limitations under the License.
 @rem
+@rem SPDX-License-Identifier: Apache-2.0
+@rem
 
 @if "%DEBUG%"=="" @echo off
 @rem ##########################################################################
@@ -48,11 +50,11 @@ set JAVA_EXE=java.exe
 %JAVA_EXE% -version >NUL 2>&1
 if %ERRORLEVEL% equ 0 goto execute
 
-echo.
-echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
-echo.
-echo Please set the JAVA_HOME variable in your environment to match the
-echo location of your Java installation.
+echo. 1>&2
+echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH. 1>&2
+echo. 1>&2
+echo Please set the JAVA_HOME variable in your environment to match the 1>&2
+echo location of your Java installation. 1>&2
 
 goto fail
 
@@ -62,11 +64,11 @@ set JAVA_EXE=%JAVA_HOME%/bin/java.exe
 
 if exist "%JAVA_EXE%" goto execute
 
-echo.
-echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME%
-echo.
-echo Please set the JAVA_HOME variable in your environment to match the
-echo location of your Java installation.
+echo. 1>&2
+echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME% 1>&2
+echo. 1>&2
+echo Please set the JAVA_HOME variable in your environment to match the 1>&2
+echo location of your Java installation. 1>&2
 
 goto fail
 
@@ -76,7 +78,7 @@ goto fail
 @rem LUCENE-9266: verify and download the gradle wrapper jar if we don't have one.
 set GRADLE_WRAPPER_JAR=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 IF NOT EXIST "%GRADLE_WRAPPER_JAR%" (
-    "%JAVA_EXE%" %JAVA_OPTS% "%APP_HOME%/buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java" "%GRADLE_WRAPPER_JAR%"
+    "%JAVA_EXE%" %JAVA_OPTS% "%APP_HOME%/build-tools/build-infra/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java" "%GRADLE_WRAPPER_JAR%"
     IF %ERRORLEVEL% EQU 1 goto failWithJvmMessage
     IF %ERRORLEVEL% NEQ 0 goto fail
 )
@@ -89,7 +91,7 @@ set CLASSPATH=%GRADLE_WRAPPER_JAR%
 IF NOT EXIST "%APP_HOME%\gradle.properties" (
   @rem local expansion is needed to check ERRORLEVEL inside control blocks.
   setlocal enableDelayedExpansion
-  "%JAVA_EXE%" %JAVA_OPTS% "%APP_HOME%/buildSrc/src/main/java/org/apache/lucene/gradle/GradlePropertiesGenerator.java" "%APP_HOME%\gradle\template.gradle.properties" "%APP_HOME%\gradle.properties"
+  "%JAVA_EXE%" %JAVA_OPTS% "%APP_HOME%/build-tools/build-infra/src/main/java/org/apache/lucene/gradle/GradlePropertiesGenerator.java" "%APP_HOME%\gradle\template.gradle.properties" "%APP_HOME%\gradle.properties"
   IF %ERRORLEVEL% NEQ 0 goto fail
   endlocal
 )
@@ -108,7 +110,7 @@ goto fail
 
 :failWithJvmMessage
 @rem https://github.com/apache/lucene/pull/819
-echo Error: Something went wrong. Make sure you're using Java version between 11 and 21.
+echo Error: Something went wrong. Make sure you're using Java version between 21 and 23.
 
 :fail
 rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of

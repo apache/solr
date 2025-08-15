@@ -49,8 +49,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
         try {
           final RequestLine requestLine = request.getRequestLine();
           String schemeHostPort = null;
-          if (request instanceof HttpRequestWrapper) {
-            HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
+          if (request instanceof HttpRequestWrapper wrapper) {
             if (wrapper.getTarget() != null) {
               schemeHostPort =
                   wrapper.getTarget().getSchemeName()
@@ -80,8 +79,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
         try {
           final RequestLine requestLine = request.getRequestLine();
           String schemeHostPort = null;
-          if (request instanceof HttpRequestWrapper) {
-            HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
+          if (request instanceof HttpRequestWrapper wrapper) {
             if (wrapper.getTarget() != null) {
               schemeHostPort =
                   wrapper.getTarget().getSchemeName()

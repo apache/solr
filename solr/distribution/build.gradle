@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import org.apache.lucene.gradle.Checksum
-
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 
@@ -68,8 +66,7 @@ def fullDistTarTask = rootProject.getTasksByName("fullDistTar", true)[0]
 def slimDistTarTask = rootProject.getTasksByName("slimDistTar", true)[0]
 
 // Compute checksums for release archives.
-task computeChecksums(type: Checksum) {
-  algorithm = Checksum.Algorithm.SHA512
+task computeChecksums(type: buildinfra.checksumClass()) {
 
   files = objects.fileCollection()
   [

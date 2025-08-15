@@ -192,8 +192,7 @@ public class RandomSortField extends FieldType {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof RandomValueSource)) return false;
-      RandomValueSource other = (RandomValueSource) o;
+      if (!(o instanceof RandomValueSource other)) return false;
       return this.field.equals(other.field);
     }
 

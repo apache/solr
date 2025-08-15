@@ -17,35 +17,64 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
+import org.apache.solr.util.StartupLoggingUtils;
 
 public abstract class ToolBase implements Tool {
 
-  protected PrintStream stdout;
-  protected boolean verbose = false;
+  protected final ToolRuntime runtime;
 
-  protected ToolBase() {
-    this(CLIO.getOutStream());
+  private boolean verbose = false;
+
+  protected ToolBase(ToolRuntime runtime) {
+    this.runtime = runtime;
   }
 
-  protected ToolBase(PrintStream stdout) {
-    this.stdout = stdout;
+  /** Is this tool being run in a verbose mode? */
+  protected boolean isVerbose() {
+    return verbose;
   }
 
-  protected void echoIfVerbose(final String msg, CommandLine cli) {
-    if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+  protected void echoIfVerbose(final String msg) {
+    if (verbose) {
       echo(msg);
     }
   }
 
   protected void echo(final String msg) {
-    stdout.println(msg);
+    runtime.println(msg);
+  }
+
+  @Override
+  public Options getOptions() {
+    return new Options()
+        .addOption(CommonCLIOptions.HELP_OPTION)
+        .addOption(CommonCLIOptions.VERBOSE_OPTION);
+  }
+
+  @Override
+  public ToolRuntime getRuntime() {
+    return runtime;
+  }
+
+  /**
+   * Provides the two ways of connecting to Solr for CLI Tools
+   *
+   * @return OptionGroup validates that only one option is supplied by the caller.
+   */
+  public OptionGroup getConnectionOptions() {
+    OptionGroup optionGroup = new OptionGroup();
+    optionGroup.addOption(CommonCLIOptions.SOLR_URL_OPTION);
+    optionGroup.addOption(CommonCLIOptions.ZK_HOST_OPTION);
+    return optionGroup;
   }
 
   @Override
   public int runTool(CommandLine cli) throws Exception {
-    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
+    verbose = cli.hasOption(CommonCLIOptions.VERBOSE_OPTION);
+    raiseLogLevelUnlessVerbose();
 
     int toolExitStatus = 0;
     try {
@@ -64,6 +93,12 @@ public abstract class ToolBase implements Tool {
       }
     }
     return toolExitStatus;
+  }
+
+  private void raiseLogLevelUnlessVerbose() {
+    if (!verbose) {
+      StartupLoggingUtils.changeLogLevel("WARN");
+    }
   }
 
   public abstract void runImpl(CommandLine cli) throws Exception;

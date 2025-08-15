@@ -120,16 +120,14 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
 
   private void assertMatchesEqual(int expectedCount, SolrIndexSearcher searcher, QueryCommand cmd)
       throws IOException {
-    QueryResult qr = new QueryResult();
-    searcher.search(qr, cmd);
+    QueryResult qr = searcher.search(cmd);
     assertEquals(expectedCount, qr.getDocList().matches());
     assertEquals(TotalHits.Relation.EQUAL_TO, qr.getDocList().hitCountRelation());
   }
 
   private QueryResult assertMatchesGreaterThan(
       int expectedCount, SolrIndexSearcher searcher, QueryCommand cmd) throws IOException {
-    QueryResult qr = new QueryResult();
-    searcher.search(qr, cmd);
+    QueryResult qr = searcher.search(cmd);
     assertTrue(
         "Expecting returned matches to be greater than "
             + expectedCount
@@ -182,7 +180,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
             searcher -> {
               QueryCommand cmd = createBasicQueryCommand(NUM_DOCS / 2, 10, "field1_s", "foo");
               cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
-              searcher.search(new QueryResult(), cmd);
+              searcher.search(cmd);
               assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
               return null;
             });
@@ -194,7 +192,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
             searcher -> {
               QueryCommand cmd = createBasicQueryCommand(NUM_DOCS, 2, "field1_s", "foo");
               cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
-              searcher.search(new QueryResult(), cmd);
+              searcher.search(cmd);
               assertMatchesEqual(NUM_DOCS, searcher, cmd);
               return null;
             });
@@ -278,8 +276,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
                 cmd.setQuery(new FixedScoreReRankQuery(cmd.getQuery(), expectedScore));
               }
 
-              final QueryResult qr = new QueryResult();
-              searcher.search(qr, cmd);
+              final QueryResult qr = searcher.search(cmd);
 
               // check score for the first document
               final DocIterator iter = qr.getDocList().iterator();
@@ -436,12 +433,65 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
             });
   }
 
+  public void testMaxHitsAllowed() throws Exception {
+    h.getCore()
+        .withSearcher(
+            searcher -> {
+              // No max hits
+              QueryCommand cmd = createBasicQueryCommand(1000, 10, "field1_s", "foo");
+              final QueryResult search = searcher.search(cmd);
+              assertEquals(NUM_DOCS, search.getDocList().matches());
+              assertEquals(10, search.getDocList().size());
+              assertFalse(search.isPartialResults());
+              assertNull(search.getTerminatedEarly());
+              assertNull(search.getMaxHitsTerminatedEarly());
+              return null;
+            });
+
+    h.getCore()
+        .withSearcher(
+            searcher -> {
+              // max hits > doc count
+              QueryCommand cmd = createBasicQueryCommand(1000, 10, 1000, "field1_s", "foo");
+              final QueryResult search = searcher.search(cmd);
+              assertEquals(NUM_DOCS, search.getDocList().matches());
+              assertEquals(10, search.getDocList().size());
+              assertFalse(search.isPartialResults());
+              assertNull(search.getTerminatedEarly());
+              assertNull(search.getMaxHitsTerminatedEarly());
+              return null;
+            });
+
+    h.getCore()
+        .withSearcher(
+            searcher -> {
+              // max hits < doc count
+              QueryCommand cmd = createBasicQueryCommand(1000, 10, 20, "field1_s", "foo");
+              final QueryResult search = searcher.search(cmd);
+              // in a single threaded search, the maxHitsAllowed will be exact
+              assertEquals(20, search.getDocList().matches());
+              assertEquals(10, search.getDocList().size());
+              assertTrue(search.isPartialResults());
+              assertNull(search.getTerminatedEarly());
+              assertEquals(Boolean.TRUE, search.getMaxHitsTerminatedEarly());
+              return null;
+            });
+  }
+
   private QueryCommand createBasicQueryCommand(
       int minExactCount, int length, String field, String q) {
+    return createBasicQueryCommand(minExactCount, length, 0, field, q);
+  }
+
+  private QueryCommand createBasicQueryCommand(
+      int minExactCount, int length, int maxHitsAllowed, String field, String q) {
     QueryCommand cmd = new QueryCommand();
     cmd.setMinExactCount(minExactCount);
     cmd.setLen(length);
     cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
+    if (maxHitsAllowed > 0) {
+      cmd.setMaxHitsAllowed(maxHitsAllowed);
+    }
     cmd.setQuery(new TermQuery(new Term(field, q)));
     return cmd;
   }

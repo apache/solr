@@ -32,8 +32,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.jersey.PermissionName;
@@ -78,18 +77,17 @@ public class SyncShard extends AdminAPIBase implements SyncShardApi {
     ClusterState clusterState = coreContainer.getZkController().getClusterState();
 
     DocCollection docCollection = clusterState.getCollection(collection);
-    ZkNodeProps leaderProps = docCollection.getLeader(shardName);
-    ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
+    Replica leader = docCollection.getLeader(shardName);
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(nodeProps.getBaseUrl())
+        new HttpSolrClient.Builder(leader.getBaseUrl())
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
       CoreAdminRequest.RequestSyncShard reqSyncShard = new CoreAdminRequest.RequestSyncShard();
       reqSyncShard.setCollection(collection);
       reqSyncShard.setShard(shardName);
-      reqSyncShard.setCoreName(nodeProps.getCoreName());
+      reqSyncShard.setCoreName(leader.getCoreName());
       client.request(reqSyncShard);
     }
   }

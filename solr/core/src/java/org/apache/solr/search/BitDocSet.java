@@ -224,8 +224,7 @@ public class BitDocSet extends DocSet {
   @Override
   public DocSet union(DocSet other) {
     FixedBitSet newbits = bits.clone();
-    if (other instanceof BitDocSet) {
-      BitDocSet otherDocSet = (BitDocSet) other;
+    if (other instanceof BitDocSet otherDocSet) {
       newbits = FixedBitSet.ensureCapacity(newbits, otherDocSet.bits.length());
       newbits.or(otherDocSet.bits);
     } else {

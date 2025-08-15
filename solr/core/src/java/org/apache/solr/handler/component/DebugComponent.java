@@ -264,6 +264,7 @@ public class DebugComponent extends SearchComponent {
         }
       }
       if (rb.isDebugResults()) {
+        // put()
         int idx = info.indexOf("explain", 0);
         if (idx >= 0) {
           info.setVal(idx, explain);
@@ -338,11 +339,11 @@ public class DebugComponent extends SearchComponent {
       }
     }
 
-    if (source instanceof NamedList && dest instanceof NamedList) {
+    if (source instanceof NamedList<?> sl && dest instanceof NamedList) {
       NamedList<Object> tmp = new NamedList<>();
-      NamedList<?> sl = (NamedList<?>) source;
       @SuppressWarnings("unchecked")
       NamedList<Object> dl = (NamedList<Object>) dest;
+      // TODO simplify; drop the same-index optimization and use a Map.compute()
       for (int i = 0; i < sl.size(); i++) {
         String skey = sl.getName(i);
         if (exclude.contains(skey)) continue;
