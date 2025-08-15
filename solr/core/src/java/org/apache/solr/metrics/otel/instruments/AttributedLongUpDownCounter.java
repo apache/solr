@@ -30,11 +30,11 @@ public class AttributedLongUpDownCounter {
   }
 
   public void inc() {
-    add(1L);
+    upDownCounter.add(1L, attributes);
   }
 
   public void dec() {
-    add(-1L);
+    upDownCounter.add(-1L, attributes);
   }
 
   public void add(Long value) {

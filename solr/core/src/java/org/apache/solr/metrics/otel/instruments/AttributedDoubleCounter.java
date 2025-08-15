@@ -30,7 +30,7 @@ public class AttributedDoubleCounter {
   }
 
   public void inc() {
-    add(1.0);
+    counter.add(1.0, attributes);
   }
 
   public void add(Double value) {
