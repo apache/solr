@@ -242,6 +242,9 @@ Bug Fixes
 ---------------------
 * SOLR-17831: ExitableDirectoryReader always initialized with QueryLimits.NONE (Andrzej Białecki)
 
+* SOLR-17834: Fixed a bug preventing Config API set properties (aka: configoverlay.json) from being used in config file property
+  substitution (hossman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
