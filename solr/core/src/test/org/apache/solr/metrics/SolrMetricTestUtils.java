@@ -193,4 +193,50 @@ public final class SolrMetricTestUtils {
     return getDatapoint(
         core, metricName, labels, HistogramSnapshot.HistogramDataPointSnapshot.class);
   }
+
+  public static CounterSnapshot.CounterDataPointSnapshot newStandaloneSelectRequestsDatapoint(
+      SolrCore core) {
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core,
+        "solr_core_requests",
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("handler", "/select")
+            .label("category", "QUERY")
+            .label("internal", "false")
+            .build());
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot newCloudSelectRequestsDatapoint(
+      SolrCore core) {
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core,
+        "solr_core_requests",
+        SolrMetricTestUtils.newCloudLabelsBuilder(core)
+            .label("handler", "/select")
+            .label("category", "QUERY")
+            .label("internal", "false")
+            .build());
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot newStandaloneUpdateRequestsDatapoint(
+      SolrCore core) {
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core,
+        "solr_core_requests",
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("handler", "/update")
+            .label("category", "UPDATE")
+            .build());
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot newCloudUpdateRequestsDatapoint(
+      SolrCore core) {
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core,
+        "solr_core_requests",
+        SolrMetricTestUtils.newCloudLabelsBuilder(core)
+            .label("handler", "/update")
+            .label("category", "UPDATE")
+            .build());
+  }
 }

@@ -96,8 +96,6 @@ public class SearchHandler extends RequestHandlerBase
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
 
-  protected static final String SHARD_HANDLER_SUFFIX = "[shard]";
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -169,7 +167,8 @@ public class SearchHandler extends RequestHandlerBase
                 .putAll(attributes)
                 .put(CATEGORY_ATTR, getCategory().toString())
                 .put(INTERNAL_ATTR, true)
-                .build());
+                .build(),
+            false);
   }
 
   @Override
