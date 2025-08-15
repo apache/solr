@@ -258,8 +258,6 @@ public class ThinCache<S, K, V> extends SolrCacheBase
       }
     }
 
-    backing.adjustMetrics(hits.sumThenReset(), inserts.sumThenReset(), lookups.sumThenReset());
-    evictions.reset();
     priorHits = other.hits.sum() + other.priorHits;
     priorInserts = other.inserts.sum() + other.priorInserts;
     priorLookups = other.lookups.sum() + other.priorLookups;
@@ -267,6 +265,16 @@ public class ThinCache<S, K, V> extends SolrCacheBase
     warmupTimeMillis =
         TimeUnit.MILLISECONDS.convert(
             System.nanoTime() - warmingStartTimeNanos, TimeUnit.NANOSECONDS);
+  }
+
+  @Override
+  public void setState(State state) {
+    if (state == State.LIVE && getState() != State.LIVE) {
+      backing.adjustMetrics(
+          hits.sumThenReset(), inserts.sumThenReset(), lookups.sumThenReset(), null);
+      evictions.reset();
+    }
+    super.setState(state);
   }
 
   @Override

@@ -39,6 +39,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import org.apache.lucene.util.Accountable;
@@ -89,6 +90,13 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   private LongAdder hits;
   private LongAdder inserts;
   private LongAdder lookups;
+
+  /**
+   * Sum of stats to be ignored for external metrics reporting (e.g., associated with autowarming).
+   */
+  private final AtomicReference<CacheStats> offsetSyncStats =
+      new AtomicReference<>(CacheStats.empty());
+
   private Cache<K, V> cache;
   private AsyncCache<K, V> asyncCache;
   private long warmupTime;
@@ -387,10 +395,14 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     }
   }
 
-  protected void adjustMetrics(long hitsAdjust, long insertsAdjust, long lookupsAdjust) {
+  public void adjustMetrics(
+      long hitsAdjust, long insertsAdjust, long lookupsAdjust, CacheStats stats) {
     hits.add(-hitsAdjust);
     inserts.add(-insertsAdjust);
     lookups.add(-lookupsAdjust);
+    if (stats != null) {
+      offsetSyncStats.updateAndGet((extant) -> extant.plus(stats));
+    }
   }
 
   @Override
@@ -418,16 +430,89 @@ public class CaffeineCache<K, V> extends SolrCacheBase
       }
     }
 
-    hits.reset();
-    inserts.reset();
-    lookups.reset();
-    CacheStats oldStats = other.cache.stats();
+    // NOTE: metrics are reset (to avoid reporting warming-related activity as end-user cache
+    // metrics) upon invocation of `setState(State.LIVE)`. This coordinates the lifecycle of all
+    // caches, and prevents warming-related activity crosstalk from other caches influencing
+    // end-user cache metrics for this cache.
+    CacheStats oldStats = other.syncStats();
     priorStats = oldStats.plus(other.priorStats);
     priorHits = oldStats.hitCount() + other.hits.sum() + other.priorHits;
     priorInserts = other.inserts.sum() + other.priorInserts;
     priorLookups = oldStats.requestCount() + other.lookups.sum() + other.priorLookups;
     warmupTime =
         TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
+  }
+
+  /**
+   * The last thing {@link SolrIndexSearcher} does before initializing metrics and making a cache
+   * available for "real" use is call {@code setState(State.LIVE)}.
+   */
+  @Override
+  public void setState(State state) {
+    setState(state, NOOP_METRICS_OFFSETTER);
+  }
+
+  private static final MetricsOffsetter NOOP_METRICS_OFFSETTER = (a, b, c, d) -> {};
+
+  public interface MetricsOffsetter {
+    void offset(long hits, long inserts, long lookups, CacheStats stats);
+  }
+
+  /**
+   * Here we use {@link #setState(State)} to mark the start of collection of "real" metrics (and
+   * report out any adjustments made).
+   *
+   * <p>The main benefit of resetting metrics here (as opposed to at the end of {@link
+   * #warm(SolrIndexSearcher, SolrCache)}) is that this clearly separates the lifecycle phases of
+   * all caches, avoiding crosstalk from the warming of other caches being reflected in the end-user
+   * metrics of this cache.
+   *
+   * <p>NOTE: {@link #setState(State)} is not well documented; but in practice atm it is updated
+   * exactly once: from its initial value of {@link SolrCache.State#CREATED} to its final value of
+   * {@link SolrCache.State#LIVE} (set immediately before the cache begins to serve user queries).
+   * We should follow up and document/formalize the semantics and contract of {@link
+   * #setState(State)}, but in the meantime we will rely on the de facto semantics and usage.
+   */
+  public void setState(State state, MetricsOffsetter offsetter) {
+    if (state == State.LIVE && getState() != State.LIVE) {
+      long hits = this.hits.sumThenReset();
+      long inserts = this.inserts.sumThenReset();
+      long lookups = this.lookups.sumThenReset();
+
+      // offset/compensate for any synchronous stats that may have accumulated before the cache was
+      // set to LIVE.
+      CacheStats stats = cache.stats();
+      offsetSyncStats.set(stats);
+      offsetter.offset(hits, inserts, lookups, stats);
+    }
+    super.setState(state);
+  }
+
+  /**
+   * In a "shared cache" situation, we want to be able to propagate/offset hit, miss, and load
+   * information, but <i>not</i> evictions (which are scoped to a specific cache.
+   *
+   * <p>This method returns a copy of the input {@link CacheStats}, but without any eviction
+   * information.
+   */
+  public static CacheStats stripEvictionStats(CacheStats stats) {
+    return CacheStats.of(
+        stats.hitCount(),
+        stats.missCount(),
+        stats.loadSuccessCount(),
+        stats.loadFailureCount(),
+        stats.totalLoadTime(),
+        0L,
+        0L);
+  }
+
+  /**
+   * Stats for synchronous operations against the backing {@link Cache} are tracked in {@link
+   * CacheStats}. This method returns a {@link CacheStats} instance that represents synchronous ops
+   * since this cache was marked as {@link SolrCache.State#LIVE} via {@link #setState(State)}.
+   */
+  private CacheStats syncStats() {
+    return cache.stats().minus(offsetSyncStats.get());
   }
 
   /** Returns the description of this cache. */
@@ -479,7 +564,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
         new MetricsMap(
             map -> {
               if (cache != null) {
-                CacheStats stats = cache.stats();
+                CacheStats stats = syncStats();
                 long hitCount = stats.hitCount() + hits.sum();
                 long insertCount = inserts.sum();
                 long lookupCount = stats.requestCount() + lookups.sum();
