@@ -53,8 +53,10 @@ import org.junit.Test;
 public class TestExportTool extends SolrCloudTestCase {
 
   public void testOutputFormatToFileNameMapping() {
+
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     String url = "http://example:8983/solr/mycollection";
-    ExportTool.Info info = new ExportTool.MultiThreadedRunner(url, null);
+    ExportTool.Info info = new ExportTool.MultiThreadedRunner(runtime, url, null);
 
     info.setOutFormat(null, "json", false);
     assertEquals("mycollection.json", info.out);
@@ -223,11 +225,9 @@ public class TestExportTool extends SolrCloudTestCase {
       assertEquals(docCount, totalDocsFromCores);
 
       ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
-      ExportTool.MultiThreadedRunner info;
-      String absolutePath;
 
-      info = new ExportTool.MultiThreadedRunner(runtime, url, null);
-      absolutePath =
+      ExportTool.MultiThreadedRunner info = new ExportTool.MultiThreadedRunner(runtime, url, null);
+      String absolutePath =
           baseDir.resolve(COLLECTION_NAME + random().nextInt(100000) + ".javabin").toString();
       info.setOutFormat(absolutePath, "javabin", false);
       info.setLimit("-1");
@@ -237,6 +237,7 @@ public class TestExportTool extends SolrCloudTestCase {
         assertEquals(
             e.getValue().longValue(), info.corehandlers.get(e.getKey()).receivedDocs.get());
       }
+
       info = new ExportTool.MultiThreadedRunner(runtime, url, null);
       absolutePath =
           baseDir.resolve(COLLECTION_NAME + random().nextInt(100000) + ".jsonl").toString();
