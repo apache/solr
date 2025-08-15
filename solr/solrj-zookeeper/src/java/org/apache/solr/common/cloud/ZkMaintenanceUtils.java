@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.CreateMode;
