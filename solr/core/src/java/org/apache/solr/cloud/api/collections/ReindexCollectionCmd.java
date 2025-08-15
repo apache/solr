@@ -433,9 +433,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
               + "id=\"topic_"
               + targetCollection
               + "\","
-              +
-              // some of the documents eg. in .system contain large blobs
-              "rows=\""
+              + "rows=\""
               + batchSize
               + "\","
               + "initialCheckpoint=\"0\"))))");
