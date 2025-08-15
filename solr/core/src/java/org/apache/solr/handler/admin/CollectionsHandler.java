@@ -512,7 +512,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CREATE,
         (req, rsp, h) -> {
           final var requestBody =
-              CreateCollection.createRequestBodyFromV1Params(req.getParams(), true);
+              CreateCollection.createRequestBodyFromV1Params(
+                  req.getParams(), true, Optional.empty());
           final CreateCollection createApi = new CreateCollection(h.coreContainer, req, rsp);
           final SolrJerseyResponse response = createApi.createCollection(requestBody);
 

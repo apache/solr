@@ -23,6 +23,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.util.Map;
+import java.util.Optional;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -73,7 +74,8 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
     // a CollectionOperation reads params and produces a message (Map) that is supposed to be sent
     // to the Overseer. Although we could create the Map without it, there are a fair amount of
     // rules we don't want to reproduce.
-    final var createReqBody = CreateCollection.createRequestBodyFromV1Params(createReqParams, true);
+    final var createReqBody =
+        CreateCollection.createRequestBodyFromV1Params(createReqParams, true, Optional.empty());
     CreateCollection.populateDefaultsIfNecessary(ccc.getCoreContainer(), createReqBody);
     final ZkNodeProps createMessage = CreateCollection.createRemoteMessage(createReqBody);
 

@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.solr.client.api.endpoint.CreateAliasApi;
 import org.apache.solr.client.api.model.CategoryRoutedAliasProperties;
 import org.apache.solr.client.api.model.CreateAliasRequestBody;
@@ -199,7 +200,8 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
     final SolrParams createCollectionParams =
         getHierarchicalParametersByPrefix(params, CREATE_COLLECTION_PREFIX);
     createBody.collCreationParameters =
-        CreateCollection.createRequestBodyFromV1Params(createCollectionParams, false);
+        CreateCollection.createRequestBodyFromV1Params(
+            createCollectionParams, false, Optional.empty());
 
     return createBody;
   }

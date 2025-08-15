@@ -34,6 +34,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 
 import jakarta.inject.Inject;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -193,7 +194,8 @@ public class RestoreCollection extends BackupAPIBase implements CollectionBackup
     restoreBody.async = solrParams.get(ASYNC);
 
     restoreBody.createCollectionParams =
-        CreateCollection.createRequestBodyFromV1Params(solrParams, false);
+        CreateCollection.createRequestBodyFromV1Params(
+            solrParams, false, Optional.of(COLLECTION_PROP));
 
     return restoreBody;
   }
