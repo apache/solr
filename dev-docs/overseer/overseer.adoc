@@ -403,7 +403,7 @@ Otherwise, if the `Session` is already busy (`isBusy()`) at the requested lock l
 If the `Session` is not busy, an attempt is made to grab the lock on the corresponding `Node` of the `LockTree`. By calling its `root.lock()` method with appropriate params (see next section for details).
 
 If the lock can’t be obtained on the `LockTree`, the `Session` marks the requested node as busy (and just this one, not the whole path) in `SessionNode.markBusy()`. This doesn’t necessarily make sense to me (I would have expected the node to be marked as busy when the lock was obtained? EDIT: this makes more sense now, see https://issues.apache.org/jira/browse/SOLR-14546?focusedCommentId=17128157&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-17128157[comment on SOLR-14546]), but if as stated above a new session is created each time, this marking busy doesn’t matter much (doesn’t make any difference actually).
-When nodes mentioned in a locking path do not exist they are created (the lock tree representation is lazy).
+When nodes mentioned in a locking path do not exist they are created (the lock tree representation is lazy). +
 
 Note that there is no resetting the busy flag of a `SessionNode` in a `Session`.
 
