@@ -305,6 +305,13 @@ This should be considered as a last-resort option as the default list may change
 </searchComponent>
 ----
 
+=== Developing Search Components
+
+One of Solr's best characteristics is how pluggable it is.  You can easily develop your own Search Components.  Here are some tips:
+
+==== Sharing memory and disk intensive objects
+Objects that are shared by multiple cores on the same Solr node should use the {solr-javadocs}/core/org/apache/solr/core/CoreContainer.html#getObjectCache()[CoreContainer.getObjectCache] capabilty to prevent multiple copies of the same object from being loaded.
+
 
 == Update Request Handlers
 
