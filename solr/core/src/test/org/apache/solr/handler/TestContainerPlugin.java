@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
@@ -170,7 +171,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     // just check if the plugin is indeed registered
     Callable<V2Response> readPluginState = getPlugin("/cluster/plugin");
     V2Response rsp = readPluginState.call();
-    assertEquals(C3.class.getName(), rsp._getStr("/plugin/testplugin/class", null));
+    assertEquals(C3.class.getName(), rsp._getStr("/plugin/testplugin/class"));
 
     // let's test the plugin
     TestDistribFileStore.assertResponseValues(
@@ -183,7 +184,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     // verify it is removed
     rsp = readPluginState.call();
-    assertNull(rsp._get("/plugin/testplugin/class", null));
+    assertNull(rsp._get("/plugin/testplugin/class"));
 
     try (ErrorLogMuter errors = ErrorLogMuter.substring("TestContainerPlugin$C4")) {
       // test with a class  @EndPoint methods. This also uses a template in the path name
@@ -230,7 +231,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     // just check if the plugin is indeed registered
     rsp = readPluginState.call();
-    assertEquals(C6.class.getName(), rsp._getStr("/plugin/clusterSingleton/class", null));
+    assertEquals(C6.class.getName(), rsp._getStr("/plugin/clusterSingleton/class"));
 
     assertTrue("ccProvided", C6.ccProvided);
     assertTrue("startCalled", C6.startCalled);
@@ -395,7 +396,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     // Verify that the expected error is thrown and the plugin is not registered
     expectError(addPlugin, "invalid config");
     V2Response response = readPluginState.call();
-    assertNull(response._getStr("/plugin/validatableplugin/class", null));
+    assertNull(response._getStr("/plugin/validatableplugin/class"));
 
     // Now register it with a valid configuration
     config.willPassValidation = true;
@@ -405,7 +406,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     response = readPluginState.call();
     assertEquals(
         ConfigurablePluginWithValidation.class.getName(),
-        response._getStr("/plugin/validatableplugin/class", null));
+        response._getStr("/plugin/validatableplugin/class"));
   }
 
   public static class CC1 extends CC {}
@@ -587,7 +588,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       V2Request req, SolrClient client, String errPath, String expectErrorMsg) {
     RemoteExecutionException e =
         expectThrows(RemoteExecutionException.class, () -> req.process(client));
-    String msg = e.getMetaData()._getStr(errPath, "");
+    String msg = Objects.requireNonNullElse(e.getMetaData()._getStr(errPath), "");
     assertTrue(expectErrorMsg, msg.contains(expectErrorMsg));
   }
 }

@@ -76,7 +76,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String BASE_URL_PROP = "base_url";
   public static final String NODE_NAME_PROP = "node_name";
   public static final String CORE_NODE_NAME_PROP = "core_node_name";
-  public static final String ROLES_PROP = "roles";
   public static final String STATE_PROP = "state";
   // if this flag equals to false and the replica does not exist in cluster state, set state op
   // become no op (default is true)
@@ -911,8 +910,7 @@ public class ZkStateReader implements SolrCloseable {
     if (replica == null || replica.getBaseUrl() == null) {
       return null;
     }
-    ZkCoreNodeProps props = new ZkCoreNodeProps(replica);
-    return props.getCoreUrl();
+    return replica.getCoreUrl();
   }
 
   public Replica getLeader(Set<String> liveNodes, DocCollection docCollection, String shard) {

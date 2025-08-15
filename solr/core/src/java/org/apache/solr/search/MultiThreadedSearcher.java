@@ -52,7 +52,8 @@ public class MultiThreadedSearcher {
       Query query,
       boolean needTopDocs,
       boolean needMaxScore,
-      boolean needDocSet)
+      boolean needDocSet,
+      QueryResult queryResult)
       throws IOException {
     Collection<CollectorManager<Collector, Object>> collectors = new ArrayList<>();
 
@@ -90,10 +91,17 @@ public class MultiThreadedSearcher {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     CollectorManager<Collector, Object>[] colls = collectors.toArray(new CollectorManager[0]);
-    SolrMultiCollectorManager manager = new SolrMultiCollectorManager(colls);
+    final SolrMultiCollectorManager manager = new SolrMultiCollectorManager(cmd, colls);
     Object[] ret;
     try {
       ret = searcher.search(query, manager);
+    } catch (EarlyTerminatingCollectorException ex) {
+      ret = manager.reduce();
+      queryResult.setMaxHitsTerminatedEarly(true);
+      queryResult.setPartialResults(Boolean.TRUE);
+      queryResult.setPartialResultsDetails(ex.getMessage());
+      queryResult.setApproximateTotalHits(
+          ex.getApproximateTotalHits(searcher.getIndexReader().maxDoc()));
     } catch (Exception ex) {
       if (ex instanceof RuntimeException
           && ex.getCause() != null
@@ -191,7 +199,7 @@ public class MultiThreadedSearcher {
     final ScoreMode scoreMode;
     private final Object[] result;
 
-    public SearchResult(ScoreMode scoreMode, Object[] result) {
+    SearchResult(ScoreMode scoreMode, Object[] result) {
       this.scoreMode = scoreMode;
       this.result = result;
     }
@@ -252,10 +260,14 @@ public class MultiThreadedSearcher {
 
       MaxScoreCollector collector;
       float maxScore = 0.0f;
-      for (Iterator var4 = collectors.iterator();
-          var4.hasNext();
+      for (Iterator collectorIterator = collectors.iterator();
+          collectorIterator.hasNext();
           maxScore = Math.max(maxScore, collector.getMaxScore())) {
-        collector = (MaxScoreCollector) var4.next();
+        Collector next = (Collector) collectorIterator.next();
+        if (next instanceof final EarlyTerminatingCollector earlyTerminatingCollector) {
+          next = earlyTerminatingCollector.getDelegate();
+        }
+        collector = (MaxScoreCollector) next;
       }
 
       return new MaxScoreResult(maxScore);
@@ -324,6 +336,9 @@ public class MultiThreadedSearcher {
       Collector collector;
       for (Object o : collectors) {
         collector = (Collector) o;
+        if (collector instanceof final EarlyTerminatingCollector earlyTerminatingCollector) {
+          collector = earlyTerminatingCollector.getDelegate();
+        }
         if (collector instanceof TopDocsCollector) {
           TopDocs td = ((TopDocsCollector) collector).topDocs(0, len);
           assert td != null : Arrays.asList(topDocs);
@@ -341,7 +356,7 @@ public class MultiThreadedSearcher {
         } else {
           mergedTopDocs = TopDocs.merge(0, len, topDocs);
         }
-        totalHits = (int) mergedTopDocs.totalHits.value;
+        totalHits = (int) mergedTopDocs.totalHits.value();
       }
       return new TopDocsResult(mergedTopDocs, totalHits);
     }

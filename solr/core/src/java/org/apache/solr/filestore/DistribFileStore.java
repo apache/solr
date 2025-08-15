@@ -239,7 +239,7 @@ public class DistribFileStore implements FileStore {
               coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(liveNode);
           final var metadataRequest = new FileStoreApi.GetMetadata(path);
           final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
-          final var metadataResponse = metadataRequest.process(client).getParsed();
+          final var metadataResponse = metadataRequest.process(client);
           boolean nodeHasBlob =
               metadataResponse.files != null && metadataResponse.files.containsKey(path);
 
@@ -285,7 +285,12 @@ public class DistribFileStore implements FileStore {
 
         @Override
         public Date getTimeStamp() {
-          return new Date(realPath().toFile().lastModified());
+          try {
+            return new Date(Files.getLastModifiedTime(realPath()).toMillis());
+          } catch (IOException e) {
+            throw new SolrException(
+                SERVER_ERROR, "Failed to retrieve the last modified time for: " + realPath(), e);
+          }
         }
 
         @Override
@@ -295,7 +300,12 @@ public class DistribFileStore implements FileStore {
 
         @Override
         public long size() {
-          return realPath().toFile().length();
+          try {
+            return Files.size(realPath());
+          } catch (IOException e) {
+            throw new SolrException(
+                SERVER_ERROR, "Failed to retrieve the file size for: " + realPath(), e);
+          }
         }
 
         @Override
@@ -334,18 +344,19 @@ public class DistribFileStore implements FileStore {
   private void distribute(FileInfo info) {
     try {
       String dirName = info.path.substring(0, info.path.lastIndexOf('/'));
+
       coreContainer
           .getZkController()
           .getZkClient()
-          .makePath(ZK_PACKAGESTORE + dirName, false, true);
-      coreContainer
-          .getZkController()
-          .getZkClient()
-          .create(
+          .makePath(
               ZK_PACKAGESTORE + info.path,
               info.getDetails().getMetaData().sha512.getBytes(UTF_8),
               CreateMode.PERSISTENT,
-              true);
+              null,
+              false,
+              true,
+              0);
+
     } catch (Exception e) {
       throw new SolrException(SERVER_ERROR, "Unable to create an entry in ZK", e);
     }
@@ -387,7 +398,7 @@ public class DistribFileStore implements FileStore {
           pullFileRequest.setGetFrom(nodeToFetchFrom);
           final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
           // fire and forget
-          pullFileRequest.process(client).getParsed();
+          pullFileRequest.process(client);
         } catch (Exception e) {
           log.info("Node: {} failed to respond for file fetch notification", node, e);
           // ignore the exception
@@ -442,7 +453,7 @@ public class DistribFileStore implements FileStore {
   }
 
   @Override
-  public void get(String path, Consumer<FileEntry> consumer, boolean fetchmissing)
+  public void get(String path, Consumer<FileEntry> consumer, boolean fetchMissing)
       throws IOException {
     Path file = getRealPath(path);
     String simpleName = file.getFileName().toString();
@@ -563,7 +574,6 @@ public class DistribFileStore implements FileStore {
         @SuppressWarnings({"rawtypes"})
         List myFiles = list(path, s -> true);
         for (Object f : l) {
-          // TODO: https://issues.apache.org/jira/browse/SOLR-15426
           // l should be a List<String> and myFiles should be a List<FileDetails>, so contains
           // should always return false!
           if (!myFiles.contains(f)) {

@@ -91,6 +91,7 @@ dependencies {
   implementation libs.apache.lucene.join
   implementation libs.apache.lucene.misc
   implementation libs.apache.lucene.queryparser
+  implementation libs.apache.lucene.sandbox
   implementation libs.apache.lucene.spatialextras
   implementation libs.apache.lucene.suggest
 
@@ -195,8 +196,9 @@ dependencies {
   testImplementation libs.apache.lucene.testframework
 
   testImplementation libs.eclipse.jetty.server
-  testImplementation libs.eclipse.jetty.servlet
-
+  testImplementation libs.eclipse.jetty.ee10.servlet
+  testImplementation libs.eclipse.jetty.util
+  testImplementation libs.jakarta.servlet.api
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest

@@ -439,6 +439,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       try (SolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
         q.set("qt", "/admin/info/system");
+
         QueryResponse rsp = adminClient.query(q);
         assertNotNull(rsp.getResponse().get("mode"));
         assertNotNull(rsp.getResponse().get("lucene"));

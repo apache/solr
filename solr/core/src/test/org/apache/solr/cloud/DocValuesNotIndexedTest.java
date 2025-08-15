@@ -478,6 +478,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       fieldAttributes.put("indexed", "false");
       fieldAttributes.put("multiValued", multi ? "true" : "false");
       fieldAttributes.put("docValues", "true");
+      fieldAttributes.put("useDocValuesAsStored", "true");
       updateList.add(new AddField(fieldAttributes));
     }
   }

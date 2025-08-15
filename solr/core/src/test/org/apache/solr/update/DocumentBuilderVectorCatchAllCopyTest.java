@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.lucene.document.Document;
+// TBD
 import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;

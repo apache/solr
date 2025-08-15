@@ -572,7 +572,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           assertEquals(2, booleanQuery.clauses().size());
           // the first clause is the original query, which is a WrappedQuery because the cache=false
           // local param was provided; the WrappedQuery doesn't cache; it contains a TermQuery
-          Query firstClause = booleanQuery.clauses().get(0).getQuery();
+          Query firstClause = booleanQuery.clauses().get(0).query();
           assertTrue(firstClause instanceof WrappedQuery);
           assertFalse(((WrappedQuery) firstClause).getCache());
           assertTrue(((WrappedQuery) firstClause).getWrappedQuery() instanceof TermQuery);
@@ -589,7 +589,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           // the first clause is a FilterQuery that contains the original query
           // (ElevateComponent introduces this FilterQuery to make sure the original query consults
           // the cache)
-          Query firstClause = booleanQuery.clauses().get(0).getQuery();
+          Query firstClause = booleanQuery.clauses().get(0).query();
           assertTrue(firstClause instanceof FilterQuery);
           FilterQuery filterQuery = (FilterQuery) firstClause;
           // the first clause is the original query, which is a WrappedQuery because the cache=false
@@ -609,7 +609,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           BooleanQuery booleanQuery = (BooleanQuery) ((WrappedQuery) filters[5]).getWrappedQuery();
           assertEquals(2, booleanQuery.clauses().size());
           // the first clause is a FilterQuery that contains the original query
-          Query firstClause = booleanQuery.clauses().get(0).getQuery();
+          Query firstClause = booleanQuery.clauses().get(0).query();
           assertTrue(firstClause instanceof FilterQuery);
           FilterQuery filterQuery = (FilterQuery) firstClause;
           // the original query is a TermQuery
@@ -625,7 +625,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           BooleanQuery booleanQuery = (BooleanQuery) ((WrappedQuery) filters[6]).getWrappedQuery();
           assertEquals(2, booleanQuery.clauses().size());
           // the first clause is the original query, which is a FilterQuery containing a TermQuery
-          Query firstClause = booleanQuery.clauses().get(0).getQuery();
+          Query firstClause = booleanQuery.clauses().get(0).query();
           assertTrue(firstClause instanceof FilterQuery);
           FilterQuery filterQuery = (FilterQuery) firstClause;
           assertTrue(filterQuery.getQuery() instanceof TermQuery);
@@ -640,7 +640,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           BooleanQuery booleanQuery = (BooleanQuery) ((WrappedQuery) filters[7]).getWrappedQuery();
           assertEquals(2, booleanQuery.clauses().size());
           // the first clause is the original query, which is a FilterQuery containing a TermQuery
-          Query firstClause = booleanQuery.clauses().get(0).getQuery();
+          Query firstClause = booleanQuery.clauses().get(0).query();
           assertTrue(firstClause instanceof FilterQuery);
           FilterQuery filterQuery = (FilterQuery) firstClause;
           assertTrue(filterQuery.getQuery() instanceof TermQuery);

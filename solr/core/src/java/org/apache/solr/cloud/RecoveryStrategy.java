@@ -365,9 +365,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
     while (!successfulRecovery && !Thread.currentThread().isInterrupted() && !isClosed()) {
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
-        ZkNodeProps leaderprops =
+        Replica leader =
             zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId());
-        final String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderprops);
+        final String leaderUrl = leader.getCoreUrl();
         final String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
 
         // TODO: We can probably delete most of this code if we say this strategy can only be used
@@ -407,7 +407,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             log.info("Stopping background replicate from leader process");
             zkController.stopReplicationFromLeader(coreName);
           }
-          replicate(zkController.getNodeName(), core, leaderprops);
+          replicate(zkController.getNodeName(), core, leader);
 
           if (isClosed()) {
             if (log.isInfoEnabled()) {
@@ -799,11 +799,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
         return null;
       }
 
-      Replica leaderReplica;
+      Replica leaderReplica = null;
       try {
         leaderReplica =
             zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId());
       } catch (SolrException e) {
+        // ignore
+      }
+      if (leaderReplica == null) {
         Thread.sleep(500);
         continue;
       }

@@ -69,6 +69,12 @@ description = 'Grandparent project for Apache Solr'
 // Propagate version and derived properties across projects.
 allprojects {
   version = rootProject.version
+
+  gradle.projectsEvaluated {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xmaxerrs" << "1000"
+    }
+  }
 }
 
 ext {
@@ -117,6 +123,9 @@ ext {
 
   // For testing code
   vectorIncubatorJavaVersions = [ JavaVersion.VERSION_21, JavaVersion.VERSION_22, JavaVersion.VERSION_23, JavaVersion.VERSION_24, JavaVersion.VERSION_25 ] as Set
+
+  // Use gradle flag in root project for further referencing
+  withUiModule = gradle.ext.withUiModule
 }
 
 // Include smaller chunks configuring dedicated build areas.

@@ -345,11 +345,11 @@ public class ZkMaintenanceUtils {
               return FileVisitResult.CONTINUE;
             }
             if (isFileForbiddenInConfigSets(filename)) {
-              log.info(
-                  "uploadToZK skipping '{}' due to forbidden file types '{}'",
-                  filename,
-                  USE_FORBIDDEN_FILE_TYPES);
-              return FileVisitResult.CONTINUE;
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "The file type provided for upload, '"
+                      + filename
+                      + "', is forbidden for use in uploading configsets.");
             }
             // TODO: Cannot check MAGIC header for file since FileTypeGuesser is in core
             String zkNode = createZkNodeName(zkPath, rootPath, file);

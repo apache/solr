@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
@@ -72,9 +71,6 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, ExternalPaths.DEFAULT_CONFIGSET)
         .configure();
-    // SchemaDesignerAPI depends on the blob store ".system" collection existing.
-    CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(BLOB_STORE_ID, 1, 1);
   }
 
   @AfterClass
@@ -327,7 +323,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertNotNull(docIds);
     assertEquals(100, docIds.size()); // designer limits the doc ids to top 100
 
-    String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM, null);
+    String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM);
     assertNotNull(idField);
   }
 
@@ -378,7 +374,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertNotNull(rsp.getValues().get("fields"));
     assertNotNull(rsp.getValues().get("fieldTypes"));
     assertNotNull(rsp.getValues().get("docIds"));
-    String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM, null);
+    String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM);
     assertNotNull(idField);
     assertDesignerSettings(expSettings, rsp.getValues());
 
@@ -696,7 +692,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     SolrQuery query = new SolrQuery("*:*");
     query.setRows(0);
     QueryResponse qr = cluster.getSolrClient().query(collection, query);
-    // this proves the docs were stored in the blob store too
+    // this proves the docs were stored in the filestore too
     assertEquals(4, qr.getResults().getNumFound());
   }
 

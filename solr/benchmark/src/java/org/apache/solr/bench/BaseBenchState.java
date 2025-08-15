@@ -16,8 +16,6 @@
  */
 package org.apache.solr.bench;
 
-import com.sun.management.HotSpotDiagnosticMXBean;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
@@ -25,6 +23,7 @@ import java.nio.file.Path;
 import java.util.SplittableRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.bench.generators.SolrGen;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -132,25 +131,28 @@ public class BaseBenchState {
    * Dump heap.
    *
    * @param benchmarkParams the benchmark params
-   * @throws IOException the io exception
    */
   @SuppressForbidden(reason = "access to force heapdump")
-  public static void dumpHeap(BenchmarkParams benchmarkParams) throws IOException {
+  public static void dumpHeap(BenchmarkParams benchmarkParams) {
     String heapDump = System.getProperty("dumpheap");
     if (heapDump != null) {
 
       boolean dumpHeap = HEAP_DUMPED.compareAndExchange(false, true);
       if (dumpHeap) {
         Path file = Path.of(heapDump);
-        PathUtils.deleteDirectory(file);
-        Files.createDirectories(file);
-        Path dumpFile = file.resolve(benchmarkParams.id() + ".hprof");
+        try {
+          PathUtils.deleteDirectory(file);
+          Files.createDirectories(file);
+          Path dumpFile = file.resolve(benchmarkParams.id() + ".hprof");
 
-        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        HotSpotDiagnosticMXBean mxBean =
-            ManagementFactory.newPlatformMXBeanProxy(
-                server, "com.sun.management:type=HotSpotDiagnostic", HotSpotDiagnosticMXBean.class);
-        mxBean.dumpHeap(dumpFile.toAbsolutePath().toString(), true);
+          MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+          ObjectName hotSpot = ObjectName.getInstance("com.sun.management:type=HotSpotDiagnostic");
+          Object[] params = new Object[] {dumpFile.toAbsolutePath().toString(), true};
+          String signature[] = new String[] {"java.lang.String", "boolean"};
+          server.invoke(hotSpot, "dumpHeap", params, signature);
+        } catch (Exception e) {
+          log("unable to dump heap " + e.getMessage());
+        }
       }
     }
   }

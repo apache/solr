@@ -25,6 +25,7 @@ import static org.apache.solr.util.QueryMatchers.termQuery;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.isA;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -41,6 +42,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
@@ -140,6 +142,18 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
           req("defType", "edismax", "q", "doesnotexist_s:( * * * )", "sow", sow),
           "/response/numFound==0" // nothing should be found
           );
+    }
+  }
+
+  @Test
+  public void testMatchAllDocs() throws Exception {
+    for (String sow : Arrays.asList("true", "false")) {
+      for (String q : Arrays.asList("*:*", "*")) {
+        try (SolrQueryRequest req = req("sow", sow, "qf", "id")) {
+          QParser qParser = QParser.getParser(q, "edismax", req);
+          assertThat(qParser.getQuery(), isA(MatchAllDocsQuery.class));
+        }
+      }
     }
   }
 
@@ -3158,7 +3172,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   private boolean containsClause(
       BooleanQuery query, String field, String value, int boost, boolean fuzzy) {
     for (BooleanClause clause : query) {
-      if (containsClause(clause.getQuery(), field, value, boost, fuzzy)) {
+      if (containsClause(clause.query(), field, value, boost, fuzzy)) {
         return true;
       }
     }
@@ -3271,13 +3285,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
           boolean rewrittenSubQ = false; // dirty flag: rebuild the repacked query?
           BooleanQuery.Builder builder = newBooleanQuery();
           for (BooleanClause clause : ((BooleanQuery) q).clauses()) {
-            Query subQ = clause.getQuery();
+            Query subQ = clause.query();
             if (subQ instanceof TermQuery) {
               Term subTerm = ((TermQuery) subQ).getTerm();
               if (frequentlyMisspelledWords.contains(subTerm.text())) {
                 rewrittenSubQ = true;
                 Query fuzzySubQ = newFuzzyQuery(subTerm, MIN_SIMILARITY, getFuzzyPrefixLength());
-                clause = newBooleanClause(fuzzySubQ, clause.getOccur());
+                clause = newBooleanClause(fuzzySubQ, clause.occur());
               }
             }
             builder.add(clause);

@@ -1755,7 +1755,6 @@ public class ZkController implements Closeable {
 
       log.debug("publishing state={}", state);
       // System.out.println(Thread.currentThread().getStackTrace()[3]);
-      Integer numShards = cd.getCloudDescriptor().getNumShards();
 
       assert collection != null && collection.length() > 0;
 
@@ -1768,7 +1767,6 @@ public class ZkController implements Closeable {
             props.put(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower());
             props.put(ZkStateReader.STATE_PROP, state.toString());
             props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
-            props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
             props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
             props.put(
                 ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(getNodeName()));
@@ -1777,9 +1775,6 @@ public class ZkController implements Closeable {
             props.put(
                 ZkStateReader.REPLICA_TYPE, cd.getCloudDescriptor().getReplicaType().toString());
             props.put(ZkStateReader.FORCE_SET_STATE_PROP, "false");
-            if (numShards != null) {
-              props.put(ZkStateReader.NUM_SHARDS_PROP, numShards.toString());
-            }
             props.putIfNotNull(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
           };
 
@@ -2151,7 +2146,8 @@ public class ZkController implements Closeable {
 
   /** Attempts to cancel all leader elections. This method should be called on node shutdown. */
   public void tryCancelAllElections() {
-    if (zkClient.isClosed()) {
+    if (!zkClient.isConnected()) {
+      log.warn("Skipping leader election node cleanup since we're disconnected from ZooKeeper.");
       return;
     }
     Collection<ElectionContext> values = electionContexts.values();

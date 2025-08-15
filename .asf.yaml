@@ -30,6 +30,7 @@ github:
     branch_9_6: {}
     branch_9_7: {}
     branch_9_8: {}
+    branch_9_9: {}
     branch_9x: {}
 
   protected_tags:

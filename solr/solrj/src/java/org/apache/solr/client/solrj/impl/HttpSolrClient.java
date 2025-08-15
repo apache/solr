@@ -343,12 +343,10 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
     Header[] contextHeaders = buildRequestSpecificHeaders(request);
 
-    // The parser 'wt=' and 'version=' params are used instead of the original
-    // params
+    // The parser 'wt=' param is used instead of the original params
     ModifiableSolrParams wparams = new ModifiableSolrParams(params);
     if (parser != null) {
       wparams.set(CommonParams.WT, parser.getWriterType());
-      wparams.set(CommonParams.VERSION, parser.getVersion());
     }
     if (invariantParams != null) {
       wparams.add(invariantParams);
@@ -752,7 +750,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         new BasicHeader(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
 
     contextHeaders[1] =
-        new BasicHeader(CommonParams.SOLR_REQUEST_TYPE_PARAM, request.getRequestType());
+        new BasicHeader(CommonParams.SOLR_REQUEST_TYPE_PARAM, request.getRequestType().toString());
 
     return contextHeaders;
   }

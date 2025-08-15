@@ -88,7 +88,7 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
       ContainerRequestContext containerRequestContext) {
     // First, handle any exception-related metrics
     final Exception normalizedException =
-        RequestHandlerBase.normalizeReceivedException(solrQueryRequest, exception);
+        RequestHandlerBase.processReceivedException(solrQueryRequest, exception);
     final RequestHandlerBase.HandlerMetrics metrics =
         (RequestHandlerBase.HandlerMetrics) containerRequestContext.getProperty(HANDLER_METRICS);
     if (metrics != null) {
