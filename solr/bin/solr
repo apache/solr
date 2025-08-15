@@ -316,10 +316,10 @@ if [ "${SOLR_GZIP_ENABLED:-true}" == "true" ]; then
 fi
 
 # Jetty configuration for new Admin UI
-if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ] ||
-   [ "${SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED:-false}" == "true" ]; then
-  # Do not enable new Admin UI
-  echo -e "New Admin UI not enabled"
+if [ "${SOLR_UI_ENABLED:-true}" == "false" ] ||
+   [ "${SOLR_ADMIN_UI_EXPERIMENTAL_ENABLED:-true}" == "false" ]; then
+  # Do not enable new Solr UI
+  echo -e "New Solr UI not enabled"
 else
   # Enable new Admin UI
   SOLR_JETTY_CONFIG+=("--module=new-ui")
