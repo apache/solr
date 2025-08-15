@@ -285,7 +285,7 @@ public abstract class RequestHandlerBase
     private LongCounter requestCounter(
         SolrMetricsContext solrMetricsContext, boolean isNodeRegistry) {
       return (isNodeRegistry)
-          ? solrMetricsContext.longCounter("solr_node_requests", "HTTP Solr node requests", null)
+          ? solrMetricsContext.longCounter("solr_node_requests", "HTTP Solr node requests")
           : solrMetricsContext.longCounter("solr_core_requests", "HTTP Solr core requests");
     }
 
@@ -293,7 +293,7 @@ public abstract class RequestHandlerBase
         SolrMetricsContext solrMetricsContext, boolean isNodeRegistry) {
       return (isNodeRegistry)
           ? solrMetricsContext.longCounter(
-              "solr_node_requests_errors", "HTTP Solr node request errors", null)
+              "solr_node_requests_errors", "HTTP Solr node request errors")
           : solrMetricsContext.longCounter(
               "solr_core_requests_errors", "HTTP Solr core request errors");
     }
@@ -302,7 +302,7 @@ public abstract class RequestHandlerBase
         SolrMetricsContext solrMetricsContext, boolean isNodeRegistry) {
       return (isNodeRegistry)
           ? solrMetricsContext.longCounter(
-              "solr_node_requests_timeout", "HTTP Solr node request timeouts", null)
+              "solr_node_requests_timeout", "HTTP Solr node request timeouts")
           : solrMetricsContext.longCounter(
               "solr_core_requests_timeout", "HTTP Solr core request timeouts");
     }
