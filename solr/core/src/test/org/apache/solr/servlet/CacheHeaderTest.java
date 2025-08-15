@@ -36,7 +36,8 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    System.setProperty("solr.enable.remote.streaming", "true"); // needed for testCacheVetoHandler
+    System.setProperty(
+        "solr.requests.streaming.remote.enabled", "true"); // needed for testCacheVetoHandler
 
     Path solrHomeDirectory = createTempDir();
     setupJettyTestHome(solrHomeDirectory, "collection1");

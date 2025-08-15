@@ -111,8 +111,8 @@ public class SolrRequestParsers {
       formUploadLimitKB = globalConfig.getFormUploadLimitKB();
 
       // security risks; disabled by default
-      enableRemoteStreams = Boolean.getBoolean("solr.enable.remote.streaming");
-      enableStreamBody = Boolean.getBoolean("solr.enable.stream.body");
+      enableRemoteStreams = Boolean.getBoolean("solr.requests.streaming.remote.enabled");
+      enableStreamBody = Boolean.getBoolean("solr.requests.streaming.body.enabled");
 
       // Let this filter take care of /select?xxx format
       handleSelect = globalConfig.isHandleSelect();
