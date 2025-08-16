@@ -43,7 +43,7 @@ teardown() {
 # I also have dreams of incorporating this as code snippets in a Tutorial via the ascii doc tags
 # like we use for the SolrJ code snippets.  That way we know the snippets continue to work!
 @test "Check lifecycle of sentiment classification" {
-  pip3 install transformers onnx onnxruntime torch
+  pip3 install transformers onnx onnxruntime torch "numpy<2"
   python3 -m transformers.onnx --opset 14 -m nlptown/bert-base-multilingual-uncased-sentiment --feature sequence-classification ${SOLR_TIP}/models/sentiment
   
   curl --insecure --output ${SOLR_TIP}/models/sentiment/vocab.txt https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment/resolve/main/vocab.txt
