@@ -62,11 +62,11 @@ import org.slf4j.LoggerFactory;
 
 /** This implements the public end points (/api/cluster/package) of package API. */
 public class PackageAPI {
-  public final boolean enablePackages = EnvUtils.getPropertyAsBool("enable.packages", false);
+  public final boolean enablePackages = EnvUtils.getPropertyAsBool("solr.packages.enabled", false);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ERR_MSG =
-      "Package loading is not enabled , Start your nodes with -Denable.packages=true";
+      "Package loading is not enabled , Start your nodes with -Dsolr.packages.enabled=true";
 
   final CoreContainer coreContainer;
   private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
