@@ -259,8 +259,7 @@ public final class SolrMetricTestUtils {
         "solr_core_requests",
         SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
             .label("handler", "/update")
-            .label("category", "QUERY")
-            .label("internal", "false")
+            .label("category", "UPDATE")
             .build());
   }
 
@@ -271,8 +270,7 @@ public final class SolrMetricTestUtils {
         "solr_core_requests",
         SolrMetricTestUtils.newCloudLabelsBuilder(core)
             .label("handler", "/update")
-            .label("category", "QUERY")
-            .label("internal", "false")
+            .label("category", "UPDATE")
             .build());
   }
 

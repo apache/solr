@@ -53,7 +53,8 @@ public class SolrCoreMetricManager implements Closeable {
   private String leaderRegistryName;
   private boolean cloudMode;
 
-  // Track all metric producers registered for this core so we can re-initialize them during rename
+  // Track all metric producers registered for this core so we can re-initialize them during core
+  // rename
   private final List<MetricProducerInfo> registeredProducers = new ArrayList<>();
 
   private record MetricProducerInfo(SolrMetricProducer producer, String scope) {}

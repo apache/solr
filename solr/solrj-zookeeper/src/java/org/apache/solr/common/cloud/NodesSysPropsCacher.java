@@ -75,8 +75,8 @@ public class NodesSysPropsCacher implements NodesSysProps, AutoCloseable {
   }
 
   // NOCOMMIT: These properties were fetched from the /admin/metrics endpoint. These properties were
-  // stored as strings instead of numeric values. This is not possible in OTEL metrics. Need to
-  // revisit this later.
+  // stored as strings instead of numeric values. This is not possible in OTEL metrics.
+  // Use /admin/info/properties to fetch system properties.
   private Map<String, Object> fetchProps(String nodeName, Collection<String> tags) {
     ModifiableSolrParams msp = new ModifiableSolrParams();
     msp.add(CommonParams.OMIT_HEADER, "true");
