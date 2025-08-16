@@ -4,8 +4,8 @@
 com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.1=jarValidation,testCompileClasspath,testRuntimeClasspath
 com.carrotsearch:hppc:0.10.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-annotations:2.18.2=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-core:2.18.2=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-databind:2.18.2=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-core:2.18.2=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-databind:2.18.2=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.18.2=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.18.2=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.18.2=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
