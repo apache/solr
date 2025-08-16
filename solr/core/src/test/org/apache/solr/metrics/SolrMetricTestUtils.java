@@ -17,6 +17,7 @@
 package org.apache.solr.metrics;
 
 import com.codahale.metrics.Counter;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
@@ -26,6 +27,7 @@ import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
@@ -68,8 +70,40 @@ public final class SolrMetricTestUtils {
     return shouldDefineMetrics ? getRandomMetricsWithReplacements(random, new HashMap<>()) : null;
   }
 
+  /**
+   * Generate random OpenTelemetry metric names for testing Prometheus metrics. Returns a map of
+   * metric names to their expected increment values.
+   */
+  public static Map<String, Long> getRandomPrometheusMetrics(Random random) {
+    return random.nextBoolean()
+        ? getRandomPrometheusMetricsWithReplacements(random, new HashMap<>())
+        : null;
+  }
+
+  public static Map<String, Long> getRandomPrometheusMetricsWithReplacements(
+      Random random, Map<String, Long> existing) {
+    HashMap<String, Long> metrics = new HashMap<>();
+    List<String> existingKeys = List.copyOf(existing.keySet());
+
+    int numMetrics = TestUtil.nextInt(random, 1, MAX_ITERATIONS);
+    for (int i = 0; i < numMetrics; ++i) {
+      boolean shouldReplaceMetric = !existing.isEmpty() && random.nextBoolean();
+      String name =
+          shouldReplaceMetric
+              ? existingKeys.get(TestUtil.nextInt(random, 0, existingKeys.size() - 1))
+              : TestUtil.randomSimpleString(random, 5, 10)
+                  + SUFFIX; // must be simple string for JMX publishing
+
+      Long incrementValue = TestUtil.nextLong(random, 1L, 1000L);
+      metrics.put(name, incrementValue);
+    }
+
+    return metrics;
+  }
+
   public static final String SUFFIX = "_testing";
 
+  // NOCOMMIT: This will get replaced by getRandomPrometheusMetricsWithReplacements
   public static Map<String, Counter> getRandomMetricsWithReplacements(
       Random random, Map<String, Counter> existing) {
     HashMap<String, Counter> metrics = new HashMap<>();
@@ -192,5 +226,85 @@ public final class SolrMetricTestUtils {
       SolrCore core, String metricName, Labels labels) {
     return getDatapoint(
         core, metricName, labels, HistogramSnapshot.HistogramDataPointSnapshot.class);
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot newStandaloneSelectRequestsDatapoint(
+      SolrCore core) {
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core,
+        "solr_core_requests",
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("handler", "/select")
+            .label("category", "QUERY")
+            .label("internal", "false")
+            .build());
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot newCloudSelectRequestsDatapoint(
+      SolrCore core) {
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core,
+        "solr_core_requests",
+        SolrMetricTestUtils.newCloudLabelsBuilder(core)
+            .label("handler", "/select")
+            .label("category", "QUERY")
+            .label("internal", "false")
+            .build());
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot newStandaloneUpdateRequestsDatapoint(
+      SolrCore core) {
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core,
+        "solr_core_requests",
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("handler", "/update")
+            .label("category", "UPDATE")
+            .build());
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot newCloudUpdateRequestsDatapoint(
+      SolrCore core) {
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core,
+        "solr_core_requests",
+        SolrMetricTestUtils.newCloudLabelsBuilder(core)
+            .label("handler", "/update")
+            .label("category", "UPDATE")
+            .build());
+  }
+
+  public static class TestSolrMetricProducer implements SolrMetricProducer {
+    SolrMetricsContext solrMetricsContext;
+    private final Map<String, io.opentelemetry.api.metrics.LongCounter> counters = new HashMap<>();
+    private final String coreName;
+    private final Map<String, Long> metrics;
+
+    public TestSolrMetricProducer(String coreName, Map<String, Long> metrics) {
+      this.coreName = coreName;
+      this.metrics = metrics;
+    }
+
+    @Override
+    public void initializeMetrics(
+        SolrMetricsContext parentContext, Attributes attributes, String scope) {
+      this.solrMetricsContext = parentContext.getChildContext(this);
+      for (Map.Entry<String, Long> entry : metrics.entrySet()) {
+        String metricName = entry.getKey();
+        Long incrementValue = entry.getValue();
+        var counter = solrMetricsContext.longCounter(metricName, "testing");
+        counters.put(metricName, counter);
+        counter.add(incrementValue, Attributes.of(AttributeKey.stringKey("core"), coreName));
+      }
+    }
+
+    @Override
+    public SolrMetricsContext getSolrMetricsContext() {
+      return solrMetricsContext;
+    }
+
+    public Map<String, io.opentelemetry.api.metrics.LongCounter> getCounters() {
+      return counters;
+    }
   }
 }
