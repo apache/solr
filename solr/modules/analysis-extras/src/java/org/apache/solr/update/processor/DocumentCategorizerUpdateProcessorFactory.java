@@ -20,7 +20,6 @@ package org.apache.solr.update.processor;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import ai.onnxruntime.OrtException;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -432,22 +431,22 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
         FileStore fs = req.getCoreContainer().getFileStore();
 
         var path = solrHome.resolve(ClusterFileStore.FILESTORE_DIRECTORY);
-        File modelFile = new File(model);
-        File vocabFile = new File(vocab);
+        Path modelFile = Path.of(model);
+        Path vocabFile = Path.of(vocab);
 
-        if (!Files.exists(modelFile.toPath())) {
-          modelFile = new File(path + "/" + model);
+        if (!Files.exists(modelFile)) {
+          modelFile = path.resolve(model);
         }
-        if (!Files.exists(vocabFile.toPath())) {
-          vocabFile = new File(path + "/" + vocab);
+        if (!Files.exists(vocabFile)) {
+          vocabFile = path.resolve(vocab);
         }
 
         log.info("initializing the documentCategorizerDL");
         try {
           documentCategorizerDL =
               new DocumentCategorizerDL(
-                  modelFile,
-                  vocabFile,
+                  modelFile.toFile(),
+                  vocabFile.toFile(),
                   getCategories(),
                   new AverageClassificationScoringStrategy(),
                   new InferenceOptions());
