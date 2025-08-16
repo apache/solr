@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -246,6 +247,9 @@ public class TransactionLog implements Closeable {
           channel.close();
         } catch (Exception e) {
           log.error("Error closing tlog file (after error opening)", e);
+        }
+        if (!openExisting) {
+          IOUtils.deleteFilesIgnoringExceptions(tlog);
         }
       }
     }

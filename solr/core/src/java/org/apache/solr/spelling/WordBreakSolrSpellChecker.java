@@ -226,8 +226,8 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     if (combineWords) {
       combineSuggestionList = new ArrayList<>(combineSuggestions.length);
       for (CombineSuggestion cs : combineSuggestions) {
-        int firstTermIndex = cs.originalTermIndexes[0];
-        int lastTermIndex = cs.originalTermIndexes[cs.originalTermIndexes.length - 1];
+        int firstTermIndex = cs.originalTermIndexes()[0];
+        int lastTermIndex = cs.originalTermIndexes()[cs.originalTermIndexes().length - 1];
         sb.delete(0, sb.length());
         for (int i = firstTermIndex; i <= lastTermIndex; i++) {
           if (i > firstTermIndex) {
@@ -240,7 +240,8 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
                 sb.toString(),
                 tokenArrWithSeparators.get(firstTermIndex).startOffset(),
                 tokenArrWithSeparators.get(lastTermIndex).endOffset());
-        combineSuggestionList.add(new ResultEntry(token, cs.suggestion.string, cs.suggestion.freq));
+        combineSuggestionList.add(
+            new ResultEntry(token, cs.suggestion().string, cs.suggestion().freq));
       }
     }
 

@@ -164,7 +164,7 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
             return new KafkaCrossDcConsumer(conf, startLatch) {
               @Override
               protected SolrMessageProcessor createSolrMessageProcessor() {
-                return new SolrMessageProcessor(solrClient, resubmitRequest -> 0L) {
+                return new SolrMessageProcessor(solrClientSupplier, resubmitRequest -> 0L) {
                   @Override
                   public Result<MirroredSolrRequest<?>> handleItem(
                       MirroredSolrRequest<?> mirroredSolrRequest) {

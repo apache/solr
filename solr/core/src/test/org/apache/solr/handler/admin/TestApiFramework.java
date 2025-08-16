@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.api.ApiBag.EMPTY_SPEC;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
@@ -56,7 +55,6 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.JsonSchemaValidator;
-import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -116,9 +114,9 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = invoke(containerHandlers, null, "/collections/_introspect", mockCC);
 
     Set<String> methodNames = new HashSet<>();
-    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
-    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
-    methodNames.add(rsp.getValues()._getStr("/spec[2]/methods[0]", null));
+    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]"));
+    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]"));
+    methodNames.add(rsp.getValues()._getStr("/spec[2]/methods[0]"));
     assertTrue(methodNames.contains("POST"));
   }
 
@@ -131,13 +129,13 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     ValidatingJsonMap spec = apis.get(0).getSpec();
 
-    assertEquals("POST", spec._getStr("/methods[0]", null));
-    assertEquals("POST", spec._getStr("/methods[0]", null));
-    assertEquals("/cluster/package", spec._getStr("/url/paths[0]", null));
-    assertEquals("string", spec._getStr("/commands/add/properties/package/type", null));
-    assertEquals("array", spec._getStr("/commands/add/properties/files/type", null));
-    assertEquals("string", spec._getStr("/commands/add/properties/files/items/type", null));
-    assertEquals("string", spec._getStr("/commands/delete/items/type", null));
+    assertEquals("POST", spec._getStr("/methods[0]"));
+    assertEquals("POST", spec._getStr("/methods[0]"));
+    assertEquals("/cluster/package", spec._getStr("/url/paths[0]"));
+    assertEquals("string", spec._getStr("/commands/add/properties/package/type"));
+    assertEquals("array", spec._getStr("/commands/add/properties/files/type"));
+    assertEquals("string", spec._getStr("/commands/add/properties/files/items/type"));
+    assertEquals("string", spec._getStr("/commands/delete/items/type"));
     SolrQueryResponse rsp =
         v2ApiInvoke(
             apiBag,
@@ -163,8 +161,8 @@ public class TestApiFramework extends SolrTestCaseJ4 {
             new ByteArrayInputStream(
                 "{\"package\":\"mypkg\", \"version\": \"1.0\", \"files\" : [\"a.jar\", \"b.jar\"]}"
                     .getBytes(UTF_8)));
-    assertEquals("mypkg", rsp.getValues()._getStr("payload/package", null));
-    assertEquals("1.0", rsp.getValues()._getStr("payload/version", null));
+    assertEquals("mypkg", rsp.getValues()._getStr("payload/package"));
+    assertEquals("1.0", rsp.getValues()._getStr("payload/version"));
   }
 
   public static class C {
@@ -282,26 +280,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     api.call(req, rsp);
     return rsp;
-  }
-
-  public void testTrailingTemplatePaths() {
-    PathTrie<Api> registry = new PathTrie<>();
-    Api api =
-        new Api(EMPTY_SPEC) {
-          @Override
-          public void call(SolrQueryRequest req, SolrQueryResponse rsp) {}
-        };
-    Api intropsect = new ApiBag.IntrospectApi(api, false);
-    ApiBag.registerIntrospect(
-        Collections.emptyMap(), registry, "/c/.system/blob/{name}", intropsect);
-    ApiBag.registerIntrospect(
-        Collections.emptyMap(), registry, "/c/.system/{x}/{name}", intropsect);
-    assertEquals(
-        intropsect, registry.lookup("/c/.system/blob/random_string/_introspect", new HashMap<>()));
-    assertEquals(intropsect, registry.lookup("/c/.system/blob/_introspect", new HashMap<>()));
-    assertEquals(intropsect, registry.lookup("/c/.system/_introspect", new HashMap<>()));
-    assertEquals(intropsect, registry.lookup("/c/.system/v1/_introspect", new HashMap<>()));
-    assertEquals(intropsect, registry.lookup("/c/.system/v1/v2/_introspect", new HashMap<>()));
   }
 
   private SolrQueryResponse invoke(
