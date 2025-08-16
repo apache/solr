@@ -98,12 +98,6 @@ admin-ui:
           - solr/webapp/**
           - solr/ui/**
 
-# Add 'prometheus-exporter' label
-prometheus-exporter:
-  - changed-files:
-      - any-glob-to-any-file:
-          - solr/prometheus-exporter/**
-
 # Add labels for changes to solr modules
 module:analysis-extras:
   - changed-files:

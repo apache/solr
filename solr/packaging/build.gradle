@@ -37,7 +37,6 @@ ext {
 configurations {
   modules
   example
-  prometheusExporter
   crossDcManager
   server
   docs
@@ -52,8 +51,6 @@ dependencies {
   project(":solr:modules").childProjects.values().stream().map(project -> project.path).each { module ->
     modules project(path: module, configuration: "packaging")
   }
-
-  prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
 
   crossDcManager project(path: ":solr:cross-dc-manager", configuration: "packaging")
 
@@ -140,15 +137,6 @@ distributions {
 
       from(configurations.modules, {
         into "modules"
-      })
-
-      from(configurations.prometheusExporter, {
-        into "prometheus-exporter"
-        filesMatching([
-                "bin/*",
-        ]) { copy ->
-          copy.setMode(0755)
-        }
       })
 
       from(configurations.crossDcManager, {
