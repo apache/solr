@@ -29,8 +29,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.ee8.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

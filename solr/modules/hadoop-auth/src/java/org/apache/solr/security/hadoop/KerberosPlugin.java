@@ -49,7 +49,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -290,7 +290,8 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
 
   @Override
   protected boolean interceptInternodeRequest(Request request) {
-    return intercept(request::header);
+    return intercept(
+        (header, value) -> request.headers(httpFields -> httpFields.add(header, value)));
   }
 
   private boolean intercept(BiConsumer<String, String> header) {

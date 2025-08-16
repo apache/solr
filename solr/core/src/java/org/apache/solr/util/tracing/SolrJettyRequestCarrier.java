@@ -20,7 +20,7 @@ package org.apache.solr.util.tracing;
 import io.opentracing.propagation.TextMap;
 import java.util.Iterator;
 import java.util.Map;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 
 /** An OpenTracing Carrier for injecting Span context through a Jetty Request */
 public class SolrJettyRequestCarrier implements TextMap {
