@@ -123,6 +123,4 @@ Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-lif
 
 === Open Telemetry
 
-* JMX, SLF4J and Graphite metric reporters have been removed. Users should migrate to using OTLP or the /admin/metrics endpoint with external tools to get metrics to their preferred backend.
-
-* The Prometheus exporter has been removed. Users should get prometheus metrics directly from the /admin/metrics endpoint or use OTLP with an external collection tool such as the Open Telemetry Collector.
+* The Prometheus exporter JMX, SLF4J and Graphite metric reporters have been removed. Users should migrate to using OTLP or the /admin/metrics endpoint with external tools to get metrics to their preferred backend.
