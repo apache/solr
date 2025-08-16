@@ -21,6 +21,8 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -54,7 +56,6 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -270,8 +271,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return startTime;
   }
 
-  private final Map<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache =
-      new WeakHashMap<>();
+  private final Cache<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache =
+      Caffeine.newBuilder().weakKeys().build();
 
   public long getStartNanoTime() {
     return startNanoTime;
@@ -2157,7 +2158,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     IndexFingerprint f = null;
-    f = perSegmentFingerprintCache.get(cacheHelper.getKey());
+    f = perSegmentFingerprintCache.getIfPresent(cacheHelper.getKey());
     // fingerprint is either not cached or if we want fingerprint only up to a version less than
     // maxVersionEncountered in the segment, or documents were deleted from segment for which
     // fingerprint was cached
@@ -2197,8 +2198,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
     if (log.isDebugEnabled()) {
       log.debug(
-          "Cache Size: {}, Segments Size:{}",
-          perSegmentFingerprintCache.size(),
+          "Approximate perSegmentFingerprintCache Size: {}, Segments Size:{}",
+          perSegmentFingerprintCache.estimatedSize(),
           searcher.getTopReaderContext().leaves().size());
     }
     return f;
