@@ -35,6 +35,8 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 
 /** Helper class for proxying the request to another Solr node. */
+// Tried to use Jetty's ProxyServlet instead but ran into inexplicable difficulties:  EOF/reset.
+// Perhaps was related to its use of ServletRequest.startAsync()/AsyncContext
 class HttpSolrProxy {
   // TODO add X-Forwarded-For and with comma delimited
 
@@ -124,10 +126,6 @@ class HttpSolrProxy {
             headerName -> {
               HttpHeader knownHeader = HttpHeader.CACHE.get(headerName); // maybe null
               if (!HOP_BY_HOP_HEADERS.contains(knownHeader)) {
-                // NOCOMMIT see SOLR-7274 SPNEGO support:
-                // && HttpHeader.HOST != knownHeader
-                // && HttpHeader.AUTHORIZATION != knownHeader
-                // && HttpHeader.ACCEPT != knownHeader) {
                 servletReq
                     .getHeaders(headerName)
                     .asIterator()

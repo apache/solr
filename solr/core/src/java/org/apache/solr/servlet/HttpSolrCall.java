@@ -715,11 +715,12 @@ public class HttpSolrCall {
     updatedQueryParams.set(INTERNAL_REQUEST_COUNT, forwardCount);
     String queryStr = updatedQueryParams.toQueryString();
 
-    log.info("Proxying request to: {}", coreUrl + path);
+    String coreUrlAndPath = coreUrl + path;
+    log.info("Proxying request to: {}", coreUrlAndPath);
     try {
       response.reset(); // clear all headers and status
       HttpClient httpClient = cores.getDefaultHttpSolrClient().getHttpClient();
-      HttpSolrProxy.doHttpProxy(httpClient, req, response, coreUrl + path + queryStr);
+      HttpSolrProxy.doHttpProxy(httpClient, req, response, coreUrlAndPath + queryStr);
     } catch (Exception e) {
       // note: don't handle interruption differently; we are stopping
       sendError(
