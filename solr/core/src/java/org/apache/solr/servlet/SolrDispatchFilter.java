@@ -188,9 +188,11 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
             }
           });
     } finally {
-      ServletUtils.consumeInputFully(request, response);
       SolrRequestInfo.reset();
-      SolrRequestParsers.cleanupMultipartFiles(request);
+      if (!request.isAsyncStarted()) { // jetty's proxy uses this
+        ServletUtils.consumeInputFully(request, response);
+        SolrRequestParsers.cleanupMultipartFiles(request);
+      }
     }
   }
 
