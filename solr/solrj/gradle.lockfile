@@ -119,7 +119,6 @@ org.apache.zookeeper:zookeeper:3.9.3=jarValidation,permitTestUnusedDeclared,test
 org.apiguardian:apiguardian-api:1.1.2=jarValidation,testRuntimeClasspath
 org.checkerframework:checker-qual:3.44.0=annotationProcessor,errorprone,jarValidation,testAnnotationProcessor,testCompileClasspath,testRuntimeClasspath
 org.codehaus.woodstox:stax2-api:4.2.2=jarValidation,testRuntimeClasspath
-org.eclipse.jetty.ee10:jetty-ee10-proxy:12.0.19=jarValidation,testRuntimeClasspath
 org.eclipse.jetty.ee10:jetty-ee10-servlet:12.0.19=jarValidation,testCompileClasspath,testRuntimeClasspath
 org.eclipse.jetty.ee10:jetty-ee10-webapp:12.0.19=jarValidation,testCompileClasspath,testRuntimeClasspath
 org.eclipse.jetty.http2:jetty-http2-client-transport:12.0.19=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath

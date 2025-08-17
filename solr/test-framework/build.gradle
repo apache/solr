@@ -85,7 +85,6 @@ dependencies {
   implementation libs.eclipse.jetty.rewrite
   implementation libs.eclipse.jetty.http2.server
   implementation libs.eclipse.jetty.http2.common
-  implementation libs.eclipse.jetty.ee10.proxy
 
   implementation libs.carrotsearch.randomizedtesting.runner
   implementation libs.junit.junit

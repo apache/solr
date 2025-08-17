@@ -178,7 +178,6 @@ org.ccil.cowan.tagsoup:tagsoup:1.2.1=compileClasspath,jarValidation,runtimeClass
 org.checkerframework:checker-qual:3.44.0=annotationProcessor,compileClasspath,errorprone,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testAnnotationProcessor,testCompileClasspath,testRuntimeClasspath
 org.codehaus.woodstox:stax2-api:4.2.2=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 org.codelibs:jhighlight:1.1.0=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
-org.eclipse.jetty.ee10:jetty-ee10-proxy:12.0.19=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 org.eclipse.jetty.ee10:jetty-ee10-servlet:12.0.19=jarValidation,testCompileClasspath,testRuntimeClasspath
 org.eclipse.jetty.http2:jetty-http2-client-transport:12.0.19=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 org.eclipse.jetty.http2:jetty-http2-client:12.0.19=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath

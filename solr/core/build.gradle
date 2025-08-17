@@ -122,7 +122,6 @@ dependencies {
   implementation libs.eclipse.jetty.client
   implementation libs.eclipse.jetty.http
   implementation libs.eclipse.jetty.io
-  implementation libs.eclipse.jetty.ee10.proxy
   implementation libs.eclipse.jetty.toolchain.servletapi
 
   // ZooKeeper

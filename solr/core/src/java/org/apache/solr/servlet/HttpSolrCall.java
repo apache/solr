@@ -110,6 +110,7 @@ import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MarkerFactory;
@@ -715,14 +716,10 @@ public class HttpSolrCall {
     String queryStr = updatedQueryParams.toQueryString();
 
     log.info("Proxying request to: {}", coreUrl + path);
-    req.setAttribute(SolrJettyProxyServlet.PROXY_TO_ATTRIBUTE, coreUrl + path + queryStr);
-
     try {
       response.reset(); // clear all headers and status
-      solrDispatchFilter
-          .getServletContext()
-          .getNamedDispatcher("proxy")
-          .forward(req, response);
+      HttpClient httpClient = cores.getDefaultHttpSolrClient().getHttpClient();
+      HttpSolrProxy.doHttpProxy(httpClient, req, response, coreUrl + path + queryStr);
     } catch (Exception e) {
       // note: don't handle interruption differently; we are stopping
       sendError(

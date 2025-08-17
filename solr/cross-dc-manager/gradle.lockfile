@@ -146,7 +146,6 @@ org.apiguardian:apiguardian-api:1.1.2=jarValidation,testRuntimeClasspath
 org.bitbucket.b_c:jose4j:0.9.6=jarValidation,runtimeClasspath,runtimeLibs,testRuntimeClasspath
 org.checkerframework:checker-qual:3.44.0=annotationProcessor,compileClasspath,errorprone,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testAnnotationProcessor,testCompileClasspath,testRuntimeClasspath
 org.codehaus.woodstox:stax2-api:4.2.2=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
-org.eclipse.jetty.ee10:jetty-ee10-proxy:12.0.19=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 org.eclipse.jetty.ee10:jetty-ee10-servlet:12.0.19=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 org.eclipse.jetty.ee10:jetty-ee10-servlets:12.0.19=solrPlatformLibs
 org.eclipse.jetty.ee10:jetty-ee10-webapp:12.0.19=solrPlatformLibs

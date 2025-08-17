@@ -26,8 +26,8 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Verify that remote (proxied) requests return proper error messages */
-public class RemoteProxyErrorTest extends SolrCloudTestCase {
+/** Verify that remote (proxied) queries return proper error messages */
+public class RemoteQueryErrorTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
