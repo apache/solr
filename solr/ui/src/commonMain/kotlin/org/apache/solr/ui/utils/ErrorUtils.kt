@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.errors
+package org.apache.solr.ui.utils
 
-import java.net.ConnectException
-
-actual fun parseError(error: Throwable): Throwable {
-    return when (error) {
-        is ConnectException -> HostNotFoundException(error)
-        else -> error
-    }
-}
+/**
+ * Parsing function for mapping platform-specific errors.
+ *
+ * @param error The error to try to parse
+ * @return A mapped error or [error] if it could not be parsed.
+ */
+expect fun parseError(error: Throwable): Throwable

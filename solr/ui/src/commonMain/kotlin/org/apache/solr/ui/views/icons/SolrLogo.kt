@@ -41,8 +41,11 @@ fun SolrLogo(
 ) = Image(
     modifier = modifier,
     painter = painterResource(
-        if (useDarkTheme) Res.drawable.solr_logo_dark
-        else Res.drawable.solr_logo_light
+        if (useDarkTheme) {
+            Res.drawable.solr_logo_dark
+        } else {
+            Res.drawable.solr_logo_light
+        },
     ),
-    contentDescription = stringResource(Res.string.cd_solr_logo)
+    contentDescription = stringResource(Res.string.cd_solr_logo),
 )
