@@ -714,6 +714,7 @@ public class HttpSolrCall {
     updatedQueryParams.set(INTERNAL_REQUEST_COUNT, forwardCount);
     String queryStr = updatedQueryParams.toQueryString();
 
+    log.info("Proxying request to: {}", coreUrl + path);
     req.setAttribute(SolrJettyProxyServlet.PROXY_TO_ATTRIBUTE, coreUrl + path + queryStr);
 
     try {
