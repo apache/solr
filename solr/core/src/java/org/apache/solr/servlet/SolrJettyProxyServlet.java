@@ -17,6 +17,7 @@
 
 package org.apache.solr.servlet;
 
+import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.eclipse.jetty.client.HttpClient;
@@ -38,7 +39,14 @@ public class SolrJettyProxyServlet extends ProxyServlet {
 
   @Override
   protected HttpClient getHttpClient() {
-    return super.getHttpClient();
+    //return super.getHttpClient();
+    try {
+      var containerProvider =
+          (CoreContainerProvider) getServletContext().getAttribute(CoreContainerProvider.class.getName());
+      return containerProvider.getCoreContainer().getDefaultHttpSolrClient().getHttpClient();
+    } catch (UnavailableException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
