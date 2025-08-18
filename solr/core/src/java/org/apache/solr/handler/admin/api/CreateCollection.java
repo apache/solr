@@ -51,7 +51,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.api.endpoint.CreateCollectionApi;
@@ -292,10 +291,10 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
   }
 
   public static CreateCollectionRequestBody createRequestBodyFromV1Params(
-      SolrParams params, boolean nameRequired, Optional<String> propertyName) {
+      SolrParams params, boolean nameRequired) {
     final var requestBody = new CreateCollectionRequestBody();
-    final var NAME = propertyName.orElse(CommonParams.NAME);
-    requestBody.name = nameRequired ? params.required().get(NAME) : params.get(NAME);
+    requestBody.name =
+        nameRequired ? params.required().get(CommonParams.NAME) : params.get(CommonParams.NAME);
     requestBody.replicationFactor = params.getInt(ZkStateReader.REPLICATION_FACTOR);
     requestBody.config = params.get(COLL_CONF);
     requestBody.numShards = params.getInt(NUM_SLICES);

@@ -45,13 +45,10 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Unit tests for {@link RestoreCollection} */
 public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
 
-  private static final Logger log = LoggerFactory.getLogger(RestoreCollectionAPITest.class);
   private static RestoreCollection restoreCollectionAPI;
 
   @BeforeClass

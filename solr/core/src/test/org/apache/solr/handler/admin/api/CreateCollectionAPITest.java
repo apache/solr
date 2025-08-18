@@ -36,7 +36,6 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionRouterProperties;
@@ -199,8 +198,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     solrParams.set("router.field", "someField");
     solrParams.set("property.somePropName", "somePropValue");
 
-    final var v2RequestBody =
-        CreateCollection.createRequestBodyFromV1Params(solrParams, true, Optional.empty());
+    final var v2RequestBody = CreateCollection.createRequestBodyFromV1Params(solrParams, true);
 
     assertEquals("someName", v2RequestBody.name);
     assertEquals(Integer.valueOf(123), v2RequestBody.numShards);
@@ -226,8 +224,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     solrParams.set(NAME, "someName");
     solrParams.set(CREATE_NODE_SET, "EMPTY");
 
-    final var v2RequestBody =
-        CreateCollection.createRequestBodyFromV1Params(solrParams, true, Optional.empty());
+    final var v2RequestBody = CreateCollection.createRequestBodyFromV1Params(solrParams, true);
 
     assertEquals("someName", v2RequestBody.name);
     assertEquals(Boolean.FALSE, v2RequestBody.createReplicas);
