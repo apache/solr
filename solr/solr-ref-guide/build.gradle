@@ -241,7 +241,7 @@ task downloadAsciiDoctorKrokiExtension(type: NpmTask) {
     group = 'Build Dependency Download'
     args = ["install", "asciidoctor-kroki"]
 
-    inputs.property("asciidoctor-kroki version", project.ext.asciidoctorKrokiVersion)
+    inputs.property("asciidoctor-kroki version", libs.versions.asciidoctor.kroki.get())
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/asciidoctor-kroki")
 }
 
