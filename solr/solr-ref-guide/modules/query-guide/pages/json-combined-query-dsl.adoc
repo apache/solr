@@ -30,7 +30,7 @@ The query structure is similar to JSON Query DSL except for how multiple queries
 
 * Multiple queries can be defined under the `queries` key by providing their name with the same syntax as a single query is defined with the key `query`.
 * In addition to the other supported parameters, there are several parameters which can be defined under `params` key as below:
-`combiner.enable` | Default: `false`::
+`combiner` | Default: `false`::
    Enables the combined query mode when set to `true`.
 `combiner.query`::
    The list of queries to be executed as defined in the `queries` key. Example: `["query1", "query2"]`

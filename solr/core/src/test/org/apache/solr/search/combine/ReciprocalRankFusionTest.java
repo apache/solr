@@ -73,7 +73,7 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
             0,
             2,
             new int[] {1, 2},
-            new float[] {0.67f, 0, 62f},
+            new float[] {0.67f, 0, 0.62f},
             3,
             0.67f,
             TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO));
