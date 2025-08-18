@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.Request;
@@ -63,6 +64,11 @@ class HttpSolrProxy {
 
     // clearing them first to ensure there's no stock entries (e.g. user-agent)
     proxyReq.headers(proxyFields -> copyRequestHeaders(servletReq, proxyFields.clear()));
+
+    // FYI see InstrumentedHttpListenerFactory
+    TraceUtils.injectTraceContext(proxyReq);
+    // TODO client spans.  See OTEL agent's approach:
+    // https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/jetty-httpclient/jetty-httpclient-12.0
 
     if (!NO_BODY_METHODS.contains(servletReq.getMethod())) {
       proxyReq.body(
