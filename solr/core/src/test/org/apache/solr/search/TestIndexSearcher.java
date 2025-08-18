@@ -16,11 +16,8 @@
  */
 package org.apache.solr.search;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -43,6 +40,7 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.index.LogDocMergePolicyFactory;
+import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.SchemaField;
@@ -137,18 +135,23 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     int baseRefCount = r3.getRefCount();
     assertEquals(1, baseRefCount);
 
-    Map<String, Metric> metrics = h.getCore().getCoreMetricManager().getRegistry().getMetrics();
-    @SuppressWarnings({"unchecked"})
-    Gauge<Date> g = (Gauge<Date>) metrics.get("SEARCHER.searcher.registeredAt");
-    Date sr3SearcherRegAt = g.getValue();
+    var registeredAtMetric =
+        SolrMetricTestUtils.getGaugeDatapoint(
+            h.getCore(),
+            "solr_core_registered_at_ms",
+            SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
+                .label("category", "SEARCHER")
+                .build());
+    var registeredAt = registeredAtMetric.getValue();
     assertU(commit()); // nothing has changed
     SolrQueryRequest sr4 = req("q", "foo");
     assertSame(
         "nothing changed, searcher should be the same", sr3.getSearcher(), sr4.getSearcher());
     assertEquals(
         "nothing changed, searcher should not have been re-registered",
-        sr3SearcherRegAt.toInstant(),
-        g.getValue().toInstant());
+        registeredAt,
+        registeredAtMetric.getValue(),
+        0);
     IndexReader r4 = sr4.getSearcher().getRawReader();
 
     // force an index change so the registered searcher won't be the one we are testing (and
