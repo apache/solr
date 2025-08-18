@@ -42,7 +42,8 @@ class DefaultMainComponent internal constructor(
     private val environmentComponent: (AppComponentContext) -> EnvironmentComponent,
     private val loggingComponent: (AppComponentContext) -> LoggingComponent,
     private val output: (Output) -> Unit,
-) : MainComponent, AppComponentContext by componentContext {
+) : MainComponent,
+    AppComponentContext by componentContext {
 
     private val navigation = StackNavigation<Configuration>()
     private val stack = childStack(
@@ -80,8 +81,7 @@ class DefaultMainComponent internal constructor(
         },
     )
 
-    override fun onNavigate(menuItem: MainMenu) =
-        navigation.bringToFront(menuItem.toConfiguration())
+    override fun onNavigate(menuItem: MainMenu) = navigation.bringToFront(menuItem.toConfiguration())
 
     override fun onNavigateBack() {
         TODO("Not yet implemented")
@@ -194,7 +194,7 @@ class DefaultMainComponent internal constructor(
         data object ThreadDump : Configuration
     }
 
-    private fun MainMenu.toConfiguration(): Configuration = when(this) {
+    private fun MainMenu.toConfiguration(): Configuration = when (this) {
         MainMenu.Dashboard -> Configuration.Dashboard
         MainMenu.Metrics -> Configuration.Metrics
         MainMenu.Cluster -> Configuration.Cluster

@@ -35,10 +35,10 @@ interface RootComponent {
 
     sealed interface Child {
 
-        data class Start(val component: StartComponent): Child
+        data class Start(val component: StartComponent) : Child
 
-        data class Main(val component: MainComponent): Child
+        data class Main(val component: MainComponent) : Child
 
-        data class Authentication(val component: AuthenticationComponent): Child
+        data class Authentication(val component: AuthenticationComponent) : Child
     }
 }

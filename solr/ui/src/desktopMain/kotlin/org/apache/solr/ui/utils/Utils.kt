@@ -15,13 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler;
+package org.apache.solr.ui.utils
 
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import javax.swing.SwingUtilities
 
-public class TestSystemCollAutoCreate extends AbstractFullDistribZkTestBase {
-  public void testAutoCreate() throws Exception {
-    TestBlobHandler.checkBlobPost(
-        cloudJettys.get(0).jetty.getBaseUrl().toExternalForm(), cloudClient);
-  }
+/**
+ * Ensures that a code [block] is executed on the UI thread.
+ */
+internal fun <T> runOnUiThread(block: () -> T): T {
+    if (SwingUtilities.isEventDispatchThread()) {
+        return block()
+    }
+
+    var error: Throwable? = null
+    var result: T? = null
+
+    SwingUtilities.invokeAndWait {
+        try {
+            result = block()
+        } catch (e: Throwable) {
+            error = e
+        }
+    }
+
+    error?.also { throw it }
+
+    @Suppress("UNCHECKED_CAST")
+    return result as T
 }

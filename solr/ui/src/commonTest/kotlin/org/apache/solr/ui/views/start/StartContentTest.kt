@@ -43,11 +43,14 @@ class StartContentTest {
             StartContent(createComponent())
         }
 
-        assertEquals("", onNodeWithTag("solr_url_input")
-            .assertExists()
-            .fetchSemanticsNode()
-            .config[SemanticsProperties.EditableText]
-            .text)
+        assertEquals(
+            "",
+            onNodeWithTag("solr_url_input")
+                .assertExists()
+                .fetchSemanticsNode()
+                .config[SemanticsProperties.EditableText]
+                .text,
+        )
     }
 
     @Test

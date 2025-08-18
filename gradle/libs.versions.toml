@@ -77,7 +77,7 @@ compose = "1.8.2"
 cutterslade-analyze = "1.10.0"
 cybozulabs-langdetect = "1.1-20120112"
 decompose = "3.3.0"
-diffplug-spotless = "6.5.2"
+diffplug-spotless = "7.2.1"
 dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.39.0"
 eclipse-jetty = "12.0.19"
@@ -150,6 +150,8 @@ kotlinx-browser = "0.3"
 kotlinx-coroutines = "1.10.1"
 kotlinx-datetime = "0.7.1"
 kotlinx-serialization = "1.9.0"
+# @keep used by spotless
+ktlint = "1.7.1"
 ktor = "3.2.2"
 langchain4j = "0.35.0"
 # @keep Link checker version used in ref-guide
@@ -165,6 +167,7 @@ netty = "4.1.114.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.66.Final"
 nimbusds-josejwt = "9.48"
+nlopez-compose = "0.4.26"
 nodegradle-node = "7.0.1"
 # @keep Node JS version used in node.gradle (LTS)
 nodejs = "16.20.2"
@@ -469,6 +472,7 @@ netty-transport-classes-epoll = { module = "io.netty:netty-transport-classes-epo
 # @keep transitive dependency for version alignment
 netty-transport-native-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
 nimbusds-josejwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusds-josejwt" }
+nlopez-compose-ktlintrules = { module = "io.nlopez.compose.rules:ktlint", version.ref = "nlopez-compose" }
 openjdk-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "openjdk-jmh" }
 openjdk-jmh-generatorannprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "openjdk-jmh" }
 opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }

@@ -36,7 +36,8 @@ class DefaultEnvironmentComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     httpClient: HttpClient,
-) : EnvironmentComponent, AppComponentContext by componentContext {
+) : EnvironmentComponent,
+    AppComponentContext by componentContext {
 
     private val mainScope = coroutineScope(SupervisorJob() + mainContext)
     private val ioScope = coroutineScope(SupervisorJob() + ioContext)
