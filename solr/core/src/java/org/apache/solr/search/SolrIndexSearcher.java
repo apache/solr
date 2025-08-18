@@ -2617,18 +2617,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         "solr_searcher_name", "Searcher name (as attribute)", obs -> obs.record(1, baseAttributes));
     // caching (boolean -> 0/1)
     solrMetricsContext.observableLongGauge(
-        "solr_core_caching_enabled",
+        "solr_searcher_caching_enabled",
         "1 if caching enabled",
         obs -> obs.record(cachingEnabled ? 1 : 0, baseAttributes));
 
     // warmupTime (ms)
     solrMetricsContext.observableLongGauge(
-        "solr_core_warmup_time_ms",
+        "solr_searcher_warmup_time_ms",
         "Searcher warmup time (ms)",
         obs -> obs.record(warmupTime, baseAttributes));
     // registeredAt (ms)
     solrMetricsContext.observableLongGauge(
-        "solr_core_registered_at_ms",
+        "solr_searcher_registered_at_ms",
         "Searcher registered time (ms)",
         obs -> obs.record(registerTime.getTime(), baseAttributes));
 
