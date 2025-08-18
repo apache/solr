@@ -113,7 +113,7 @@ public class SolrCoreMetricManager implements Closeable {
 
   /**
    * Re-register all metric producers associated with this core. This recreates the metric registry
-   * resetting its state
+   * resetting its state and recreating its attributes for all tracked registered producers.
    */
   public void reregisterCoreMetrics() {
     this.solrMetricsContext =
@@ -124,18 +124,19 @@ public class SolrCoreMetricManager implements Closeable {
     metricManager.removeRegistry(solrMetricsContext.getRegistryName());
     if (leaderRegistryName != null) metricManager.removeRegistry(leaderRegistryName);
 
-    var attributesBuilder =
+    var attributes =
         Attributes.builder()
             .put(CORE_ATTR, core.getName())
             .put(COLLECTION_ATTR, collectionName)
             .put(SHARD_ATTR, shardName)
-            .put(REPLICA_ATTR, replicaName);
+            .put(REPLICA_ATTR, replicaName)
+            .build();
 
-    core.initializeMetrics(solrMetricsContext, attributesBuilder.build(), core.getName());
+    core.initializeMetrics(solrMetricsContext, attributes, core.getName());
 
     registeredProducers.forEach(
         metricProducer -> {
-          var producerAttributes = attributesBuilder.build().toBuilder();
+          var producerAttributes = attributes.toBuilder();
           if (metricProducer.scope().startsWith("/"))
             producerAttributes.put(HANDLER_ATTR, metricProducer.scope);
           metricProducer.producer.initializeMetrics(
@@ -144,7 +145,9 @@ public class SolrCoreMetricManager implements Closeable {
   }
 
   /**
-   * Registers a mapping of name/metric's with the manager's metric registry.
+   * Registers a mapping of name/metric's with the manager's metric registry and creates the base
+   * set of attributes for core level metrics. All metric producers are tracked for re-registering
+   * in the case of core swapping/renaming
    *
    * @param scope the scope of the metrics to be registered (e.g. `/admin/ping`)
    * @param producer producer of metrics to be registered
