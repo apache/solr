@@ -472,9 +472,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         writer.writePendingUpdates();
 
         byte[] data =
-            zkClient
-                .getZooKeeper()
-                .getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null);
+            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true);
         Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(data);
         assertNotNull(map.get("c1"));
       }
@@ -509,12 +507,23 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
         writer.writePendingUpdates();
 
-        byte[] data =
+        byte[] dataCompressed =
             zkClient
-                .getZooKeeper()
-                .getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c2/state.json", null, null);
-        assertTrue(compressor.isCompressedBytes(data));
-        Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(compressor.decompressBytes(data));
+                .getCuratorFramework()
+                .getData()
+                .undecompressed()
+                .forPath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2/state.json");
+        assertTrue(compressor.isCompressedBytes(dataCompressed));
+        Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(compressor.decompressBytes(dataCompressed));
+        assertNotNull(map.get("c2"));
+
+        byte[] dataDecompressed =
+            zkClient
+                .getCuratorFramework()
+                .getData()
+                .forPath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2/state.json");
+        assertFalse(compressor.isCompressedBytes(dataDecompressed));
+        map = (Map<?, ?>) Utils.fromJSON(dataDecompressed);
         assertNotNull(map.get("c2"));
       }
 

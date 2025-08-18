@@ -51,7 +51,6 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 |`/api/cores/_core-name_` |Reload, rename, delete, and unload a core.
 |`/api/node` |Perform overseer operation, rejoin leader election.
 |`/api/cluster` |Add role, remove role, set cluster property.
-|`/api/c/.system/blob` |Upload and download blobs and metadata.
 |===
 
 == Introspect
@@ -157,7 +156,7 @@ See the state of the cluster:
 ----
 $ curl http://localhost:8983/api/cluster
 
-{"responseHeader":{"status":0,"QTime":0},"collections":["gettingstarted",".system"]}
+{"responseHeader":{"status":0,"QTime":0},"collections":["gettingstarted"]}
 ----
 
 Set a cluster property:

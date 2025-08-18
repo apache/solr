@@ -252,6 +252,10 @@
 
   <dynamicField name="*_c" type="currency" indexed="true" stored="true"/>
 
+  <!-- Subfields used with CurrencyFieldType -->
+  <dynamicField name="*_s_ns" type="string" indexed="true" stored="false" />
+  <dynamicField name="*_l_ns" type="long" indexed="true" stored="false"/>
+  
   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
   <dynamicField name="attr_*" type="text_general" indexed="true" stored="true" multiValued="true"/>
 
@@ -726,9 +730,10 @@
                             ratesFileLocation: URL or path to rates JSON file (default latest.json on the web)
                             refreshInterval: Number of minutes between each rates fetch (default: 1440, min: 60)
   -->
-  <fieldType name="currency" class="solr.CurrencyField" precisionStep="8" defaultCurrency="USD"
+  <fieldType name="currency" class="solr.CurrencyFieldType" amountLongSuffix="_l_ns" codeStrSuffix="_s_ns" defaultCurrency="USD"
              currencyConfig="currency.xml"/>
-
+  <fieldType name="severityType" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  <field name="severity_mv" type="severityType" indexed="true" stored="true" multiValued="true" docValues="true" />
 
   <!-- some examples for different languages (generally ordered by ISO code) -->
   <!-- REMOVED.  these reference things not in the test config, like lang/stopwords_en.txt -->

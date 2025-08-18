@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
@@ -157,7 +156,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     waitForState(
         "",
         collection,
-        (liveNodes, collectionState) ->
+        collectionState ->
             collectionState.getSlice("shard1").getReplicas().stream()
                     .filter(replica -> replica.getState() == Replica.State.DOWN)
                     .count()
@@ -170,7 +169,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     waitForState(
         "",
         collection,
-        (liveNodes, collectionState) ->
+        collectionState ->
             collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
     cluster.getJettySolrRunner(1).start();
@@ -213,7 +212,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     waitForState(
         "Timeout waiting for leader",
         collection,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Replica newLeader = collectionState.getLeader("shard1");
           return newLeader != null && newLeader.getName().equals(leader.getName());
         });
@@ -240,7 +239,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     waitForState(
         "Timeout waiting for leader goes DOWN",
         collection,
-        (liveNodes, collectionState) ->
+        collectionState ->
             collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
     // the meat of the test -- wait to see if a different replica become a leader
@@ -277,7 +276,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     waitForState(
         "Timeout waiting for leader",
         collection,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Replica newLeader = collectionState.getLeader("shard1");
           return newLeader != null && newLeader.getName().equals(leader.getName());
         });
@@ -349,7 +348,6 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   }
 
   protected SolrClient getHttpSolrClient(Replica replica, String coll) {
-    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    return getHttpSolrClient(zkProps.getBaseUrl(), coll);
+    return getHttpSolrClient(replica.getBaseUrl(), coll);
   }
 }

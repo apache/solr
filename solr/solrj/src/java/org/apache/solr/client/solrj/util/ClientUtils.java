@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.util;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -29,10 +28,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
@@ -66,32 +62,23 @@ public class ClientUtils {
    * Create the full URL for a SolrRequest (excepting query parameters) as a String
    *
    * @param solrRequest the {@link SolrRequest} to build the URL for
-   * @param requestWriter a {@link RequestWriter} from the {@link SolrClient} that will be sending
-   *     the request
-   * @param serverRootUrl the root URL of the Solr server being targeted. May be overridden {@link
-   *     SolrRequest#getBasePath()}, if present.
+   * @param serverRootUrl the root URL of the Solr server being targeted.
    * @param collection the collection to send the request to. May be null if no collection is
    *     needed.
-   * @throws MalformedURLException if {@code serverRootUrl} or {@link SolrRequest#getBasePath()}
-   *     contain a malformed URL string
+   * @throws MalformedURLException if {@code serverRootUrl} contains a malformed URL string
    */
   public static String buildRequestUrl(
-      SolrRequest<?> solrRequest,
-      RequestWriter requestWriter,
-      String serverRootUrl,
-      String collection)
+      SolrRequest<?> solrRequest, String serverRootUrl, String collection)
       throws MalformedURLException {
 
-    // TODO remove getBasePath support here prior to closing SOLR-17256
-    String basePath = solrRequest.getBasePath() == null ? serverRootUrl : solrRequest.getBasePath();
-
+    String basePath = serverRootUrl;
     if (solrRequest.getApiVersion() == SolrRequest.ApiVersion.V2) {
       basePath = addNormalV2ApiRoot(basePath);
     }
 
     if (solrRequest.requiresCollection() && collection != null) basePath += "/" + collection;
 
-    String path = requestWriter.getPath(solrRequest);
+    String path = solrRequest.getPath();
     if (path == null || !path.startsWith("/")) {
       path = DEFAULT_PATH;
     }
@@ -108,6 +95,8 @@ public class ClientUtils {
   private static String buildReplacementV2Path(String existingPath) {
     if (existingPath.contains("/solr")) {
       return existingPath.replaceFirst("/solr", "/api");
+    } else if (existingPath.endsWith("/api")) {
+      return existingPath;
     } else {
       return existingPath + "/api";
     }
@@ -133,8 +122,7 @@ public class ClientUtils {
           for (Entry<Object, Object> entry : ((Map<Object, Object>) v).entrySet()) {
             update = entry.getKey().toString();
             v = entry.getValue();
-            if (v instanceof Collection) {
-              Collection<?> values = (Collection<?>) v;
+            if (v instanceof Collection<?> values) {
               for (Object value : values) {
                 writeVal(writer, name, value, update);
               }
@@ -161,11 +149,9 @@ public class ClientUtils {
       throws IOException {
     if (v instanceof Date) {
       v = ((Date) v).toInstant().toString();
-    } else if (v instanceof byte[]) {
-      byte[] bytes = (byte[]) v;
+    } else if (v instanceof byte[] bytes) {
       v = Base64.getEncoder().encodeToString(bytes);
-    } else if (v instanceof ByteBuffer) {
-      ByteBuffer bytes = (ByteBuffer) v;
+    } else if (v instanceof ByteBuffer bytes) {
       v =
           new String(
               Base64.getEncoder()
@@ -179,8 +165,7 @@ public class ClientUtils {
     }
 
     XML.Writable valWriter = null;
-    if (v instanceof SolrInputDocument) {
-      final SolrInputDocument solrDoc = (SolrInputDocument) v;
+    if (v instanceof SolrInputDocument solrDoc) {
       valWriter = (writer1) -> writeXML(solrDoc, writer1);
     } else if (v != null) {
       final Object val = v;
@@ -199,15 +184,6 @@ public class ClientUtils {
         XML.writeXML(writer, "field", valWriter, "name", name, "update", update);
       }
     }
-  }
-
-  public static String toXML(SolrInputDocument doc) {
-    StringWriter str = new StringWriter();
-    try {
-      writeXML(doc, str);
-    } catch (Exception ex) {
-    }
-    return str.toString();
   }
 
   // ---------------------------------------------------------------------------------------
@@ -309,7 +285,7 @@ public class ClientUtils {
    * @param request the {@link SolrRequest} being executed
    */
   public static boolean shouldApplyDefaultCollection(
-      String providedCollection, SolrRequest<? extends SolrResponse> request) {
+      String providedCollection, SolrRequest<?> request) {
     return providedCollection == null && request.requiresCollection();
   }
 }

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.apache.lucene.store.Directory;
@@ -30,8 +29,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 public class MockFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
-  public Directory create(String path, LockFactory lockFactory, DirContext dirContext)
-      throws IOException {
+  public Directory create(String path, LockFactory lockFactory) throws IOException {
     Directory dir = LuceneTestCase.newFSDirectory(Path.of(path), lockFactory);
     // we can't currently do this check because of how
     // Solr has to reboot a new Directory sometimes when replicating
@@ -54,7 +52,7 @@ public class MockFSDirectoryFactory extends StandardDirectoryFactory {
   public boolean isAbsolute(String path) {
     // TODO: kind of a hack - we don't know what the delegate is, so
     // we treat it as file based since this works on most ephem impls
-    return new File(path).isAbsolute();
+    return Path.of(path).isAbsolute();
   }
 
   private Directory reduce(Directory dir) {

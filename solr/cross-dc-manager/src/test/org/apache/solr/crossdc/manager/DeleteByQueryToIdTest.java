@@ -108,9 +108,8 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
 
     solrCluster1 =
         SolrCloudTestCase.configureCluster(1)
-            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath().toAbsolutePath())
-            .addConfig(
-                "confNoDbq", getFile("configs/cloud-minimal-no-dbq/conf").toPath().toAbsolutePath())
+            .addConfig("conf", getFile("configs/cloud-minimal/conf").toAbsolutePath())
+            .addConfig("confNoDbq", getFile("configs/cloud-minimal-no-dbq/conf").toAbsolutePath())
             .configure();
 
     props.setProperty("solr.crossdc.topicName", TOPIC);
@@ -132,8 +131,8 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
 
     solrCluster2 =
         SolrCloudTestCase.configureCluster(1)
-            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
-            .addConfig("confNoDbq", getFile("configs/cloud-minimal-no-dbq/conf").toPath())
+            .addConfig("conf", getFile("configs/cloud-minimal/conf"))
+            .addConfig("confNoDbq", getFile("configs/cloud-minimal-no-dbq/conf"))
             .configure();
 
     solrCluster2.getZkClient().makePath("/crossdc.properties", data, true);
@@ -165,7 +164,7 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
             return new KafkaCrossDcConsumer(conf, startLatch) {
               @Override
               protected SolrMessageProcessor createSolrMessageProcessor() {
-                return new SolrMessageProcessor(solrClient, resubmitRequest -> 0L) {
+                return new SolrMessageProcessor(solrClientSupplier, resubmitRequest -> 0L) {
                   @Override
                   public Result<MirroredSolrRequest<?>> handleItem(
                       MirroredSolrRequest<?> mirroredSolrRequest) {

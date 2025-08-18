@@ -16,6 +16,9 @@
  */
 package org.apache.solr.security;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -30,9 +33,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 import javax.security.auth.Subject;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
@@ -47,7 +47,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ValidatingJsonMap;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,8 +102,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
       }
     }
     if (!CommandOperation.captureErrors(commands).isEmpty()) return null;
-    if (authenticationProvider instanceof ConfigEditablePlugin) {
-      ConfigEditablePlugin editablePlugin = (ConfigEditablePlugin) authenticationProvider;
+    if (authenticationProvider instanceof ConfigEditablePlugin editablePlugin) {
       return editablePlugin.edit(latestConf, commands);
     }
     throw new SolrException(ErrorCode.BAD_REQUEST, "This cannot be edited");
@@ -223,11 +222,8 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   @Override
   protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
     if (forwardCredentials) {
-      if (httpContext instanceof HttpClientContext) {
-        HttpClientContext httpClientContext = (HttpClientContext) httpContext;
-        if (httpClientContext.getUserToken() instanceof BasicAuthUserPrincipal) {
-          BasicAuthUserPrincipal principal =
-              (BasicAuthUserPrincipal) httpClientContext.getUserToken();
+      if (httpContext instanceof HttpClientContext httpClientContext) {
+        if (httpClientContext.getUserToken() instanceof BasicAuthUserPrincipal principal) {
           String userPassBase64 =
               Base64.getEncoder()
                   .encodeToString(
@@ -245,14 +241,14 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   protected boolean interceptInternodeRequest(Request request) {
     if (forwardCredentials) {
       Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
-      if (userToken instanceof BasicAuthUserPrincipal) {
-        BasicAuthUserPrincipal principal = (BasicAuthUserPrincipal) userToken;
+      if (userToken instanceof BasicAuthUserPrincipal principal) {
         String userPassBase64 =
             Base64.getEncoder()
                 .encodeToString(
                     (principal.getName() + ":" + principal.getPassword())
                         .getBytes(StandardCharsets.UTF_8));
-        request.header(HttpHeaders.AUTHORIZATION, "Basic " + userPassBase64);
+        request.headers(
+            httpFields -> httpFields.add(HttpHeaders.AUTHORIZATION, "Basic " + userPassBase64));
         return true;
       }
     }
@@ -311,8 +307,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof BasicAuthUserPrincipal)) return false;
-      BasicAuthUserPrincipal that = (BasicAuthUserPrincipal) o;
+      if (!(o instanceof BasicAuthUserPrincipal that)) return false;
       return Objects.equals(username, that.username) && Objects.equals(password, that.password);
     }
 

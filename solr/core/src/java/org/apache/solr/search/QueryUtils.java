@@ -44,8 +44,7 @@ public class QueryUtils {
 
   /** return true if this query has no positive components */
   public static boolean isNegative(Query q) {
-    if (!(q instanceof BooleanQuery)) return false;
-    BooleanQuery bq = (BooleanQuery) q;
+    if (!(q instanceof BooleanQuery bq)) return false;
     Collection<BooleanClause> clauses = bq.clauses();
     if (clauses.size() == 0) return false;
     for (BooleanClause clause : clauses) {
@@ -140,8 +139,7 @@ public class QueryUtils {
    * @return Absolute version of the Query
    */
   public static Query getAbs(Query q) {
-    if (q instanceof BoostQuery) {
-      BoostQuery bq = (BoostQuery) q;
+    if (q instanceof BoostQuery bq) {
       Query subQ = bq.getQuery();
       Query absSubQ = getAbs(subQ);
       if (absSubQ.equals(subQ)) return q;
@@ -155,8 +153,7 @@ public class QueryUtils {
       return new WrappedQuery(absSubQ);
     }
 
-    if (!(q instanceof BooleanQuery)) return q;
-    BooleanQuery bq = (BooleanQuery) q;
+    if (!(q instanceof BooleanQuery bq)) return q;
 
     Collection<BooleanClause> clauses = bq.clauses();
     if (clauses.size() == 0) return q;
@@ -167,7 +164,7 @@ public class QueryUtils {
 
     if (clauses.size() == 1) {
       // if only one clause, dispense with the wrapping BooleanQuery
-      Query negClause = clauses.iterator().next().getQuery();
+      Query negClause = clauses.iterator().next().query();
       // we shouldn't need to worry about adjusting the boosts since the negative
       // clause would have never been selected in a positive query, and hence would
       // not contribute to a score.
@@ -178,7 +175,7 @@ public class QueryUtils {
 
       // the inverse of -a -b is a OR b
       for (BooleanClause clause : clauses) {
-        newBqB.add(clause.getQuery(), BooleanClause.Occur.SHOULD);
+        newBqB.add(clause.query(), BooleanClause.Occur.SHOULD);
       }
       return newBqB.build();
     }
@@ -198,8 +195,7 @@ public class QueryUtils {
    */
   public static Query fixNegativeQuery(Query q) {
     float boost = 1f;
-    if (q instanceof BoostQuery) {
-      BoostQuery bq = (BoostQuery) q;
+    if (q instanceof BoostQuery bq) {
       boost = bq.getBoost();
       q = bq.getQuery();
     }
@@ -326,8 +322,7 @@ public class QueryUtils {
       Object tagVal = tagMap.get(tagName);
       if (!(tagVal instanceof Collection)) continue;
       for (Object obj : (Collection<?>) tagVal) {
-        if (!(obj instanceof QParser)) continue;
-        QParser qParser = (QParser) obj;
+        if (!(obj instanceof QParser qParser)) continue;
         Query query;
         try {
           query = qParser.getQuery();

@@ -22,7 +22,6 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import java.io.Closeable;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,9 +32,9 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,7 +79,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.ResourceLoader;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -106,9 +105,9 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.IndexFetcher;
-import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
@@ -122,19 +121,15 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.CborResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
 import org.apache.solr.response.GraphMLResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
-import org.apache.solr.response.PHPResponseWriter;
-import org.apache.solr.response.PHPSerializedResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.PrometheusResponseWriter;
-import org.apache.solr.response.PythonResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SchemaXmlResponseWriter;
 import org.apache.solr.response.SmileResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -953,8 +948,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } catch (Exception e) {
       // The JVM likes to wrap our helpful SolrExceptions in things like
       // "InvocationTargetException" that have no useful getMessage
-      if (null != e.getCause() && e.getCause() instanceof SolrException) {
-        SolrException inner = (SolrException) e.getCause();
+      if (null != e.getCause() && e.getCause() instanceof SolrException inner) {
         throw inner;
       }
 
@@ -999,8 +993,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } catch (Exception e) {
       // The JVM likes to wrap our helpful SolrExceptions in things like
       // "InvocationTargetException" that have no useful getMessage
-      if (null != e.getCause() && e.getCause() instanceof SolrException) {
-        SolrException inner = (SolrException) e.getCause();
+      if (null != e.getCause() && e.getCause() instanceof SolrException inner) {
         throw inner;
       }
 
@@ -1361,12 +1354,31 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     // initialize disk total / free metrics
-    Path dataDirPath = Paths.get(dataDir);
-    File dataDirFile = dataDirPath.toFile();
+    Path dataDirPath = Path.of(dataDir);
     parentContext.gauge(
-        () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
+        () -> {
+          try {
+            return Files.getFileStore(dataDirPath).getTotalSpace();
+          } catch (IOException e) {
+            return 0L;
+          }
+        },
+        true,
+        "totalSpace",
+        Category.CORE.toString(),
+        "fs");
     parentContext.gauge(
-        () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
+        () -> {
+          try {
+            return Files.getFileStore(dataDirPath).getUsableSpace();
+          } catch (IOException e) {
+            return 0L;
+          }
+        },
+        true,
+        "usableSpace",
+        Category.CORE.toString(),
+        "fs");
     parentContext.gauge(
         () -> dataDirPath.toAbsolutePath().toString(),
         true,
@@ -1844,13 +1856,15 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     // Close the snapshots meta-data directory.
-    Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
-    try {
-      this.directoryFactory.release(snapshotsDir);
-    } catch (Throwable e) {
-      log.error("Exception releasing snapshotsDir {}", snapshotsDir, e);
-      if (e instanceof Error) {
-        throw (Error) e;
+    if (snapshotMgr != null) {
+      Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
+      try {
+        this.directoryFactory.release(snapshotsDir);
+      } catch (Throwable e) {
+        log.error("Exception releasing snapshotsDir {}", snapshotsDir, e);
+        if (e instanceof Error) {
+          throw (Error) e;
+        }
       }
     }
 
@@ -3015,18 +3029,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("standard", m.get(CommonParams.JSON));
     m.put("geojson", new GeoJSONResponseWriter());
     m.put("graphml", new GraphMLResponseWriter());
-    m.put("python", new PythonResponseWriter());
-    m.put("php", new PHPResponseWriter());
-    m.put("phps", new PHPSerializedResponseWriter());
-    m.put("ruby", new RubyResponseWriter());
     m.put("raw", new RawResponseWriter());
-    m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
+    m.put(CommonParams.JAVABIN, new JavaBinResponseWriter());
     m.put("cbor", new CborResponseWriter());
     m.put("csv", new CSVResponseWriter());
     m.put("schema.xml", new SchemaXmlResponseWriter());
     m.put("smile", new SmileResponseWriter());
     m.put(PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
-    m.put(ReplicationHandler.FILE_STREAM, getFileStreamWriter());
+    m.put(ReplicationAPIBase.FILE_STREAM, getFileStreamWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
     try {
       m.put(
@@ -3040,12 +3050,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  private static BinaryResponseWriter getFileStreamWriter() {
-    return new BinaryResponseWriter() {
+  private static JavaBinResponseWriter getFileStreamWriter() {
+    return new JavaBinResponseWriter() {
       @Override
-      public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
+      public void write(
+          OutputStream out, SolrQueryRequest req, SolrQueryResponse response, String contentType)
           throws IOException {
-        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
+        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
         if (rawWriter != null) {
           rawWriter.write(out);
           if (rawWriter instanceof Closeable) ((Closeable) rawWriter).close();
@@ -3054,11 +3065,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       @Override
       public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
+        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
         if (rawWriter != null) {
           return rawWriter.getContentType();
         } else {
-          return BinaryResponseParser.BINARY_CONTENT_TYPE;
+          return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
         }
       }
     };
@@ -3071,7 +3082,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   public interface RawWriter {
     default String getContentType() {
-      return BinaryResponseParser.BINARY_CONTENT_TYPE;
+      return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
     }
 
     void write(OutputStream os) throws IOException;
@@ -3400,8 +3411,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * some data so that events are triggered.
    */
   private void registerConfListener() {
-    if (!(resourceLoader instanceof ZkSolrResourceLoader)) return;
-    final ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) resourceLoader;
+    if (!(resourceLoader instanceof ZkSolrResourceLoader zkSolrResourceLoader)) return;
     if (zkSolrResourceLoader != null)
       zkSolrResourceLoader
           .getZkController()
@@ -3421,8 +3431,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         zkSolrResourceLoader.getConfigSetZkPath() + "/" + core.getSolrConfig().getName();
     String schemaRes = null;
     if (core.getLatestSchema().isMutable()
-        && core.getLatestSchema() instanceof ManagedIndexSchema) {
-      ManagedIndexSchema mis = (ManagedIndexSchema) core.getLatestSchema();
+        && core.getLatestSchema() instanceof ManagedIndexSchema mis) {
       schemaRes = mis.getResourceName();
     }
     final String managedSchemaResourcePath =

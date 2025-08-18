@@ -19,7 +19,8 @@ package org.apache.solr.cloud;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 
 import com.codahale.metrics.MetricRegistry;
-import java.io.File;
+import io.dropwizard.metrics.jetty12.ee10.InstrumentedEE10Handler;
+import jakarta.servlet.Filter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
@@ -53,7 +54,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import javax.servlet.Filter;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
@@ -84,8 +84,8 @@ import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.server.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -516,6 +516,32 @@ public class MiniSolrCloudCluster {
   }
 
   /**
+   * Add a previously stopped node back to the cluster on a different port
+   *
+   * @param jetty a {@link JettySolrRunner} previously returned by {@link #stopJettySolrRunner(int)}
+   * @return the started node
+   * @throws Exception on error
+   */
+  public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
+    return startJettySolrRunner(jetty, false);
+  }
+
+  /**
+   * Add a previously stopped node back to the cluster
+   *
+   * @param jetty a {@link JettySolrRunner} previously returned by {@link #stopJettySolrRunner(int)}
+   * @param reusePort the port previously used by jetty
+   * @return the started node
+   * @throws Exception on error
+   */
+  public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty, boolean reusePort)
+      throws Exception {
+    jetty.start(reusePort);
+    if (!jettys.contains(jetty)) jettys.add(jetty);
+    return jetty;
+  }
+
+  /**
    * Stop a Solr instance
    *
    * @param index the index of node in collection returned by {@link #getJettySolrRunners()}
@@ -525,19 +551,6 @@ public class MiniSolrCloudCluster {
     JettySolrRunner jetty = jettys.get(index);
     jetty.stop();
     jettys.remove(index);
-    return jetty;
-  }
-
-  /**
-   * Add a previously stopped node back to the cluster
-   *
-   * @param jetty a {@link JettySolrRunner} previously returned by {@link #stopJettySolrRunner(int)}
-   * @return the started node
-   * @throws Exception on error
-   */
-  public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
-    jetty.start(false);
-    if (!jettys.contains(jetty)) jettys.add(jetty);
     return jetty;
   }
 
@@ -567,7 +580,7 @@ public class MiniSolrCloudCluster {
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      new ZkConfigSetService(zkClient).uploadConfig(configName, configDir, true);
+      new ZkConfigSetService(zkClient).uploadConfig(configName, configDir);
     }
   }
 
@@ -584,7 +597,7 @@ public class MiniSolrCloudCluster {
 
       reader.createClusterStateWatchersAndUpdate(); // up to date aliases & collections
       reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
-      for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
+      for (String collection : reader.getClusterState().getCollectionNames()) {
         CollectionAdminRequest.deleteCollection(collection).process(solrClient);
       }
 
@@ -594,7 +607,7 @@ public class MiniSolrCloudCluster {
             "Still waiting to see all collections removed from clusterstate.");
       }
 
-      for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
+      for (String collection : reader.getClusterState().getCollectionNames()) {
         reader.waitForState(collection, 15, TimeUnit.SECONDS, Objects::isNull);
       }
     }
@@ -763,9 +776,11 @@ public class MiniSolrCloudCluster {
       try {
         future.get();
       } catch (ExecutionException e) {
+        log.error(message, e);
         parsed.addSuppressed(e.getCause());
         ok = false;
       } catch (InterruptedException e) {
+        log.error(message, e);
         Thread.interrupted();
         throw e;
       }
@@ -785,14 +800,7 @@ public class MiniSolrCloudCluster {
 
   /** Make the zookeeper session on a particular jetty lose connection and expire */
   public void expireZkSession(JettySolrRunner jetty) {
-    CoreContainer cores = jetty.getCoreContainer();
-    if (cores != null) {
-      ChaosMonkey.causeConnectionLoss(jetty);
-      zkServer.expire(cores.getZkController().getZkClient().getZooKeeper().getSessionId());
-      if (log.isInfoEnabled()) {
-        log.info("Expired zookeeper session from node {}", jetty.getBaseUrl());
-      }
-    }
+    ChaosMonkey.expireSession(jetty, zkServer);
   }
 
   // Currently not used ;-(
@@ -962,7 +970,7 @@ public class MiniSolrCloudCluster {
     }
   }
 
-  public void dumpMetrics(File outputDirectory, String fileName) throws IOException {
+  public void dumpMetrics(Path outputDirectory, String fileName) throws IOException {
     for (JettySolrRunner jetty : jettys) {
       jetty.outputMetrics(outputDirectory, fileName);
     }
@@ -985,10 +993,9 @@ public class MiniSolrCloudCluster {
     private volatile MetricRegistry metricRegistry;
 
     @Override
-    protected HandlerWrapper injectJettyHandlers(HandlerWrapper chain) {
+    protected Handler.Wrapper injectJettyHandlers(Handler.Wrapper chain) {
       metricRegistry = new MetricRegistry();
-      io.dropwizard.metrics.jetty10.InstrumentedHandler metrics =
-          new io.dropwizard.metrics.jetty10.InstrumentedHandler(metricRegistry);
+      InstrumentedEE10Handler metrics = new InstrumentedEE10Handler(metricRegistry);
       metrics.setHandler(chain);
       return metrics;
     }

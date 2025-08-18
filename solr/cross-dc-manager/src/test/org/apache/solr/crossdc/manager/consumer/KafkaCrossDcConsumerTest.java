@@ -43,16 +43,17 @@ import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
@@ -74,6 +75,10 @@ public class KafkaCrossDcConsumerTest {
   private KafkaConsumer<String, MirroredSolrRequest<?>> kafkaConsumerMock;
   private CloudSolrClient solrClientMock;
   private KafkaMirroringSink kafkaMirroringSinkMock;
+  private ClusterStateProvider clusterStateProviderMock;
+  private KafkaCrossDcConsumer.SolrClientSupplier supplier;
+  private AtomicInteger solrClientCounter = new AtomicInteger(0);
+  private boolean clusterStateProviderIsClosed = false;
 
   private SolrMessageProcessor messageProcessorMock;
 
@@ -87,10 +92,22 @@ public class KafkaCrossDcConsumerTest {
   @Before
   public void setUp() {
     kafkaConsumerMock = mock(KafkaConsumer.class);
+    clusterStateProviderMock = mock(ClusterStateProvider.class);
+    doAnswer(inv -> clusterStateProviderIsClosed).when(clusterStateProviderMock).isClosed();
     solrClientMock = mock(CloudSolrClient.class);
+    doReturn(clusterStateProviderMock).when(solrClientMock).getClusterStateProvider();
     kafkaMirroringSinkMock = mock(KafkaMirroringSink.class);
     messageProcessorMock = mock(SolrMessageProcessor.class);
     conf = testCrossDCConf();
+    supplier =
+        new KafkaCrossDcConsumer.SolrClientSupplier(null) {
+          @Override
+          protected CloudSolrClient createSolrClient() {
+            solrClientCounter.incrementAndGet();
+            return solrClientMock;
+          }
+        };
+
     // Set necessary configurations
 
     kafkaCrossDcConsumer =
@@ -107,8 +124,8 @@ public class KafkaCrossDcConsumerTest {
           }
 
           @Override
-          protected CloudSolrClient createSolrClient(KafkaCrossDcConf conf) {
-            return solrClientMock;
+          protected SolrClientSupplier createSolrClientSupplier(KafkaCrossDcConf conf) {
+            return supplier;
           }
 
           @Override
@@ -188,6 +205,15 @@ public class KafkaCrossDcConsumerTest {
   }
 
   @Test
+  public void testSolrClientSupplier() throws Exception {
+    supplier.get();
+    assertEquals(1, solrClientCounter.get());
+    clusterStateProviderIsClosed = true;
+    supplier.get();
+    assertEquals(2, solrClientCounter.get());
+  }
+
+  @Test
   public void testRunAndShutdown() throws Exception {
     // Define the expected behavior of the mocks and set up the test scenario
 
@@ -220,7 +246,6 @@ public class KafkaCrossDcConsumerTest {
 
     // Verify that the appropriate methods were called on the mocks
     verify(kafkaConsumerMock).wakeup();
-    verify(solrClientMock).close();
 
     consumerThreadExecutor.shutdown();
     consumerThreadExecutor.awaitTermination(10, TimeUnit.SECONDS);
@@ -279,7 +304,7 @@ public class KafkaCrossDcConsumerTest {
     doc.addField("id", "1");
     UpdateRequest validRequest = new UpdateRequest();
     validRequest.add(doc);
-    validRequest.setParams(new ModifiableSolrParams().add("commit", "true"));
+    validRequest.getParams().set("commit", true);
     // Create a valid MirroredSolrRequest
     ConsumerRecord<String, MirroredSolrRequest<?>> record =
         new ConsumerRecord<>("test-topic", 0, 0, "key", new MirroredSolrRequest<>(validRequest));
@@ -300,10 +325,7 @@ public class KafkaCrossDcConsumerTest {
                   return ((UpdateRequest) solrRequest)
                           .getDocuments()
                           .equals(validRequest.getDocuments())
-                      && solrRequest
-                          .getParams()
-                          .toNamedList()
-                          .equals(validRequest.getParams().toNamedList());
+                      && solrRequest.getParams().equals(validRequest.getParams());
                 }),
             eq(MirroredSolrRequest.Type.UPDATE),
             eq(record),
@@ -349,10 +371,7 @@ public class KafkaCrossDcConsumerTest {
             argThat(
                 solrRequest -> {
                   // Check if the SolrRequest has the same content as the original validRequest
-                  return solrRequest
-                      .getParams()
-                      .toNamedList()
-                      .equals(create.getParams().toNamedList());
+                  return solrRequest.getParams().equals(create.getParams());
                 }),
             eq(MirroredSolrRequest.Type.ADMIN),
             eq(record1),
@@ -459,7 +478,7 @@ public class KafkaCrossDcConsumerTest {
 
     UpdateRequest invalidRequest = new UpdateRequest();
     // no updates on request
-    invalidRequest.setParams(new ModifiableSolrParams().add("invalid_param", "invalid_value"));
+    invalidRequest.getParams().add("invalid_param", "invalid_value");
 
     ConsumerRecord<String, MirroredSolrRequest<?>> record =
         new ConsumerRecord<>("test-topic", 0, 0, "key", new MirroredSolrRequest<>(invalidRequest));
@@ -479,10 +498,7 @@ public class KafkaCrossDcConsumerTest {
                   System.out.println(Utils.toJSONString(solrRequest));
                   // Check if the UpdateRequest has the same content as the original invalidRequest
                   return ((UpdateRequest) solrRequest).getDocuments() == null
-                      && solrRequest
-                          .getParams()
-                          .toNamedList()
-                          .equals(invalidRequest.getParams().toNamedList());
+                      && solrRequest.getParams().equals(invalidRequest.getParams());
                 }),
             any(),
             eq(record),

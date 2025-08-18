@@ -30,10 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -276,7 +274,7 @@ public class StatsField {
             qplug.createParser(localParams.get(QueryParsing.V), localParams, params, rb.req);
 
         // figure out what type of query we are dealing, get the most direct ValueSource
-        vs = extractValueSource(qp.parse());
+        vs = qp.parseAsValueSource();
 
         // if this ValueSource directly corresponds to a SchemaField, act as if
         // we were asked to compute stats on it directly
@@ -339,23 +337,6 @@ public class StatsField {
   }
 
   /**
-   * Inspects a {@link Query} to see if it directly maps to a {@link ValueSource}, and if so returns
-   * it -- otherwise wraps it as needed.
-   *
-   * @param q Query whose scores we have been asked to compute stats of
-   * @returns a ValueSource to use for computing the stats
-   */
-  private static ValueSource extractValueSource(Query q) {
-    return (q instanceof FunctionQuery)
-        ?
-        // Common case: we're wrapping a func, so we can directly pull out ValueSource
-        ((FunctionQuery) q).getValueSource()
-        :
-        // asked to compute stats over a query, wrap it up as a ValueSource
-        new QueryValueSource(q, 0.0F);
-  }
-
-  /**
    * Inspects a {@link ValueSource} to see if it directly maps to a {@link SchemaField}, and if so
    * returns it.
    *
@@ -405,8 +386,7 @@ public class StatsField {
       // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
       if (!(olst instanceof Collection)) continue;
       for (Object o : (Collection<?>) olst) {
-        if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser) o;
+        if (!(o instanceof QParser qp)) continue;
         try {
           excludeSet.put(qp.getQuery(), Boolean.TRUE);
         } catch (SyntaxError e) {

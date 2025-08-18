@@ -19,11 +19,6 @@ package org.apache.solr.servlet;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
@@ -33,12 +28,15 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
 import io.opentelemetry.api.trace.Span;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,12 +48,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -70,9 +66,11 @@ import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
@@ -96,20 +94,17 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditEvent.EventType;
@@ -125,7 +120,6 @@ import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
-import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -146,6 +140,8 @@ public class HttpSolrCall {
   protected final HttpServletRequest req;
   protected final HttpServletResponse response;
   protected final boolean retry;
+  private final SolrVersion userAgentSolrVersion; // of the client
+  private final Span span;
   protected SolrCore core = null;
   protected SolrQueryRequest solrReq = null;
   private boolean mustClearSolrRequestInfo = false;
@@ -177,18 +173,30 @@ public class HttpSolrCall {
     this.response = response;
     this.retry = retry;
     this.requestType = RequestType.UNKNOWN;
+    this.userAgentSolrVersion = parseUserAgentSolrVersion();
+    this.span = Optional.ofNullable(TraceUtils.getSpan(req)).orElse(Span.getInvalid());
+    this.path = ServletUtils.getPathAfterContext(req);
+
     req.setAttribute(HttpSolrCall.class.getName(), this);
     // set a request timer which can be reused by requests if needed
     req.setAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE, new RTimerTree());
     // put the core container in request attribute
     req.setAttribute("org.apache.solr.CoreContainer", cores);
-    path = ServletUtils.getPathAfterContext(req);
   }
 
   public String getPath() {
     return path;
   }
 
+  /**
+   * WARNING: This method returns a non-null {@link HttpServletRequest}, but calling certain methods
+   * on it — such as {@link HttpServletRequest#getAttribute(String)} — may throw {@link
+   * NullPointerException} if accessed outside the original servlet thread (e.g., in asynchronous
+   * tasks).
+   *
+   * <p>Always cache required request data early during request handling if it needs to be accessed
+   * later.
+   */
   public HttpServletRequest getReq() {
     return req;
   }
@@ -279,14 +287,12 @@ public class HttpSolrCall {
         } else {
           // if we couldn't find it locally, look on other nodes
           if (idx > 0) {
-            extractRemotePath(collectionName, origCorename);
+            extractRemotePath(collectionName);
             if (action == REMOTEQUERY) {
               path = path.substring(idx);
               return;
             }
           }
-          // core is not available locally or remotely
-          autoCreateSystemColl(collectionName);
           if (action != null) return;
         }
       }
@@ -360,52 +366,6 @@ public class HttpSolrCall {
     return logic.get();
   }
 
-  protected void autoCreateSystemColl(String corename) throws Exception {
-    if (core == null
-        && SYSTEM_COLL.equals(corename)
-        && "POST".equals(req.getMethod())
-        && !cores.getZkController().getClusterState().hasCollection(SYSTEM_COLL)) {
-      log.info("Going to auto-create {} collection", SYSTEM_COLL);
-      SolrQueryResponse rsp = new SolrQueryResponse();
-      String repFactor =
-          String.valueOf(
-              Math.min(3, cores.getZkController().getClusterState().getLiveNodes().size()));
-      cores
-          .getCollectionsHandler()
-          .handleRequestBody(
-              new LocalSolrQueryRequest(
-                  null,
-                  new ModifiableSolrParams()
-                      .add(ACTION, CREATE.toString())
-                      .add(NAME, SYSTEM_COLL)
-                      .add(REPLICATION_FACTOR, repFactor)),
-              rsp);
-      if (rsp.getValues().get("success") == null) {
-        throw new SolrException(
-            ErrorCode.SERVER_ERROR,
-            "Could not auto-create "
-                + SYSTEM_COLL
-                + " collection: "
-                + Utils.toJSONString(rsp.getValues()));
-      }
-      TimeOut timeOut = new TimeOut(3, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      for (; ; ) {
-        if (cores.getZkController().getClusterState().getCollectionOrNull(SYSTEM_COLL) != null) {
-          break;
-        } else {
-          if (timeOut.hasTimedOut()) {
-            throw new SolrException(
-                ErrorCode.SERVER_ERROR,
-                "Could not find " + SYSTEM_COLL + " collection even after 3 seconds");
-          }
-          timeOut.sleep(50);
-        }
-      }
-
-      action = RETRY;
-    }
-  }
-
   /**
    * Resolves the parameter as a potential comma delimited list of collections, and resolves aliases
    * too. One level of aliases pointing to another alias is supported. De-duplicates and retains the
@@ -464,10 +424,10 @@ public class HttpSolrCall {
     }
   }
 
-  protected void extractRemotePath(String collectionName, String origCorename)
+  protected void extractRemotePath(String collectionName)
       throws KeeperException, InterruptedException, SolrException {
     assert core == null;
-    coreUrl = getRemoteCoreUrl(collectionName, origCorename);
+    coreUrl = getRemoteCoreUrl(collectionName);
     // don't proxy for internal update requests
     invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
     if (coreUrl != null
@@ -642,12 +602,7 @@ public class HttpSolrCall {
 
   /** Get the Span for this request. Not null. */
   public Span getSpan() {
-    var s = TraceUtils.getSpan(req);
-    if (s != null) {
-      return s;
-    } else {
-      return Span.getInvalid();
-    }
+    return span;
   }
 
   // called after init().
@@ -775,10 +730,23 @@ public class HttpSolrCall {
         method.removeHeaders(CONTENT_LENGTH_HEADER);
       }
 
+      // Make sure the user principal is forwarded when its exist
+      HttpClientContext httpClientRequestContext =
+          HttpClientUtil.createNewHttpClientRequestContext();
+      Principal userPrincipal = req.getUserPrincipal();
+      if (userPrincipal != null) {
+        // Normally the context contains a static userToken to enable reuse resources. However, if a
+        // personal Principal object exists, we use that instead, also as a means to transfer
+        // authentication information to Auth plugins that wish to intercept the request later
+        if (log.isDebugEnabled()) {
+          log.debug("Forwarding principal {}", userPrincipal);
+        }
+        httpClientRequestContext.setUserToken(userPrincipal);
+      }
+
+      // Execute the method.
       final HttpResponse response =
-          solrDispatchFilter
-              .getHttpClient()
-              .execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+          solrDispatchFilter.getHttpClient().execute(method, httpClientRequestContext);
       int httpStatus = response.getStatusLine().getStatusCode();
       httpEntity = response.getEntity();
 
@@ -934,13 +902,7 @@ public class HttpSolrCall {
    * returns the default query response writer Note: This method must not return null
    */
   protected QueryResponseWriter getResponseWriter() {
-    String wt = solrReq.getParams().get(CommonParams.WT);
-    if (core != null) {
-      return core.getQueryResponseWriter(wt);
-    } else {
-      return SolrCore.DEFAULT_RESPONSE_WRITERS.getOrDefault(
-          wt, SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard"));
-    }
+    return solrReq.getResponseWriter();
   }
 
   protected void handleAdmin(SolrQueryResponse solrResp) {
@@ -1008,8 +970,7 @@ public class HttpSolrCall {
       }
 
       if (Method.HEAD != reqMethod) {
-        OutputStream out = response.getOutputStream();
-        QueryResponseWriterUtil.writeQueryResponse(out, responseWriter, solrReq, solrRsp, ct);
+        responseWriter.write(response.getOutputStream(), solrReq, solrRsp, ct);
       }
       // else http HEAD request, nothing to write out, waited this long just to get ContentType
     } catch (EOFException e) {
@@ -1069,7 +1030,7 @@ public class HttpSolrCall {
       if (core != null) return core;
     }
 
-    List<Replica> replicas = collection.getReplicas(cores.getZkController().getNodeName());
+    List<Replica> replicas = collection.getReplicasOnNode(cores.getZkController().getNodeName());
     return randomlyGetSolrCore(liveNodes, replicas);
   }
 
@@ -1098,45 +1059,15 @@ public class HttpSolrCall {
     return core;
   }
 
-  private void getSlicesForCollections(
-      ClusterState clusterState, Collection<Slice> slices, boolean activeSlices) {
-    if (activeSlices) {
-      for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
-        final Slice[] activeCollectionSlices = entry.getValue().getActiveSlicesArr();
-        if (activeCollectionSlices != null) {
-          Collections.addAll(slices, activeCollectionSlices);
-        }
-      }
-    } else {
-      for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
-        final Collection<Slice> collectionSlices = entry.getValue().getSlices();
-        if (collectionSlices != null) {
-          slices.addAll(collectionSlices);
-        }
-      }
-    }
-  }
-
-  protected String getRemoteCoreUrl(String collectionName, String origCorename)
-      throws SolrException {
+  protected String getRemoteCoreUrl(String collectionName) throws SolrException {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
-    Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
-    List<Slice> activeSlices = new ArrayList<>();
-    boolean byCoreName = false;
+    if (docCollection == null) {
+      return null;
+    }
+    Collection<Slice> activeSlices = docCollection.getActiveSlices();
 
     int totalReplicas = 0;
-
-    if (slices == null) {
-      byCoreName = true;
-      activeSlices = new ArrayList<>();
-      getSlicesForCollections(clusterState, activeSlices, true);
-      if (activeSlices.isEmpty()) {
-        getSlicesForCollections(clusterState, activeSlices, false);
-      }
-    } else {
-      Collections.addAll(activeSlices, slices);
-    }
 
     for (Slice s : activeSlices) {
       totalReplicas += s.getReplicas().size();
@@ -1160,41 +1091,30 @@ public class HttpSolrCall {
           "No active replicas found for collection: " + collectionName);
     }
 
-    String coreUrl =
-        getCoreUrl(collectionName, origCorename, clusterState, activeSlices, byCoreName, true);
+    String coreUrl = getCoreUrl(activeSlices, true, clusterState.getLiveNodes());
 
     if (coreUrl == null) {
-      coreUrl =
-          getCoreUrl(collectionName, origCorename, clusterState, activeSlices, byCoreName, false);
+      coreUrl = getCoreUrl(activeSlices, false, clusterState.getLiveNodes());
     }
 
     return coreUrl;
   }
 
   private String getCoreUrl(
-      String collectionName,
-      String origCorename,
-      ClusterState clusterState,
-      List<Slice> slices,
-      boolean byCoreName,
-      boolean activeReplicas) {
-    String coreUrl;
-    Set<String> liveNodes = clusterState.getLiveNodes();
-    Collections.shuffle(slices, Utils.RANDOM);
+      Collection<Slice> slices, boolean activeReplicas, Set<String> liveNodes) {
 
-    for (Slice slice : slices) {
-      List<Replica> randomizedReplicas = new ArrayList<>(slice.getReplicas());
-      Collections.shuffle(randomizedReplicas, Utils.RANDOM);
+    Iterator<Slice> shuffledSlices = new RandomIterator<>(Utils.RANDOM, slices);
+    while (shuffledSlices.hasNext()) {
+      Slice slice = shuffledSlices.next();
 
-      for (Replica replica : randomizedReplicas) {
+      Iterator<Replica> shuffledReplicas = new RandomIterator<>(Utils.RANDOM, slice.getReplicas());
+      while (shuffledReplicas.hasNext()) {
+        Replica replica = shuffledReplicas.next();
+
         if (!activeReplicas
             || (liveNodes.contains(replica.getNodeName())
                 && replica.getState() == Replica.State.ACTIVE)) {
 
-          if (byCoreName && !Objects.equals(origCorename, replica.getStr(CORE_NAME_PROP))) {
-            // if it's by core name, make sure they match
-            continue;
-          }
           if (Objects.equals(replica.getBaseUrl(), cores.getZkController().getBaseUrl())) {
             // don't count a local core
             continue;
@@ -1218,6 +1138,34 @@ public class HttpSolrCall {
 
   protected Object _getHandler() {
     return handler;
+  }
+
+  /**
+   * Gets the client (user-agent) SolrJ version, or null if isn't SolrJ. Note that older SolrJ
+   * clients prior to 9.9 present themselves as 1.0 or 2.0.
+   */
+  public SolrVersion getUserAgentSolrVersion() {
+    return userAgentSolrVersion;
+  }
+
+  private SolrVersion parseUserAgentSolrVersion() {
+    String header = req.getHeader("User-Agent");
+    if (header == null || !header.startsWith("Solr")) {
+      return null;
+    }
+    try {
+      String userAgent = header.substring(header.lastIndexOf(' ') + 1);
+      if ("1.0".equals(userAgent)) {
+        userAgent = "1.0.0";
+      } else if ("2.0".equals(userAgent)) {
+        userAgent = "2.0.0";
+      }
+      return SolrVersion.valueOf(userAgent);
+    } catch (Exception e) {
+      // unexpected but let's not freak out
+      assert false : e.toString();
+      return null;
+    }
   }
 
   private AuthorizationContext getAuthCtx() {

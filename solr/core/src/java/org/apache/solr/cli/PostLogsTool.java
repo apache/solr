@@ -20,7 +20,6 @@ package org.apache.solr.cli;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
-import java.io.PrintStream;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -36,8 +35,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -49,12 +48,26 @@ import org.apache.solr.handler.component.ShardRequest;
 /** A command line tool for indexing Solr logs in the out-of-the-box log format. */
 public class PostLogsTool extends ToolBase {
 
-  public PostLogsTool() {
-    this(CLIO.getOutStream());
-  }
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Name of the collection.")
+          .build();
 
-  public PostLogsTool(PrintStream stdout) {
-    super(stdout);
+  private static final Option ROOT_DIR_OPTION =
+      Option.builder()
+          .longOpt("rootdir")
+          .hasArg()
+          .argName("DIRECTORY")
+          .required()
+          .desc("All files found at or below the root directory will be indexed.")
+          .build();
+
+  public PostLogsTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -63,55 +76,26 @@ public class PostLogsTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("url")
-            .longOpt("solr-collection-url")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --solr-url and -c / --name instead")
-                    .get())
-            .hasArg()
-            .argName("ADDRESS")
-            .desc("Address of the collection, example http://localhost:8983/solr/collection1/.")
-            .build(),
-        Option.builder("c")
-            .longOpt("name")
-            .hasArg()
-            .argName("NAME")
-            .desc("Name of the collection.")
-            .build(),
-        Option.builder("rootdir")
-            .longOpt("rootdir")
-            .hasArg()
-            .argName("DIRECTORY")
-            .required(true)
-            .desc("All files found at or below the root directory will be indexed.")
-            .build(),
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(ROOT_DIR_OPTION)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url = null;
-    if (cli.hasOption("solr-url")) {
-      if (!cli.hasOption("name")) {
-        throw new IllegalArgumentException(
-            "Must specify -c / --name parameter with --solr-url to post documents.");
-      }
-      url = SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name");
+    if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
+      url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
 
-    } else if (cli.hasOption("solr-collection-url")) {
-      url = cli.getOptionValue("solr-collection-url");
     } else {
-      // Swap to required Option when --solr-collection-url removed.
+      // Could be required arg, but maybe we want to support --zk-host option too?
       throw new IllegalArgumentException("Must specify --solr-url.");
     }
-    String rootDir = cli.getOptionValue("rootdir");
-    String credentials = cli.getOptionValue("credentials");
+    String rootDir = cli.getOptionValue(ROOT_DIR_OPTION);
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     runCommand(url, rootDir, credentials);
   }
 

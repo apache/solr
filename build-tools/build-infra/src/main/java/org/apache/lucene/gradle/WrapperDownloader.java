@@ -22,11 +22,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
@@ -46,7 +45,7 @@ public class WrapperDownloader {
 
     try {
       checkVersion();
-      new WrapperDownloader().run(Paths.get(args[0]));
+      new WrapperDownloader().run(Path.of(args[0]));
     } catch (Exception e) {
       System.err.println("ERROR: " + e.getMessage());
       System.exit(3);
@@ -54,10 +53,10 @@ public class WrapperDownloader {
   }
 
   public static void checkVersion() {
-    int major = Runtime.getRuntime().version().feature();
-    if (major < 11 || major > 21) {
+    int major = Runtime.version().feature();
+    if (major < 21 || major > 23) {
       throw new IllegalStateException(
-          "java version must be between 11 and 21, your version: " + major);
+          "java version must be between 21 and 23, your version: " + major);
     }
   }
 
@@ -89,12 +88,12 @@ public class WrapperDownloader {
       }
     }
 
-    URL url =
-        new URL(
+    URI uri =
+        URI.create(
             "https://raw.githubusercontent.com/gradle/gradle/v"
                 + wrapperVersion
                 + "/gradle/wrapper/gradle-wrapper.jar");
-    System.err.println("Downloading gradle-wrapper.jar from " + url);
+    System.err.println("Downloading gradle-wrapper.jar from " + uri);
 
     // Zero-copy save the jar to a temp file
     Path temp = Files.createTempFile(destination.getParent(), ".gradle-wrapper", ".tmp");
@@ -103,7 +102,7 @@ public class WrapperDownloader {
       int retryDelay = 30;
       HttpURLConnection connection;
       while (true) {
-        connection = (HttpURLConnection) url.openConnection();
+        connection = (HttpURLConnection) uri.toURL().openConnection();
         try {
           connection.connect();
         } catch (IOException e) {

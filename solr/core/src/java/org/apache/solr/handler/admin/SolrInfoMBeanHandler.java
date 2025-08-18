@@ -21,6 +21,7 @@ import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrException;
@@ -32,7 +33,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 
@@ -72,7 +73,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       wrap.add("solr-mbeans", cats);
       cats =
           (NamedList<NamedList<NamedList<Object>>>)
-              BinaryResponseWriter.getParsedResponse(req, wrap).get("solr-mbeans");
+              JavaBinResponseWriter.getParsedResponse(req, wrap).get("solr-mbeans");
 
       // Get rid of irrelevant things
       normalize(ref);
@@ -158,9 +159,9 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     NamedList<NamedList<NamedList<Object>>> changed = new NamedList<>();
 
     // Cycle through each category
-    for (int i = 0; i < ref.size(); i++) {
-      String category = ref.getName(i);
-      NamedList<NamedList<Object>> ref_cat = ref.get(category);
+    for (Entry<String, NamedList<NamedList<Object>>> catEntry : ref) {
+      String category = catEntry.getKey();
+      NamedList<NamedList<Object>> ref_cat = catEntry.getValue();
       NamedList<NamedList<Object>> now_cat = now.get(category);
       if (now_cat != null) {
         String ref_txt = ref_cat + "";
@@ -170,9 +171,9 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
           // Now iterate the real beans
 
           NamedList<NamedList<Object>> cat = new SimpleOrderedMap<>();
-          for (int j = 0; j < ref_cat.size(); j++) {
-            String name = ref_cat.getName(j);
-            NamedList<Object> ref_bean = ref_cat.get(name);
+          for (Entry<String, NamedList<Object>> beanEntry : ref_cat) {
+            String name = beanEntry.getKey();
+            NamedList<Object> ref_bean = beanEntry.getValue();
             NamedList<Object> now_bean = now_cat.get(name);
 
             ref_txt = ref_bean + "";
@@ -204,28 +205,27 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
 
   public NamedList<Object> diffNamedList(NamedList<?> ref, NamedList<?> now) {
     NamedList<Object> out = new SimpleOrderedMap<>();
-    for (int i = 0; i < ref.size(); i++) {
-      String name = ref.getName(i);
-      Object r = ref.getVal(i);
-      Object n = now.get(name);
-      if (n == null) {
-        if (r != null) {
-          out.add("REMOVE " + name, r);
-          now.remove(name);
-        }
-      } else if (r != null) {
-        out.add(name, diffObject(r, n));
-        now.remove(name);
-      }
-    }
+    ref.forEach(
+        (name, r) -> {
+          Object n = now.get(name);
+          if (n == null) {
+            if (r != null) {
+              out.add("REMOVE " + name, r);
+              now.remove(name);
+            }
+          } else if (r != null) {
+            out.add(name, diffObject(r, n));
+            now.remove(name);
+          }
+        });
 
-    for (int i = 0; i < now.size(); i++) {
-      String name = now.getName(i);
-      Object v = now.getVal(i);
-      if (v != null) {
-        out.add("ADD " + name, v);
-      }
-    }
+    now.forEach(
+        (name, v) -> {
+          if (v != null) {
+            out.add("ADD " + name, v);
+          }
+        });
+
     return out;
   }
 
@@ -266,8 +266,8 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   /** The 'avgRequestsPerSecond' field will make everything look like it changed */
   public void normalize(NamedList<?> input) {
     input.remove("avgRequestsPerSecond");
-    for (int i = 0; i < input.size(); i++) {
-      Object v = input.getVal(i);
+    for (Entry<String, ?> entry : input) {
+      Object v = entry.getValue();
       if (v instanceof NamedList) {
         // edit in place so we don't need to return it
         normalize((NamedList<?>) v);

@@ -17,15 +17,14 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -37,12 +36,26 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 /** Supports snapshot-describe command in the bin/solr script. */
 public class SnapshotDescribeTool extends ToolBase {
 
-  public SnapshotDescribeTool() {
-    this(CLIO.getOutStream());
-  }
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Name of collection to be snapshot.")
+          .build();
 
-  public SnapshotDescribeTool(PrintStream stdout) {
-    super(stdout);
+  private static final Option SNAPSHOT_NAME_OPTION =
+      Option.builder()
+          .longOpt("snapshot-name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Name of the snapshot to describe")
+          .build();
+
+  public SnapshotDescribeTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   private static final DateFormat dateFormat =
@@ -54,35 +67,19 @@ public class SnapshotDescribeTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
-        Option.builder("c")
-            .longOpt("name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Name of collection to be snapshot.")
-            .build(),
-        Option.builder()
-            .longOpt("snapshot-name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Name of the snapshot to describe")
-            .build(),
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(SNAPSHOT_NAME_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-
-    String snapshotName = cli.getOptionValue("snapshot-name");
-    String collectionName = cli.getOptionValue("name");
-    try (var solrClient = SolrCLI.getSolrClient(cli)) {
+    String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
+    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
+    try (var solrClient = CLIUtils.getSolrClient(cli)) {
       describeSnapshot(solrClient, collectionName, snapshotName);
     }
   }

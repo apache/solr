@@ -612,8 +612,7 @@ abstract class FacetParser<T extends FacetRequest> {
 
       FacetRequest.FacetSort facetSort = null;
 
-      if (sort instanceof String) {
-        String sortStr = (String) sort;
+      if (sort instanceof String sortStr) {
         if (sortStr.endsWith(" asc")) {
           facetSort =
               new FacetRequest.FacetSort(

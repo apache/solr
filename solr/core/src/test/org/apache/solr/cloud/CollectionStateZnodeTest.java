@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.util.Objects;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.zookeeper.data.Stat;
@@ -64,7 +65,7 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
 
     // remove collection
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
-    waitForState("Collection not deleted", collectionName, (n, coll) -> coll == null);
+    waitForState("Collection not deleted", collectionName, Objects::isNull);
 
     assertFalse(
         "collection state should not exist",

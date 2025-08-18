@@ -18,14 +18,13 @@ package org.apache.solr.client.solrj.request;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.params.ConfigSetParams;
@@ -34,6 +33,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase.FileStream;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * This class is experimental and subject to change.
@@ -52,11 +52,11 @@ public abstract class ConfigSetAdminRequest<
   }
 
   public ConfigSetAdminRequest() {
-    super(METHOD.GET, "/admin/configs");
+    super(METHOD.GET, "/admin/configs", SolrRequestType.ADMIN);
   }
 
   public ConfigSetAdminRequest(String path) {
-    super(METHOD.GET, path);
+    super(METHOD.GET, path, SolrRequestType.ADMIN);
   }
 
   protected abstract Q getThis();
@@ -72,7 +72,7 @@ public abstract class ConfigSetAdminRequest<
   }
 
   @Override
-  protected abstract R createResponse(SolrClient client);
+  protected abstract R createResponse(NamedList<Object> namedList);
 
   protected abstract static class ConfigSetSpecificAdminRequest<
           T extends ConfigSetAdminRequest<T, ConfigSetAdminResponse>>
@@ -99,14 +99,9 @@ public abstract class ConfigSetAdminRequest<
     }
 
     @Override
-    protected ConfigSetAdminResponse createResponse(SolrClient client) {
+    protected ConfigSetAdminResponse createResponse(NamedList<Object> namedList) {
       return new ConfigSetAdminResponse();
     }
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
   }
 
   /**
@@ -160,7 +155,8 @@ public abstract class ConfigSetAdminRequest<
      *
      * @see #setUploadStream
      */
-    public final Upload setUploadFile(final File file, final String contentType) {
+    public final Upload setUploadFile(final Path file, final String contentType)
+        throws IOException {
       final FileStream fileStream = new FileStream(file);
       fileStream.setContentType(contentType);
       return setUploadStream(fileStream);
@@ -326,7 +322,7 @@ public abstract class ConfigSetAdminRequest<
     }
 
     @Override
-    protected ConfigSetAdminResponse.List createResponse(SolrClient client) {
+    protected ConfigSetAdminResponse.List createResponse(NamedList<Object> namedList) {
       return new ConfigSetAdminResponse.List();
     }
   }

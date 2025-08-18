@@ -21,21 +21,22 @@ import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
-import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.prometheus.collector.MetricsCollectorFactory;
 import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
 import org.apache.solr.prometheus.scraper.SolrCloudScraper;
@@ -49,9 +50,7 @@ public class SolrExporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int DEFAULT_PORT = 8989;
-  private static final String DEFAULT_BASE_URL = "http://localhost:8983/solr";
-  private static final String DEFAULT_ZK_HOST = "";
-  private static final String DEFAULT_CLUSTER_ID = "";
+  private static final String DEFAULT_BASE_URL = getDefaultSolrUrl();
   private static final String DEFAULT_CONFIG = "solr-exporter-config.xml";
   private static final int DEFAULT_SCRAPE_INTERVAL = 60;
   private static final Integer DEFAULT_NUM_THREADS = 1;
@@ -105,7 +104,9 @@ public class SolrExporter {
   }
 
   void stop() {
-    httpServer.stop();
+    if (httpServer != null) {
+      httpServer.stop();
+    }
 
     metricsCollector.removeObserver(prometheusCollector);
 
@@ -143,36 +144,19 @@ public class SolrExporter {
 
   public static void main(String[] args) {
     Options mainOptions = new Options();
-    Options deprecatedOptions = new Options();
 
-    // Change to -s and --solr-url in main once deprecated -s flag for --scrape-interval is removed.
-    Option baseUrlOption =
-        Option.builder("b")
-            .longOpt("base-url")
+    Option solrUrlOption =
+        Option.builder("s")
+            .longOpt("solr-url")
             .hasArg()
-            .argName("BASE_URL")
+            .argName("HOST")
             .type(String.class)
             .desc(
-                "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'http://localhost:8983/solr'.")
+                "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -s parameter and the -z parameter, connect to "
+                    + DEFAULT_BASE_URL
+                    + ".")
             .build();
-    mainOptions.addOption(baseUrlOption);
-
-    Option baseUrlDepOption =
-        Option.builder()
-            .longOpt("baseUrl")
-            .hasArg()
-            .argName("BASE_URL")
-            .type(String.class)
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.7")
-                    .setDescription("Use --base-url instead")
-                    .get())
-            .desc(
-                "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'http://localhost:8983/solr'.")
-            .build();
-    deprecatedOptions.addOption(baseUrlDepOption);
+    mainOptions.addOption(solrUrlOption);
 
     Option configOption =
         Option.builder()
@@ -182,28 +166,15 @@ public class SolrExporter {
             .type(String.class)
             .desc("Specify the configuration file; the default is " + DEFAULT_CONFIG + ".")
             .build();
-    Option configOptionDeprecated =
-        Option.builder("f")
-            .hasArg()
-            .argName("CONFIG")
-            .type(String.class)
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --config-file instead")
-                    .get())
-            .desc("Specify the configuration file; the default is " + DEFAULT_CONFIG + ".")
-            .build();
+
     mainOptions.addOption(configOption);
-    mainOptions.addOption(configOptionDeprecated);
 
     Option helpOption =
         Option.builder("h").longOpt("help").desc("Prints this help message.").build();
     mainOptions.addOption(helpOption);
 
     Option clusterIdOption =
-        Option.builder("i")
+        Option.builder()
             .longOpt("cluster-id")
             .hasArg()
             .argName("CLUSTER_ID")
@@ -225,23 +196,6 @@ public class SolrExporter {
                     + ".")
             .build();
     mainOptions.addOption(numThreadsOption);
-    Option numThreadsOptionDeprecated =
-        Option.builder("n")
-            .hasArg()
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --num-threads instead")
-                    .get())
-            .argName("NUM_THREADS")
-            .type(Integer.class)
-            .desc(
-                "Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; the default is "
-                    + DEFAULT_NUM_THREADS
-                    + ".")
-            .build();
-    mainOptions.addOption(numThreadsOptionDeprecated);
 
     Option portOption =
         Option.builder("p")
@@ -266,26 +220,8 @@ public class SolrExporter {
             .build();
     mainOptions.addOption(scrapeIntervalOption);
 
-    Option scrapeIntervalOptionDeprecated =
-        Option.builder("s")
-            .hasArg()
-            .argName("SCRAPE_INTERVAL")
-            .type(Integer.class)
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --scrape-interval instead")
-                    .get())
-            .desc(
-                "Specify the delay between scraping Solr metrics; the default is "
-                    + DEFAULT_SCRAPE_INTERVAL
-                    + " seconds.")
-            .build();
-    mainOptions.addOption(scrapeIntervalOptionDeprecated);
-
     Option sslOption =
-        Option.builder("ssl")
+        Option.builder()
             .longOpt("ssl-enabled")
             .type(Boolean.class)
             .desc(
@@ -311,13 +247,14 @@ public class SolrExporter {
             .argName("ZK_HOST")
             .type(String.class)
             .desc(
-                "Specify the ZooKeeper connection string when connecting to Solr in SolrCloud mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'localhost:2181/solr'.")
+                "Specify the ZooKeeper connection string when connecting to Solr in SolrCloud mode. If omitted both the -s parameter and the -z parameter, connect to "
+                    + DEFAULT_BASE_URL
+                    + ".")
             .build();
     mainOptions.addOption(zkHostOption);
 
     Options options = new Options();
     options.addOptions(mainOptions);
-    options.addOptions(deprecatedOptions);
 
     try {
       CommandLineParser parser = new DefaultParser();
@@ -330,35 +267,31 @@ public class SolrExporter {
         return;
       }
 
-      SolrScrapeConfiguration scrapeConfiguration = null;
-
-      String defaultClusterId = "";
-      if (commandLine.hasOption(zkHostOption)) {
-        String zkHost = commandLine.getOptionValue(zkHostOption, DEFAULT_ZK_HOST);
+      final SolrScrapeConfiguration scrapeConfiguration;
+      final String defaultClusterId;
+      String zkHost = getZkHost(commandLine, zkHostOption);
+      if (zkHost != null && !zkHost.isBlank()) {
         defaultClusterId = makeShortHash(zkHost);
         scrapeConfiguration = SolrScrapeConfiguration.solrCloud(zkHost);
-      } else if (commandLine.hasOption(baseUrlOption) || commandLine.hasOption(baseUrlDepOption)) {
-        log.warn("-b and --base-url will be replaced with -s and --solr-url in Solr 10");
-        String baseUrl =
-            commandLine.hasOption(baseUrlOption)
-                ? commandLine.getOptionValue(baseUrlOption)
-                : commandLine.getOptionValue(baseUrlDepOption, DEFAULT_BASE_URL);
+      } else if (commandLine.hasOption(solrUrlOption)) {
+        String baseUrl = commandLine.getOptionValue(solrUrlOption);
+        defaultClusterId = makeShortHash(baseUrl);
+        scrapeConfiguration = SolrScrapeConfiguration.standalone(baseUrl);
+      } else {
+        String baseUrl = DEFAULT_BASE_URL;
+        if (log.isInfoEnabled()) {
+          log.info(
+              "Neither --{} or --{} parameters provided so assuming solr url is {}",
+              solrUrlOption.getLongOpt(),
+              zkHostOption.getLongOpt(),
+              baseUrl);
+        }
         defaultClusterId = makeShortHash(baseUrl);
         scrapeConfiguration = SolrScrapeConfiguration.standalone(baseUrl);
       }
 
-      if (scrapeConfiguration == null) {
-        log.error(
-            "Must provide either --{} or --{}",
-            baseUrlOption.getLongOpt(),
-            zkHostOption.getLongOpt());
-      }
-
       int port = commandLine.getParsedOptionValue(portOption, DEFAULT_PORT);
-      String clusterId = commandLine.getOptionValue(clusterIdOption, DEFAULT_CLUSTER_ID);
-      if (StrUtils.isNullOrEmpty(clusterId)) {
-        clusterId = defaultClusterId;
-      }
+      String clusterId = commandLine.getOptionValue(clusterIdOption, defaultClusterId);
 
       if (commandLine.hasOption(credentialsOption)) {
         String credentials = commandLine.getOptionValue(credentialsOption, DEFAULT_CREDENTIALS);
@@ -372,31 +305,16 @@ public class SolrExporter {
         log.info("SSL ENABLED");
 
         scrapeConfiguration.withSslConfiguration(
-            Paths.get(getSystemVariable("SOLR_SSL_KEY_STORE")),
+            Path.of(getSystemVariable("SOLR_SSL_KEY_STORE")),
             getSystemVariable("SOLR_SSL_KEY_STORE_PASSWORD"),
-            Paths.get(getSystemVariable("SOLR_SSL_TRUST_STORE")),
+            Path.of(getSystemVariable("SOLR_SSL_TRUST_STORE")),
             getSystemVariable("SOLR_SSL_TRUST_STORE_PASSWORD"));
       }
 
-      String configFile = DEFAULT_CONFIG;
-      if (commandLine.hasOption(configOptionDeprecated)) {
-        configFile = commandLine.getOptionValue(configOptionDeprecated);
-      } else if (commandLine.hasOption(configOption)) {
-        configFile = commandLine.getOptionValue(configOption);
-      }
-      int numberOfThreads = DEFAULT_NUM_THREADS;
-      if (commandLine.hasOption("num-threads")) {
-        numberOfThreads = commandLine.getParsedOptionValue("num-threads");
-      } else if (commandLine.hasOption("n")) {
-        numberOfThreads = commandLine.getParsedOptionValue("n");
-      }
-
-      int scrapeInterval = DEFAULT_SCRAPE_INTERVAL;
-      if (commandLine.hasOption("s")) {
-        scrapeInterval = commandLine.getParsedOptionValue(scrapeIntervalOptionDeprecated);
-      } else if (commandLine.hasOption("scrape-interval")) {
-        scrapeInterval = commandLine.getParsedOptionValue(scrapeIntervalOption);
-      }
+      String configFile = commandLine.getOptionValue(configOption, DEFAULT_CONFIG);
+      int numberOfThreads = commandLine.getParsedOptionValue(numThreadsOption, DEFAULT_NUM_THREADS);
+      int scrapeInterval =
+          commandLine.getParsedOptionValue(scrapeIntervalOption, DEFAULT_SCRAPE_INTERVAL);
 
       SolrExporter solrExporter =
           new SolrExporter(
@@ -414,9 +332,9 @@ public class SolrExporter {
           clusterId,
           scrapeConfiguration);
     } catch (IOException e) {
-      log.error("Failed to start Solr Prometheus Exporter: ", e);
+      exit(1, "Failed to start Solr Prometheus Exporter: " + e.getMessage());
     } catch (ParseException e) {
-      log.error("Failed to parse command line arguments: ", e);
+      exit(1, "Failed to parse command line arguments: " + e.getMessage());
     }
   }
 
@@ -441,5 +359,33 @@ public class SolrExporter {
 
   private static String getSystemVariable(String name) {
     return System.getProperty(name, System.getenv(name));
+  }
+
+  @SuppressForbidden(reason = "For use in command line tools only")
+  public static void exit(int exitStatus, String message) {
+    System.err.println(message);
+    try {
+      System.exit(exitStatus);
+    } catch (java.lang.SecurityException secExc) {
+      if (exitStatus != 0)
+        throw new RuntimeException("SolrExporter failed to exit with status " + exitStatus);
+    }
+  }
+
+  // copied over from CLIUtils
+  private static String getDefaultSolrUrl() {
+    // note that ENV_VAR syntax (and the env vars too) are mapped to env.var sys props
+    String scheme = EnvUtils.getProperty("solr.url.scheme", "http");
+    String host = EnvUtils.getProperty("solr.host", "localhost");
+    String port = EnvUtils.getProperty("jetty.port", "8983"); // from SOLR_PORT env
+    return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
+  }
+
+  public static String getZkHost(CommandLine cli, Option option) {
+    String zkHost = cli.getOptionValue(option);
+    if (zkHost != null && !zkHost.isBlank()) {
+      return zkHost;
+    }
+    return EnvUtils.getProperty("zkHost");
   }
 }

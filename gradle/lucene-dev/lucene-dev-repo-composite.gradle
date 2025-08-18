@@ -104,7 +104,7 @@ if (luceneDevRepo != null) {
     // We substitute the exact version of Lucene we currently have in versions.props across all the dependencies.
     // We can't just substitute all references without looking at the versoin because
     // plugin dependencies then also get substituted and everything crashes.
-    String luceneVersion = (file("${rootDir}/versions.props").getText("UTF-8") =~ /org.apache.lucene:\*=(.+)/)[0][1]
+    String luceneVersion = libs.versions.apache.lucene.get()
     logger.lifecycle("Local Lucene development repository will be used substituting ${luceneVersion}: ${luceneDevRepo}")
 
     // Include Lucene repository as a composite and substitute module names.

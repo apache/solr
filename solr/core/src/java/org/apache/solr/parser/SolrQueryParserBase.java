@@ -56,6 +56,7 @@ import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.RegExp;
 import org.apache.solr.analysis.ReversedWildcardFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
@@ -459,7 +460,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (clauses.size() > 0 && conj == CONJ_AND) {
       BooleanClause c = clauses.get(clauses.size() - 1);
       if (!c.isProhibited())
-        clauses.set(clauses.size() - 1, new BooleanClause(c.getQuery(), BooleanClause.Occur.MUST));
+        clauses.set(clauses.size() - 1, new BooleanClause(c.query(), BooleanClause.Occur.MUST));
     }
 
     if (clauses.size() > 0 && operator == AND_OPERATOR && conj == CONJ_OR) {
@@ -469,8 +470,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       // this modification a OR b would parsed as +a OR b
       BooleanClause c = clauses.get(clauses.size() - 1);
       if (!c.isProhibited())
-        clauses.set(
-            clauses.size() - 1, new BooleanClause(c.getQuery(), BooleanClause.Occur.SHOULD));
+        clauses.set(clauses.size() - 1, new BooleanClause(c.query(), BooleanClause.Occur.SHOULD));
     }
 
     // We might have been passed a null query; the term might have been
@@ -549,8 +549,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     // only set slop of the phrase query was a result of this parser
     // and not a sub-parser.
     if (subQParser == null) {
-      if (query instanceof PhraseQuery) {
-        PhraseQuery pq = (PhraseQuery) query;
+      if (query instanceof PhraseQuery pq) {
         Term[] terms = pq.getTerms();
         int[] positions = pq.getPositions();
         PhraseQuery.Builder builder = new PhraseQuery.Builder();
@@ -559,8 +558,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         }
         builder.setSlop(slop);
         query = builder.build();
-      } else if (query instanceof MultiPhraseQuery) {
-        MultiPhraseQuery mpq = (MultiPhraseQuery) query;
+      } else if (query instanceof MultiPhraseQuery mpq) {
 
         if (slop != mpq.getSlop()) {
           query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
@@ -600,10 +598,14 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * @return new RegexpQuery instance
    */
   protected Query newRegexpQuery(Term regexp) {
-    RegexpQuery query = new RegexpQuery(regexp);
     SchemaField sf = schema.getField(regexp.field());
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
-    return query;
+    return new RegexpQuery(
+        regexp,
+        RegExp.ALL,
+        0,
+        RegexpQuery.DEFAULT_PROVIDER,
+        Operations.DEFAULT_DETERMINIZE_WORK_LIMIT,
+        sf.getType().getRewriteMethod(parser, sf));
   }
 
   @Override
@@ -632,7 +634,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       case PICK_BEST:
         List<Query> currPosnClauses = new ArrayList<>(terms.length);
         for (TermAndBoost term : terms) {
-          currPosnClauses.add(newTermQuery(new Term(field, term.term), term.boost));
+          currPosnClauses.add(newTermQuery(new Term(field, term.term()), term.boost()));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
@@ -640,7 +642,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for (TermAndBoost term : terms) {
           builder.add(
-              newTermQuery(new Term(field, term.term), term.boost), BooleanClause.Occur.SHOULD);
+              newTermQuery(new Term(field, term.term()), term.boost()), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       case AS_SAME_TERM:
@@ -683,10 +685,9 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * @return new WildcardQuery instance
    */
   protected Query newWildcardQuery(Term t) {
-    WildcardQuery query = new WildcardQuery(t);
     SchemaField sf = schema.getField(t.field());
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
-    return query;
+    return new WildcardQuery(
+        t, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT, sf.getType().getRewriteMethod(parser, sf));
   }
 
   /**
@@ -710,8 +711,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     boolean onlyRawQueries = true;
     int allRawQueriesTermCount = 0;
     for (BooleanClause clause : clauses) {
-      if (clause.getQuery() instanceof RawQuery) {
-        allRawQueriesTermCount += ((RawQuery) clause.getQuery()).getTermCount();
+      if (clause.query() instanceof RawQuery) {
+        allRawQueriesTermCount += ((RawQuery) clause.query()).getTermCount();
       } else {
         onlyRawQueries = false;
       }
@@ -723,12 +724,12 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     Map<SchemaField, List<RawQuery>> fmap = new HashMap<>();
 
     for (BooleanClause clause : clauses) {
-      Query subq = clause.getQuery();
+      Query subq = clause.query();
       if (subq instanceof RawQuery) {
-        if (clause.getOccur() != BooleanClause.Occur.SHOULD) {
+        if (clause.occur() != BooleanClause.Occur.SHOULD) {
           // We only collect optional terms for set queries.  Since this isn't optional,
           // convert the raw query to a normal query and handle as usual.
-          clause = new BooleanClause(rawToNormal(subq), clause.getOccur());
+          clause = new BooleanClause(rawToNormal(subq), clause.occur());
         } else {
           // Optional raw query.
           RawQuery rawq = (RawQuery) subq;
@@ -751,7 +752,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             continue;
           }
 
-          clause = new BooleanClause(rawToNormal(subq), clause.getOccur());
+          clause = new BooleanClause(rawToNormal(subq), clause.occur());
         }
       }
 
@@ -813,8 +814,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     BooleanQuery bq = QueryUtils.build(booleanBuilder, parser);
     if (bq.clauses().size() == 1) { // Unwrap single SHOULD query
       BooleanClause clause = bq.clauses().iterator().next();
-      if (clause.getOccur() == BooleanClause.Occur.SHOULD) {
-        return clause.getQuery();
+      if (clause.occur() == BooleanClause.Occur.SHOULD) {
+        return clause.query();
       }
     }
     return bq;
@@ -1011,9 +1012,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     }
 
     Analyzer a = fieldType.getIndexAnalyzer();
-    if (a instanceof TokenizerChain) {
+    if (a instanceof TokenizerChain tc) {
       // examine the indexing analysis chain if it supports leading wildcards
-      TokenizerChain tc = (TokenizerChain) a;
       TokenFilterFactory[] factories = tc.getTokenFilterFactories();
       for (TokenFilterFactory factory : factories) {
         if (factory instanceof ReversedWildcardFilterFactory) {
@@ -1036,13 +1036,10 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   protected String analyzeIfMultitermTermText(String field, String part, FieldType fieldType) {
-
     if (part == null
         || !(fieldType instanceof TextField)
         || ((TextField) fieldType).getMultiTermAnalyzer() == null) return part;
 
-    SchemaField sf = schema.getFieldOrNull((field));
-    if (sf == null || !(fieldType instanceof TextField)) return part;
     BytesRef out =
         TextField.analyzeMultiTerm(field, part, ((TextField) fieldType).getMultiTermAnalyzer());
     return out == null ? part : out.utf8ToString();
@@ -1053,8 +1050,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   // Create a "normal" query from a RawQuery (or just return the current query if it's not raw)
   Query rawToNormal(Query q) {
     Query normal = q;
-    if (q instanceof RawQuery) {
-      RawQuery rawq = (RawQuery) q;
+    if (q instanceof RawQuery rawq) {
       if (rawq.sfield.getType().isTokenized()) {
         normal =
             rawq.sfield.getType().getFieldQuery(parser, rawq.sfield, rawq.getJoinedExternalVal());
@@ -1297,7 +1293,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (factory != null) {
       Term term = new Term(field, termStr);
       // fsa representing the query
-      Automaton automaton = WildcardQuery.toAutomaton(term);
+      Automaton automaton =
+          WildcardQuery.toAutomaton(term, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
       // TODO: we should likely use the automaton to calculate shouldReverse, too.
       if (factory.shouldReverse(termStr)) {
         automaton = Operations.concatenate(automaton, Automata.makeChar(factory.getMarkerChar()));

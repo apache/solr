@@ -18,10 +18,9 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase.BadApple;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -35,7 +34,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-16122")
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-16122")
 public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -63,13 +62,13 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
             ExecutorUtil.newMDCAwareSingleThreadExecutor(
                 new SolrNamedThreadFactory(this.getTestName()));
         try (ZkController zkController =
-            new ZkController(
-                cc, server.getZkAddress(), 15000, cloudConfig, Collections::emptyList)) {
+            new ZkController(cc, server.getZkAddress(), 15000, cloudConfig)) {
           threadExecutor.execute(
               () -> {
                 TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
                 while (!timeout.hasTimedOut()) {
-                  server.expire(zkController.getZkClient().getZooKeeper().getSessionId());
+                  long sessionId = zkController.getZkClient().getZkSessionId();
+                  server.expire(sessionId);
                   try {
                     timeout.sleep(10);
                   } catch (InterruptedException e) {

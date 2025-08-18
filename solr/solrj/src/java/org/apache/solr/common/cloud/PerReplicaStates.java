@@ -18,7 +18,6 @@
 package org.apache.solr.common.cloud;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.VERSION;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -31,14 +30,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.WrappedSimpleMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +56,7 @@ public class PerReplicaStates implements ReflectMapWriter {
   @JsonProperty public final int cversion;
 
   // states of individual replicas
-  @JsonProperty public final SimpleMap<State> states;
+  @JsonProperty public final Map<String, State> states;
 
   private volatile Boolean allActive;
 
@@ -85,7 +82,7 @@ public class PerReplicaStates implements ReflectMapWriter {
         tmp.put(rs.replica, rs.insert(existing));
       }
     }
-    this.states = new WrappedSimpleMap<>(tmp);
+    this.states = tmp;
   }
 
   public static PerReplicaStates empty(String collectionName) {
@@ -95,27 +92,23 @@ public class PerReplicaStates implements ReflectMapWriter {
   /** Check and return if all replicas are ACTIVE */
   public boolean allActive() {
     if (this.allActive != null) return allActive;
-    boolean[] result = new boolean[] {true};
-    states.forEachEntry(
-        (r, s) -> {
-          if (s.state != Replica.State.ACTIVE) result[0] = false;
-        });
-    return this.allActive = result[0];
+    this.allActive = states.values().stream().allMatch(s -> s.state == Replica.State.ACTIVE);
+    return allActive;
   }
 
   /** Get the changed replicas */
   public static Set<String> findModifiedReplicas(PerReplicaStates old, PerReplicaStates fresh) {
     Set<String> result = new HashSet<>();
     if (fresh == null) {
-      old.states.forEachKey(result::add);
+      result.addAll(old.states.keySet());
       return result;
     }
-    old.states.forEachEntry(
+    old.states.forEach(
         (s, state) -> {
           // the state is modified or missing
           if (!Objects.equals(fresh.get(s), state)) result.add(s);
         });
-    fresh.states.forEachEntry(
+    fresh.states.forEach(
         (s, state) -> {
           if (old.get(s) == null) result.add(s);
         });
@@ -165,8 +158,8 @@ public class PerReplicaStates implements ReflectMapWriter {
   }
 
   private StringBuilder appendStates(StringBuilder sb) {
-    states.forEachEntry(
-        new BiConsumer<String, State>() {
+    states.forEach(
+        new BiConsumer<>() {
           int count = 0;
 
           @Override
@@ -237,7 +230,7 @@ public class PerReplicaStates implements ReflectMapWriter {
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put(NAME, replica);
-      ew.put(VERSION, version);
+      ew.put("version", version);
       ew.put(ReplicaStateProps.STATE, state.toString());
       if (isLeader) ew.put(ReplicaStateProps.LEADER, isLeader);
       ew.putIfNotNull("duplicate", duplicate);
@@ -291,8 +284,7 @@ public class PerReplicaStates implements ReflectMapWriter {
 
     @Override
     public boolean equals(Object o) {
-      if (o instanceof State) {
-        State that = (State) o;
+      if (o instanceof State that) {
         return Objects.equals(this.asString, that.asString);
       }
       return false;
@@ -318,7 +310,7 @@ public class PerReplicaStates implements ReflectMapWriter {
               ew.put(
                   "states",
                   (IteratorWriter)
-                      iw -> states.forEachEntry((s, state) -> iw.addNoEx(state.toString())));
+                      iw -> states.forEach((s, state) -> iw.addNoEx(state.toString())));
             } else {
               ew.put(k, v);
             }
