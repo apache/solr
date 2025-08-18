@@ -160,7 +160,7 @@ Some con's to this approach are:
 
 NOTE: This needs Jason's https://github.com/apache/solr/pull/2391 to get to done done!
 
-The second approach you can take is to use a simple ZooKeeper xref:solr-glossary.adoc#ensemble[Ensemble] setup.   You can start a pair of Solr's and have their embedded ZooKeeper join each other to form an Ensemble.   And yes, I hear you when you say "this isn't a odd number and ZK quorums should be an odd number to avoid split brain etc".   
+The second approach you can take is to use a simple ZooKeeper xref:getting-started:solr-glossary.adoc#ensemble[Ensemble] setup.   You can start a pair of Solr's and have their embedded ZooKeeper join each other to form an Ensemble.   And yes, I hear you when you say "this isn't a odd number and ZK quorums should be an odd number to avoid split brain etc".   
 
 NOTE: What is the difference between fail over and high availablity?  
 
