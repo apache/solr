@@ -220,7 +220,7 @@ Some con's to this approach are:
 
 NOTE: This isn't yet fleshed out as to how it works!
 
-Solr has a concept of node xref:deployment-guide:node-roles.adoc#ensemble[Roles] that could be leveraged to establish a set of Solr nodes that run embedded ZooKeeper, and then a larger set of Solr nodes that connect to those ZooKeepers.  We currently have the concept of "data" nodes that hosts shards and replicas, we can introduce a "zookeeper" node that also runs the embedded ZooKeeper process.   
+Solr has a concept of node xref:deployment-guide:node-roles.adoc#roles[Roles] that could be leveraged to establish a set of Solr nodes that run embedded ZooKeeper, and then a larger set of Solr nodes that connect to those ZooKeepers.  We currently have the concept of "data" nodes that hosts shards and replicas, we can introduce a "zookeeper" node that also runs the embedded ZooKeeper process.   
 
 This will work well as you grow from six to 12 nodes in your cluster.
 
