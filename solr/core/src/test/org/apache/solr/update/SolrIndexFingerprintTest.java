@@ -29,7 +29,7 @@ public class SolrIndexFingerprintTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    initCore("solrconfig-tiny-segments.xml", "schema.xml");
+    initCore("solrconfig-nomergepolicyfactory.xml", "schema.xml");
   }
 
   @Test
@@ -37,8 +37,9 @@ public class SolrIndexFingerprintTest extends SolrTestCaseJ4 {
     long maxVersion = Long.MAX_VALUE;
     SolrCore core = h.getCore();
 
-    // Create a set of 500 segments (to catch race conditions, i.e.SOLR-17863)
-    IntStream.range(0, 500)
+    int numDocs = RANDOM_MULTIPLIER == 1 ? 3 : 500;
+    // Create a set of many segments (to catch race conditions, i.e. SOLR-17863)
+    IntStream.range(0, numDocs)
         .forEach(
             i -> {
               assertU(adoc("id", "" + i));

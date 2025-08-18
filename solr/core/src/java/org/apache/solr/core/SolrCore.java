@@ -241,6 +241,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
   private final ConfigSet configSet;
+  private final Cache<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache =
+      Caffeine.newBuilder().weakKeys().build();
   // singleton listener for all packages used in schema
 
   private final CircuitBreakerRegistry circuitBreakerRegistry;
@@ -270,9 +272,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   public Date getStartTimeStamp() {
     return startTime;
   }
-
-  private final Cache<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache =
-      Caffeine.newBuilder().weakKeys().build();
 
   public long getStartNanoTime() {
     return startNanoTime;
