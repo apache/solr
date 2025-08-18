@@ -221,6 +221,26 @@ public class DistributedApiAsyncTracker {
       return new Pair<>(RequestStatusState.NOT_FOUND, null);
     }
 
+    /*
+     * First check the inFlightAsyncTasks, then the trackedAsyncTasks.
+     * This is the reverse of "cancelAsyncId()" and "setTaskCompleted()",
+     * because a race condition can occur where this is called between the
+     * "trackedAsyncTasks" and "inFlightAsyncTasks" modifications in those methods.
+     *
+     * Therefore, here we will start with inFlightAsyncTasks, and if it hasn't been updated yet,
+     * we return the "old-ish" state, and the client can try again. If the inFlightAsyncTasks has
+     * been updated (removed), then we know to try the trackedAsyncTasks which must have been updated
+     * at that point.
+     */
+
+    // Now dealing with the middle column "persistent=null or failed OverseerSolrResponse"
+    InFlightJobs.State ephemeralState = inFlightAsyncTasks.getInFlightState(asyncId);
+    if (ephemeralState == InFlightJobs.State.SUBMITTED) {
+      return new Pair<>(RequestStatusState.SUBMITTED, null);
+    } else if (ephemeralState == InFlightJobs.State.RUNNING) {
+      return new Pair<>(RequestStatusState.RUNNING, null);
+    }
+
     byte[] data = trackedAsyncTasks.get(asyncId);
     OverseerSolrResponse response =
         data != null ? OverseerSolrResponseSerializer.deserialize(data) : null;
@@ -231,14 +251,6 @@ public class DistributedApiAsyncTracker {
       // This return addresses the whole "persistent=success OverseerSolrResponse" column from the
       // table
       return new Pair<>(RequestStatusState.COMPLETED, response);
-    }
-
-    // Now dealing with the middle column "persistent=null or failed OverseerSolrResponse"
-    InFlightJobs.State ephemeralState = inFlightAsyncTasks.getInFlightState(asyncId);
-    if (ephemeralState == InFlightJobs.State.SUBMITTED) {
-      return new Pair<>(RequestStatusState.SUBMITTED, null);
-    } else if (ephemeralState == InFlightJobs.State.RUNNING) {
-      return new Pair<>(RequestStatusState.RUNNING, null);
     }
 
     // The task has failed, but there are two options: if response is null, it has failed because

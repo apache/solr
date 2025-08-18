@@ -19,17 +19,18 @@ package org.apache.solr.rest.schema;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.hamcrest.Matchers.containsString;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.misc.SweetSpotSimilarity;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.DFISimilarity;
@@ -44,7 +45,6 @@ import org.apache.solr.schema.AbstractSpatialPrefixTreeFieldType;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.util.LogListener;
-import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.After;
@@ -58,29 +58,14 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    Path tmpSolrHome = createTempDir();
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
-        "solrconfig-managed-schema.xml",
-        "schema-rest.xml",
-        "/solr",
-        true,
-        null);
-    if (random().nextBoolean()) {
-      log.info("These tests are run with V2 API");
-      restTestHarness.setServerProvider(
-          new RESTfulServerProvider() {
-            @Override
-            public String getBaseURL() {
-              return getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME;
-            }
-          });
-    }
+        tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml", "/solr", true, null);
   }
 
   @After
@@ -131,7 +116,6 @@ public class TestBulkSchemaAPI extends RestTestBase {
   }
 
   public void testAnalyzerClass() throws Exception {
-
     String addFieldTypeAnalyzerWithClass =
         "{\n"
             + "'add-field-type' : {"
@@ -861,14 +845,14 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue("'bleh_s' copyField rule exists in the schema", l.isEmpty());
 
     payload =
-        "{\n"
-            + "          'add-copy-field' : {\n"
-            + "                       'source' :'bleh_s',\n"
-            + "                       'dest':'"
-            + newFieldName
-            + "'\n"
-            + "                       }\n"
-            + "          }\n";
+        """
+            {
+              "add-copy-field": {
+                "source": "bleh_s",
+                "dest": "%s"
+              }
+            }""";
+    payload = String.format(Locale.ROOT, payload, newFieldName);
     response = harness.post("/schema", json(payload));
 
     map = (Map) fromJSONString(response);

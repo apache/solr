@@ -16,9 +16,11 @@
  */
 package org.apache.solr.search;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.junit.Before;
@@ -30,22 +32,22 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
 
   @Before
   public void initManagedSchemaCore() throws Exception {
-    final String tmpSolrHomePath = createTempDir().toFile().getAbsolutePath();
-    File tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
-    File tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
+    final Path tmpSolrHome = createTempDir();
+    Path tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
+    Path testHomeConfDir = TEST_HOME().resolve(confDir);
+    Files.createDirectories(tmpConfDir);
     final String configFileName = "solrconfig-managed-schema.xml";
     final String schemaFileName = "schema-id-and-version-fields-only.xml";
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, configFileName), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, schemaFileName), tmpConfDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(testHomeConfDir.resolve(configFileName), tmpConfDir);
+    PathUtils.copyFileToDirectory(testHomeConfDir.resolve(schemaFileName), tmpConfDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "true");
-    initCore(configFileName, schemaFileName, tmpSolrHome.getPath());
+    initCore(configFileName, schemaFileName, tmpSolrHome);
   }
 
   public void test() throws Exception {

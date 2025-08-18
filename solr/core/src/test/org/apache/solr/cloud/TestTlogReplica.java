@@ -20,9 +20,10 @@ import static org.apache.solr.cloud.TestPullReplica.getHypotheticalTlogDir;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.codahale.metrics.Meter;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,12 +46,13 @@ import org.apache.http.util.EntityUtils;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -145,8 +147,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
         try {
           core = cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName());
           assertNotNull(core);
-          File tlogDir = getHypotheticalTlogDir(core);
-          assertTrue("Update log should exist for replicas of type Append", tlogDir.exists());
+          Path tlogDir = getHypotheticalTlogDir(core);
+          assertTrue("Update log should exist for replicas of type Append", Files.exists(tlogDir));
         } finally {
           core.close();
         }
@@ -284,6 +286,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
                     "qt", "/admin/plugins",
                     "stats", "true");
             QueryResponse statsResponse = tlogReplicaClient.query(req);
+            NamedList<Object> entries = (statsResponse.getResponse());
             assertEquals(
                 "Append replicas should recive all updates. Replica: "
                     + r
@@ -291,8 +294,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
                     + statsResponse,
                 1L,
                 ((Map<String, Object>)
-                        (statsResponse.getResponse())
-                            .findRecursive("plugins", "UPDATE", "updateHandler", "stats"))
+                        entries._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
                     .get("UPDATE.updateHandler.cumulativeAdds.count"));
             break;
           } catch (AssertionError e) {
@@ -810,8 +812,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
     params.set("replica", newLeader.getName());
     params.set("property", "preferredLeader");
     params.set("property.value", "true");
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.POST,
+            "/admin/collections",
+            SolrRequest.SolrRequestType.ADMIN,
+            params);
     cloudClient.request(request);
 
     // Wait until a preferredleader flag is set to the new leader candidate
@@ -819,35 +825,39 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState(
         "Waiting for setting preferredleader flag",
         collectionName,
-        (n, c) -> {
+        10,
+        TimeUnit.SECONDS,
+        c -> {
           Map<String, Slice> slices = c.getSlicesMap();
           Replica me = slices.get(slice.getName()).getReplica(newLeaderName);
           return me.getBool("property.preferredleader", false);
-        },
-        10,
-        TimeUnit.SECONDS);
+        });
 
     // Rebalance leaders
     params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.REBALANCELEADERS.toString());
     params.set("collection", collectionName);
     params.set("maxAtOnce", "10");
-    request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    request =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.POST,
+            "/admin/collections",
+            SolrRequest.SolrRequestType.ADMIN,
+            params);
     cloudClient.request(request);
 
     // Wait until a new leader is elected
     waitForState(
         "Waiting for a new leader to be elected",
         collectionName,
-        (n, c) -> {
+        30,
+        TimeUnit.SECONDS,
+        c -> {
           Replica leader = c.getSlice(slice.getName()).getLeader();
           return leader != null
               && leader.getName().equals(newLeaderName)
               && leader.isActive(cloudClient.getClusterState().getLiveNodes());
-        },
-        30,
-        TimeUnit.SECONDS);
+        });
 
     new UpdateRequest()
         .add(sdoc("id", "1"))
@@ -864,7 +874,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState(
         "Expect new leader",
         collectionName,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Replica leader = collectionState.getLeader(shardName);
           if (leader == null
               || !leader.isActive(cluster.getSolrClient().getClusterState().getLiveNodes())) {
@@ -1030,9 +1040,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState(
         "Waiting for collection " + collection + " to be deleted",
         collection,
-        (n, c) -> c == null,
         10,
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        Objects::isNull);
   }
 
   private DocCollection assertNumberOfReplicas(

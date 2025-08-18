@@ -18,7 +18,9 @@
 package org.apache.solr.common;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 
 /**
@@ -32,23 +34,22 @@ public interface NavigableObject {
    * list of strings where performance is important
    *
    * @param path the full path to that object such as a/b/c[4]/d etc
-   * @param def the default
    * @return the found value or default
    */
-  default Object _get(String path, Object def) {
+  default Object _get(String path) {
     Object v = Utils.getObjectByPath(this, false, path);
-    return v == null ? def : v;
+    return v;
   }
 
   /**
    * get the value as a String. useful in tests
    *
    * @param path the full path
-   * @param def default value
    */
-  default String _getStr(String path, String def) {
+  default String _getStr(String path) {
     Object v = Utils.getObjectByPath(this, false, path);
-    return v == null ? def : String.valueOf(v);
+    if (v == null) return null;
+    return String.valueOf(v);
   }
 
   /**
@@ -95,5 +96,14 @@ public interface NavigableObject {
     int[] size = new int[1];
     _forEachEntry((k, v) -> size[0]++);
     return size[0];
+  }
+
+  /** Casts or wraps the argument into a NavigableObject if possible, never returning null. */
+  @SuppressWarnings("unchecked")
+  static NavigableObject wrap(Object obj) {
+    if (obj == null) return SimpleOrderedMap.of();
+    if (obj instanceof NavigableObject navObj) return navObj;
+    if (obj instanceof Map<?, ?> m) return new MapWriterMap((Map<String, Object>) m);
+    throw new IllegalArgumentException("Cannot wrap " + obj.getClass());
   }
 }

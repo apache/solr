@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -66,9 +65,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    configureCluster(1)
-        .addConfig("_default", new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
-        .configure();
+    configureCluster(1).addConfig("_default", ExternalPaths.DEFAULT_CONFIGSET).configure();
     solrClient =
         new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())

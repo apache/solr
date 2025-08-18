@@ -41,12 +41,15 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -66,8 +69,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonParams;
@@ -1160,13 +1161,13 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   }
 
   @Override
-  protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
+  protected Replica getLeaderFromZk(String collection, String slice) {
     ClusterState clusterState = getCommonCloudSolrClient().getClusterState();
-    ZkNodeProps leader = clusterState.getCollection(collection).getLeader(slice);
+    Replica leader = clusterState.getCollection(collection).getLeader(slice);
     if (leader == null) {
       throw new RuntimeException("Could not find leader:" + collection + " " + slice);
     }
-    return new ZkCoreNodeProps(leader);
+    return leader;
   }
 
   /**
@@ -1284,11 +1285,10 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       ModifiableSolrParams params = new ModifiableSolrParams();
       // params.set("qt", "/admin/metrics?prefix=UPDATE.updateHandler&registry=solr.core." +
       // collection);
-      params.set("qt", "/admin/metrics");
       params.set("prefix", "UPDATE.updateHandler");
       params.set("registry", "solr.core." + collection);
       // use generic request to avoid extra processing of queries
-      QueryRequest req = new QueryRequest(params);
+      var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
       NamedList<Object> resp = client.request(req);
       NamedList<?> metrics = (NamedList<?>) resp.get("metrics");
       NamedList<?> uhandlerCat = (NamedList<?>) metrics.getVal(0);
@@ -1369,12 +1369,11 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
         zkStateReader.getClusterState().getCollection(oneInstanceCollection2).getSlicesMap();
     assertNotNull(slices);
 
-    ZkCoreNodeProps props =
-        new ZkCoreNodeProps(
-            getCommonCloudSolrClient()
-                .getClusterState()
-                .getCollection(oneInstanceCollection2)
-                .getLeader("shard1"));
+    Replica leader =
+        getCommonCloudSolrClient()
+            .getClusterState()
+            .getCollection(oneInstanceCollection2)
+            .getLeader("shard1");
 
     // now test that unloading a core gets us a new leader
     try (SolrClient unloadClient =
@@ -1383,9 +1382,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
       Unload unloadCmd = new Unload(true);
-      unloadCmd.setCoreName(props.getCoreName());
+      unloadCmd.setCoreName(leader.getCoreName());
 
-      String leader = props.getCoreUrl();
+      String leaderUrl = leader.getCoreUrl();
 
       testExecutor.execute(
           new Runnable() {
@@ -1410,7 +1409,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
                 TimeUnit.MILLISECONDS,
                 (n, c) -> {
                   try {
-                    if (leader.equals(
+                    if (leaderUrl.equals(
                         zkStateReader.getLeaderUrl(oneInstanceCollection2, "shard1", 10000))) {
                       return false;
                     }
@@ -1512,7 +1511,6 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
           try (SolrClient client = getHttpSolrClient(baseUrl)) {
             // client.setConnectionTimeout(15000);
             Create createCmd = new Create();
-            createCmd.setRoles("none");
             createCmd.setCoreName(collection + num);
             createCmd.setCollection(collection);
 
@@ -1524,7 +1522,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             if (shardId == null) {
               createCmd.setNumShards(2);
             }
-            createCmd.setDataDir(getDataDir(createTempDir(collection).toFile().getAbsolutePath()));
+            createCmd.setDataDir(getDataDir(createTempDir(collection).toString()));
             if (shardId != null) {
               createCmd.setShardId(shardId);
             }

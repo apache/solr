@@ -67,9 +67,33 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.9
+
+=== SolrJ
+
+If Http2SolrClient.Builder.withHttpClient is used, (and it's used more in 9.8, shifted from deprecated Apache HttpClient based clients), settings affecting HttpClient construction cannot be customized; an IllegalStateException will now be thrown if you try.
+The connection timeout cannot be customized, but idle & request timeouts can be.
+Callers (various places in Solr) no longer customize the connection timeout.
+
+== Solr 9.8.1
+=== Configuration
+
+In `solr.xml`, the `indexSearcherExecutorThreads` now defaults to 0.
+Therefore, multi-threaded search execution is disabled at a node-level by default.
+It is currently recommended to only use an `indexSearcherExecutorThreads > 0` if all query requests sent to Solr opt-in to multiThreaded search.
+Additionally, `indexSearcherExecutorThreads = -1` can be given to use the number of available CPU threads available to Solr.
+This was the previous default.
+
 == Solr 9.8
 === Configuration
 In solrconfig.xml, the `numVersionBuckets` and `versionBucketLockTimeoutMs` settings are now obsolete and ignored; a warning will be logged if specified.
+
+`<lib/>` directives have been made into an "opt-in" feature in Solr 9.8 and must be explicitly enabled if desired (using a system property or environment variable like `-Dsolr.config.lib.enabled=true`) If not explicitly enabled, Solr will log a warning but otherwise quietly ignore any `<lib/>` tags in configsets.
+This is a breaking change, and we apologize for the disruption, but it's a necessary response to a number of security gaps that have come to light around this feature.
+`<lib/>` directives should be considered deprecated and will be removed entirely in Solr 10.0.
+Current users of `<lib/>` have a number of options to ensure their libraries remain on Solr's classpath, including: `SOLR_MODULES`, core "lib" directories, the solr.xml `<sharedLib>` tag, Solr's package manager, etc.
+
+If you're using the new/experimental `multiThreaded=true` parameter introduced in 9.7, you may now need to increase `indexSearcherExecutorThreads` in `solr.xml` to more fully utilize a machine than in 9.7.
 
 === Partial Results
 When query limits are in use and partial results are not desirable (i.e. reporting or quantitative usages of search)
@@ -252,7 +276,7 @@ TIP: Users who cannot upgrade their Docker engine will need to specify the docke
 * Streaming Expressions have been moved out of Solrj core into its own module called `solrj-streaming`.
 This change will only affect users that have used streaming expression classes in clients outside
 of Solr. Streaming expressions sent to the /stream handler will still operate exactly as before.
-External clients using streaming expression classes will need to update their depenencies to reference
+External clients using streaming expression classes will need to update their dependencies to reference
 the `solrj-streaming` artifacts under the `org.apache.solr` groupId.
 
 === Deprecations
@@ -387,9 +411,9 @@ If you plan on using SolrJ as a JDBC driver, please refer to the xref:query-guid
 * `SolrMetricProducer` / `SolrInfoBean` APIs have changed and third-party components that implement these APIs need to be updated.
 * Use of blacklist/whitelist terminology has been completely removed. JWTAuthPlugin parameter `algWhitelist` is now `algAllowlist`. The old parameter will still work in 9.x. Environment variables `SOLR_IP_WHITELIST` and `SOLR_IP_BLACKLIST` are no longer supported, but replaced with `SOLR_IP_ALLOWLIST` and `SOLR_IP_DENYLIST`.
 * Solr Backups - Async responses for backups now correctly aggregate and return information. For collection's snapshot backup request responses additional fields `indexVersion`, `indexFileCount`, etc. were added similar to incremental backup request responses.
-* If you are using the HDFS backup repository, you need to change the repository class to `org.apache.solr.hdfs.backup.repository.HdfsBackupRepository` - see the xref:deployment-guide:backup-restore.adoc#hdfsbackuprepository[HDFS Backup Repository] section.
+* If you are using the HDFS backup repository, you need to change the repository class to `org.apache.solr.hdfs.backup.repository.HdfsBackupRepository` - see the xref:deployment-guide:backup-restore.adoc[Backup and Restore] page for the "HDFS Backup Repository" section in a pre Solr 10 Ref Guide.
 * HDFS storage support has been moved to a module. Existing Solr configurations do not need any HDFS-related
-changes, however the module needs to be installed - see the section xref:deployment-guide:solr-on-hdfs.adoc[].
+changes, however the module needs to be installed - see the section Solr on HDFS in a pre Solr 10 Ref Guide.
 * The folder `$SOLR_HOME/userfiles`, used by the "cat" streaming expression, is no longer created automatically on startup. The user must create this folder.
 * Solr no longer requires a `solr.xml` in `$SOLR_HOME`. If one is not found, Solr will instead use the default one from `$SOLR_TIP/server/solr/solr.xml`. You can revert to the pre-9.0 behaviour by setting environment variable `SOLR_SOLRXML_REQUIRED=true` or system property `-Dsolr.solrxml.required=true`. Solr also does not require a `zoo.cfg` in `$SOLR_HOME` if started with embedded zookeeper.
 * `base_url` has been removed from stored cluster state. If you're able to upgrade SolrJ to 8.8.x for all of your client applications, then you can set `-Dsolr.storeBaseUrl=false` (introduced in Solr 8.8.1) to better align the stored state in Zookeeper with future versions of Solr; as of Solr 9.x, the `base_url` will no longer be persisted in stored state.

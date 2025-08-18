@@ -17,32 +17,38 @@
 
 package org.apache.solr.util;
 
-import java.util.AbstractMap;
-import java.util.AbstractSet;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.util.PropertiesUtil;
 
-/** ConfigNode impl that copies and maintains data internally from DOM */
+/**
+ * ConfigNode impl that applies property substitutions on access.
+ *
+ * <p>This class wraps another {@link ConfigNode} and applies property substitution immediately when
+ * the {@link #txt} or {@link #attributes} methods are called. Because property substition is based
+ * on ThreadLocal values, These methods <em>MUST</em> be called while those variables are "active"
+ *
+ * @see ConfigNode#SUBSTITUTES
+ * @see PropertiesUtil#substitute
+ */
 public class DataConfigNode implements ConfigNode {
-  public final String name;
-  public final Map<String, String> attributes;
-  public final Map<String, List<ConfigNode>> kids;
-  public final String textData;
+  private final String name;
+  private final Map<String, String> rawAttributes;
+  private final Map<String, List<ConfigNode>> kids;
+  private final String rawTextData;
 
   public DataConfigNode(ConfigNode root) {
     Map<String, List<ConfigNode>> kids = new LinkedHashMap<>();
     name = root.name();
-    attributes = wrapSubstituting(root.attributes());
-    textData = root.txt();
+    rawAttributes = root.attributes();
+    rawTextData = root.txt();
     root.forEachChild(
         it -> {
           List<ConfigNode> nodes = kids.computeIfAbsent(it.name(), k -> new ArrayList<>());
@@ -61,25 +67,38 @@ public class DataConfigNode implements ConfigNode {
     return PropertiesUtil.substitute(s, SUBSTITUTES.get());
   }
 
-  /** provides a substitute view, and read-only */
-  private static Map<String, String> wrapSubstituting(Map<String, String> delegate) {
-    if (delegate.size() == 0) return delegate; // avoid unnecessary object creation
-    return new SubstitutingMap(delegate);
-  }
-
   @Override
   public String name() {
     return name;
   }
 
+  /** Each call to this method returns a (new) copy of the original txt with substitions applied. */
   @Override
   public String txt() {
-    return substituteVal(textData);
+    return substituteVal(rawTextData);
   }
 
+  /**
+   * Each call to this method returns a (new) copy of the original Map with substitions applied to
+   * the values.
+   */
   @Override
   public Map<String, String> attributes() {
-    return attributes;
+    if (rawAttributes.isEmpty()) return rawAttributes; // avoid unnecessary object creation
+
+    // Note: using the the 4 arg toMap to force LinkedHashMap.
+    // Duplicate keys should be impossible, but toMap makes us specify a mergeFunction
+    return rawAttributes.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                e -> {
+                  return substituteVal(e.getValue());
+                },
+                (v, vv) -> {
+                  throw new IllegalStateException();
+                },
+                LinkedHashMap::new));
   }
 
   @Override
@@ -94,9 +113,13 @@ public class DataConfigNode implements ConfigNode {
   }
 
   @Override
-  public List<ConfigNode> getAll(Predicate<ConfigNode> test, Set<String> matchNames) {
+  public List<ConfigNode> getAll(Set<String> names, Predicate<ConfigNode> test) {
+    if (names == null) {
+      return ConfigNode.super.getAll(names, test);
+    }
+    // fast implementation based on our index on named children:
     List<ConfigNode> result = new ArrayList<>();
-    for (String s : matchNames) {
+    for (String s : names) {
       List<ConfigNode> vals = kids.get(s);
       if (vals != null) {
         vals.forEach(
@@ -118,76 +141,5 @@ public class DataConfigNode implements ConfigNode {
             configNodes.forEach(fun::apply);
           }
         });
-  }
-
-  private static class SubstitutingMap extends AbstractMap<String, String> {
-
-    private final Map<String, String> delegate;
-
-    SubstitutingMap(Map<String, String> delegate) {
-      this.delegate = delegate;
-    }
-
-    @Override
-    public String get(Object key) {
-      return substituteVal(delegate.get(key));
-    }
-
-    @Override
-    public int size() {
-      return delegate.size();
-    }
-
-    @Override
-    public Set<String> keySet() {
-      return delegate.keySet();
-    }
-
-    @Override
-    public void forEach(BiConsumer<? super String, ? super String> action) {
-      delegate.forEach((k, v) -> action.accept(k, substituteVal(v)));
-    }
-
-    @Override
-    public Set<Entry<String, String>> entrySet() {
-      return new AbstractSet<>() {
-        @Override
-        public Iterator<Entry<String, String>> iterator() {
-          // using delegate, return an iterator using Streams
-          return delegate.entrySet().stream()
-              .map(entry -> (Entry<String, String>) new SubstitutingEntry(entry))
-              .iterator();
-        }
-
-        @Override
-        public int size() {
-          return delegate.size();
-        }
-      };
-    }
-
-    private static class SubstitutingEntry implements Entry<String, String> {
-
-      private final Entry<String, String> delegateEntry;
-
-      SubstitutingEntry(Entry<String, String> delegateEntry) {
-        this.delegateEntry = delegateEntry;
-      }
-
-      @Override
-      public String getKey() {
-        return delegateEntry.getKey();
-      }
-
-      @Override
-      public String getValue() {
-        return substituteVal(delegateEntry.getValue());
-      }
-
-      @Override
-      public String setValue(String value) {
-        throw new UnsupportedOperationException();
-      }
-    }
   }
 }

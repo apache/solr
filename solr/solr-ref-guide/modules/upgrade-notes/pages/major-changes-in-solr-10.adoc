@@ -56,6 +56,11 @@ Users who previously relied on collection-specific URLs to avoid including the c
 
 * Minimum Java version for Solrj 10.x is Java 17.
 
+* Deprecate CloudSolrClient’s ZooKeeper Hosts constructor. Users are encouraged to supply Solr URLs instead of communicating with ZooKeeper. It’s not likely to be removed before Solr 11.
+
+* Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to JavaBinRequestWriter, JavaBinResponseParser, StreamingJavaBinResponseParser.
+This makes it clear that they pertain specifically to “JavaBin” rather than binary in general.
+
 === Service installer
 
 The service installer now installs a `systemd` startup script instead of an `init.d` startup script. It is up to the user to uninstall any existing `init.d` script when upgrading.
@@ -85,9 +90,8 @@ has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_
 
 * The legacy Circuit Breaker named `CircuitBreakerManager`, is removed. Please use individual Circuit Breaker plugins instead.
 
-* The `BlobRepository`, which was deprecated in 8x in favour of the `FileStore` approach is removed.
-Users should migrate to the `FileStore` implementation (per node stored file) and the still existing `BlobHandler` (across the cluster storage backed by `.system` collection).
-Please note this also removes the ability to share resource intensive objects across multiple cores as this feature was tied to the `BlobRepository` implementation.
+* BlobRepository and BlobHandler have both been removed in favour of the `FileStore` API implementation (per node stored file).
+To share resource intensive objects across multiple cores in components you should now use the `CoreContainer.getObjectCache` approach
 
 * The language specific Response Writers, which were deprecated in 9.8 in favour of more widely used formats like JSON have been removed.
 The removed writer types (invoked as part of the `wt` parameter) include `python`, `ruby`, `php`, and `phps`.
@@ -99,3 +103,58 @@ Users that need to vary JAR accessibility on a per-core basis can use Solr's xre
 Users who that don't need to vary JAR access on a per-core basis have several options, including the xref:configuration-guide:configuring-solr-xml.adoc[`<sharedLib/>` tag supported by solr.xml] or manipulation of Solr's classpath prior to JVM startup.
 
 * Kerberos based authentication has been removed.  This results in changes to SolrJ, the Solr Admin app, and the removal of the `hadoop-auth` module.
+
+* Storing indexes and snapshots in HDFS has been removed.  This results in changes to solrconfig.xml and related configuration files and removal of the `hdfs` module.
+
+* ExternalFileField field type has been removed.
+
+* CurrencyField has been removed.  Users should migrate to the `CurrencyFieldType` implementation.
+
+* The `addHttpRequestToContext` option in `solrconfig.xml` has been removed; it's obsolete.
+Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.getHttpSolrCall().getReq()`.
+
+* EnumField has been removed.  Users should migrate to the `EnumFieldType` implementation.
+
+* PreAnalyzedField and PreAnalyzedUpdateProcessor have been removed due to incompatibility with Lucene 10 (SOLR-17839).
+
+* BlobHandler and the `.system` collection have been removed in favour of FileStore API.  (SOLR-17851). 
+
+
+=== Security
+
+* There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
+
+=== Upgrade to Jetty 12.x
+Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-life support. Jetty 12.x requires Java 17 or newer and is fully compatible with Solr's new minimum requirement of Java 21. This upgrade brings support for modern HTTP protocols and adopts the Jakarta EE 10 namespace. For more details, see https://webtide.com/jetty-12-has-arrived/.
+
+=== Analysis and Tokenizers
+
+==== PathHierarchyTokenizer Behavior Change
+
+Due to Lucene 10 changes (https://github.com/apache/lucene/pull/12875), `PathHierarchyTokenizer` now produces sequential tokens (position increment = 1) instead of overlapping tokens (position increment = 0). This affects ancestor queries that relied on overlapping token matching. Users should test existing queries and update configurations if needed.
+
+* In Lucene 10, the `OrdinalIterator` class has been moved from the main `lucene-facet` module to the `lucene-sandbox` module. This requires Solr core to now include a dependency on `lucene-sandbox` to support faceting operations that use this class.
+
+*Example configuration change:*
+[source,xml]
+----
+<!-- Before: Query-time tokenization for ancestors -->
+<fieldType name="ancestor_path" class="solr.TextField">
+  <analyzer type="index">
+    <tokenizer class="solr.KeywordTokenizerFactory"/>
+  </analyzer>
+  <analyzer type="query">
+    <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/"/>
+  </analyzer>
+</fieldType>
+
+<!-- After: Index-time tokenization for modern behavior -->
+<fieldType name="ancestor_path" class="solr.TextField">
+  <analyzer type="index">
+    <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/"/>
+  </analyzer>
+  <analyzer type="query">
+    <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/"/>
+  </analyzer>
+</fieldType>
+----

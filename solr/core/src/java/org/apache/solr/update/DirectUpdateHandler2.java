@@ -65,6 +65,7 @@ import org.apache.solr.search.FunctionRangeQuery;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrSearcherRequirementDetector;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.util.RefCounted;
@@ -78,6 +79,8 @@ import org.slf4j.LoggerFactory;
  */
 public class DirectUpdateHandler2 extends UpdateHandler
     implements SolrCoreState.IndexWriterCloser, SolrMetricProducer {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int NO_FILE_SIZE_UPPER_BOUND_PLACEHOLDER = -1;
 
@@ -114,8 +117,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
   void setCommitWithinSoftCommit(boolean value) {
     this.commitWithinSoftCommit = value;
   }
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DirectUpdateHandler2(SolrCore core) {
     super(core, null, false);
@@ -335,11 +336,18 @@ public class DirectUpdateHandler2 extends UpdateHandler
               + errorDetails;
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMsg, iae);
     } catch (RuntimeException t) {
+      SolrException.ErrorCode errorCode =
+          core.getCoreContainer().checkTragicException(core)
+              ? SolrException.ErrorCode.SERVER_ERROR
+              : SolrException.ErrorCode.BAD_REQUEST;
       String errorMsg =
           "Exception writing document id "
               + cmd.getPrintableId()
-              + " to the index; possible analysis error.";
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMsg, t);
+              + " to the index"
+              + (errorCode == SolrException.ErrorCode.SERVER_ERROR
+                  ? "."
+                  : "; possible analysis error.");
+      throw new SolrException(errorCode, errorMsg, t);
     }
   }
 
@@ -572,12 +580,23 @@ public class DirectUpdateHandler2 extends UpdateHandler
     deleteByQueryCommandsCumulative.mark();
     boolean madeIt = false;
     try {
+      Query q = getQuery(cmd);
+
+      // Parts of the DBQ codepath run the query using a standard Lucene IndexSearcher, so block any
+      // queries that we know require a SolrIndexSearcher
+      final var unsupportedQDetector = new SolrSearcherRequirementDetector();
+      q.visit(unsupportedQDetector);
+      if (unsupportedQDetector.getRequiresSolrSearcher()) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Query [" + cmd.getQuery() + "] is not supported in delete-by-query operations");
+      }
+
       if ((cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) != 0) {
         if (ulog != null) ulog.deleteByQuery(cmd);
         madeIt = true;
         return;
       }
-      Query q = getQuery(cmd);
 
       boolean delAll = MatchAllDocsQuery.class == q.getClass();
 

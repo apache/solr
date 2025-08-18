@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.ref_guide_examples;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -54,10 +53,8 @@ public class JsonRequestApiHeatmapFacetingTest extends SolrCloudTestCase {
     configureCluster(1)
         .addConfig(
             CONFIG_NAME,
-            new File(
-                    ExternalPaths.SOURCE_HOME,
-                    "solrj/src/test-files/solrj/solr/configsets/spatial/conf")
-                .toPath())
+            ExternalPaths.SOURCE_HOME.resolve(
+                "solrj/src/test-files/solrj/solr/configsets/spatial/conf"))
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)

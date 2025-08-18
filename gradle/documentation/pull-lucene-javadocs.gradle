@@ -41,14 +41,16 @@ configure(project(":solr:documentation")) {
     // - For now this list is focused solely on the javadocs needed for ref-guide link validation.
     // - If/when additional links are added from the ref-guide to additional lucene modules not listed here,
     //   they can be added.
-    // - If/when we need the lucene javadocs for "all" lucene depdencies in Solr (ie: to do link checking
-    //   from all Solr javadocs?) then perhaps we can find a way to build this list programatically?
-    // - If these javadocs are (only every) consumed by the ref guide only, then these deps & associated tasks
+    // - If/when we need the lucene javadocs for "all" lucene dependencies in Solr (ie: to do link checking
+    //   from all Solr javadocs?) then perhaps we can find a way to build this list programmatically?
+    // - If these javadocs are only consumed by the ref guide, then these deps & associated tasks
     //   should just be moved to the ref-guide build.gradle
     javadocs variantOf(libs.apache.lucene.core) { classifier 'javadoc' }
+    javadocs variantOf(libs.apache.lucene.expressions) { classifier 'javadoc' }
     javadocs variantOf(libs.apache.lucene.analysis.common) { classifier 'javadoc' }
     javadocs variantOf(libs.apache.lucene.analysis.stempel) { classifier 'javadoc' }
     javadocs variantOf(libs.apache.lucene.queryparser) { classifier 'javadoc' }
+    javadocs variantOf(libs.apache.lucene.queries) { classifier 'javadoc' }
     javadocs variantOf(libs.apache.lucene.spatialextras) { classifier 'javadoc' }
   }
 
@@ -64,7 +66,7 @@ configure(project(":solr:documentation")) {
       def resolved = configurations.javadocs.resolvedConfiguration
       resolved.resolvedArtifacts.each { artifact ->
         def id = artifact.moduleVersion.id
-        // This mimics the directory stucture used on lucene.apache.org for the javadocs of all modules.
+        // This mimics the directory structure used on lucene.apache.org for the javadocs of all modules.
         //
         // HACK: the lucene.apache.org javadocs are organized to match the module directory structure in the repo,
         // not the "flat" artifact names -- so there is no one size fits all way to determine the directory name.

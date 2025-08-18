@@ -57,7 +57,7 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
 
   public void testCreateParser() throws IOException {
     try (RankQParserPlugin rankQPPlugin = new RankQParserPlugin()) {
-      QParser parser = rankQPPlugin.createParser("", new ModifiableSolrParams(), null, req());
+      QParser parser = rankQPPlugin.createParser("", SolrParams.of(), SolrParams.of(), req());
       assertNotNull(parser);
       assertTrue(parser instanceof RankQParser);
     }
@@ -80,6 +80,20 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
         "ID is not a feature field",
         "Field \"id\" is not a RankField",
         () -> getRankQParser(params(FIELD, "id"), req()).parse());
+  }
+
+  public void testBadLinearParameters() {
+    assertSyntaxError(
+        "Expecting bad weight",
+        "weight must be in",
+        () ->
+            getRankQParser(
+                    params(
+                        FIELD, "rank_1",
+                        FUNCTION, "linear",
+                        WEIGHT, "0"),
+                    req())
+                .parse());
   }
 
   public void testBadLogParameters() {
@@ -208,6 +222,36 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
                 .parse());
   }
 
+  public void testParseLinear() throws IOException, SyntaxError {
+    assertValidRankQuery(
+        expectedFeatureQueryToString("rank_1", expectedLinearToString(), 1),
+        params(
+            FIELD, "rank_1",
+            FUNCTION, "linear",
+            WEIGHT, "1"));
+
+    assertValidRankQuery(
+        expectedFeatureQueryToString("rank_1", expectedLinearToString(), 1),
+        params(
+            FIELD, "rank_1",
+            FUNCTION, "linear",
+            WEIGHT, "1"));
+
+    assertValidRankQuery(
+        expectedFeatureQueryToString("rank_1", expectedLinearToString(), 2.5f),
+        params(
+            FIELD, "rank_1",
+            FUNCTION, "linear",
+            WEIGHT, "2.5"));
+
+    assertValidRankQuery(
+        expectedFeatureQueryToString("rank_1", expectedLinearToString(), 2.5f),
+        params(
+            FIELD, "rank_1",
+            FUNCTION, "Linear", // use different case
+            WEIGHT, "2.5"));
+  }
+
   public void testParseLog() throws IOException, SyntaxError {
     assertValidRankQuery(
         expectedFeatureQueryToString("rank_1", expectedLogToString(1), 1),
@@ -330,6 +374,10 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
     return "(" + featureQueryStr + ")^" + boost;
   }
 
+  private String expectedLinearToString() {
+    return "LinearFunction";
+  }
+
   private String expectedLogToString(float scalingFactor) {
     return "LogFunction(scalingFactor=" + scalingFactor + ")";
   }
@@ -351,7 +399,7 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
   private RankQParser getRankQParser(SolrParams localParams, SolrQueryRequest req)
       throws IOException {
     try (RankQParserPlugin rankQPPlugin = new RankQParserPlugin()) {
-      return (RankQParser) rankQPPlugin.createParser("", localParams, null, req);
+      return (RankQParser) rankQPPlugin.createParser("", localParams, req.getParams(), req);
     }
   }
 }

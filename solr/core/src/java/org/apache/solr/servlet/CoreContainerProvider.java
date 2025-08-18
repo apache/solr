@@ -29,11 +29,14 @@ import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.common.annotations.VisibleForTesting;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.UnavailableException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Locale;
@@ -45,10 +48,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.UnavailableException;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.VectorUtil;
@@ -390,7 +389,7 @@ public class CoreContainerProvider implements ServletContextListener {
       home = "solr/";
       source = "defaulted to '" + home + "' ... could not find system property or JNDI";
     }
-    final Path solrHome = Paths.get(home).toAbsolutePath().normalize();
+    final Path solrHome = Path.of(home).toAbsolutePath().normalize();
     log.info("Solr Home: {} (source: {})", solrHome, source);
 
     return solrHome;

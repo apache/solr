@@ -279,7 +279,7 @@ public class S3BackupRepository extends AbstractBackupRepository {
 
     try (IndexInput indexInput =
         shouldVerifyChecksum
-            ? sourceDir.openChecksumInput(sourceFileName, IOContext.READONCE)
+            ? sourceDir.openChecksumInput(sourceFileName)
             : sourceDir.openInput(sourceFileName, IOContext.READONCE)) {
       if (indexInput.length() <= CodecUtil.footerLength()) {
         throw new CorruptIndexException("file is too small:" + indexInput.length(), indexInput);

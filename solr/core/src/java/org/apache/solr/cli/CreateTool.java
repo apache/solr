@@ -17,17 +17,15 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cli.CommonCLIOptions.DefaultValues;
 import org.apache.solr.client.solrj.SolrClient;
@@ -42,7 +40,6 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
@@ -99,12 +96,8 @@ public class CreateTool extends ToolBase {
           .desc("Configuration name; default is the collection name.")
           .build();
 
-  public CreateTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public CreateTool(PrintStream stdout) {
-    super(stdout);
+  public CreateTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -156,8 +149,8 @@ public class CreateTool extends ToolBase {
         cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
 
     // we allow them to pass a directory instead of a configset name
-    Path configsetDir = Paths.get(confDirName);
-    Path solrInstallDirPath = Paths.get(solrInstallDir);
+    Path configsetDir = Path.of(confDirName);
+    Path solrInstallDirPath = Path.of(solrInstallDir);
 
     if (!Files.isDirectory(configsetDir)) {
       ensureConfDirExists(solrInstallDirPath, configsetDir);
@@ -181,7 +174,7 @@ public class CreateTool extends ToolBase {
               + "' already exists!\nChecked core existence using Core API command");
     }
 
-    Path coreInstanceDir = Paths.get(coreRootDirectory, coreName);
+    Path coreInstanceDir = Path.of(coreRootDirectory, coreName);
     Path confDir = getFullConfDir(solrInstallDirPath, configsetDir).resolve("conf");
     if (!Files.isDirectory(coreInstanceDir)) {
       Files.createDirectories(coreInstanceDir);
@@ -190,7 +183,7 @@ public class CreateTool extends ToolBase {
             "Failed to create new core instance directory: " + coreInstanceDir.toAbsolutePath());
       }
 
-      FileUtils.copyDirectoryToDirectory(confDir.toFile(), coreInstanceDir.toFile());
+      PathUtils.copyDirectory(confDir, coreInstanceDir, StandardCopyOption.COPY_ATTRIBUTES);
 
       echoIfVerbose(
           "\nCopying configuration to new core instance directory:\n"
@@ -237,8 +230,8 @@ public class CreateTool extends ToolBase {
     final String solrInstallDir = System.getProperty("solr.install.dir");
     String confName = cli.getOptionValue(CONF_NAME_OPTION);
     String confDir = cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
-    Path solrInstallDirPath = Paths.get(solrInstallDir);
-    Path confDirPath = Paths.get(confDir);
+    Path solrInstallDirPath = Path.of(solrInstallDir);
+    Path confDirPath = Path.of(confDir);
     ensureConfDirExists(solrInstallDirPath, confDirPath);
     printDefaultConfigsetWarningIfNecessary(cli);
 
@@ -265,9 +258,7 @@ public class CreateTool extends ToolBase {
                 .getZkClient()
                 .exists("/configs/" + confName, true);
 
-    if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
-      // do nothing
-    } else if (configExistsInZk) {
+    if (configExistsInZk) {
       echo("Re-using existing configuration directory " + confName);
     } else { // if (confdir != null && !confdir.trim().isEmpty()) {
       if (confName == null || confName.trim().isEmpty()) {
@@ -288,7 +279,7 @@ public class CreateTool extends ToolBase {
               + " to ZooKeeper at "
               + cloudSolrClient.getClusterStateProvider().getQuorumHosts());
       // We will trust the config since we have the Zookeeper Address
-      configSetService.uploadConfig(confName, confPath, true);
+      configSetService.uploadConfig(confName, confPath);
     }
 
     // since creating a collection is a heavy-weight operation, check for existence first
@@ -346,7 +337,7 @@ public class CreateTool extends ToolBase {
       Path fullConfDir = getFullConfDir(solrInstallDir, confDirName);
       if (!Files.isDirectory(fullConfDir)) {
         echo("Specified configuration directory " + confDirName + " not found!");
-        System.exit(1);
+        runtime.exit(1);
       }
     }
   }

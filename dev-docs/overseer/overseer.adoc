@@ -161,8 +161,6 @@ Overseer `start()` method creates and starts as `OverseerThread`’s:
 * <<OverseerCollectionConfigSetProcessor>> (consuming collection queue which includes the identical config set queue),
 * OverseerTriggerThread (for Autoscaling, not discussed in this doc)
 
-start() also verifies that the system collection ”.system” is in good shape (segment/Lucene versions).
-
 [[ClusterStateUpdater,ClusterStateUpdater]]
 ==== Inner class ClusterStateUpdater
 

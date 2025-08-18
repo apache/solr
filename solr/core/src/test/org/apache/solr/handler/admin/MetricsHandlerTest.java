@@ -25,8 +25,10 @@ import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import io.prometheus.metrics.model.snapshots.SummarySnapshot;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.MapWriter;
@@ -120,15 +122,15 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(o); // counter type
     assertTrue(o instanceof MapWriter);
     // response wasn't serialized, so we get here whatever MetricUtils produced instead of NamedList
-    assertNotNull(((MapWriter) o)._get("count", null));
-    assertEquals(0L, ((MapWriter) nl.get("SEARCHER.new.errors"))._get("count", null));
+    assertNotNull(((MapWriter) o)._get("count"));
+    assertEquals(0L, ((MapWriter) nl.get("SEARCHER.new.errors"))._get("count"));
     assertNotNull(nl.get("INDEX.segments")); // int gauge
-    assertTrue((int) ((MapWriter) nl.get("INDEX.segments"))._get("value", null) >= 0);
+    assertTrue((int) ((MapWriter) nl.get("INDEX.segments"))._get("value") >= 0);
     assertNotNull(nl.get("INDEX.sizeInBytes")); // long gauge
-    assertTrue((long) ((MapWriter) nl.get("INDEX.sizeInBytes"))._get("value", null) >= 0);
+    assertTrue((long) ((MapWriter) nl.get("INDEX.sizeInBytes"))._get("value") >= 0);
     nl = (NamedList<?>) values.get("solr.node");
     assertNotNull(nl.get("CONTAINER.cores.loaded")); // int gauge
-    assertEquals(1, ((MapWriter) nl.get("CONTAINER.cores.loaded"))._get("value", null));
+    assertEquals(1, ((MapWriter) nl.get("CONTAINER.cores.loaded"))._get("value"));
     assertNotNull(nl.get("ADMIN./admin/authorization.clientErrors")); // timer type
     Map<String, Object> map = new HashMap<>();
     ((MapWriter) nl.get("ADMIN./admin/authorization.clientErrors")).toMap(map);
@@ -275,9 +277,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(1, values.size());
     assertNotNull(values.get("solr.node"));
     values = (NamedList<?>) values.get("solr.node");
-    assertEquals(27, values.size());
+    assertEquals(15, values.size());
     assertNotNull(values.get("CONTAINER.cores.lazy")); // this is a gauge node
-    assertNotNull(values.get("CONTAINER.threadPool.coreContainerWorkExecutor.completed"));
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
 
     resp = new SolrQueryResponse();
@@ -299,8 +300,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = (NamedList<?>) values.get("metrics");
     assertNotNull(values.get("solr.node"));
     values = (NamedList<?>) values.get("solr.node");
-    assertEquals(7, values.size());
-    assertNotNull(values.get("CONTAINER.threadPool.coreContainerWorkExecutor.completed"));
+    assertEquals(5, values.size());
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
 
     resp = new SolrQueryResponse();
@@ -325,7 +325,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(1, values.size());
     MapWriter writer = (MapWriter) values.get("CACHE.core.fieldCache");
     assertNotNull(writer);
-    assertNotNull(writer._get("entries_count", null));
+    assertNotNull(writer._get("entries_count"));
 
     resp = new SolrQueryResponse();
     handler.handleRequestBody(
@@ -479,7 +479,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key1),
         resp);
     NamedList<?> values = resp.getValues();
-    Object val = values.findRecursive("metrics", key1);
+    Object val = values._get(List.of("metrics", key1), null);
     assertNotNull(val);
     assertTrue(val instanceof MapWriter);
     assertTrue(((MapWriter) val)._size() >= 2);
@@ -495,7 +495,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             MetricsHandler.KEY_PARAM,
             key2),
         resp);
-    val = resp.getValues()._get("metrics/" + key2, null);
+    val = resp.getValues()._get("metrics/" + key2);
     assertNotNull(val);
     assertTrue(val instanceof Number);
 
@@ -511,7 +511,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key3),
         resp);
 
-    val = resp.getValues()._get("metrics/" + key3, null);
+    val = resp.getValues()._get("metrics/" + key3);
     assertNotNull(val);
     assertTrue(val instanceof Number);
     assertEquals(3, ((Number) val).intValue());
@@ -532,11 +532,11 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key3),
         resp);
 
-    val = resp.getValues()._get("metrics/" + key1, null);
+    val = resp.getValues()._get("metrics/" + key1);
     assertNotNull(val);
-    val = resp.getValues()._get("metrics/" + key2, null);
+    val = resp.getValues()._get("metrics/" + key2);
     assertNotNull(val);
-    val = resp.getValues()._get("metrics/" + key3, null);
+    val = resp.getValues()._get("metrics/" + key3);
     assertNotNull(val);
 
     String key4 = "solr.core.collection1:QUERY./select.requestTimes:1minRate";
@@ -573,8 +573,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = resp.getValues();
     NamedList<?> metrics = (NamedList<?>) values.get("metrics");
     assertEquals(0, metrics.size());
-    assertNotNull(values.findRecursive("errors", "foo"));
-    assertNotNull(values.findRecursive("errors", "foo:bar:baz:xyz"));
+    assertNotNull(values._get(List.of("errors", "foo"), null));
+    assertNotNull(values._get(List.of("errors", "foo:bar:baz:xyz"), null));
 
     // unknown registry
     resp = new SolrQueryResponse();
@@ -590,7 +590,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = resp.getValues();
     metrics = (NamedList<?>) values.get("metrics");
     assertEquals(0, metrics.size());
-    assertNotNull(values.findRecursive("errors", "foo:bar:baz"));
+    assertNotNull(values._get(List.of("errors", "foo:bar:baz"), null));
 
     // unknown metric
     resp = new SolrQueryResponse();
@@ -606,7 +606,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = resp.getValues();
     metrics = (NamedList<?>) values.get("metrics");
     assertEquals(0, metrics.size());
-    assertNotNull(values.findRecursive("errors", "solr.jetty:unknown:baz"));
+    assertNotNull(values._get(List.of("errors", "solr.jetty:unknown:baz"), null));
 
     handler.close();
   }
@@ -630,7 +630,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     // response structure is like in the case of non-key params
     Object val =
         resp.getValues()
-            .findRecursive("metrics", "solr.core.collection1", "QUERY./select.requestTimes");
+            ._get(List.of("metrics", "solr.core.collection1", "QUERY./select.requestTimes"), null);
     assertNotNull(val);
     assertTrue(val instanceof MapWriter);
     Map<String, Object> map = new HashMap<>();
@@ -655,7 +655,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key2),
         resp);
     // response structure is like in the case of non-key params
-    val = resp.getValues().findRecursive("metrics", "solr.core.collection1");
+    val = resp.getValues()._get(List.of("metrics", "solr.core.collection1"), null);
     assertNotNull(val);
     Object v = ((SimpleOrderedMap<Object>) val).get("QUERY./select.requestTimes");
     assertNotNull(v);
@@ -689,7 +689,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             MetricsHandler.EXPR_PARAM,
             key3),
         resp);
-    val = resp.getValues().findRecursive("metrics", "solr.core.collection1");
+    val = resp.getValues()._get(List.of("metrics", "solr.core.collection1"), null);
     assertNotNull(val);
     // for requestTimes only the full set of values from the first expr should be present
     assertNotNull(val);
@@ -731,12 +731,12 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(actualSnapshots);
 
     MetricSnapshot actualSnapshot =
-        getMetricSnapshot(actualSnapshots, "solr_metrics_core_average_request_time");
-    GaugeSnapshot.GaugeDataPointSnapshot actualGaugeDataPoint =
-        getGaugeDatapointSnapshot(
+        getMetricSnapshot(actualSnapshots, "solr_metrics_core_request_time_ms");
+    SummarySnapshot.SummaryDataPointSnapshot actualSummaryDataPoint =
+        getSummaryDataPointSnapshot(
             actualSnapshot,
             Labels.of("category", "QUERY", "core", "collection1", "handler", "/select[shard]"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+    assertEquals(0, (float) actualSummaryDataPoint.getCount(), 0);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_requests");
     CounterSnapshot.CounterDataPointSnapshot actualCounterDataPoint =
@@ -754,7 +754,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(0, actualCounterDataPoint.getValue(), 0);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_cache");
-    actualGaugeDataPoint =
+    GaugeSnapshot.GaugeDataPointSnapshot actualGaugeDataPoint =
         getGaugeDatapointSnapshot(
             actualSnapshot,
             Labels.of("cacheType", "fieldValueCache", "core", "collection1", "item", "hits"));
@@ -765,13 +765,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
         getCounterDatapointSnapshot(
             actualSnapshot,
             Labels.of("item", "default", "core", "collection1", "type", "SolrFragmenter"));
-    assertEquals(0, actualCounterDataPoint.getValue(), 0);
-
-    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_requests_time");
-    actualCounterDataPoint =
-        getCounterDatapointSnapshot(
-            actualSnapshot,
-            Labels.of("category", "QUERY", "core", "collection1", "handler", "/select[shard]"));
     assertEquals(0, actualCounterDataPoint.getValue(), 0);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_searcher_documents");
@@ -796,11 +789,11 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(0, actualGaugeDataPoint.getValue(), 0);
 
     actualSnapshot =
-        getMetricSnapshot(actualSnapshots, "solr_metrics_core_average_searcher_warmup_time");
-    actualGaugeDataPoint =
-        getGaugeDatapointSnapshot(
+        getMetricSnapshot(actualSnapshots, "solr_metrics_core_searcher_warmup_time_ms");
+    actualSummaryDataPoint =
+        getSummaryDataPointSnapshot(
             actualSnapshot, Labels.of("core", "collection1", "type", "warmup"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+    assertEquals(0, (float) actualSummaryDataPoint.getCount(), 0);
 
     handler.close();
   }
@@ -1178,6 +1171,15 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   private CounterSnapshot.CounterDataPointSnapshot getCounterDatapointSnapshot(
       MetricSnapshot snapshot, Labels labels) {
     return (CounterSnapshot.CounterDataPointSnapshot)
+        snapshot.getDataPoints().stream()
+            .filter(ss -> ss.getLabels().hasSameValues(labels))
+            .findAny()
+            .get();
+  }
+
+  private SummarySnapshot.SummaryDataPointSnapshot getSummaryDataPointSnapshot(
+      MetricSnapshot snapshot, Labels labels) {
+    return (SummarySnapshot.SummaryDataPointSnapshot)
         snapshot.getDataPoints().stream()
             .filter(ss -> ss.getLabels().hasSameValues(labels))
             .findAny()

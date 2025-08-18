@@ -22,6 +22,7 @@ import static java.util.Collections.unmodifiableMap;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,10 +31,9 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
-import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.DOMConfigNode;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 /** An Object which represents a Plugin of any type */
 public class PluginInfo implements MapSerializable {
@@ -100,39 +100,23 @@ public class PluginInfo implements MapSerializable {
     }
   }
 
+  /** From XML. */
   public PluginInfo(ConfigNode node, String err, boolean requireName, boolean requireClass) {
     type = node.name();
-    name =
-        node.requiredStrAttr(
-            NAME,
-            requireName
-                ? () -> new RuntimeException(err + ": missing mandatory attribute 'name'")
-                : null);
+    name = requireName ? node.attrRequired(NAME, err) : node.attr(NAME);
     cName =
-        parseClassName(
-            node.requiredStrAttr(
-                CLASS_NAME,
-                requireClass
-                    ? () -> new RuntimeException(err + ": missing mandatory attribute 'class'")
-                    : null));
+        parseClassName(requireClass ? node.attrRequired(CLASS_NAME, err) : node.attr(CLASS_NAME));
     className = cName.className;
     pkgName = cName.pkg;
-    initArgs = DOMUtil.childNodesToNamedList(node);
+    initArgs = node.childNodesToNamedList();
     attributes = node.attributes();
     children = loadSubPlugins(node);
     isFromSolrConfig = true;
   }
 
-  public PluginInfo(Node node, String err, boolean requireName, boolean requireClass) {
-    type = node.getNodeName();
-    name = DOMUtil.getAttr(node, NAME, requireName ? err : null);
-    cName = parseClassName(DOMUtil.getAttr(node, CLASS_NAME, requireClass ? err : null));
-    className = cName.className;
-    pkgName = cName.pkg;
-    initArgs = DOMUtil.childNodesToNamedList(node);
-    attributes = unmodifiableMap(DOMUtil.toMap(node.getAttributes()));
-    children = loadSubPlugins(node);
-    isFromSolrConfig = true;
+  @VisibleForTesting
+  PluginInfo(Node node, String err, boolean requireName, boolean requireClass) {
+    this(new DOMConfigNode(node), err, requireName, requireClass);
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -178,20 +162,6 @@ public class PluginInfo implements MapSerializable {
           if (pluginInfo.isEnabled()) children.add(pluginInfo);
           return null;
         });
-    return children.isEmpty() ? Collections.emptyList() : unmodifiableList(children);
-  }
-
-  private List<PluginInfo> loadSubPlugins(Node node) {
-    List<PluginInfo> children = new ArrayList<>();
-    // if there is another sub tag with a non namedlist tag that has to be another plugin
-    NodeList nlst = node.getChildNodes();
-    for (int i = 0; i < nlst.getLength(); i++) {
-      Node nd = nlst.item(i);
-      if (nd.getNodeType() != Node.ELEMENT_NODE) continue;
-      if (NL_TAGS.contains(nd.getNodeName())) continue;
-      PluginInfo pluginInfo = new PluginInfo(nd, null, false, false);
-      if (pluginInfo.isEnabled()) children.add(pluginInfo);
-    }
     return children.isEmpty() ? Collections.emptyList() : unmodifiableList(children);
   }
 

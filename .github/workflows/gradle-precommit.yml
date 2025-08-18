@@ -1,47 +1,28 @@
 name: Gradle Precommit
 
-on: 
+on:
   pull_request:
     branches:
-      - 'main'
-      - 'branch_*'
+      - '*'
 
 jobs:
   test:
     name: gradle check
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     env:
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
 
     steps:
-    # Setup
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-    - name: Set up JDK
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: 21
-        java-package: jdk
-
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-
-    - uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-        key: ${{ runner.os }}-gradle-precommit-${{ hashFiles('versions.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-precommit-
-          ${{ runner.os }}-gradle-
+    - uses: ./.github/actions/prepare-for-build
 
     - name: Run gradle check (without tests)
-      run: ./gradlew check -x test -Ptask.times=true
+      run: ./gradlew check -x test -Ptask.times=true --continue
 
-    - uses: gradle/wrapper-validation-action@v3
+    - name: Validate Gradle wrapper
+      uses: gradle/actions/wrapper-validation@v4

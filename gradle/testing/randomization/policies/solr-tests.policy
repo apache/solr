@@ -103,16 +103,8 @@ grant {
   permission java.lang.RuntimePermission "closeClassLoader";
   // needed by HttpSolrClient
   permission java.lang.RuntimePermission "getFileSystemAttributes";
-  // needed by hadoop hdfs (TODO: there is a cleaner way to handle this)
-  permission java.lang.RuntimePermission "loadLibrary.jaas";
-  permission java.lang.RuntimePermission "loadLibrary.jaas_unix";
-  permission java.lang.RuntimePermission "loadLibrary.jaas_nt";
-  // needed by hadoop common RawLocalFileSystem for java nio getOwner
-  permission java.lang.RuntimePermission "accessUserInformation";
-  // needed by hadoop hdfs
-  permission java.lang.RuntimePermission "readFileDescriptor";
-  permission java.lang.RuntimePermission "writeFileDescriptor";
-  // needed by hadoop http
+
+  // needed by mockito http
   permission java.lang.RuntimePermission "getProtectionDomain";
   // SolrProcessMgr to list processes
   permission java.lang.RuntimePermission "manageProcess";
@@ -139,20 +131,11 @@ grant {
   permission javax.management.MBeanServerPermission "releaseMBeanServer";
   permission javax.management.MBeanTrustPermission "register";
   
-  // needed by hadoop hdfs
-  permission javax.security.auth.AuthPermission "getSubject";
-  permission javax.security.auth.AuthPermission "modifyPrincipals";
-  permission javax.security.auth.AuthPermission "doAs";
-  permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
-  permission javax.security.auth.AuthPermission "modifyPublicCredentials";
-  permission javax.security.auth.PrivateCredentialPermission "org.apache.hadoop.security.Credentials * \"*\"", "read";
-
   // needed by crossdc
   permission javax.security.auth.AuthPermission "getLoginConfiguration";
   permission javax.security.auth.AuthPermission "setLoginConfiguration";
   
-  // needed by hadoop security
-  permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
+  // needed by benchmark
   permission java.security.SecurityPermission "insertProvider";
 
   // Needed by JWT integration tests & S3 tests
@@ -163,6 +146,7 @@ grant {
 
   // needed by s3mock
   permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
+  permission java.lang.RuntimePermission "accessSystemModules";
 
   // needed for kafka mockito
   permission java.lang.RuntimePermission "manageProcess";
@@ -215,14 +199,14 @@ grant {
   permission "java.net.URLPermission" "http://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "https://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "socket://[::1]:*", "CONNECT:*";
+
+  // Needed by TestCoreDiscovery
+  permission java.lang.RuntimePermission "accessUserInformation";
 };
 
 // additional permissions based on system properties set by /bin/solr
 // NOTE: if the property is not set, the permission entry is ignored.
-grant {
-  permission java.io.FilePermission "${hadoop.security.credential.provider.path}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${hadoop.security.credential.provider.path}${/}-", "read,write,delete,readlink";
-
+grant {  
   permission java.io.FilePermission "${solr.jetty.keystore}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.jetty.keystore}${/}-", "read,write,delete,readlink";
 
@@ -257,8 +241,15 @@ grant {
   permission java.io.FilePermission "${aws.configFile}", "read,readlink";
   permission java.io.FilePermission "${user.home}${/}.aws${/}-", "read,readlink";
 
+  // GCS
+  permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}properties", "read,readlink";
+  permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}active_config", "read,readlink";
+  permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}configurations${/}config_default", "read,readlink";
+
+
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "metadata.google.internal:80", "connect,resolve";
 
   // Run java
   permission java.io.FilePermission "${java.home}${/}-", "execute";

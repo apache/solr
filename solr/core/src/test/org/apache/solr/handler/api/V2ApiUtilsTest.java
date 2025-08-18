@@ -16,12 +16,13 @@
  */
 package org.apache.solr.handler.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.impl.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 
 import jakarta.ws.rs.core.MediaType;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
 public class V2ApiUtilsTest extends SolrTestCaseJ4 {
@@ -44,9 +45,7 @@ public class V2ApiUtilsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testConvertsWtToMediaTypeString() {
-    assertEquals(
-        "someDefault",
-        V2ApiUtils.getMediaTypeFromWtParam(new ModifiableSolrParams(), "someDefault"));
+    assertEquals("someDefault", V2ApiUtils.getMediaTypeFromWtParam(SolrParams.of(), "someDefault"));
 
     var params = new ModifiableSolrParams();
     params.add("wt", "json");
@@ -56,7 +55,7 @@ public class V2ApiUtilsTest extends SolrTestCaseJ4 {
     assertEquals(MediaType.APPLICATION_XML, V2ApiUtils.getMediaTypeFromWtParam(params, null));
 
     params.set("wt", "javabin");
-    assertEquals(BINARY_CONTENT_TYPE_V2, V2ApiUtils.getMediaTypeFromWtParam(params, null));
+    assertEquals(JAVABIN_CONTENT_TYPE_V2, V2ApiUtils.getMediaTypeFromWtParam(params, null));
 
     params.set("wt", FILE_STREAM);
     assertEquals(

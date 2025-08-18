@@ -37,7 +37,7 @@ pattern = re.compile(r"\(([^()]*)\)$")
 
 for para in paras:
   # Normalize whitespace (replace all whitespace with a single space)
-  para = re.sub('\s+', ' ', para).strip()
+  para = re.sub(r"\s+", ' ', para).strip()
   #print(f'> {para}')
 
   # Find all contributors in the line
@@ -51,7 +51,8 @@ for para in paras:
       contributor = contributor.strip()
       contributors[contributor] += 1
 
-del contributors['solrbot']
+if 'solrbot' in contributors:
+  del contributors['solrbot']
 
 sorted_contributors = sorted(contributors.items(), key=lambda item: item[1], reverse=True)
 

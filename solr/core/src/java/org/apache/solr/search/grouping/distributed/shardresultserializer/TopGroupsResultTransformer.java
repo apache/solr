@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
@@ -128,10 +129,17 @@ public class TopGroupsResultTransformer
       Integer totalHitCount = (Integer) commandResult.get("totalHitCount");
 
       List<GroupDocs<BytesRef>> groupDocs = new ArrayList<>();
-      for (int i = 2; i < commandResult.size(); i++) {
-        String groupValue = commandResult.getName(i);
+
+      // Skip first two entries (totalGroupedHitCount and totalHitCount) and process the rest
+      int skipCount = 0;
+      for (Entry<String, ?> groupEntry : commandResult) {
+        if (skipCount++ < 2) {
+          continue;
+        }
+
+        String groupValue = groupEntry.getKey();
         @SuppressWarnings("unchecked")
-        NamedList<Object> groupResult = (NamedList<Object>) commandResult.getVal(i);
+        NamedList<Object> groupResult = (NamedList<Object>) groupEntry.getValue();
         // previously Integer now Long
         Number totalGroupHits = (Number) groupResult.get("totalHits");
         Float maxScore = (Float) groupResult.get("maxScore");
@@ -222,24 +230,24 @@ public class TopGroupsResultTransformer
     SchemaField uniqueField = schema.getUniqueKeyField();
     for (GroupDocs<BytesRef> searchGroup : data.groups) {
       NamedList<Object> groupResult = new NamedList<>();
-      assert searchGroup.totalHits.relation == TotalHits.Relation.EQUAL_TO;
-      groupResult.add("totalHits", searchGroup.totalHits.value);
-      if (!Float.isNaN(searchGroup.maxScore)) {
-        groupResult.add("maxScore", searchGroup.maxScore);
+      assert searchGroup.totalHits().relation() == TotalHits.Relation.EQUAL_TO;
+      groupResult.add("totalHits", searchGroup.totalHits().value());
+      if (!Float.isNaN(searchGroup.maxScore())) {
+        groupResult.add("maxScore", searchGroup.maxScore());
       }
 
       SolrDocumentFetcher docFetcher = rb.req.getSearcher().getDocFetcher();
       List<NamedList<Object>> documents = new ArrayList<>();
-      for (int i = 0; i < searchGroup.scoreDocs.length; i++) {
+      for (int i = 0; i < searchGroup.scoreDocs().length; i++) {
         NamedList<Object> document = new NamedList<>();
         documents.add(document);
 
-        Document doc = retrieveDocument(uniqueField, searchGroup.scoreDocs[i].doc, docFetcher);
+        Document doc = retrieveDocument(uniqueField, searchGroup.scoreDocs()[i].doc, docFetcher);
         document.add(ID, uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
-        if (!Float.isNaN(searchGroup.scoreDocs[i].score)) {
-          document.add("score", searchGroup.scoreDocs[i].score);
+        if (!Float.isNaN(searchGroup.scoreDocs()[i].score)) {
+          document.add("score", searchGroup.scoreDocs()[i].score);
         }
-        if (!(searchGroup.scoreDocs[i] instanceof FieldDoc fieldDoc)) {
+        if (!(searchGroup.scoreDocs()[i] instanceof FieldDoc fieldDoc)) {
           continue; // thus don't add sortValues below
         }
 
@@ -263,10 +271,10 @@ public class TopGroupsResultTransformer
       }
       groupResult.add("documents", documents);
       String groupValue =
-          searchGroup.groupValue != null
+          searchGroup.groupValue() != null
               ? groupField
                   .getType()
-                  .indexedToReadable(searchGroup.groupValue, new CharsRefBuilder())
+                  .indexedToReadable(searchGroup.groupValue(), new CharsRefBuilder())
                   .toString()
               : null;
       result.add(groupValue, groupResult);
@@ -279,8 +287,8 @@ public class TopGroupsResultTransformer
     NamedList<Object> queryResult = new NamedList<>();
     queryResult.add("matches", result.getMatches());
     TopDocs topDocs = result.getTopDocs();
-    assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
-    queryResult.add("totalHits", topDocs.totalHits.value);
+    assert topDocs.totalHits.relation() == TotalHits.Relation.EQUAL_TO;
+    queryResult.add("totalHits", topDocs.totalHits.value());
     // debug: assert !Float.isNaN(result.getTopDocs().getMaxScore()) ==
     // rb.getGroupingSpec().isNeedScore();
     if (!Float.isNaN(result.getMaxScore())) {

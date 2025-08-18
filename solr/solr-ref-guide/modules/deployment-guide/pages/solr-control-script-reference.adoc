@@ -16,14 +16,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr includes a script known as "`bin/solr`" that allows you to perform many common operations on your Solr installation or cluster.
+The SolrCLI, available as the `bin/solr` script, is a versatile command-line tool that allows you to perform many common operations on your Solr installation or cluster.
 
 You can start and stop Solr, create and delete collections or cores, perform operations on ZooKeeper and check the status of Solr and configured shards.
 
 You can find the script in the `bin/` directory of your Solr installation.
-The `bin/solr` script makes Solr easier to work with by providing simple commands and options to quickly accomplish common goals.
+The SolrCLI makes Solr easier to work with by providing simple commands and options to quickly accomplish common goals.
 
-More examples of `bin/solr` in use are available throughout this Guide, but particularly in the sections xref:installing-solr.adoc#starting-solr[Starting Solr] and xref:getting-started:tutorial-solrcloud.adoc[].
+More examples of SolrCLI in use are available throughout this Guide, particularly in the sections xref:installing-solr.adoc#starting-solr[Starting Solr] and xref:getting-started:tutorial-solrcloud.adoc[].
 
 == Starting and Stopping
 
@@ -69,7 +69,7 @@ If you are passing JVM parameters that begin with `-D`, you can omit the `--jvm-
 [source,bash]
 bin/solr start --jvm-opts "-Xdebug -Xrunjdwp:transport=dt_socket, server=y,suspend=n,address=1044"
 
-`-j <jettyParams>`::
+`-j <jettyParams>` or `--jettyconfig <jettyParams>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1385,7 +1385,7 @@ Trailing wildcards are supported when copying from localand must be quoted.
 
 Other examples are:
 
-*Recursively copy a directory from local to ZooKeeper*: `bin/solr zk cp -r file:/apache/confgs/whatever/conf zk:/configs/myconf -z 111.222.333.444:2181`
+*Recursively copy a directory from local to ZooKeeper*: `bin/solr zk cp -r file:/apache/configs/whatever/conf zk:/configs/myconf -z 111.222.333.444:2181`
 
 *Copy a single file from ZooKeeper to local*: `bin/solr zk cp zk:/configs/myconf/managed_schema /configs/myconf/managed_schema -z 111.222.333.444:2181`
 
@@ -1619,12 +1619,12 @@ Examples of this command:
 
 === Exporting Documents to a File
 
-The `export` command will allow you to export documents from a collection in JSON, JSON with Lines, or Javabin format.
-All documents can be exported, or only those that match a query.
+The `export` command will allow you to export documents from a collection in JSON, https://jsonlines.org/[JSON Lines], or Javabin format.
+All documents can be exported, or only those that match a query.  You may need to wrap some parameters with quotes.
 
 NOTE: This hasn't been tested with nested child documents and your results will vary.
 
-NOTE: The `export` command only works with in a Solr running in cloud mode.
+NOTE: The `export` command only works with Solr running in cloud mode.
 
 `bin/solr export [options]`
 
@@ -1661,9 +1661,11 @@ Name of the collection to run an export against.
 |Optional |Default: `json`
 |===
 +
-The file format of the export, `json`, `jsonl`, or `javabin`.
-Choosing `javabin` exports in the native Solr format, and is compact and fast to import.
-`jsonl` is the Json with Lines format, learn more at https://jsonlines.org/.
+The file format of the export, `json` (default) or `jsonl` or `javabin`, this also specifies the file extension to be used.
+`json` and `jsonl` both export documents in the same format as using `wt=json`.  The `json` output file is suitable for
+immediately posting back to solr via the `/update/json` endpoint.  `jsonl` outputs each Solr document on it's own line,
+and it useful for parallel processing tasks. Learn more at https://jsonlines.org/.
+Choosing `javabin` exports in the native binary Solr format and is compact and faster to import.
 
 `--output <path>`::
 +
@@ -1673,6 +1675,7 @@ Choosing `javabin` exports in the native Solr format, and is compact and fast to
 |===
 +
 Either the path to the directory for the exported data to be written to, or a specific file to be written out.
+If the file name ends with `.gz` the output will be compressed into a .gz file.
 +
 If only a directory is specified then the file will be created with the name of the collection, as in `<collection>.json`.
 
@@ -1692,7 +1695,7 @@ If you specify `--compress` then the resulting outputting file with will be gzip
 |Optional |Default: `\*:*`
 |===
 +
-A custom query.
+A custom query to select documents for exporting.
 The default is `\*:*` which will export all documents.
 
 `--fields <fields>`::
@@ -1727,7 +1730,7 @@ This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or 
 
 *Examples*
 
-Export all documents from a collection `gettingstarted`:
+Export all documents from a collection `gettingstarted` into a file called `gettingstarted.json`:
 
 [source,bash]
 bin/solr export --solr-url http://localhost:8983 -c gettingstarted --limit -1
@@ -1741,7 +1744,12 @@ bin/solr export --solr-url http://localhost:8983 -c gettingstarted --limit -1 --
 
 === Importing Documents into a Collection
 
-Once you have exported documents in a file, you can use the xref:indexing-guide:indexing-with-update-handlers.adoc[/update request handler] to import them to a new Solr collection.
+Once you have exported documents in a file, you can use the xref:indexing-guide:indexing-with-update-handlers.adoc#json-formatted-index-updates[/update request handler] to import them to a new Solr collection.
+Notice the different endpoints used depending on the format.  
+
+*Example: import `json` files*
+
+`curl -X POST --header "Content-Type: application/json" -d @gettingstarted.json http://localhost:8983/solr/gettingstarted/update/json?commit=true`
 
 *Example: import `json` files*
 
@@ -1763,7 +1771,7 @@ Now import the data with either of these methods:
 
 [,console]
 ----
-$ curl -X POST -d @gettingstarted.json 'http://localhost:8983/solr/test_collection/update/json/docs?commit=true'
+$ curl -X POST --header "Content-Type: application/json" -d @gettingstarted.json 'http://localhost:8983/solr/test_collection/update/json/docs?commit=true'
 ----
 or
 [,console]
@@ -1834,7 +1842,7 @@ The `package` command allows you to interact with Solr's xref:configuration-guid
 
 == Snapshots and Backups
 
-The snapshots capablity of the CLI allows you to:
+The snapshots capability of the CLI allows you to:
 
 * Create snapshotted view of your index
 * List all the available snapshots

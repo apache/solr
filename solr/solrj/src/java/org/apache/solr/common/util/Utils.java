@@ -24,6 +24,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -80,7 +81,6 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -213,6 +213,12 @@ public class Utils {
   public static Object fromJavabin(byte[] bytes) throws IOException {
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       return jbc.unmarshal(bytes);
+    }
+  }
+
+  public static Object fromJavabin(InputStream is) throws IOException {
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      return jbc.unmarshal(is);
     }
   }
 
@@ -533,12 +539,8 @@ public class Utils {
             o = idx < l.size() ? l.get(idx) : null;
           } else if (o instanceof IteratorWriter) {
             o = getValueAt((IteratorWriter) o, idx);
-          } else if (o instanceof MapWriter) {
+          } else if (o instanceof MapWriter || o instanceof Map<?, ?>) {
             o = getVal(o, null, idx);
-          } else if (o instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> map = (Map<String, Object>) o;
-            o = getVal(new MapWriterMap(map), null, idx);
           } else {
             return null;
           }
@@ -604,32 +606,41 @@ public class Utils {
     return o instanceof Map || o instanceof NamedList || o instanceof MapWriter;
   }
 
-  private static Object getVal(Object obj, String key, int idx) {
-    if (obj instanceof MapWriter) {
+  /** Extract either the key or index from mapLike. */
+  private static Object getVal(Object mapLike, String key, int idx) {
+    assert (key == null && idx >= 0) || (key != null && idx == -1);
+    if (mapLike instanceof Map<?, ?> m) {
+      if (key != null) {
+        return m.get(key);
+      } else {
+        var optEntry = m.entrySet().stream().skip(idx).findFirst();
+        return optEntry
+            .map(entry -> new MapWriterEntry<>(entry.getKey().toString(), entry.getValue()))
+            .orElse(null);
+      }
+    } else if (mapLike instanceof MapWriter mapWriter) {
       Object[] result = new Object[1];
       try {
-        ((MapWriter) obj)
-            .writeMap(
-                new MapWriter.EntryWriter() {
-                  int count = -1;
+        mapWriter.writeMap(
+            new MapWriter.EntryWriter() {
+              int count = -1;
 
-                  @Override
-                  public MapWriter.EntryWriter put(CharSequence k, Object v) {
-                    if (result[0] != null) return this;
-                    if (idx < 0) {
-                      if (key.contentEquals(k)) result[0] = v;
-                    } else {
-                      if (++count == idx) result[0] = new MapWriterEntry<>(k, v);
-                    }
-                    return this;
-                  }
-                });
+              @Override
+              public MapWriter.EntryWriter put(CharSequence k, Object v) {
+                if (result[0] != null) return this;
+                if (idx < 0) {
+                  if (key.contentEquals(k)) result[0] = v;
+                } else {
+                  if (++count == idx) result[0] = new MapWriterEntry<>(k, v);
+                }
+                return this;
+              }
+            });
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
       return result[0];
-    } else if (obj instanceof Map) return ((Map<?, ?>) obj).get(key);
-    else throw new RuntimeException("must be a NamedList or Map");
+    } else throw new RuntimeException("must be a NamedList or Map");
   }
 
   /**
@@ -660,8 +671,13 @@ public class Utils {
    * @throws IOException on problem with IO
    */
   public static void readFully(InputStream is) throws IOException {
-    is.skip(is.available());
-    while (is.read() != -1) {}
+    if (is.read() != -1) { // not needed but avoids skipNBytes's internal buffer allocation
+      try {
+        is.skipNBytes(Long.MAX_VALUE); // throws EOF
+      } catch (EOFException e) {
+        // ignore / expected for skipNBytes
+      }
+    }
   }
 
   public static final Pattern ARRAY_ELEMENT_INDEX = Pattern.compile("(\\S*?)\\[([-]?\\d+)\\]");
@@ -753,9 +769,11 @@ public class Utils {
    * @param urlScheme scheme for the base url ('http' or 'https')
    * @return url that looks like {@code https://app-node-1:8983/solr}
    * @throws IllegalArgumentException if the provided node name is malformed
+   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String)}
    */
+  @Deprecated
   public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
-    return getBaseUrlForNodeName(nodeName, urlScheme, false);
+    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
 
   /**
@@ -768,22 +786,12 @@ public class Utils {
    * @return url that looks like {@code https://app-node-1:8983/api} (V2) or {@code
    *     https://app-node-1:8983/solr} (V1)
    * @throws IllegalArgumentException if the provided node name is malformed
+   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String, boolean)}
    */
+  @Deprecated
   public static String getBaseUrlForNodeName(
       final String nodeName, final String urlScheme, boolean isV2) {
-    final int colonAt = nodeName.indexOf(':');
-    if (colonAt == -1) {
-      throw new IllegalArgumentException(
-          "nodeName does not contain expected ':' separator: " + nodeName);
-    }
-
-    final int _offset = nodeName.indexOf('_', colonAt);
-    if (_offset < 0) {
-      throw new IllegalArgumentException(
-          "nodeName does not contain expected '_' separator: " + nodeName);
-    }
-    final String hostAndPort = nodeName.substring(0, _offset);
-    return urlScheme + "://" + hostAndPort + "/" + (isV2 ? "api" : "solr");
+    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, isV2);
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {

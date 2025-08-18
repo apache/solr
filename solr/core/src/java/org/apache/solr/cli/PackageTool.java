@@ -29,6 +29,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
@@ -92,11 +93,8 @@ public class PackageTool extends ToolBase {
           .desc("Don't prompt for input; accept all default choices, defaults to false.")
           .build();
 
-  @SuppressForbidden(
-      reason = "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")
-  public PackageTool() {
-    // Need a logging free, clean output going through to the user.
-    Configurator.setRootLevel(Level.OFF);
+  public PackageTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -112,8 +110,14 @@ public class PackageTool extends ToolBase {
       reason =
           "We really need to print the stacktrace here, otherwise "
               + "there shall be little else information to debug problems. Other SolrCLI tools "
-              + "don't print stack traces, hence special treatment is needed here.")
+              + "don't print stack traces, hence special treatment is needed here."
+              + "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")
   public void runImpl(CommandLine cli) throws Exception {
+
+    // Need a logging free, clean output going through to the user.
+    Level oldLevel = LoggerContext.getContext(false).getRootLogger().getLevel();
+    Configurator.setRootLevel(Level.OFF);
+
     try {
       String solrUrl = CLIUtils.normalizeSolrUrl(cli);
       String zkHost = CLIUtils.getZkHost(cli);
@@ -126,7 +130,7 @@ public class PackageTool extends ToolBase {
       String cmd = cli.getArgs()[0];
 
       try (SolrClient solrClient = CLIUtils.getSolrClient(cli, true)) {
-        packageManager = new PackageManager(solrClient, solrUrl, zkHost);
+        packageManager = new PackageManager(runtime, solrClient, solrUrl, zkHost);
         try {
           repositoryManager = new RepositoryManager(solrClient, packageManager);
 
@@ -282,6 +286,9 @@ public class PackageTool extends ToolBase {
       // of brevity. Package tool should surely print the full stacktrace!
       ex.printStackTrace();
       throw ex;
+    } finally {
+      // Restore the old logging level
+      Configurator.setRootLevel(oldLevel);
     }
   }
 

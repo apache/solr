@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -279,14 +278,14 @@ public class SolrPackageLoader implements Closeable {
           throw new RuntimeException("Cannot load package: " + errs);
         }
         for (String file : version.files) {
-          paths.add(coreContainer.getFileStore().getRealpath(file));
+          paths.add(coreContainer.getFileStore().getRealPath(file));
         }
 
         loader =
             new PackageResourceLoader(
                 "PACKAGE_LOADER: " + parent.name() + ":" + version,
                 paths,
-                Paths.get(coreContainer.getSolrHome()),
+                coreContainer.getSolrHome(),
                 coreContainer.getResourceLoader().getClassLoader());
       }
 

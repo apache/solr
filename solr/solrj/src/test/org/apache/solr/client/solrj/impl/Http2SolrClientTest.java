@@ -17,24 +17,29 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
+import static org.hamcrest.core.StringContains.containsStringIgnoringCase;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -44,7 +49,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
   @Override
   protected String expectedUserAgent() {
-    return "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
+    return "Solr[" + Http2SolrClient.class.getName() + "] " + SolrVersion.LATEST_STRING;
   }
 
   @Override
@@ -69,7 +74,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
-      assertTrue(e.getMessage().contains("timeout") || e.getMessage().contains("Timeout"));
+      assertIsTimeout(e);
     }
   }
 
@@ -100,7 +105,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
-      assertTrue(e.getMessage().contains("timeout") || e.getMessage().contains("Timeout"));
+      assertIsTimeout(e);
     }
   }
 
@@ -147,6 +152,8 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", MUST_ENCODE);
+    q.setParam("case_sensitive_param", "lowercase");
+    q.setParam("CASE_SENSITIVE_PARAM", "uppercase");
     Http2SolrClient.Builder b =
         new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE);
     if (rp != null) {
@@ -155,7 +162,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client = b.build()) {
       client.query(q, method);
       assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+          client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
     } catch (SolrClient.RemoteSolrException ignored) {
     }
   }
@@ -238,8 +245,6 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         client.deleteById("id");
       } catch (SolrClient.RemoteSolrException ignored) {
       }
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
     }
@@ -258,8 +263,6 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         client.deleteByQuery("*:*");
       } catch (SolrClient.RemoteSolrException ignored) {
       }
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
     }
@@ -291,7 +294,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url)
             .withDefaultCollection(DEFAULT_CORE)
-            .withRequestWriter(new RequestWriter())
+            .withRequestWriter(new XMLRequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build()) {
       testUpdate(client, WT.XML, "application/xml; charset=UTF-8", MUST_ENCODE);
@@ -304,8 +307,8 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url)
             .withDefaultCollection(DEFAULT_CORE)
-            .withRequestWriter(new BinaryRequestWriter())
-            .withResponseParser(new BinaryResponseParser())
+            .withRequestWriter(new JavaBinRequestWriter())
+            .withResponseParser(new JavaBinResponseParser())
             .build()) {
       testUpdate(client, WT.JAVABIN, "application/javabin", MUST_ENCODE);
     }
@@ -512,8 +515,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     } finally {
       System.clearProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS);
       System.clearProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
-      PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(
-          new MapSolrParams(new HashMap<>()));
+      PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(SolrParams.of());
     }
   }
 
@@ -654,25 +656,77 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testIdleTimeoutWithHttpClient() {
+  public void testIdleTimeoutWithHttpClient() throws Exception {
+    String url = getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
     try (Http2SolrClient oldClient =
-        new Http2SolrClient.Builder("baseSolrUrl")
-            .withIdleTimeout(5000, TimeUnit.MILLISECONDS)
+        new Http2SolrClient.Builder(url)
+            .withRequestTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
+            .withIdleTimeout(100, TimeUnit.MILLISECONDS)
             .build()) {
+
       try (Http2SolrClient onlyBaseUrlChangedClient =
-          new Http2SolrClient.Builder("newBaseSolrUrl").withHttpClient(oldClient).build()) {
+          new Http2SolrClient.Builder(url).withHttpClient(oldClient).build()) {
         assertEquals(oldClient.getIdleTimeout(), onlyBaseUrlChangedClient.getIdleTimeout());
         assertEquals(oldClient.getHttpClient(), onlyBaseUrlChangedClient.getHttpClient());
       }
+
+      // too little time to succeed
+      QueryRequest req = new QueryRequest();
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      assertIsTimeout(expectThrows(SolrServerException.class, () -> oldClient.request(req)));
+
+      int newIdleTimeoutMs = 10 * 1000; // enough time to succeed
       try (Http2SolrClient idleTimeoutChangedClient =
-          new Http2SolrClient.Builder("baseSolrUrl")
+          new Http2SolrClient.Builder(url)
               .withHttpClient(oldClient)
-              .withIdleTimeout(3000, TimeUnit.MILLISECONDS)
+              .withIdleTimeout(newIdleTimeoutMs, TimeUnit.MILLISECONDS)
               .build()) {
-        assertFalse(oldClient.getIdleTimeout() == idleTimeoutChangedClient.getIdleTimeout());
-        assertEquals(3000, idleTimeoutChangedClient.getIdleTimeout());
+        assertNotEquals(oldClient.getIdleTimeout(), idleTimeoutChangedClient.getIdleTimeout());
+        assertEquals(newIdleTimeoutMs, idleTimeoutChangedClient.getIdleTimeout());
+        NamedList<Object> response = idleTimeoutChangedClient.request(req);
+        try (InputStream is = (InputStream) response.get("stream")) {
+          assertEquals("0123456789", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+        }
       }
     }
+  }
+
+  @Test
+  public void testRequestTimeoutWithHttpClient() throws Exception {
+    String url = getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
+    try (Http2SolrClient oldClient =
+        new Http2SolrClient.Builder(url)
+            .withIdleTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
+            .withRequestTimeout(100, TimeUnit.MILLISECONDS)
+            .build()) {
+
+      try (Http2SolrClient onlyBaseUrlChangedClient =
+          new Http2SolrClient.Builder(url).withHttpClient(oldClient).build()) {
+        // Client created with the same HTTP client should have the same behavior
+        assertEquals(oldClient.getHttpClient(), onlyBaseUrlChangedClient.getHttpClient());
+      }
+
+      // too little time to succeed
+      QueryRequest req = new QueryRequest();
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      assertIsTimeout(expectThrows(SolrServerException.class, () -> oldClient.request(req)));
+
+      int newRequestTimeoutMs = 10 * 1000; // enough time to succeed
+      try (Http2SolrClient requestTimeoutChangedClient =
+          new Http2SolrClient.Builder(url)
+              .withHttpClient(oldClient)
+              .withRequestTimeout(newRequestTimeoutMs, TimeUnit.MILLISECONDS)
+              .build()) {
+        NamedList<Object> response = requestTimeoutChangedClient.request(req);
+        try (InputStream is = (InputStream) response.get("stream")) {
+          assertEquals("0123456789", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+        }
+      }
+    }
+  }
+
+  private static void assertIsTimeout(Throwable t) {
+    assertThat(t.getMessage(), containsStringIgnoringCase("Timeout"));
   }
 
   /* Missed tests : - set cookies via interceptor - invariant params - compression */

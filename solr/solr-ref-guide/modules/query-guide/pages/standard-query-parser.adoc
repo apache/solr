@@ -154,6 +154,8 @@ This will match terms like roams & foam - but not foams since it has an edit dis
 
 IMPORTANT: In many cases, stemming (reducing terms to a common stem) can produce similar effects to fuzzy searches and wildcard searches.
 
+If more advanced fuzzy search options are required, such as `prefixLength` or `maxExpansions`, these can be enabled via the xref:other-parsers.adoc#fuzzy-query-parser[fuzzy query parser].
+
 === Proximity Searches
 
 A proximity search looks for terms that are within a specific distance from one another.
@@ -438,7 +440,7 @@ There is no limitation on the number of terms that match (as there was in past v
 
 === Specifying Dates and Times
 
-Queries against date based fields must use the xref:indexing-guide:date-formatting-math.adoc[appropriate date formating].
+Queries against date based fields must use the xref:indexing-guide:date-formatting-math.adoc[appropriate date formatting].
 Queries for exact date values will require quoting or escaping since `:` is the parser syntax used to denote a field query:
 
 * `createdate:1976-03-06T23\:59\:59.999Z`

@@ -31,9 +31,6 @@ public interface CollectionAdminParams {
 
   String ROLE = "role";
 
-  /** Predefined system collection name. */
-  String SYSTEM_COLL = ".system";
-
   /**
    * A parameter to specify list of Solr nodes to be used (e.g. for collection creation or restore
    * operation).

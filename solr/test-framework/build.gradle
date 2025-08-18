@@ -32,6 +32,7 @@ dependencies {
 
   api project(':solr:core')
   api project(':solr:solrj')
+  api project(':solr:api')
   implementation project(':solr:solrj-zookeeper')
 
   api libs.apache.lucene.testframework
@@ -65,16 +66,17 @@ dependencies {
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
   implementation libs.dropwizard.metrics.core
-  implementation libs.dropwizard.metrics.jetty10
+  implementation libs.dropwizard.metrics.jetty12.ee10
   implementation libs.commonscli.commonscli
   permitUnusedDeclared libs.commonscli.commonscli
   implementation libs.apache.httpcomponents.httpclient
   implementation libs.apache.httpcomponents.httpcore
   implementation libs.opentelemetry.api
 
-  implementation libs.eclipse.jetty.toolchain.servletapi
+  implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server
-  api libs.eclipse.jetty.servlet
+  implementation libs.eclipse.jetty.session
+  api libs.eclipse.jetty.ee10.servlet
   implementation libs.eclipse.jetty.util
   implementation libs.eclipse.jetty.alpnserver
   runtimeOnly(libs.eclipse.jetty.alpnjavaserver, {

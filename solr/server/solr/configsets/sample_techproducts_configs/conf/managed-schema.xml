@@ -132,7 +132,6 @@
    -->
    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
 
-   <field name="pre" type="preanalyzed" indexed="true" stored="true"/>
    <field name="sku" type="text_en_splitting_tight" indexed="true" stored="true" omitNorms="true"/>
    <field name="name" type="text_general" indexed="true" stored="true" uninvertible="true"/>
    <field name="manu" type="text_gen_sort" indexed="true" stored="true" omitNorms="true" multiValued="false" useDocValuesAsStored="true"/>
@@ -1181,13 +1180,6 @@
       </analyzer>
     </fieldType>
 
-    <!-- Pre-analyzed field type, allows inserting arbitrary token streams and stored values. -->
-    <fieldType name="preanalyzed" class="solr.PreAnalyzedField">
-      <!-- PreAnalyzedField's builtin index analyzer just decodes the pre-analyzed token stream. -->
-      <analyzer type="query">
-        <tokenizer name="whitespace"/>
-      </analyzer>
-    </fieldType>
 
   <!-- Similarity is the scoring routine for each document vs. a query.
        A custom Similarity or SimilarityFactory may be specified here, but

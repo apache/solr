@@ -113,7 +113,6 @@ task buildLocalAntoraYaml {
         props.putAll([
             ["dep_version_commons_codec", libs.versions.commons.codec],
             ["dep_version_dropwizard", libs.versions.dropwizard.metrics],
-            ["dep_version_hadoop", libs.versions.apache.hadoop.asProvider()],
             ["dep_version_log4j", libs.versions.apache.log4j],
             ["dep_version_opennlp", libs.versions.apache.opennlp],
             ["dep_version_tika", libs.versions.apache.tika],
@@ -277,7 +276,7 @@ task startUIBuildDir(type: Copy) {
     group = 'Site - UI'
     dependsOn tasks.downloadDefaultUITemplate
 
-    // Copy the antora latest default ui into the root folder, to mimick a new checkout of the default ui
+    // Copy the antora latest default ui into the root folder, to mimic a new checkout of the default ui
     with {
         from "${project.ext.nodeProjectDir}/node_modules/@antora/ui-default"
         duplicatesStrategy = 'EXCLUDE'
@@ -407,7 +406,7 @@ task buildLocalAntoraSite(type: NpxTask) {
         "--fetch"
     ] + extraArgs
 
-    environment = ["SITE_SEARCH_ENABLED": "true"]
+    environment = ["SITE_SEARCH_ENABLED": "true", "MATOMO_ENABLED": "false"]
 
     inputs.files(fileTree(project.ext.siteStagingDir))
     inputs.property("Antora version", libs.versions.antora.asProvider().get())
@@ -502,7 +501,7 @@ task buildOfficialSite(type: NpxTask) {
         officialPlaybook,
     ] + extraArgs
 
-    environment = ["SITE_SEARCH_ENABLED": "true"]
+    environment = ["SITE_SEARCH_ENABLED": "true", "MATOMO_ENABLED": "true"]
 
     inputs.files(officialPlaybook)
     inputs.property("Antora version", libs.versions.antora.asProvider().get())

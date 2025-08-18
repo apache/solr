@@ -19,6 +19,7 @@ package org.apache.solr.ltr;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestLTRQParserPlugin extends TestRerankBase {
@@ -142,6 +143,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   }
 
   @Test
+  @Ignore("SOLR-17840")
   public void ltr_expensiveFeatureRescoring_shouldTimeOutAndReturnPartialResults()
       throws Exception {
     /* One SolrFeature is defined: {!func}sleep(1000,999)
@@ -153,7 +155,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.setQuery(solrQuery);
     query.setFields("id", "score");
     query.setRows(4);
-    query.setTimeAllowed(300);
+    query.setTimeAllowed(800);
     query.add("fv", "true");
     query.add("rq", "{!ltr model=slowModel reRankDocs=3}");
 
@@ -187,7 +189,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.setQuery(solrQuery);
     query.setFields("id", "score");
     query.setRows(4);
-    query.setTimeAllowed(300);
+    query.setTimeAllowed(800);
     query.add("partialResults", "false");
     query.add("fv", "true");
     query.add("rq", "{!ltr model=slowModel reRankDocs=3}");

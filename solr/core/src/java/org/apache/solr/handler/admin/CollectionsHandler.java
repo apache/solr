@@ -805,7 +805,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
           final NamedList<Object> status = new NamedList<>();
           if (coreContainer.getDistributedCollectionCommandRunner().isEmpty()) {
-            if (zkController.getOverseerCompletedMap().contains(requestId)) {
+            if (zkController.getOverseerRunningMap().contains(requestId)) {
+              addStatusToResponse(status, RUNNING, "found [" + requestId + "] in running tasks");
+            } else if (zkController.getOverseerCompletedMap().contains(requestId)) {
               final byte[] mapEntry = zkController.getOverseerCompletedMap().get(requestId);
               rsp.getValues()
                   .addAll(OverseerSolrResponseSerializer.deserialize(mapEntry).getResponse());
@@ -816,8 +818,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               rsp.getValues()
                   .addAll(OverseerSolrResponseSerializer.deserialize(mapEntry).getResponse());
               addStatusToResponse(status, FAILED, "found [" + requestId + "] in failed tasks");
-            } else if (zkController.getOverseerRunningMap().contains(requestId)) {
-              addStatusToResponse(status, RUNNING, "found [" + requestId + "] in running tasks");
             } else if (h.overseerCollectionQueueContains(requestId)) {
               addStatusToResponse(
                   status, SUBMITTED, "found [" + requestId + "] in submitted tasks");
@@ -975,7 +975,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CLUSTERSTATUS,
         (req, rsp, h) -> {
           new ClusterStatus(h.coreContainer.getZkController().getZkStateReader(), req.getParams())
-              .getClusterStatus(rsp.getValues());
+              .getClusterStatus(rsp.getValues(), req.getHttpSolrCall().getUserAgentSolrVersion());
           return null;
         }),
     ADDREPLICAPROP_OP(

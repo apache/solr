@@ -31,13 +31,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -47,12 +45,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.QueryTimeout;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -77,16 +74,15 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldCollectorManager;
 import org.apache.lucene.search.TopFieldDocs;
-import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.TotalHits.Relation;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -96,6 +92,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -109,7 +107,6 @@ import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -137,15 +134,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   public static final String STATS_SOURCE = "org.apache.solr.stats_source";
   public static final String STATISTICS_KEY = "searcher";
+
+  public static final String EXITABLE_READER_PROPERTY = "solr.useExitableDirectoryReader";
+
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
   private static final Map<String, SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
   private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
 
-  // If you find this useful, let us know in dev@solr.apache.org.  Likely to be removed eventually.
-  private static final boolean useExitableDirectoryReader =
-      Boolean.getBoolean("solr.useExitableDirectoryReader");
+  public static final int EXECUTOR_MAX_CPU_THREADS = Runtime.getRuntime().availableProcessors();
 
   private final SolrCore core;
   private final IndexSchema schema;
@@ -180,7 +178,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   @SuppressWarnings({"rawtypes"})
   private final SolrCache[] cacheList;
 
-  private DirectoryFactory directoryFactory;
+  private final DirectoryFactory directoryFactory;
 
   private final LeafReader leafReader;
   // only for addIndexes etc (no fieldcache)
@@ -191,7 +189,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private final StatsCache statsCache;
 
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private SolrMetricsContext solrMetricsContext;
 
   private static DirectoryReader getReader(
@@ -206,47 +203,59 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
 
+  private static final class QueryLimitsTimeout implements QueryTimeout {
+    private static final QueryLimitsTimeout INSTANCE = new QueryLimitsTimeout();
+
+    private QueryLimitsTimeout() {}
+
+    @Override
+    public boolean shouldExit() {
+      return QueryLimits.getCurrentLimits().shouldExit();
+    }
+
+    @Override
+    public String toString() {
+      return QueryLimits.getCurrentLimits().limitStatusMessage();
+    }
+  }
+
   // TODO: wrap elsewhere and return a "map" from the schema that overrides get() ?
   // this reader supports reopen
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader)
       throws IOException {
     assert reader != null;
     reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
-    if (useExitableDirectoryReader) { // SOLR-16693 legacy; may be removed.  Probably inefficient.
-      reader = ExitableDirectoryReader.wrap(reader, QueryLimits.getCurrentLimits());
+    // see SOLR-16693 and SOLR-17831 for more details
+    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY, Boolean.FALSE)) {
+      reader = ExitableDirectoryReader.wrap(reader, QueryLimitsTimeout.INSTANCE);
     }
     return reader;
   }
 
   /**
-   * Create an {@link ExecutorService} to be used by the Lucene {@link IndexSearcher#getExecutor()}.
-   * Shared across the whole node because it's a machine CPU resource.
+   * Create an {@link ExecutorService} to be used by the Lucene {@link
+   * IndexSearcher#getTaskExecutor()}. Shared across the whole node because it's a machine CPU
+   * resource.
    */
   public static ExecutorService initCollectorExecutor(NodeConfig cfg) {
-    final int indexSearcherExecutorThreads = cfg.getIndexSearcherExecutorThreads();
-    if (0 >= indexSearcherExecutorThreads) {
+    int indexSearcherExecutorThreads = cfg.getIndexSearcherExecutorThreads();
+    if (indexSearcherExecutorThreads == 0) {
       return null;
+    } else if (indexSearcherExecutorThreads < 0) {
+      // Treat a negative value as "unlimited" and set it to the value number of available CPU
+      // threads
+      indexSearcherExecutorThreads = EXECUTOR_MAX_CPU_THREADS;
     }
 
+    // note that Lucene will catch a RejectedExecutionException to just run the task.
+    //  Therefore, we shouldn't worry too much about the queue size.
     return new MDCAwareThreadPoolExecutor(
         indexSearcherExecutorThreads,
         indexSearcherExecutorThreads,
         0L,
         TimeUnit.MILLISECONDS,
-        new SynchronousQueue<>(true) { // fairness
-          // a hack to force ThreadPoolExecutor to block if threads are busy
-          // -- otherwise it will throw RejectedExecutionException; unacceptable
-          @Override
-          public boolean offer(Runnable runnable) { // is supposed to not block, but we do anyway
-            try {
-              put(runnable); // blocks
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-              throw new RuntimeException("interrupted submitting to search multi-threaded pool", e);
-            }
-            return true;
-          }
-        },
+        new LinkedBlockingQueue<>(
+            EnvUtils.getPropertyAsInteger("solr.search.multiThreaded.queueSize", 1000)),
         new SolrNamedThreadFactory("searcherCollector")) {
 
       @Override
@@ -293,17 +302,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
     }
 
-    final boolean terminateEarly = cmd.getTerminateEarly();
-    if (terminateEarly) {
-      collector = new EarlyTerminatingCollector(collector, cmd.getLen());
+    if (cmd.shouldEarlyTerminateSearch()) {
+      collector = new EarlyTerminatingCollector(collector, cmd.getMaxHitsAllowed());
     }
 
-    final long timeAllowed = cmd.getTimeAllowed();
+    /*    final long timeAllowed = cmd.getTimeAllowed();
     if (timeAllowed > 0) {
-      collector =
-          new TimeLimitingCollector(
-              collector, TimeLimitingCollector.getGlobalCounter(), timeAllowed);
-    }
+      setTimeout(new QueryTimeoutImpl(timeAllowed));
+    }*/
 
     if (postFilter != null) {
       postFilter.setLastDelegate(collector);
@@ -319,28 +325,31 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     try {
-      super.search(query, collector);
-    } catch (TimeLimitingCollector.TimeExceededException
-        | ExitableDirectoryReader.ExitingReaderException
+      try {
+        super.search(query, collector);
+      } finally {
+        // The complete() method can use the collectors, so this needs to be surrounded by the same
+        // catch logic that limit collecting
+        if (collector instanceof DelegatingCollector) {
+          ((DelegatingCollector) collector).complete();
+        }
+      }
+    } catch (ExitableDirectoryReader.ExitingReaderException
         | CancellableCollector.QueryCancelledException x) {
       log.warn("Query: [{}]; ", query, x);
       qr.setPartialResults(true);
     } catch (EarlyTerminatingCollectorException etce) {
-      if (collector instanceof DelegatingCollector) {
-        ((DelegatingCollector) collector).complete();
-      }
-      throw etce;
+      qr.setPartialResults(true);
+      qr.setMaxHitsTerminatedEarly(true);
+      qr.setPartialResultsDetails(etce.getMessage());
+      qr.setApproximateTotalHits(etce.getApproximateTotalHits(reader.maxDoc()));
     } finally {
       if (earlyTerminatingSortingCollector != null) {
         qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());
       }
-
       if (cmd.isQueryCancellable()) {
         core.getCancellableQueryTracker().removeCancellableQuery(cmd.getQueryID());
       }
-    }
-    if (collector instanceof DelegatingCollector) {
-      ((DelegatingCollector) collector).complete();
     }
 
     return collector;
@@ -773,11 +782,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return qr;
   }
 
-  @Override
+  /*@Override
+  TBD . This is overridden to exit the query when limits are reached
   protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
       throws IOException {
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-    if (useExitableDirectoryReader || !queryLimits.isLimitsEnabled()) {
+    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY, Boolean.FALSE)
+        || !queryLimits.isLimitsEnabled()) {
       // no timeout.  Pass through to super class
       super.search(leaves, weight, collector);
     } else {
@@ -796,18 +807,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
       }.searchWithTimeout();
     }
-  }
+  }*/
 
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.
    *
    * @see SolrDocumentFetcher
    */
-  @Override
+  /* @Override
   @Deprecated
   public Document doc(int docId) throws IOException {
     return doc(docId, (Set<String>) null);
-  }
+  }*/
 
   /**
    * Visit a document's fields using a {@link StoredFieldVisitor}. This method does not currently
@@ -816,11 +827,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @see IndexReader#document(int, StoredFieldVisitor)
    * @see SolrDocumentFetcher
    */
-  @Override
+  /*@Override
   @Deprecated
   public final void doc(int docId, StoredFieldVisitor visitor) throws IOException {
     getDocFetcher().doc(docId, visitor);
-  }
+  }*/
 
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.
@@ -830,11 +841,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *
    * @see SolrDocumentFetcher
    */
-  @Override
-  @Deprecated
-  public final Document doc(int i, Set<String> fields) throws IOException {
-    return getDocFetcher().doc(i, fields);
-  }
+  /*
+    @Override
+    @Deprecated
+    public final Document doc(int i, Set<String> fields) throws IOException {
+      return getDocFetcher().doc(i, fields);
+    }
+  */
 
   /** expert: internal API, subject to change */
   public SolrCache<String, UnInvertedField> getFieldValueCache() {
@@ -1390,7 +1403,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       for (int subindex = 0; subindex < numSubs; subindex++) {
         MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
         if (sub.postingsEnum == null) continue;
-        int base = sub.slice.start;
+        int base = sub.slice.start();
         int docid;
 
         if (largestPossible > docs.length) {
@@ -1800,7 +1813,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (scoreModeUsed == ScoreMode.COMPLETE || scoreModeUsed == ScoreMode.COMPLETE_NO_SCORES) {
       return TotalHits.Relation.EQUAL_TO;
     } else {
-      return topDocs.totalHits.relation;
+      return topDocs.totalHits.relation();
     }
   }
 
@@ -1862,14 +1875,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (null == cmd.getSort()) {
       assert null == cmd.getCursorMark() : "have cursor but no sort";
-      return TopScoreDocCollector.create(len, minNumFound);
+      return new TopScoreDocCollectorManager(len, minNumFound).newCollector();
     } else {
       // we have a sort
       final Sort weightedSort = weightSort(cmd.getSort());
       final CursorMark cursor = cmd.getCursorMark();
 
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
-      return TopFieldCollector.create(weightedSort, len, searchAfter, minNumFound);
+      return new TopFieldCollectorManager(weightedSort, len, searchAfter, minNumFound)
+          .newCollector();
     }
   }
 
@@ -1878,11 +1892,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int last = len;
     if (last < 0 || last > maxDoc()) last = maxDoc();
     final int lastDocRequested = last;
-    int nDocsReturned = 0;
     int totalHits;
-    float maxScore;
-    int[] ids;
-    float[] scores;
+    final float maxScore;
+    final DocList docList;
 
     final boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
 
@@ -1899,18 +1911,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final Collector collector;
 
       if (!needScores) {
-        collector =
-            new SimpleCollector() {
-              @Override
-              public void collect(int doc) {
-                numHits[0]++;
-              }
-
-              @Override
-              public ScoreMode scoreMode() {
-                return ScoreMode.COMPLETE_NO_SCORES;
-              }
-            };
+        collector = new TotalHitCountCollector();
       } else {
         collector =
             new SimpleCollector() {
@@ -1937,13 +1938,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
-      ids = new int[nDocsReturned];
-      scores = new float[nDocsReturned];
       totalHits = numHits[0];
+      if (collector instanceof TotalHitCountCollector) {
+        totalHits = ((TotalHitCountCollector) collector).getTotalHits();
+      } else {
+        totalHits = numHits[0];
+      }
       maxScore = totalHits > 0 ? topscore[0] : 0.0f;
+      docList =
+          new DocSlice(
+              0, 0, new int[0], new float[0], totalHits, maxScore, TotalHits.Relation.EQUAL_TO);
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
-      hitsRelation = Relation.EQUAL_TO;
     } else {
       if (log.isDebugEnabled()) {
         log.debug("calling from 2, query: {}", query.getClass());
@@ -1973,32 +1979,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         log.trace("MULTI-THREADED search, using CollectorManager int getDocListNC");
         final MultiThreadedSearcher.SearchResult searchResult =
             new MultiThreadedSearcher(this)
-                .searchCollectorManagers(len, cmd, query, true, needScores, false);
+                .searchCollectorManagers(len, cmd, query, true, needScores, false, qr);
         scoreModeUsed = searchResult.scoreMode;
 
         MultiThreadedSearcher.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
         totalHits = topDocsResult.totalHits;
         topDocs = topDocsResult.topDocs;
-
         maxScore = searchResult.getMaxScore(totalHits);
       }
 
       hitsRelation = populateScoresIfNeeded(cmd, needScores, topDocs, query, scoreModeUsed);
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
 
-      nDocsReturned = topDocs.scoreDocs.length;
-      ids = new int[nDocsReturned];
-      scores = needScores ? new float[nDocsReturned] : null;
-      for (int i = 0; i < nDocsReturned; i++) {
-        ScoreDoc scoreDoc = topDocs.scoreDocs[i];
-        ids[i] = scoreDoc.doc;
-        if (scores != null) scores[i] = scoreDoc.score;
-      }
+      int nDocsReturned = topDocs.scoreDocs.length;
+      int sliceLen = Math.min(lastDocRequested, nDocsReturned);
+      docList =
+          new TopDocsSlice(0, sliceLen, topDocs, totalHits, needScores, maxScore, hitsRelation);
     }
-
-    int sliceLen = Math.min(lastDocRequested, nDocsReturned);
-    if (sliceLen < 0) sliceLen = 0;
-    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, hitsRelation));
+    qr.setDocList(docList);
   }
 
   // any DocSet returned is for the query only, without any filtering... that way it may
@@ -2011,9 +2009,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final int nDocsReturned;
     final int totalHits;
     final float maxScore;
-    final int[] ids;
-    final float[] scores;
     final DocSet set;
+    final DocList docList;
 
     final boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
     final int maxDoc = maxDoc();
@@ -2062,11 +2059,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       set = DocSetUtil.getDocSet(setCollector, this);
 
-      nDocsReturned = 0;
-      ids = new int[nDocsReturned];
-      scores = new float[nDocsReturned];
-      totalHits = set.size();
-      maxScore = totalHits > 0 ? topscore[0] : 0.0f;
+      maxScore = set.size() > 0 ? topscore[0] : 0.0f;
+      docList =
+          new DocSlice(
+              0, 0, new int[0], new float[0], set.size(), maxScore, TotalHits.Relation.EQUAL_TO);
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
@@ -2102,47 +2098,25 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } else {
         log.trace("MULTI-THREADED search, using CollectorManager in getDocListAndSetNC");
 
-        boolean needMaxScore = needScores;
         MultiThreadedSearcher.SearchResult searchResult =
             new MultiThreadedSearcher(this)
-                .searchCollectorManagers(len, cmd, query, true, needMaxScore, true);
+                .searchCollectorManagers(len, cmd, query, true, needScores, true, qr);
         MultiThreadedSearcher.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
         totalHits = topDocsResult.totalHits;
         topDocs = topDocsResult.topDocs;
         maxScore = searchResult.getMaxScore(totalHits);
         set = new BitDocSet(searchResult.getFixedBitSet());
-
-        // TODO: Is this correct?
-        // hitsRelation = populateScoresIfNeeded(cmd, needScores, topDocs, query,
-        // searchResult.scoreMode);
-
-        // nDocsReturned = topDocs.scoreDocs.length;
-        // TODO: Is this correct?
-        // hitsRelation = topDocs.totalHits.relation;
-        //   } else {
-        //    hitsRelation = Relation.EQUAL_TO;
-        //   }
-
+        // TODO: Think about using ScoreMode from searchResult down below
       }
-
-      populateScoresIfNeeded(cmd, needScores, topDocs, query, ScoreMode.COMPLETE);
+      final Relation relation =
+          populateScoresIfNeeded(cmd, needScores, topDocs, query, ScoreMode.COMPLETE);
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
       nDocsReturned = topDocs.scoreDocs.length;
-
-      ids = new int[nDocsReturned];
-      scores = needScores ? new float[nDocsReturned] : null;
-      for (int i = 0; i < nDocsReturned; i++) {
-        ScoreDoc scoreDoc = topDocs.scoreDocs[i];
-        ids[i] = scoreDoc.doc;
-        if (scores != null) scores[i] = scoreDoc.score;
-      }
+      int sliceLen = Math.min(lastDocRequested, nDocsReturned);
+      docList = new TopDocsSlice(0, sliceLen, topDocs, totalHits, needScores, maxScore, relation);
     }
 
-    int sliceLen = Math.min(lastDocRequested, nDocsReturned);
-    if (sliceLen < 0) sliceLen = 0;
-
-    qr.setDocList(
-        new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, TotalHits.Relation.EQUAL_TO));
+    qr.setDocList(docList);
     // TODO: if we collect results before the filter, we just need to intersect with
     // that filter to generate the DocSet for qr.setDocSet()
     qr.setDocSet(set);
@@ -2405,10 +2379,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       ids[i] = scoreDoc.doc;
     }
 
-    assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+    assert topDocs.totalHits.relation() == TotalHits.Relation.EQUAL_TO;
     qr.getDocListAndSet().docList =
         new DocSlice(
-            0, nDocsReturned, ids, null, topDocs.totalHits.value, 0.0f, topDocs.totalHits.relation);
+            0,
+            nDocsReturned,
+            ids,
+            null,
+            topDocs.totalHits.value(),
+            0.0f,
+            topDocs.totalHits.relation());
     populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
   }
 
@@ -2521,17 +2501,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         log.debug("autowarming [{}] from [{}]\n\t{}", this, old, old.cacheList[i]);
       }
 
-      final SolrQueryRequest req =
-          new LocalSolrQueryRequest(core, params) {
-            @Override
-            public SolrIndexSearcher getSearcher() {
-              return SolrIndexSearcher.this;
-            }
-
-            @Override
-            public void close() {}
-          };
-
+      final SolrQueryRequest req = SolrQueryRequest.wrapSearcher(SolrIndexSearcher.this, params);
       final SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       try {
@@ -2593,24 +2563,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public IndexFingerprint getIndexFingerprint(long maxVersion) throws IOException {
     final SolrIndexSearcher searcher = this;
-    final AtomicReference<IOException> exception = new AtomicReference<>();
-    try {
-      return searcher.getTopReaderContext().leaves().stream()
-          .map(
-              ctx -> {
-                try {
-                  return searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion);
-                } catch (IOException e) {
-                  exception.set(e);
-                  return null;
-                }
-              })
-          .filter(java.util.Objects::nonNull)
-          .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
-
-    } finally {
-      if (exception.get() != null) throw exception.get();
-    }
+    List<Callable<IndexFingerprint>> tasks =
+        searcher.getTopReaderContext().leaves().stream()
+            .map(
+                ctx ->
+                    (Callable<IndexFingerprint>)
+                        () -> searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion))
+            .collect(Collectors.toList());
+    return ExecutorUtil.submitAllAndAwaitAggregatingExceptions(
+            core.getCoreContainer().getIndexFingerprintExecutor(), tasks)
+        .stream()
+        .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
   }
 
   /////////////////////////////////////////////////////////////////////

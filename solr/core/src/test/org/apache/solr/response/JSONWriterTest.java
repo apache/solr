@@ -54,9 +54,9 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSimpleJson() throws IOException {
-    SolrQueryRequest req = req("q", "dummy", "indent", "off");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    QueryResponseWriter w = new JSONResponseWriter();
+    var req = req("q", "dummy", "indent", "off");
+    var rsp = new SolrQueryResponse();
+    var w = new JSONResponseWriter();
 
     StringWriter buf = new StringWriter();
 
@@ -355,8 +355,6 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
             "true",
             "isto",
             "42",
-            "amount",
-            "100,USD",
             "price",
             "3.14",
             "severity",
@@ -380,7 +378,6 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
             + "      \"uuid\":[\"6e2fb55b-dd42-4e2d-84ca-71a599403aa3\"],\n"
             + "      \"bsto\":[true],\n"
             + "      \"isto\":[42],\n"
-            + "      \"amount\":\"100,USD\",\n"
             + "      \"price\":3.14,\n"
             + "      \"severity\":\"High\",\n"
             + "      \"dateRange\":[\"[2024-03-01 TO 2024-03-31]\"],\n"

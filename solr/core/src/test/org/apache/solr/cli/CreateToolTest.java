@@ -17,10 +17,6 @@
 
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.findTool;
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-
-import org.apache.commons.cli.CommandLine;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
@@ -54,13 +50,6 @@ public class CreateToolTest extends SolrCloudTestCase {
       "--verbose"
     };
 
-    assertEquals(0, runTool(args));
-  }
-
-  private int runTool(String[] args) throws Exception {
-    Tool tool = findTool(args);
-    assertTrue(tool instanceof CreateTool);
-    CommandLine cli = parseCmdLine(tool, args);
-    return tool.runTool(cli);
+    assertEquals(0, CLITestHelper.runTool(args, CreateTool.class));
   }
 }
