@@ -22,7 +22,6 @@ import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
 
 import com.codahale.metrics.Gauge;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
@@ -2679,33 +2678,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         obs -> {
           try {
             obs.record(reader.maxDoc() - reader.numDocs(), baseAttributes);
-          } catch (Exception ignore) {
-          }
-        });
-    // reader identity (strings → attributes on a dummy value 1)
-    solrMetricsContext.observableLongGauge(
-        "solr_searcher_reader",
-        "Reader identity (as attribute)",
-        obs -> {
-          try {
-            obs.record(
-                1,
-                baseAttributes.toBuilder()
-                    .put(AttributeKey.stringKey("reader"), String.valueOf(reader))
-                    .build());
-          } catch (Exception ignore) {
-          }
-        });
-    solrMetricsContext.observableLongGauge(
-        "solr_searcher_reader_dir",
-        "Reader directory (as attribute)",
-        obs -> {
-          try {
-            obs.record(
-                1,
-                baseAttributes.toBuilder()
-                    .put(AttributeKey.stringKey("reader_dir"), String.valueOf(reader.directory()))
-                    .build());
           } catch (Exception ignore) {
           }
         });
