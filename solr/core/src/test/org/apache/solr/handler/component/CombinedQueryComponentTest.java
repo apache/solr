@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -194,5 +196,56 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
         "//result[@numFound='5']",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='1']");
+  }
+
+  /**
+   * Tests that using unsupported features with Combined Queries throws the expected exception.
+   *
+   * <p>This test case verifies that requests for Combined Queries that include either the
+   * 'cursorMark' or 'group' parameters.
+   */
+  @Test
+  public void testNonEnabledFeature() {
+    String combinedQueryStr =
+        "{\"queries\":"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
+            + "\"sort\":\"id asc\","
+            + "\"fields\":[\"id\",\"score\",\"title\"],"
+            + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
+    RuntimeException exceptionThrown =
+        expectThrows(
+            RuntimeException.class,
+            () ->
+                assertQ(
+                    req(
+                        CommonParams.JSON,
+                        combinedQueryStr,
+                        CommonParams.QT,
+                        "/search",
+                        "cursorMark",
+                        CURSOR_MARK_START)));
+    assertTrue(
+        exceptionThrown
+            .getCause()
+            .getMessage()
+            .contains("Unsupported functionality for Combined Queries."));
+    exceptionThrown =
+        expectThrows(
+            RuntimeException.class,
+            () ->
+                assertQ(
+                    req(
+                        CommonParams.JSON,
+                        combinedQueryStr,
+                        CommonParams.QT,
+                        "/search",
+                        "group",
+                        "true")));
+    assertTrue(
+        exceptionThrown
+            .getCause()
+            .getMessage()
+            .contains("Unsupported functionality for Combined Queries."));
   }
 }

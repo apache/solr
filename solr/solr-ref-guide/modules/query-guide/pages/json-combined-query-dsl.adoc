@@ -22,7 +22,7 @@ It is extending JSON Query DSL ultimately enabling Hybrid Search.
 
 [NOTE]
 ====
-This feature is currently unsupported for non-distributed and grouping query. Using Cursors is not advisable, as it may produce inconsistent results.
+This feature is currently unsupported for non-distributed query, grouping and Cursors.
 ====
 
 == Query DSL Structure

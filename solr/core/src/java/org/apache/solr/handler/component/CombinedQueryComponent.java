@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.CursorMarkParams;
+import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -127,6 +128,11 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
   public void prepare(ResponseBuilder rb) throws IOException {
     if (rb instanceof CombinedQueryResponseBuilder crb) {
       SolrParams params = crb.req.getParams();
+      if (params.get(CursorMarkParams.CURSOR_MARK_PARAM) != null
+          || params.getBool(GroupParams.GROUP, false)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Unsupported functionality for Combined Queries.");
+      }
       String[] queriesToCombineKeys = params.getParams(CombinerParams.COMBINER_QUERY);
       if (queriesToCombineKeys.length > maxCombinerQueries) {
         throw new SolrException(
@@ -161,10 +167,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       boolean setMaxHitsTerminatedEarly = false;
       List<QueryResult> queryResults = new ArrayList<>();
       for (ResponseBuilder rbNow : crb.responseBuilders) {
-        // propagating from global ResponseBuilder, so that if in case cursor is needed for
-        // retrieving the next batch of documents
-        // which might have duplicate results from the previous cursorMark as we are dealing with
-        // multiple queries
+        // Just a placeholder for future implementation for Cursors
         rbNow.setCursorMark(crb.getCursorMark());
         super.process(rbNow);
         DocListAndSet docListAndSet = rbNow.getResults();
@@ -213,7 +216,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                   ? 0
                   : crb.getResults().docList.matches());
       if (!crb.req.getParams().getBool(ShardParams.IS_SHARD, false)) {
-        // for non-distributed request
+        // for non-distributed request and future cursor improvement
         if (null != crb.getNextCursorMark()) {
           crb.rsp.add(
               CursorMarkParams.CURSOR_MARK_NEXT,
