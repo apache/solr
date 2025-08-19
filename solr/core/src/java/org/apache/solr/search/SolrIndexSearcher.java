@@ -114,6 +114,7 @@ import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -2604,17 +2605,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return solrMetricsContext;
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext solrMetricsContext, Attributes attributes, String scope) {
     var baseAttributes =
-        attributes.toBuilder()
-            .remove(AttributeKey.stringKey("scope"))
-            .put(CATEGORY_ATTR, Category.SEARCHER.toString())
-            .build();
-    solrMetricsContext.observableLongGauge(
-        "solr_searcher_name", "Searcher name (as attribute)", obs -> obs.record(1, baseAttributes));
+        attributes.toBuilder().put(CATEGORY_ATTR, Category.SEARCHER.toString()).build();
     // caching (boolean -> 0/1)
     solrMetricsContext.observableLongGauge(
         "solr_searcher_caching_enabled",
@@ -2623,30 +2618,27 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // warmupTime (ms)
     solrMetricsContext.observableLongGauge(
-        "solr_searcher_warmup_time_ms",
+        "solr_searcher_warmup_time",
         "Searcher warmup time (ms)",
-        obs -> obs.record(warmupTime, baseAttributes));
+        obs -> obs.record(warmupTime, baseAttributes),
+        OtelUnit.MILLISECONDS);
     // registeredAt (ms)
     solrMetricsContext.observableLongGauge(
-        "solr_searcher_registered_at_ms",
+        "solr_searcher_registered_at",
         "Searcher registered time (ms)",
-        obs -> obs.record(registerTime.getTime(), baseAttributes));
+        obs -> obs.record(registerTime.getTime(), baseAttributes),
+        OtelUnit.MILLISECONDS);
 
     // fullSortCount
-    solrMetricsContext.observableLongGauge(
+    solrMetricsContext.observableLongCounter(
         "solr_searcher_full_sort_count",
-        "Total full sorts",
-        obs -> obs.record(fullSortCount.sum(), baseAttributes));
-    // fullSortCount
-    solrMetricsContext.observableLongGauge(
-        "solr_searcher_full_sort_count",
-        "Total full sorts",
+        "Number of queries that required building a full DocList with sorting",
         obs -> obs.record(fullSortCount.sum(), baseAttributes));
 
     // skipSortCount
-    solrMetricsContext.observableLongGauge(
-        "solr_searcher_skip_sort_count",
-        "Total skip sorts",
+    solrMetricsContext.observableLongCounter(
+        "solr_searcher_skip_sort",
+        "Number of queries where Solr skipped building a full sorted DocList and instead returned results directly from the DocSet",
         obs -> obs.record(skipSortCount.sum(), baseAttributes));
     solrMetricsContext.observableLongGauge(
         "solr_searcher_live_docs_cache",
@@ -2654,12 +2646,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         obs -> {
           obs.record(
               liveDocsInsertsCount.sum(),
-              baseAttributes.toBuilder().put("type", "inserts").build());
+              baseAttributes.toBuilder().put(TYPE_ATTR, "inserts").build());
           obs.record(
-              liveDocsHitCount.sum(), baseAttributes.toBuilder().put("type", "hits").build());
+              liveDocsHitCount.sum(), baseAttributes.toBuilder().put(TYPE_ATTR, "hits").build());
           obs.record(
               liveDocsNaiveCacheHitCount.sum(),
-              baseAttributes.toBuilder().put("type", "naive_hits").build());
+              baseAttributes.toBuilder().put(TYPE_ATTR, "naive_hits").build());
         });
     // reader stats (numeric)
     solrMetricsContext.observableLongGauge(

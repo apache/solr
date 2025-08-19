@@ -138,7 +138,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     var registeredAtMetric =
         SolrMetricTestUtils.getGaugeDatapoint(
             h.getCore(),
-            "solr_core_registered_at_ms",
+            "solr_searcher_registered_at_milliseconds",
             SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
                 .label("category", "SEARCHER")
                 .build());
