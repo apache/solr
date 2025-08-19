@@ -1,4 +1,14 @@
 {
+//-------legend----------
+// 0  = string attribute
+// 1  = string node
+// 10 = boolean attribute
+// 11 = boolean node
+// 20 = int attrubute
+// 21 = int node
+// 30 = float attribute
+// 31 = float node
+//------------------------
   "updateHandler":{
     "autoCommit":{
       "maxDocs":20,
