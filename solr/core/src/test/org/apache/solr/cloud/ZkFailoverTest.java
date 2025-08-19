@@ -47,7 +47,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void resetWaitForZk() {
-    System.setProperty("solr.wait.for.zk", "30");
+    System.setProperty("solr.tests.wait.for.zk.seconds", "30");
   }
 
   public void testRestartZkWhenClusterDown() throws Exception {
