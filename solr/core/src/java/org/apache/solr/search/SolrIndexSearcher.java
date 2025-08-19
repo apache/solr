@@ -601,7 +601,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           Attributes.empty(),
           SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
-    // TODO SOLR-17458: Add Otel
     Attributes baseAttributes;
     if (core.getCoreContainer().isZooKeeperAware()) {
       baseAttributes =
@@ -2631,7 +2630,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // fullSortCount
     solrMetricsContext.observableLongCounter(
-        "solr_searcher_full_sort_count",
+        "solr_searcher_full_sort",
         "Number of queries that required building a full DocList with sorting",
         obs -> obs.record(fullSortCount.sum(), baseAttributes));
 
