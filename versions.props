@@ -12,6 +12,7 @@ com.github.stephenc.jcip:jcip-annotations=1.0-1
 com.google.cloud:google-cloud-bom=0.224.0
 com.google.errorprone:*=2.31.0
 com.google.guava:guava=32.1.3-jre
+com.google.protobuf:*=3.25.8
 com.google.re2j:re2j=1.7
 com.j256.simplemagic:simplemagic=1.17
 com.jayway.jsonpath:json-path=2.9.0
