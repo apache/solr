@@ -27,17 +27,6 @@ public class WeightedFragListBuilder extends HighlightingPluginBase implements S
     // If that ever changes, it should wrap them with defaults...
     // params = SolrParams.wrapDefaults(params, defaults)
 
-    numRequests.inc();
-
     return new org.apache.lucene.search.vectorhighlight.WeightedFragListBuilder();
-  }
-
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////////// SolrInfoMBeans methods ///////////////////////
-  ///////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getDescription() {
-    return "WeightedFragListBuilder";
   }
 }

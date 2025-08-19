@@ -473,7 +473,6 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     final BlockJoinParentQParserPlugin blockJoinParentQParserPlugin =
         new BlockJoinParentQParserPlugin();
     blockJoinParentQParserPlugin.init(null);
-    blockJoinParentQParserPlugin.close();
   }
 
   private static final String eParent[] =
