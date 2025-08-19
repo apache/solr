@@ -111,7 +111,6 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
@@ -2735,17 +2734,41 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             // skip recording if unavailable (no nullNumber in OTel)
           }
         });
+    var cacheBaseAttribute = Attributes.of(CATEGORY_ATTR, Category.CACHE.toString());
     // statsCache metrics
-    solrMetricsContext.gauge(
-        new MetricsMap(
-            map -> {
-              statsCache.getCacheMetrics().getSnapshot(map::putNoEx);
-              map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
-            }),
-        true,
-        "statsCache",
-        Category.CACHE.toString(),
-        scope);
+    solrMetricsContext.observableLongGauge(
+        "solr_searcher_stats_cache",
+        "Operation counts for the searcher stats cache, reported per operation type",
+        obs -> {
+          var cacheMetrics = statsCache.getCacheMetrics();
+          obs.record(
+              cacheMetrics.lookups.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "lookups").build());
+          obs.record(
+              cacheMetrics.missingGlobalFieldStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "missing_global_field_stats").build());
+          obs.record(
+              cacheMetrics.missingGlobalTermStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "missing_global_term_stats").build());
+          obs.record(
+              cacheMetrics.mergeToGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "merge_to_global_stats").build());
+          obs.record(
+              cacheMetrics.retrieveStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "retrieve_stats").build());
+          obs.record(
+              cacheMetrics.returnLocalStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "return_local_stats").build());
+          obs.record(
+              cacheMetrics.sendGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "send_global_stats").build());
+          obs.record(
+              cacheMetrics.useCachedGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "use_cached_global_stats").build());
+          obs.record(
+              cacheMetrics.receiveGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "receive_global_stats").build());
+        });
   }
 
   /**
