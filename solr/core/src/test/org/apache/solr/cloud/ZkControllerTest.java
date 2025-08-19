@@ -189,8 +189,8 @@ public class ZkControllerTest extends SolrCloudTestCase {
   public void testLiveNodeDataStored() throws Exception {
     Path zkDir = createTempDir("testLiveNodeDataStored");
     ZkTestServer server = new ZkTestServer(zkDir);
-    server.run();
     try {
+      server.run();
       CoreContainer cc = getCoreContainer();
       CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
 

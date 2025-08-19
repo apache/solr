@@ -1194,9 +1194,9 @@ public class ZkController implements Closeable {
     Map<NodeRoles.Role, String> roles = cc.nodeRoles.getRoles();
 
     List<SolrZkClient.CuratorOpBuilder> ops = new ArrayList<>(roles.size() + 1);
-    byte[] data = buildLiveNodeData();
 
-    ops.add(op -> op.create().withMode(CreateMode.EPHEMERAL).forPath(nodePath, data));
+    ops.add(
+        op -> op.create().withMode(CreateMode.EPHEMERAL).forPath(nodePath, buildLiveNodeData()));
 
     // Create the roles node as well
     roles.forEach(
@@ -1218,8 +1218,7 @@ public class ZkController implements Closeable {
     Map<NodeRoles.Role, String> roles = cc.nodeRoles.getRoles();
     props.put(LIVE_NODE_ROLES, roles);
 
-    ZkNodeProps zkProps = new ZkNodeProps(props);
-    return Utils.toJSON(zkProps.getProperties());
+    return Utils.toJSON(props);
   }
 
   public void removeEphemeralLiveNode() throws KeeperException, InterruptedException {
