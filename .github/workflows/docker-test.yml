@@ -7,7 +7,6 @@ on:
     paths:
       - '.github/workflows/docker-test.yml'
       - 'solr/bin/**'
-      - 'solr/prometheus-exporter/bin/**'
       - 'solr/docker/**'
       - 'solr/packaging/**'
 
