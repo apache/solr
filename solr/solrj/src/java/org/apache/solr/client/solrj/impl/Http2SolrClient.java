@@ -214,14 +214,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
     this.listenerFactory.add(factory);
   }
 
-  // internal usage only
-  HttpClient getHttpClient() {
+  /** internal use only */
+  public HttpClient getHttpClient() {
     return httpClient;
   }
 
-  // internal usage only
-  ProtocolHandlers getProtocolHandlers() {
-    return httpClient.getProtocolHandlers();
+  @Deprecated(since = "9.10")
+  public ProtocolHandlers getProtocolHandlers() {
+    return getHttpClient().getProtocolHandlers();
   }
 
   private HttpClient createHttpClient(Builder builder) {

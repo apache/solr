@@ -49,7 +49,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.UnavailableException;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.VectorUtil;
 import org.apache.solr.client.api.util.SolrVersion;
@@ -84,7 +83,6 @@ public class CoreContainerProvider implements ServletContextListener {
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private CoreContainer cores;
   private Properties extraProperties;
-  private HttpClient httpClient;
   private SolrMetricManager metricManager;
   private RateLimitManager rateLimitManager;
   private String registryName;
@@ -121,14 +119,6 @@ public class CoreContainerProvider implements ServletContextListener {
   CoreContainer getCoreContainer() throws UnavailableException {
     checkReady();
     return cores;
-  }
-
-  /**
-   * @see SolrDispatchFilter#getHttpClient()
-   */
-  HttpClient getHttpClient() throws UnavailableException {
-    checkReady();
-    return httpClient;
   }
 
   private void checkReady() throws UnavailableException {
@@ -176,7 +166,6 @@ public class CoreContainerProvider implements ServletContextListener {
       }
     } finally {
       if (cc != null) {
-        httpClient = null;
         cc.shutdown();
       }
     }
@@ -229,7 +218,6 @@ public class CoreContainerProvider implements ServletContextListener {
               });
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
-      this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit, coresInit.getNodeConfig().getMetricsConfig());
 
       SolrZkClient zkClient = null;

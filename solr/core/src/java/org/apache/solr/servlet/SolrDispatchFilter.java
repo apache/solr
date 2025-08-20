@@ -40,7 +40,6 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -91,15 +90,6 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
 
   public final boolean isV2Enabled = V2ApiUtils.isEnabled();
 
-  public HttpClient getHttpClient() {
-    try {
-      return containerProvider.getHttpClient();
-    } catch (UnavailableException e) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR, "Internal Http Client Unavailable, startup may have failed");
-    }
-  }
-
   /**
    * Enum to define action that needs to be processed. PASSTHROUGH: Pass through to another filter
    * via webapp. FORWARD: Forward rewritten URI (without path prefix and core/collection name) to
@@ -134,6 +124,7 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
 
   @Override
   public void init(FilterConfig config) throws ServletException {
+    super.init(config);
     try {
       containerProvider = CoreContainerProvider.serviceForContext(config.getServletContext());
       boolean isCoordinator =
@@ -201,9 +192,11 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
             }
           });
     } finally {
-      ServletUtils.consumeInputFully(request, response);
       SolrRequestInfo.reset();
-      SolrRequestParsers.cleanupMultipartFiles(request);
+      if (!request.isAsyncStarted()) { // jetty's proxy uses this
+        ServletUtils.consumeInputFully(request, response);
+        SolrRequestParsers.cleanupMultipartFiles(request);
+      }
     }
   }
 

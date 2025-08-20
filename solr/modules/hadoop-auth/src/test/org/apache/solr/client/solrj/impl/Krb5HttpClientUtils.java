@@ -38,6 +38,7 @@ public class Krb5HttpClientUtils {
     HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
     authenticationStore.addAuthentication(createSPNEGOAuthentication(principalName));
     http2Client
+        .getHttpClient()
         .getProtocolHandlers()
         .put(new WWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
     http2Client.setAuthenticationStore(authenticationStore);
