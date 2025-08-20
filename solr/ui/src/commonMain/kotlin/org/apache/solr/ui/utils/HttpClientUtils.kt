@@ -46,7 +46,7 @@ fun getDefaultClient(
             Json {
                 ignoreUnknownKeys = true
                 allowSpecialFloatingPointValues = true
-            }
+            },
         )
     }
 

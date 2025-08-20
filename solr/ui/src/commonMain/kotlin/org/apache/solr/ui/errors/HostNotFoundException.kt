@@ -22,4 +22,4 @@ package org.apache.solr.ui.errors
  *
  * @property cause The root cause that caused this exception.
  */
-class HostNotFoundException(cause: Throwable? = null): Throwable(cause)
+class HostNotFoundException(cause: Throwable? = null) : Throwable(cause)

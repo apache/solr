@@ -51,6 +51,8 @@ Improvements
 
 * SOLR-17852: Migrate Schema Designer to use FileStore API instead of BlobHandler for persisting working data. (Eric Pugh)
 
+* SOLR-17867: Export tool should properly output exported documents in json, json w/ lines, and javabin formats. (Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -142,6 +144,8 @@ Deprecation Removals
 * SOLR-17839: Removed PreAnalyzedFields (Ishan Chattopadhyaya)
 
 * SOLR-17851: Removed BlobHandler and .system collection support (Eric Pugh)
+
+* SOLR-17742: Removed the handleSelect option of <requestDispatcher>.  (Gaurav Tuli, David Smiley)
 
 Dependency Upgrades
 ---------------------

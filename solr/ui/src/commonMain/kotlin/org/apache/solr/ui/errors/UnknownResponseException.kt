@@ -26,4 +26,4 @@ import io.ktor.client.statement.HttpResponse
  *
  * @property response The response that could not be handled.
  */
-class UnknownResponseException(val response: HttpResponse): Exception()
+class UnknownResponseException(val response: HttpResponse) : Exception()

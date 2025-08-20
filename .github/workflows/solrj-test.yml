@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 15
 
     env:
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
 
     steps:
     - name: Checkout code
