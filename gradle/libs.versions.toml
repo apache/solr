@@ -168,7 +168,7 @@ netty = "4.2.4.Final"
 netty-tcnative = "2.0.66.Final"
 nimbusds-josejwt = "9.48"
 nlopez-compose = "0.4.26"
-nodegradle-node = "7.0.1"
+nodegradle-node = "7.1.0"
 # @keep Node JS version used in node.gradle (LTS)
 nodejs = "16.20.2"
 openapi = "7.6.0"
