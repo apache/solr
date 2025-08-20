@@ -23,14 +23,22 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.update.CommitUpdateCommand;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -176,5 +184,34 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     assertNotNull(registryName);
     assertEquals("solr.core.collection1", registryName);
     assertNull(leaderRegistryName);
+  }
+
+  /** Check the metric registry specific to a core is removed once the core is unloaded. */
+  @Test
+  public void testNoRegistryAfterUnload() throws Exception {
+
+    String coreRegistryName;
+
+    CoreContainer cc = h.getCoreContainer();
+    SolrMetricManager metricManager = cc.getMetricManager();
+
+    SolrCore core = cc.create("to-unload", Map.of("configSet", "minimal"));
+    coreRegistryName = core.getSolrMetricsContext().getRegistryName();
+
+    Set<String> names = metricManager.registryNames();
+    assertTrue("missing registry", names.contains(coreRegistryName));
+
+    // Commit and wait for searcher to ensure the searcher is created. This is required to make sure
+    // the core inner thread does not create it *after* we asked the container to unload the core.
+    SolrParams params = new MapSolrParams(Map.of(UpdateParams.WAIT_SEARCHER, "true"));
+    core.getUpdateHandler()
+        .commit(new CommitUpdateCommand(new SolrQueryRequestBase(h.getCore(), params) {}, false));
+
+    cc.unload("to-unload");
+
+    // Make sure the core metric registry does not exist anymore once we fully removed the core
+    // from the container
+    names = metricManager.registryNames();
+    assertFalse(names.contains(coreRegistryName));
   }
 }

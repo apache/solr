@@ -727,7 +727,9 @@ public class SolrRequestParsers {
         // Protect container owned streams from being closed by us, see SOLR-8933
         in =
             FastInputStream.wrap(
-                in == null ? new CloseShieldInputStream(req.getInputStream()) : in);
+                in == null
+                    ? new CloseShieldInputStream(req.getInputStream())
+                    : new CloseShieldInputStream(in));
 
         final long bytesRead = parseFormDataContent(in, maxLength, charset, map, false);
         if (bytesRead == 0L && totalLength > 0L) {

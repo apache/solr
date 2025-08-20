@@ -39,28 +39,26 @@ import androidx.compose.ui.unit.sp
  * Custom typography that styles headlines and titles with a different font.
  */
 @Composable
-fun SolrTypography(): Typography {
-    return Typography(
-        headlineLarge = MaterialTheme.typography.headlineLarge.copy(
-            fontWeight = FontWeight.Light,
-            fontSize = 32.sp,
-            lineHeight = 40.sp,
-            letterSpacing= 0.sp,
-        ),
-        headlineMedium = MaterialTheme.typography.headlineMedium.copy(
-            fontWeight = FontWeight.Light,
-            fontSize = 28.sp,
-            lineHeight = 36.sp,
-            letterSpacing= 0.sp,
-        ),
-        headlineSmall = MaterialTheme.typography.headlineSmall.copy(
-            fontWeight = FontWeight.Light,
-            fontSize = 24.sp,
-            lineHeight = 32.sp,
-            letterSpacing= 0.sp,
-        )
-    )
-}
+fun SolrTypography(): Typography = Typography(
+    headlineLarge = MaterialTheme.typography.headlineLarge.copy(
+        fontWeight = FontWeight.Light,
+        fontSize = 32.sp,
+        lineHeight = 40.sp,
+        letterSpacing = 0.sp,
+    ),
+    headlineMedium = MaterialTheme.typography.headlineMedium.copy(
+        fontWeight = FontWeight.Light,
+        fontSize = 28.sp,
+        lineHeight = 36.sp,
+        letterSpacing = 0.sp,
+    ),
+    headlineSmall = MaterialTheme.typography.headlineSmall.copy(
+        fontWeight = FontWeight.Light,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
+        letterSpacing = 0.sp,
+    ),
+)
 
 // Customize the extended typography
 @Composable
