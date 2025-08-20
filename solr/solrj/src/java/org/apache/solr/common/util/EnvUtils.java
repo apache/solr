@@ -56,17 +56,21 @@ public class EnvUtils {
     try {
       Properties props = new Properties();
       Properties deprecatedProps = new Properties();
-      try (InputStream stream =
+      try (InputStream environmentToSystemPropertyMappings =
               EnvUtils.class
                   .getClassLoader()
                   .getResourceAsStream("EnvToSyspropMappings.properties");
-          InputStream stream2 =
+          InputStream deprecatedSytemPropertyMappings =
               EnvUtils.class
                   .getClassLoader()
-                  .getResourceAsStream("EnvToSyspropDeprecatedMappings.properties")) {
-        props.load(new InputStreamReader(Objects.requireNonNull(stream), StandardCharsets.UTF_8));
+                  .getResourceAsStream("DeprecatedSystemPropertyMappings.properties")) {
+        props.load(
+            new InputStreamReader(
+                Objects.requireNonNull(environmentToSystemPropertyMappings),
+                StandardCharsets.UTF_8));
         deprecatedProps.load(
-            new InputStreamReader(Objects.requireNonNull(stream2), StandardCharsets.UTF_8));
+            new InputStreamReader(
+                Objects.requireNonNull(deprecatedSytemPropertyMappings), StandardCharsets.UTF_8));
         for (String key : props.stringPropertyNames()) {
           CUSTOM_MAPPINGS.put(key, props.getProperty(key));
         }
