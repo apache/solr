@@ -145,6 +145,8 @@ Deprecation Removals
 
 * SOLR-17851: Removed BlobHandler and .system collection support (Eric Pugh)
 
+* SOLR-17742: Removed the handleSelect option of <requestDispatcher>.  (Gaurav Tuli, David Smiley)
+
 Dependency Upgrades
 ---------------------
 

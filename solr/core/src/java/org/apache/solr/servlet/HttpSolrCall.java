@@ -99,7 +99,6 @@ import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.ContentStreamHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
@@ -401,26 +400,6 @@ public class HttpSolrCall {
   protected void extractHandlerFromURLPath(SolrRequestParsers parser) throws Exception {
     if (handler == null && path.length() > 1) { // don't match "" or "/" as valid path
       handler = core.getRequestHandler(path);
-      // no handler yet but <requestDispatcher> allows us to handle /select with a 'qt' param
-      if (handler == null && parser.isHandleSelect()) {
-        if ("/select".equals(path) || "/select/".equals(path)) {
-          solrReq = parser.parse(core, path, req);
-          String qt = solrReq.getParams().get(CommonParams.QT);
-          handler = core.getRequestHandler(qt);
-          if (handler == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "unknown handler: " + qt);
-          }
-          if (qt != null && qt.startsWith("/") && (handler instanceof ContentStreamHandlerBase)) {
-            // For security reasons it's a bad idea to allow a leading '/', ex: /select?qt=/update
-            // see SOLR-3161
-            // There was no restriction from Solr 1.4 thru 3.5 and it's not supported for update
-            // handlers.
-            throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST,
-                "Invalid Request Handler ('qt').  Do not use /select to access: " + qt);
-          }
-        }
-      }
     }
   }
 
