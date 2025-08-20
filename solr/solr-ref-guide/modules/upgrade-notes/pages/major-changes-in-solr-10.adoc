@@ -117,6 +117,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * PreAnalyzedField and PreAnalyzedUpdateProcessor have been removed due to incompatibility with Lucene 10 (SOLR-17839).
 
+* The ConcurrentMergeScheduler's autoIOThrottle default changed to `false` but `true` may be configured to retain prior behaviour. (SOLR-17631).
+
 * BlobHandler and the `.system` collection have been removed in favour of FileStore API.  (SOLR-17851). 
 
 
