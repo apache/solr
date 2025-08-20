@@ -51,6 +51,8 @@ Improvements
 
 * SOLR-17852: Migrate Schema Designer to use FileStore API instead of BlobHandler for persisting working data. (Eric Pugh)
 
+* SOLR-17867: Export tool should properly output exported documents in json, json w/ lines, and javabin formats. (Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -140,6 +142,10 @@ Deprecation Removals
 * SOLR-17779: Removed obsolete 'roles' and 'numShards' core properties, which were persisted with but unused (Pierre Salagnac).
 
 * SOLR-17839: Removed PreAnalyzedFields (Ishan Chattopadhyaya)
+
+* SOLR-17851: Removed BlobHandler and .system collection support (Eric Pugh)
+
+* SOLR-17742: Removed the handleSelect option of <requestDispatcher>.  (Gaurav Tuli, David Smiley)
 
 Dependency Upgrades
 ---------------------
@@ -235,12 +241,18 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-17286: When proxying requests to another node, use Jetty HttpClient not Apache HttpClient.
+  (David Smiley)
 
 ==================  9.9.1 ==================
 Bug Fixes
 ---------------------
 * SOLR-17831: ExitableDirectoryReader always initialized with QueryLimits.NONE (Andrzej Białecki)
+
+* SOLR-17834: Fixed a bug preventing Config API set properties (aka: configoverlay.json) from being used in config file property
+  substitution (hossman)
+
+* SOLR-17830: v1 Restore API no longer conflates backup-name and collection-name during validation. (Abhishek Umarjikar via Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------
