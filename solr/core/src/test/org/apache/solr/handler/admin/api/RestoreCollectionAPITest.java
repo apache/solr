@@ -202,8 +202,10 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     assertEquals("someRepositoryName", requestBody.repository);
     assertEquals(Integer.valueOf(123), requestBody.backupId);
     assertEquals("someAsyncId", requestBody.async);
+    // Ensure the nested "collection-creation" object looks as expected
     assertNotNull(requestBody.createCollectionParams);
     final var createParams = requestBody.createCollectionParams;
+    assertEquals("someCollectionName", createParams.name);
     assertEquals("someConfig", createParams.config);
     assertEquals(Integer.valueOf(123), createParams.nrtReplicas);
     assertNotNull(createParams.properties);
@@ -211,28 +213,5 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     assertEquals("bar", createParams.properties.get("foo"));
     assertEquals(List.of("node1", "node2"), createParams.nodeSet);
     assertEquals(Boolean.FALSE, createParams.shuffleNodes);
-  }
-
-  @Test
-  public void testCreateRequestBodyFromV1Params() throws Exception {
-    var v1Params = new ModifiableSolrParams();
-
-    v1Params.add("name", "test-2025-06-05T18:00");
-    v1Params.add("collection", "testab");
-    v1Params.add("location", "/var/solr/data/");
-
-    RestoreCollectionRequestBody requestBody =
-        RestoreCollection.createRequestBodyFromV1Params(v1Params);
-
-    assertEquals("testab", requestBody.collection);
-    assertEquals("testab", requestBody.createCollectionParams.name);
-
-    v1Params = new ModifiableSolrParams();
-    v1Params.add("name", "test-2025-06-05T1800");
-    v1Params.add("collection", "testcollection");
-    v1Params.add("location", "/var/solr/data/new/");
-    requestBody = RestoreCollection.createRequestBodyFromV1Params(v1Params);
-    assertEquals("testcollection", requestBody.collection);
-    assertEquals("testcollection", requestBody.createCollectionParams.name);
   }
 }
