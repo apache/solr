@@ -317,7 +317,7 @@ fi
 
 # Jetty configuration for new Admin UI
 if [ "${SOLR_UI_ENABLED:-true}" == "false" ] ||
-   [ "${SOLR_ADMIN_UI_EXPERIMENTAL_ENABLED:-true}" == "false" ]; then
+   [ "${SOLR_UI_EXPERIMENTAL_ENABLED:-true}" == "false" ]; then
   # Do not enable new Solr UI
   echo -e "New Solr UI not enabled"
 else
