@@ -196,7 +196,7 @@ IF "%SOLR_GZIP_ENABLED%"=="true" (
 REM Jetty configuration for new Admin UI
 IF "%SOLR_UI_ENABLED%"=="false" (
   REM Do not load jetty-configuration if Admin UI explicitly disabled
-) ELSE IF "%SOLR_ADMIN_UI_EXPERIMENTAL_ENABLED%"=="false" (
+) ELSE IF "%SOLR_UI_EXPERIMENTAL_ENABLED%"=="false" (
   REM Do not load jetty-configuration if new Admin UI explicitly disabled
 ) ELSE (
   REM Enable new Admin UI by loading jetty-configuration

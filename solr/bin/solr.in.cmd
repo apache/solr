@@ -69,7 +69,7 @@ REM for production SolrCloud environments to control the hostname exposed to clu
 REM set SOLR_HOST=192.168.1.1
 
 REM By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
-REM set SOLR_WAIT_FOR_ZK=30
+REM set SOLR_CLOUD_WAIT_FOR_ZK_SECONDS=30
 
 REM By default Solr will log a warning for cores that are not registered in Zookeeper at startup
 REM but otherwise ignore them. This protects against misconfiguration (e.g. connecting to the
@@ -222,14 +222,14 @@ REM This is experimental!
 REM set SOLR_SECURITY_MANAGER_ENABLED=true
 
 REM This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
-REM change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
+REM change the value to false. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 REM scripts.
-REM set SOLR_UI_ENABLED=false
+REM set SOLR_UI_ENABLED=true
 
 REM This variable provides you with the option to disable the new experimental Admin UI. If you uncomment the variable
 REM below and change the value to false, Jetty will not load the new-ui module which update the CSP directive for the
 REM new UI endpoints. This property is ignored if SOLR_UI_ENABLED is false.
-REM set SOLR_ADMIN_UI_EXPERIMENTAL_ENABLED=false
+REM set SOLR_UI_EXPERIMENTAL_ENABLED=false
 
 REM Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 REM Sometimes it may be necessary to place a core or a backup on a different location or a different disk
