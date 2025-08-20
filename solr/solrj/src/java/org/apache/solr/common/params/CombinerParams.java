@@ -17,8 +17,8 @@
 package org.apache.solr.common.params;
 
 /**
- * The CombinerParams class provides constants for configuration parameters related to the combiner.
- * It defines keys for various properties used in the combiner configuration.
+ * This class provides constants for configuration parameters related to the combiner. It defines
+ * keys for various properties used in the combiner configuration.
  */
 public class CombinerParams {
 
@@ -30,6 +30,6 @@ public class CombinerParams {
   public static final String RECIPROCAL_RANK_FUSION = "rrf";
   public static final String COMBINER_RRF_K = COMBINER + "." + RECIPROCAL_RANK_FUSION + ".k";
   public static final String DEFAULT_COMBINER = RECIPROCAL_RANK_FUSION;
-  public static final int COMBINER_RRF_K_DEFAULT = 60;
+  public static final int DEFAULT_COMBINER_RRF_K = 60;
   public static final int DEFAULT_MAX_COMBINER_QUERIES = 5;
 }

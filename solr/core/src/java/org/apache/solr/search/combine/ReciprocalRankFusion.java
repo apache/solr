@@ -42,19 +42,15 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
 
 /**
- * The ReciprocalRankFusion class implements a query and response combiner that uses the Reciprocal
- * Rank Fusion (RRF) algorithm to combine multiple ranked lists into a single ranked list.
+ * This class implements a query and response combiner that uses the Reciprocal Rank Fusion (RRF)
+ * algorithm to combine multiple ranked lists into a single ranked list.
  */
 public class ReciprocalRankFusion extends QueryAndResponseCombiner {
 
   private int k;
 
-  public int getK() {
-    return k;
-  }
-
   public ReciprocalRankFusion() {
-    this.k = CombinerParams.COMBINER_RRF_K_DEFAULT;
+    this.k = CombinerParams.DEFAULT_COMBINER_RRF_K;
   }
 
   @Override
@@ -63,6 +59,10 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
     if (kParam != null) {
       this.k = Integer.parseInt(kParam.toString());
     }
+  }
+
+  public int getK() {
+    return k;
   }
 
   @Override

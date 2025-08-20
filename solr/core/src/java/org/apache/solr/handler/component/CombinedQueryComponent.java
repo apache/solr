@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
@@ -68,11 +67,11 @@ import org.slf4j.LoggerFactory;
  */
 public class CombinedQueryComponent extends QueryComponent implements SolrCoreAware {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String COMPONENT_NAME = "combined_query";
   protected NamedList<?> initParams;
-  private Map<String, QueryAndResponseCombiner> combiners = new ConcurrentHashMap<>();
+  private final Map<String, QueryAndResponseCombiner> combiners = new HashMap<>();
   private int maxCombinerQueries;
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void init(NamedList<?> args) {
@@ -84,25 +83,28 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
   @Override
   public void inform(SolrCore core) {
     if (initParams != null && initParams.size() > 0) {
-      log.info("Initializing CombinedQueryComponent");
-      NamedList<?> all = (NamedList<?>) initParams.get("combiners");
-      for (int i = 0; i < all.size(); i++) {
-        String name = all.getName(i);
-        NamedList<?> combinerConfig = (NamedList<?>) all.getVal(i);
-        String className = (String) combinerConfig.get("class");
-        QueryAndResponseCombiner combiner =
-            core.getResourceLoader().newInstance(className, QueryAndResponseCombiner.class);
-        combiner.init(combinerConfig);
-        combiners.compute(
-            name,
-            (k, existingCombiner) -> {
-              if (existingCombiner == null) {
-                return combiner;
-              }
-              throw new SolrException(
-                  SolrException.ErrorCode.BAD_REQUEST,
-                  "Found more than one combiner with same name");
-            });
+      for (Map.Entry<String, ?> initEntry : initParams) {
+        if ("combiners".equals(initEntry.getKey())
+            && initEntry.getValue() instanceof NamedList<?> all) {
+          for (int i = 0; i < all.size(); i++) {
+            String name = all.getName(i);
+            NamedList<?> combinerConfig = (NamedList<?>) all.getVal(i);
+            String className = (String) combinerConfig.get("class");
+            QueryAndResponseCombiner combiner =
+                core.getResourceLoader().newInstance(className, QueryAndResponseCombiner.class);
+            combiner.init(combinerConfig);
+            combiners.compute(
+                name,
+                (k, existingCombiner) -> {
+                  if (existingCombiner == null) {
+                    return combiner;
+                  }
+                  throw new SolrException(
+                      SolrException.ErrorCode.BAD_REQUEST,
+                      "Found more than one combiner with same name");
+                });
+          }
+        }
       }
       Object maxQueries = initParams.get("maxCombinerQueries");
       if (maxQueries != null) {
@@ -208,13 +210,11 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       }
       ResultContext ctx = new BasicResultContext(crb);
       crb.rsp.addResponse(ctx);
-      crb.rsp
-          .getToLog()
-          .add(
-              "hits",
-              crb.getResults() == null || crb.getResults().docList == null
-                  ? 0
-                  : crb.getResults().docList.matches());
+      crb.rsp.addToLog(
+          "hits",
+          crb.getResults() == null || crb.getResults().docList == null
+              ? 0
+              : crb.getResults().docList.matches());
       if (!crb.req.getParams().getBool(ShardParams.IS_SHARD, false)) {
         // for non-distributed request and future cursor improvement
         if (null != crb.getNextCursorMark()) {

@@ -88,7 +88,7 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
    */
   public static QueryAndResponseCombiner getImplementation(
       String algorithm, Map<String, QueryAndResponseCombiner> combiners) {
-    if (combiners.containsKey(algorithm)) {
+    if (combiners.get(algorithm) != null) {
       return combiners.get(algorithm);
     }
     throw new SolrException(
