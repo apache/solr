@@ -123,7 +123,8 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
 
   public static final String SOLR_INSTALL_DIR_ATTRIBUTE = "solr.install.dir";
 
-  public static final String SOLR_DEFAULT_CONFDIR_ATTRIBUTE = "solr.default.confdir";
+  public static final String SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE =
+      "solr.configset.default.confdir";
 
   public static final String SOLR_LOG_MUTECONSOLE = "solr.log.muteconsole";
 

@@ -1120,7 +1120,7 @@ IF NOT EXIST "%SOLR_SERVER_DIR%\tmp" (
   mkdir "%SOLR_SERVER_DIR%\tmp"
 )
 
-IF "%SOLR_DEFAULT_CONFDIR%"=="" set "SOLR_DEFAULT_CONFDIR=%SOLR_SERVER_DIR%\solr\configsets\_default\conf"
+IF "%SOLR_CONFIGSET_DEFAULT_CONFDIR%"=="" set "SOLR_CONFIGSET_DEFAULT_CONFDIR=%SOLR_SERVER_DIR%\solr\configsets\_default\conf"
 
 IF "%FG%"=="1" (
   REM run solr in the foreground

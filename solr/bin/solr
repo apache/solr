@@ -1017,8 +1017,8 @@ elif [[ $SOLR_HOME != /* ]]; then
 fi
 
 # Set the default configset dir to be bootstrapped as _default
-: "${SOLR_DEFAULT_CONFDIR:="$SOLR_SERVER_DIR/solr/configsets/_default/conf"}"
-export SOLR_DEFAULT_CONFDIR
+: "${SOLR_CONFIGSET_DEFAULT_CONFDIR:="$SOLR_SERVER_DIR/solr/configsets/_default/conf"}"
+export SOLR_CONFIGSET_DEFAULT_CONFDIR
 
 # This is quite hacky, but examples rely on a different log4j2.xml
 # so that we can write logs for examples to $SOLR_HOME/../logs
