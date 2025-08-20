@@ -251,8 +251,7 @@ Bug Fixes
 * SOLR-17834: Fixed a bug preventing Config API set properties (aka: configoverlay.json) from being used in config file property
   substitution (hossman)
 
-* SOLR-17830: Fixed a bug in the v1 API where the Restore API internally created a 'create-collection' request using the
-  incorrect parameter 'backup-name' instead of the 'collection name'. (Abhishek Umarjikar)
+* SOLR-17830: v1 Restore API no longer conflates backup-name and collection-name during validation. (Abhishek Umarjikar via Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------
