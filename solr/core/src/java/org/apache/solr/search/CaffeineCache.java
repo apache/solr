@@ -511,7 +511,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
    * CacheStats}. This method returns a {@link CacheStats} instance that represents synchronous ops
    * since this cache was marked as {@link SolrCache.State#LIVE} via {@link #setState(State)}.
    */
-  private CacheStats syncStats() {
+  public CacheStats syncStats() {
     return cache.stats().minus(offsetSyncStats.get());
   }
 
