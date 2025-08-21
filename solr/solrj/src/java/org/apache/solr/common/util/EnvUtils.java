@@ -60,7 +60,7 @@ public class EnvUtils {
               EnvUtils.class
                   .getClassLoader()
                   .getResourceAsStream("EnvToSyspropMappings.properties");
-          InputStream deprecatedSytemPropertyMappings =
+          InputStream deprecatedSystemPropertyMappings =
               EnvUtils.class
                   .getClassLoader()
                   .getResourceAsStream("DeprecatedSystemPropertyMappings.properties")) {
@@ -70,7 +70,7 @@ public class EnvUtils {
                 StandardCharsets.UTF_8));
         deprecatedProps.load(
             new InputStreamReader(
-                Objects.requireNonNull(deprecatedSytemPropertyMappings), StandardCharsets.UTF_8));
+                Objects.requireNonNull(deprecatedSystemPropertyMappings), StandardCharsets.UTF_8));
         for (String key : props.stringPropertyNames()) {
           CUSTOM_MAPPINGS.put(key, props.getProperty(key));
         }
@@ -225,7 +225,17 @@ public class EnvUtils {
             "You are passing in deprecated system property {} and should upgrade to using {} instead.  The deprecated property support will be removed in future version of Solr.",
             deprecatedKey,
             key);
-        setProperty(key, sysProperties.getProperty(deprecatedKey));
+
+        if (key.endsWith(".enabled") && deprecatedKey.endsWith(".disabled") ){
+          log.warn(
+              "Converting from legacy system property {} to modern .enabled equivalent {} by flipping the boolean property value.",
+              deprecatedKey,
+              key);
+          setProperty(key, String.valueOf(!Boolean.getBoolean(deprecatedKey)));
+        }
+        else {
+          setProperty(key, sysProperties.getProperty(deprecatedKey));
+        }
       }
     }
   }

@@ -109,4 +109,16 @@ public class EnvUtilsTest extends SolrTestCase {
     EnvUtils.init(false, env, defaultProps);
     assertEquals("xml,json,jar", EnvUtils.getProperty("solr.configset.forbidden.file.types"));
   }
+
+  @Test
+  public void testFlippingDisabledToEnabledPropertyName() {
+
+    var env = Map.of("SOLR_ADMIN_UI_DISABLED", "true");
+    Properties defaultProps = new Properties();
+    defaultProps.setProperty("solr.admin.ui.disabled", "true");
+
+    EnvUtils.init(false, env, defaultProps);
+    assertEquals(false, EnvUtils.getPropertyAsBool("solr.ui.enabled"));
+
+  }
 }
