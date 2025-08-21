@@ -7,21 +7,14 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 ==================  9.9.1 ==================
 Bug Fixes
 ---------------------
-(No changes)
-
-Dependency Upgrades
----------------------
-(No changes)
-
-==================  9.9.1 ==================
-Bug Fixes
----------------------
 * SOLR-17831: ExitableDirectoryReader always initialized with QueryLimits.NONE (Andrzej Białecki)
 
 * SOLR-17834: Fixed a bug preventing Config API set properties (aka: configoverlay.json) from being used in config file property
   substitution (hossman)
 
 * SOLR-17830: v1 Restore API no longer conflates backup-name and collection-name during validation. (Abhishek Umarjikar via Jason Gerlowski)
+
+* SOLR-17860: DocBasedVersionConstraintsProcessorFactory now supports PULL replicas. (Houston Putman)
 
 Dependency Upgrades
 ---------------------
