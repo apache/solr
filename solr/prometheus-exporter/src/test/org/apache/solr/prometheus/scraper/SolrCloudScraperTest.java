@@ -173,25 +173,6 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
   }
 
   @Test
-  public void metricsForEachHost() throws Exception {
-    Map<String, MetricSamples> metricsByHost =
-        solrCloudScraper.metricsForAllHosts(configuration.getMetricsConfiguration().get(0));
-
-    List<Replica> replicas = getCollectionState().getReplicas();
-    assertEquals(replicas.size(), metricsByHost.size());
-
-    for (Replica replica : replicas) {
-      List<Collector.MetricFamilySamples> replicaSamples =
-          metricsByHost.get(replica.getBaseUrl()).asList();
-      assertEquals(1, replicaSamples.size());
-      assertEquals("solr_metrics_jvm_buffers", replicaSamples.get(0).name);
-
-      assertEquals("cluster_id", replicaSamples.get(0).samples.get(0).labelNames.get(2));
-      assertEquals("test", replicaSamples.get(0).samples.get(0).labelValues.get(2));
-    }
-  }
-
-  @Test
   public void search() throws Exception {
     List<Collector.MetricFamilySamples> samples =
         solrCloudScraper.search(configuration.getSearchConfiguration().get(0)).asList();

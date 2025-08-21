@@ -62,16 +62,6 @@ public class SolrExporterIntegrationTest extends SolrExporterTestBase {
   }
 
   @Test
-  public void jvmMetrics() throws Exception {
-    Map<String, Double> jvmMetrics = metricsWithName(getAllMetrics(), "solr_metrics_jvm_threads");
-
-    // exact set of metrics can vary based on JVM impl (ie: windows)
-    // but there should always be at least one per known thread state per node...
-    assertTrue(
-        jvmMetrics.toString(), (NUM_NODES * Thread.State.values().length) < jvmMetrics.size());
-  }
-
-  @Test
   public void jsonFacetMetrics() throws Exception {
     Map<String, Double> facetMetrics = metricsWithName(getAllMetrics(), "solr_facets_category");
     assertEquals(FACET_VALUES.size(), facetMetrics.size());

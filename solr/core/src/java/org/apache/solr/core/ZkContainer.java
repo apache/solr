@@ -40,6 +40,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,7 +180,7 @@ public class ZkContainer {
                     measurement -> {
                       measurement.record(metricsListener.getBytesRead(), attributes);
                     },
-                    "By");
+                    OtelUnit.BYTES);
 
                 ctx.observableLongCounter(
                     "solr_zk_watches_fired",
@@ -194,7 +195,7 @@ public class ZkContainer {
                     measurement -> {
                       measurement.record(metricsListener.getBytesWritten());
                     },
-                    "By");
+                    OtelUnit.BYTES);
 
                 ctx.observableLongCounter(
                     "solr_zk_cumulative_multi_ops_total",

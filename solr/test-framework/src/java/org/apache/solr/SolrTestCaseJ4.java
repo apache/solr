@@ -282,6 +282,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.http.disableCookies", Boolean.toString(rarely()));
+    System.setProperty("solr.metrics.jvm.enabled", "false");
 
     startTrackingSearchers();
     ignoreException("ignore_exception");

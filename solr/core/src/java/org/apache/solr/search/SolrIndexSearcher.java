@@ -2658,6 +2658,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             for (String file : files) {
               total += DirectoryFactory.sizeOf(reader.directory(), file);
             }
+
             return total;
           } catch (Exception e) {
             return parentContext.nullNumber();
