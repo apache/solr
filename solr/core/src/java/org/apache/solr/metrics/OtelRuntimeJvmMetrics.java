@@ -57,7 +57,7 @@ public class OtelRuntimeJvmMetrics {
       try {
         runtimeMetrics.close();
       } catch (Exception e) {
-        log.warn("Failed to close JVM metrics collection", e);
+        log.error("Failed to close JVM metrics collection", e);
       } finally {
         runtimeMetrics = null;
         isInitialized = false;
