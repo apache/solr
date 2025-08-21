@@ -88,9 +88,9 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     }
 
     // JVM JFR (Java Flight Recorder) periodic tasks thread
-    //    if (threadName.equals("JFR Periodic Tasks")) {
-    //      return true;
-    //    }
+    if (threadName.equals("JFR Periodic Tasks")) {
+      return true;
+    }
 
     return threadName.startsWith("closeThreadPool");
   }
