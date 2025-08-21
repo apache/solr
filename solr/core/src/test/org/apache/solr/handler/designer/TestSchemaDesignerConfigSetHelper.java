@@ -24,7 +24,6 @@ import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,12 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.filestore.FileStore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -57,11 +57,8 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
   public static void createCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
-        .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
+        .addConfig(DEFAULT_CONFIGSET_NAME, ExternalPaths.DEFAULT_CONFIGSET)
         .configure();
-    // SchemaDesignerConfigSetHelper depends on the blob store
-    CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(BLOB_STORE_ID, 1, 1);
   }
 
   @AfterClass
@@ -253,14 +250,26 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     doc.setField("pages", 809);
     doc.setField("published_year", 1989);
 
-    helper.postDataToBlobStore(
-        cluster.getSolrClient(),
-        configSet + "_sample",
-        SchemaDesignerConfigSetHelper.readAllBytes(() -> toJavabin(List.of(doc))));
+    helper.storeSampleDocs(
+        configSet, SchemaDesignerConfigSetHelper.readAllBytes(() -> toJavabin(List.of(doc))));
 
-    List<SolrInputDocument> docs = helper.getStoredSampleDocs(configSet);
+    List<SolrInputDocument> docs = helper.retrieveSampleDocs(configSet);
     assertTrue(docs != null && docs.size() == 1);
     assertEquals("1", docs.get(0).getFieldValue("id"));
+
+    helper.deleteStoredSampleDocs(configSet);
+
+    String path = helper.getSampleDocsPathFromConfigSet(configSet);
+    FileStore.FileType type = cc.getFileStore().getType(path, true);
+    assertEquals(FileStore.FileType.NOFILE, type);
+  }
+
+  @Test
+  public void testRetrieveNonExistentDocsReturnsEmptyDocList() throws Exception {
+    String configSet = "testRetrieveNonExistentDocsReturnsEmptyDocList";
+    List<SolrInputDocument> docs = helper.retrieveSampleDocs(configSet);
+    assertNotNull(docs);
+    assertTrue(docs.isEmpty());
   }
 
   @Test
@@ -283,10 +292,9 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     Map<String, Object> analysis =
         helper.analyzeField(configSet, "title", "The Pillars of the Earth");
 
-    Map<String, Object> title =
-        (Map<String, Object>) ((Map<String, Object>) analysis.get("field_names")).get("title");
-    assertNotNull(title);
-    List<Object> index = (List<Object>) title.get("index");
+    var index =
+        (List<Object>)
+            Utils.getObjectByPath(analysis, false, List.of("field_names", "title", "index"));
     assertNotNull(index);
     assertFalse(index.isEmpty());
   }

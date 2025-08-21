@@ -20,28 +20,6 @@ The `requestDispatcher` element of `solrconfig.xml` controls the way the Solr HT
 
 Included are parameters for defining if it should handle `/select` urls (for Solr 1.1 compatibility), if it will support remote streaming, the maximum size of file uploads and how it will respond to HTTP cache headers in requests.
 
-== handleSelect Element
-
-[IMPORTANT]
-====
-`handleSelect` is for legacy back-compatibility; those new to Solr do not need to change anything about the way this is configured by default.
-====
-
-The first configurable item is the `handleSelect` attribute on the `<requestDispatcher>` element itself.
-This attribute can be set to one of two values, either "true" or "false".
-It governs how Solr responds to requests such as `/select?qt=XXX`.
-The default value "false" will ignore requests to `/select` if a request handler is not explicitly registered with the name `/select`.
-A value of "true" will route query requests to the parser defined with the `qt` value if a request handler is not explicitly registered with the name `/select`.
-
-In recent versions of Solr, a `/select` request handler is defined by default, so a value of "false" will work fine.
-See the section xref:requesthandlers-searchcomponents.adoc[] for more information.
-
-[source,xml]
-----
-<requestDispatcher handleSelect="true" >
-  ...
-</requestDispatcher>
-----
 
 == requestParsers Element
 
@@ -69,21 +47,11 @@ A value of `-1` means MAX_INT, which is also the system default if omitted.
 This attribute sets a limit in kilobytes on the size of form data (`application/x-www-form-urlencoded`) submitted in a HTTP POST request, which can be used to pass request parameters that will not fit in a URL.
 A value of `-1` means MAX_INT, which is also the system default if omitted.
 
-`addHttpRequestToContext`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-This attribute can be used to indicate that the original `HttpServletRequest` object should be included in the context map of the `SolrQueryRequest` using the key `httpRequest`.
-This `HttpServletRequest` is not used by any Solr component, but may be useful when developing custom plugins.
 
 [source,xml]
 ----
 <requestParsers multipartUploadLimitInKB="2048"
-                formdataUploadLimitInKB="2048"
-                addHttpRequestToContext="false" />
+                formdataUploadLimitInKB="2048" />
 ----
 
 == httpCaching Element

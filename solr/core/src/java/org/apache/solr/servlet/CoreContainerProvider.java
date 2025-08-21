@@ -29,11 +29,14 @@ import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.common.annotations.VisibleForTesting;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.UnavailableException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Locale;
@@ -45,11 +48,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.UnavailableException;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.VectorUtil;
 import org.apache.solr.client.api.util.SolrVersion;
@@ -84,7 +82,6 @@ public class CoreContainerProvider implements ServletContextListener {
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private CoreContainer cores;
   private Properties extraProperties;
-  private HttpClient httpClient;
   private SolrMetricManager metricManager;
   private RateLimitManager rateLimitManager;
   private String registryName;
@@ -121,14 +118,6 @@ public class CoreContainerProvider implements ServletContextListener {
   CoreContainer getCoreContainer() throws UnavailableException {
     checkReady();
     return cores;
-  }
-
-  /**
-   * @see SolrDispatchFilter#getHttpClient()
-   */
-  HttpClient getHttpClient() throws UnavailableException {
-    checkReady();
-    return httpClient;
   }
 
   private void checkReady() throws UnavailableException {
@@ -176,7 +165,6 @@ public class CoreContainerProvider implements ServletContextListener {
       }
     } finally {
       if (cc != null) {
-        httpClient = null;
         cc.shutdown();
       }
     }
@@ -228,7 +216,6 @@ public class CoreContainerProvider implements ServletContextListener {
               });
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
-      this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit, coresInit.getNodeConfig().getMetricsConfig());
 
       SolrZkClient zkClient = null;
@@ -390,7 +377,7 @@ public class CoreContainerProvider implements ServletContextListener {
       home = "solr/";
       source = "defaulted to '" + home + "' ... could not find system property or JNDI";
     }
-    final Path solrHome = Paths.get(home).toAbsolutePath().normalize();
+    final Path solrHome = Path.of(home).toAbsolutePath().normalize();
     log.info("Solr Home: {} (source: {})", solrHome, source);
 
     return solrHome;

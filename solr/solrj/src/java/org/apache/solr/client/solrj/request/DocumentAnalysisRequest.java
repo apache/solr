@@ -25,12 +25,13 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.DocumentAnalysisResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * A request for the org.apache.solr.handler.DocumentAnalysisRequestHandler.
@@ -46,7 +47,7 @@ public class DocumentAnalysisRequest
 
   /** Constructs a new request with a default uri of "/documentanalysis". */
   public DocumentAnalysisRequest() {
-    super(METHOD.POST, "/analysis/document");
+    super(METHOD.POST, "/analysis/document", SolrRequestType.QUERY);
   }
 
   /**
@@ -55,7 +56,7 @@ public class DocumentAnalysisRequest
    * @param uri The of the request handler.
    */
   public DocumentAnalysisRequest(String uri) {
-    super(METHOD.POST, uri);
+    super(METHOD.POST, uri, SolrRequestType.QUERY);
   }
 
   @Override
@@ -80,12 +81,12 @@ public class DocumentAnalysisRequest
   }
 
   @Override
-  protected DocumentAnalysisResponse createResponse(SolrClient client) {
+  protected DocumentAnalysisResponse createResponse(NamedList<Object> namedList) {
     return new DocumentAnalysisResponse();
   }
 
   @Override
-  public ModifiableSolrParams getParams() {
+  public SolrParams getParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (query != null) {
       params.add(AnalysisParams.QUERY, query);
@@ -195,10 +196,5 @@ public class DocumentAnalysisRequest
    */
   public boolean isShowMatch() {
     return showMatch;
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.QUERY.toString();
   }
 }

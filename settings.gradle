@@ -49,7 +49,6 @@ include "solr:modules:cross-dc"
 include "solr:modules:opentelemetry"
 include "solr:modules:extraction"
 include "solr:modules:gcs-repository"
-include "solr:modules:hdfs"
 include "solr:modules:jwt-auth"
 include "solr:modules:langid"
 include "solr:modules:llm"
@@ -67,6 +66,12 @@ include "solr:packaging"
 include "solr:distribution"
 include "solr:docker"
 include "solr:prometheus-exporter"
+
+def disableUiModuleValue = providers.gradleProperty('disableUiModule').orNull
+gradle.ext.withUiModule = disableUiModuleValue == null || disableUiModuleValue != 'true'
+if (gradle.ext.withUiModule) {
+    include(":solr:ui")
+}
 
 // Configures development for joint Lucene/ Solr composite build.
 apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')

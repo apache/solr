@@ -35,8 +35,8 @@ import java.util.concurrent.Future;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -308,7 +308,7 @@ public class SolrCmdDistributor implements Closeable {
     // Copy user principal from the original request to the new update request, for later
     // authentication interceptor use
     if (SolrRequestInfo.getRequestInfo() != null) {
-      req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
+      req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getUserPrincipal());
     }
 
     if (req.synchronous) {
@@ -431,7 +431,7 @@ public class SolrCmdDistributor implements Closeable {
     // care when assembling the final response to check both the rollup and leader trackers on the
     // aggregator node.
     public void trackRequestResult(
-        org.eclipse.jetty.client.api.Response resp, InputStream respBody, boolean success) {
+        org.eclipse.jetty.client.Response resp, InputStream respBody, boolean success) {
 
       // Returning Integer.MAX_VALUE here means there was no "rf" on the response, therefore we just
       // need to increment our achieved rf if we are a leader, i.e. have a leaderTracker.
@@ -449,7 +449,7 @@ public class SolrCmdDistributor implements Closeable {
     private int getRfFromResponse(InputStream inputStream) {
       if (inputStream != null) {
         try {
-          BinaryResponseParser brp = new BinaryResponseParser();
+          JavaBinResponseParser brp = new JavaBinResponseParser();
           NamedList<Object> nl = brp.processResponse(inputStream, null);
           Object hdr = nl.get("responseHeader");
           if (hdr != null && hdr instanceof NamedList) {

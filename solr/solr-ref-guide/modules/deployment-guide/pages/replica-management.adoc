@@ -422,7 +422,6 @@ This parameter is required unless `shard` and `sourceNode` are specified, howeve
 +
 The number of seconds to wait for the replica to be live in the new location before deleting the replica in the old location.
 Deletion will not occur and creation will not be rolled back in the event of a timeout, potentially leaving an extra replica.
-Presently, this parameter is ignored if the replica is an hdfs replica.
 
 `inPlaceMove`::
 +

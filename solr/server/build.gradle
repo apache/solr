@@ -47,10 +47,10 @@ dependencies {
   serverLib libs.eclipse.jetty.rewrite
   serverLib libs.eclipse.jetty.security
   serverLib libs.eclipse.jetty.server
-  serverLib libs.eclipse.jetty.servlet
-  serverLib libs.eclipse.jetty.servlets
+  serverLib libs.eclipse.jetty.ee10.servlet
+  serverLib libs.eclipse.jetty.ee10.servlets
   serverLib libs.eclipse.jetty.util
-  serverLib libs.eclipse.jetty.webapp
+  serverLib libs.eclipse.jetty.ee10.webapp
   serverLib libs.eclipse.jetty.xml
   serverLib libs.eclipse.jetty.alpnserver
   serverLib(libs.eclipse.jetty.alpnjavaserver, {
@@ -76,15 +76,20 @@ dependencies {
 
   libExt(libs.dropwizard.metrics.core, {
     exclude group: "com.rabbitmq", module: "amqp-client"
+
   })
   libExt(libs.dropwizard.metrics.graphite, {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
-  libExt(libs.dropwizard.metrics.jetty10, {
+  def excludeTransitiveJetty = {
     exclude group: "org.eclipse.jetty", module: "*"
     exclude group: "org.eclipse.jetty.http2", module: "*"
     exclude group: "org.eclipse.jetty.toolchain", module: "*"
-  })
+    exclude group: "org.eclipse.jetty.ee10", module: "*"
+    exclude group: "jakarta.servlet", module: "jakarta.servlet-api"
+  }
+  libExt(libs.dropwizard.metrics.jetty12, excludeTransitiveJetty)
+  libExt(libs.dropwizard.metrics.jetty12.ee10, excludeTransitiveJetty)
   libExt libs.dropwizard.metrics.jvm
   libExt libs.dropwizard.metrics.jmx
 
@@ -117,6 +122,22 @@ task assemblePackaging(type: Sync) {
     include "scripts/**"
     include "solr/**"
     include "README.md"
+
+    if (rootProject.ext.development) {
+      // Allow duplicates to overwrite previous files
+      duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      // Rename dev files in development
+      rename { String fileName -> fileName.replace("-dev.xml", ".xml") }
+
+      // Exclude production configurations
+      exclude "**/*-prod.xml"
+    } else {
+      // Rename prod files in production
+      rename { String fileName -> fileName.replace("-prod.xml", ".xml") }
+
+      // Exclude dev configurations
+      exclude "**/*-dev.xml"
+    }
   })
 
   // Add in the intersection of serverLib and solrCore

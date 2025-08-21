@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -57,7 +58,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -540,12 +540,9 @@ public class TestPackages extends SolrCloudTestCase {
     try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
       TestDistribFileStore.assertResponseValues(
           10,
-          () -> {
-            Object o = Utils.executeGET(client.getHttpClient(), jetty.getBaseUrl() + uri, parser);
-            if (o instanceof NavigableObject) return (NavigableObject) o;
-            if (o instanceof Map) return new MapWriterMap((Map<String, Object>) o);
-            throw new RuntimeException("Unknown response");
-          },
+          () ->
+              NavigableObject.wrap(
+                  Utils.executeGET(client.getHttpClient(), jetty.getBaseUrl() + uri, parser)),
           expected);
     }
   }
@@ -634,10 +631,9 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         1,
         () ->
-            new MapWriterMap(
-                (Map<String, Object>)
-                    Utils.fromJSON(
-                        cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
+            NavigableObject.wrap(
+                Utils.fromJSON(
+                    cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
         Map.of(":packages:test_pkg[0]:version", "0.12", ":packages:test_pkg[0]:files[0]", FILE2));
 
     // post a new jar with a proper signature
@@ -658,10 +654,9 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         1,
         () ->
-            new MapWriterMap(
-                (Map<String, Object>)
-                    Utils.fromJSON(
-                        cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
+            NavigableObject.wrap(
+                Utils.fromJSON(
+                    cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
         Map.of(":packages:test_pkg[1]:version", "0.13", ":packages:test_pkg[1]:files[0]", FILE3));
 
     // Now we will just delete one version
@@ -684,10 +679,9 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         1,
         () ->
-            new MapWriterMap(
-                (Map<String, Object>)
-                    Utils.fromJSON(
-                        cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
+            NavigableObject.wrap(
+                Utils.fromJSON(
+                    cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
         Map.of(":packages:test_pkg[0]:version", "0.13", ":packages:test_pkg[0]:files[0]", FILE3));
 
     // So far we have been verifying the details with  ZK directly
@@ -886,7 +880,7 @@ public class TestPackages extends SolrCloudTestCase {
       req.process(client);
       fail("should have failed with message : " + expectErrorMsg);
     } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-      String msg = e.getMetaData()._getStr(errPath, "");
+      String msg = Objects.requireNonNullElse(e.getMetaData()._getStr(errPath), "");
       assertTrue(
           "should have failed with message: " + expectErrorMsg + "actual message : " + msg,
           msg.contains(expectErrorMsg));

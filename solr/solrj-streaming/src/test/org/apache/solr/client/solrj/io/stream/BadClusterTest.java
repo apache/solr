@@ -32,6 +32,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
+import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -79,34 +80,35 @@ public class BadClusterTest extends SolrCloudTestCase {
   }
 
   private void testEmptyCollection() throws Exception {
-    CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory);
-    assertEquals(0, getTuples(stream).size());
+    try (CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory)) {
+      assertEquals(0, getTuples(stream).size());
+    }
   }
 
   private void testAllNodesDown() throws Exception {
-
-    CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory);
-    cluster.expireZkSession(cluster.getReplicaJetty(getReplicas().get(0)));
-
-    try {
-      getTuples(stream);
-      fail("Expected IOException");
-    } catch (IOException ioe) {
+    try (CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory)) {
+      // Pre-warm the streaming clients, so that the following getTuples can fail quickly
+      assertEquals(0, getTuples(stream).size());
+      cluster.expireZkSession(cluster.getReplicaJetty(getReplicas().getFirst()));
+      expectThrows(IOException.class, () -> getTuples(stream));
     }
   }
 
   private void testClusterShutdown() throws Exception {
-
-    CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory);
-    cluster.shutdown();
-
-    try {
-      getTuples(stream);
-      fail("Expected IOException: SolrException: TimeoutException");
-    } catch (IOException ioe) {
+    try (CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory)) {
+      cluster.shutdown();
+      IOException ioe = expectThrows(IOException.class, () -> getTuples(stream));
+      assertNotNull("IOException must have a SolrException cause", ioe.getCause());
+      assertThat(
+          "Cause of IOException is incorrect",
+          ioe.getCause(),
+          Matchers.instanceOf(SolrException.class));
       SolrException se = (SolrException) ioe.getCause();
-      TimeoutException te = (TimeoutException) se.getCause();
-      assertNotNull(te);
+      assertNotNull("SolrException must have a TimeoutException cause", se.getCause());
+      assertThat(
+          "Cause of SolrException is incorrect",
+          se.getCause(),
+          Matchers.instanceOf(TimeoutException.class));
     }
   }
 

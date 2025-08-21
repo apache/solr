@@ -24,7 +24,7 @@ import org.apache.solr.util.SolrPluginUtils;
 
 public class MergePolicyFactoryArgs {
 
-  private final Map<String, Object> args;
+  final Map<String, Object> args;
 
   public MergePolicyFactoryArgs() {
     this.args = new HashMap<>();

@@ -221,7 +221,7 @@ This must be less than `maxMergeCount`.
 |===
 +
 A Boolean value (`true` or `false`) to explicitly control I/O throttling.
-By default throttling is enabled and the CMS will limit I/O throughput when merging to leave other (search, indexing) some room.
+By default throttling is disabled and the CMS will not limit I/O throughput when merging to leave other (search, indexing) some room.
 
 .Example: Dynamic defaults
 [source,xml]
@@ -303,9 +303,6 @@ WARNING: If multiple Solr instances in different JVMs modify an index, this type
 
 +
 See also the {lucene-javadocs}/core/org/apache/lucene/store/SingleInstanceLockFactory.html[SingleInstanceLockFactory javadocs].
-
-* `hdfs` uses `HdfsLockFactory` to support reading and writing index and transaction log files to a HDFS filesystem.
-See the section xref:deployment-guide:solr-on-hdfs.adoc[] for more details on using this feature.
 
 [source,xml]
 ----

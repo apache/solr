@@ -31,6 +31,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -40,13 +42,13 @@ import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.crossdc.common.CrossDcConf;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
@@ -85,7 +87,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final int maxCollapseRecords;
   private final SolrMessageProcessor messageProcessor;
 
-  protected final CloudSolrClient solrClient;
+  protected SolrClientSupplier solrClientSupplier;
 
   private final ThreadPoolExecutor executor;
 
@@ -94,6 +96,68 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final PartitionManager partitionManager;
 
   private final BlockingQueue<Runnable> queue = new BlockingQueue<>(10);
+
+  /**
+   * Supplier for creating and managing a working CloudSolrClient instance. This class ensures that
+   * the CloudSolrClient instance doesn't try to use its {@link
+   * org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider} in a closed state, which may
+   * happen if e.g. the ZooKeeper connection is lost. When this happens the CloudSolrClient is
+   * re-created to ensure it can continue to function properly.
+   *
+   * <p>TODO: this functionality should be moved to the CloudSolrClient itself.
+   */
+  public static class SolrClientSupplier implements Supplier<CloudSolrClient>, AutoCloseable {
+    private final AtomicReference<CloudSolrClient> solrClientRef = new AtomicReference<>();
+    private final String zkConnectString;
+
+    public SolrClientSupplier(String zkConnectString) {
+      this.zkConnectString = zkConnectString;
+    }
+
+    @Override
+    public void close() {
+      IOUtils.closeQuietly(solrClientRef.get());
+    }
+
+    protected CloudSolrClient createSolrClient() {
+      log.debug("Creating new SolrClient...");
+      return new CloudSolrClient.Builder(
+              Collections.singletonList(zkConnectString), Optional.empty())
+          .build();
+    }
+
+    @Override
+    public CloudSolrClient get() {
+      CloudSolrClient existingClient = solrClientRef.get();
+      if (existingClient == null) {
+        synchronized (solrClientRef) {
+          if (solrClientRef.get() == null) {
+            log.info("Initializing Solr client.");
+            solrClientRef.set(createSolrClient());
+          }
+          return solrClientRef.get();
+        }
+      }
+      if (existingClient.getClusterStateProvider().isClosed()) {
+        // lock out other threads and re-open the client if its ClusterStateProvider was closed
+        synchronized (solrClientRef) {
+          // refresh and check again
+          existingClient = solrClientRef.get();
+          if (existingClient.getClusterStateProvider().isClosed()) {
+            log.info("Re-creating Solr client because its ClusterStateProvider was closed.");
+            CloudSolrClient newClient = createSolrClient();
+            solrClientRef.set(newClient);
+            IOUtils.closeQuietly(existingClient);
+            return newClient;
+          } else {
+            return existingClient;
+          }
+        }
+      } else {
+        return existingClient;
+      }
+    }
+  }
 
   /**
    * @param conf The Kafka consumer configuration
@@ -157,7 +221,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
             r -> new Thread(r, "KafkaCrossDcConsumerWorker"));
     executor.prestartAllCoreThreads();
 
-    solrClient = createSolrClient(conf);
+    solrClientSupplier = createSolrClientSupplier(conf);
 
     messageProcessor = createSolrMessageProcessor();
 
@@ -170,13 +234,21 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
     log.info("Created Kafka resubmit producer");
   }
 
+  protected SolrClientSupplier createSolrClientSupplier(KafkaCrossDcConf conf) {
+    return new SolrClientSupplier(conf.get(KafkaCrossDcConf.ZK_CONNECT_STRING));
+  }
+
   protected SolrMessageProcessor createSolrMessageProcessor() {
-    return new SolrMessageProcessor(solrClient, resubmitRequest -> 0L);
+    return new SolrMessageProcessor(solrClientSupplier, resubmitRequest -> 0L);
   }
 
   public KafkaConsumer<String, MirroredSolrRequest<?>> createKafkaConsumer(Properties properties) {
     return new KafkaConsumer<>(
         properties, new StringDeserializer(), new MirroredSolrRequestSerializer());
+  }
+
+  protected KafkaMirroringSink createKafkaMirroringSink(KafkaCrossDcConf conf) {
+    return new KafkaMirroringSink(conf);
   }
 
   /**
@@ -219,7 +291,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         log.warn("Failed to close kafka mirroring sink", e);
       }
     } finally {
-      IOUtils.closeQuietly(solrClient);
+      IOUtils.closeQuietly(solrClientSupplier);
     }
   }
 
@@ -259,7 +331,6 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         partitionWork.partitionQueue.add(workUnit);
         try {
           ModifiableSolrParams lastUpdateParams = null;
-          NamedList<?> lastUpdateParamsAsNamedList = null;
           for (ConsumerRecord<String, MirroredSolrRequest<?>> requestRecord : partitionRecords) {
             if (log.isTraceEnabled()) {
               log.trace(
@@ -291,8 +362,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
             if (type == MirroredSolrRequest.Type.UPDATE
                 && (
                 // different params
-                (lastUpdateParams != null
-                        && !lastUpdateParams.toNamedList().equals(params.toNamedList()))
+                (lastUpdateParams != null && !lastUpdateParams.equals(params))
                     ||
                     // no collapsing
                     (collapseUpdates == CrossDcConf.CollapseUpdates.NONE)
@@ -310,7 +380,6 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
                 sendBatch(updateReqBatch, type, lastRecord, workUnit);
               }
               updateReqBatch = null;
-              lastUpdateParamsAsNamedList = null;
               currentCollapsed = 0;
               workUnit = new PartitionManager.WorkUnit(partition);
               workUnit.nextOffset = PartitionManager.getOffsetForPartition(partitionRecords);
@@ -334,9 +403,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
               }
               UpdateRequest update = (UpdateRequest) solrReq;
               MirroredSolrRequest.setParams(updateReqBatch, params);
-              if (lastUpdateParamsAsNamedList == null) {
-                lastUpdateParamsAsNamedList = lastUpdateParams.toNamedList();
-              }
+
               // merge
               List<SolrInputDocument> docs = update.getDocuments();
               if (docs != null) {
@@ -424,7 +491,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   }
 
   public void sendBatch(
-      SolrRequest<?> solrReqBatch,
+      SolrRequest<? extends SolrResponse> solrReqBatch,
       MirroredSolrRequest.Type type,
       ConsumerRecord<String, MirroredSolrRequest<?>> lastRecord,
       PartitionManager.WorkUnit workUnit) {
@@ -433,7 +500,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         executor.submit(
             () -> {
               try {
-                final MirroredSolrRequest<?> mirroredSolrRequest =
+                final var mirroredSolrRequest =
                     new MirroredSolrRequest<>(type, lastRecord.value().getAttempt(), solrReqBatch);
                 final IQueueHandler.Result<MirroredSolrRequest<?>> result =
                     messageProcessor.handleItem(mirroredSolrRequest);
@@ -511,7 +578,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         offsetCheckExecutor.shutdown();
         offsetCheckExecutor.awaitTermination(30, TimeUnit.SECONDS);
       }
-      solrClient.close();
+      IOUtils.closeQuietly(solrClientSupplier);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       log.warn("Interrupted while waiting for executor to shutdown");
@@ -520,16 +587,5 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
     } finally {
       Util.logMetrics(metrics);
     }
-  }
-
-  protected CloudSolrClient createSolrClient(KafkaCrossDcConf conf) {
-    return new CloudSolrClient.Builder(
-            Collections.singletonList(conf.get(KafkaCrossDcConf.ZK_CONNECT_STRING)),
-            Optional.empty())
-        .build();
-  }
-
-  protected KafkaMirroringSink createKafkaMirroringSink(KafkaCrossDcConf conf) {
-    return new KafkaMirroringSink(conf);
   }
 }

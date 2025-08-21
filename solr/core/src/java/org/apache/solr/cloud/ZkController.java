@@ -55,6 +55,7 @@ import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
@@ -76,6 +77,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollectionWatcher;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.NodesSysPropsCacher;
+import org.apache.solr.common.cloud.OnDisconnect;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
@@ -91,6 +93,7 @@ import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Compressor;
@@ -197,10 +200,13 @@ public class ZkController implements Closeable {
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
 
-  // only for internal usage
-  private Http2SolrClient http2SolrClient;
-
   private CloudHttp2SolrClient cloudSolrClient;
+
+  private final ExecutorService zkConnectionListenerCallbackExecutor =
+      ExecutorUtil.newMDCAwareSingleThreadExecutor(
+          new SolrNamedThreadFactory("zkConnectionListenerCallback"));
+  private final OnReconnect onReconnect = this::onReconnect;
+  private final OnDisconnect onDisconnect = this::onDisconnect;
 
   private final String zkServerAddress; // example: 127.0.0.1:54062/solr
 
@@ -250,7 +256,7 @@ public class ZkController implements Closeable {
   // keeps track of a list of objects that need to know a new ZooKeeper session was created after
   // expiration occurred ref is held as a HashSet since we clone the set before notifying to avoid
   // synchronizing too long
-  private HashSet<OnReconnect> reconnectListeners = new HashSet<>();
+  private final HashSet<OnReconnect> reconnectListeners = new HashSet<>();
 
   private class RegisterCoreAsync implements Callable<Object> {
 
@@ -272,22 +278,6 @@ public class ZkController implements Closeable {
       }
       register(descriptor.getName(), descriptor, recoverReloadedCores, afterExpiration, false);
       return descriptor;
-    }
-  }
-
-  // notifies registered listeners after the ZK reconnect in the background
-  private static class OnReconnectNotifyAsync implements Callable<Object> {
-
-    private final OnReconnect listener;
-
-    OnReconnectNotifyAsync(OnReconnect listener) {
-      this.listener = listener;
-    }
-
-    @Override
-    public Object call() throws Exception {
-      listener.command();
-      return null;
     }
   }
 
@@ -361,12 +351,19 @@ public class ZkController implements Closeable {
             .withUrl(zkServerAddress)
             .withTimeout(clientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
-            .withReconnectListener(this::onReconnect)
-            .withDisconnectListener((sessionExpired) -> onDisconnect(sessionExpired))
             .withAclProvider(zkACLProvider)
             .withClosedCheck(cc::isShutDown)
             .withCompressor(compressor)
             .build();
+
+    zkClient
+        .getCuratorFramework()
+        .getConnectionStateListenable()
+        .addListener(onReconnect, zkConnectionListenerCallbackExecutor);
+    zkClient
+        .getCuratorFramework()
+        .getConnectionStateListenable()
+        .addListener(onDisconnect, zkConnectionListenerCallbackExecutor);
     // Refuse to start if ZK has a non empty /clusterstate.json or a /solr.xml file
     checkNoOldClusterstate(zkClient);
 
@@ -488,6 +485,9 @@ public class ZkController implements Closeable {
           } else {
             register(descriptor.getName(), descriptor, true, true, false);
           }
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw e;
         } catch (Exception e) {
           log.error("Error registering SolrCore", e);
         }
@@ -503,11 +503,22 @@ public class ZkController implements Closeable {
       for (OnReconnect listener : clonedListeners) {
         try {
           if (executorService != null) {
-            executorService.submit(new OnReconnectNotifyAsync(listener));
+            executorService.execute(
+                () -> {
+                  try {
+                    listener.onReconnect();
+                  } catch (Throwable exc) {
+                    // not much we can do here other than warn in the log
+                    log.warn(
+                        "Error when notifying OnReconnect listener {} after session re-connected.",
+                        listener,
+                        exc);
+                  }
+                });
           } else {
-            listener.command();
+            listener.onReconnect();
           }
-        } catch (Exception exc) {
+        } catch (Throwable exc) {
           // not much we can do here other than warn in the log
           log.warn(
               "Error when notifying OnReconnect listener {} after session re-connected.",
@@ -518,7 +529,9 @@ public class ZkController implements Closeable {
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
-      throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
+      // This means that we are closing down and the executor is shut down.
+      // There is no need to throw an additional error here, as the executor will
+      // not accept further listener commands.
     } catch (Exception e) {
       log.error("Exception during reconnect", e);
       throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
@@ -579,6 +592,10 @@ public class ZkController implements Closeable {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
+  }
+
+  public CloudSolrClient getSolrClient() {
+    return getSolrCloudManager().getSolrClient();
   }
 
   public int getLeaderVoteWait() {
@@ -686,6 +703,16 @@ public class ZkController implements Closeable {
 
   public void preClose() {
     this.isClosed = true;
+    try {
+      // We do not want to react to connection state changes after we have started to close
+      zkClient.getCuratorFramework().getConnectionStateListenable().removeListener(onReconnect);
+      zkClient.getCuratorFramework().getConnectionStateListenable().removeListener(onDisconnect);
+      ExecutorUtil.shutdownNowAndAwaitTermination(zkConnectionListenerCallbackExecutor);
+    } catch (Exception e) {
+      log.warn(
+          "Error stopping and shutting down zkConnectionListenerCallbackExecutor. Continue closing the ZkController",
+          e);
+    }
 
     try {
       if (getZkClient().isConnected()) {
@@ -754,7 +781,6 @@ public class ZkController implements Closeable {
       sysPropsCacher.close();
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudManager));
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudSolrClient));
-      customThreadPool.execute(() -> IOUtils.closeQuietly(http2SolrClient));
 
       try {
         try {
@@ -850,18 +876,11 @@ public class ZkController implements Closeable {
       if (cloudManager != null) {
         return cloudManager;
       }
-      http2SolrClient =
-          new Http2SolrClient.Builder()
-              .withHttpClient(cc.getDefaultHttpSolrClient())
-              .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
-              .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-              .build();
       cloudSolrClient =
           new CloudHttp2SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
-              .withHttpClient(http2SolrClient)
+              .withHttpClient(cc.getDefaultHttpSolrClient())
               .build();
       cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
-      cloudManager.getClusterStateProvider().connect();
     }
     return cloudManager;
   }
@@ -1105,7 +1124,7 @@ public class ZkController implements Closeable {
           (collectionState) -> {
             if (collectionState == null) return false;
             boolean allStatesCorrect =
-                Optional.ofNullable(collectionState.getReplicas(nodeName)).stream()
+                Optional.ofNullable(collectionState.getReplicasOnNode(nodeName)).stream()
                     .flatMap(List::stream)
                     .allMatch(replica -> replica.getState() == Replica.State.DOWN);
 
@@ -1315,16 +1334,21 @@ public class ZkController implements Closeable {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
 
-      // in this case, we want to wait for the leader as long as the leader might
-      // wait for a vote, at least - but also long enough that a large cluster has
-      // time to get its act together
-      String leaderUrl = getLeader(cloudDesc, leaderVoteWait + 600000);
+      final String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
 
-      String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
-      log.debug("We are {} and leader is {}", ourUrl, leaderUrl);
-      boolean isLeader = leaderUrl.equals(ourUrl);
-      assert !isLeader || replica.getType().leaderEligible
-          : replica.getType().name() + " replica became leader!";
+      // Check if we are the (new) leader before deciding if/what type of recovery to do
+      boolean isLeader = false;
+      if (replica.getType().leaderEligible) {
+        // if are eligible to be a leader, then we might currently be participating in leader
+        // election.
+
+        // in this case, we want to wait for the leader as long as the leader might
+        // wait for a vote, at least - but also long enough that a large cluster has
+        // time to get its act together
+        String leaderUrl = getLeader(cloudDesc, leaderVoteWait + 600000);
+        log.debug("We are {} and leader is {}", ourUrl, leaderUrl);
+        isLeader = leaderUrl.equals(ourUrl);
+      }
 
       try (SolrCore core = cc.getCore(desc.getName())) {
 
@@ -1368,6 +1392,13 @@ public class ZkController implements Closeable {
             }
           }
         }
+
+        // If we don't already have a reason to skipRecovery, check if we should skip
+        // due to replica property
+        if (!skipRecovery) {
+          skipRecovery = checkSkipRecoveryReplicaProp(core, replica);
+        }
+
         boolean didRecovery =
             checkRecovery(
                 recoverReloadedCores,
@@ -1408,6 +1439,62 @@ public class ZkController implements Closeable {
     } finally {
       MDCLoggingContext.clear();
     }
+  }
+
+  static final String SKIP_LEADER_RECOVERY_PROP = "skipLeaderRecovery";
+
+  /**
+   * Note: internally, property names are always lowercase
+   *
+   * @see #SKIP_LEADER_RECOVERY_PROP
+   */
+  static final String SKIP_LEADER_RECOVERY_PROP_KEY =
+      CollectionAdminParams.PROPERTY_PREFIX + SKIP_LEADER_RECOVERY_PROP.toLowerCase(Locale.ROOT);
+
+  /**
+   * Returns true if and only if this replica has a replica property indicating that leader recovery
+   * should be skipped <em>AND</em> the replica meets the neccessary criteria to respect that
+   * property.
+   *
+   * @see #SKIP_LEADER_RECOVERY_PROP_KEY
+   */
+  private boolean checkSkipRecoveryReplicaProp(final SolrCore core, final Replica replica) {
+
+    if (!replica.getBool(SKIP_LEADER_RECOVERY_PROP_KEY, false)) {
+      // Property is not set (or set to false) so we are definitely not skipping recovery
+      return false;
+    }
+
+    // else: Sanity check if we should respect the property ...
+
+    if (replica.getType().requireTransactionLog) {
+      if (log.isWarnEnabled()) {
+        log.warn(
+            "Ignoring {} replica property for replica {} because replica type {} requires transaction logs",
+            SKIP_LEADER_RECOVERY_PROP,
+            replica.getName(),
+            replica.getType());
+      }
+      return false;
+    }
+
+    if (null == ReplicateFromLeader.getCommitVersion(core)) {
+      if (log.isWarnEnabled()) {
+        log.warn(
+            "Ignoring {} replica property for replica {} because there is no local index commit",
+            SKIP_LEADER_RECOVERY_PROP,
+            replica.getName());
+      }
+      return false;
+    }
+
+    if (log.isInfoEnabled()) {
+      log.info(
+          "Skipping recovery from leader for replica {} due to {} replica property",
+          replica.getName(),
+          SKIP_LEADER_RECOVERY_PROP);
+    }
+    return true;
   }
 
   private Replica getReplicaOrNull(DocCollection docCollection, String shard, String coreNodeName) {
@@ -1668,7 +1755,6 @@ public class ZkController implements Closeable {
 
       log.debug("publishing state={}", state);
       // System.out.println(Thread.currentThread().getStackTrace()[3]);
-      Integer numShards = cd.getCloudDescriptor().getNumShards();
 
       assert collection != null && collection.length() > 0;
 
@@ -1681,7 +1767,6 @@ public class ZkController implements Closeable {
             props.put(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower());
             props.put(ZkStateReader.STATE_PROP, state.toString());
             props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
-            props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
             props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
             props.put(
                 ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(getNodeName()));
@@ -1690,9 +1775,6 @@ public class ZkController implements Closeable {
             props.put(
                 ZkStateReader.REPLICA_TYPE, cd.getCloudDescriptor().getReplicaType().toString());
             props.put(ZkStateReader.FORCE_SET_STATE_PROP, "false");
-            if (numShards != null) {
-              props.put(ZkStateReader.NUM_SHARDS_PROP, numShards.toString());
-            }
             props.putIfNotNull(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
           };
 
@@ -1789,9 +1871,8 @@ public class ZkController implements Closeable {
 
   private ZkCollectionTerms getCollectionTerms(String collection) {
     synchronized (collectionToTerms) {
-      if (!collectionToTerms.containsKey(collection))
-        collectionToTerms.put(collection, new ZkCollectionTerms(collection, zkClient));
-      return collectionToTerms.get(collection);
+      return collectionToTerms.computeIfAbsent(
+          collection, col -> new ZkCollectionTerms(col, zkClient));
     }
   }
 
@@ -2065,7 +2146,8 @@ public class ZkController implements Closeable {
 
   /** Attempts to cancel all leader elections. This method should be called on node shutdown. */
   public void tryCancelAllElections() {
-    if (zkClient.isClosed()) {
+    if (!zkClient.isConnected()) {
+      log.warn("Skipping leader election node cleanup since we're disconnected from ZooKeeper.");
       return;
     }
     Collection<ElectionContext> values = electionContexts.values();

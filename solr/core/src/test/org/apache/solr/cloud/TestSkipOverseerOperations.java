@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.LiveNodesPredicate;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.Before;
@@ -237,7 +238,8 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
    * <p>The update happens in org.apache.solr.cloud.Overseer.ClusterStateUpdater.processQueueItem()
    */
   private int getNumLeaderOperations(CollectionAdminResponse resp) {
-    return (int) resp.getResponse().findRecursive("overseer_operations", "leader", "requests");
+    NamedList<Object> entries = resp.getResponse();
+    return (int) entries._get(List.of("overseer_operations", "leader", "requests"), null);
   }
 
   /**
@@ -245,7 +247,8 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
    * org.apache.solr.cloud.overseer.OverseerAction#STATE} message that sets replica properties
    */
   private int getNumStateOperations(CollectionAdminResponse resp) {
-    return (int) resp.getResponse().findRecursive("overseer_operations", "state", "requests");
+    NamedList<Object> entries = resp.getResponse();
+    return (int) entries._get(List.of("overseer_operations", "state", "requests"), null);
   }
 
   private String getOverseerLeader() throws IOException, SolrServerException {

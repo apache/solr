@@ -17,13 +17,8 @@
 
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.findTool;
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.StringReader;
@@ -79,7 +74,8 @@ public class StreamToolTest extends SolrCloudTestCase {
         new String[] {
           "--fields", "field9, field2, field3, field4",
         };
-    StreamTool streamTool = new StreamTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    StreamTool streamTool = new StreamTool(runtime);
     CommandLine cli = SolrCLI.processCommandLineArgs(streamTool, args);
     String[] outputFields = StreamTool.getOutputFields(cli);
     assert outputFields != null;
@@ -185,11 +181,10 @@ public class StreamToolTest extends SolrCloudTestCase {
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void testLocalCatStream() throws Exception {
-    File localFile = File.createTempFile("topLevel1", ".txt");
-    populateFileWithData(localFile.toPath());
+    Path localFile = Files.createTempFile("topLevel1", ".txt");
+    populateFileWithData(localFile);
 
-    StreamTool.LocalCatStream catStream =
-        new StreamTool.LocalCatStream(localFile.getAbsolutePath(), -1);
+    StreamTool.LocalCatStream catStream = new StreamTool.LocalCatStream(localFile.toString(), -1);
     List<Tuple> tuples = new ArrayList();
     try {
       catStream.open();
@@ -210,8 +205,8 @@ public class StreamToolTest extends SolrCloudTestCase {
 
     for (int i = 0; i < 4; i++) {
       Tuple t = tuples.get(i);
-      assertEquals(localFile.getName() + " line " + (i + 1), t.get("line"));
-      assertEquals(localFile.getAbsolutePath(), t.get("file"));
+      assertEquals(localFile.getFileName() + " line " + (i + 1), t.get("line"));
+      assertEquals(localFile.toString(), t.get("file"));
     }
   }
 
@@ -243,7 +238,7 @@ public class StreamToolTest extends SolrCloudTestCase {
           cluster.getZkClient().getZkServerAddress(),
           expression
         };
-    assertEquals(1, runTool(args));
+    assertEquals(1, CLITestHelper.runTool(args, StreamTool.class));
   }
 
   @Test
@@ -260,15 +255,15 @@ public class StreamToolTest extends SolrCloudTestCase {
           cluster.getZkClient().getZkServerAddress(),
           expression
         };
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
   }
 
   @Test
   public void testRunEchoStreamLocally() throws Exception {
 
     String expression = "echo(Hello)";
-    File expressionFile = File.createTempFile("expression", ".EXPR");
-    FileWriter writer = new FileWriter(expressionFile, Charset.defaultCharset());
+    Path expressionFile = Files.createTempFile("expression", ".EXPR");
+    BufferedWriter writer = Files.newBufferedWriter(expressionFile, Charset.defaultCharset());
     writer.write(expression);
     writer.close();
 
@@ -281,10 +276,10 @@ public class StreamToolTest extends SolrCloudTestCase {
       "--verbose",
       "-zk-host",
       cluster.getZkClient().getZkServerAddress(),
-      expressionFile.getAbsolutePath()
+      expressionFile.toString()
     };
 
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
 
     // test passing in the expression directly
     args =
@@ -298,7 +293,7 @@ public class StreamToolTest extends SolrCloudTestCase {
           expression
         };
 
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
   }
 
   @Test
@@ -312,8 +307,8 @@ public class StreamToolTest extends SolrCloudTestCase {
         clusterShape(1, 1));
 
     String expression = "echo(Hello)";
-    File expressionFile = File.createTempFile("expression", ".EXPR");
-    FileWriter writer = new FileWriter(expressionFile, Charset.defaultCharset());
+    Path expressionFile = Files.createTempFile("expression", ".EXPR");
+    BufferedWriter writer = Files.newBufferedWriter(expressionFile, Charset.defaultCharset());
     writer.write(expression);
     writer.close();
 
@@ -329,10 +324,10 @@ public class StreamToolTest extends SolrCloudTestCase {
       cluster.getZkClient().getZkServerAddress(),
       "--credentials",
       SecurityJson.USER_PASS,
-      expressionFile.getAbsolutePath()
+      expressionFile.toString()
     };
 
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
 
     // test passing in the expression directly
     args =
@@ -350,14 +345,7 @@ public class StreamToolTest extends SolrCloudTestCase {
           expression
         };
 
-    assertEquals(0, runTool(args));
-  }
-
-  private int runTool(String[] args) throws Exception {
-    Tool tool = findTool(args);
-    assertTrue(tool instanceof StreamTool);
-    CommandLine cli = parseCmdLine(tool, args);
-    return tool.runTool(cli);
+    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
   }
 
   // Copied from StreamExpressionTest.java

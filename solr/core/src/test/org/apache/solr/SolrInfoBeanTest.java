@@ -16,12 +16,14 @@
  */
 package org.apache.solr;
 
-import java.io.File;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.admin.LukeRequestHandler;
@@ -88,30 +90,37 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4 {
   }
 
   private static List<Class<?>> getClassesForPackage(String pckgname) throws Exception {
-    ArrayList<File> directories = new ArrayList<>();
+    ArrayList<Path> directories = new ArrayList<>();
     ClassLoader cld = h.getCore().getResourceLoader().getClassLoader();
     String path = pckgname.replace('.', '/');
     Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
       final URI uri = resources.nextElement().toURI();
       if (!"file".equalsIgnoreCase(uri.getScheme())) continue;
-      final File f = new File(uri);
+      final Path f = Path.of(uri);
       directories.add(f);
     }
 
     ArrayList<Class<?>> classes = new ArrayList<>();
-    for (File directory : directories) {
-      if (directory.exists()) {
-        String[] files = directory.list();
-        for (String file : files) {
-          if (file.endsWith(".class")) {
-            String clazzName = file.substring(0, file.length() - 6);
-            // exclude Test classes that happen to be in these packages.
-            // class.ForName'ing some of them can cause trouble.
-            if (!clazzName.endsWith("Test") && !clazzName.startsWith("Test")) {
-              classes.add(Class.forName(pckgname + '.' + clazzName));
-            }
-          }
+    for (Path directory : directories) {
+      if (Files.exists(directory)) {
+        try (Stream<Path> files = Files.list(directory)) {
+          files.forEach(
+              (file) -> {
+                String fileName = file.getFileName().toString();
+                if (fileName.endsWith(".class")) {
+                  String clazzName = fileName.substring(0, fileName.length() - 6);
+                  // exclude Test classes that happen to be in these packages.
+                  // class.ForName'ing some of them can cause trouble.
+                  if (!clazzName.endsWith("Test") && !clazzName.startsWith("Test")) {
+                    try {
+                      classes.add(Class.forName(pckgname + '.' + clazzName));
+                    } catch (ClassNotFoundException e) {
+                      throw new RuntimeException(e);
+                    }
+                  }
+                }
+              });
         }
       }
     }

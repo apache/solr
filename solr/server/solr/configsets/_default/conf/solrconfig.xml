@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>9.12</luceneMatchVersion>
+  <luceneMatchVersion>10.2</luceneMatchVersion>
 
   <!-- Data Directory
 
@@ -526,16 +526,8 @@
          POST. You can use POST to pass request parameters not
          fitting into the URL.
 
-         addHttpRequestToContext - if set to true, it will instruct
-         the requestParsers to include the original HttpServletRequest
-         object in the context map of the SolrQueryRequest under the
-         key "httpRequest". It will not be used by any of the existing
-         Solr components, but may be useful when developing custom
-         plugins.
-
     <requestParsers multipartUploadLimitInKB="-1"
-                    formdataUploadLimitInKB="-1"
-                    addHttpRequestToContext="false"/>
+                    formdataUploadLimitInKB="-1"/>
       -->
 
     <!-- HTTP Caching

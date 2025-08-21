@@ -48,13 +48,6 @@ public class TestConfigOverlay extends SolrTestCase {
         isEditableProp("requestDispatcher.requestParsers.multipartUploadLimitInKB", false, null));
     assertTrue(
         isEditableProp("requestDispatcher.requestParsers.formdataUploadLimitInKB", false, null));
-    assertTrue(
-        isEditableProp("requestDispatcher.requestParsers.enableRemoteStreaming", false, null));
-    assertTrue(isEditableProp("requestDispatcher.requestParsers.enableStreamBody", false, null));
-    assertTrue(
-        isEditableProp("requestDispatcher.requestParsers.addHttpRequestToContext", false, null));
-
-    assertTrue(isEditableProp("requestDispatcher.handleSelect", false, null));
 
     assertTrue(isEditableProp("query.filterCache.initialSize", false, null));
     assertFalse(isEditableProp("query.filterCache", false, null));
