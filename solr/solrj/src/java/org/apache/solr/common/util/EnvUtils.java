@@ -226,14 +226,13 @@ public class EnvUtils {
             deprecatedKey,
             key);
 
-        if (key.endsWith(".enabled") && deprecatedKey.endsWith(".disabled") ){
+        if (key.endsWith(".enabled") && deprecatedKey.endsWith(".disabled")) {
           log.warn(
               "Converting from legacy system property {} to modern .enabled equivalent {} by flipping the boolean property value.",
               deprecatedKey,
               key);
           setProperty(key, String.valueOf(!Boolean.getBoolean(deprecatedKey)));
-        }
-        else {
+        } else {
           setProperty(key, sysProperties.getProperty(deprecatedKey));
         }
       }

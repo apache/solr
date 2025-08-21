@@ -119,6 +119,5 @@ public class EnvUtilsTest extends SolrTestCase {
 
     EnvUtils.init(false, env, defaultProps);
     assertEquals(false, EnvUtils.getPropertyAsBool("solr.ui.enabled"));
-
   }
 }
