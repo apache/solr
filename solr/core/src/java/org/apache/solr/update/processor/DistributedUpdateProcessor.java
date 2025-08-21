@@ -31,7 +31,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.GenericCollectionRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -681,7 +681,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     params.set("getInputDocument", id);
     params.set("onlyIfActive", true);
     var ur =
-        new GenericCollectionRequest(METHOD.GET, "/get", SolrRequest.SolrRequestType.ADMIN, params);
+        new GenericSolrRequest(METHOD.GET, "/get", SolrRequest.SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
 
     String leaderUrl = getLeaderUrl(id);
 

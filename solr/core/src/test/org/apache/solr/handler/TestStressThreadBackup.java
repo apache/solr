@@ -41,7 +41,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericCollectionRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -136,11 +135,12 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
           /** no solrj API for ReplicationHandler */
           private SolrRequest<?> makeReplicationReq(SolrParams p) {
-            return new GenericCollectionRequest(
-                GenericSolrRequest.METHOD.POST,
-                "/replication",
-                SolrRequest.SolrRequestType.ADMIN,
-                p);
+            return new GenericSolrRequest(
+                    GenericSolrRequest.METHOD.POST,
+                    "/replication",
+                    SolrRequest.SolrRequestType.ADMIN,
+                    p)
+                .setRequiresCollection(true);
           }
 
           /**

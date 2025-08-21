@@ -49,7 +49,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericCollectionRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -292,12 +292,13 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         10,
         cluster.getSolrClient(),
-        new GenericCollectionRequest(
-            SolrRequest.METHOD.GET,
-            "/stream",
-            SolrRequest.SolrRequestType.ADMIN,
-            new MapSolrParams(
-                Map.of("collection", COLLECTION_NAME, WT, JAVABIN, "action", "plugins"))),
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET,
+                "/stream",
+                SolrRequest.SolrRequestType.ADMIN,
+                new MapSolrParams(
+                    Map.of("collection", COLLECTION_NAME, WT, JAVABIN, "action", "plugins")))
+            .setRequiresCollection(true),
         Map.of(":plugins:mincopy", "org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric"));
 
     UpdateRequest ur = new UpdateRequest();
@@ -436,14 +437,14 @@ public class TestPackages extends SolrCloudTestCase {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("collection", COLLECTION_NAME);
-    new GenericCollectionRequest(
+    new GenericSolrRequest(
         SolrRequest.METHOD.POST, "/config/params", SolrRequest.SolrRequestType.ADMIN, params) {
       @Override
       public RequestWriter.ContentWriter getContentWriter(String expectedType) {
         return new RequestWriter.StringPayloadContentWriter(
             "{set:{PKG_VERSIONS:{mypkg : '1.1'}}}", ClientUtils.TEXT_JSON);
       }
-    }.process(cluster.getSolrClient());
+    }.setRequiresCollection(true).process(cluster.getSolrClient());
 
     add.version = "2.1";
     add.files = Arrays.asList(new String[] {FILE3, URP2, EXPR1});
@@ -461,14 +462,14 @@ public class TestPackages extends SolrCloudTestCase {
     verifyComponent(
         cluster.getSolrClient(), COLLECTION_NAME, "requestHandler", "/runtime", "mypkg", "1.1");
 
-    new GenericCollectionRequest(
+    new GenericSolrRequest(
         SolrRequest.METHOD.POST, "/config/params", SolrRequest.SolrRequestType.ADMIN, params) {
       @Override
       public RequestWriter.ContentWriter getContentWriter(String expectedType) {
         return new RequestWriter.StringPayloadContentWriter(
             "{set:{PKG_VERSIONS:{mypkg : '2.1'}}}", ClientUtils.TEXT_JSON);
       }
-    }.process(cluster.getSolrClient());
+    }.setRequiresCollection(true).process(cluster.getSolrClient());
 
     // now, let's force every collection using 'mypkg' to refresh
     // so that it uses version 2.1
@@ -562,11 +563,12 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         10,
         client,
-        new GenericCollectionRequest(
-            SolrRequest.METHOD.GET,
-            "/config/" + componentType,
-            SolrRequest.SolrRequestType.ADMIN,
-            params),
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET,
+                "/config/" + componentType,
+                SolrRequest.SolrRequestType.ADMIN,
+                params)
+            .setRequiresCollection(true),
         Map.of(
             ":config:" + componentType + ":" + componentName + ":_packageinfo_:package", pkg,
             ":config:" + componentType + ":" + componentName + ":_packageinfo_:version", version));

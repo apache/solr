@@ -43,7 +43,6 @@ import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.GenericCollectionRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.prometheus.collector.MetricSamples;
@@ -143,8 +142,9 @@ public abstract class SolrScraper implements Closeable {
               METHOD.GET, query.getPath(), SolrRequestType.ADMIN, query.getParameters());
     } else {
       request =
-          new GenericCollectionRequest(
-              METHOD.GET, query.getPath(), SolrRequestType.UNSPECIFIED, query.getParameters());
+          new GenericSolrRequest(
+                  METHOD.GET, query.getPath(), SolrRequestType.UNSPECIFIED, query.getParameters())
+              .setRequiresCollection(true);
     }
 
     NamedList<Object> response;

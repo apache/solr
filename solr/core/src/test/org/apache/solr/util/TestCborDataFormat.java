@@ -38,7 +38,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericCollectionRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -146,11 +146,12 @@ public class TestCborDataFormat extends SolrCloudTestCase {
   private void modifySchema(String testCollection, CloudSolrClient client)
       throws SolrServerException, IOException {
     client.request(
-        new GenericCollectionRequest(
+        new GenericSolrRequest(
                 SolrRequest.METHOD.POST,
                 "/schema",
                 SolrRequest.SolrRequestType.ADMIN,
                 SolrParams.of())
+            .setRequiresCollection(true)
             .withContent(
                 ("{\n"
                         + "\"add-field-type\" : {"
@@ -166,35 +167,38 @@ public class TestCborDataFormat extends SolrCloudTestCase {
         testCollection);
   }
 
-  private GenericCollectionRequest createJsonReq(byte[] b) {
-    return new GenericCollectionRequest(
+  private SolrRequest<?> createJsonReq(byte[] b) {
+    return new GenericSolrRequest(
             SolrRequest.METHOD.POST,
             "/update/json/docs",
             SolrRequest.SolrRequestType.UPDATE,
             new MapSolrParams(Map.of("commit", "true")))
+        .setRequiresCollection(true)
         .withContent(b, "application/json");
   }
 
   @SuppressWarnings("rawtypes")
-  private GenericCollectionRequest createJavabinReq(byte[] b) throws IOException {
+  private SolrRequest<?> createJavabinReq(byte[] b) throws IOException {
     List l = (List) Utils.fromJSON(b);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     new JavaBinCodec().marshal(l.iterator(), baos);
 
-    return new GenericCollectionRequest(
+    return new GenericSolrRequest(
             SolrRequest.METHOD.POST,
             "/update",
             SolrRequest.SolrRequestType.UPDATE,
             new MapSolrParams(Map.of("commit", "true")))
+        .setRequiresCollection(true)
         .withContent(baos.toByteArray(), "application/javabin");
   }
 
-  private GenericCollectionRequest createCborReq(byte[] b) throws IOException {
-    return new GenericCollectionRequest(
+  private SolrRequest<?> createCborReq(byte[] b) throws IOException {
+    return new GenericSolrRequest(
             SolrRequest.METHOD.POST,
             "/update/cbor",
             SolrRequest.SolrRequestType.UPDATE,
             new MapSolrParams(Map.of("commit", "true")))
+        .setRequiresCollection(true)
         .withContent(serializeToCbor(b), "application/cbor");
   }
 

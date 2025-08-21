@@ -85,9 +85,7 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
    * 'false' otherwise.
    *
    * @param requiresCollection true if a default collection should be used, false otherwise.
-   * @deprecated use {@link GenericCollectionRequest} instead
    */
-  @Deprecated
   public GenericSolrRequest setRequiresCollection(boolean requiresCollection) {
     this.requiresCollection = requiresCollection;
     return this;

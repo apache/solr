@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.GenericCollectionRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.util.NamedList;
@@ -192,11 +191,12 @@ public final class BackupStatusChecker {
   private String _checkBackupSuccess(final String backupName) throws Exception {
     final String label = (null == backupName ? "latest backup" : backupName);
     final SimpleSolrResponse rsp =
-        new GenericCollectionRequest(
+        new GenericSolrRequest(
                 GenericSolrRequest.METHOD.GET,
                 path,
                 SolrRequest.SolrRequestType.ADMIN,
                 params("command", "details"))
+            .setRequiresCollection(true)
             .process(client);
     final NamedList<?> data = rsp.getResponse();
     log.info("Checking Status of {}: {}", label, data);
@@ -272,11 +272,12 @@ public final class BackupStatusChecker {
   public boolean checkBackupDeletionSuccess(final String backupName) throws Exception {
     assertNotNull("backumpName must not be null", backupName);
     final SimpleSolrResponse rsp =
-        new GenericCollectionRequest(
+        new GenericSolrRequest(
                 GenericSolrRequest.METHOD.GET,
                 path,
                 SolrRequest.SolrRequestType.ADMIN,
                 params("command", "details"))
+            .setRequiresCollection(true)
             .process(client);
     final NamedList<?> data = rsp.getResponse();
     log.info("Checking Deletion Status of {}: {}", backupName, data);
