@@ -86,7 +86,7 @@ public class CacheConfig implements MapSerializable {
     if (nodes == null || nodes.isEmpty()) {
       return new LinkedHashMap<>();
     }
-    Map<String, CacheConfig> result = CollectionUtil.newHashMap(nodes.size());
+    Map<String, CacheConfig> result = CollectionUtil.newLinkedHashMap(nodes.size());
     for (ConfigNode node : nodes) {
       if (node.boolAttr("enabled", true)) {
         CacheConfig config =
@@ -157,12 +157,23 @@ public class CacheConfig implements MapSerializable {
           }
         };
     config.regenImpl = config.args.get("regenerator");
-    if (config.regenImpl != null) {
-      config.regenerator = loader.newInstance(config.regenImpl, CacheRegenerator.class);
+    if (config.regenImpl != null && !config.regenImpl.isEmpty()) {
+      config.regenerator =
+          loader.newInstance(
+              config.regenImpl,
+              CacheRegenerator.class,
+              EMPTY,
+              REGEN_PARAMS,
+              new Object[] {solrConfig, config});
     }
 
     return config;
   }
+
+  private static final String[] EMPTY = new String[0];
+
+  @SuppressWarnings("rawtypes")
+  private static final Class<?>[] REGEN_PARAMS = new Class[] {SolrConfig.class, CacheConfig.class};
 
   @SuppressWarnings("rawtypes")
   public SolrCache newInstance(SolrCore core) {

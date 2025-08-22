@@ -20,9 +20,11 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.UniformReservoir;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ArrayUtil;
@@ -31,7 +33,9 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.SolrCache.MetaEntry;
-import org.apache.solr.search.SolrCache.SidecarMetricProducer;
+import org.apache.solr.util.IOFunction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base class for {@link CacheRegenerator} implementations that may be used to internally wrap cache
@@ -60,8 +64,9 @@ import org.apache.solr.search.SolrCache.SidecarMetricProducer;
  * @param <M> {@link MetaEntry} value type. This is the type of the underlying "internal" cache that
  *     is used for autowarming and lifecycle operations.
  */
-public class MetaCacheRegenerator<K, V, M extends MetaEntry<V, M>>
-    implements CacheRegenerator, SidecarMetricProducer<K, M> {
+public class MetaCacheRegenerator<K, V, M extends MetaEntry<K, V, M>> implements CacheRegenerator {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int DEFAULT_BUCKETS = 10;
   private static final SearcherIOBiFunction<Query, DocSet> FILTER_REGEN_FUNC =
@@ -76,9 +81,10 @@ public class MetaCacheRegenerator<K, V, M extends MetaEntry<V, M>>
   }
 
   public static final class FilterHistogram
-      extends MetaCacheRegenerator<Query, DocSet, HitsMetaEntry<DocSet>> {
+      extends MetaCacheRegenerator<Query, DocSet, HitsMetaEntry<Query, DocSet>> {
     public FilterHistogram() {
       super(
+          true,
           FILTER_REGEN_FUNC,
           HitsMetaEntry.WRAP_FUNC,
           ".histogram",
@@ -96,9 +102,10 @@ public class MetaCacheRegenerator<K, V, M extends MetaEntry<V, M>>
   }
 
   public static final class FilterDump
-      extends MetaCacheRegenerator<Query, DocSet, HitsMetaEntry<DocSet>> {
+      extends MetaCacheRegenerator<Query, DocSet, HitsMetaEntry<Query, DocSet>> {
     public FilterDump() {
       super(
+          true,
           FILTER_REGEN_FUNC,
           HitsMetaEntry.WRAP_FUNC,
           ".dump",
@@ -128,11 +135,11 @@ public class MetaCacheRegenerator<K, V, M extends MetaEntry<V, M>>
     V apply(SolrIndexSearcher s, K k) throws IOException;
   }
 
+  private final boolean enabled;
   private final SearcherIOBiFunction<K, V> regenFunction;
-  private final Function<V, M> wrapFunction;
+  private final BiFunction<SegmentMap, V, M> wrapFunction;
   private final String metaType;
   private final Function<SolrCache<K, M>, MapWriter> mapWriterFunction;
-  private SolrMetricsContext metricsContext;
 
   /**
    * This ctor should be used by subclasses that will make regen decisions based on metadata. Such
@@ -141,14 +148,16 @@ public class MetaCacheRegenerator<K, V, M extends MetaEntry<V, M>>
    *
    * @param wrapFunction function to wrap raw values in a {@link MetaEntry} wrapper.
    */
-  public MetaCacheRegenerator(Function<V, M> wrapFunction) {
-    this(null, wrapFunction, null, null);
+  public MetaCacheRegenerator(boolean enabled, BiFunction<SegmentMap, V, M> wrapFunction) {
+    this(enabled, null, wrapFunction, null, null);
   }
 
   /**
    * This ctor should be used by subclasses that are strictly interested in cache entry metadata for
    * the purpose of reporting nuanced cache metrics.
    *
+   * @param enabled allow to disable; e.g., for cases where autowarming is a pre-requisite, and not
+   *     enabled.
    * @param regenFunction Function to regenerate raw value for the provided searcher and key.
    * @param wrapFunction function to wrap raw values in a {@link MetaEntry} wrapper.
    * @param metaType suffix added to the associated cache's metric name to define extra
@@ -156,10 +165,12 @@ public class MetaCacheRegenerator<K, V, M extends MetaEntry<V, M>>
    * @param mapWriterFunction defines the mapWriter for supplying meta-metrics
    */
   public MetaCacheRegenerator(
+      boolean enabled,
       SearcherIOBiFunction<K, V> regenFunction,
-      Function<V, M> wrapFunction,
+      BiFunction<SegmentMap, V, M> wrapFunction,
       String metaType,
       Function<SolrCache<K, M>, MapWriter> mapWriterFunction) {
+    this.enabled = enabled;
     this.regenFunction = regenFunction == null ? nullWarningRegenFunc() : regenFunction;
     this.wrapFunction = wrapFunction;
     if (metaType == null ^ mapWriterFunction == null) {
@@ -169,6 +180,22 @@ public class MetaCacheRegenerator<K, V, M extends MetaEntry<V, M>>
     this.metaType = metaType;
     this.mapWriterFunction = mapWriterFunction;
   }
+
+  /**
+   * After warming, associated caches should call this method to inform this regenerator. Doing so
+   * allows the regenerator to manage its cache-scoped metrics in a way that's roughly in sync with
+   * associated caches (e.g., per-cache vs. cumulative metrics).
+   */
+  public void postWarm() {
+    // no-op default implementation
+  }
+
+  /**
+   * Allows this regenerator to append metrics directly to the map entry writer for associated
+   * caches. e.g., for cache-scoped metrics that depend on metadata that only the regenerator is
+   * aware of
+   */
+  public void appendMetrics(MapWriter.EntryWriter map) throws IOException {}
 
   @Override
   @SuppressWarnings("unchecked")
@@ -192,38 +219,42 @@ public class MetaCacheRegenerator<K, V, M extends MetaEntry<V, M>>
 
   @Override
   public <K1> SolrCache<K1, ?> wrap(SolrCache<K1, ?> internal) {
+    if (!enabled) {
+      // If this regenerator's not enabled, don't wrap, and we should remove
+      // ourselves from the associated cache.
+      if (internal instanceof SolrCacheBase) {
+        log.warn(
+            "configured cache regenerator for {} is disabled (perhaps because no autowarming?)",
+            internal);
+        ((SolrCacheBase) internal).regenerator = null;
+      }
+      return internal;
+    }
     @SuppressWarnings("unchecked")
-    CaffeineCache<K, M> backing = (CaffeineCache<K, M>) internal;
+    SolrCache<K, M> backing = (SolrCache<K, M>) internal;
     @SuppressWarnings("unchecked")
-    SolrCache<K1, ?> ret = (SolrCache<K1, ?>) new MetaSolrCache<>(backing, wrapFunction);
+    SolrCache<K1, ?> ret = (SolrCache<K1, ?>) new MetaSolrCache<>(backing, wrapFunction, this);
     return ret;
   }
 
-  @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, SolrCache<K, M> cache) {
-    this.metricsContext = parentContext;
+  /**
+   * Allows this regenerator to add separate metrics under an associated cache's metrics context.
+   * The handling here is a bit unusual: since we want the added regen metrics to follow the
+   * lifecycle of the associated cache, we <i>don't</i> to treat the specified context as a "parent
+   * context", nor register ourselves as the owner of any contexts.
+   */
+  public final void initializeMetrics(
+      SolrMetricsContext context, String scope, SolrCache<K, M> cache) {
     if (metaType != null) {
       MetricsMap metricsMap = new MetricsMap(mapWriterFunction.apply(cache));
-      metricsContext.gauge(
-          metricsMap, true, scope.concat(metaType), cache.getCategory().toString());
+      context.gauge(metricsMap, true, scope.concat(metaType), cache.getCategory().toString());
     }
   }
 
-  @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public SolrMetricsContext getSolrMetricsContext() {
-    return metricsContext;
-  }
-
-  private static class HitsMetaEntry<V> implements MetaEntry<V, HitsMetaEntry<V>> {
+  private static class HitsMetaEntry<K, V> implements MetaEntry<K, V, HitsMetaEntry<K, V>> {
     @SuppressWarnings("UnnecessaryLambda")
-    private static final Function<DocSet, HitsMetaEntry<DocSet>> WRAP_FUNC =
-        (v) -> new HitsMetaEntry<>(v, 0);
+    private static final BiFunction<SegmentMap, DocSet, HitsMetaEntry<Query, DocSet>> WRAP_FUNC =
+        (segMap, v) -> new HitsMetaEntry<>(v, 0);
 
     private static final long BASE_RAM_BYTES =
         RamUsageEstimator.shallowSizeOfInstance(MetaEntry.class);
@@ -238,7 +269,7 @@ public class MetaCacheRegenerator<K, V, M extends MetaEntry<V, M>>
     }
 
     @Override
-    public V get() {
+    public V get(SegmentMap segMap, K key, IOFunction<? super K, ? extends V> mappingFunction) {
       hits.increment();
       return val;
     }
@@ -249,7 +280,7 @@ public class MetaCacheRegenerator<K, V, M extends MetaEntry<V, M>>
     }
 
     @Override
-    public HitsMetaEntry<V> metaClone(V val) {
+    public HitsMetaEntry<K, V> metaClone(V val) {
       return new HitsMetaEntry<>(val, priorHits + hits.sum());
     }
   }

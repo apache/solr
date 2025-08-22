@@ -695,6 +695,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           });
     }
 
+    if (solrConfig.ordMapCacheConfig != null
+        && solrConfig.ordMapCacheConfig.getRegenerator() == null) {
+      solrConfig.ordMapCacheConfig.setRegenerator(
+          new OrdMapRegenerator<>(solrConfig, solrConfig.ordMapCacheConfig));
+    }
+
     if (solrConfig.filterCacheConfig != null
         && solrConfig.filterCacheConfig.getRegenerator() == null) {
       solrConfig.filterCacheConfig.setRegenerator(
@@ -2546,6 +2552,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return a.intersects(getDocSet(deState));
   }
 
+  private SegmentMap cachedSegMap;
+
+  public SegmentMap getSegmentMap() {
+    return cachedSegMap != null
+        ? cachedSegMap
+        : (cachedSegMap = SegmentMap.generateSegmentMap(this));
+  }
+
   /**
    * Called on the initial searcher for each core, immediately before <code>firstSearcherListeners
    * </code> are called for the searcher. This provides the opportunity to perform initialization on
@@ -2554,7 +2568,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public void bootstrapFirstSearcher() {
     for (SolrCache<?, ?> solrCache : cacheList) {
-      solrCache.initialSearcher(this);
+      try {
+        solrCache.initialSearcher(this);
+      } catch (Throwable e) {
+        log.error("Exception registering searcher with cache {}", solrCache, e);
+        if (e instanceof Error) {
+          throw e;
+        }
+      }
     }
   }
 

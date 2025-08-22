@@ -336,13 +336,10 @@ public class SolrConfig implements MapSerializable {
         conf = new CacheConfig(CaffeineCache.class, args, null);
       }
       fieldValueCacheConfig = conf;
+
       conf = CacheConfig.getConfig(this, get("query").get("ordMapCache"), "query/ordMapCache");
-      if (conf != null) {
-        OrdMapRegenerator.configureRegenerator(this, conf);
-        ordMapCacheConfig = conf;
-      } else {
-        ordMapCacheConfig = OrdMapRegenerator.getDefaultCacheConfig();
-      }
+      ordMapCacheConfig = conf == null ? OrdMapRegenerator.getDefaultCacheConfig() : conf;
+
       useColdSearcher = get("query").get("useColdSearcher").boolVal(false);
       dataDir = get("dataDir").txt();
       if (dataDir != null && dataDir.length() == 0) dataDir = null;

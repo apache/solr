@@ -16,9 +16,12 @@
  */
 package org.apache.solr.search;
 
+import com.codahale.metrics.Gauge;
 import java.io.IOException;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.SolrCache.MetaEntry;
 import org.apache.solr.util.IOFunction;
@@ -28,9 +31,10 @@ import org.apache.solr.util.IOFunction;
  * {@link #backing} cache. Commonly used in conjunction with {@link
  * CacheRegenerator#wrap(SolrCache)}.
  */
-public class MetaSolrCache<K, V, M extends MetaEntry<V, M>> implements SolrCache<K, V> {
+public class MetaSolrCache<K, V, M extends MetaEntry<K, V, M>> implements SolrCache<K, V> {
   private final SolrCache<K, M> backing;
-  private final Function<V, M> mapping;
+  private final BiFunction<SegmentMap, V, M> mapping;
+  private final MetaCacheRegenerator<K, V, M> regen;
 
   /**
    * Creates an external view over the specified backing cache.
@@ -39,15 +43,229 @@ public class MetaSolrCache<K, V, M extends MetaEntry<V, M>> implements SolrCache
    * @param mapping a function that wraps "external" values as "internal" values associated with the
    *     backing cache.
    */
-  public MetaSolrCache(SolrCache<K, M> backing, Function<V, M> mapping) {
+  public MetaSolrCache(
+      SolrCache<K, M> backing,
+      BiFunction<SegmentMap, V, M> mapping,
+      MetaCacheRegenerator<K, V, M> regen) {
     this.backing = backing;
     this.mapping = mapping;
+    this.regen = regen;
   }
 
-  /** Returns the associated backing cache. */
+  /** Returns a shim wrapper around the associated backing cache. */
   @Override
   public SolrCache<?, ?> toInternal() {
-    return backing;
+    return new InternalMetaSolrCache<>(backing, this, regen);
+  }
+
+  /**
+   * Shim that is returned from {@link MetaSolrCache#toInternal()}. We could <i>almost</i> directly
+   * return {@link MetaSolrCache#backing}, but we need to intercept calls to {@link
+   * #initializeMetrics(SolrMetricsContext, String)} and {@link #warm(SolrIndexSearcher,
+   * SolrCache)}, in order to:
+   *
+   * <ul>
+   *   <li>incorporate regenerator-managed metrics in cache metrics; this is necessary because the
+   *       internal/external shimming of the cache (and metrics derived from metadata cache entry
+   *       value wrappers) are entirely managed by the regenerator, with no knowledge of the backing
+   *       cache
+   *   <li>add lifecycle hooks for the regenerator via {@link MetaCacheRegenerator#postWarm()} --
+   *       otherwise the regenerator just sees one entry at a time (this is used to modify regen
+   *       metrics -- see above -- in sync with the cache lifecycle).
+   * </ul>
+   */
+  private static final class InternalMetaSolrCache<K, V, M extends MetaEntry<K, V, M>>
+      implements SolrCache<K, M> {
+
+    private final SolrCache<K, M> backing;
+    private final MetaSolrCache<K, V, ?> external;
+    private final MetaCacheRegenerator<K, V, M> regen;
+
+    private InternalMetaSolrCache(
+        SolrCache<K, M> backing,
+        MetaSolrCache<K, V, M> external,
+        MetaCacheRegenerator<K, V, M> regen) {
+      this.backing = backing;
+      this.external = external;
+      this.regen = regen;
+    }
+
+    @Override
+    public Object init(Map<String, String> args, Object persistence, CacheRegenerator regenerator) {
+      throw new UnsupportedOperationException("not supported");
+    }
+
+    @Override
+    public String name() {
+      return backing.name();
+    }
+
+    @Override
+    public int size() {
+      return backing.size();
+    }
+
+    @Override
+    public M put(K key, M value) {
+      return backing.put(key, value);
+    }
+
+    @Override
+    public M get(K key) {
+      return backing.get(key);
+    }
+
+    @Override
+    public M remove(K key) {
+      return backing.remove(key);
+    }
+
+    @Override
+    public M computeIfAbsent(K key, IOFunction<? super K, ? extends M> mappingFunction)
+        throws IOException {
+      return backing.computeIfAbsent(key, mappingFunction);
+    }
+
+    @Override
+    public void clear() {
+      backing.clear();
+    }
+
+    @Override
+    public void forEach(BiConsumer<K, M> action) {
+      backing.forEach(action);
+    }
+
+    @Override
+    public void setState(State state) {
+      backing.setState(state);
+    }
+
+    @Override
+    public State getState() {
+      return backing.getState();
+    }
+
+    @Override
+    public void initialSearcher(SolrIndexSearcher initialSearcher) {
+      backing.initialSearcher(initialSearcher);
+    }
+
+    @Override
+    public void warm(SolrIndexSearcher searcher, SolrCache<K, M> old) {
+      @SuppressWarnings("unchecked")
+      InternalMetaSolrCache<K, V, M> other = (InternalMetaSolrCache<K, V, M>) old;
+      backing.warm(searcher, other.backing);
+      regen.postWarm();
+    }
+
+    @Override
+    public void close() throws IOException {
+      backing.close();
+    }
+
+    @Override
+    public int getMaxSize() {
+      return backing.getMaxSize();
+    }
+
+    @Override
+    public void setMaxSize(int maxSize) {
+      throw new UnsupportedOperationException("not supported");
+    }
+
+    @Override
+    public int getMaxRamMB() {
+      return backing.getMaxRamMB();
+    }
+
+    @Override
+    public void setMaxRamMB(int maxRamMB) {
+      throw new UnsupportedOperationException("not supported");
+    }
+
+    @Override
+    public boolean isRecursionSupported() {
+      return backing.isRecursionSupported();
+    }
+
+    @Override
+    public SolrCache<?, ?> toExternal() {
+      return external;
+    }
+
+    @Override
+    public SolrCache<?, ?> toInternal() {
+      return backing.toInternal();
+    }
+
+    @Override
+    public SegmentMap getSegmentMap() {
+      return backing.getSegmentMap();
+    }
+
+    @Override
+    public String getName() {
+      return backing.getName();
+    }
+
+    @Override
+    public String getDescription() {
+      return backing.getDescription();
+    }
+
+    @Override
+    public Category getCategory() {
+      return backing.getCategory();
+    }
+
+    private SolrMetricsContext solrMetricsContext;
+
+    @Override
+    public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+      // first grab metrics from the backing cache, to present as if our own
+      final MetricsMap[] wrappedMap = new MetricsMap[1];
+      final SolrMetricsContext tmp =
+          new SolrMetricsContext(null, null, null) {
+            @Override
+            public SolrMetricsContext getChildContext(Object child) {
+              return new SolrMetricsContext(null, null, null) {
+                @Override
+                public void unregister() {
+                  // no-op
+                }
+
+                @Override
+                public void gauge(
+                    Gauge<?> gauge, boolean force, String metricName, String... metricPath) {
+                  wrappedMap[0] = (MetricsMap) gauge;
+                }
+              };
+            }
+          };
+      backing.initializeMetrics(tmp, scope);
+      solrMetricsContext = parentContext.getChildContext(this);
+      final MetricsMap backingMetrics = wrappedMap[0];
+      MetricsMap cacheMap =
+          new MetricsMap(
+              (map) -> {
+                backingMetrics.writeMap(map);
+                // here append directly to the cache gauge metrics that are managed
+                // by the regenerator -- e.g., cache-scoped metrics that depend on
+                // metadata that only the regenerator is aware of.
+                regen.appendMetrics(map);
+              });
+      solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
+
+      // allow regenerator to append metrics as a separate gauge in the cache's
+      // `solrMetricsContext`.
+      regen.initializeMetrics(solrMetricsContext, scope, this);
+    }
+
+    @Override
+    public SolrMetricsContext getSolrMetricsContext() {
+      return solrMetricsContext;
+    }
   }
 
   @Override
@@ -67,26 +285,31 @@ public class MetaSolrCache<K, V, M extends MetaEntry<V, M>> implements SolrCache
 
   @Override
   public V put(K key, V value) {
-    MetaEntry<V, ?> replaced = backing.put(key, mapping.apply(value));
-    return replaced == null ? null : replaced.get();
+    SegmentMap segMap = backing.getSegmentMap();
+    M metaEntry = mapping.apply(segMap, value);
+    MetaEntry<K, V, ?> replaced = backing.put(key, metaEntry);
+    return replaced == null ? null : replaced.get(segMap, key);
   }
 
   @Override
   public V get(K key) {
-    MetaEntry<V, ?> ret = backing.get(key);
-    return ret == null ? null : ret.get();
+    MetaEntry<K, V, ?> ret = backing.get(key);
+    return ret == null ? null : ret.get(backing.getSegmentMap(), key);
   }
 
   @Override
   public V remove(K key) {
-    MetaEntry<V, ?> removed = backing.remove(key);
-    return removed == null ? null : removed.get();
+    MetaEntry<K, V, ?> removed = backing.remove(key);
+    return removed == null ? null : removed.get(backing.getSegmentMap(), key);
   }
 
   @Override
   public V computeIfAbsent(K key, IOFunction<? super K, ? extends V> mappingFunction)
       throws IOException {
-    return backing.computeIfAbsent(key, (k) -> mapping.apply(mappingFunction.apply(k))).get();
+    SegmentMap segMap = backing.getSegmentMap();
+    return backing
+        .computeIfAbsent(key, (k) -> mapping.apply(segMap, mappingFunction.apply(k)))
+        .get(segMap, key, mappingFunction);
   }
 
   @Override

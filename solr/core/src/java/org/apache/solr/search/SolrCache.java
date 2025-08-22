@@ -17,14 +17,12 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.apache.lucene.util.Accountable;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.IOFunction;
 
 /** Primary API for dealing with Solr's internal caches. */
@@ -230,30 +228,35 @@ public interface SolrCache<K, V> extends SolrInfoBean {
   }
 
   /**
+   * Returns the segmentMap for the searcher over which this cache is valid (cache is informed of
+   * this via {@link #initialSearcher(SolrIndexSearcher)} or {@link #warm(SolrIndexSearcher,
+   * SolrCache)}).
+   */
+  default SegmentMap getSegmentMap() {
+    return null;
+  }
+
+  /**
    * Intended for use as a cache value that wraps a raw value of type <code>V</code> in a {@link
    * MetaEntry} for tracking additional per-entry metadata.
    */
-  interface MetaEntry<V, E extends MetaEntry<V, E>> extends Supplier<V>, Accountable {
+  interface MetaEntry<K, V, E extends MetaEntry<K, V, E>> extends Accountable {
     /**
      * Returns a {@link MetaEntry} instance of the same concrete type, wrapping the specified raw
      * value. The returned value should inherit any relevant metadata from <code>this</code>
      * instance.
      */
     E metaClone(V val);
-  }
 
-  /**
-   * A special extension of SolrMetricProducer that may be implemented by {@link CacheRegenerator}s
-   * to register extra metrics associated with their associated {@link SolrCache}.
-   */
-  interface SidecarMetricProducer<K, M extends MetaEntry<?, M>> extends SolrMetricProducer {
-    /**
-     * Special metrics initialization method.
-     *
-     * @param parentContext the context of the associated cache.
-     * @param scope the scope of this metrics sidecar, as defined by the caller
-     * @param cache the associated cache
-     */
-    void initializeMetrics(SolrMetricsContext parentContext, String scope, SolrCache<K, M> cache);
+    V get(SegmentMap segMap, K key, IOFunction<? super K, ? extends V> mappingFunction)
+        throws IOException;
+
+    default V get(SegmentMap segMap, K key) {
+      try {
+        return get(segMap, key, null);
+      } catch (IOException ex) {
+        throw new UncheckedIOException(ex);
+      }
+    }
   }
 }

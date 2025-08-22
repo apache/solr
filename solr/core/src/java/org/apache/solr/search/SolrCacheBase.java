@@ -24,8 +24,6 @@ import java.util.Map;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.search.SolrCache.SidecarMetricProducer;
 import org.apache.solr.search.SolrCache.State;
 
 /** Common base class of reusable functionality for SolrCaches */
@@ -38,6 +36,11 @@ public abstract class SolrCacheBase implements SolrMetricProducer {
   private String name;
 
   protected AutoWarmCountRef autowarm;
+
+  static boolean autowarmOn(CacheConfig config) {
+    return new SolrCacheBase.AutoWarmCountRef((String) config.toMap(Map.of()).get("autowarmCount"))
+        .isAutoWarmingOn();
+  }
 
   /** Decides how many things to autowarm based on the size of another cache */
   public static class AutoWarmCountRef {
@@ -140,23 +143,5 @@ public abstract class SolrCacheBase implements SolrMetricProducer {
   public SolrCache<?, ?> toExternal() {
     SolrCache<?, ?> internal = (SolrCache<?, ?>) this;
     return regenerator == null ? internal : regenerator.wrap(internal);
-  }
-
-  private SolrMetricsContext solrMetricsContext;
-
-  @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
-    if (regenerator instanceof SidecarMetricProducer) {
-      // provide regenerators the opportunity to register extra metrics
-      ((SidecarMetricProducer) regenerator)
-          .initializeMetrics(solrMetricsContext, scope, (SolrCache) this);
-    }
-  }
-
-  @Override
-  public SolrMetricsContext getSolrMetricsContext() {
-    return solrMetricsContext;
   }
 }

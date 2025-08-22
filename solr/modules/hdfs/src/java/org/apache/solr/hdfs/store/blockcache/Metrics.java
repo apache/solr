@@ -51,11 +51,12 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
 
   private MetricsMap metricsMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private SolrMetricsContext solrMetricsContext;
   private long previous = System.nanoTime();
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
+    solrMetricsContext = parentContext.getChildContext(this);
     metricsMap =
         new MetricsMap(
             map -> {
@@ -113,7 +114,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
 
               previous = now;
             });
-    getSolrMetricsContext().gauge(metricsMap, true, getName(), getCategory().toString(), scope);
+    solrMetricsContext.gauge(metricsMap, true, getName(), getCategory().toString(), scope);
   }
 
   private float getPerSecond(long value, double seconds) {
@@ -130,5 +131,10 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
   @Override
   public String getDescription() {
     return "Provides metrics for the HdfsDirectoryFactory BlockCache.";
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 }
