@@ -214,7 +214,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       System.setProperty("host", "localhost");
       System.setProperty("jetty.port", String.valueOf(port));
-      System.setProperty("solr.log.dir", createTempDir("solr_logs").toString());
+      System.setProperty("solr.logs.dir", createTempDir("solr_logs").toString());
 
       standaloneSolr = new JettySolrRunner(solrHomeDir.toString(), port);
       Thread bg =

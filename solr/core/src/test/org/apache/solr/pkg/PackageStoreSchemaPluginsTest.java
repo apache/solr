@@ -60,7 +60,7 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("enable.packages", "true");
+    System.setProperty("solr.packages.enabled", "true");
     configureCluster(2)
         // add a configset where one schema field is of type `my.pkg.MyTextField`
         // this class is available via schema-plugins.jar.bin
@@ -79,7 +79,7 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
       cluster.shutdown();
       cluster = null;
     }
-    System.clearProperty("enable.packages");
+    System.clearProperty("solr.packages.enabled");
     super.tearDown();
   }
 
