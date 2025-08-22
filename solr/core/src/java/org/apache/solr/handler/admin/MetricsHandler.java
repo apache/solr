@@ -84,7 +84,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   public static final String SHARD_PARAM = "shard";
   public static final String REPLICA_PARAM = "replica";
   public static final String METRIC_NAME_PARAM = "name";
-  private final Set<String> labelFilterParams =
+  private final Set<String> labelFilterKeys =
       Set.of(CATEGORY_PARAM, CORE_PARAM, COLLECTION_PARAM, SHARD_PARAM, REPLICA_PARAM);
 
   // NOCOMMIT: This wt=prometheus will be removed as it will become the default for /admin/metrics
@@ -170,12 +170,10 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   }
 
   private void handlePrometheusRequest(SolrParams params, BiConsumer<String, Object> consumer) {
-    Set<String> metricNames = parseMetricNames(params);
-    Map<String, Set<String>> labelFilters = parseLabelFilters(params);
+    Set<String> metricNames = metricNamesFilter(params);
+    Map<String, Set<String>> labelFilters = labelFilters(params);
 
-    boolean hasFiltering = !metricNames.isEmpty() || !labelFilters.isEmpty();
-
-    if (!hasFiltering) {
+    if (!metricNames.isEmpty() || !labelFilters.isEmpty()) {
       consumer.accept(
           "metrics",
           mergeSnapshots(
@@ -197,7 +195,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     consumer.accept("metrics", mergedSnapshots);
   }
 
-  private Set<String> parseMetricNames(SolrParams params) {
+  private Set<String> metricNamesFilter(SolrParams params) {
     String[] metricNameParams = params.getParams(METRIC_NAME_PARAM);
     if (metricNameParams == null || metricNameParams.length == 0) {
       return Collections.emptySet();
@@ -212,30 +210,30 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return metricNames;
   }
 
-  private Map<String, Set<String>> parseLabelFilters(SolrParams params) {
+  private Map<String, Set<String>> labelFilters(SolrParams params) {
     Map<String, Set<String>> labelFilters = new HashMap<>();
-    labelFilterParams.forEach(
+    labelFilterKeys.forEach(
         (paramName) -> {
-          Set<String> labelFilter = readFilterLabels(params, paramName);
-          if (!labelFilter.isEmpty()) {
-            labelFilters.put(paramName, labelFilter);
+          Set<String> filterValues = labelFilterValues(params, paramName);
+          if (!filterValues.isEmpty()) {
+            labelFilters.put(paramName, filterValues);
           }
         });
 
     return labelFilters;
   }
 
-  private Set<String> readFilterLabels(SolrParams params, String paramName) {
+  private Set<String> labelFilterValues(SolrParams params, String paramName) {
     String[] filterLabels = params.getParams(paramName);
-    Set<String> allLabels = new HashSet<>();
+    Set<String> labelValues = new HashSet<>();
     if (filterLabels != null) {
       for (String labels : filterLabels) {
         if (labels != null && !labels.trim().isEmpty()) {
-          allLabels.addAll(StrUtils.splitSmart(labels, ','));
+          labelValues.addAll(StrUtils.splitSmart(labels, ','));
         }
       }
     }
-    return allLabels;
+    return labelValues;
   }
 
   private NamedList<Object> handleDropwizardRegistry(SolrParams params) {
