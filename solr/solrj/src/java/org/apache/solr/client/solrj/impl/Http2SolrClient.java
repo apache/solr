@@ -296,6 +296,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
     httpClient.setConnectTimeout(builder.getConnectionTimeoutMillis());
+    httpClient.setIdleTimeout(-1); // don't enforce an idle timeout at this level
     // note: idle & request timeouts are set per request
 
     var cookieStore = builder.getCookieStore();
