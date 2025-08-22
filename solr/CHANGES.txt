@@ -17,6 +17,8 @@ New Features
 * SOLR-14414: Introduce a new, experimental Admin UI that can be used aside the current Admin UI. The new module is
   loaded together with the existing Admin UI and available under the URL path /solr/compose. (Christos Malliaridis)
 
+* SOLR-17864: Standarized patterns for system property naming across Solr.  i.e enable.packages is now solr.packages.enabled.  (janhoy, Eric Pugh)
+
 Improvements
 ---------------------
 
