@@ -16,8 +16,6 @@
  */
 package org.apache.solr.update;
 
-import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
-
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
@@ -25,9 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
@@ -41,10 +36,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
-import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
-import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
-import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,12 +69,6 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private final Http2SolrClient recoveryOnlyClient;
 
-  private final CloseableHttpClient defaultClient;
-
-  private final InstrumentedPoolingHttpClientConnectionManager defaultConnectionManager;
-
-  private final InstrumentedHttpRequestExecutor httpRequestExecutor;
-
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
 
   private SolrMetricsContext solrMetricsContext;
@@ -91,13 +77,9 @@ public class UpdateShardHandler implements SolrInfoBean {
   private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
-    defaultConnectionManager =
-        new InstrumentedPoolingHttpClientConnectionManager(
-            HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
+
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     if (cfg != null) {
-      defaultConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
-      defaultConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
       clientParams.set(
           HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
@@ -112,12 +94,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     }
     log.debug("Created default UpdateShardHandler HTTP client with params: {}", clientParams);
 
-    httpRequestExecutor = new InstrumentedHttpRequestExecutor(getMetricNameStrategy(cfg));
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
-
-    defaultClient =
-        HttpClientUtil.createClient(
-            clientParams, defaultConnectionManager, false, httpRequestExecutor);
 
     Set<String> urlParamNames =
         Set.of(
@@ -158,23 +135,6 @@ public class UpdateShardHandler implements SolrInfoBean {
     }
   }
 
-  private HttpClientMetricNameStrategy getMetricNameStrategy(UpdateShardHandlerConfig cfg) {
-    HttpClientMetricNameStrategy metricNameStrategy =
-        KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
-    if (cfg != null) {
-      metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
-      if (metricNameStrategy == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Unknown metricNameStrategy: "
-                + cfg.getMetricNameStrategy()
-                + " found. Must be one of: "
-                + KNOWN_METRIC_NAME_STRATEGIES.keySet());
-      }
-    }
-    return metricNameStrategy;
-  }
-
   private InstrumentedHttpListenerFactory.NameStrategy getNameStrategy(
       UpdateShardHandlerConfig cfg) {
     InstrumentedHttpListenerFactory.NameStrategy nameStrategy =
@@ -191,7 +151,7 @@ public class UpdateShardHandler implements SolrInfoBean {
             "Unknown metricNameStrategy: "
                 + cfg.getMetricNameStrategy()
                 + " found. Must be one of: "
-                + KNOWN_METRIC_NAME_STRATEGIES.keySet());
+                + InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.keySet());
       }
     }
     return nameStrategy;
@@ -207,7 +167,6 @@ public class UpdateShardHandler implements SolrInfoBean {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
     trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
-    defaultConnectionManager.initializeMetrics(solrMetricsContext, expandedScope);
     updateExecutor =
         MetricUtils.instrumentedExecutorService(
             updateExecutor,
@@ -237,21 +196,6 @@ public class UpdateShardHandler implements SolrInfoBean {
     return solrMetricsContext;
   }
 
-  /**
-   * Returns the default HTTP client for general-purpose usage.
-   *
-   * <p>This method is deprecated as the default client is now provided by {@link
-   * org.apache.solr.core.CoreContainer#getDefaultHttpSolrClient()}. Users should prefer that method
-   * to retrieve the default Solr client.
-   *
-   * @return the default {@link HttpClient}.
-   * @deprecated Use {@link org.apache.solr.core.CoreContainer#getDefaultHttpSolrClient()} instead.
-   */
-  @Deprecated
-  public HttpClient getDefaultHttpClient() {
-    return defaultClient;
-  }
-
   // don't introduce a bug, this client is for sending updates only!
   public Http2SolrClient getUpdateOnlyHttpClient() {
     return updateOnlyClient;
@@ -269,10 +213,6 @@ public class UpdateShardHandler implements SolrInfoBean {
    */
   public ExecutorService getUpdateExecutor() {
     return updateExecutor;
-  }
-
-  public PoolingHttpClientConnectionManager getDefaultConnectionManager() {
-    return defaultConnectionManager;
   }
 
   /**
@@ -298,8 +238,6 @@ public class UpdateShardHandler implements SolrInfoBean {
       }
       IOUtils.closeQuietly(updateOnlyClient);
       IOUtils.closeQuietly(recoveryOnlyClient);
-      HttpClientUtil.close(defaultClient);
-      defaultConnectionManager.close();
     }
   }
 

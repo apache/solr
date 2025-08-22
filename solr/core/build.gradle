@@ -117,9 +117,6 @@ dependencies {
   implementation libs.fasterxml.jackson.dataformat.smile
   implementation libs.fasterxml.jackson.dataformat.cbor
 
-  implementation libs.apache.httpcomponents.httpclient
-  implementation libs.apache.httpcomponents.httpcore
-
   implementation libs.eclipse.jetty.client
   implementation libs.eclipse.jetty.http
   implementation libs.eclipse.jetty.io

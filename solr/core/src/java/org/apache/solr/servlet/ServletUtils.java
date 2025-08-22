@@ -37,12 +37,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.http.HttpHeaders;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.tracing.TraceUtils;
+import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -254,7 +254,7 @@ public abstract class ServletUtils {
     try {
       Utils.readFully(req.getInputStream());
     } catch (IOException e) {
-      if (req.getHeader(HttpHeaders.EXPECT) != null && response.isCommitted()) {
+      if (req.getHeader(HttpHeader.EXPECT.asString()) != null && response.isCommitted()) {
         log.debug("No input stream to consume from client");
       } else {
         log.info("Could not consume full client request", e);

@@ -27,8 +27,6 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.http.HttpRequest;
-import org.apache.http.protocol.HttpContext;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.Request;
@@ -115,25 +113,6 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
         return username;
       }
     };
-  }
-
-  /**
-   * Override this method to intercept internode requests. This allows your authentication plugin to
-   * decide on per-request basis whether it should handle inter-node requests or delegate to {@link
-   * PKIAuthenticationPlugin}. Return true to indicate that your plugin did handle the request, or
-   * false to signal that PKI plugin should handle it. This method will be called by {@link
-   * PKIAuthenticationPlugin}'s interceptor.
-   *
-   * <p>If not overridden, this method will return true for plugins implementing {@link
-   * HttpClientBuilderPlugin}. This method can be overridden by subclasses e.g. to set HTTP headers,
-   * even if you don't use a clientBuilder.
-   *
-   * @param httpRequest the httpRequest that is about to be sent to another internal Solr node
-   * @param httpContext the context of that request.
-   * @return true if this plugin handled authentication for the request, else false
-   */
-  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
-    return this instanceof HttpClientBuilderPlugin;
   }
 
   /**

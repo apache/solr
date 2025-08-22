@@ -24,8 +24,6 @@ dependencies {
 
   // declare dependencies we use even though already declared by solrj-core
   implementation libs.slf4j.api
-  implementation libs.apache.httpcomponents.httpclient
-  implementation libs.apache.httpcomponents.httpcore
   implementation libs.apache.commons.math3
 
   testImplementation project(':solr:test-framework')
