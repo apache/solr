@@ -96,7 +96,7 @@ public class SpellCheckCollator {
     while (tryNo < maxTries && collNo < maxCollations && possibilityIter.hasNext()) {
 
       if (queryLimits.maybeExitWithPartialResults("SpellCheck collator")) {
-        return new ArrayList<>();
+        return collations;
       }
 
       PossibilityIterator.RankedSpellPossibility possibility = possibilityIter.next();
