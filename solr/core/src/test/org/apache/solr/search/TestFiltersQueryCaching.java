@@ -16,34 +16,143 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.common.util.Utils.fromJSONString;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergeTrigger;
+import org.apache.lucene.index.SegmentCommitInfo;
+import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.index.MergePolicyFactoryArgs;
+import org.apache.solr.index.SimpleMergePolicyFactory;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.schema.IndexSchema;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Verify caching impacts of FiltersQParser and FilterQuery */
 public class TestFiltersQueryCaching extends SolrTestCaseJ4 {
 
-  private static final int NUM_DOCS = 20;
+  private static final int NUM_DOCS = 100;
+  private static final int AVG_SEG_SIZE = NUM_DOCS / 10;
+  private static final int MAX_SEG_SIZE = AVG_SEG_SIZE * 2;
+  private static final int MAX_MERGE_AT_ONCE = 2;
+  private static final String FILTER_CACHE_IMPL_CLASS_PROPNAME = "solr.filterCache.class";
+  private static final String FILTER_CACHE_REGEN_CLASS_PROPNAME = "solr.filterCache.regenerator";
+  private static final String FILTER_CACHE_AUTOWARM_COUNT_PROPNAME =
+      "solr.filterCache.autowarmCount";
+  private static String RESTORE_FILTER_CACHE_IMPL_PROPERTY = null;
+  private static String RESTORE_FILTER_CACHE_REGEN_PROPERTY = null;
+  private static String RESTORE_FILTER_AUTOWARM_COUNT_PROPERTY = null;
+  private static boolean SEG_AWARE_FILTER_CACHE;
+
+  /**
+   * There may be a better way to do this; because partial cache can be invalidated by
+   * too-aggressive merging, but because we still want to actually test caching against merging
+   * (i.e., NoMergePolicy would skip testing relevant functionality), we need a way to throttle
+   * merges coming out of the TieredMergePolicy in order to control the portion of the overall index
+   * that might be invalidated for any one commit.
+   */
+  public static class ThrottledMergePolicy extends SimpleMergePolicyFactory {
+    public ThrottledMergePolicy(
+        SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+      super(resourceLoader, args, schema);
+    }
+
+    @Override
+    protected MergePolicy getMergePolicyInstance() {
+      TieredMergePolicy ret =
+          new TieredMergePolicy() {
+            @Override
+            public MergePolicy.MergeSpecification findMerges(
+                MergeTrigger mergeTrigger, SegmentInfos infos, MergeContext mergeContext)
+                throws IOException {
+              MergeSpecification ret = super.findMerges(mergeTrigger, infos, mergeContext);
+              if (ret == null) {
+                return null;
+              }
+              for (OneMerge oneMerge : ret.merges) {
+                assert oneMerge.segments.size() == 2;
+                final SegmentCommitInfo first = oneMerge.segments.get(0);
+                final SegmentCommitInfo second = oneMerge.segments.get(1);
+                if (first.info.maxDoc()
+                        - first.getDelCount()
+                        + second.info.maxDoc()
+                        - second.getDelCount()
+                    <= MAX_SEG_SIZE) {
+                  // prevent segments from growing too big
+                  ret = new MergeSpecification();
+                  ret.add(oneMerge);
+                  return ret;
+                }
+              }
+              return null;
+            }
+          };
+      ret.setMaxMergeAtOnce(MAX_MERGE_AT_ONCE);
+      return ret;
+    }
+  }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    systemSetPropertySolrTestsMergePolicyFactory(ThrottledMergePolicy.class.getName());
+    SEG_AWARE_FILTER_CACHE = random().nextBoolean();
+    RESTORE_FILTER_AUTOWARM_COUNT_PROPERTY =
+        System.setProperty(FILTER_CACHE_AUTOWARM_COUNT_PROPNAME, "0");
+    if (SEG_AWARE_FILTER_CACHE) {
+      System.setProperty(FILTER_CACHE_AUTOWARM_COUNT_PROPNAME, "100%");
+      RESTORE_FILTER_CACHE_IMPL_PROPERTY =
+          System.setProperty(FILTER_CACHE_IMPL_CLASS_PROPNAME, "solr.CaffeineCache");
+      RESTORE_FILTER_CACHE_REGEN_PROPERTY =
+          System.setProperty(FILTER_CACHE_REGEN_CLASS_PROPNAME, "solr.KeepAliveRegenerator");
+    }
     initCore("solrconfig.xml", "schema_latest.xml");
     createIndex();
   }
 
+  @AfterClass
+  public static void afterClass() throws Exception {
+    if (SEG_AWARE_FILTER_CACHE) {
+      if (RESTORE_FILTER_CACHE_IMPL_PROPERTY == null) {
+        System.clearProperty(FILTER_CACHE_IMPL_CLASS_PROPNAME);
+      } else {
+        System.setProperty(FILTER_CACHE_IMPL_CLASS_PROPNAME, RESTORE_FILTER_CACHE_IMPL_PROPERTY);
+      }
+      if (RESTORE_FILTER_CACHE_REGEN_PROPERTY == null) {
+        System.clearProperty(FILTER_CACHE_REGEN_CLASS_PROPNAME);
+      } else {
+        System.setProperty(FILTER_CACHE_REGEN_CLASS_PROPNAME, RESTORE_FILTER_CACHE_REGEN_PROPERTY);
+      }
+    }
+    if (RESTORE_FILTER_AUTOWARM_COUNT_PROPERTY == null) {
+      System.clearProperty(FILTER_CACHE_AUTOWARM_COUNT_PROPNAME);
+    } else {
+      System.setProperty(
+          FILTER_CACHE_AUTOWARM_COUNT_PROPNAME, RESTORE_FILTER_AUTOWARM_COUNT_PROPERTY);
+    }
+    systemClearPropertySolrTestsMergePolicyFactory();
+  }
+
   public static void createIndex() {
+    int lastSegBoundary = -1;
     for (int i = 0; i < NUM_DOCS; i++) {
       assertU(adoc("id", Integer.toString(i), "field_s", "d" + i));
-      if (random().nextInt(NUM_DOCS) == 0) {
-        assertU(commit()); // sometimes make multiple segments
+      if (random().nextInt(AVG_SEG_SIZE) == 0 || i - lastSegBoundary > MAX_SEG_SIZE) {
+        lastSegBoundary = i;
+        assertU(commit());
       }
     }
     assertU(commit());
@@ -215,5 +324,110 @@ public class TestFiltersQueryCaching extends SolrTestCaseJ4 {
     request.addAll(List.of("q", "*:*", "indent", "true", "fq", "{!filters param=$fqs}"));
     request.addAll(fqsArgs);
     assertJQ(req(request.toArray(new String[0])), "/response/numFound==" + expectNumFound);
+  }
+
+  private static void forceNewSearcher() {
+    final int i = random().nextInt(NUM_DOCS);
+    assertU(adoc("id", Integer.toString(i), "field_s", "d" + i));
+    assertU(commit());
+  }
+
+  private static final String MATCH_ALL_DOCS_QUERY = "*:*";
+
+  private static Map<String, Object> coreToFilterCacheMetrics(SolrCore core) {
+    return ((MetricsMap)
+            ((SolrMetricManager.GaugeWrapper<?>)
+                    core.getCoreMetricManager()
+                        .getRegistry()
+                        .getMetrics()
+                        .get("CACHE.searcher.filterCache"))
+                .getGauge())
+        .getValue();
+  }
+
+  private static long getNumFound(String response) {
+    Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
+    Map<?, ?> body = (Map<?, ?>) (res.get("response"));
+    return (long) body.get("numFound");
+  }
+
+  private static final List<String> VALS;
+
+  static {
+    final String[] vals = new String[NUM_DOCS];
+    for (int i = 0; i < NUM_DOCS; i++) {
+      vals[i] = Integer.toString(i);
+    }
+    VALS = List.of(vals);
+  }
+
+  private static String getQuery(int count) {
+    List<String> vals = new ArrayList<>(VALS);
+    Collections.shuffle(vals, random());
+    return vals.subList(0, count).stream()
+        .collect(
+            Collectors.joining(
+                "}' should='{!term f=field_s v=d", "{!bool should='{!term f=field_s v=d", "}'}"));
+  }
+
+  @Test
+  public void testCoreReloads() throws Exception {
+    final int expectNumFound = random().nextInt(NUM_DOCS / 2) + 1;
+    final String q = getQuery(expectNumFound);
+    String response;
+
+    h.reload();
+    response =
+        JQ(
+            req(
+                "q",
+                MATCH_ALL_DOCS_QUERY,
+                "indent",
+                "true",
+                "cursorMark",
+                "*",
+                "sort",
+                "id asc",
+                "fq",
+                q));
+    Map<String, Object> filterCacheMetrics = coreToFilterCacheMetrics(h.getCore());
+    assertEquals(1, (long) filterCacheMetrics.get("cumulative_inserts"));
+    assertEquals(0, (long) filterCacheMetrics.get("cumulative_hits"));
+    assertEquals(1, (long) filterCacheMetrics.get("inserts")); // unchanged
+    assertEquals(0, (long) filterCacheMetrics.get("hits"));
+    assertEquals(expectNumFound, getNumFound(response));
+
+    for (int reloads = 1; reloads <= 10; reloads++) {
+      forceNewSearcher();
+      response =
+          JQ(
+              req(
+                  "q",
+                  MATCH_ALL_DOCS_QUERY,
+                  "indent",
+                  "true",
+                  "cursorMark",
+                  "*",
+                  "sort",
+                  "id asc",
+                  "fq",
+                  q));
+      filterCacheMetrics = coreToFilterCacheMetrics(h.getCore());
+      if (SEG_AWARE_FILTER_CACHE) {
+        // System.err.println("XXX \n"+filterCacheMetrics.entrySet().stream()
+        //    .map((e) -> "\t" + e).collect(Collectors.joining("\n")));
+        assertEquals(1, (long) filterCacheMetrics.get("cumulative_inserts"));
+        assertEquals(reloads, (long) filterCacheMetrics.get("cumulative_hits"));
+        assertEquals(0, (long) filterCacheMetrics.get("inserts"));
+        assertEquals(1, (long) filterCacheMetrics.get("hits"));
+      } else {
+        assertEquals(1, (int) filterCacheMetrics.get("size"));
+        assertEquals(reloads + 1, (long) filterCacheMetrics.get("cumulative_inserts"));
+        assertEquals(0, (long) filterCacheMetrics.get("cumulative_hits"));
+        assertEquals(1, (long) filterCacheMetrics.get("inserts"));
+        assertEquals(0, (long) filterCacheMetrics.get("hits"));
+      }
+      assertEquals(expectNumFound, getNumFound(response));
+    }
   }
 }
