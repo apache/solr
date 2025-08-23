@@ -196,7 +196,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
     assertEquals(
         "sanity check of update to X from read only user",
-        500, // should be 403, but CloudSolrClient lies on updates for now: SOLR-14222
+        403,
         expectThrows(
                 SolrException.class,
                 () -> {
@@ -210,7 +210,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
     assertEquals(
         "sanity check of update to X from write_Y user",
-        500, // should be 403, but CloudSolrClient lies on updates for now: SOLR-14222
+        403,
         expectThrows(
                 SolrException.class,
                 () -> {
