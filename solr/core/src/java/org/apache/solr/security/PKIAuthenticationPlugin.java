@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -510,6 +511,19 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     byte[] signature = publicKeyHandler.getKeyPair().signSha256(payload);
     String base64Signature = Base64.getEncoder().encodeToString(signature);
     return s + " " + base64Signature;
+  }
+
+  @VisibleForTesting
+  void setHeader(BiConsumer<String, String> httpRequest) {
+    if ("v1".equals(System.getProperty(SEND_VERSION))) {
+      getUser()
+          .map(generatedV1TokenCache::get)
+          .ifPresent(token -> httpRequest.accept(HEADER, token));
+    } else {
+      getUser()
+          .map(generatedV2TokenCache::get)
+          .ifPresent(token -> httpRequest.accept(HEADER_V2, token));
+    }
   }
 
   boolean isSolrThread() {
