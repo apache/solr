@@ -152,11 +152,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.httpClient = createHttpClient(builder);
       this.closeClient = true;
     }
+    // note: do not manipulate httpClient below this point; it could be a shared instance
+
     if (builder.listenerFactory != null) {
       this.listenerFactory.addAll(builder.listenerFactory);
     }
     updateDefaultMimeTypeForParser();
-    this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
     this.idleTimeoutMillis = builder.getIdleTimeoutMillis();
 
     try {
@@ -291,7 +292,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     httpClient.setExecutor(this.executor);
     httpClient.setStrictEventOrdering(false);
     httpClient.setConnectBlocking(true);
-    httpClient.setFollowRedirects(false);
+    httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
     httpClient.setMaxRequestsQueuedPerDestination(
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
