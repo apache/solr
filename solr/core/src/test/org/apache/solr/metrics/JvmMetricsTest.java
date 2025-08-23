@@ -101,6 +101,9 @@ public class JvmMetricsTest extends SolrJettyTestBase {
             (k, v) -> {
               if (NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.contains(k)) {
                 assertNull("hidden property " + k + " present!", values.get(k));
+              } else if (k == "solr.security.auth.basicauth.credentials") {
+                // DEFAULT_HIDDEN_SYS_PROPS.contains doesn't match a partial pattern.
+                assertNull("hidden property " + k + " present!", values.get(k));
               } else {
                 assertEquals(v, values.get(String.valueOf(k)));
               }
