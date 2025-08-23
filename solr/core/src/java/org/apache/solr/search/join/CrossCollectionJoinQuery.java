@@ -34,6 +34,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
@@ -61,6 +62,7 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrSearcherRequirer;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequirer {
 
@@ -324,7 +326,7 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       if (docs == null) {
         docs = getDocSet();
       }
@@ -333,7 +335,8 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
       if (readerSetIterator == null) {
         return null;
       }
-      return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
+      Scorer scorer = new ConstantScoreScorer(score(), scoreMode, readerSetIterator);
+      return new SolrDefaultScorerSupplier(scorer);
     }
 
     @Override

@@ -40,7 +40,6 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
@@ -259,9 +258,7 @@ public class CreateTool extends ToolBase {
                 .getZkClient()
                 .exists("/configs/" + confName, true);
 
-    if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
-      // do nothing
-    } else if (configExistsInZk) {
+    if (configExistsInZk) {
       echo("Re-using existing configuration directory " + confName);
     } else { // if (confdir != null && !confdir.trim().isEmpty()) {
       if (confName == null || confName.trim().isEmpty()) {

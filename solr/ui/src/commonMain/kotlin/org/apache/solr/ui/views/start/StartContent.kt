@@ -39,8 +39,8 @@ import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.start.StartComponent
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.action_connect
-import org.apache.solr.ui.generated.resources.connecting
 import org.apache.solr.ui.generated.resources.cd_solr_logo
+import org.apache.solr.ui.generated.resources.connecting
 import org.apache.solr.ui.generated.resources.desc_to_get_started
 import org.apache.solr.ui.generated.resources.solr_sun
 import org.apache.solr.ui.generated.resources.title_welcome_to_solr
@@ -75,7 +75,7 @@ fun StartContent(
             .scale(1.5f),
         alpha = .3f,
         painter = painterResource(Res.drawable.solr_sun),
-        contentDescription = stringResource(Res.string.cd_solr_logo)
+        contentDescription = stringResource(Res.string.cd_solr_logo),
     )
 
     Column(
@@ -93,7 +93,7 @@ fun StartContent(
             Text(
                 modifier = Modifier.testTag("start_description"),
                 text = stringResource(Res.string.desc_to_get_started),
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
             )
 
             OutlinedTextField(
@@ -111,7 +111,7 @@ fun StartContent(
                             color = MaterialTheme.colorScheme.error,
                         )
                     }
-                }
+                },
                 // TODO Update colors if necessary
             )
 
@@ -123,14 +123,19 @@ fun StartContent(
                 ) {
                     Text(
                         text = stringResource(
-                            if (model.isConnecting) Res.string.connecting
-                            else Res.string.action_connect
+                            if (model.isConnecting) {
+                                Res.string.connecting
+                            } else {
+                                Res.string.action_connect
+                            },
                         ),
                     )
                 }
-                if (model.isConnecting) SolrLinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth().testTag("loading_indicator"),
-                )
+                if (model.isConnecting) {
+                    SolrLinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth().testTag("loading_indicator"),
+                    )
+                }
             }
         }
     }

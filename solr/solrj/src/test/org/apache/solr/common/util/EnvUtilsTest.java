@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import org.apache.solr.SolrTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,7 +42,7 @@ public class EnvUtilsTest extends SolrTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     // Make a map of some common Solr environment variables for testing, and initialize EnvUtils
-    EnvUtils.init(true, ENV);
+    EnvUtils.init(true, ENV, System.getProperties());
   }
 
   @Test
@@ -80,7 +81,7 @@ public class EnvUtilsTest extends SolrTestCase {
     assertEquals(ENV.get("SOLR_HOME"), EnvUtils.getProperty("solr.solr.home"));
     assertEquals(ENV.get("SOLR_PORT"), EnvUtils.getProperty("jetty.port"));
     assertEquals(ENV.get("SOLR_HOST"), EnvUtils.getProperty("host"));
-    assertEquals(ENV.get("SOLR_LOGS_DIR"), EnvUtils.getProperty("solr.log.dir"));
+    assertEquals(ENV.get("SOLR_LOGS_DIR"), EnvUtils.getProperty("solr.logs.dir"));
   }
 
   @Test
@@ -93,9 +94,30 @@ public class EnvUtilsTest extends SolrTestCase {
   public void testOverwrite() {
     EnvUtils.setProperty("solr.overwrite", "original");
     var env2 = Map.of("SOLR_OVERWRITE", "overwritten");
-    EnvUtils.init(false, env2);
+    EnvUtils.init(false, env2, new Properties());
     assertEquals("original", EnvUtils.getProperty("solr.overwrite"));
-    EnvUtils.init(true, env2);
+    EnvUtils.init(true, env2, new Properties());
     assertEquals("overwritten", EnvUtils.getProperty("solr.overwrite"));
+  }
+
+  @Test
+  public void testDeprecated() {
+    var env = Map.of("SOLR_OVERWRITE", "overwritten");
+    Properties defaultProps = new Properties();
+    defaultProps.setProperty("solrConfigSetForbiddenFileTypes", "xml,json,jar");
+
+    EnvUtils.init(false, env, defaultProps);
+    assertEquals("xml,json,jar", EnvUtils.getProperty("solr.configset.forbidden.file.types"));
+  }
+
+  @Test
+  public void testFlippingDisabledToEnabledPropertyName() {
+
+    var env = Map.of("SOLR_ADMIN_UI_DISABLED", "true");
+    Properties defaultProps = new Properties();
+    defaultProps.setProperty("solr.admin.ui.disabled", "true");
+
+    EnvUtils.init(false, env, defaultProps);
+    assertEquals(false, EnvUtils.getPropertyAsBool("solr.ui.enabled"));
   }
 }

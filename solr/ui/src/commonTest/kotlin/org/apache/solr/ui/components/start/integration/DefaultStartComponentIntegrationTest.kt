@@ -94,10 +94,13 @@ class DefaultStartComponentIntegrationTest {
             actual = engine.requestHistory.size,
             message = "Expected one request in history",
         )
-        assertEquals(expected = URLBuilder(DEFAULT_SOLR_URL).apply {
-            // As of now connection is established by calling this endpoint
-            path("api/node/system")
-        }.build(), actual = engine.requestHistory[0].url)
+        assertEquals(
+            expected = URLBuilder(DEFAULT_SOLR_URL).apply {
+                // As of now connection is established by calling this endpoint
+                path("api/node/system")
+            }.build(),
+            actual = engine.requestHistory[0].url,
+        )
     }
 
     @Test
@@ -138,10 +141,13 @@ class DefaultStartComponentIntegrationTest {
             actual = engine.requestHistory.size,
             message = "Expected one request in history",
         )
-        assertEquals(expected = URLBuilder(validSolrUrl).apply {
-            // As of now connection is established by calling this endpoint
-            path("api/node/system")
-        }.build(), actual = engine.requestHistory[0].url)
+        assertEquals(
+            expected = URLBuilder(validSolrUrl).apply {
+                // As of now connection is established by calling this endpoint
+                path("api/node/system")
+            }.build(),
+            actual = engine.requestHistory[0].url,
+        )
     }
 
     @Test

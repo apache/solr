@@ -21,6 +21,7 @@ import java.util.Map;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -135,10 +136,17 @@ public class TestNumericTerms32 extends SolrTestCase {
         upper = a;
       }
       Query tq =
-          LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);
+          LegacyNumericRangeQuery.newIntRange(
+              field,
+              precisionStep,
+              lower,
+              upper,
+              true,
+              true,
+              MultiTermQuery.CONSTANT_SCORE_REWRITE);
       TopDocs topDocs =
           searcher.search(tq, noDocs, new Sort(new SortField(field, SortField.Type.INT, true)));
-      if (topDocs.totalHits.value == 0) continue;
+      if (topDocs.totalHits.value() == 0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
       int last =

@@ -20,11 +20,13 @@ package org.apache.solr.ui.components.start.integration
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
+import io.ktor.http.Headers
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.path
 import org.apache.solr.ui.components.start.store.StartStoreProvider
+import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.errors.UnauthorizedException
 import org.apache.solr.ui.errors.UnknownResponseException
 
@@ -54,8 +56,42 @@ class HttpStartStoreClient(
 
         return when (response.status) {
             HttpStatusCode.OK -> Result.success(Unit)
-            HttpStatusCode.Unauthorized -> Result.failure(UnauthorizedException())
+            HttpStatusCode.Unauthorized -> {
+                val methods = getAuthMethodsFromHeader(response.headers)
+                Result.failure(
+                    UnauthorizedException(
+                        url = url,
+                        methods = methods,
+                        message =
+                        if (methods.isEmpty()) {
+                            "Unauthorized response received with missing or unsupported auth method."
+                        } else {
+                            null
+                        },
+                    ),
+                )
+            }
+
             else -> Result.failure(UnknownResponseException(response))
+        }
+    }
+
+    /**
+     * Extracts the authentication methods from a response's headers and returns
+     * a list of [AuthMethod]s.
+     *
+     * @param headers The headers to use for extracting the information.
+     */
+    private fun getAuthMethodsFromHeader(headers: Headers): List<AuthMethod> {
+        val authHeader = headers["Www-Authenticate"]
+        val parts = authHeader?.split(" ", limit = 2)
+        val scheme = parts?.firstOrNull()
+
+        // TODO Get realm from header value
+
+        return when (scheme) {
+            "Basic" -> listOf(AuthMethod.BasicAuthMethod(realm = "solr"))
+            else -> emptyList()
         }
     }
 }

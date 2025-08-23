@@ -22,28 +22,29 @@ import io.ktor.http.Url
 import org.apache.solr.ui.components.start.store.StartStore.Intent
 import org.apache.solr.ui.components.start.store.StartStore.Label
 import org.apache.solr.ui.components.start.store.StartStore.State
+import org.apache.solr.ui.domain.AuthMethod
 
 /**
- * State store interface of the environment.
+ * State store interface of the start screen.
  *
- * Implementations of this state store manage detailed information of the environment.
+ * Implementations of this state store manage detailed information of the start screen.
  */
 internal interface StartStore : Store<Intent, State, Label> {
 
     /**
-     * Intent for interacting with the environment store.
+     * Intent for interacting with the start store.
      */
     sealed interface Intent {
 
         /**
          * Intent for updating the current Solr URL.
          */
-        data class UpdateSolrUrl(val url: String): Intent
+        data class UpdateSolrUrl(val url: String) : Intent
 
         /**
          * Intent for initiating a new connection to a Solr instance.
          */
-        data object Connect: Intent
+        data object Connect : Intent
     }
 
     sealed interface Label {
@@ -54,14 +55,15 @@ internal interface StartStore : Store<Intent, State, Label> {
          *
          * @property url URL of the Solr instance.
          */
-        data class Connected(val url: Url): Label
+        data class Connected(val url: Url) : Label
 
         /**
          * Label that is published when a Solr server was found, but authentication is required.
          *
          * @property url URL of the Solr instance that requires authentication.
+         * @property methods The supported authentication methods.
          */
-        data class AuthRequired(val url: Url): Label
+        data class AuthRequired(val url: Url, val methods: List<AuthMethod>) : Label
     }
 
     /**

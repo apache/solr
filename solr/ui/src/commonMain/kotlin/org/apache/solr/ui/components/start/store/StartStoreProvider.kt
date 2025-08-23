@@ -27,16 +27,14 @@ import io.ktor.http.Url
 import io.ktor.http.parseUrl
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.start.store.StartStore.Intent
 import org.apache.solr.ui.components.start.store.StartStore.Label
 import org.apache.solr.ui.components.start.store.StartStore.State
 import org.apache.solr.ui.errors.UnauthorizedException
-import org.apache.solr.ui.errors.parseError
 import org.apache.solr.ui.utils.DEFAULT_SOLR_URL
+import org.apache.solr.ui.utils.parseError
 
 /**
  * Store provider that [provide]s instances of [StartStore].
@@ -93,23 +91,19 @@ internal class StartStoreProvider(
                             cause = Error("Invalid URL"),
                         )
 
-                        scope.launch(context = CoroutineExceptionHandler { _, throwable ->
-                            // error returned here is platform-specific and needs further parsing
-                            dispatch(Message.ConnectionFailed(error = parseError(throwable)))
-                        }) {
+                        scope.launch(
+                            context = CoroutineExceptionHandler { _, throwable ->
+                                // error returned here is platform-specific and needs further parsing
+                                dispatch(Message.ConnectionFailed(error = parseError(throwable)))
+                            },
+                        ) {
                             withContext(ioContext) {
                                 client.connect(url)
                             }.onSuccess {
                                 // Solr server found with no auth active
                                 publish(Label.Connected(url))
                             }.onFailure { error ->
-                                when (error) {
-                                    is UnauthorizedException -> {
-                                        // Solr server found, but user is unauthorized
-                                        publish(Label.AuthRequired(url))
-                                    }
-                                    else -> dispatch(Message.ConnectionFailed(error))
-                                }
+                                handleConnectionError(error, url)
                             }
                         }
                     } catch (error: Exception) {
@@ -117,6 +111,33 @@ internal class StartStoreProvider(
                     }
                 }
             }
+        }
+
+        /**
+         * Handles any connection error that may occur during a connection establishment.
+         *
+         * This function may dispatch [Message]s or publish [Label]s.
+         *
+         * @param error Error that occurred.
+         * @param url The URL that was used for the connection.
+         */
+        private fun handleConnectionError(error: Throwable, url: Url) = when (error) {
+            is UnauthorizedException -> {
+                if (error.methods.isEmpty()) {
+                    // Solr server found but responded with an unauthorized error
+                    // that cannot be processed (supported method or missing information)
+                    dispatch(Message.ConnectionFailed(error))
+                } else {
+                    // Solr server found, but user is unauthorized
+                    publish(
+                        Label.AuthRequired(
+                            url = url,
+                            methods = error.methods,
+                        ),
+                    )
+                }
+            }
+            else -> dispatch(Message.ConnectionFailed(error))
         }
     }
 

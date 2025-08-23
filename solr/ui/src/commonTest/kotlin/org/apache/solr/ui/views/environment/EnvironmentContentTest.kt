@@ -59,7 +59,7 @@ private object TestEnvironmentComponent : EnvironmentComponent {
                 "key 5" to "value 5",
                 "key 6" to "value 6",
                 "key 7" to "value 7",
-            )
-        )
+            ),
+        ),
     )
 }

@@ -39,7 +39,8 @@ class DefaultStartComponent(
     storeFactory: StoreFactory,
     httpClient: HttpClient,
     output: (StartComponent.Output) -> Unit,
-) : StartComponent, AppComponentContext by componentContext {
+) : StartComponent,
+    AppComponentContext by componentContext {
 
     private val mainScope = coroutineScope(SupervisorJob() + mainContext)
     private val ioScope = coroutineScope(SupervisorJob() + ioContext)
@@ -53,19 +54,23 @@ class DefaultStartComponent(
         ).provide()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override val model = store.stateFlow.map(mainScope, startStateToModel)
+
     init {
         store.labels.onEach { label ->
             when (label) {
-                is StartStore.Label.AuthRequired ->
-                    output(StartComponent.Output.OnAuthRequired(url = label.url))
+                is StartStore.Label.AuthRequired -> output(
+                    StartComponent.Output.OnAuthRequired(
+                        url = label.url,
+                        methods = label.methods,
+                    ),
+                )
                 is StartStore.Label.Connected ->
                     output(StartComponent.Output.OnConnected(url = label.url))
             }
         }.launchIn(mainScope)
     }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override val model = store.stateFlow.map(mainScope, startStateToModel)
 
     override fun onSolrUrlChange(url: String) = store.accept(Intent.UpdateSolrUrl(url))
 
