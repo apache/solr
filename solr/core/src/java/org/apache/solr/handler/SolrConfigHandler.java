@@ -71,6 +71,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -102,9 +103,8 @@ import org.slf4j.LoggerFactory;
 public class SolrConfigHandler extends RequestHandlerBase
     implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String CONFIGSET_EDITING_DISABLED_ARG = "disable.configEdit";
-  public static final boolean configEditing_disabled =
-      Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
+  public static final String CONFIGSET_EDITING_ENABLED_ARG = "solr.configset.edit.enabled";
+  public static final boolean configEditingEnabled = EnvUtils.getPropertyAsBool(CONFIGSET_EDITING_ENABLED_ARG,true);
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
   private final Lock reloadLock = new ReentrantLock(true);
 
@@ -132,10 +132,10 @@ public class SolrConfigHandler extends RequestHandlerBase
     String httpMethod = (String) req.getContext().get("httpMethod");
     Command command = new Command(req, rsp, httpMethod);
     if ("POST".equals(httpMethod)) {
-      if (configEditing_disabled || isImmutableConfigSet) {
+      if (!configEditingEnabled || isImmutableConfigSet) {
         final String reason =
-            configEditing_disabled
-                ? "due to " + CONFIGSET_EDITING_DISABLED_ARG
+            !configEditingEnabled
+                ? "due to " + CONFIGSET_EDITING_ENABLED_ARG
                 : "because ConfigSet is immutable";
         throw new SolrException(
             SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
