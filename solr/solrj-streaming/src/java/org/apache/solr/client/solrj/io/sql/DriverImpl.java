@@ -18,17 +18,15 @@ package org.apache.solr.client.solrj.io.sql;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
@@ -125,12 +123,13 @@ public class DriverImpl implements Driver {
   }
 
   private void loadParams(URI uri, Properties props) throws SQLException {
-    List<NameValuePair> parsedParams = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
-    for (NameValuePair pair : parsedParams) {
-      if (pair.getValue() != null) {
-        props.put(pair.getName(), pair.getValue());
-      } else {
-        props.put(pair.getName(), "");
+    String query = uri.getRawQuery();
+    if (query != null) {
+      for (String param : query.split("&")) {
+        String[] pair = param.split("=", 2);
+        String key = URLDecoder.decode(pair[0], StandardCharsets.UTF_8);
+        String value = pair.length > 1 ? URLDecoder.decode(pair[1], StandardCharsets.UTF_8) : "";
+        props.put(key, value);
       }
     }
   }
