@@ -1,8 +1,8 @@
-name: Dependency Graph Submission
+name: Dependency Submission
 
 on:
   push:
-    branches: [ 'main' ]
+    branches: [ main ]
 
 permissions:
   contents: write
@@ -11,11 +11,25 @@ jobs:
   dependency-submission:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: 21
+      - uses: actions/checkout@v4
 
-    - name: Generate and submit dependency graph
-      uses: gradle/actions/dependency-submission@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          develocity-url: https://develocity.apache.org
+
+      - name: Generate and submit dependency graph
+        uses: gradle/actions/dependency-submission@v4
+        with:
+          build-scan-publish: true
+          develocity-access-key: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
+
+        env:
+          DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS: "(?i)(^|:)(compileClasspath|runtimeClasspath|testCompileClasspath|testRuntimeClasspath)$"
+          DEPENDENCY_GRAPH_EXCLUDE_CONFIGURATIONS: "(?i)(^|:)(classpath|.*PluginClasspath|kotlinCompilerClasspath|kaptClasspath|annotationProcessor|detachedConfiguration.*)$"
+          DEPENDENCY_GRAPH_RUNTIME_INCLUDE_CONFIGURATIONS: "(?i)(^|:)runtimeClasspath$"
+          DEPENDENCY_GRAPH_RUNTIME_EXCLUDE_CONFIGURATIONS: "(?i)(^|:)testRuntimeClasspath$"
