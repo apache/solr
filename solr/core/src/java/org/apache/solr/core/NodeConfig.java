@@ -495,7 +495,7 @@ public class NodeConfig {
 
   public static final String REDACTED_SYS_PROP_VALUE = "--REDACTED--";
 
-  /** Returns the a system property value, or "--REDACTED--" if the system property is hidden */
+  /** Returns the system property value, or "--REDACTED--" if the system property is hidden */
   public String getRedactedSysPropValue(String sysPropName) {
     return hiddenSysPropPattern.test(sysPropName)
         ? REDACTED_SYS_PROP_VALUE
@@ -647,7 +647,7 @@ public class NodeConfig {
         Set.of(
             "javax\\.net\\.ssl\\.keyStorePassword",
             "javax\\.net\\.ssl\\.trustStorePassword",
-            "solr\\.security\\.auth\\.basicauth\\.credentials",
+            ".*credentials",
             "zkDigestPassword",
             "zkDigestReadonlyPassword",
             "aws\\.secretKey", // AWS SDK v1
