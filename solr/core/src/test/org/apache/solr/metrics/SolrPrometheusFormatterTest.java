@@ -16,7 +16,8 @@
  */
 package org.apache.solr.metrics;
 
-import static org.apache.solr.metrics.prometheus.core.PrometheusCoreFormatterInfo.CLOUD_CORE_PATTERN;
+import static org.apache.solr.metrics.prometheus.core.SolrCoreMetric.CLOUD_CORE_PATTERN;
+import static org.apache.solr.metrics.prometheus.core.SolrCoreMetric.STANDALONE_CORE_PATTERN;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -27,6 +28,7 @@ import com.codahale.metrics.Timer;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
+import io.prometheus.metrics.model.snapshots.SummarySnapshot;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,11 +85,11 @@ public class SolrPrometheusFormatterTest extends SolrTestCaseJ4 {
 
     Labels expectedLabels = Labels.of("test", "test-value");
     testFormatter.exportTimer(expectedMetricName, metric, expectedLabels);
-    assertTrue(testFormatter.getMetricGauges().containsKey(expectedMetricName));
+    assertTrue(testFormatter.getMetricSummaries().containsKey(expectedMetricName));
 
-    GaugeSnapshot.GaugeDataPointSnapshot actual =
-        testFormatter.getMetricGauges().get("test_metric").get(0);
-    assertEquals(5000000000L, actual.getValue(), 500000000L);
+    SummarySnapshot.SummaryDataPointSnapshot actual =
+        testFormatter.getMetricSummaries().get("test_metric").get(0);
+    assertEquals(5000L, actual.getSum(), 500L);
     assertEquals(expectedLabels, actual.getLabels());
   }
 
@@ -146,30 +148,40 @@ public class SolrPrometheusFormatterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCloudCorePattern() {
-    String coreName = "core_test-core_shard2_replica_t123";
-    Matcher m = CLOUD_CORE_PATTERN.matcher(coreName);
+    String metricName = "core_test-core_shard2_replica_t123.TEST./foobar/endpoint";
+    Matcher m = CLOUD_CORE_PATTERN.matcher(metricName);
     assertTrue(m.find());
-    assertEquals("test-core", m.group(1));
-    assertEquals("shard2", m.group(2));
-    assertEquals("replica_t123", m.group(3));
+    assertEquals("core_test-core_shard2_replica_t123", m.group("core"));
+    assertEquals("test-core", m.group("collection"));
+    assertEquals("shard2", m.group("shard"));
+    assertEquals("replica_t123", m.group("replica"));
 
-    coreName = "core_foo_bar_shard24_replica_p8";
-    m = CLOUD_CORE_PATTERN.matcher(coreName);
+    metricName = "core_foo_bar_shard24_replica_p8.QUERY.random.metric-name";
+    m = CLOUD_CORE_PATTERN.matcher(metricName);
     assertTrue(m.matches());
-    assertEquals("foo_bar", m.group(1));
-    assertEquals("shard24", m.group(2));
-    assertEquals("replica_p8", m.group(3));
+    assertEquals("core_foo_bar_shard24_replica_p8", m.group("core"));
+    assertEquals("foo_bar", m.group("collection"));
+    assertEquals("shard24", m.group("shard"));
+    assertEquals("replica_p8", m.group("replica"));
   }
 
   @Test
   public void testBadCloudCorePattern() {
-    String badCoreName = "core_solrtest_shard100_replica_xyz23";
-    Matcher m = CLOUD_CORE_PATTERN.matcher(badCoreName);
+    String badMetricName = "core_solrtest_shard100_replica_xyz23.TEST./foobar/endpoint";
+    Matcher m = CLOUD_CORE_PATTERN.matcher(badMetricName);
     assertFalse(m.matches());
 
-    badCoreName = "core_solrtest_shards100_replica_x23";
-    m = CLOUD_CORE_PATTERN.matcher(badCoreName);
+    badMetricName = "core_solrtest_shards100_replica_x23.QUERY.random.metric-name";
+    m = CLOUD_CORE_PATTERN.matcher(badMetricName);
     assertFalse(m.matches());
+  }
+
+  @Test
+  public void testStandaloneCorePattern() {
+    String metricName = "core_test-core.TEST./foobar/endpoint";
+    Matcher m = STANDALONE_CORE_PATTERN.matcher(metricName);
+    assertTrue(m.find());
+    assertEquals("test-core", m.group(1));
   }
 
   static class TestSolrPrometheusFormatter extends SolrPrometheusFormatter {
@@ -187,6 +199,10 @@ public class SolrPrometheusFormatterTest extends SolrTestCaseJ4 {
 
     public Map<String, List<GaugeSnapshot.GaugeDataPointSnapshot>> getMetricGauges() {
       return metricGauges;
+    }
+
+    public Map<String, List<SummarySnapshot.SummaryDataPointSnapshot>> getMetricSummaries() {
+      return metricSummaries;
     }
   }
 }

@@ -27,11 +27,13 @@ import java.util.Map;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -76,15 +78,13 @@ public class MirroredSolrRequestSerializer
       throw new RuntimeException(e);
     }
     MirroredSolrRequest.Type type = MirroredSolrRequest.Type.get((String) requestMap.get("type"));
-    SolrRequest<?> request;
+    SolrRequest<? extends SolrResponse> request;
     int attempt = Integer.parseInt(String.valueOf(requestMap.getOrDefault("attempt", "-1")));
     long submitTimeNanos =
         Long.parseLong(String.valueOf(requestMap.getOrDefault("submitTimeNanos", "-1")));
-    ModifiableSolrParams params;
+    SolrParams params;
     if (requestMap.get("params") != null) {
-      params =
-          ModifiableSolrParams.of(
-              new MapSolrParams((Map<String, String>) requestMap.get("params")));
+      params = new MapSolrParams((Map<String, String>) requestMap.get("params"));
     } else {
       params = new ModifiableSolrParams();
     }
@@ -110,7 +110,7 @@ public class MirroredSolrRequestSerializer
           updateRequest.deleteByQuery(delQuery);
         }
       }
-      updateRequest.setParams(params);
+      updateRequest.setParams(ModifiableSolrParams.of(params));
     } else if (type == MirroredSolrRequest.Type.ADMIN) {
       CollectionParams.CollectionAction action =
           CollectionParams.CollectionAction.get(params.get(CoreAdminParams.ACTION));

@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +39,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
   private static final String COLLECTION = MethodHandles.lookup().lookupClass().getName();
   private static final String CONF = COLLECTION + "_configSet";
 
-  private static String FIELD = null; // randomized
+  private static String FIELD = "amount";
 
   private static final List<String> STR_VALS = Arrays.asList("x0", "x1", "x2");
   // NOTE: in our test conversions EUR uses an asymmetric exchange rate
@@ -57,14 +56,13 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     CurrencyFieldTypeTest.assumeCurrencySupport("USD", "EUR", "MXN", "GBP", "JPY", "NOK");
-    FIELD = usually() ? "amount_CFT" : "amount";
 
     final int numShards = TestUtil.nextInt(random(), 1, 5);
     final int numReplicas = 1;
     final int nodeCount = numShards * numReplicas;
 
     configureCluster(nodeCount)
-        .addConfig(CONF, Paths.get(TEST_HOME(), "collection1", "conf"))
+        .addConfig(CONF, TEST_HOME().resolve("collection1").resolve("conf"))
         .configure();
 
     assertEquals(
@@ -77,7 +75,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
 
     // we're indexing each Currency value in 3 docs, each with a diff 'x_s' field value
     // use modulo to pick the values, so we don't add the docs in strict order of either VALUES of
-    // STR_VALS (that way if we want ot filter by id later, it's an independent variable)
+    // STR_VALS (that way if we want to filter by id later, it's an independent variable)
     for (int id = 0; id < NUM_DOCS; id++) {
       final String x = STR_VALS.get(id % STR_VALS.size());
       final String val = VALUES.get(id % VALUES.size());

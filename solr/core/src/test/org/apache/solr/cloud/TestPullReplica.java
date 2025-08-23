@@ -17,9 +17,10 @@
 package org.apache.solr.cloud;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,7 +28,9 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -38,7 +41,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -232,15 +234,15 @@ public class TestPullReplica extends SolrCloudTestCase {
    * otherwise returns the <code>tlog</code> subdirectory within {@link SolrCore#getDataDir()}.
    * (NOTE: the last of these is by far the most common default location of the tlog directory).
    */
-  static File getHypotheticalTlogDir(SolrCore core) {
+  static Path getHypotheticalTlogDir(SolrCore core) {
     String ulogDir;
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
     if (ulog != null) {
-      return new File(ulog.getTlogDir());
+      return Path.of(ulog.getTlogDir());
     } else if ((ulogDir = core.getCoreDescriptor().getUlogDir()) != null) {
-      return new File(ulogDir, UpdateLog.TLOG_NAME);
+      return Path.of(ulogDir, UpdateLog.TLOG_NAME);
     } else {
-      return new File(core.getDataDir(), UpdateLog.TLOG_NAME);
+      return Path.of(core.getDataDir(), UpdateLog.TLOG_NAME);
     }
   }
 
@@ -257,11 +259,11 @@ public class TestPullReplica extends SolrCloudTestCase {
         try (SolrCore core =
             cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName())) {
           assertNotNull(core);
-          File tlogDir = getHypotheticalTlogDir(core);
+          Path tlogDir = getHypotheticalTlogDir(core);
           assertFalse(
               "Update log should not exist for replicas of type Passive but file is present: "
                   + tlogDir,
-              tlogDir.exists());
+              Files.exists(tlogDir));
         }
       }
     }
@@ -317,7 +319,7 @@ public class TestPullReplica extends SolrCloudTestCase {
               "Replicas shouldn't process the add document request: " + statsResponse,
               ((Map<String, Object>)
                       (statsResponse.getResponse())
-                          .findRecursive("plugins", "UPDATE", "updateHandler", "stats"))
+                          ._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
                   .get("UPDATE.updateHandler.adds"));
         }
       }
@@ -473,7 +475,18 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   public void testRealTimeGet()
-      throws SolrServerException, IOException, KeeperException, InterruptedException {
+      throws SolrServerException,
+          IOException,
+          KeeperException,
+          InterruptedException,
+          TimeoutException {
+    cluster
+        .getZkStateReader()
+        .waitForLiveNodes(
+            10,
+            TimeUnit.SECONDS,
+            (oldLiveNodes, newLiveNodes) ->
+                newLiveNodes.size() == cluster.getJettySolrRunners().size());
     // should be redirected to Replica.Type.NRT
     int numReplicas = random().nextBoolean() ? 1 : 2;
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, numReplicas, 0, numReplicas)
@@ -483,27 +496,18 @@ public class TestPullReplica extends SolrCloudTestCase {
         collectionName,
         activeReplicaCount(numReplicas, 0, numReplicas));
     DocCollection docCollection = assertNumberOfReplicas(numReplicas, 0, numReplicas, false, true);
-    HttpClient httpClient = getHttpClient();
     int id = 0;
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd : slice.getReplicas()) {
-      try (SolrClient client =
-          new HttpSolrClient.Builder(rAdd.getBaseUrl())
-              .withDefaultCollection(rAdd.getCoreName())
-              .withHttpClient(httpClient)
-              .build()) {
+      try (SolrClient client = getHttpSolrClient(rAdd.getBaseUrl(), rAdd.getCoreName())) {
         client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
       }
       SolrDocument docCloudClient =
           cluster.getSolrClient().getById(collectionName, String.valueOf(id));
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet : slice.getReplicas()) {
-        try (SolrClient client =
-            new HttpSolrClient.Builder(rGet.getBaseUrl())
-                .withDefaultCollection(rGet.getCoreName())
-                .withHttpClient(httpClient)
-                .build()) {
+        try (SolrClient client = getHttpSolrClient(rGet.getBaseUrl(), rGet.getCoreName())) {
           SolrDocument doc = client.getById(String.valueOf(id));
           assertEquals("bar", doc.getFieldValue("foo_s"));
         }
@@ -513,11 +517,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd : slice.getReplicas()) {
-      try (SolrClient client =
-          new HttpSolrClient.Builder(rAdd.getBaseUrl())
-              .withDefaultCollection(rAdd.getCoreName())
-              .withHttpClient(httpClient)
-              .build()) {
+      try (SolrClient client = getHttpSolrClient(rAdd.getBaseUrl(), rAdd.getCoreName())) {
         SolrDocumentList allIdsResult = client.getById(ids);
         if (previousAllIdsResult != null) {
           assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
@@ -694,7 +694,138 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForNumDocsInAllActiveReplicas(2);
   }
 
-  public void testSearchWhileReplicationHappens() {}
+  public void testSkipLeaderRecoveryProperty() throws Exception {
+    final int numDocsAdded = 13;
+
+    assertTrue(
+        "Test has been broken, not enough jetties", cluster.getJettySolrRunners().size() >= 2);
+
+    // Track the two jetty instances we're going to (re)use w/specific replica types
+    final JettySolrRunner tlogLeaderyJetty = cluster.getJettySolrRunners().get(0);
+    final JettySolrRunner pullFollowerJetty = cluster.getJettySolrRunners().get(1);
+    assertNotEquals(tlogLeaderyJetty, pullFollowerJetty);
+
+    // Start with a single tlog replic on the leader jetty
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 0, 1, 0)
+        .setCreateNodeSet(tlogLeaderyJetty.getNodeName())
+        // NOTE: we restart the leader, so we need a non-ephemeral index
+        .setProperties(Map.of("solr.directoryFactory", "solr.StandardDirectoryFactory"))
+        .process(cluster.getSolrClient());
+
+    // Add 2 PULL replicas on the follower jetty
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL)
+        .setCreateNodeSet(pullFollowerJetty.getNodeName())
+        .setPullReplicas(2)
+        .process(cluster.getSolrClient());
+
+    waitForState("Collection init never finished?", collectionName, activeReplicaCount(0, 1, 2));
+
+    assertEquals(
+        2, getCollectionState(collectionName).getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+
+    // set our 'skip' property on one of the PULL replicas, and keep track of this replica
+    final String pullThatSkipsRecovery =
+        getCollectionState(collectionName)
+            .getReplicas(EnumSet.of(Replica.Type.PULL))
+            .get(0)
+            .getName();
+    CollectionAdminRequest.addReplicaProperty(
+            collectionName,
+            "shard1",
+            pullThatSkipsRecovery,
+            ZkController.SKIP_LEADER_RECOVERY_PROP,
+            "true")
+        .process(cluster.getSolrClient());
+
+    // index a few docs and wait to ensure everything is in sync with our expectations
+    addDocs(numDocsAdded);
+    waitForNumDocsInAllReplicas(numDocsAdded, getCollectionState(collectionName).getReplicas());
+    waitForState(
+        "Replica prop never added?",
+        collectionName,
+        (liveNodes, docState) -> {
+          return docState
+              .getReplica(pullThatSkipsRecovery)
+              .getBool(ZkController.SKIP_LEADER_RECOVERY_PROP_KEY, false);
+        });
+
+    // Now shutdown our leader node and confirm all our PULL replicas are still active and serving
+    // requests
+    tlogLeaderyJetty.stop();
+    cluster.waitForJettyToStop(tlogLeaderyJetty);
+    waitForState(
+        "Leader should be down, PULLs should be active",
+        collectionName,
+        activeReplicaCount(0, 0, 2));
+    waitForNumDocsInAllReplicas(
+        numDocsAdded,
+        getCollectionState(collectionName).getReplicas(EnumSet.of(Replica.Type.PULL)));
+
+    // Add yetanother PULL replica while the leader is down.
+    // This new replica will immediately stall going into recoveery, since the leader is down.
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL)
+        .setCreateNodeSet(pullFollowerJetty.getNodeName())
+        .process(cluster.getSolrClient());
+    waitForState(
+        "3rd PULL replica should be down",
+        collectionName,
+        (liveNodes, colState) -> {
+          int active = 0;
+          int down = 0;
+          for (Replica r : colState.getReplicas(EnumSet.of(Replica.Type.PULL))) {
+            if (r.getState().equals(Replica.State.ACTIVE)) {
+              active++;
+            } else if (r.getState().equals(Replica.State.DOWN)) {
+              down++;
+            }
+          }
+          return ((2 == active) && (1 == down));
+        });
+
+    // But even if when set our 'skip' property on this new PULL replica, it's *next* (re)start
+    // should still block waiting for RECOVERY since it won't have an active index.
+    final String pullThatWantsToSkipRecoveryButMustRecoverOnce =
+        getCollectionState(collectionName).getReplicas(EnumSet.of(Replica.Type.PULL)).stream()
+            .filter(r -> r.getState().equals(Replica.State.DOWN))
+            .map(r -> r.getName())
+            .findFirst()
+            .get();
+    CollectionAdminRequest.addReplicaProperty(
+            collectionName,
+            "shard1",
+            pullThatWantsToSkipRecoveryButMustRecoverOnce,
+            ZkController.SKIP_LEADER_RECOVERY_PROP,
+            "true")
+        .process(cluster.getSolrClient());
+
+    // Restart the node all of our PULL replicas are one, and confirm that our special REPLICA goes
+    // ACTIVE while the others all stay DOWN
+    // (Note: Other PULL replica can't start RECOVERING until the leader comes back)
+    pullFollowerJetty.stop();
+    cluster.waitForJettyToStop(pullFollowerJetty);
+    pullFollowerJetty.start();
+    waitForState(
+        "Special PULL should be ACTIVE, all others should be DOWN",
+        collectionName,
+        (liveNodes, colState) -> {
+          for (Replica r : colState.getReplicas()) {
+            if (r.getName().equals(pullThatSkipsRecovery)) {
+              if (!r.getState().equals(Replica.State.ACTIVE)) {
+                return false;
+              }
+            } else if (!r.getState().equals(Replica.State.DOWN)) {
+              return false;
+            }
+          }
+          return true;
+        });
+
+    // Restart our leader, eventually all replicas should be ACTIVE and happy
+    tlogLeaderyJetty.start();
+    waitForState(
+        "Leader should be back, all replicas active", collectionName, activeReplicaCount(0, 1, 3));
+    waitForNumDocsInAllReplicas(numDocsAdded, getCollectionState(collectionName).getReplicas());
+  }
 
   private void waitForNumDocsInAllActiveReplicas(int numDocs)
       throws IOException, SolrServerException, InterruptedException {
@@ -753,9 +884,9 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState(
         "Waiting for collection " + collection + " to be deleted",
         collection,
-        (n, c) -> c == null,
         10,
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        Objects::isNull);
   }
 
   private DocCollection assertNumberOfReplicas(

@@ -74,9 +74,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
             ? "solr.NRTCachingDirectoryFactory"
             : "solr.StandardDirectoryFactory"; // test the default most of the time
     System.setProperty("solr.directoryFactory", factory);
-    leader =
-        new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
     leaderJetty = createAndStartJetty(leader);
     leaderClient =
@@ -86,14 +84,12 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
 
     follower =
         new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
+            createTempDir("solr-instance"), "follower", leaderJetty.getLocalPort());
     follower.setUp();
     followerJetty = createAndStartJetty(follower);
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
             TestReplicationHandler.buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
-
-    System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
 
   @Override
@@ -118,7 +114,6 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
       followerClient = null;
     }
     System.clearProperty(TEST_URL_ALLOW_LIST);
-    System.clearProperty("solr.indexfetcher.sotimeout");
 
     IndexFetcher.usableDiskSpaceProvider = originalDiskSpaceprovider;
     IndexFetcher.testWait = originalTestWait;
@@ -215,7 +210,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
                 .add("command", CMD_FETCH_INDEX)
                 .add("wait", "true"));
 
-    assertEquals("Replication command status", "OK", response._getStr("status", null));
+    assertEquals("Replication command status", "OK", response._getStr("status"));
 
     assertEquals(
         "threads encountered failures (see logs for when)",
@@ -236,7 +231,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     assertEquals(
         "follower's clearedLocalIndexFirst (from rep details)",
         "true",
-        response._getStr("details/follower/clearedLocalIndexFirst", null));
+        response._getStr("details/follower/clearedLocalIndexFirst"));
   }
 
   @SuppressWarnings("unchecked")

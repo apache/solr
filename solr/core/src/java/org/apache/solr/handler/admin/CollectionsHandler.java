@@ -174,7 +174,7 @@ import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUnique;
 import org.apache.solr.handler.admin.api.ClusterProperty;
 import org.apache.solr.handler.admin.api.CollectionProperty;
-import org.apache.solr.handler.admin.api.CollectionStatusAPI;
+import org.apache.solr.handler.admin.api.CollectionStatus;
 import org.apache.solr.handler.admin.api.CreateAlias;
 import org.apache.solr.handler.admin.api.CreateCollection;
 import org.apache.solr.handler.admin.api.CreateCollectionBackup;
@@ -539,11 +539,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   ColStatus.RAW_SIZE_SAMPLING_PERCENT_PROP,
                   ColStatus.SIZE_INFO_PROP);
 
-          new ColStatus(
-                  h.coreContainer.getSolrClientCache(),
-                  h.coreContainer.getZkController().getZkStateReader().getClusterState(),
-                  new ZkNodeProps(props))
-              .getColStatus(rsp.getValues());
+          CollectionStatus.populateColStatusData(
+              h.coreContainer, new ZkNodeProps(props), rsp.getValues());
           return null;
         }),
     DELETE_OP(
@@ -808,7 +805,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
           final NamedList<Object> status = new NamedList<>();
           if (coreContainer.getDistributedCollectionCommandRunner().isEmpty()) {
-            if (zkController.getOverseerCompletedMap().contains(requestId)) {
+            if (zkController.getOverseerRunningMap().contains(requestId)) {
+              addStatusToResponse(status, RUNNING, "found [" + requestId + "] in running tasks");
+            } else if (zkController.getOverseerCompletedMap().contains(requestId)) {
               final byte[] mapEntry = zkController.getOverseerCompletedMap().get(requestId);
               rsp.getValues()
                   .addAll(OverseerSolrResponseSerializer.deserialize(mapEntry).getResponse());
@@ -819,8 +818,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               rsp.getValues()
                   .addAll(OverseerSolrResponseSerializer.deserialize(mapEntry).getResponse());
               addStatusToResponse(status, FAILED, "found [" + requestId + "] in failed tasks");
-            } else if (zkController.getOverseerRunningMap().contains(requestId)) {
-              addStatusToResponse(status, RUNNING, "found [" + requestId + "] in running tasks");
             } else if (h.overseerCollectionQueueContains(requestId)) {
               addStatusToResponse(
                   status, SUBMITTED, "found [" + requestId + "] in submitted tasks");
@@ -978,7 +975,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CLUSTERSTATUS,
         (req, rsp, h) -> {
           new ClusterStatus(h.coreContainer.getZkController().getZkStateReader(), req.getParams())
-              .getClusterStatus(rsp.getValues());
+              .getClusterStatus(rsp.getValues(), req.getHttpSolrCall().getUserAgentSolrVersion());
           return null;
         }),
     ADDREPLICAPROP_OP(
@@ -1360,6 +1357,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateReplica.class,
         AddReplicaProperty.class,
         BalanceShardUnique.class,
+        CollectionStatus.class,
         CreateAlias.class,
         CreateCollection.class,
         CreateCollectionBackup.class,
@@ -1399,7 +1397,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RebalanceLeadersAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new CollectionStatusAPI(this)));
     return apis;
   }
 

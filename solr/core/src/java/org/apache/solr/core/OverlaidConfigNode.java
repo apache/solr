@@ -19,9 +19,9 @@ package org.apache.solr.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.ConfigNode;
 
 /** A config node impl which has an overlay */
@@ -80,7 +80,7 @@ class OverlaidConfigNode implements ConfigNode {
   }
 
   @Override
-  public SimpleMap<String> attributes() {
+  public Map<String, String> attributes() {
     return delegate.attributes();
   }
 

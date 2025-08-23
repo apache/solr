@@ -26,7 +26,7 @@ import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,7 +43,6 @@ import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.Test;
@@ -152,7 +151,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
       log.info("Updating mappings from zk");
-      waitForNewLeader(cloudClient, "shard1", (Replica) initialLeaderJetty.client.info);
+      waitForNewLeader(cloudClient, "shard1", initialLeaderJetty.info);
       updateMappingsFromZk(jettys, clients, true);
       assertEquals(
           "PeerSynced node did not become leader",
@@ -326,7 +325,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
             + "/data/replication.properties";
     assertTrue(
         "PeerSync failed. Had to fail back to replication",
-        Files.notExists(Paths.get(replicationProperties)));
+        Files.notExists(Path.of(replicationProperties)));
   }
 
   private void waitTillNodesActive() throws Exception {
@@ -369,8 +368,6 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    ureq.setParams(params);
     ureq.process(cloudClient);
   }
 

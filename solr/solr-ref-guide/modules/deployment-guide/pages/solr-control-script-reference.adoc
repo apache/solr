@@ -16,14 +16,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr includes a script known as "`bin/solr`" that allows you to perform many common operations on your Solr installation or cluster.
+The SolrCLI, available as the `bin/solr` script, is a versatile command-line tool that allows you to perform many common operations on your Solr installation or cluster.
 
 You can start and stop Solr, create and delete collections or cores, perform operations on ZooKeeper and check the status of Solr and configured shards.
 
 You can find the script in the `bin/` directory of your Solr installation.
-The `bin/solr` script makes Solr easier to work with by providing simple commands and options to quickly accomplish common goals.
+The SolrCLI makes Solr easier to work with by providing simple commands and options to quickly accomplish common goals.
 
-More examples of `bin/solr` in use are available throughout this Guide, but particularly in the sections xref:installing-solr.adoc#starting-solr[Starting Solr] and xref:getting-started:tutorial-solrcloud.adoc[].
+More examples of SolrCLI in use are available throughout this Guide, particularly in the sections xref:installing-solr.adoc#starting-solr[Starting Solr] and xref:getting-started:tutorial-solrcloud.adoc[].
 
 == Starting and Stopping
 
@@ -69,7 +69,7 @@ If you are passing JVM parameters that begin with `-D`, you can omit the `--jvm-
 [source,bash]
 bin/solr start --jvm-opts "-Xdebug -Xrunjdwp:transport=dt_socket, server=y,suspend=n,address=1044"
 
-`-j <jettyParams>`::
+`-j <jettyParams>` or `--jettyconfig <jettyParams>`::
 +
 [%autowidth,frame=none]
 |===
@@ -870,7 +870,6 @@ The `bin/solr` script allows enabling or disabling Authentication, allowing you 
 Currently this command is only available when using SolrCloud mode and must be run on the machine hosting Solr.
 
 For Basic Authentication the script provides https://github.com/apache/solr/blob/main/solr/core/resources/security.json[user roles and permission mappings], and maps the created user to the `superadmin` role.
-For Kerberos it only enables the security.json, it doesn't set up any users or role mappings.
 
 
 === Enabling Basic Authentication
@@ -900,7 +899,6 @@ Here are some example usages:
 ----
 Usage: solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]
        solr auth enable [--type basicAuth] --prompt <true|false> [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]
-       solr auth enable --type kerberos --config <kerberos configs> [--update-include-file-only <true|false>] [-v]
        solr auth disable [--update-include-file-only <true|false>] [-v]
 ----
 
@@ -1387,7 +1385,7 @@ Trailing wildcards are supported when copying from localand must be quoted.
 
 Other examples are:
 
-*Recursively copy a directory from local to ZooKeeper*: `bin/solr zk cp -r file:/apache/confgs/whatever/conf zk:/configs/myconf -z 111.222.333.444:2181`
+*Recursively copy a directory from local to ZooKeeper*: `bin/solr zk cp -r file:/apache/configs/whatever/conf zk:/configs/myconf -z 111.222.333.444:2181`
 
 *Copy a single file from ZooKeeper to local*: `bin/solr zk cp zk:/configs/myconf/managed_schema /configs/myconf/managed_schema -z 111.222.333.444:2181`
 
@@ -1836,7 +1834,7 @@ The `package` command allows you to interact with Solr's xref:configuration-guid
 
 == Snapshots and Backups
 
-The snapshots capablity of the CLI allows you to:
+The snapshots capability of the CLI allows you to:
 
 * Create snapshotted view of your index
 * List all the available snapshots

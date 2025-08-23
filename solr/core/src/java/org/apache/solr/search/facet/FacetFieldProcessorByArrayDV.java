@@ -38,7 +38,7 @@ import org.apache.solr.search.facet.SweepCountAware.SegCountGlobal;
 import org.apache.solr.search.facet.SweepCountAware.SegCountPerSeg;
 import org.apache.solr.uninverting.FieldCacheImpl;
 
-/** Grabs values from {@link DocValues}. */
+/** Grabs values from {@link SortedDocValues} or {@link SortedDocValues}. */
 class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   static boolean unwrap_singleValued_multiDv = true; // only set to false for test coverage
 
@@ -272,9 +272,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (multiDv.advanceExact(doc)) {
         final int maxIdx = disi.registerCounts(segCounter);
-        for (; ; ) {
+        for (int o = 0; o < multiDv.docValueCount(); o++) {
           int segOrd = (int) multiDv.nextOrd();
-          if (segOrd < 0) break;
           segCounter.incrementCount(segOrd, 1, maxIdx);
         }
       }
@@ -369,9 +368,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       if (multiDv.advanceExact(doc)) {
         final int maxIdx = disi.registerCounts(segCounter);
         final boolean collectBase = disi.collectBase();
-        for (; ; ) {
+        for (int o = 0; o < multiDv.docValueCount(); o++) {
           int segOrd = (int) multiDv.nextOrd();
-          if (segOrd < 0) break;
           collect(doc, segOrd, toGlobal, segCounter, maxIdx, collectBase);
         }
       }
@@ -385,9 +383,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (multiDv.advanceExact(doc)) {
         final int maxIdx = disi.registerCounts(segCounter);
-        for (; ; ) {
+        for (int o = 0; o < multiDv.docValueCount(); o++) {
           int segOrd = (int) multiDv.nextOrd();
-          if (segOrd < 0) break;
           int ord = (int) toGlobal.get(segOrd);
           segCounter.incrementCount(ord, 1, maxIdx);
         }

@@ -63,6 +63,7 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
     // success/failure for AuditLogging, and other logic.
     final SolrQueryResponse solrQueryResponse =
         (SolrQueryResponse) containerRequestContext.getProperty(SOLR_QUERY_RESPONSE);
+
     final SolrQueryRequest solrQueryRequest =
         (SolrQueryRequest) containerRequestContext.getProperty(SOLR_QUERY_REQUEST);
     if (exception instanceof WebApplicationException wae) {
@@ -87,7 +88,7 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
       ContainerRequestContext containerRequestContext) {
     // First, handle any exception-related metrics
     final Exception normalizedException =
-        RequestHandlerBase.normalizeReceivedException(solrQueryRequest, exception);
+        RequestHandlerBase.processReceivedException(solrQueryRequest, exception);
     final RequestHandlerBase.HandlerMetrics metrics =
         (RequestHandlerBase.HandlerMetrics) containerRequestContext.getProperty(HANDLER_METRICS);
     if (metrics != null) {

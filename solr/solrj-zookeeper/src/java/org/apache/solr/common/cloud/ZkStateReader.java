@@ -76,7 +76,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String BASE_URL_PROP = "base_url";
   public static final String NODE_NAME_PROP = "node_name";
   public static final String CORE_NODE_NAME_PROP = "core_node_name";
-  public static final String ROLES_PROP = "roles";
   public static final String STATE_PROP = "state";
   // if this flag equals to false and the replica does not exist in cluster state, set state op
   // become no op (default is true)
@@ -159,7 +158,6 @@ public class ZkStateReader implements SolrCloseable {
   /** A view of the current state of all collections. */
   protected volatile ClusterState clusterState;
 
-  private static final int GET_LEADER_RETRY_INTERVAL_MS = 50;
   private static final int GET_LEADER_RETRY_DEFAULT_TIMEOUT =
       Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "4000"));
 
@@ -408,29 +406,30 @@ public class ZkStateReader implements SolrCloseable {
       int zkClientTimeout,
       int zkClientConnectTimeout,
       boolean canUseZkACLs) {
-    SolrZkClient.Builder builder =
+    this.zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkServerAddress)
             .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
             .withUseDefaultCredsAndACLs(canUseZkACLs)
-            .withReconnectListener(
+            .build();
+    this.zkClient
+        .getCuratorFramework()
+        .getConnectionStateListenable()
+        .addListener(
+            (OnReconnect)
                 () -> {
                   // on reconnect, reload cloud info
                   try {
                     this.createClusterStateWatchersAndUpdate();
-                  } catch (KeeperException e) {
-                    log.error("A ZK error has occurred", e);
-                    throw new ZooKeeperException(
-                        ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
                   } catch (InterruptedException e) {
                     // Restore the interrupted status
                     Thread.currentThread().interrupt();
-                    log.error("Interrupted", e);
-                    throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "Interrupted", e);
+                    log.warn("Interrupted", e);
+                  } catch (Throwable e) {
+                    log.error("An error has occurred while updating the cluster state", e);
                   }
                 });
-    this.zkClient = builder.build();
     this.closeClient = true;
     this.securityNodeWatcher = null;
     collectionPropertiesZkStateReader = new CollectionPropertiesZkStateReader(this);
@@ -911,8 +910,7 @@ public class ZkStateReader implements SolrCloseable {
     if (replica == null || replica.getBaseUrl() == null) {
       return null;
     }
-    ZkCoreNodeProps props = new ZkCoreNodeProps(replica);
-    return props.getCoreUrl();
+    return replica.getCoreUrl();
   }
 
   public Replica getLeader(Set<String> liveNodes, DocCollection docCollection, String shard) {
@@ -1003,30 +1001,12 @@ public class ZkStateReader implements SolrCloseable {
 
   public List<ZkCoreNodeProps> getReplicaProps(
       String collection, String shardId, String thisCoreNodeName) {
-    return getReplicaProps(collection, shardId, thisCoreNodeName, null);
-  }
-
-  public List<ZkCoreNodeProps> getReplicaProps(
-      String collection,
-      String shardId,
-      String thisCoreNodeName,
-      Replica.State mustMatchStateFilter) {
-    return getReplicaProps(collection, shardId, thisCoreNodeName, mustMatchStateFilter, null);
-  }
-
-  public List<ZkCoreNodeProps> getReplicaProps(
-      String collection,
-      String shardId,
-      String thisCoreNodeName,
-      Replica.State mustMatchStateFilter,
-      Replica.State mustNotMatchStateFilter) {
-    // TODO: We don't need all these getReplicaProps method overloading. Also, it's odd that the
-    // default is to return replicas of type TLOG and NRT only
+    // TODO: It's odd that the default is to return replicas of type TLOG and NRT only
     return getReplicaProps(
         collection,
         shardId,
         thisCoreNodeName,
-        mustMatchStateFilter,
+        null,
         null,
         EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT));
   }
@@ -1638,12 +1618,25 @@ public class ZkStateReader implements SolrCloseable {
 
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
-    AtomicReference<DocCollection> docCollection = new AtomicReference<>();
+    final AtomicReference<DocCollection> docCollection = new AtomicReference<>();
+    final AtomicReference<SolrException> thrownException = new AtomicReference<>();
     CollectionStateWatcher watcher =
         (n, c) -> {
           docCollection.set(c);
-          boolean matches = predicate.matches(n, c);
-          if (matches) latch.countDown();
+          boolean matches = false;
+          try {
+            matches = predicate.matches(n, c);
+            if (matches) {
+              latch.countDown();
+              thrownException.set(null);
+            }
+          } catch (SolrException e) {
+            if (thrownException.getAndSet(e) != null) {
+              // Return if we have seen an exception twice
+              latch.countDown();
+              matches = true;
+            }
+          }
 
           return matches;
         };
@@ -1651,13 +1644,18 @@ public class ZkStateReader implements SolrCloseable {
     try {
       registerCollectionStateWatcher(collection, watcher);
       // wait for the watcher predicate to return true, or time out
-      if (!latch.await(wait, unit))
+      if (!latch.await(wait, unit)) {
         throw new TimeoutException(
             "Timeout waiting to see state for collection="
                 + collection
                 + " :"
                 + docCollection.get());
-
+      } else if (thrownException.get() != null) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Error occurred while checking state",
+            thrownException.get());
+      }
     } finally {
       removeCollectionStateWatcher(collection, watcher);
       waitLatches.remove(latch);

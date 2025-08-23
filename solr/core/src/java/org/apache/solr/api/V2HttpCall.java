@@ -24,6 +24,8 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
 import io.opentelemetry.api.trace.Span;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -35,8 +37,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
@@ -156,8 +156,9 @@ public class V2HttpCall extends HttpSolrCall {
                   + this.collectionsList);
         } else {
           String collectionName = collectionsList.get(0);
-          // Certain HTTP methods are only used for admin APIs, check for those and short-circuit
-          if (List.of("delete").contains(req.getMethod().toLowerCase(Locale.ROOT))) {
+          // Short-circuit for coll-deletion, so it can happen without acquiring a 'SolrCore' ref.
+          if (List.of("delete").contains(req.getMethod().toLowerCase(Locale.ROOT))
+              && pathSegments.size() == 2) {
             initAdminRequest(path);
             return;
           }
@@ -165,7 +166,7 @@ public class V2HttpCall extends HttpSolrCall {
           core = getCoreByCollection(collectionName, isPreferLeader);
           if (core == null) {
             // this collection exists , but this node does not have a replica for that collection
-            extractRemotePath(collectionName, collectionName);
+            extractRemotePath(collectionName);
             if (action == REMOTEQUERY) {
               action = ADMIN_OR_REMOTEQUERY;
               coreUrl = coreUrl.replace("/solr/", "/solr/____v2/c/");
@@ -174,7 +175,7 @@ public class V2HttpCall extends HttpSolrCall {
             }
           }
         }
-      } else if ("cores".equals(prefix)) {
+      } else if ("cores".equals(prefix) && pathSegments.size() > 1) {
         origCorename = pathSegments.get(1);
         core = cores.getCore(origCorename);
       }
@@ -188,6 +189,8 @@ public class V2HttpCall extends HttpSolrCall {
 
       Thread.currentThread().setContextClassLoader(core.getResourceLoader().getClassLoader());
       this.path = path = path.substring(prefix.length() + pathSegments.get(1).length() + 2);
+      // Core-level API, so populate "collection" template val
+      parts.put(COLLECTION_PROP, origCorename);
       Api apiInfo = getApiInfo(core.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
       if (isCompositeApi && apiInfo instanceof CompositeApi) {
         ((CompositeApi) this.api).add(apiInfo);
@@ -434,7 +437,12 @@ public class V2HttpCall extends HttpSolrCall {
         // SolrCore counter
         core.close();
         core = null;
-        response.getHeaderNames().stream().forEach(name -> response.setHeader(name, null));
+        // Skip specific headers
+        // workaround for response.setHeader(name, null)
+        response.getHeaderNames().stream()
+            .filter(name -> !name.equalsIgnoreCase("Content-Length"))
+            .forEach(name -> response.setHeader(name, ""));
+        response.setContentLength(-1);
         invokeJerseyRequest(
             cores, null, cores.getJerseyApplicationHandler(), cores.getRequestHandlers(), rsp);
       }

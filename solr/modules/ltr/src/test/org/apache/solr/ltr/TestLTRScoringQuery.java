@@ -17,7 +17,7 @@
 package org.apache.solr.ltr;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -56,7 +56,7 @@ import org.junit.Test;
 public class TestLTRScoringQuery extends SolrTestCase {
 
   public static final SolrResourceLoader solrResourceLoader =
-      new SolrResourceLoader(Paths.get("").toAbsolutePath());
+      new SolrResourceLoader(Path.of("").toAbsolutePath());
 
   private IndexSearcher getSearcher(IndexReader r) {
     final IndexSearcher searcher = newSearcher(r, false, false);
@@ -192,9 +192,9 @@ public class TestLTRScoringQuery extends SolrTestCase {
     final IndexSearcher searcher = getSearcher(r);
     // first run the standard query
     final TopDocs hits = searcher.search(bqBuilder.build(), 10);
-    assertEquals(2, hits.totalHits.value);
-    assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+    assertEquals(2, hits.totalHits.value());
+    assertEquals("0", searcher.storedFields().document(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("1", searcher.storedFields().document(hits.scoreDocs[1].doc).get("id"));
 
     List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});

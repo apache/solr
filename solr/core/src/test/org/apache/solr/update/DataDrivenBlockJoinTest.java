@@ -16,8 +16,10 @@
  */
 package org.apache.solr.update;
 
-import java.io.File;
-import org.apache.commons.io.FileUtils;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,22 +31,20 @@ public class DataDrivenBlockJoinTest extends SolrTestCaseJ4 {
 
   @Before
   public void before() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    File tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig-schemaless.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "schema-add-schema-fields-update-processor.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
+    Path tmpSolrHome = createTempDir();
+    Path tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
+    Path testHomeConfDir = TEST_HOME().resolve(confDir);
+    Files.createDirectories(tmpConfDir);
+    PathUtils.copyFileToDirectory(testHomeConfDir.resolve("solrconfig-schemaless.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("schema-add-schema-fields-update-processor.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
     initCore(
-        "solrconfig-schemaless.xml",
-        "schema-add-schema-fields-update-processor.xml",
-        tmpSolrHome.getPath());
+        "solrconfig-schemaless.xml", "schema-add-schema-fields-update-processor.xml", tmpSolrHome);
   }
 
   @Test

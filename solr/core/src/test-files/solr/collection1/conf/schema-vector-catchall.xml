@@ -434,27 +434,6 @@
     <fieldType name="tenD" class="solr.PointType" dimension="10" subFieldType="double"/>
     <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1"/>
 
-    <!-- Currency type -->
-    <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
-    <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="solr.MockExchangeRateProvider" foo="bar"
-               multiValued="false"/>
-    <fieldType name="oer_currency"
-               class="solr.CurrencyField"
-               multiValued="false"
-               providerClass="solr.OpenExchangeRatesOrgProvider"
-               ratesFileLocation="open-exchange-rates.json"/>
-    <fieldType name="currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
-               currencyConfig="currency.xml" multiValued="false"/>
-    <fieldType name="mock_currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
-               providerClass="solr.MockExchangeRateProvider" foo="bar" multiValued="false"/>
-    <fieldType name="oer_currency_CFT"
-               class="solr.CurrencyFieldType"
-               amountLongSuffix="_l1_ns"
-               codeStrSuffix="_s1_ns"
-               multiValued="false"
-               providerClass="solr.OpenExchangeRatesOrgProvider"
-               ratesFileLocation="open-exchange-rates.json"/>
-
     <!-- omitPositions example -->
     <fieldType name="nopositions" class="solr.TextField" omitPositions="true">
         <analyzer>
@@ -525,12 +504,9 @@
         </analyzer>
     </fieldType>
     <copyField source="*_commongrams" dest="*_commongrams_stop" />
-
-    <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
-
+    
     <fieldType name="binary" class="solr.BinaryField" />
     <fieldType name="collation" class="solr.CollationField" language="en" />
-    <fieldType name="externalFile" class="solr.ExternalFileField" />
     <fieldType name="icuCollation" class="solr.ICUCollationField" locale="en" />
     <fieldType name="latLonPointSpatial" class="solr.LatLonPointSpatialField" />
     <fieldType name="randomSort" class="solr.RandomSortField" />
@@ -572,14 +548,6 @@
     <field name="homed" type="xyd" indexed="true" stored="true" multiValued="false"/>
     <field name="home_ns" type="xy" indexed="true" stored="false" multiValued="false"/>
     <field name="work" type="xy" indexed="true" stored="true" multiValued="false"/>
-
-    <!-- Test currency -->
-    <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
-    <field name="mock_amount" type="mock_currency" indexed="true" stored="true"/>
-    <field name="oer_amount" type="oer_currency" indexed="true" stored="true"/>
-    <field name="amount_CFT" type="currency_CFT" indexed="true" stored="true" multiValued="false"/>
-    <field name="mock_amount_CFT" type="mock_currency_CFT" indexed="true" stored="true"/>
-    <field name="oer_amount_CFT" type="oer_currency_CFT" indexed="true" stored="true"/>
 
     <!-- test different combinations of indexed and stored -->
     <field name="bind" type="boolean" indexed="true" stored="false"/>
@@ -666,7 +634,6 @@
     <field name="datePointRemove" type="pdate" indexed="true" stored="true" multiValued="true"/>
     <field name="dateRangeRemove" type="dateRange" indexed="true" stored="true" multiValued="true"/>
     <field name="doublePointRemove" type="pdouble" indexed="true" stored="true" multiValued="true"/>
-    <field name="externalFileRemove" type="externalFile" indexed="true" stored="true" multiValued="true"/>
     <field name="floatPointRemove" type="pfloat" indexed="true" stored="true" multiValued="true"/>
     <field name="icuCollationRemove" type="icuCollation" indexed="true" stored="true" multiValued="true"/>
     <field name="intPointRemove" type="pint" indexed="true" stored="true" multiValued="true"/>
@@ -697,9 +664,6 @@
     <field name="payloadDelimited" type="payloadDelimited"/>
 
     <field name="sortabuse_not_uninvertible" type="string" indexed="true" multiValued="false" uninvertible="false" />
-
-    <!-- EnumType -->
-    <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
 
     <field name="max_chars" type="string" indexed="false" stored="true"/>
     <field name="no_max_chars" type="string" indexed="false" stored="true"/>
@@ -794,8 +758,6 @@
     <dynamicField name="*_path" type="path" indexed="true" stored="true" omitNorms="true" multiValued="true"/>
     <dynamicField name="*_ancestor" type="ancestor_path" indexed="true" stored="true" omitNorms="true"
                   multiValued="true"/>
-
-    <dynamicField name="*_sev_enum" type="severityType" indexed="true" stored="true" docValues="true" multiValued="true"/>
 
     <!-- With DocValues=true -->
     <dynamicField name="*_i_dv" type="int" indexed="true" stored="true" docValues="true"/>

@@ -91,11 +91,16 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(RankQParserPlugin.NAME, new RankQParserPlugin());
     map.put(KnnQParserPlugin.NAME, new KnnQParserPlugin());
     map.put(VectorSimilarityQParserPlugin.NAME, new VectorSimilarityQParserPlugin());
+    map.put(FuzzyQParserPlugin.NAME, new FuzzyQParserPlugin());
 
     standardPlugins = Collections.unmodifiableMap(map);
   }
 
-  /** return a {@link QParser} */
+  /**
+   * Creates the {@link QParser}.
+   *
+   * @see QParser#QParser(String, SolrParams, SolrParams, SolrQueryRequest)
+   */
   public abstract QParser createParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);
 

@@ -22,10 +22,10 @@ plugins {
   id 'base'
   id 'solr.build-infra'
 
-  alias(libs.plugins.carrotsearch.dependencychecks)
   alias(libs.plugins.owasp.dependencycheck)
   alias(libs.plugins.cutterslade.analyze)
   alias(libs.plugins.benmanes.versions)
+  alias(libs.plugins.kotlin.multiplatform) apply false
   alias(libs.plugins.littlerobots.versioncatalogupdate) apply false
   alias(libs.plugins.thetaphi.forbiddenapis) apply false
   alias(libs.plugins.undercouch.download) apply false
@@ -38,6 +38,9 @@ plugins {
 // Declare default Java versions for the entire project and for SolrJ separately
 rootProject.ext.minJavaVersionDefault = JavaVersion.toVersion(libs.versions.java.min.get())
 rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(libs.versions.java.solrj.get())
+
+// Check development mode for entire project (defaults to true if 'production' not provided and set to true)
+rootProject.ext.development = !project.hasProperty('production') || project.findProperty('production') != 'true'
 
 apply from: file('gradle/globals.gradle')
 
@@ -66,6 +69,12 @@ description = 'Grandparent project for Apache Solr'
 // Propagate version and derived properties across projects.
 allprojects {
   version = rootProject.version
+
+  gradle.projectsEvaluated {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xmaxerrs" << "1000"
+    }
+  }
 }
 
 ext {
@@ -111,6 +120,12 @@ ext {
     logger.debug('Lucene base version (without suffix): {}', luceneBaseVersion)
     return luceneBaseVersion
   }
+
+  // For testing code
+  vectorIncubatorJavaVersions = [ JavaVersion.VERSION_21, JavaVersion.VERSION_22, JavaVersion.VERSION_23, JavaVersion.VERSION_24, JavaVersion.VERSION_25 ] as Set
+
+  // Use gradle flag in root project for further referencing
+  withUiModule = gradle.ext.withUiModule
 }
 
 // Include smaller chunks configuring dedicated build areas.
@@ -122,10 +137,6 @@ ext {
 apply from: file('gradle/conventions.gradle')
 apply from: file('gradle/generation/local-settings.gradle')
 
-// Ant-compatibility layer: apply folder layout early so that
-// evaluation of other scripts doesn't need to be deferred.
-apply from: file('gradle/ant-compat/solr.folder-layout.gradle')
-
 // Set up defaults and configure aspects for certain modules or functionality
 // (java, tests)
 apply from: file('gradle/java/folder-layout.gradle')
@@ -133,7 +144,6 @@ apply from: file('gradle/java/javac.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
 apply from: file('gradle/testing/fail-on-no-tests.gradle')
-apply from: file('gradle/testing/fail-on-unsupported-jdk.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
 apply from: file('gradle/testing/retry-test.gradle')
@@ -189,13 +199,6 @@ apply from: file('gradle/help.gradle')
 // Configures development for joint Lucene/ Solr composite build.
 apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
 
-// Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
-// here so that we can coexist with current ant build but they are indicative
-// of potential problems with the build conventions, dependencies, etc.
-apply from: file('gradle/ant-compat/misc.gradle')
-
-apply from: file('gradle/ant-compat/artifact-naming.gradle')
-
 apply from: file('gradle/documentation/pull-lucene-javadocs.gradle')
 apply from: file('gradle/documentation/documentation.gradle')
 apply from: file('gradle/documentation/changes-to-html.gradle')
@@ -206,7 +209,6 @@ apply from: file('gradle/hacks/global-exclude-dependencies.gradle')
 apply from: file('gradle/hacks/gradle-archives.gradle')
 
 apply from: file('gradle/hacks/wipe-temp.gradle')
-apply from: file('gradle/hacks/hashmapAssertions.gradle')
 apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
 apply from: file('gradle/hacks/dummy-outputs.gradle')
 

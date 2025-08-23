@@ -39,27 +39,6 @@ teardown() {
   refute_output --partial '"EXCEPTION"'
 }
 
-@test "Hadoop-Auth Module: KerberosPlugin Classloading" {
-  # Write a security.json that uses the KerberosPlugin
-  local security_json="${BATS_TEST_TMPDIR}/kerberos-security.json"
-  echo '{"authentication": {"class": "solr.KerberosPlugin"}}' > "${security_json}"
-
-  # Start Solr
-  export SOLR_MODULES=hadoop-auth
-  solr start \
-    -Dsolr.kerberos.principal=test \
-    -Dsolr.kerberos.keytab=test \
-    -Dsolr.kerberos.cookie.domain=test
-
-  # Upload the custom security.json and wait for Solr to try to load it
-  solr zk cp "${security_json}" zk:security.json -z localhost:${ZK_PORT}
-  sleep 1
-
-  run cat "${SOLR_LOGS_DIR}/solr.log"
-  assert_output --partial "Initializing authentication plugin: solr.KerberosPlugin"
-  refute_output --partial "java.lang.ClassNotFoundException"
-}
-
 @test "icu collation in analysis-extras module" {
   local solr_include_file="${BATS_TEST_TMPDIR}/solr.include"
   echo "SOLR_MODULES=analysis-extras" > "${solr_include_file}"

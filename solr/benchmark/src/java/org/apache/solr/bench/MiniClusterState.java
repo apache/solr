@@ -20,16 +20,15 @@ import static org.apache.commons.io.file.PathUtils.deleteDirectory;
 import static org.apache.solr.bench.BaseBenchState.log;
 
 import com.codahale.metrics.Meter;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SplittableRandom;
@@ -122,7 +121,7 @@ public class MiniClusterState {
 
       // dump Solr metrics
       Path metricsResults =
-          Paths.get(
+          Path.of(
               workDir,
               "metrics-results",
               benchmarkParams.id(),
@@ -130,8 +129,7 @@ public class MiniClusterState {
               benchmarkParams.getBenchmark() + ".txt");
       Files.createDirectories(metricsResults.getParent());
 
-      cluster.dumpMetrics(
-          metricsResults.getParent().toFile(), metricsResults.getFileName().toString());
+      cluster.dumpMetrics(metricsResults.getParent(), metricsResults.getFileName().toString());
     }
 
     /**
@@ -170,8 +168,14 @@ public class MiniClusterState {
                   long clusterSize =
                       Files.walk(node)
                           .filter(Files::isRegularFile)
-                          .map(Path::toFile)
-                          .mapToLong(File::length)
+                          .mapToLong(
+                              file -> {
+                                try {
+                                  return Files.size(file);
+                                } catch (IOException e) {
+                                  throw new RuntimeException(e);
+                                }
+                              })
                           .sum();
                   log("mini cluster node size (bytes) " + node + " " + clusterSize);
                 } catch (IOException e) {
@@ -198,7 +202,7 @@ public class MiniClusterState {
 
       workDir = System.getProperty("workBaseDir", "build/work");
 
-      Path currentRelativePath = Paths.get("");
+      Path currentRelativePath = Path.of("");
       String s = currentRelativePath.toAbsolutePath().toString();
       log("current relative path is: " + s);
       log("work path is: " + workDir);
@@ -221,13 +225,13 @@ public class MiniClusterState {
       String baseDirSysProp = System.getProperty("miniClusterBaseDir");
       if (baseDirSysProp != null) {
         deleteMiniCluster = false;
-        miniClusterBaseDir = Paths.get(baseDirSysProp);
+        miniClusterBaseDir = Path.of(baseDirSysProp);
         if (Files.exists(miniClusterBaseDir)) {
           createCollectionAndIndex = false;
           allowClusterReuse = true;
         }
       } else {
-        miniClusterBaseDir = Paths.get(workDir, "mini-cluster");
+        miniClusterBaseDir = Path.of(workDir, "mini-cluster");
       }
 
       System.setProperty("metricsEnabled", String.valueOf(metricsEnabled));
@@ -267,7 +271,7 @@ public class MiniClusterState {
         cluster =
             new MiniSolrCloudCluster.Builder(nodeCount, miniClusterBaseDir)
                 .formatZkServer(false)
-                .addConfig("conf", getFile("src/resources/configs/cloud-minimal/conf").toPath())
+                .addConfig("conf", getFile("src/resources/configs/cloud-minimal/conf"))
                 .configure();
       } catch (Exception e) {
         if (Files.exists(miniClusterBaseDir)) {
@@ -551,12 +555,14 @@ public class MiniClusterState {
    * @param name the name
    * @return the file
    */
-  public static File getFile(String name) {
+  public static Path getFile(String name) {
     final URL url =
-        MiniClusterState.class.getClassLoader().getResource(name.replace(File.separatorChar, '/'));
+        MiniClusterState.class
+            .getClassLoader()
+            .getResource(name.replace(FileSystems.getDefault().getSeparator(), "/"));
     if (url != null) {
       try {
-        return new File(url.toURI());
+        return Path.of(url.toURI());
       } catch (Exception e) {
         throw new RuntimeException(
             "Resource was found on classpath, but cannot be resolved to a "
@@ -564,12 +570,12 @@ public class MiniClusterState {
                 + name);
       }
     }
-    File file = new File(name);
-    if (file.exists()) {
+    Path file = Path.of(name);
+    if (Files.exists(file)) {
       return file;
     } else {
-      file = new File("../../../", name);
-      if (file.exists()) {
+      file = Path.of("../../../", name);
+      if (Files.exists(file)) {
         return file;
       }
     }
@@ -577,6 +583,6 @@ public class MiniClusterState {
         "Cannot find resource in classpath or in file-system (relative to CWD): "
             + name
             + " CWD="
-            + Paths.get("").toAbsolutePath());
+            + Path.of("").toAbsolutePath());
   }
 }

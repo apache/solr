@@ -819,11 +819,11 @@ public class SimpleFacets {
         result.getFacetEntries(offset, limit < 0 ? Integer.MAX_VALUE : limit);
     for (GroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
       // :TODO:can we filter earlier than this to make it more efficient?
-      if (termFilter != null && !termFilter.test(facetEntry.getValue())) {
+      if (termFilter != null && !termFilter.test(facetEntry.value())) {
         continue;
       }
-      facetFieldType.indexedToReadable(facetEntry.getValue(), charsRef);
-      facetCounts.add(charsRef.toString(), facetEntry.getCount());
+      facetFieldType.indexedToReadable(facetEntry.value(), charsRef);
+      facetCounts.add(charsRef.toString(), facetEntry.count());
     }
 
     if (missing) {
@@ -871,12 +871,12 @@ public class SimpleFacets {
    * @see #getFieldMissingCount
    * @see #getFacetTermEnumCounts
    */
-  public NamedList<Object> getFacetFieldCounts() throws IOException, SyntaxError {
+  public SimpleOrderedMap<Object> getFacetFieldCounts() throws IOException, SyntaxError {
 
-    NamedList<Object> res = new SimpleOrderedMap<>();
     String[] facetFs = global.getParams(FacetParams.FACET_FIELD);
+
     if (null == facetFs) {
-      return res;
+      return SimpleOrderedMap.of();
     }
 
     // Passing a negative number for FACET_THREADS implies an unlimited number of threads is
@@ -891,6 +891,7 @@ public class SimpleFacets {
       fdebugParent.putInfoItem("maxThreads", maxThreads);
     }
 
+    SimpleOrderedMap<Object> res;
     try {
       // Loop over fields; submit to executor, keeping the future
       for (String f : facetFs) {
@@ -914,10 +915,8 @@ public class SimpleFacets {
                   result.add(key, getTermCounts(facetValue, parsed));
                 }
                 return result;
-              } catch (SolrException se) {
+              } catch (SolrException | ExitableDirectoryReader.ExitingReaderException se) {
                 throw se;
-              } catch (ExitableDirectoryReader.ExitingReaderException timeout) {
-                throw timeout;
               } catch (Exception e) {
                 throw new SolrException(
                     ErrorCode.SERVER_ERROR, "Exception during facet.field: " + facetValue, e);
@@ -932,6 +931,7 @@ public class SimpleFacets {
         futures.add(runnableFuture);
       } // facetFs loop
 
+      res = new SimpleOrderedMap<>();
       // Loop over futures to get the values. The order is the same as facetFs but shouldn't matter.
       for (Future<NamedList<?>> future : futures) {
         res.addAll(future.get());
@@ -1184,7 +1184,7 @@ public class SimpleFacets {
                 for (int subindex = 0; subindex < numSubs; subindex++) {
                   MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
                   if (sub.postingsEnum == null) continue;
-                  int base = sub.slice.start;
+                  int base = sub.slice.start();
                   int docid;
                   while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                     if (fastForRandomSet.get(docid + base)) {

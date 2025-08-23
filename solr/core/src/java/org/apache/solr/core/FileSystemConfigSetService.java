@@ -140,7 +140,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   @Override
-  protected void uploadConfig(String configName, Path source) throws IOException {
+  public void uploadConfig(String configName, Path source) throws IOException {
     Path dest = getConfigDir(configName);
     copyRecursively(source, dest);
   }
@@ -150,8 +150,11 @@ public class FileSystemConfigSetService extends ConfigSetService {
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
     if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
-      log.warn("Not including uploading file to config, as it is a forbidden type: {}", fileName);
-      return;
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "The file type provided for upload, '"
+              + fileName
+              + "', is forbidden for use in uploading configsets.");
     }
     if (FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
       String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);

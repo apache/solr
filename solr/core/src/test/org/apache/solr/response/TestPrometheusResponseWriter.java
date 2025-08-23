@@ -23,13 +23,17 @@ import com.codahale.metrics.SettableGauge;
 import com.codahale.metrics.SharedMetricRegistries;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -52,7 +56,10 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     SharedMetricRegistries.clear();
 
     solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
-    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
+    solrClientTestRule
+        .newCollection()
+        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET.toString())
+        .create();
     var cc = solrClientTestRule.getCoreContainer();
     cc.waitForLoadingCoresToFinish(30000);
 
@@ -74,17 +81,31 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
   @Test
   public void testPrometheusStructureOutput() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/metrics");
     params.set("wt", "prometheus");
-    QueryRequest req = new QueryRequest(params);
+    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
     req.setResponseParser(new NoOpResponseParser("prometheus"));
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
       String output = (String) res.get("response");
+
+      Set<String> seenTypeInfo = new HashSet<>();
+
       List<String> filteredResponse =
-          output.lines().filter(line -> !line.startsWith("#")).collect(Collectors.toList());
+          output
+              .lines()
+              .filter(
+                  line -> {
+                    if (!line.startsWith("#")) {
+                      return true;
+                    }
+                    assertTrue(
+                        "Prometheus exposition format cannot have duplicate TYPE information",
+                        seenTypeInfo.add(line));
+                    return false;
+                  })
+              .collect(Collectors.toList());
       filteredResponse.forEach(
           (actualMetric) -> {
             String actualValue;
@@ -115,9 +136,8 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     String expectedJvm = "solr_metrics_jvm_gc{item=\"dummyMetrics\"} 0.0";
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/metrics");
     params.set("wt", "prometheus");
-    QueryRequest req = new QueryRequest(params);
+    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
     req.setResponseParser(new NoOpResponseParser("prometheus"));
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {

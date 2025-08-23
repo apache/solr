@@ -54,7 +54,7 @@ When you're ready to setup Solr for a production environment, please refer to th
 How to size your Solr installation is a complex question that relies on a number of factors, including the number and structure of documents, how many fields you intend to store, the number of users, etc.
 
 It's highly recommended that you spend a bit of time thinking about the factors that will impact hardware sizing for your Solr implementation.
-A very good blog post that discusses the issues to consider is https://lucidworks.com/2012/07/23/sizing-hardware-in-the-abstract-why-we-dont-have-a-definitive-answer/[Sizing Hardware in the Abstract: Why We Don't have a Definitive Answer].
+A very good blog post that discusses the issues to consider is https://lucidworks.com/blog/solr-sizing-guide-estimating-solr-sizing-hardware/[Sizing Hardware in the Abstract: Why We Don't have a Definitive Answer].
 ====
 
 One thing to note when planning your installation is that a hard limit exists in Lucene for the number of documents in a single index: approximately 2.14 billion documents (2,147,483,647 to be exact).
@@ -73,7 +73,7 @@ tar zxf solr-{solr-full-version}.tgz
 
 Once extracted, you are now ready to run Solr using the instructions provided in the <<Starting Solr>> section below.
 
-TIP: Windows includes the `tar` tool since Windows 10. Open a command line window and execute the above comamnd. There are also several 3rd party un-archiving tools that support `.tar` archives.
+TIP: Windows includes the `tar` tool since Windows 10. Open a command line window and execute the above command. There are also several 3rd party un-archiving tools that support `.tar` archives.
 
 == Directory Layout
 

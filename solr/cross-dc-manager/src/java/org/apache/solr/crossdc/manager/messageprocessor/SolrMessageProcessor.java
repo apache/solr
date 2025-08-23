@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -59,13 +60,14 @@ public class SolrMessageProcessor extends MessageProcessor
   private final MetricRegistry metrics =
       SharedMetricRegistries.getOrCreate(Consumer.METRICS_REGISTRY);
 
-  final CloudSolrClient client;
+  final Supplier<CloudSolrClient> clientSupplier;
 
   private static final String VERSION_FIELD = "_version_";
 
-  public SolrMessageProcessor(CloudSolrClient client, ResubmitBackoffPolicy resubmitBackoffPolicy) {
+  public SolrMessageProcessor(
+      Supplier<CloudSolrClient> clientSupplier, ResubmitBackoffPolicy resubmitBackoffPolicy) {
     super(resubmitBackoffPolicy);
-    this.client = client;
+    this.clientSupplier = clientSupplier;
   }
 
   @Override
@@ -190,14 +192,14 @@ public class SolrMessageProcessor extends MessageProcessor
     if (log.isDebugEnabled()) {
       log.debug(
           "Sending request to Solr at ZK address={} with params {}",
-          ZkStateReader.from(client).getZkClient().getZkServerAddress(),
+          ZkStateReader.from(clientSupplier.get()).getZkClient().getZkServerAddress(),
           request.getParams());
     }
     Result<MirroredSolrRequest<?>> result;
     SolrResponseBase response;
     Timer.Context ctx = metrics.timer(MetricRegistry.name(type.name(), "outputTime")).time();
     try {
-      response = (SolrResponseBase) request.process(client);
+      response = (SolrResponseBase) request.process(clientSupplier.get());
     } finally {
       ctx.stop();
     }
@@ -216,7 +218,7 @@ public class SolrMessageProcessor extends MessageProcessor
     if (log.isDebugEnabled()) {
       log.debug(
           "Finished sending request to Solr at ZK address={} with params {} status_code={}",
-          ZkStateReader.from(client).getZkClient().getZkServerAddress(),
+          ZkStateReader.from(clientSupplier.get()).getZkClient().getZkServerAddress(),
           request.getParams(),
           status);
     }
@@ -331,7 +333,8 @@ public class SolrMessageProcessor extends MessageProcessor
       }
     } else {
       SolrParams params = mirroredSolrRequest.getSolrRequest().getParams();
-      String shouldMirror = (params == null ? null : params.get(CrossDcConstants.SHOULD_MIRROR));
+      assert params != null;
+      String shouldMirror = params.get(CrossDcConstants.SHOULD_MIRROR);
       if (shouldMirror == null) {
         if (params instanceof ModifiableSolrParams) {
           log.warn("{} param is missing - setting to false", CrossDcConstants.SHOULD_MIRROR);
@@ -351,7 +354,7 @@ public class SolrMessageProcessor extends MessageProcessor
     boolean connected = false;
     while (!connected) {
       try {
-        client.connect(); // volatile null-check if already connected
+        clientSupplier.get().connect(); // volatile null-check if already connected
         connected = true;
       } catch (Exception e) {
         log.error("Unable to connect to solr server. Not consuming.", e);

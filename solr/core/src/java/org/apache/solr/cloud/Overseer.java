@@ -36,8 +36,8 @@ import java.util.function.BiConsumer;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
@@ -481,7 +481,7 @@ public class Overseer implements SolrCloseable {
       byte[] data;
       try {
         data = zkClient.getData(path, null, stat, true);
-      } catch (IllegalStateException e) {
+      } catch (IllegalStateException | KeeperException.NoNodeException e) {
         return;
       } catch (Exception e) {
         log.warn("Error communicating with ZooKeeper", e);
@@ -857,13 +857,18 @@ public class Overseer implements SolrCloseable {
     } else {
       return;
     }
-    try (CloudSolrClient client =
-        new CloudLegacySolrClient.Builder(
-                Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
-            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
-            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-            .withHttpClient(updateShardHandler.getDefaultHttpClient())
-            .build()) {
+
+    try (var solrClient =
+            new Http2SolrClient.Builder()
+                .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
+                .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
+                .build();
+        var client =
+            new CloudHttp2SolrClient.Builder(
+                    Collections.singletonList(getZkController().getZkServerAddress()),
+                    Optional.empty())
+                .withHttpClient(solrClient)
+                .build()) {
       CollectionAdminRequest.ColStatus req =
           CollectionAdminRequest.collectionStatus(CollectionAdminParams.SYSTEM_COLL)
               .setWithSegments(true)

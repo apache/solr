@@ -176,7 +176,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     waitForState(
         "Timeout waiting for leader goes DOWN",
         COLLECTION,
-        (liveNodes, collectionState) ->
+        collectionState ->
             collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
     // Sanity check that a new (out of sync) replica doesn't come up in our place...
@@ -216,7 +216,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     waitForState(
         "Timeout waiting for leader",
         COLLECTION,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Replica newLeader = collectionState.getLeader("shard1");
           return newLeader != null && newLeader.getName().equals(leader.getName());
         });

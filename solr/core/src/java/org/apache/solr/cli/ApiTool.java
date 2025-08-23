@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.net.URI;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -46,12 +45,8 @@ public class ApiTool extends ToolBase {
           .desc("Send a GET request to a Solr API endpoint.")
           .build();
 
-  public ApiTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ApiTool(PrintStream stdout) {
-    super(stdout);
+  public ApiTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -98,7 +93,7 @@ public class ApiTool extends ToolBase {
       NamedList<Object> response = solrClient.request(req);
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asMap());
+      new JSONWriter(arr, 2).write(response.asMap(10));
       return arr.toString();
     }
   }

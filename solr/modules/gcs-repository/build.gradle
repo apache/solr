@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,7 +21,13 @@ apply plugin: 'java-library'
 
 description = 'GCS Backup Repository'
 
+ext {
+    // Use of the security manager is not supported on windows.
+    useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
+}
+
 dependencies {
+    implementation platform(project(':platform'))
     api project(':solr:core')
     implementation project(':solr:solrj')
 
