@@ -618,7 +618,8 @@ public class NodeConfig {
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
-    private boolean hideStackTrace = Boolean.getBoolean("solr.hideStackTrace");
+    private boolean hideStackTrace =
+        !(Boolean.parseBoolean(System.getProperty("solr.responses.stacktrace.enabled", "true")));
 
     private final Path solrHome;
     private final String nodeName;
