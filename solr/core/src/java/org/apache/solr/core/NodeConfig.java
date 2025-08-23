@@ -861,25 +861,17 @@ public class NodeConfig {
     }
 
     /**
-     * Finds list of hiddenSysProps requested by system property or environment variable or the
-     * default
+     * Finds list of hiddenSysProps requested in priority of solr.xml, system property or the
+     * default set
      *
-     * @return set of raw hidden sysProps, may be regex
+     * @return set of raw hidden system properties, may be regex
      */
     private Set<String> resolveHiddenSysPropsFromSysPropOrEnvOrDefault(String hiddenSysProps) {
-      // Fall back to sysprop and env.var if nothing configured through solr.xml
+      // Fall back to system properties if nothing configured through solr.xml
       if (!StrUtils.isNotNullOrEmpty(hiddenSysProps)) {
-        String fromProps = System.getProperty("solr.hiddenSysProps");
-        // Back-compat for solr 9x
-        // DEPRECATED: Remove in 10.0
-        if (StrUtils.isNotNullOrEmpty(fromProps)) {
-          fromProps = System.getProperty("solr.redaction.system.pattern");
-        }
-        String fromEnv = System.getenv("SOLR_HIDDEN_SYS_PROPS");
+        String fromProps = System.getProperty("solr.responses.hidden.sys.props");
         if (StrUtils.isNotNullOrEmpty(fromProps)) {
           hiddenSysProps = fromProps;
-        } else if (StrUtils.isNotNullOrEmpty(fromEnv)) {
-          hiddenSysProps = fromEnv;
         }
       }
       Set<String> hiddenSysPropSet = Collections.emptySet();
