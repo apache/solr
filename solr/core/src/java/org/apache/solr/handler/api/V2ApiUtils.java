@@ -45,7 +45,6 @@ public class V2ApiUtils {
     return EnvUtils.getPropertyAsBool("solr.api.v2.enabled", true);
   }
 
-
   public static void flattenMapWithPrefix(
       Map<String, Object> toFlatten, Map<String, Object> destination, String additionalPrefix) {
     if (toFlatten == null || toFlatten.isEmpty() || destination == null) {

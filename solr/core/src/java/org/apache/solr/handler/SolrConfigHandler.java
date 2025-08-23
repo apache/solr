@@ -104,7 +104,8 @@ public class SolrConfigHandler extends RequestHandlerBase
     implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String CONFIGSET_EDITING_ENABLED_ARG = "solr.configset.edit.enabled";
-  public static final boolean configEditingEnabled = EnvUtils.getPropertyAsBool(CONFIGSET_EDITING_ENABLED_ARG,true);
+  public static final boolean configEditingEnabled =
+      EnvUtils.getPropertyAsBool(CONFIGSET_EDITING_ENABLED_ARG, true);
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
   private final Lock reloadLock = new ReentrantLock(true);
 
