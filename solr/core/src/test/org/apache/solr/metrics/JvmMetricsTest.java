@@ -85,9 +85,9 @@ public class JvmMetricsTest extends SolrJettyTestBase {
 
   @Test
   public void testSystemProperties() {
-    if (System.getProperty("basicauth") == null) {
+    if (System.getProperty("solr.security.auth.basicauth.credentials") == null) {
       // make sure it's set
-      System.setProperty("basicauth", "foo:bar");
+      System.setProperty("solr.security.auth.basicauth.credentials", "foo:bar");
     }
     SolrMetricManager metricManager = getJetty().getCoreContainer().getMetricManager();
     Map<String, Metric> metrics = metricManager.registry("solr.jvm").getMetrics();

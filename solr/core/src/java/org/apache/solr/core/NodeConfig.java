@@ -647,7 +647,7 @@ public class NodeConfig {
         Set.of(
             "javax\\.net\\.ssl\\.keyStorePassword",
             "javax\\.net\\.ssl\\.trustStorePassword",
-            "basicauth",
+            "solr\\.security\\.auth\\.basicauth\\.credentials",
             "zkDigestPassword",
             "zkDigestReadonlyPassword",
             "aws\\.secretKey", // AWS SDK v1
