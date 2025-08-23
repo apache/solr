@@ -27,6 +27,7 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
@@ -35,6 +36,9 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.monitor.Visitors.QueryTermFilterVisitor;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
@@ -79,6 +83,7 @@ public class DefaultSavedSearchCache extends SolrCacheBase
   private int initialSize;
   private int maxSize;
   private int maxRamMB;
+  private int initialRamMB;
 
   @Override
   public VersionedQueryCacheEntry computeIfStale(
@@ -106,21 +111,31 @@ public class DefaultSavedSearchCache extends SolrCacheBase
     str = args.get(MAX_RAM_MB_PARAM);
     maxRamMB = (str == null) ? -1 : Integer.parseInt(str);
     str = args.get(INITIAL_SIZE_PARAM);
-    initialSize = Math.min((str == null) ? 10_000 : Integer.parseInt(str), maxSize);
+    initialSize = Math.min((str == null) ? maxSize : Integer.parseInt(str), maxSize);
+    str = args.get("initialRamMB");
+    initialRamMB = Math.min((str == null) ? maxRamMB : Integer.parseInt(str), maxRamMB);
     str = args.get(MAX_IDLE_TIME_PARAM);
     int maxIdleTimeSec = -1;
     if (str != null) {
       maxIdleTimeSec = Integer.parseInt(str);
     }
-    mqCache = buildCache(maxIdleTimeSec);
+    str = args.get("expireAfterWriteSeconds");
+    int expireAfterWriteSeconds = -1;
+    if (str != null) {
+      expireAfterWriteSeconds = Integer.parseInt(str);
+    }
+    mqCache = buildCache(maxIdleTimeSec, expireAfterWriteSeconds);
     return persistence;
   }
 
-  private Cache<String, VersionedQueryCacheEntry> buildCache(int maxIdleTimeSec) {
+  private Cache<String, VersionedQueryCacheEntry> buildCache(
+      int maxIdleTimeSec, int expireAfterWriteSeconds) {
     Caffeine<String, VersionedQueryCacheEntry> builder =
         Caffeine.newBuilder().initialCapacity(initialSize).removalListener(this).recordStats();
     if (maxIdleTimeSec > 0) {
       builder.expireAfterAccess(Duration.ofSeconds(maxIdleTimeSec));
+    } else if (expireAfterWriteSeconds > 0) {
+      builder.expireAfterWrite(Duration.ofSeconds(expireAfterWriteSeconds));
     }
 
     if (maxRamMB >= 0) {
@@ -337,6 +352,8 @@ public class DefaultSavedSearchCache extends SolrCacheBase
   public static class LatestRegenerator implements CacheRegenerator {
 
     private static final int MAX_BATCH_SIZE = 1 << 10;
+    private static final Sort VERSION_SORT =
+        new Sort(new SortField(CommonParams.VERSION_FIELD, SortField.Type.LONG));
 
     @Override
     public <K, V> boolean regenerateItem(
@@ -355,45 +372,52 @@ public class DefaultSavedSearchCache extends SolrCacheBase
       var cache = (DefaultSavedSearchCache) newCache;
       var reader = searcher.getIndexReader();
       int batchSize = Math.min(MAX_BATCH_SIZE, cache.getInitialSize());
-      var topDocs =
-          new IndexSearcher(searcher.getTopReaderContext())
-              .search(versionRangeQuery(cache), batchSize)
-              .scoreDocs;
-      int batchesRemaining = cache.getInitialSize() / batchSize - 1;
+      boolean isDone = false;
+      int countBasedBatches = cache.getInitialSize() / batchSize - 1;
+      long targetInitialRam = ((DefaultSavedSearchCache) newCache).initialRamMB * 1024L * 1024L;
+      long estimatedWeight = 0;
       SolrCore core = searcher.getCore();
       SavedSearchDecoder decoder = new SavedSearchDecoder(core);
-      while (topDocs.length > 0 && batchesRemaining > 0) {
-        int docIndex = 0;
-        for (LeafReaderContext ctx : reader.leaves()) {
+      long maxEncounteredVersion = cache.versionHighWaterMark;
+      for (LeafReaderContext ctx : reader.leaves()) {
+        var topDocs =
+            new IndexSearcher(ctx.reader())
+                .search(versionRangeQuery(cache.versionHighWaterMark), batchSize, VERSION_SORT)
+                .scoreDocs;
+        Arrays.sort(topDocs, (a, b) -> Long.compare(b.doc, a.doc));
+        long maxLeafVersion = -1;
+        while (topDocs.length > 0 && !isDone) {
           SavedSearchDataValues dataValues =
               new SavedSearchDataValues(ctx, core.getLatestSchema().getUniqueKeyField().getName());
-          int shiftedMax = ctx.reader().maxDoc() + ctx.docBase;
-          while (docIndex < topDocs.length
-              && topDocs[docIndex].doc >= ctx.docBase
-              && topDocs[docIndex].doc < shiftedMax) {
-            int doc = topDocs[docIndex].doc - ctx.docBase;
-            docIndex++;
-            if (dataValues.advanceTo(doc)) {
-              cache.computeIfStale(dataValues, decoder);
+          for (ScoreDoc topDoc : topDocs) {
+            if (dataValues.advanceTo(topDoc.doc)) {
+              var cacheEntry = cache.computeIfStale(dataValues, decoder);
+              estimatedWeight += RamUsageEstimator.sizeOf(cacheEntry.entry.getMatchQuery());
+              estimatedWeight += RamUsageEstimator.sizeOf(cacheEntry.entry.getId());
+              long version = dataValues.getVersion();
+              maxEncounteredVersion = Math.max(maxEncounteredVersion, version);
+              maxLeafVersion = Math.max(maxLeafVersion, version);
+              cache.docVisits++;
             }
-            cache.versionHighWaterMark =
-                Math.max(cache.versionHighWaterMark, dataValues.getVersion());
-            cache.docVisits++;
+          }
+          topDocs =
+              new IndexSearcher(ctx.reader())
+                  .search(versionRangeQuery(maxLeafVersion + 1), batchSize, VERSION_SORT)
+                  .scoreDocs;
+          Arrays.sort(topDocs, (a, b) -> Long.compare(b.doc, a.doc));
+          if (targetInitialRam > 0L) {
+            isDone = estimatedWeight >= targetInitialRam;
+          } else {
+            isDone = --countBasedBatches <= 0;
           }
         }
-        var scoreDoc = topDocs[topDocs.length - 1];
-        topDocs =
-            new IndexSearcher(searcher.getTopReaderContext())
-                .searchAfter(scoreDoc, versionRangeQuery(cache), batchSize)
-                .scoreDocs;
-        batchesRemaining--;
       }
+      cache.versionHighWaterMark = Math.max(cache.versionHighWaterMark, maxEncounteredVersion);
       return false;
     }
 
-    private static Query versionRangeQuery(DefaultSavedSearchCache cache) {
-      return LongPoint.newRangeQuery(
-          CommonParams.VERSION_FIELD, cache.versionHighWaterMark, Long.MAX_VALUE);
+    private static Query versionRangeQuery(long version) {
+      return LongPoint.newRangeQuery(CommonParams.VERSION_FIELD, version, Long.MAX_VALUE);
     }
   }
 }
