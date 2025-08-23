@@ -127,8 +127,8 @@ more secure production configuration.
 
 Like other modules, the new UI is enabled with the jetty module parameter `--module=new-ui`.
 When using the Solr CLI, users can disable the new UI with
-`SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED=true` or by disabling the entire UI with
-`SOLR_ADMIN_UI_DISABLED=true`.
+`SOLR_UI_EXPERIMENTAL_ENABLED=false` or by disabling all user interface features with
+`SOLR_UI_ENABLED=false`.
 
 ==== JVM
 

@@ -41,12 +41,11 @@ fun RootContent(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-
         Children(
             stack = component.childStack,
             modifier = Modifier.weight(1f),
         ) {
-            when(val child = it.instance) {
+            when (val child = it.instance) {
                 is RootComponent.Child.Start -> StartContent(
                     component = child.component,
                     modifier = Modifier.fillMaxSize(),

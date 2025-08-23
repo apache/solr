@@ -692,7 +692,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     SolrQuery query = new SolrQuery("*:*");
     query.setRows(0);
     QueryResponse qr = cluster.getSolrClient().query(collection, query);
-    // this proves the docs were stored in the blob store too
+    // this proves the docs were stored in the filestore too
     assertEquals(4, qr.getResults().getNumFound());
   }
 

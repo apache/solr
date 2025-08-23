@@ -54,7 +54,6 @@ class HttpEnvironmentStoreClient(
 
         return when {
             response.status.isSuccess() -> {
-
                 // Map the response data to a list of JavaProperty for better readability
                 val javaProperties = response.body<JavaPropertiesResponse>()
                     .properties
