@@ -801,7 +801,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       if (repFactor > 1) {
         t = timings.sub("finalCommit");
         CollectionHandlingUtils.commit(
-            ccc.getCoreContainer().getDefaultHttpSolrClient(),
+            ccc.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient(),
             results,
             slice.get(),
             parentShardLeader);
