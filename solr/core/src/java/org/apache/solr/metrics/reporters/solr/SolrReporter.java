@@ -39,7 +39,6 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -176,7 +175,7 @@ public class SolrReporter extends ScheduledReporter {
      * Default is false.
      *
      * @param cloudClient use CloudSolrClient when true, {@link
-     *     org.apache.solr.client.solrj.impl.HttpSolrClient} otherwise.
+     *     org.apache.solr.client.solrj.impl.Http2SolrClient} otherwise.
      * @return {@code this}
      */
     public Builder cloudClient(boolean cloudClient) {
@@ -265,34 +264,6 @@ public class SolrReporter extends ScheduledReporter {
     /**
      * Build it.
      *
-     * @param client an instance of {@link HttpClient} to be used for making calls.
-     * @param urlProvider function that returns the base URL of Solr instance to target. May return
-     *     null to indicate that reporting should be skipped. Note: this function will be called
-     *     every time just before report is sent.
-     * @return configured instance of reporter
-     * @deprecated use {@link #build(SolrClientCache, Supplier)} instead.
-     */
-    @Deprecated
-    public SolrReporter build(HttpClient client, Supplier<String> urlProvider) {
-      return new SolrReporter(
-          client,
-          urlProvider,
-          metricManager,
-          reports,
-          handler,
-          reporterId,
-          rateUnit,
-          durationUnit,
-          params,
-          skipHistograms,
-          skipAggregateValues,
-          cloudClient,
-          compact);
-    }
-
-    /**
-     * Build it.
-     *
      * @param solrClientCache an instance of {@link SolrClientCache} to be used for making calls.
      * @param urlProvider function that returns the base URL of Solr instance to target. May return
      *     null to indicate that reporting should be skipped. Note: this function will be called
@@ -366,60 +337,6 @@ public class SolrReporter extends ScheduledReporter {
   // a non-null registry.
   // We delegate to registries anyway, so having a dummy registry is harmless.
   private static final MetricRegistry dummyRegistry = new MetricRegistry();
-
-  // back-compat constructor
-
-  /**
-   * Create a SolrReporter instance.
-   *
-   * @param httpClient HttpClient to use for constructing SolrClient instances.
-   * @param urlProvider what URL to send to.
-   * @param metricManager metric manager
-   * @param metrics metric specifications to report
-   * @param handler handler name to report to
-   * @param reporterId my reporter id
-   * @param rateUnit rate unit
-   * @param durationUnit duration unit
-   * @param params request parameters
-   * @param skipHistograms if true then don't send histogram metrics
-   * @param skipAggregateValues if true then don't send aggregate metrics' individual values
-   * @param cloudClient if true then use CloudSolrClient, plain HttpSolrClient otherwise.
-   * @param compact if true then use compact representation.
-   * @deprecated use {@link SolrReporter#SolrReporter(SolrClientCache, boolean, Supplier,
-   *     SolrMetricManager, List, String, String, TimeUnit, TimeUnit, SolrParams, boolean, boolean,
-   *     boolean, boolean)} instead.
-   */
-  @Deprecated
-  public SolrReporter(
-      HttpClient httpClient,
-      Supplier<String> urlProvider,
-      SolrMetricManager metricManager,
-      List<Report> metrics,
-      String handler,
-      String reporterId,
-      TimeUnit rateUnit,
-      TimeUnit durationUnit,
-      SolrParams params,
-      boolean skipHistograms,
-      boolean skipAggregateValues,
-      boolean cloudClient,
-      boolean compact) {
-    this(
-        new SolrClientCache(httpClient),
-        true,
-        urlProvider,
-        metricManager,
-        metrics,
-        handler,
-        reporterId,
-        rateUnit,
-        durationUnit,
-        params,
-        skipHistograms,
-        skipAggregateValues,
-        cloudClient,
-        compact);
-  }
 
   /**
    * Create a SolrReporter instance.

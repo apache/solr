@@ -32,7 +32,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -134,9 +134,13 @@ public class AdminHandlersProxy {
       throws IOException, SolrServerException {
     log.debug("Proxying {} request to node {}", endpoint, nodeName);
     URI baseUri = URI.create(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
-    HttpSolrClient solr = new HttpSolrClient.Builder(baseUri.toString()).build();
+
+    var solr =
+        new Http2SolrClient.Builder(baseUri.toString())
+            .withHttpClient(zkController.getCoreContainer().getDefaultHttpSolrClient())
+            .build();
     SolrRequest<?> proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, endpoint, params);
-    HttpSolrClient.HttpUriRequestResponse proxyResp = solr.httpUriRequest(proxyReq);
-    return new Pair<>(proxyResp.future, solr);
+    var future = solr.requestAsync(proxyReq);
+    return new Pair<>(future, solr);
   }
 }
