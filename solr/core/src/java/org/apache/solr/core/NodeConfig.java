@@ -619,7 +619,8 @@ public class NodeConfig {
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
-    private boolean hideStackTrace = !EnvUtils.getPropertyAsBool("solr.responses.stacktrace.enabled", true);
+    private boolean hideStackTrace =
+        !EnvUtils.getPropertyAsBool("solr.responses.stacktrace.enabled", true);
 
     private final Path solrHome;
     private final String nodeName;
@@ -862,15 +863,15 @@ public class NodeConfig {
     }
 
     /**
-     * Finds list of hiddenSysProps requested in priority of solr.xml, system property or the
+     * Finds list of hiddenSysProps requested in priority of solr.xml, system properties or the
      * default set
      *
      * @return set of raw hidden system properties, may be regex
      */
-    private Set<String> resolveHiddenSysPropsFromSysPropOrEnvOrDefault(String hiddenSysProps) {
+    private Set<String> resolveHiddenSysProps(String hiddenSysProps) {
       // Fall back to system properties if nothing configured through solr.xml
       if (!StrUtils.isNotNullOrEmpty(hiddenSysProps)) {
-        String fromProps = System.getProperty("solr.responses.hidden.sys.props");
+        String fromProps = EnvUtils.getProperty("solr.responses.hidden.sys.props");
         if (StrUtils.isNotNullOrEmpty(fromProps)) {
           hiddenSysProps = fromProps;
         }
@@ -931,7 +932,7 @@ public class NodeConfig {
           hideStackTrace,
           configSetServiceClass,
           modules,
-          resolveHiddenSysPropsFromSysPropOrEnvOrDefault(hiddenSysProps));
+          resolveHiddenSysProps(hiddenSysProps));
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {

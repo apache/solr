@@ -36,6 +36,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
@@ -96,7 +97,7 @@ public class ConfigSetAPIBase extends JerseyResource {
   }
 
   protected void ensureConfigSetUploadEnabled() {
-    if (!"true".equals(System.getProperty("solr.configset.upload.enabled", "true"))) {
+    if (EnvUtils.getPropertyAsBool("solr.configset.upload.enabled", true)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Configset upload feature is disabled. To enable this, start Solr with '-Dsolr.configset.upload.enabled=true'.");
