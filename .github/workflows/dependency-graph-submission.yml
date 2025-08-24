@@ -17,17 +17,9 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          develocity-url: https://develocity.apache.org
-
+          
       - name: Generate and submit dependency graph
         uses: gradle/actions/dependency-submission@v4
-        with:
-          build-scan-publish: true
-          develocity-access-key: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
-
         env:
           DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS: "(?i)(^|:)(compileClasspath|runtimeClasspath|testCompileClasspath|testRuntimeClasspath)$"
           DEPENDENCY_GRAPH_EXCLUDE_CONFIGURATIONS: "(?i)(^|:)(classpath|.*PluginClasspath|kotlinCompilerClasspath|kaptClasspath|annotationProcessor|detachedConfiguration.*)$"
