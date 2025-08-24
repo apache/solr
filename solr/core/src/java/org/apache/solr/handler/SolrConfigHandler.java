@@ -103,9 +103,9 @@ import org.slf4j.LoggerFactory;
 public class SolrConfigHandler extends RequestHandlerBase
     implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String CONFIGSET_EDITING_ENABLED_ARG = "solr.configset.edit.enabled";
+  public static final String CONFIG_EDITING_ENABLED_ARG = "solr.api.config.edit.enabled";
   public static final boolean configEditingEnabled =
-      EnvUtils.getPropertyAsBool(CONFIGSET_EDITING_ENABLED_ARG, true);
+      EnvUtils.getPropertyAsBool(CONFIG_EDITING_ENABLED_ARG, true);
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
   private final Lock reloadLock = new ReentrantLock(true);
 
@@ -136,7 +136,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       if (!configEditingEnabled || isImmutableConfigSet) {
         final String reason =
             !configEditingEnabled
-                ? "due to " + CONFIGSET_EDITING_ENABLED_ARG
+                ? "due to " + CONFIG_EDITING_ENABLED_ARG
                 : "because ConfigSet is immutable";
         throw new SolrException(
             SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
