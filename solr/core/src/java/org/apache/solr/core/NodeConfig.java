@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.search.CacheConfig;
@@ -618,7 +619,7 @@ public class NodeConfig {
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
-    private boolean hideStackTrace = Boolean.getBoolean("solr.hideStackTrace");
+    private boolean hideStackTrace = !EnvUtils.getPropertyAsBool("solr.responses.stacktrace.enabled", true);
 
     private final Path solrHome;
     private final String nodeName;
