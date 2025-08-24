@@ -66,7 +66,9 @@ public class DeleteCollection extends AdminAPIBase implements DeleteCollectionAp
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
-            coreContainer.getDistributedCollectionCommandRunner(),
+            coreContainer.getZkController() != null 
+                ? coreContainer.getZkController().getDistributedCollectionCommandRunner() 
+                : java.util.Optional.empty(),
             remoteMessage,
             CollectionParams.CollectionAction.DELETE,
             DEFAULT_COLLECTION_OP_TIMEOUT);

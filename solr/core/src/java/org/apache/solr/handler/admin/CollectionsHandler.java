@@ -827,7 +827,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             }
           } else {
             Pair<RequestStatusState, OverseerSolrResponse> sr =
-                coreContainer
+                zkController
                     .getDistributedCollectionCommandRunner()
                     .get()
                     .getAsyncTaskRequestStatus(requestId);
@@ -953,7 +953,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           NamedList<Object> results = new NamedList<>();
           boolean isDistributedApi =
-              h.zkController != null && h.zkController.getDistributedCollectionCommandRunner().isPresent();
+              h.coreContainer.getZkController() != null && h.coreContainer.getZkController().getDistributedCollectionCommandRunner().isPresent();
           results.add("isDistributedApi", isDistributedApi);
           rsp.getValues().addAll(results);
           return null;
