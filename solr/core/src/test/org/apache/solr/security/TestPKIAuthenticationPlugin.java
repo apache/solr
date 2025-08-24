@@ -133,7 +133,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     String username = "solr user"; // with spaces
     principal.set(new BasicUserPrincipal(username));
     mock.solrRequestInfo = new SolrRequestInfo(localSolrQueryRequest, new SolrQueryResponse());
-    mock.setHeader(request);
+    mockSetHeaderOnRequest();
     header.set(request.getFirstHeader(headerKey));
     assertNotNull(header.get());
     assertTrue(header.get().getValue().startsWith(nodeName));
@@ -143,6 +143,10 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertNotNull(((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal());
     assertEquals(
         username, ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
+  }
+
+  private void mockSetHeaderOnRequest() {
+    mock.setHeader((k, v) -> request.setHeader(k, v));
   }
 
   public void testSuperUser() throws Exception {
@@ -164,7 +168,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
     // Setup regular superuser request
     mock.solrRequestInfo = null;
-    mock.setHeader(request);
+    mockSetHeaderOnRequest();
     header.set(request.getFirstHeader(headerKey));
     assertNotNull(header.get());
     assertTrue(header.get().getValue().startsWith(nodeName));
@@ -190,7 +194,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
     principal.set(new BasicUserPrincipal("solr"));
     mock.solrRequestInfo = new SolrRequestInfo(localSolrQueryRequest, new SolrQueryResponse());
-    mock.setHeader(request);
+    mockSetHeaderOnRequest();
 
     HttpServletResponse response = mock(HttpServletResponse.class);
     // This will fail in the same way that a missing header would fail

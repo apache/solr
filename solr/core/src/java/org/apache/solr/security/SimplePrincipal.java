@@ -14,17 +14,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.security;
 
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import java.security.Principal;
+import java.util.Objects;
 
-/**
- * Plugin interface for configuring internal HttpClients. This relies on the internal HttpClient
- * implementation and is subject to change.
- *
- * @lucene.experimental
- */
-public interface HttpClientBuilderPlugin {
+/** A basic name-only {@link Principal}. */
+public final class SimplePrincipal implements Principal {
+  // nocommit javadoc prevented me from using a record!
+  private final String name;
 
-  public default void setup(Http2SolrClient client) {}
+  public SimplePrincipal(String name) {
+    this.name = name;
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) return true;
+    if (obj == null || obj.getClass() != this.getClass()) return false;
+    var that = (SimplePrincipal) obj;
+    return Objects.equals(this.name, that.name);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name);
+  }
+
+  @Override
+  public String toString() {
+    return "SimplePrincipal[" + "name=" + name + ']';
+  }
 }

@@ -40,28 +40,20 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpException;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.http.protocol.HttpContext;
+import java.util.function.BiConsumer;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.CryptoKeys;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +94,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   private final LoadingCache<String, String> generatedV2TokenCache;
   private static final int MAX_VALIDITY = Integer.getInteger("pkiauth.ttl", 10000);
   private final String myNodeName;
-  private final HttpHeaderClientInterceptor interceptor = new HttpHeaderClientInterceptor();
   private boolean interceptorRegistered = false;
 
   private boolean acceptPkiV1 = false;
@@ -214,7 +205,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     final Principal principal =
         "$".equals(headerData.userName)
             ? CLUSTER_MEMBER_NODE
-            : new BasicUserPrincipal(headerData.userName);
+            : new SimplePrincipal(headerData.userName);
 
     numAuthenticated.inc();
     filterChain.doFilter(wrapWithPrincipal(request, principal), response);
@@ -235,7 +226,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       throws IOException {
     numErrors.mark();
     log.error(message);
-    response.setHeader(HttpHeaders.WWW_AUTHENTICATE, v2 ? HEADER_V2 : HEADER);
+    response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), v2 ? HEADER_V2 : HEADER);
     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, message);
     return false;
   }
@@ -384,7 +375,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       return null;
     }
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
-    HttpEntity entity = null;
     try {
       final var solrParams = new ModifiableSolrParams();
       solrParams.add("wt", "json");
@@ -409,8 +399,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     } catch (Exception e) {
       log.error("Exception trying to get public key from: {}", url, e);
       return null;
-    } finally {
-      Utils.consumeFully(entity);
     }
   }
 
@@ -475,40 +463,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     client.addListenerFactory(() -> listener);
   }
 
-  @Override
-  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
-    HttpClientUtil.addRequestInterceptor(interceptor);
-    interceptorRegistered = true;
-    return builder;
-  }
-
   public boolean needsAuthorization(HttpServletRequest req) {
     return req.getUserPrincipal() != CLUSTER_MEMBER_NODE;
-  }
-
-  private class HttpHeaderClientInterceptor implements HttpRequestInterceptor {
-
-    public HttpHeaderClientInterceptor() {}
-
-    @Override
-    public void process(HttpRequest httpRequest, HttpContext httpContext)
-        throws HttpException, IOException {
-      if (cores.getAuthenticationPlugin() == null) {
-        return;
-      }
-      if (!cores.getAuthenticationPlugin().interceptInternodeRequest(httpRequest, httpContext)) {
-        if (log.isDebugEnabled()) {
-          log.debug("{} secures this internode request", this.getClass().getSimpleName());
-        }
-        setHeader(httpRequest);
-      } else {
-        if (log.isDebugEnabled()) {
-          log.debug(
-              "{} secures this internode request",
-              cores.getAuthenticationPlugin().getClass().getSimpleName());
-        }
-      }
-    }
   }
 
   private Optional<String> getUser() {
@@ -557,15 +513,16 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     return s + " " + base64Signature;
   }
 
-  void setHeader(HttpRequest httpRequest) {
+  @VisibleForTesting
+  void setHeader(BiConsumer<String, String> httpRequest) {
     if ("v1".equals(System.getProperty(SEND_VERSION))) {
       getUser()
           .map(generatedV1TokenCache::get)
-          .ifPresent(token -> httpRequest.setHeader(HEADER, token));
+          .ifPresent(token -> httpRequest.accept(HEADER, token));
     } else {
       getUser()
           .map(generatedV2TokenCache::get)
-          .ifPresent(token -> httpRequest.setHeader(HEADER_V2, token));
+          .ifPresent(token -> httpRequest.accept(HEADER_V2, token));
     }
   }
 
@@ -579,7 +536,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
   @Override
   public void close() throws IOException {
-    HttpClientUtil.removeRequestInterceptor(interceptor);
     interceptorRegistered = false;
   }
 
@@ -592,5 +548,5 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   public static final String HEADER_V2 = "SolrAuthV2";
   public static final String NODE_IS_USER = "$";
   // special principal to denote the cluster member
-  public static final Principal CLUSTER_MEMBER_NODE = new BasicUserPrincipal("$");
+  public static final Principal CLUSTER_MEMBER_NODE = new SimplePrincipal("$");
 }
