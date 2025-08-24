@@ -238,8 +238,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public CollectionsHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     distributedCollectionConfigSetCommandRunner =
-        coreContainer != null
-            ? coreContainer.getDistributedCollectionCommandRunner()
+        coreContainer != null && coreContainer.getZkController() != null
+            ? coreContainer.getZkController().getDistributedCollectionCommandRunner()
             : Optional.empty();
   }
 
@@ -804,7 +804,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final ZkController zkController = coreContainer.getZkController();
 
           final NamedList<Object> status = new NamedList<>();
-          if (coreContainer.getDistributedCollectionCommandRunner().isEmpty()) {
+          if (zkController.getDistributedCollectionCommandRunner().isEmpty()) {
             if (zkController.getOverseerRunningMap().contains(requestId)) {
               addStatusToResponse(status, RUNNING, "found [" + requestId + "] in running tasks");
             } else if (zkController.getOverseerCompletedMap().contains(requestId)) {
@@ -878,7 +878,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   "Both requestid and flush parameters can not be specified together.");
             }
 
-            if (coreContainer.getDistributedCollectionCommandRunner().isEmpty()) {
+            if (zkController.getDistributedCollectionCommandRunner().isEmpty()) {
               if (flush) {
                 Collection<String> completed = zkController.getOverseerCompletedMap().keys();
                 Collection<String> failed = zkController.getOverseerFailureMap().keys();
@@ -913,11 +913,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               }
             } else {
               if (flush) {
-                coreContainer.getDistributedCollectionCommandRunner().get().deleteAllAsyncIds();
+                zkController.getDistributedCollectionCommandRunner().get().deleteAllAsyncIds();
                 rsp.getValues()
                     .add("status", "successfully cleared stored collection api responses");
               } else {
-                if (coreContainer
+                if (zkController
                     .getDistributedCollectionCommandRunner()
                     .get()
                     .deleteSingleAsyncId(requestId)) {
@@ -953,7 +953,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           NamedList<Object> results = new NamedList<>();
           boolean isDistributedApi =
-              h.coreContainer.getDistributedCollectionCommandRunner().isPresent();
+              h.zkController != null && h.zkController.getDistributedCollectionCommandRunner().isPresent();
           results.add("isDistributedApi", isDistributedApi);
           rsp.getValues().addAll(results);
           return null;

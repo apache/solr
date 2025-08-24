@@ -133,7 +133,9 @@ public abstract class AdminAPIBase extends JerseyResource {
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
-            coreContainer.getDistributedCollectionCommandRunner(),
+            coreContainer.getZkController() != null 
+                ? coreContainer.getZkController().getDistributedCollectionCommandRunner() 
+                : java.util.Optional.empty(),
             remoteMessage,
             action,
             DEFAULT_COLLECTION_OP_TIMEOUT);

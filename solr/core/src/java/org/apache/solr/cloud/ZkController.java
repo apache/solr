@@ -65,6 +65,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
+import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -219,6 +220,13 @@ public class ZkController implements Closeable {
   private final NodesSysPropsCacher sysPropsCacher;
 
   private final DistributedClusterStateUpdater distributedClusterStateUpdater;
+
+  /**
+   * Non-empty if the Collection API is executed in a distributed way and not on Overseer, once the
+   * ZkController has been initialized properly. Until then it is null, and it is not expected to be read.
+   */
+  private volatile Optional<DistributedCollectionConfigSetCommandRunner>
+      distributedCollectionCommandRunner;
 
   private LeaderElector overseerElector;
 
@@ -681,6 +689,11 @@ public class ZkController implements Closeable {
     return sysPropsCacher;
   }
 
+  public Optional<DistributedCollectionConfigSetCommandRunner>
+      getDistributedCollectionCommandRunner() {
+    return this.distributedCollectionCommandRunner;
+  }
+
   private ContextKey closeExistingElectionContext(CoreDescriptor cd, boolean sessionExpired) {
     // look for old context - if we find it, cancel it
     String collection = cd.getCloudDescriptor().getCollectionName();
@@ -779,6 +792,18 @@ public class ZkController implements Closeable {
     } finally {
 
       sysPropsCacher.close();
+      
+      // Stop and cleanup distributedCollectionCommandRunner if present
+      if (distributedCollectionCommandRunner.isPresent()) {
+        customThreadPool.execute(() -> {
+          try {
+            distributedCollectionCommandRunner.get().stopAndWaitForPendingTasksToComplete();
+          } catch (Exception e) {
+            log.error("Error stopping distributedCollectionCommandRunner", e);
+          }
+        });
+      }
+      
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudManager));
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudSolrClient));
 
@@ -1023,6 +1048,12 @@ public class ZkController implements Closeable {
 
       // Do this last to signal we're up.
       createEphemeralLiveNode();
+      
+      // Initialize distributedCollectionCommandRunner after ZooKeeper is fully initialized
+      this.distributedCollectionCommandRunner =
+          cloudConfig.getDistributedCollectionConfigSetExecution()
+              ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc))
+              : Optional.empty();
     } catch (IOException e) {
       log.error("", e);
       throw new SolrException(
