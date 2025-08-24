@@ -40,6 +40,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -171,7 +173,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
   private void handlePrometheusRequest(SolrParams params, BiConsumer<String, Object> consumer) {
     Set<String> metricNames = metricNamesFilter(params);
-    Map<String, Set<String>> labelFilters = labelFilters(params);
+    SortedMap<String, Set<String>> labelFilters = labelFilters(params);
 
     if (!metricNames.isEmpty() || !labelFilters.isEmpty()) {
       consumer.accept(
@@ -210,8 +212,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return metricNames;
   }
 
-  private Map<String, Set<String>> labelFilters(SolrParams params) {
-    Map<String, Set<String>> labelFilters = new HashMap<>();
+  private SortedMap<String, Set<String>> labelFilters(SolrParams params) {
+    SortedMap<String, Set<String>> labelFilters = new TreeMap<>();
     labelFilterKeys.forEach(
         (paramName) -> {
           Set<String> filterValues = labelFilterValues(params, paramName);

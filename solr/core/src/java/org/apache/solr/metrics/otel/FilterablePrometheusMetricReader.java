@@ -31,6 +31,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -52,15 +53,15 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
    * Collect metrics with filtering support for metric names and labels.
    *
    * @param includedNames Set of metric names to include. If empty, all metric names are included.
-   * @param includedLabels Map of label names to their allowed values. If empty, no label filtering
+   * @param requiredLabels Map of label names to their allowed values. If empty, no label filtering
    *     is applied.
    * @return Filtered MetricSnapshots
    */
   public MetricSnapshots collect(
-      Set<String> includedNames, Map<String, Set<String>> includedLabels) {
+      Set<String> includedNames, SortedMap<String, Set<String>> requiredLabels) {
 
     // If no filtering is requested then return all metrics
-    if (includedNames.isEmpty() && includedLabels.isEmpty()) {
+    if (includedNames.isEmpty() && requiredLabels.isEmpty()) {
       return super.collect();
     }
 
@@ -87,7 +88,7 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
     }
 
     // Return named filtered snapshots if not label filters provided
-    if (includedLabels.isEmpty()) {
+    if (requiredLabels.isEmpty()) {
       return snapshotsToFilter;
     }
 
@@ -97,7 +98,7 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
         case CounterSnapshot snapshot -> {
           List<CounterSnapshot.CounterDataPointSnapshot> filtered =
               filterDatapoint(
-                  snapshot, includedLabels, CounterSnapshot.CounterDataPointSnapshot.class);
+                  snapshot, requiredLabels, CounterSnapshot.CounterDataPointSnapshot.class);
           if (!filtered.isEmpty()) {
             filteredSnapshots.metricSnapshot(new CounterSnapshot(snapshot.getMetadata(), filtered));
           }
@@ -105,7 +106,7 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
         case HistogramSnapshot snapshot -> {
           List<HistogramSnapshot.HistogramDataPointSnapshot> filtered =
               filterDatapoint(
-                  snapshot, includedLabels, HistogramSnapshot.HistogramDataPointSnapshot.class);
+                  snapshot, requiredLabels, HistogramSnapshot.HistogramDataPointSnapshot.class);
           if (!filtered.isEmpty()) {
             filteredSnapshots.metricSnapshot(
                 new HistogramSnapshot(snapshot.getMetadata(), filtered));
@@ -113,7 +114,7 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
         }
         case GaugeSnapshot snapshot -> {
           List<GaugeSnapshot.GaugeDataPointSnapshot> filtered =
-              filterDatapoint(snapshot, includedLabels, GaugeSnapshot.GaugeDataPointSnapshot.class);
+              filterDatapoint(snapshot, requiredLabels, GaugeSnapshot.GaugeDataPointSnapshot.class);
           if (!filtered.isEmpty()) {
             filteredSnapshots.metricSnapshot(new GaugeSnapshot(snapshot.getMetadata(), filtered));
           }
@@ -130,29 +131,56 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
   }
 
   private <D extends DataPointSnapshot> List<D> filterDatapoint(
-      MetricSnapshot snapshot, Map<String, Set<String>> includedLabels, Class<D> dataPointClass) {
+      MetricSnapshot snapshot,
+      SortedMap<String, Set<String>> requiredLabels,
+      Class<D> dataPointClass) {
     return snapshot.getDataPoints().stream()
-        .filter(dp -> allowedLabelsFilter(dp.getLabels(), includedLabels))
+        .filter(dp -> requiredLabelsFilter(dp.getLabels(), requiredLabels))
         .map(dataPointClass::cast)
         .collect(toList());
   }
 
-  private boolean allowedLabelsFilter(Labels labels, Map<String, Set<String>> includedLabels) {
-    if (includedLabels.isEmpty()) {
-      return true;
+  // TODO test me
+  static boolean requiredLabelsFilter(
+      Labels labels, SortedMap<String, Set<String>> requiredLabels) {
+    // Both Labels and requiredLabels are name-sorted with unique names.
+    // For each required label, scan forward through labels until we find it.
+    int labelIdx = 0;
+    requireLoop:
+    for (Map.Entry<String, Set<String>> entry : requiredLabels.entrySet()) {
+      String requiredLabelName = entry.getKey();
+      Set<String> allowedValues = entry.getValue();
+
+      // Labels are sorted, so we can continue from the last position
+      while (labelIdx < labels.size()) {
+        String labelName = labels.getName(labelIdx);
+
+        int comparison = labelName.compareTo(requiredLabelName);
+
+        if (comparison < 0) {
+          // a label before requiredLabelName; we don't care about this one
+          assert !requiredLabels.containsKey(labelName);
+          labelIdx++;
+          continue; // inspect the next input label
+        }
+        if (comparison > 0) {
+          // We've passed where requiredLabelName should be, so it doesn't exist
+          assert !labels.contains(requiredLabelName);
+          return false;
+        }
+
+        assert labels.contains(requiredLabelName);
+        if (!allowedValues.contains(labels.getValue(labelIdx))) {
+          return false;
+        }
+        // we satisfied requiredLabelName with its allowedValues.  Move onto next
+        labelIdx++;
+        continue requireLoop;
+      } // end while loop on input Labels
+      // didn't find requiredLabelName; ran out of names
+      assert !labels.contains(requiredLabelName);
+      return false;
     }
-
-    return includedLabels.entrySet().stream()
-        .allMatch(
-            filterEntry -> {
-              String requiredLabelName = filterEntry.getKey();
-              Set<String> allowedValues = filterEntry.getValue();
-
-              return labels.stream()
-                  .anyMatch(
-                      label ->
-                          requiredLabelName.equals(label.getName())
-                              && allowedValues.contains(label.getValue()));
-            });
+    return true; // found all requiredLabels in Labels
   }
 }
