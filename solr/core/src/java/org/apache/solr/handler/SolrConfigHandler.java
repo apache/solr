@@ -136,8 +136,8 @@ public class SolrConfigHandler extends RequestHandlerBase
       if (!configEditingEnabled || isImmutableConfigSet) {
         final String reason =
             !configEditingEnabled
-                ? "due to " + CONFIG_EDITING_ENABLED_ARG
-                : "because ConfigSet is immutable";
+                ? "due to " + CONFIG_EDITING_ENABLED_ARG + " setting"
+                : "because ConfigSet is marked immutable";
         throw new SolrException(
             SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
       }
