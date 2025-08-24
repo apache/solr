@@ -953,7 +953,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           NamedList<Object> results = new NamedList<>();
           boolean isDistributedApi =
-              h.coreContainer.getZkController() != null && h.coreContainer.getZkController().getDistributedCollectionCommandRunner().isPresent();
+              h.coreContainer.getZkController() != null
+                  && h.coreContainer
+                      .getZkController()
+                      .getDistributedCollectionCommandRunner()
+                      .isPresent();
           results.add("isDistributedApi", isDistributedApi);
           rsp.getValues().addAll(results);
           return null;

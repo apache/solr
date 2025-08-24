@@ -73,8 +73,8 @@ public class ConfigSetAPIBase extends JerseyResource {
     this.solrQueryResponse = solrQueryResponse;
 
     this.distributedCollectionConfigSetCommandRunner =
-        coreContainer.getZkController() != null 
-            ? coreContainer.getZkController().getDistributedCollectionCommandRunner() 
+        coreContainer.getZkController() != null
+            ? coreContainer.getZkController().getDistributedCollectionCommandRunner()
             : java.util.Optional.empty();
     this.configSetService = coreContainer.getConfigSetService();
   }

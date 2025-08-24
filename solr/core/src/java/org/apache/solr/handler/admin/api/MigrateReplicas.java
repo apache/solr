@@ -62,8 +62,8 @@ public class MigrateReplicas extends AdminAPIBase implements MigrateReplicasApi 
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
-            coreContainer.getZkController() != null 
-                ? coreContainer.getZkController().getDistributedCollectionCommandRunner() 
+            coreContainer.getZkController() != null
+                ? coreContainer.getZkController().getDistributedCollectionCommandRunner()
                 : java.util.Optional.empty(),
             remoteMessage,
             CollectionAction.MIGRATE_REPLICAS,

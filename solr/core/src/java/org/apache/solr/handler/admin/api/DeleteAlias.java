@@ -57,8 +57,8 @@ public class DeleteAlias extends AdminAPIBase implements DeleteAliasApi {
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
-            coreContainer.getZkController() != null 
-                ? coreContainer.getZkController().getDistributedCollectionCommandRunner() 
+            coreContainer.getZkController() != null
+                ? coreContainer.getZkController().getDistributedCollectionCommandRunner()
                 : java.util.Optional.empty(),
             remoteMessage,
             CollectionParams.CollectionAction.DELETEALIAS,

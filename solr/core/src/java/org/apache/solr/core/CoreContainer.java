@@ -45,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -1297,7 +1296,10 @@ public class CoreContainer {
     if (zkController != null) {
       if (zkController.getDistributedCollectionCommandRunner().isPresent()) {
         // Local (i.e. distributed) Collection API processing
-        zkController.getDistributedCollectionCommandRunner().get().stopAndWaitForPendingTasksToComplete();
+        zkController
+            .getDistributedCollectionCommandRunner()
+            .get()
+            .stopAndWaitForPendingTasksToComplete();
       } else {
         // Overseer based processing
         OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();

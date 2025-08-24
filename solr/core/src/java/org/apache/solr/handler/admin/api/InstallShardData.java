@@ -91,8 +91,8 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
-            coreContainer.getZkController() != null 
-                ? coreContainer.getZkController().getDistributedCollectionCommandRunner() 
+            coreContainer.getZkController() != null
+                ? coreContainer.getZkController().getDistributedCollectionCommandRunner()
                 : java.util.Optional.empty(),
             remoteMessage,
             CollectionParams.CollectionAction.INSTALLSHARDDATA,

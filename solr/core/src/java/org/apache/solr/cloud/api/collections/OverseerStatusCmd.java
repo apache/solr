@@ -165,7 +165,10 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
       throws Exception {
     // If Collection API execution is distributed, we're not running on the Overseer node so can't
     // return any Overseer stats.
-    if (ccc.getCoreContainer().getZkController().getDistributedCollectionCommandRunner().isPresent()) {
+    if (ccc.getCoreContainer()
+        .getZkController()
+        .getDistributedCollectionCommandRunner()
+        .isPresent()) {
       // TODO: introduce a per node status command allowing insight into how Cluster state updates,
       // Collection API and config set API execution went on that node...
       return;
