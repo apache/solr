@@ -17,6 +17,8 @@ New Features
 * SOLR-14414: Introduce a new, experimental Admin UI that can be used aside the current Admin UI. The new module is
   loaded together with the existing Admin UI and available under the URL path /solr/compose. (Christos Malliaridis)
 
+* SOLR-17864: Standarized patterns for system property naming across Solr.  i.e enable.packages is now solr.packages.enabled.  (janhoy, Eric Pugh)
+
 Improvements
 ---------------------
 
@@ -216,7 +218,7 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-17860: DocBasedVersionConstraintsProcessorFactory now supports PULL replicas. (Houston Putman)
 
 Optimizations
 ---------------------
@@ -234,6 +236,8 @@ Bug Fixes
 
 * SOLR-17789: When Solr forwards/proxies requests to another node that can service the request, it needs to pass authorization headers.
   (Timo Crabbé)
+
+* SOLR-17863: Fix race condition in SolrCore's fingerprint cache which caused leader election to hang. (Luke Kot-Zaniewski, Matthew Biscocho)
 
 Dependency Upgrades
 ---------------------
