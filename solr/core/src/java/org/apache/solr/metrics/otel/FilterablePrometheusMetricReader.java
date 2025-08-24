@@ -20,10 +20,12 @@ import static java.util.stream.Collectors.toList;
 
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.InfoSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
+import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -90,61 +92,48 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
     }
 
     MetricSnapshots.Builder filteredSnapshots = MetricSnapshots.builder();
-    snapshotsToFilter.forEach(
-        metricSnapshot -> {
-          switch (metricSnapshot) {
-            case CounterSnapshot counter -> {
-              List<CounterSnapshot.CounterDataPointSnapshot> filtered =
-                  filterCounterDatapoint(counter, includedLabels);
-              if (!filtered.isEmpty()) {
-                filteredSnapshots.metricSnapshot(
-                    new CounterSnapshot(counter.getMetadata(), filtered));
-              }
-            }
-            case HistogramSnapshot histogram -> {
-              List<HistogramSnapshot.HistogramDataPointSnapshot> filtered =
-                  filterHistogramDatapoint(histogram, includedLabels);
-              if (!filtered.isEmpty()) {
-                filteredSnapshots.metricSnapshot(
-                    new HistogramSnapshot(histogram.getMetadata(), filtered));
-              }
-            }
-            case GaugeSnapshot gauge -> {
-              List<GaugeSnapshot.GaugeDataPointSnapshot> filtered =
-                  filterGaugeDatapoint(gauge, includedLabels);
-              if (!filtered.isEmpty()) {
-                filteredSnapshots.metricSnapshot(new GaugeSnapshot(gauge.getMetadata(), filtered));
-              }
-            }
-            case InfoSnapshot ignored -> {
-              // Do nothing for InfoSnapshots. Always filter it out
-            }
-            default -> {
-              log.error("Unknown metric snapshot type {}", metricSnapshot.getClass());
-            }
+    for (MetricSnapshot metricSnapshot : snapshotsToFilter) {
+      switch (metricSnapshot) {
+        case CounterSnapshot snapshot -> {
+          List<CounterSnapshot.CounterDataPointSnapshot> filtered =
+              filterDatapoint(
+                  snapshot, includedLabels, CounterSnapshot.CounterDataPointSnapshot.class);
+          if (!filtered.isEmpty()) {
+            filteredSnapshots.metricSnapshot(new CounterSnapshot(snapshot.getMetadata(), filtered));
           }
-        });
+        }
+        case HistogramSnapshot snapshot -> {
+          List<HistogramSnapshot.HistogramDataPointSnapshot> filtered =
+              filterDatapoint(
+                  snapshot, includedLabels, HistogramSnapshot.HistogramDataPointSnapshot.class);
+          if (!filtered.isEmpty()) {
+            filteredSnapshots.metricSnapshot(
+                new HistogramSnapshot(snapshot.getMetadata(), filtered));
+          }
+        }
+        case GaugeSnapshot snapshot -> {
+          List<GaugeSnapshot.GaugeDataPointSnapshot> filtered =
+              filterDatapoint(snapshot, includedLabels, GaugeSnapshot.GaugeDataPointSnapshot.class);
+          if (!filtered.isEmpty()) {
+            filteredSnapshots.metricSnapshot(new GaugeSnapshot(snapshot.getMetadata(), filtered));
+          }
+        }
+        case InfoSnapshot ignored -> {
+          // Do nothing for InfoSnapshots. Always filter it out
+        }
+        default -> {
+          log.error("Unknown metric snapshot type {}", metricSnapshot.getClass());
+        }
+      }
+    }
     return filteredSnapshots.build();
   }
 
-  private List<CounterSnapshot.CounterDataPointSnapshot> filterCounterDatapoint(
-      CounterSnapshot cs, Map<String, Set<String>> includedLabels) {
-    return cs.getDataPoints().stream()
+  private <D extends DataPointSnapshot> List<D> filterDatapoint(
+      MetricSnapshot snapshot, Map<String, Set<String>> includedLabels, Class<D> dataPointClass) {
+    return snapshot.getDataPoints().stream()
         .filter(dp -> allowedLabelsFilter(dp.getLabels(), includedLabels))
-        .collect(toList());
-  }
-
-  private List<HistogramSnapshot.HistogramDataPointSnapshot> filterHistogramDatapoint(
-      HistogramSnapshot hs, Map<String, Set<String>> includedLabels) {
-    return hs.getDataPoints().stream()
-        .filter(dp -> allowedLabelsFilter(dp.getLabels(), includedLabels))
-        .collect(toList());
-  }
-
-  private List<GaugeSnapshot.GaugeDataPointSnapshot> filterGaugeDatapoint(
-      GaugeSnapshot gs, Map<String, Set<String>> includedLabels) {
-    return gs.getDataPoints().stream()
-        .filter(dp -> allowedLabelsFilter(dp.getLabels(), includedLabels))
+        .map(dataPointClass::cast)
         .collect(toList());
   }
 
