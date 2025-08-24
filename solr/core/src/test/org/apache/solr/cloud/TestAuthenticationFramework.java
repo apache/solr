@@ -58,7 +58,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
   private void setupAuthenticationPlugin() {
     System.setProperty(
-        "authenticationPlugin",
+        "solr.security.auth.plugin",
         "org.apache.solr.cloud.TestAuthenticationFramework$MockAuthenticationPlugin");
     MockAuthenticationPlugin.expectedUsername = null;
     MockAuthenticationPlugin.expectedPassword = null;
@@ -85,7 +85,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    System.clearProperty("authenticationPlugin");
+    System.clearProperty("solr.security.auth.plugin");
     shutdownCluster();
     super.tearDown();
   }

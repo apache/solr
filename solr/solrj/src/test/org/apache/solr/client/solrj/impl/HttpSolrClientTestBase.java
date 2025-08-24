@@ -89,7 +89,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
   @Override
   public void tearDown() throws Exception {
-    System.clearProperty("basicauth");
+    System.clearProperty("solr.security.auth.basicauth.credentials");
     System.clearProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
     DebugServlet.clear();
     super.tearDown();

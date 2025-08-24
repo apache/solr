@@ -85,9 +85,9 @@ public class JvmMetricsTest extends SolrJettyTestBase {
 
   @Test
   public void testSystemProperties() {
-    if (System.getProperty("basicauth") == null) {
+    if (System.getProperty("solr.security.auth.basicauth.credentials") == null) {
       // make sure it's set
-      System.setProperty("basicauth", "foo:bar");
+      System.setProperty("solr.security.auth.basicauth.credentials", "foo:bar");
     }
     SolrMetricManager metricManager = getJetty().getCoreContainer().getMetricManager();
     Map<String, Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
@@ -100,6 +100,9 @@ public class JvmMetricsTest extends SolrJettyTestBase {
         .forEach(
             (k, v) -> {
               if (NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.contains(k)) {
+                assertNull("hidden property " + k + " present!", values.get(k));
+              } else if (k == "solr.security.auth.basicauth.credentials") {
+                // DEFAULT_HIDDEN_SYS_PROPS.contains doesn't match a partial pattern.
                 assertNull("hidden property " + k + " present!", values.get(k));
               } else {
                 assertEquals(v, values.get(String.valueOf(k)));

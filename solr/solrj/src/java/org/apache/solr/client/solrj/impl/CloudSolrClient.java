@@ -89,7 +89,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   // no of times collection state to be reloaded if stale state error is received
   private static final int MAX_STALE_RETRIES =
-      Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
+      Integer.parseInt(System.getProperty("solr.solrj.cloud.max.stale.retries", "5"));
   private final Random rand = new Random();
 
   private final boolean updatesToLeaders;
