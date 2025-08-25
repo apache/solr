@@ -211,6 +211,8 @@ Other Changes
 
 * SOLR-17703: SolrJ - Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to "JavaBin.." equivalent. (Abhishek Umarjikar)
 
+* SOLR-17286: When proxying requests to another node, use Jetty HttpClient not Apache HttpClient. (David Smiley)
+
 ==================  9.10.0 ==================
 New Features
 ---------------------
@@ -245,9 +247,6 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-* SOLR-17286: When proxying requests to another node, use Jetty HttpClient not Apache HttpClient.
-  (David Smiley)
-
 * SOLR-17620: SolrCloud "live_node" now has metadata: version of Solr, roles (Yuntong Qu, David Smiley)
 
 ==================  9.9.1 ==================
