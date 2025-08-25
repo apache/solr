@@ -112,7 +112,7 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
     final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, backupName, requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.BACKUP,
             DEFAULT_COLLECTION_OP_TIMEOUT);

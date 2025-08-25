@@ -68,7 +68,7 @@ public class DeleteReplicaProperty extends AdminAPIBase implements DeleteReplica
         createRemoteMessage(collName, shardName, replicaName, propertyName);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.DELETEREPLICAPROP,
             DEFAULT_COLLECTION_OP_TIMEOUT);

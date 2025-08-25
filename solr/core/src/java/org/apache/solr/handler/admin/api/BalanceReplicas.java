@@ -59,7 +59,7 @@ public class BalanceReplicas extends AdminAPIBase implements BalanceReplicasApi 
     final ZkNodeProps remoteMessage = createRemoteMessage(requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionAction.BALANCE_REPLICAS,
             DEFAULT_COLLECTION_OP_TIMEOUT);

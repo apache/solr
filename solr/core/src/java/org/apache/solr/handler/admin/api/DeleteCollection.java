@@ -65,7 +65,7 @@ public class DeleteCollection extends AdminAPIBase implements DeleteCollectionAp
     final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, followAliases, asyncId);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.DELETE,
             DEFAULT_COLLECTION_OP_TIMEOUT);

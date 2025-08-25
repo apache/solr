@@ -64,7 +64,7 @@ public class DeleteNode extends AdminAPIBase implements DeleteNodeApi {
     final ZkNodeProps remoteMessage = createRemoteMessage(nodeName, requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.DELETENODE,
             DEFAULT_COLLECTION_OP_TIMEOUT);

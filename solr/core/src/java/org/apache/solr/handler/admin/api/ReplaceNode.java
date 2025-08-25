@@ -65,7 +65,7 @@ public class ReplaceNode extends AdminAPIBase implements ReplaceNodeApi {
     final ZkNodeProps remoteMessage = createRemoteMessage(sourceNodeName, requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.REPLACENODE,
             DEFAULT_COLLECTION_OP_TIMEOUT);

@@ -111,7 +111,7 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
 
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.CREATEALIAS,
             DEFAULT_COLLECTION_OP_TIMEOUT);

@@ -57,26 +57,18 @@ public class ConfigSetAPIBase extends JerseyResource {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final CoreContainer coreContainer;
-
+  protected final ConfigSetService configSetService;
   protected final SolrQueryRequest solrQueryRequest;
   protected final SolrQueryResponse solrQueryResponse;
-  protected final Optional<DistributedCollectionConfigSetCommandRunner>
-      distributedCollectionConfigSetCommandRunner;
-  protected final ConfigSetService configSetService;
 
   public ConfigSetAPIBase(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     this.coreContainer = coreContainer;
+    this.configSetService = coreContainer.getConfigSetService();
     this.solrQueryRequest = solrQueryRequest;
     this.solrQueryResponse = solrQueryResponse;
-
-    this.distributedCollectionConfigSetCommandRunner =
-        coreContainer.getZkController() != null
-            ? coreContainer.getZkController().getDistributedCollectionCommandRunner()
-            : java.util.Optional.empty();
-    this.configSetService = coreContainer.getConfigSetService();
   }
 
   protected void runConfigSetCommand(
@@ -88,8 +80,10 @@ public class ConfigSetAPIBase extends JerseyResource {
       log.info("Invoked ConfigSet Action :{} with params {} ", action.toLower(), messageToSend);
     }
 
-    if (distributedCollectionConfigSetCommandRunner.isPresent()) {
-      distributedCollectionConfigSetCommandRunner
+    Optional<DistributedCollectionConfigSetCommandRunner> distribCommandRunner =
+        coreContainer.getZkController().getDistribCommandRunner();
+    if (distribCommandRunner.isPresent()) {
+      distribCommandRunner
           .get()
           .runConfigSetCommand(rsp, action, messageToSend, CONFIG_SET_TIMEOUT);
     } else {

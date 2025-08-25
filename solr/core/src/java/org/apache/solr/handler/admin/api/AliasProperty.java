@@ -163,7 +163,7 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
     final ZkNodeProps remoteMessage = createRemoteMessage(alias, properties, async);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.ALIASPROP,
             DEFAULT_COLLECTION_OP_TIMEOUT);

@@ -112,7 +112,7 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
     final ZkNodeProps remoteMessage = createRemoteMessage(requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.CREATE,
             DEFAULT_COLLECTION_OP_TIMEOUT);

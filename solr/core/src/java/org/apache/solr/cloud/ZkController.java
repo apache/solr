@@ -690,8 +690,7 @@ public class ZkController implements Closeable {
     return sysPropsCacher;
   }
 
-  public Optional<DistributedCollectionConfigSetCommandRunner>
-      getDistributedCollectionCommandRunner() {
+  public Optional<DistributedCollectionConfigSetCommandRunner> getDistribCommandRunner() {
     return Objects.requireNonNull(this.distributedCollectionCommandRunner);
   }
 
