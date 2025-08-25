@@ -38,6 +38,8 @@ Other Changes
 ---------------------
 (No changes)
 
+* SOLR-17620: SolrCloud "live_node" now has metadata: version of Solr, roles (Yuntong Qu, David Smiley)
+
 ==================  9.9.1 ==================
 Bug Fixes
 ---------------------
