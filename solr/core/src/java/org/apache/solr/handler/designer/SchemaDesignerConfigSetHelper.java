@@ -130,9 +130,14 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     solrParams.set("analysis.showmatch", true);
     solrParams.set("analysis.fieldname", fieldName);
     solrParams.set("analysis.fieldvalue", "POST");
-    var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/analysis/field", solrParams);
+    var request =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.POST,
+                "/analysis/field",
+                SolrRequest.SolrRequestType.ADMIN,
+                solrParams)
+            .setRequiresCollection(true);
     request.withContent(fieldText.getBytes(StandardCharsets.UTF_8), "text/plain");
-    request.setRequiresCollection(true);
     request.setResponseParser(new JsonMapResponseParser());
     try {
       var resp = request.process(cloudClient(), mutableId).getResponse();

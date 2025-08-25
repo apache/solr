@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -134,7 +135,7 @@ public abstract class SolrScraper implements Closeable {
       zkHostLabelValue = ((CloudSolrClient) client).getClusterStateProvider().getQuorumHosts();
     }
 
-    GenericSolrRequest request = null;
+    SolrRequest<?> request;
     if (ADMIN_PATHS.contains(query.getPath())) {
       request =
           new GenericSolrRequest(
@@ -142,8 +143,8 @@ public abstract class SolrScraper implements Closeable {
     } else {
       request =
           new GenericSolrRequest(
-              METHOD.GET, query.getPath(), SolrRequestType.ADMIN, query.getParameters());
-      request.setRequiresCollection(true);
+                  METHOD.GET, query.getPath(), SolrRequestType.UNSPECIFIED, query.getParameters())
+              .setRequiresCollection(true);
     }
 
     NamedList<Object> response;
