@@ -384,10 +384,10 @@ public class ZkController implements Closeable {
               if (cc != null) cc.securityNodeChanged();
             });
 
+    init();
+
     // Check version compatibility with other live nodes
     checkVersionCompatibility();
-
-    init();
 
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
       this.overseerJobQueue = null;
