@@ -221,13 +221,7 @@ public class ZkController implements Closeable {
 
   private final DistributedClusterStateUpdater distributedClusterStateUpdater;
 
-  /**
-   * Non-empty if the Collection API is executed in a distributed way and not on Overseer, once the
-   * ZkController has been initialized properly. Until then it is null, and it is not expected to be
-   * read.
-   */
-  private volatile Optional<DistributedCollectionConfigSetCommandRunner>
-      distributedCollectionCommandRunner;
+  private Optional<DistributedCollectionConfigSetCommandRunner> distributedCommandRunner;
 
   private LeaderElector overseerElector;
 
@@ -690,18 +684,19 @@ public class ZkController implements Closeable {
     return sysPropsCacher;
   }
 
+  /** Non-empty if the Collection API is executed in a distributed way (Overseer is disabled). */
   public Optional<DistributedCollectionConfigSetCommandRunner> getDistribCommandRunner() {
-    return Objects.requireNonNull(this.distributedCollectionCommandRunner);
+    return Objects.requireNonNull(this.distributedCommandRunner);
   }
 
+  /** Waits for pending tasks to complete. Should be called before {@link #close()}. */
   public void waitForPendingTasksToComplete() {
-    if (distributedCollectionCommandRunner.isPresent()) {
+    if (distributedCommandRunner.isPresent()) {
       // Local (i.e. distributed) Collection API processing
-      distributedCollectionCommandRunner.get().stopAndWaitForPendingTasksToComplete();
+      distributedCommandRunner.get().stopAndWaitForPendingTasksToComplete();
     } else {
       // Overseer based processing
-      OverseerTaskQueue overseerCollectionQueue = getOverseerCollectionQueue();
-      overseerCollectionQueue.allowOverseerPendingTasksToComplete();
+      getOverseerCollectionQueue().allowOverseerPendingTasksToComplete();
     }
   }
 
@@ -1023,7 +1018,14 @@ public class ZkController implements Closeable {
       checkForExistingEphemeralNode();
       registerLiveNodesListener();
 
-      // start the overseer first as following code may need it's processing
+      this.distributedCommandRunner =
+          cloudConfig.getDistributedCollectionConfigSetExecution()
+              ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc))
+              : Optional.empty();
+
+      // Start the overseer now since the following code may need it's processing.
+      // Note: even when using distributed processing, we still create an Overseer anyway since
+      //    cluster singleton processing is linked to the elected Overseer.
       if (!zkRunOnly) {
         overseerElector = new LeaderElector(zkClient);
         this.overseer =
@@ -1048,12 +1050,6 @@ public class ZkController implements Closeable {
 
       // Do this last to signal we're up.
       createEphemeralLiveNode();
-
-      // Initialize distributedCollectionCommandRunner after ZooKeeper is fully initialized
-      this.distributedCollectionCommandRunner =
-          cloudConfig.getDistributedCollectionConfigSetExecution()
-              ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc))
-              : Optional.empty();
     } catch (IOException e) {
       log.error("", e);
       throw new SolrException(
