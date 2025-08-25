@@ -1020,7 +1020,7 @@ public class ZkController implements Closeable {
 
       this.distributedCommandRunner =
           cloudConfig.getDistributedCollectionConfigSetExecution()
-              ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc))
+              ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
               : Optional.empty();
 
       // Start the overseer now since the following code may need it's processing.
