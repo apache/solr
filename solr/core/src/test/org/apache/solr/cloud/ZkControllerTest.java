@@ -586,4 +586,23 @@ public class ZkControllerTest extends SolrCloudTestCase {
       return metricManager;
     }
   }
+
+  @Test
+  public void testClusterSolrVersionIsSet() throws Exception {
+    configureCluster(1).configure();
+    String KEY = "clusterSolrVersion"; // not using the constant to ensure it's stable
+
+    // test the cluster has the latest Solr version:
+    assertEquals(
+        SolrVersion.LATEST_STRING, cluster.getZkStateReader().getClusterProperty(KEY, null));
+
+    // Ideally we would do the following via Docker to run an older Solr.
+    // stop the cluster, remove the version (pretend is a legacy cluster).
+    // Test that the version is not re-initialized after starting.
+    cluster.getJettySolrRunner(0).stop();
+    cluster.getZkClient().delete(ZkStateReader.CLUSTER_PROPS, -1, true);
+    cluster.getJettySolrRunner(0).start();
+
+    assertNull(cluster.getZkStateReader().getClusterProperty(KEY, null));
+  }
 }
