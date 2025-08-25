@@ -23,6 +23,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.opentelemetry.api.common.Attributes;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,6 +33,11 @@ import java.security.cert.X509Certificate;
 import java.util.Collections;
 import javax.security.auth.x500.X500Principal;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.util.SolrMetricTestUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,8 +54,21 @@ public class CertAuthPluginTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
+    CoreContainer coreContainer =
+        SolrTestCaseJ4.createCoreContainer(
+            "collection1", "data", "solrconfig-basic.xml", "schema.xml");
+    String registryName = "solr.core.collection1";
     plugin = new CertAuthPlugin();
+    SolrMetricsContext solrMetricsContext =
+        new SolrMetricsContext(coreContainer.getMetricManager(), registryName, "foo");
+    plugin.initializeMetrics(solrMetricsContext, Attributes.empty(), null);
     plugin.init(Collections.emptyMap());
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    deleteCore();
+    super.tearDown();
   }
 
   @Test
@@ -63,7 +84,8 @@ public class CertAuthPluginTest extends SolrTestCaseJ4 {
         (req, rsp) -> assertEquals(principal, ((HttpServletRequest) req).getUserPrincipal());
     assertTrue(plugin.doAuthenticate(request, null, chain));
 
-    assertEquals(1, plugin.numAuthenticated.getCount());
+    long missingCredentialsCount = getLongMetricValue("solr_core_authentication_plugin_num_authenticated");
+    assertEquals(1L, missingCredentialsCount);
   }
 
   @Test
@@ -76,6 +98,17 @@ public class CertAuthPluginTest extends SolrTestCaseJ4 {
     assertFalse(plugin.doAuthenticate(request, response, null));
     verify(response).sendError(eq(401), anyString());
 
-    assertEquals(1, plugin.numMissingCredentials.getCount());
+    long missingCredentialsCount = getLongMetricValue("solr_core_authentication_plugin_fail_missing_credentials");
+    assertEquals(1L, missingCredentialsCount);
+  }
+
+  private long getLongMetricValue(String metricName) {
+    SolrCore core = h.getCore();
+    CounterSnapshot.CounterDataPointSnapshot metric =
+        SolrMetricTestUtils.getCounterDatapoint(
+            core,
+            metricName,
+            Labels.of("otel_scope_name", "org.apache.solr", "category", "SECURITY"));
+    return (metric != null) ? (long) metric.getValue() : 0L;
   }
 }

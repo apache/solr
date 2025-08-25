@@ -16,9 +16,6 @@
  */
 package org.apache.solr.security;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.Attributes;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,10 +25,13 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.eclipse.jetty.client.Request;
 
 /**
@@ -46,14 +46,14 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   protected SolrMetricsContext solrMetricsContext;
 
-  protected Meter numErrors = new Meter();
-  protected Counter requests = new Counter();
-  protected Timer requestTimes = new Timer();
-  protected Counter totalTime = new Counter();
-  protected Counter numAuthenticated = new Counter();
-  protected Counter numPassThrough = new Counter();
-  protected Counter numWrongCredentials = new Counter();
-  protected Counter numMissingCredentials = new Counter();
+  protected AttributedLongCounter numErrors;
+  protected AttributedLongCounter requests;
+  protected AttributedLongTimer requestTimes;
+  protected AttributedLongCounter totalTime;
+  protected AttributedLongCounter numAuthenticated;
+  protected AttributedLongCounter numPassThrough;
+  protected AttributedLongCounter numWrongCredentials;
+  protected AttributedLongCounter numMissingCredentials;
 
   /**
    * This is called upon loading up of a plugin, used for setting it up.
@@ -86,16 +86,16 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
   public final boolean authenticate(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws Exception {
-    Timer.Context timer = requestTimes.time();
+    AttributedLongTimer.MetricTimer timer = requestTimes.start(TimeUnit.NANOSECONDS);
     requests.inc();
     try {
       return doAuthenticate(request, response, filterChain);
     } catch (Exception e) {
-      numErrors.mark();
+      numErrors.inc();
       throw e;
     } finally {
-      long elapsed = timer.stop();
-      totalTime.inc(elapsed);
+      long elapsed = Double.valueOf(timer.stop()).longValue();
+      totalTime.add(elapsed);
     }
   }
 
@@ -163,24 +163,59 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
     return solrMetricsContext;
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
+    Attributes attrsWithCategory =
+        Attributes.builder().putAll(attributes).put("category", getCategory().toString()).build();
     // Metrics
-    numErrors = this.solrMetricsContext.meter("errors", getCategory().toString(), scope);
-    requests = this.solrMetricsContext.counter("requests", getCategory().toString(), scope);
+    numErrors =
+        new AttributedLongCounter(
+            this.solrMetricsContext.longCounter(
+                "solr_core_authentication_plugin_errors", "Count of errors during authentication"),
+            attrsWithCategory);
+    requests =
+        new AttributedLongCounter(
+            this.solrMetricsContext.longCounter(
+                "solr_core_authentication_plugin_requests", "Count of requests for authentication"),
+            attrsWithCategory);
     numAuthenticated =
-        this.solrMetricsContext.counter("authenticated", getCategory().toString(), scope);
+        new AttributedLongCounter(
+            this.solrMetricsContext.longCounter(
+                "solr_core_authentication_plugin_num_authenticated",
+                "Count of successful authentication requests"),
+            attrsWithCategory);
     numPassThrough =
-        this.solrMetricsContext.counter("passThrough", getCategory().toString(), scope);
+        new AttributedLongCounter(
+            this.solrMetricsContext.longCounter(
+                "solr_core_authentication_plugin_num_pass_through",
+                "Count of skipped authentication requests"),
+            attrsWithCategory);
     numWrongCredentials =
-        this.solrMetricsContext.counter("failWrongCredentials", getCategory().toString(), scope);
+        new AttributedLongCounter(
+            this.solrMetricsContext.longCounter(
+                "solr_core_authentication_plugin_fail_wrong_credentials",
+                "Count of authentication failures due to incorrect credentials"),
+            attrsWithCategory);
     numMissingCredentials =
-        this.solrMetricsContext.counter("failMissingCredentials", getCategory().toString(), scope);
-    requestTimes = this.solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
-    totalTime = this.solrMetricsContext.counter("totalTime", getCategory().toString(), scope);
+        new AttributedLongCounter(
+            this.solrMetricsContext.longCounter(
+                "solr_core_authentication_plugin_fail_missing_credentials",
+                "Count of authentication failures due to missing credentials"),
+            attrsWithCategory);
+    requestTimes =
+        new AttributedLongTimer(
+            this.solrMetricsContext.longHistogram(
+                "solr_core_authentication_plugin_request_times",
+                "Distribution of authentication request durations"),
+            attrsWithCategory);
+    totalTime =
+        new AttributedLongCounter(
+            this.solrMetricsContext.longCounter(
+                "solr_core_authentication_plugin_total_time",
+                "Overall time spent in authentication"),
+            attrsWithCategory);
   }
 
   @Override
