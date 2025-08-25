@@ -175,7 +175,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     Set<String> metricNames = metricNamesFilter(params);
     SortedMap<String, Set<String>> labelFilters = labelFilters(params);
 
-    if (!metricNames.isEmpty() || !labelFilters.isEmpty()) {
+    if (metricNames.isEmpty() && labelFilters.isEmpty()) {
       consumer.accept(
           "metrics",
           mergeSnapshots(

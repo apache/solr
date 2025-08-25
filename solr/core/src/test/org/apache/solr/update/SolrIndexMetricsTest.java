@@ -107,7 +107,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
     var segmentSize =
         SolrMetricTestUtils.getGaugeDatapoint(
             h.getCore(),
-            "solr_core_segment_count",
+            "solr_core_segments",
             SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
                 .label("category", "CORE")
                 .build());

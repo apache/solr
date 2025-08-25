@@ -20,9 +20,6 @@ package org.apache.solr.handler.admin;
 import com.codahale.metrics.Counter;
 import io.opentelemetry.api.common.Attributes;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
-import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
-import io.prometheus.metrics.model.snapshots.Labels;
-import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,13 +29,10 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.PluginBag;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.junit.AfterClass;
@@ -676,65 +670,244 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertTrue(map.toString(), map.containsKey("count"));
   }
 
-  private MetricSnapshot getMetricSnapshot(MetricSnapshots snapshots, String metricName) {
-    return snapshots.stream()
-        .filter(ss -> ss.getMetadata().getPrometheusName().equals(metricName))
-        .findAny()
-        .get();
+  @Test
+  public void testMetricNamesFiltering() throws Exception {
+    String expectedRequestsMetricName = "solr_core_requests";
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    assertQ(req("*:*"), "//result[@numFound='0']");
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.METRIC_NAME_PARAM,
+            expectedRequestsMetricName),
+        resp);
+    var metrics = resp.getValues().get("metrics");
+    MetricSnapshots snapshots = (MetricSnapshots) metrics;
+    var datapoint =
+        (CounterSnapshot.CounterDataPointSnapshot) snapshots.get(0).getDataPoints().getFirst();
+    assertEquals(1, snapshots.size());
+    assertEquals(expectedRequestsMetricName, snapshots.get(0).getMetadata().getPrometheusName());
+    assertEquals(1, datapoint.getValue(), 0.0);
+
+    handler.close();
   }
 
-  private GaugeSnapshot.GaugeDataPointSnapshot getGaugeDatapointSnapshot(
-      MetricSnapshot snapshot, Labels labels) {
-    return (GaugeSnapshot.GaugeDataPointSnapshot)
-        snapshot.getDataPoints().stream()
-            .filter(ss -> ss.getLabels().hasSameValues(labels))
-            .findAny()
-            .get();
+  @Test
+  public void testMultipleMetricNamesFiltering() throws Exception {
+    String expectedRequestsMetricName = "solr_core_requests";
+    String expectedSearcherMetricName = "solr_core_searcher_new";
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    assertQ(req("*:*"), "//result[@numFound='0']");
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.METRIC_NAME_PARAM,
+            expectedRequestsMetricName + "," + expectedSearcherMetricName),
+        resp);
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    var requestsDatapoint =
+        (CounterSnapshot.CounterDataPointSnapshot)
+            metrics.stream()
+                .filter(
+                    (dp) -> dp.getMetadata().getPrometheusName().equals(expectedRequestsMetricName))
+                .findFirst()
+                .orElseThrow()
+                .getDataPoints()
+                .getFirst();
+    var searcherDatapoint =
+        (CounterSnapshot.CounterDataPointSnapshot)
+            metrics.stream()
+                .filter(
+                    (dp) -> dp.getMetadata().getPrometheusName().equals(expectedSearcherMetricName))
+                .findFirst()
+                .orElseThrow()
+                .getDataPoints()
+                .getFirst();
+    assertEquals(2, metrics.size());
+    assertEquals(expectedRequestsMetricName, metrics.get(0).getMetadata().getPrometheusName());
+    assertEquals(expectedSearcherMetricName, metrics.get(1).getMetadata().getPrometheusName());
+    assertEquals(1, requestsDatapoint.getValue(), 0.0);
+    assertEquals(2, searcherDatapoint.getValue(), 0.0);
+
+    handler.close();
   }
 
-  private CounterSnapshot.CounterDataPointSnapshot getCounterDatapointSnapshot(
-      MetricSnapshot snapshot, Labels labels) {
-    return (CounterSnapshot.CounterDataPointSnapshot)
-        snapshot.getDataPoints().stream()
-            .filter(ss -> ss.getLabels().hasSameValues(labels))
-            .findAny()
-            .get();
+  @Test
+  public void testNonExistentMetricNameFiltering() throws Exception {
+    String nonexistentMetricName = "nonexistent_metric_name";
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.METRIC_NAME_PARAM,
+            nonexistentMetricName),
+        resp);
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    assertEquals(0, metrics.size());
+    handler.close();
   }
 
-  static class RefreshablePluginHolder extends PluginBag.PluginHolder<SolrRequestHandler> {
+  @Test
+  public void testLabelFiltering() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
-    private DumpRequestHandler rh;
-    private SolrMetricsContext metricsInfo;
+    assertQ(req("*:*"), "//result[@numFound='0']");
 
-    public RefreshablePluginHolder(PluginInfo info, DumpRequestHandler rh) {
-      super(info);
-      this.rh = rh;
-    }
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.CATEGORY_PARAM,
+            "QUERY"),
+        resp);
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
 
-    @Override
-    public boolean isLoaded() {
-      return true;
-    }
+    // Every metric should only be a SEARCHER category metric
+    metrics.forEach(
+        (ms) -> {
+          ms.getDataPoints()
+              .forEach(
+                  (dp) -> {
+                    assertEquals("QUERY", dp.getLabels().get(MetricsHandler.CATEGORY_PARAM));
+                  });
+        });
 
-    void closeHandler() throws Exception {
-      this.metricsInfo = rh.getSolrMetricsContext();
-      //      if(metricsInfo.tag.contains(String.valueOf(rh.hashCode()))){
-      //        //this created a new child metrics
-      //        metricsInfo = metricsInfo.getParent();
-      //      }
-      this.rh.close();
-    }
+    handler.close();
+  }
 
-    void reset(DumpRequestHandler rh) {
-      this.rh = rh;
-      if (metricsInfo != null)
-        this.rh.initializeMetrics(metricsInfo, Attributes.empty(), "/dumphandler");
-    }
+  @Test
+  public void testMultipleLabelFiltering() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
-    @Override
-    public SolrRequestHandler get() {
-      return rh;
-    }
+    assertQ(req("*:*"), "//result[@numFound='0']");
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.CATEGORY_PARAM,
+            "QUERY" + "," + "SEARCHER"),
+        resp);
+
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    metrics.forEach(
+        (ms) -> {
+          ms.getDataPoints()
+              .forEach(
+                  (dp) -> {
+                    assertTrue(
+                        dp.getLabels().get(MetricsHandler.CATEGORY_PARAM).equals("QUERY")
+                            || dp.getLabels()
+                                .get(MetricsHandler.CATEGORY_PARAM)
+                                .equals("SEARCHER"));
+                  });
+        });
+
+    handler.close();
+  }
+
+  @Test
+  public void testNonExistentLabelFiltering() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.CORE_PARAM,
+            "nonexistent_core_name"),
+        resp);
+
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    assertEquals(0, metrics.size());
+    handler.close();
+  }
+
+  @Test
+  public void testMixedLabelFiltering() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    assertQ(req("*:*"), "//result[@numFound='0']");
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.CORE_PARAM,
+            "collection1",
+            MetricsHandler.CATEGORY_PARAM,
+            "SEARCHER"),
+        resp);
+
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    metrics.forEach(
+        (ms) -> {
+          ms.getDataPoints()
+              .forEach(
+                  (dp) -> {
+                    assertTrue(
+                        dp.getLabels().get(MetricsHandler.CATEGORY_PARAM).equals("SEARCHER")
+                            && dp.getLabels().get(MetricsHandler.CORE_PARAM).equals("collection1"));
+                  });
+        });
+
+    handler.close();
+  }
+
+  @Test
+  public void testMetricNamesAndLabelFiltering() throws Exception {
+    String expectedMetricName = "solr_core_segments";
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    assertQ(req("*:*"), "//result[@numFound='0']");
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.CATEGORY_PARAM,
+            "CORE",
+            MetricsHandler.METRIC_NAME_PARAM,
+            expectedMetricName),
+        resp);
+
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    var actualDatapoint = metrics.get(0).getDataPoints().getFirst();
+    assertEquals(expectedMetricName, metrics.get(0).getMetadata().getPrometheusName());
+    assertEquals("CORE", actualDatapoint.getLabels().get(MetricsHandler.CATEGORY_PARAM));
+    handler.close();
   }
 
   public static class DumpRequestHandler extends RequestHandlerBase {

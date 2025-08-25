@@ -1421,7 +1421,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         OtelUnit.BYTES);
 
     parentContext.observableLongGauge(
-        "solr_core_segment_count",
+        "solr_core_segments",
         "Number of segments in a Solr core",
         (observableLongMeasurement -> {
           if (isReady())
