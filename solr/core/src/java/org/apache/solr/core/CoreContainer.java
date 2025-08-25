@@ -1013,7 +1013,7 @@ public class CoreContainer {
     containerProperties.putAll(cfg.getSolrProperties());
 
     // initialize gauges for reporting the number of cores and disk total/free
-
+    // TODO: Convert these metrics
     solrMetricsContext.gauge(
         solrCores::getNumLoadedPermanentCores,
         true,
