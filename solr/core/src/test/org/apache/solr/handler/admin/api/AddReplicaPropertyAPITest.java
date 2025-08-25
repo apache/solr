@@ -69,6 +69,7 @@ public class AddReplicaPropertyAPITest extends SolrTestCaseJ4 {
     super.setUp();
 
     mockCoreContainer = mock(CoreContainer.class);
+    mockZkController = mock(ZkController.class);
     mockCommandRunner = mock(DistributedCollectionConfigSetCommandRunner.class);
     when(mockCoreContainer.getZkController()).thenReturn(mockZkController);
     when(mockZkController.getDistributedCommandRunner()).thenReturn(Optional.of(mockCommandRunner));
