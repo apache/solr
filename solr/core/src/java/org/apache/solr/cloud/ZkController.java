@@ -386,9 +386,6 @@ public class ZkController implements Closeable {
 
     init();
 
-    // Check version compatibility with other live nodes
-    checkVersionCompatibility();
-
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
       this.overseerJobQueue = null;
     } else {
@@ -611,24 +608,19 @@ public class ZkController implements Closeable {
       Optional<SolrVersion> lowestVersion = zkStateReader.fetchLowestSolrVersion();
       if (lowestVersion.isPresent()) {
         SolrVersion currentVersion = SolrVersion.LATEST;
-        SolrVersion otherLowestVersion = lowestVersion.get();
+        SolrVersion clusterVersion = lowestVersion.get();
         
-        if (currentVersion.getMajorVersion() != otherLowestVersion.getMajorVersion()) {
+        if (currentVersion.getMajorVersion() < clusterVersion.getMajorVersion()) {
+          log.warn("Current Solr version {} is older than cluster version {}", 
+                   currentVersion, clusterVersion);
           String message = String.format(Locale.ROOT,
               "Cannot start Solr due to major version incompatibility. Current Solr version: %s, "
               + "lowest version in cluster: %s. All nodes in a cluster must run the same major version.",
-              currentVersion, otherLowestVersion);
-          log.error(message);
+              currentVersion, clusterVersion);
           throw new SolrException(ErrorCode.INVALID_STATE, message);
         }
-        
-        log.info("Version compatibility check passed. Current version: {}, lowest cluster version: {}", 
-                 currentVersion, otherLowestVersion);
-      } else {
-        log.info("No other live nodes found in cluster. Version compatibility check skipped.");
       }
     } catch (KeeperException e) {
-      log.error("Error checking version compatibility with cluster", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, 
                                    "Error checking version compatibility", e);
     }
@@ -1037,6 +1029,9 @@ public class ZkController implements Closeable {
 
       checkForExistingEphemeralNode();
       registerLiveNodesListener();
+
+      // Check version compatibility with other live nodes before joining the cluster
+      checkVersionCompatibility();
 
       // start the overseer first as following code may need it's processing
       if (!zkRunOnly) {

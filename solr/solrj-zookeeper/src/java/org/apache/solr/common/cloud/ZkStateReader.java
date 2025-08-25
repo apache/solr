@@ -873,12 +873,12 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   /**
-   * Returns the lowest Solr version among all other live nodes in the cluster (excluding current
-   * node). If older Solr nodes have joined that don't declare their version, the result won't be
+   * Returns the lowest Solr version among all live nodes in the cluster.
+   * If older Solr nodes have joined that don't declare their version, the result won't be
    * accurate, but it's at least an upper bound on the possible version it might be.
    *
-   * @return an Optional containing the lowest Solr version of other nodes in the cluster, or empty
-   *     if no other live nodes exist or no versions can be determined
+   * @return an Optional containing the lowest Solr version of nodes in the cluster, or empty
+   *     if no live nodes exist or all nodes return 9.9.0 for unspecified versions
    */
   public Optional<SolrVersion> fetchLowestSolrVersion() throws KeeperException, InterruptedException {
     List<String> liveNodeNames = zkClient.getChildren(LIVE_NODES_ZKNODE, null, true);
