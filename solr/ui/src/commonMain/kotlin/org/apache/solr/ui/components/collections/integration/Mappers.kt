@@ -7,5 +7,7 @@ internal val collectionsStateToModel: (CollectionsStore.State) -> CollectionsCom
     CollectionsComponent.Model(
         collectionsList = it.collectionsList,
         selectedCollectionData = it.selectedCollectionData,
+        liveNodesData = it.liveNodesData,
+        mutating = it.mutating,
     )
 }
