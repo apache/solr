@@ -248,6 +248,8 @@ Other Changes
 * SOLR-17286: When proxying requests to another node, use Jetty HttpClient not Apache HttpClient.
   (David Smiley)
 
+* SOLR-17620: SolrCloud "live_node" now has metadata: version of Solr, roles (Yuntong Qu, David Smiley)
+
 ==================  9.9.1 ==================
 Bug Fixes
 ---------------------
