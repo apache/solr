@@ -16,6 +16,8 @@ Bug Fixes
 
 * SOLR-17860: DocBasedVersionConstraintsProcessorFactory now supports PULL replicas. (Houston Putman)
 
+* SOLR-17871: Http2SolrClient wasn't honoring idle timeout configuration above 30 seconds -- a regression. (Thomas Wöckinger, David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
