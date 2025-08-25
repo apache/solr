@@ -1222,9 +1222,7 @@ public class CoreContainer {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
-      if (!zkSys.getZkController().getDistributedCollectionCommandRunner().isPresent()) {
-        zkSys.getZkController().checkOverseerDesignate();
-      }
+      zkSys.getZkController().checkOverseerDesignate();
     }
 
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at
@@ -1294,17 +1292,7 @@ public class CoreContainer {
 
     ZkController zkController = getZkController();
     if (zkController != null) {
-      if (zkController.getDistributedCollectionCommandRunner().isPresent()) {
-        // Local (i.e. distributed) Collection API processing
-        zkController
-            .getDistributedCollectionCommandRunner()
-            .get()
-            .stopAndWaitForPendingTasksToComplete();
-      } else {
-        // Overseer based processing
-        OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
-        overseerCollectionQueue.allowOverseerPendingTasksToComplete();
-      }
+      zkController.waitForPendingTasksToComplete();
     }
     if (log.isInfoEnabled()) {
       log.info("Shutting down CoreContainer instance={}", System.identityHashCode(this));

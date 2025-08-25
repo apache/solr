@@ -221,8 +221,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final CoreContainer coreContainer;
-  private final Optional<DistributedCollectionConfigSetCommandRunner>
-      distributedCollectionConfigSetCommandRunner;
 
   public CollectionsHandler() {
     // Unlike most request handlers, CoreContainer initialization
@@ -237,10 +235,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
    */
   public CollectionsHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    distributedCollectionConfigSetCommandRunner =
-        coreContainer != null && coreContainer.getZkController() != null
-            ? coreContainer.getZkController().getDistributedCollectionCommandRunner()
-            : Optional.empty();
   }
 
   @Override
@@ -351,8 +345,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   public static SolrResponse submitCollectionApiCommand(
       CoreContainer coreContainer,
-      Optional<DistributedCollectionConfigSetCommandRunner>
-          distributedCollectionConfigSetCommandRunner,
       ZkNodeProps m,
       CollectionAction action,
       long timeout)
@@ -367,6 +359,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     // same JVM as the Overseer based cluster state update... The configuration handling includes
     // these checks to not allow distributing collection API without distributing cluster state
     // updates (but the other way around is ok). See constructor of CloudConfig.
+    Optional<DistributedCollectionConfigSetCommandRunner>
+        distributedCollectionConfigSetCommandRunner =
+            coreContainer.getZkController().getDistributedCollectionCommandRunner();
     if (distributedCollectionConfigSetCommandRunner.isPresent()) {
       return distributedCollectionConfigSetCommandRunner
           .get()
@@ -441,8 +436,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public SolrResponse submitCollectionApiCommand(
       ZkNodeProps m, CollectionAction action, long timeout)
       throws KeeperException, InterruptedException {
-    return submitCollectionApiCommand(
-        coreContainer, distributedCollectionConfigSetCommandRunner, m, action, timeout);
+    return submitCollectionApiCommand(coreContainer, m, action, timeout);
   }
 
   private boolean overseerCollectionQueueContains(String asyncId)

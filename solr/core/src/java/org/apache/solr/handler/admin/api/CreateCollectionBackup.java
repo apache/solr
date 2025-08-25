@@ -113,9 +113,6 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
-            coreContainer.getZkController() != null
-                ? coreContainer.getZkController().getDistributedCollectionCommandRunner()
-                : java.util.Optional.empty(),
             remoteMessage,
             CollectionParams.CollectionAction.BACKUP,
             DEFAULT_COLLECTION_OP_TIMEOUT);

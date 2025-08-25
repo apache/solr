@@ -692,7 +692,18 @@ public class ZkController implements Closeable {
 
   public Optional<DistributedCollectionConfigSetCommandRunner>
       getDistributedCollectionCommandRunner() {
-    return this.distributedCollectionCommandRunner;
+    return Objects.requireNonNull(this.distributedCollectionCommandRunner);
+  }
+
+  public void waitForPendingTasksToComplete() {
+    if (distributedCollectionCommandRunner.isPresent()) {
+      // Local (i.e. distributed) Collection API processing
+      distributedCollectionCommandRunner.get().stopAndWaitForPendingTasksToComplete();
+    } else {
+      // Overseer based processing
+      OverseerTaskQueue overseerCollectionQueue = getOverseerCollectionQueue();
+      overseerCollectionQueue.allowOverseerPendingTasksToComplete();
+    }
   }
 
   private ContextKey closeExistingElectionContext(CoreDescriptor cd, boolean sessionExpired) {
@@ -793,18 +804,6 @@ public class ZkController implements Closeable {
     } finally {
 
       sysPropsCacher.close();
-
-      // Stop and cleanup distributedCollectionCommandRunner if present
-      if (distributedCollectionCommandRunner.isPresent()) {
-        customThreadPool.execute(
-            () -> {
-              try {
-                distributedCollectionCommandRunner.get().stopAndWaitForPendingTasksToComplete();
-              } catch (Exception e) {
-                log.error("Error stopping distributedCollectionCommandRunner", e);
-              }
-            });
-      }
 
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudManager));
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudSolrClient));
