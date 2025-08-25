@@ -104,7 +104,7 @@ google-errorprone = "2.31.0"
 google-gson = "2.11.0"
 google-guava = "33.1.0-jre"
 # @keep for version alignment
-google-j2objc = "3.0.0"
+google-j2objc = "3.1"
 # @keep This is GJF version for spotless/ tidy.
 google-javaformat = "1.18.1"
 # @keep for version alignment
