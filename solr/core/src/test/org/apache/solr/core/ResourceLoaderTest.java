@@ -16,7 +16,7 @@
  */
 package org.apache.solr.core;
 
-import static org.apache.solr.core.SolrResourceLoader.SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM;
+import static org.apache.solr.core.SolrResourceLoader.SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM;
 import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
 import static org.apache.solr.core.SolrResourceLoader.clearCache;
 import static org.hamcrest.core.Is.is;
@@ -51,7 +51,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    setUnsafeResourceLoading(false);
+    setUnsafeResourceLoadingEnabled(false);
   }
 
   public void testInstanceDir() throws Exception {
@@ -68,7 +68,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     Path instanceDir = temp.resolve("instance");
     Files.createDirectories(instanceDir.resolve("conf"));
 
-    setUnsafeResourceLoading(false);
+    setUnsafeResourceLoadingEnabled(false);
     try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir)) {
       // Path traversal
       assertTrue(
@@ -87,7 +87,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
       assertNull(loader.resourceLocation("\\\\192.168.10.10\\foo"));
     }
 
-    setUnsafeResourceLoading(true);
+    setUnsafeResourceLoadingEnabled(true);
     try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir)) {
       // Path traversal - unsafe but allowed
       loader.openResource("../../dummy.txt").close();
@@ -104,11 +104,11 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void setUnsafeResourceLoading(boolean unsafe) {
+  private void setUnsafeResourceLoadingEnabled(boolean unsafe) {
     if (unsafe) {
-      System.setProperty(SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM, "true");
+      System.setProperty(SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM, "false");
     } else {
-      System.clearProperty(SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM);
+      System.clearProperty(SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM);
     }
   }
 
