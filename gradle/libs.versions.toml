@@ -165,7 +165,7 @@ mvikotlin = "4.3.0"
 navsecurity = "0.5.10"
 netty = "4.2.4.Final"
 # @keep for version alignment
-netty-tcnative = "2.0.66.Final"
+netty-tcnative = "2.0.72.Final"
 nimbusds-josejwt = "9.48"
 nlopez-compose = "0.4.26"
 nodegradle-node = "7.1.0"
