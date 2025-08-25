@@ -16,6 +16,9 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
 
 import com.codahale.metrics.Gauge;
@@ -25,7 +28,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -108,9 +110,9 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -597,8 +599,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           Attributes.empty(),
           SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
-    // TODO SOLR-17458: Add Otel
-    initializeMetrics(solrMetricsContext, Attributes.empty(), STATISTICS_KEY);
+    Attributes baseAttributes;
+    if (core.getCoreContainer().isZooKeeperAware()) {
+      baseAttributes =
+          Attributes.builder()
+              .put(COLLECTION_ATTR, core.getCoreDescriptor().getCollectionName())
+              .put(CORE_ATTR, core.getCoreDescriptor().getName())
+              .put(SHARD_ATTR, core.getCoreDescriptor().getCloudDescriptor().getShardId())
+              .build();
+    } else {
+      baseAttributes =
+          Attributes.builder().put(CORE_ATTR, core.getCoreDescriptor().getName()).build();
+    }
+    initializeMetrics(solrMetricsContext, baseAttributes, STATISTICS_KEY);
     registerTime = new Date();
   }
 
@@ -2589,95 +2602,145 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return solrMetricsContext;
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    parentContext.gauge(() -> name, true, "searcherName", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> cachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(
-        () -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(
-        fullSortCount::sum, true, "fullSortCount", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(
-        skipSortCount::sum, true, "skipSortCount", Category.SEARCHER.toString(), scope);
-    final MetricsMap liveDocsCacheMetrics =
-        new MetricsMap(
-            (map) -> {
-              map.put("inserts", liveDocsInsertsCount.sum());
-              map.put("hits", liveDocsHitCount.sum());
-              map.put("naiveHits", liveDocsNaiveCacheHitCount.sum());
-            });
-    parentContext.gauge(
-        liveDocsCacheMetrics, true, "liveDocsCache", Category.SEARCHER.toString(), scope);
-    // reader stats
-    parentContext.gauge(
-        rgauge(parentContext.nullNumber(), () -> reader.numDocs()),
-        true,
-        "numDocs",
-        Category.SEARCHER.toString(),
-        scope);
-    parentContext.gauge(
-        rgauge(parentContext.nullNumber(), () -> reader.maxDoc()),
-        true,
-        "maxDoc",
-        Category.SEARCHER.toString(),
-        scope);
-    parentContext.gauge(
-        rgauge(parentContext.nullNumber(), () -> reader.maxDoc() - reader.numDocs()),
-        true,
-        "deletedDocs",
-        Category.SEARCHER.toString(),
-        scope);
-    parentContext.gauge(
-        rgauge(parentContext.nullString(), () -> reader.toString()),
-        true,
-        "reader",
-        Category.SEARCHER.toString(),
-        scope);
-    parentContext.gauge(
-        rgauge(parentContext.nullString(), () -> reader.directory().toString()),
-        true,
-        "readerDir",
-        Category.SEARCHER.toString(),
-        scope);
-    parentContext.gauge(
-        rgauge(parentContext.nullNumber(), () -> reader.getVersion()),
-        true,
-        "indexVersion",
-        Category.SEARCHER.toString(),
-        scope);
-    // size of the currently opened commit
-    parentContext.gauge(
-        () -> {
+      SolrMetricsContext solrMetricsContext, Attributes attributes, String scope) {
+    var baseAttributes =
+        attributes.toBuilder().put(CATEGORY_ATTR, Category.SEARCHER.toString()).build();
+    // caching (boolean -> 0/1)
+    solrMetricsContext.observableLongGauge(
+        "solr_searcher_caching_enabled",
+        "1 if caching enabled",
+        obs -> obs.record(cachingEnabled ? 1 : 0, baseAttributes));
+
+    // warmupTime (ms)
+    solrMetricsContext.observableLongGauge(
+        "solr_searcher_warmup_time",
+        "Searcher warmup time (ms)",
+        obs -> obs.record(warmupTime, baseAttributes),
+        OtelUnit.MILLISECONDS);
+    // registeredAt (ms)
+    solrMetricsContext.observableLongGauge(
+        "solr_searcher_registered_at",
+        "Searcher registered time (ms)",
+        obs -> obs.record(registerTime.getTime(), baseAttributes),
+        OtelUnit.MILLISECONDS);
+
+    // fullSortCount
+    solrMetricsContext.observableLongCounter(
+        "solr_searcher_full_sort",
+        "Number of queries that required building a full DocList with sorting",
+        obs -> obs.record(fullSortCount.sum(), baseAttributes));
+
+    // skipSortCount
+    solrMetricsContext.observableLongCounter(
+        "solr_searcher_skip_sort",
+        "Number of queries where Solr skipped building a full sorted DocList and instead returned results directly from the DocSet",
+        obs -> obs.record(skipSortCount.sum(), baseAttributes));
+    solrMetricsContext.observableLongGauge(
+        "solr_searcher_live_docs_cache",
+        "LiveDocs cache metrics",
+        obs -> {
+          obs.record(
+              liveDocsInsertsCount.sum(),
+              baseAttributes.toBuilder().put(TYPE_ATTR, "inserts").build());
+          obs.record(
+              liveDocsHitCount.sum(), baseAttributes.toBuilder().put(TYPE_ATTR, "hits").build());
+          obs.record(
+              liveDocsNaiveCacheHitCount.sum(),
+              baseAttributes.toBuilder().put(TYPE_ATTR, "naive_hits").build());
+        });
+    // reader stats (numeric)
+    solrMetricsContext.observableLongGauge(
+        "solr_searcher_num_docs",
+        "Number of live docs",
+        obs -> {
           try {
-            Collection<String> files = reader.getIndexCommit().getFileNames();
-            long total = 0;
-            for (String file : files) {
+            obs.record(reader.numDocs(), baseAttributes);
+          } catch (Exception ignore) {
+            // replacement for nullNumber
+          }
+        });
+
+    solrMetricsContext.observableLongGauge(
+        "solr_searcher_max_doc",
+        "Max doc (including deletions)",
+        obs -> {
+          try {
+            obs.record(reader.maxDoc(), baseAttributes);
+          } catch (Exception ignore) {
+          }
+        });
+
+    solrMetricsContext.observableLongGauge(
+        "solr_searcher_deleted_docs",
+        "Number of deleted docs",
+        obs -> {
+          try {
+            obs.record(reader.maxDoc() - reader.numDocs(), baseAttributes);
+          } catch (Exception ignore) {
+          }
+        });
+    // indexVersion (numeric)
+    solrMetricsContext.observableLongGauge(
+        "solr_searcher_index_version",
+        "Lucene index version",
+        obs -> {
+          try {
+            obs.record(reader.getVersion(), baseAttributes);
+          } catch (Exception ignore) {
+          }
+        });
+    // size of the currently opened commit
+    solrMetricsContext.observableLongGauge(
+        "solr_searcher_index_commit_size_bytes",
+        "Size of the current index commit (bytes)",
+        obs -> {
+          try {
+            long total = 0L;
+            for (String file : reader.getIndexCommit().getFileNames()) {
               total += DirectoryFactory.sizeOf(reader.directory(), file);
             }
-            return total;
+            obs.record(total, baseAttributes);
           } catch (Exception e) {
-            return parentContext.nullNumber();
+            // skip recording if unavailable (no nullNumber in OTel)
           }
-        },
-        true,
-        "indexCommitSize",
-        Category.SEARCHER.toString(),
-        scope);
+        });
+    var cacheBaseAttribute = Attributes.of(CATEGORY_ATTR, Category.CACHE.toString());
     // statsCache metrics
-    parentContext.gauge(
-        new MetricsMap(
-            map -> {
-              statsCache.getCacheMetrics().getSnapshot(map::putNoEx);
-              map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
-            }),
-        true,
-        "statsCache",
-        Category.CACHE.toString(),
-        scope);
+    solrMetricsContext.observableLongGauge(
+        "solr_searcher_stats_cache",
+        "Operation counts for the searcher stats cache, reported per operation type",
+        obs -> {
+          var cacheMetrics = statsCache.getCacheMetrics();
+          obs.record(
+              cacheMetrics.lookups.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "lookups").build());
+          obs.record(
+              cacheMetrics.missingGlobalFieldStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "missing_global_field_stats").build());
+          obs.record(
+              cacheMetrics.missingGlobalTermStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "missing_global_term_stats").build());
+          obs.record(
+              cacheMetrics.mergeToGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "merge_to_global_stats").build());
+          obs.record(
+              cacheMetrics.retrieveStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "retrieve_stats").build());
+          obs.record(
+              cacheMetrics.returnLocalStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "return_local_stats").build());
+          obs.record(
+              cacheMetrics.sendGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "send_global_stats").build());
+          obs.record(
+              cacheMetrics.useCachedGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "use_cached_global_stats").build());
+          obs.record(
+              cacheMetrics.receiveGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "receive_global_stats").build());
+        });
   }
 
   /**
