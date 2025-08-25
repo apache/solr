@@ -56,7 +56,6 @@ public class RegexFragmenter extends HighlightingPluginBase implements SolrFragm
 
   @Override
   public Fragmenter getFragmenter(String fieldName, SolrParams params) {
-    numRequests.inc();
     params = SolrParams.wrapDefaults(params, defaults);
 
     int fragsize =
@@ -84,14 +83,5 @@ public class RegexFragmenter extends HighlightingPluginBase implements SolrFragm
     }
 
     return new LuceneRegexFragmenter(fragsize, increment, slop, maxchars, p);
-  }
-
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////////// SolrInfoMBeans methods ///////////////////////
-  ///////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getDescription() {
-    return "RegexFragmenter (" + defaultPatternRaw + ")";
   }
 }
