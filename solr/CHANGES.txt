@@ -50,6 +50,8 @@ Bug Fixes
 
 * SOLR-17830: v1 Restore API no longer conflates backup-name and collection-name during validation. (Abhishek Umarjikar via Jason Gerlowski)
 
+* SOLR-17871: Http2SolrClient wasn't honoring idle timeout configuration above 30 seconds -- a regression. (Thomas Wöckinger, David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
