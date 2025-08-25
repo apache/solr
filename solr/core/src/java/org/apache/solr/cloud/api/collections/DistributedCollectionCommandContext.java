@@ -27,23 +27,17 @@ import org.apache.solr.handler.component.ShardHandler;
 
 public class DistributedCollectionCommandContext implements CollectionCommandContext {
   private final CoreContainer coreContainer;
-  private final DistributedClusterStateUpdater getDistributedClusterStateUpdater;
+  private final DistributedClusterStateUpdater distributedClusterStateUpdater;
   private final ExecutorService executorService;
-
-  private final SolrCloudManager solrCloudManager;
-  private final ZkStateReader zkStateReader;
 
   public DistributedCollectionCommandContext(
       CoreContainer coreContainer, ExecutorService executorService) {
+    // note: coreContainer.getZkController() is not yet instantiated; don't call it right now
     this.coreContainer = coreContainer;
-    this.getDistributedClusterStateUpdater =
+    this.distributedClusterStateUpdater =
         new DistributedClusterStateUpdater(
             coreContainer.getConfig().getCloudConfig().getDistributedClusterStateUpdates());
-    ;
     this.executorService = executorService;
-
-    solrCloudManager = this.coreContainer.getZkController().getSolrCloudManager();
-    zkStateReader = this.coreContainer.getZkController().getZkStateReader();
   }
 
   @Override
@@ -60,7 +54,7 @@ public class DistributedCollectionCommandContext implements CollectionCommandCon
 
   @Override
   public SolrCloudManager getSolrCloudManager() {
-    return solrCloudManager;
+    return this.coreContainer.getZkController().getSolrCloudManager();
   }
 
   @Override
@@ -70,12 +64,12 @@ public class DistributedCollectionCommandContext implements CollectionCommandCon
 
   @Override
   public ZkStateReader getZkStateReader() {
-    return zkStateReader;
+    return this.coreContainer.getZkController().getZkStateReader();
   }
 
   @Override
   public DistributedClusterStateUpdater getDistributedClusterStateUpdater() {
-    return this.getDistributedClusterStateUpdater;
+    return this.distributedClusterStateUpdater;
   }
 
   @Override
