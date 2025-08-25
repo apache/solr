@@ -685,7 +685,7 @@ public class ZkController implements Closeable {
   }
 
   /** Non-empty if the Collection API is executed in a distributed way (Overseer is disabled). */
-  public Optional<DistributedCollectionConfigSetCommandRunner> getDistribCommandRunner() {
+  public Optional<DistributedCollectionConfigSetCommandRunner> getDistributedCommandRunner() {
     return Objects.requireNonNull(this.distributedCommandRunner);
   }
 

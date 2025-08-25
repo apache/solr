@@ -63,7 +63,7 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
     mockCoreContainer = mock(CoreContainer.class);
     mockCommandRunner = mock(DistributedCollectionConfigSetCommandRunner.class);
     when(mockCoreContainer.getZkController()).thenReturn(mockZkController);
-    when(mockZkController.getDistribCommandRunner()).thenReturn(Optional.of(mockCommandRunner));
+    when(mockZkController.getDistributedCommandRunner()).thenReturn(Optional.of(mockCommandRunner));
     when(mockCommandRunner.runCollectionCommand(any(), any(), anyLong()))
         .thenReturn(new OverseerSolrResponse(new NamedList<>()));
     mockQueryRequest = mock(SolrQueryRequest.class);

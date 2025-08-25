@@ -81,7 +81,7 @@ public class ConfigSetAPIBase extends JerseyResource {
     }
 
     Optional<DistributedCollectionConfigSetCommandRunner> distribCommandRunner =
-        coreContainer.getZkController().getDistribCommandRunner();
+        coreContainer.getZkController().getDistributedCommandRunner();
     if (distribCommandRunner.isPresent()) {
       distribCommandRunner
           .get()

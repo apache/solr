@@ -357,7 +357,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     // these checks to not allow distributing collection API without distributing cluster state
     // updates (but the other way around is ok). See constructor of CloudConfig.
     Optional<DistributedCollectionConfigSetCommandRunner> distribCommandRunner =
-        zkController.getDistribCommandRunner();
+        zkController.getDistributedCommandRunner();
     if (distribCommandRunner.isPresent()) {
       return distribCommandRunner.get().runCollectionCommand(m, action, timeout);
     } else { // Sending the Collection API message to Overseer via a Zookeeper queue
@@ -788,7 +788,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final ZkController zkController = coreContainer.getZkController();
 
           final NamedList<Object> status = new NamedList<>();
-          if (zkController.getDistribCommandRunner().isEmpty()) {
+          if (zkController.getDistributedCommandRunner().isEmpty()) {
             if (zkController.getOverseerRunningMap().contains(requestId)) {
               addStatusToResponse(status, RUNNING, "found [" + requestId + "] in running tasks");
             } else if (zkController.getOverseerCompletedMap().contains(requestId)) {
@@ -811,7 +811,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             }
           } else {
             Pair<RequestStatusState, OverseerSolrResponse> sr =
-                zkController.getDistribCommandRunner().get().getAsyncTaskRequestStatus(requestId);
+                zkController
+                    .getDistributedCommandRunner()
+                    .get()
+                    .getAsyncTaskRequestStatus(requestId);
             final String message;
             switch (sr.first()) {
               case COMPLETED:
@@ -859,7 +862,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   "Both requestid and flush parameters can not be specified together.");
             }
 
-            if (zkController.getDistribCommandRunner().isEmpty()) {
+            if (zkController.getDistributedCommandRunner().isEmpty()) {
               if (flush) {
                 Collection<String> completed = zkController.getOverseerCompletedMap().keys();
                 Collection<String> failed = zkController.getOverseerFailureMap().keys();
@@ -894,11 +897,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               }
             } else {
               if (flush) {
-                zkController.getDistribCommandRunner().get().deleteAllAsyncIds();
+                zkController.getDistributedCommandRunner().get().deleteAllAsyncIds();
                 rsp.getValues()
                     .add("status", "successfully cleared stored collection api responses");
               } else {
-                if (zkController.getDistribCommandRunner().get().deleteSingleAsyncId(requestId)) {
+                if (zkController
+                    .getDistributedCommandRunner()
+                    .get()
+                    .deleteSingleAsyncId(requestId)) {
                   rsp.getValues()
                       .add(
                           "status", "successfully removed stored response for [" + requestId + "]");
@@ -931,7 +937,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           NamedList<Object> results = new NamedList<>();
           boolean isDistributedApi =
-              h.coreContainer.getZkController().getDistribCommandRunner().isPresent();
+              h.coreContainer.getZkController().getDistributedCommandRunner().isPresent();
           results.add("isDistributedApi", isDistributedApi);
           rsp.getValues().addAll(results);
           return null;
