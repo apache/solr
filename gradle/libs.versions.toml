@@ -175,7 +175,7 @@ openapi = "7.6.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.46.0"
 osgi-annotation = "8.1.0"
-oshai-logging = "7.0.3"
+oshai-logging = "7.0.13"
 # @keep for version alignment
 ow2-asm = "9.7.1"
 owasp-dependencycheck = "12.1.3"
