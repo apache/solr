@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -923,8 +924,9 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     zkClient.create(livePath + "/" + node2, data2, CreateMode.EPHEMERAL, true);
 
     var lowestVersion = reader.fetchLowestSolrVersion();
+    assertTrue("Expected lowest version to be present", lowestVersion.isPresent());
     assertEquals(
-        "Expected lowest version to be 9.0.1", SolrVersion.valueOf("9.0.1"), lowestVersion);
+        "Expected lowest version to be 9.0.1", SolrVersion.valueOf("9.0.1"), lowestVersion.get());
   }
 
   /** Test when the only live node has empty data. */
@@ -943,7 +945,9 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     String emptyNode = "empty_node";
     zkClient.create(livePath + "/" + emptyNode, new byte[0], CreateMode.EPHEMERAL, true);
 
-    assertEquals("after empty node", SolrVersion.valueOf("9.9.0"), reader.fetchLowestSolrVersion());
+    var lowestVersion = reader.fetchLowestSolrVersion();
+    assertTrue("Expected lowest version to be present for empty node", lowestVersion.isPresent());
+    assertEquals("after empty node", SolrVersion.valueOf("9.9.0"), lowestVersion.get());
   }
 
   /** Test when two live nodes exist; one is blank and the other has a high version */
@@ -965,11 +969,31 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         CreateMode.EPHEMERAL,
         true);
 
-    assertEquals("after high node", SolrVersion.LATEST, reader.fetchLowestSolrVersion());
+    var lowestVersion1 = reader.fetchLowestSolrVersion();
+    assertTrue("Expected lowest version to be present for high version node", lowestVersion1.isPresent());
+    assertEquals("after high node", SolrVersion.valueOf("888.0.0"), lowestVersion1.get());
 
     String node2 = "node2_solr";
     zkClient.create(livePath + "/" + node2, new byte[0], CreateMode.EPHEMERAL, true);
 
-    assertEquals("after empty node", SolrVersion.valueOf("9.9.0"), reader.fetchLowestSolrVersion());
+    var lowestVersion2 = reader.fetchLowestSolrVersion();
+    assertTrue("Expected lowest version to be present for empty node", lowestVersion2.isPresent());
+    assertEquals("after empty node", SolrVersion.valueOf("9.9.0"), lowestVersion2.get());
+  }
+
+  /** Test when no live nodes exist - should return empty Optional */
+  public void testFetchLowestSolrVersion_noLiveNodes() throws Exception {
+    SolrZkClient zkClient = fixture.zkClient;
+    ZkStateReader reader = fixture.reader;
+    String livePath = ZkStateReader.LIVE_NODES_ZKNODE;
+
+    // Clear any existing live node children.
+    List<String> nodes = zkClient.getChildren(livePath, null, true);
+    for (String node : nodes) {
+      zkClient.delete(livePath + "/" + node, -1, true);
+    }
+
+    var lowestVersion = reader.fetchLowestSolrVersion();
+    assertFalse("Expected no lowest version when no live nodes exist", lowestVersion.isPresent());
   }
 }
