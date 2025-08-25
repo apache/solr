@@ -29,7 +29,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    System.clearProperty(SolrResourceLoader.SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM);
+    System.clearProperty(SolrResourceLoader.SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM);
     super.tearDown();
   }
 
@@ -129,7 +129,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
   }
 
   public void testUnsafeResolving() throws Exception {
-    System.setProperty(SolrResourceLoader.SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM, "true");
+    System.setProperty(SolrResourceLoader.SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM, "false");
 
     final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
     final ResourceLoader loader =
