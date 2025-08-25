@@ -141,6 +141,7 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -1013,31 +1014,38 @@ public class CoreContainer {
     containerProperties.putAll(cfg.getSolrProperties());
 
     // initialize gauges for reporting the number of cores and disk total/free
-    // TODO: Convert these metrics
-    solrMetricsContext.gauge(
-        solrCores::getNumLoadedPermanentCores,
-        true,
-        "loaded",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "cores");
-    solrMetricsContext.gauge(
-        solrCores::getNumLoadedTransientCores,
-        true,
-        "lazy",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "cores");
-    solrMetricsContext.gauge(
-        solrCores::getNumUnloadedCores,
-        true,
-        "unloaded",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "cores");
+
+    Attributes containerAttrs =
+        Attributes.builder().put(CATEGORY_ATTR, SolrInfoBean.Category.CONTAINER.toString()).build();
+
+    solrMetricsContext.observableLongGauge(
+        "solr_cc_cores_loaded_permanent",
+        "Number of permanent Solr cores loaded by CoreContainer",
+        measurement -> {
+          measurement.record(solrCores.getNumLoadedPermanentCores(), containerAttrs);
+        });
+    solrMetricsContext.observableLongGauge(
+        "solr_cc_cores_loaded_transient",
+        "Number of transient Solr cores loaded by CoreContainer",
+        measurement -> {
+          measurement.record(solrCores.getNumLoadedTransientCores(), containerAttrs);
+        });
+    solrMetricsContext.observableLongGauge(
+        "solr_cc_cores_unloaded",
+        "Number of Solr cores unloaded by CoreContainer",
+        measurement -> {
+          measurement.record(solrCores.getNumUnloadedCores(), containerAttrs);
+        });
+
     Path dataHome =
         cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
-    solrMetricsContext.gauge(
-        () -> {
+
+    solrMetricsContext.observableLongGauge(
+        "solr_cc_filesystem_total_space",
+        "Total size of Solr's data home directory",
+        measurement -> {
           try {
-            return Files.getFileStore(dataHome).getTotalSpace();
+            measurement.record(Files.getFileStore(dataHome).getTotalSpace(), containerAttrs);
           } catch (IOException e) {
             throw new SolrException(
                 ErrorCode.SERVER_ERROR,
@@ -1045,15 +1053,13 @@ public class CoreContainer {
                 e);
           }
         },
-        true,
-        "totalSpace",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "fs");
-
-    solrMetricsContext.gauge(
-        () -> {
+        OtelUnit.BYTES);
+    solrMetricsContext.observableLongGauge(
+        "solr_cc_filesystem_usable_space",
+        "Amount of space available in Solr's data home directory",
+        measurement -> {
           try {
-            return Files.getFileStore(dataHome).getUsableSpace();
+            measurement.record(Files.getFileStore(dataHome).getUsableSpace(), containerAttrs);
           } catch (IOException e) {
             throw new SolrException(
                 ErrorCode.SERVER_ERROR,
@@ -1061,66 +1067,37 @@ public class CoreContainer {
                 e);
           }
         },
-        true,
-        "usableSpace",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "fs");
-    solrMetricsContext.gauge(
-        dataHome::toString, true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    solrMetricsContext.gauge(
-        () -> {
+        OtelUnit.BYTES);
+    solrMetricsContext.observableLongGauge(
+        "solr_cc_filesystem_core_root_total_space",
+        "Total size of Solr's core root directory",
+        measurement -> {
           try {
-            return Files.getFileStore(cfg.getCoreRootDirectory()).getTotalSpace();
+            measurement.record(
+                Files.getFileStore(cfg.getCoreRootDirectory()).getTotalSpace(), containerAttrs);
           } catch (IOException e) {
             throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Error retrieving total space for core root directory: "
-                    + cfg.getCoreRootDirectory(),
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving total space for core root directory" + dataHome,
                 e);
           }
         },
-        true,
-        "totalSpace",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "fs",
-        "coreRoot");
-    solrMetricsContext.gauge(
-        () -> {
+        OtelUnit.BYTES);
+    solrMetricsContext.observableLongGauge(
+        "solr_cc_filesystem_core_root_usable_space",
+        "Amount of space available in Solr's core root directory",
+        measurement -> {
           try {
-            return Files.getFileStore(cfg.getCoreRootDirectory()).getUsableSpace();
+            measurement.record(
+                Files.getFileStore(cfg.getCoreRootDirectory()).getUsableSpace(), containerAttrs);
           } catch (IOException e) {
             throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Error retrieving usable space for core root directory: "
-                    + cfg.getCoreRootDirectory(),
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving usable space for core root directory" + dataHome,
                 e);
           }
         },
-        true,
-        "usableSpace",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "fs",
-        "coreRoot");
-    solrMetricsContext.gauge(
-        () -> cfg.getCoreRootDirectory().toString(),
-        true,
-        "path",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "fs",
-        "coreRoot");
-    // add version information
-    solrMetricsContext.gauge(
-        () -> this.getClass().getPackage().getSpecificationVersion(),
-        true,
-        "specification",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "version");
-    solrMetricsContext.gauge(
-        () -> this.getClass().getPackage().getImplementationVersion(),
-        true,
-        "implementation",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "version");
+        OtelUnit.BYTES);
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
     // NOCOMMIT SOLR-17458: Otel migration
