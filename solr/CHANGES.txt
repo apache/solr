@@ -36,8 +36,7 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-* SOLR-17286: When proxying requests to another node, use Jetty HttpClient not Apache HttpClient.
-  (David Smiley)
+(No changes)
 
 ==================  9.9.1 ==================
 Bug Fixes

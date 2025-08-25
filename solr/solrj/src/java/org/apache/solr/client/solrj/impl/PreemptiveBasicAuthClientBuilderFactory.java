@@ -95,9 +95,10 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
     authenticationStore.addAuthentication(
         new SolrBasicAuthentication(basicAuthUser, basicAuthPass));
     client.setAuthenticationStore(authenticationStore);
-    var httpClient = client.getHttpClient();
-    httpClient.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(httpClient));
-    httpClient.getProtocolHandlers().put(new ProxyAuthenticationProtocolHandler(httpClient));
+    client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(client.getHttpClient()));
+    client
+        .getProtocolHandlers()
+        .put(new ProxyAuthenticationProtocolHandler(client.getHttpClient()));
   }
 
   @Override

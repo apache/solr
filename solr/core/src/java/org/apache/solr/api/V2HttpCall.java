@@ -349,7 +349,7 @@ public class V2HttpCall extends HttpSolrCall {
   }
 
   /**
-   * Differentiate between "admin" and "remoteproxy"-type requests; executing each as appropriate.
+   * Differentiate between "admin" and "remotequery"-type requests; executing each as appropriate.
    *
    * <p>The JAX-RS framework used by {@link V2HttpCall} doesn't provide any easy way to check in
    * advance whether a Jersey application can handle an incoming request. This, in turn, makes it
@@ -360,7 +360,7 @@ public class V2HttpCall extends HttpSolrCall {
    * <p>This method uses this strategy to differentiate between admin requests that don't require a
    * {@link SolrCore}, but whose path happen to contain a core/collection name (e.g.
    * ADDREPLICAPROP's path of
-   * /collections/collName/shards/shardName/replicas/replicaName/properties), and "REMOTEPROXY"
+   * /collections/collName/shards/shardName/replicas/replicaName/properties), and "REMOTEQUERY"
    * requests which do require a local SolrCore to process.
    */
   @Override

@@ -131,7 +131,6 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     authenticationStore.addAuthentication(createSPNEGOAuthentication());
     http2Client.setAuthenticationStore(authenticationStore);
     http2Client
-        .getHttpClient()
         .getProtocolHandlers()
         .put(new WWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
   }

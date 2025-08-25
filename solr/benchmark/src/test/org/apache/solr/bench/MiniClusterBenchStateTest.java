@@ -26,13 +26,15 @@ import static org.apache.solr.bench.generators.SourceDSL.longs;
 import static org.apache.solr.bench.generators.SourceDSL.strings;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.After;
 import org.junit.Test;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -40,12 +42,12 @@ import org.openjdk.jmh.infra.IterationParams;
 import org.openjdk.jmh.runner.IterationType;
 import org.openjdk.jmh.runner.WorkloadParams;
 import org.openjdk.jmh.runner.options.TimeValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ThreadLeakLingering(linger = 10)
 public class MiniClusterBenchStateTest extends SolrTestCaseJ4 {
-  private MiniClusterState.MiniClusterBenchState miniBenchState;
-  private BaseBenchState baseBenchState;
-  private BenchmarkParams benchParams;
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void testMiniClusterState() throws Exception {
@@ -53,8 +55,9 @@ public class MiniClusterBenchStateTest extends SolrTestCaseJ4 {
     System.setProperty("workBaseDir", createTempDir("work").toString());
     System.setProperty("random.counts", "true");
 
-    miniBenchState = new MiniClusterState.MiniClusterBenchState();
-    benchParams =
+    MiniClusterState.MiniClusterBenchState miniBenchState =
+        new MiniClusterState.MiniClusterBenchState();
+    BenchmarkParams benchParams =
         new BenchmarkParams(
             "benchmark",
             "generatedTarget",
@@ -77,7 +80,7 @@ public class MiniClusterBenchStateTest extends SolrTestCaseJ4 {
             "vmVersion",
             "jmhVersion",
             TimeValue.seconds(10));
-    baseBenchState = new BaseBenchState();
+    BaseBenchState baseBenchState = new BaseBenchState();
     baseBenchState.doSetup(benchParams);
     miniBenchState.doSetup(benchParams, baseBenchState);
 
@@ -108,7 +111,7 @@ public class MiniClusterBenchStateTest extends SolrTestCaseJ4 {
             .field(doubles().all());
 
     int numDocs = 50;
-    docs.preGenerate(numDocs);
+    Iterator<SolrInputDocument> docIt = docs.preGenerate(numDocs);
 
     miniBenchState.index(collection, docs, numDocs);
 
@@ -121,12 +124,8 @@ public class MiniClusterBenchStateTest extends SolrTestCaseJ4 {
     BaseBenchState.log("match all query result=" + result);
 
     assertEquals(numDocs, result.getResults().getNumFound());
-  }
 
-  @After
-  public void after() throws Exception {
     BaseBenchState.doTearDown(benchParams);
-
     miniBenchState.tearDown(benchParams);
     miniBenchState.shutdownMiniCluster(benchParams, baseBenchState);
   }
