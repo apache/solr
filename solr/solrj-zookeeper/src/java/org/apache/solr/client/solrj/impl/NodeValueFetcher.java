@@ -38,6 +38,8 @@ import org.apache.solr.common.util.Utils;
  * This class is responsible for fetching metrics and other attributes from a given node in Solr
  * cluster. This is a helper class that is used by {@link SolrClientNodeStateProvider}
  */
+// NOCOMMIT: Need to removed hardcoded references to Dropwizard metrics for OTEL conversion, and
+// probably change enum structure to be more compatible with OTEL naming
 public class NodeValueFetcher {
   // well known tags
   public static final String NODE = "node";
