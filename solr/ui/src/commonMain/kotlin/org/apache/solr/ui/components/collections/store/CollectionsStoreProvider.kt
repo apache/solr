@@ -16,6 +16,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.apache.solr.ui.components.collections.data.ClusterStatusResponse
 import org.apache.solr.ui.components.collections.data.CollectionInfo
 import org.apache.solr.ui.components.collections.data.CollectionsList
+import org.apache.solr.ui.components.collections.data.ListConfigSets
 import org.apache.solr.ui.components.collections.data.ZkTree
 import org.apache.solr.ui.components.collections.data.liveNodes
 import org.apache.solr.ui.components.collections.data.toCollectionDataOrNull
@@ -54,6 +55,7 @@ internal class CollectionsStoreProvider(
         data object MutationFinished : Message
         data class SelectedChanged(val name: String) : Message
         data object SelectionCleared : Message
+        data class ConfigSetsUpdated(val configSets: ListConfigSets) : Message
     }
     private inner class ExecutorImpl : CoroutineExecutor<Intent, Action, State, Message, CollectionsStore.Label>(mainContext) {
 
@@ -92,6 +94,15 @@ internal class CollectionsStoreProvider(
                 }
                 is Intent.DeleteCollection -> {
                     deleteCollection(intent.collection)
+                }
+                is Intent.Reload -> {
+                    reloadCollection(intent.collection)
+                }
+                is Intent.FetchConfigSet -> {
+                    fetchConfigSets()
+                }
+                is Intent.CreateCollection -> {
+                    createCollection(intent.name, intent.numShards, intent.replicas, intent.configSet)
                 }
             }
         }
@@ -176,6 +187,49 @@ internal class CollectionsStoreProvider(
             dispatch(Message.MutationFinished)
         }
 
+        private fun reloadCollection(name: String) {
+            dispatch(Message.MutationStarted)
+            scope.launch {
+                withContext(ioContext) {
+                    client.reloadCollection(name)
+                }.onSuccess {
+                    publish(CollectionsStore.Label.CollectionReloaded(name))
+                    fetchCollectionData(name)
+                }.onFailure {
+                    publish(CollectionsStore.Label.Error("Reload collection failed"))
+                }
+            }
+            dispatch(Message.MutationFinished)
+        }
+
+        private fun createCollection(name: String, numShards: Int, replicas: Int, configSet: String) {
+            dispatch(Message.MutationStarted)
+            scope.launch {
+                withContext(ioContext) {
+                    client.createCollection(name, numShards, replicas, configSet)
+                }.onSuccess {
+                    publish(CollectionsStore.Label.CollectionCreated(name))
+                    fetchCollectionList()
+                    fetchCollectionData(name)
+                }.onFailure {
+                    publish(CollectionsStore.Label.Error("Create collection failed"))
+                }
+            }
+            dispatch(Message.MutationFinished)
+        }
+
+        private fun fetchConfigSets() {
+            scope.launch {
+                withContext(ioContext) {
+                    client.fetchConfigSets()
+                }.onSuccess { sets ->
+                    dispatch(Message.ConfigSetsUpdated(sets))
+                }.onFailure {
+                    publish(CollectionsStore.Label.Error("Fetch configsets failed"))
+                }
+            }
+        }
+
         private suspend fun pollShardHealthyBackoff(
             collection: String,
             shard: String,
@@ -228,6 +282,9 @@ internal class CollectionsStoreProvider(
                     selectedCollectionData = null,
                 )
             }
+            is Message.ConfigSetsUpdated -> {
+                copy(configSets = msg.configSets)
+            }
         }
     }
 
@@ -238,5 +295,8 @@ internal class CollectionsStoreProvider(
         suspend fun addReplica(collectionName: String, nodeName: String?, shardName: String, type: String): Result<JsonObject>
         suspend fun deleteReplica(collectionName: String, shardName: String, replicaName: String): Result<JsonObject>
         suspend fun deleteCollection(collectionName: String): Result<JsonObject>
+        suspend fun reloadCollection(collectionName: String): Result<JsonObject>
+        suspend fun fetchConfigSets(): Result<ListConfigSets>
+        suspend fun createCollection(name: String, numShards: Int, replicas: Int, configSet: String): Result<JsonObject>
     }
 }

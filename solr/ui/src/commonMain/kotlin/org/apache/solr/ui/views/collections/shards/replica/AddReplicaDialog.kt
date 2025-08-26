@@ -14,15 +14,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.map
-import org.apache.solr.ui.views.collections.LocalCollectionsProvider
 
 enum class ReplicaType(val solr: String) { NRT("NRT"), TLOG("TLOG"), PULL("PULL") }
 
@@ -31,19 +29,18 @@ enum class ReplicaType(val solr: String) { NRT("NRT"), TLOG("TLOG"), PULL("PULL"
 fun AddReplicaDialog(
     visible: Boolean,
     shardName: String,
+    liveNodes: List<String>,
+    onFetchLiveNodes: () -> Unit,
     onDismiss: () -> Unit,
-    onConfirm: (node: String?, type: String) -> Unit, // keep if you want parent to handle
+    onConfirm: (node: String?, type: String) -> Unit,
 ) {
     if (!visible) return
 
-    val component = LocalCollectionsProvider.current
-    // read just the liveNodes slice
-    val liveNodes by component.model
-        .map { it.liveNodesData } // or .liveNodes if that’s your field name
-        .collectAsState(initial = emptyList())
+    // keep most recent lambda reference across recompositions
+    val fetchLiveNodes by rememberUpdatedState(onFetchLiveNodes)
     // fetch nodes when the dialog opens
     LaunchedEffect(visible) {
-        if (visible) component.fetchLiveNodesData()
+        if (visible) fetchLiveNodes()
     }
     var nodeExpanded by remember { mutableStateOf(false) }
     var typeExpanded by remember { mutableStateOf(false) }

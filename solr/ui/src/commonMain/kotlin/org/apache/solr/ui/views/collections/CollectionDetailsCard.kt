@@ -23,7 +23,6 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,12 +37,10 @@ fun CollectionDetailsCard(
     details: CollectionData,
     isLoading: Boolean,
     onDelete: (String) -> Unit,
-    onReload: () -> Unit,
+    onReload: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val component = LocalCollectionsProvider.current
     var showDelete by remember { mutableStateOf(false) }
-    val model by component.model.collectAsState()
 
     OutlinedCard(
         modifier = modifier,
@@ -73,11 +70,12 @@ fun CollectionDetailsCard(
             }
             DeleteCollectionDialog(
                 open = showDelete,
-                collectionName = details.name, // or the name from your details pane
+                collectionName = details.name,
                 onDismiss = { showDelete = false },
+                onConfirm = { onDelete(details.name) },
             )
             Spacer(Modifier.width(8.dp))
-            OutlinedButton(onClick = onReload, enabled = !isLoading, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) {
+            OutlinedButton(onClick = { onReload(details.name) }, enabled = !isLoading, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) {
                 Icon(Icons.Outlined.Refresh, null)
                 Spacer(Modifier.width(6.dp))
                 Text("Reload")

@@ -9,5 +9,6 @@ internal val collectionsStateToModel: (CollectionsStore.State) -> CollectionsCom
         selectedCollectionData = it.selectedCollectionData,
         liveNodesData = it.liveNodesData,
         mutating = it.mutating,
+        configSets = it.configSets,
     )
 }

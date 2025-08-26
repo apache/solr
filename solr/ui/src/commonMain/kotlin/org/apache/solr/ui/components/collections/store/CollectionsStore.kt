@@ -3,6 +3,7 @@ package org.apache.solr.ui.components.collections.store
 import com.arkivanov.mvikotlin.core.store.Store
 import org.apache.solr.ui.components.collections.data.CollectionData
 import org.apache.solr.ui.components.collections.data.CollectionsList
+import org.apache.solr.ui.components.collections.data.ListConfigSets
 import org.apache.solr.ui.components.collections.store.CollectionsStore.Intent
 import org.apache.solr.ui.components.collections.store.CollectionsStore.State
 
@@ -46,6 +47,24 @@ interface CollectionsStore : Store<Intent, State, CollectionsStore.Label> {
          * Represents an intent to delete a collection.
          */
         data class DeleteCollection(val collection: String) : Intent
+
+        /**
+         * Represents an intent to reload a specific collection, typically used to refresh or update
+         * the state of the given collection.
+         *
+         * @property collection The name of the collection to be reloaded.
+         */
+        data class Reload(val collection: String) : Intent
+
+        /**
+         * Represents an intent to create a new collection.
+         */
+        data class CreateCollection(val name: String, val numShards: Int, val replicas: Int, val configSet: String) : Intent
+
+        /**
+         * Represents an intent to fetch a configuration set by its name.
+         */
+        data object FetchConfigSet : Intent
     }
 
     data class State(
@@ -54,12 +73,15 @@ interface CollectionsStore : Store<Intent, State, CollectionsStore.Label> {
         val liveNodesData: List<String> = emptyList(),
         val mutating: Boolean = false,
         val selected: String? = null,
+        val configSets: ListConfigSets? = null,
     )
 
     sealed interface Label {
         data class ReplicaAdded(val shard: String) : Label
         data class ReplicaDeleted(val shard: String, val replica: String) : Label
         data class CollectionDeleted(val name: String) : Label
+        data class CollectionReloaded(val name: String) : Label
+        data class CollectionCreated(val name: String) : Label
         data class Error(val message: String) : Label
     }
 }

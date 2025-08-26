@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import kotlin.collections.component1
 import kotlin.collections.component2
 import org.apache.solr.ui.components.collections.data.Shard
-import org.apache.solr.ui.views.collections.LocalCollectionsProvider
 import org.apache.solr.ui.views.collections.shards.replica.AddReplicaDialog
 import org.apache.solr.ui.views.collections.shards.replica.ReplicaListItem
 
@@ -42,9 +41,11 @@ fun ShardCard(
     expanded: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
+    liveNodes: List<String> = emptyList(),
+    onFetchLiveNodes: () -> Unit = {},
+    onAddReplica: (shardName: String, node: String?, type: String) -> Unit = { _, _, _ -> },
+    onDeleteReplica: (shardName: String, replica: String) -> Unit = { _, _ -> },
 ) {
-    val component = LocalCollectionsProvider.current
-
     OutlinedCard(
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.outlinedCardColors(),
@@ -97,9 +98,11 @@ fun ShardCard(
             AddReplicaDialog(
                 visible = showAdd,
                 shardName = addForShard ?: "",
+                liveNodes = liveNodes,
+                onFetchLiveNodes = onFetchLiveNodes,
                 onDismiss = { showAdd = false },
                 onConfirm = { node, type ->
-                    component.addReplica(shardName = addForShard!!, nodeName = node, type = type)
+                    onAddReplica(addForShard!!, node, type)
                     showAdd = false
                 },
             )
@@ -125,7 +128,7 @@ fun ShardCard(
                         ReplicaListItem(
                             replicaName = replicaName,
                             rep = rep,
-                            onDelete = { component.deleteReplica(shardName, replicaName) },
+                            onDelete = { onDeleteReplica(shardName, replicaName) },
                         )
                         if (idx != replicaEntries.lastIndex) HorizontalDivider()
                     }

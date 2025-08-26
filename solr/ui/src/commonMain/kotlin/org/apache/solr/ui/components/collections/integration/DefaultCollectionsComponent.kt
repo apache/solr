@@ -58,4 +58,17 @@ class DefaultCollectionsComponent(
     override fun deleteCollection(name: String) {
         store.accept(CollectionsStore.Intent.DeleteCollection(name))
     }
+
+    override fun reloadCollection(name: String) {
+        println("reloadCollection: $name")
+        store.accept(CollectionsStore.Intent.Reload(name))
+    }
+
+    override fun fetchConfigSets() {
+        store.accept(CollectionsStore.Intent.FetchConfigSet)
+    }
+
+    override fun createCollection(name: String, numShards: Int, replicas: Int, configSet: String) {
+        store.accept(CollectionsStore.Intent.CreateCollection(name, numShards, replicas, configSet))
+    }
 }

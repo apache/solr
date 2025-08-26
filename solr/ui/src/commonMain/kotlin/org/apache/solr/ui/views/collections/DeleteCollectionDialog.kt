@@ -29,10 +29,9 @@ fun DeleteCollectionDialog(
     open: Boolean,
     collectionName: String,
     onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
 ) {
     if (!open) return
-
-    val component = LocalCollectionsProvider.current
 
     var typed by rememberSaveable { mutableStateOf("") }
     val matches = typed.trim() == collectionName // require exact match like the old UI
@@ -44,9 +43,7 @@ fun DeleteCollectionDialog(
                 enabled = matches,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 onClick = {
-                    component.deleteCollection(
-                        name = collectionName,
-                    )
+                    onConfirm()
                     onDismiss()
                 },
             ) { Text("Delete") }

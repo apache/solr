@@ -15,6 +15,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.apache.solr.ui.components.collections.data.ClusterStatusResponse
 import org.apache.solr.ui.components.collections.data.CollectionsList
+import org.apache.solr.ui.components.collections.data.ListConfigSets
 import org.apache.solr.ui.components.collections.data.ZkTree
 import org.apache.solr.ui.components.collections.store.CollectionsStoreProvider
 
@@ -101,6 +102,52 @@ class HttpCollectionsStoreClient(
             response.status.isSuccess() -> Result.success(response.body())
             else -> Result.failure(Exception("Unknown Error"))
             // TODO Add proper error handling
+        }
+    }
+
+    override suspend fun reloadCollection(
+        collectionName: String,
+    ): Result<JsonObject> {
+        val response = httpClient.post("api/collections/$collectionName/reload")
+        return when {
+            response.status.isSuccess() -> Result.success(response.body())
+            else -> Result.failure(Exception("Unknown Error"))
+            // TODO Add proper error handling
+        }
+    }
+
+    override suspend fun fetchConfigSets(): Result<ListConfigSets> {
+        val response = httpClient.get("api/configsets") {
+            parameter("omitHeader", "true")
+            parameter("wt", "json")
+        }
+        return when {
+            response.status.isSuccess() -> Result.success(response.body())
+            else -> Result.failure(Exception("Unknown Error"))
+            // TODO Add proper error handling
+        }
+    }
+
+    override suspend fun createCollection(
+        name: String,
+        numShards: Int,
+        replicas: Int,
+        configSet: String,
+    ): Result<JsonObject> {
+        val response = httpClient.post("api/collections") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                buildJsonObject {
+                    put("name", name)
+                    put("config", configSet)
+                    put("numShards", numShards)
+                    put("replicationFactor", replicas)
+                },
+            )
+        }
+        return when {
+            response.status.isSuccess() -> Result.success(response.body())
+            else -> Result.failure(Exception("Unknown Error"))
         }
     }
 }

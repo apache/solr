@@ -37,6 +37,10 @@ fun ShardsMaterialCards(
     shards: Map<String, Shard>,
     modifier: Modifier = Modifier,
     resetKey: Any? = null,
+    liveNodes: List<String> = emptyList(),
+    onFetchLiveNodes: () -> Unit = {},
+    onAddReplica: (shardName: String, node: String?, type: String) -> Unit = { _, _, _ -> },
+    onDeleteReplica: (shardName: String, replica: String) -> Unit = { _, _ -> },
 ) = SolrCard(modifier) {
     Text(
         "Shards",
@@ -72,6 +76,10 @@ fun ShardsMaterialCards(
                         shard = shard,
                         expanded = expanded == shardName,
                         onToggle = { expanded = if (expanded == shardName) null else shardName },
+                        liveNodes = liveNodes,
+                        onFetchLiveNodes = onFetchLiveNodes,
+                        onAddReplica = onAddReplica,
+                        onDeleteReplica = onDeleteReplica,
                     )
                 }
             }
