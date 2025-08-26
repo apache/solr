@@ -172,7 +172,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   }
 
   private void handlePrometheusRequest(SolrParams params, BiConsumer<String, Object> consumer) {
-    Set<String> metricNames = metricNamesFilter(params);
+    Set<String> metricNames = readParamsAsSet(params, METRIC_NAME_PARAM);
     SortedMap<String, Set<String>> labelFilters = labelFilters(params);
 
     if (metricNames.isEmpty() && labelFilters.isEmpty()) {
@@ -197,26 +197,11 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     consumer.accept("metrics", mergedSnapshots);
   }
 
-  private Set<String> metricNamesFilter(SolrParams params) {
-    String[] metricNameParams = params.getParams(METRIC_NAME_PARAM);
-    if (metricNameParams == null || metricNameParams.length == 0) {
-      return Collections.emptySet();
-    }
-
-    Set<String> metricNames = new HashSet<>();
-    for (String param : metricNameParams) {
-      if (param != null && !param.trim().isEmpty()) {
-        metricNames.addAll(StrUtils.splitSmart(param, ','));
-      }
-    }
-    return metricNames;
-  }
-
   private SortedMap<String, Set<String>> labelFilters(SolrParams params) {
     SortedMap<String, Set<String>> labelFilters = new TreeMap<>();
     labelFilterKeys.forEach(
         (paramName) -> {
-          Set<String> filterValues = labelFilterValues(params, paramName);
+          Set<String> filterValues = readParamsAsSet(params, paramName);
           if (!filterValues.isEmpty()) {
             labelFilters.put(paramName, filterValues);
           }
@@ -225,17 +210,17 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return labelFilters;
   }
 
-  private Set<String> labelFilterValues(SolrParams params, String paramName) {
-    String[] filterLabels = params.getParams(paramName);
-    Set<String> labelValues = new HashSet<>();
-    if (filterLabels != null) {
-      for (String labels : filterLabels) {
-        if (labels != null && !labels.trim().isEmpty()) {
-          labelValues.addAll(StrUtils.splitSmart(labels, ','));
-        }
-      }
+  private Set<String> readParamsAsSet(SolrParams params, String paramName) {
+    String[] paramValues = params.getParams(paramName);
+    if (paramValues == null || paramValues.length == 0) {
+      return Set.of();
     }
-    return labelValues;
+
+    Set<String> paramSet = new HashSet<>();
+    for (String param : paramValues) {
+      paramSet.addAll(StrUtils.splitSmart(param, ','));
+    }
+    return Set.copyOf(paramSet);
   }
 
   private NamedList<Object> handleDropwizardRegistry(SolrParams params) {
@@ -269,6 +254,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return response;
   }
 
+  // NOCOMMIT: Remove this filtering logic
   private static class MetricsExpr {
     Pattern registryRegex;
     MetricFilter metricFilter;
@@ -590,7 +576,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
    * Merge a collection of individual {@link MetricSnapshot} instances into one {@link
    * MetricSnapshots}. This is necessary because we create a {@link
    * io.opentelemetry.sdk.metrics.SdkMeterProvider} per Solr core resulting in duplicate metric
-   * names across cores which is an illegal format if not under the same prometheus grouping.
+   * names across cores which is an illegal format if under the same prometheus grouping.
    */
   private MetricSnapshots mergeSnapshots(List<MetricSnapshot> snapshots) {
     Map<String, CounterSnapshot.Builder> counterSnapshotMap = new HashMap<>();

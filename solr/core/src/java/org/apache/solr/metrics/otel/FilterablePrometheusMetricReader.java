@@ -140,7 +140,6 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
         .collect(toList());
   }
 
-  // TODO test me
   static boolean requiredLabelsFilter(
       Labels labels, SortedMap<String, Set<String>> requiredLabels) {
     // Both Labels and requiredLabels are name-sorted with unique names.
