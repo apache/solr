@@ -202,8 +202,10 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     assertEquals("someRepositoryName", requestBody.repository);
     assertEquals(Integer.valueOf(123), requestBody.backupId);
     assertEquals("someAsyncId", requestBody.async);
+    // Ensure the nested "collection-creation" object looks as expected
     assertNotNull(requestBody.createCollectionParams);
     final var createParams = requestBody.createCollectionParams;
+    assertEquals("someCollectionName", createParams.name);
     assertEquals("someConfig", createParams.config);
     assertEquals(Integer.valueOf(123), createParams.nrtReplicas);
     assertNotNull(createParams.properties);
