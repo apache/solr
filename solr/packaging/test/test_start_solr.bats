@@ -101,9 +101,15 @@ teardown() {
   test -d "${confdir_path}"
   
   # Start Solr with bootstrap_confdir pointing to techproducts configset
+  # bootstrap_confdir: path to config directory to upload
+  # collection.configName: name to give the uploaded configset (default: "configuration1")
+  # This uploads the sample_techproducts_configs/conf directory as "techproducts" configset
   solr start -Dbootstrap_confdir="${confdir_path}" -Dcollection.configName=techproducts
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
   
-  # Verify the techproducts configset was uploaded
+  # Allow time for the configset upload to complete
+  sleep 1
+  
+  # Verify the techproducts configset was uploaded to ZooKeeper
   config_exists "techproducts"
 }
