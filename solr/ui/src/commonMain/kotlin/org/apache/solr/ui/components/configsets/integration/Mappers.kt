@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.main.integration
+package org.apache.solr.ui.components.configsets.integration
 
-import org.apache.solr.ui.components.main.MainComponent
-import org.apache.solr.ui.components.root.RootComponent
-import org.apache.solr.ui.views.navigation.MainMenu
+import org.apache.solr.ui.components.configsets.ConfigsetsComponent
+import org.apache.solr.ui.components.configsets.store.ConfigsetsStore
 
-val MainComponent.Child.asMainMenu: MainMenu
-    get() = when (this) {
-        // TODO Add additional mappings once more children are supported
-        is MainComponent.Child.Configsets -> MainMenu.Configsets
-        is MainComponent.Child.Environment -> MainMenu.Environment
-        is MainComponent.Child.Logging -> MainMenu.Logging
-    }
+internal val configsetsStateToModel: (ConfigsetsStore.State) -> ConfigsetsComponent.Model = {
+    ConfigsetsComponent.Model(
+        selectedTab = it.selectedTab,
+    )
+}
