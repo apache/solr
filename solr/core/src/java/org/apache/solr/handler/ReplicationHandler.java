@@ -31,6 +31,9 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.STATUS;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.TLOG_FILE;
 
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.BatchCallback;
+import io.opentelemetry.api.metrics.ObservableLongGauge;
+import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -100,8 +103,8 @@ import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.admin.api.SnapshotBackupAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.jersey.APIConfigProvider;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -151,6 +154,13 @@ public class ReplicationHandler extends RequestHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   SolrCore core;
+  private ObservableLongGauge indexSizeGauge;
+  private ObservableLongGauge indexVersionGauge;
+  private ObservableLongGauge generationGauge;
+  private ObservableLongGauge isLeaderGauge;
+  private ObservableLongGauge isFollowerGauge;
+  private ObservableLongGauge replicationEnabledGauge;
+  private BatchCallback fetcherMetricsBatch;
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
@@ -841,83 +851,139 @@ public class ReplicationHandler extends RequestHandlerBase
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    super.initializeMetrics(parentContext, attributes, scope);
-    solrMetricsContext.gauge(
-        () ->
-            (core != null && !core.isClosed()
-                ? NumberUtils.readableSize(core.getIndexSize())
-                : parentContext.nullString()),
-        true,
-        "indexSize",
-        getCategory().toString(),
-        scope);
-    solrMetricsContext.gauge(
-        () ->
-            (core != null && !core.isClosed()
-                ? getIndexVersion().toString()
-                : parentContext.nullString()),
-        true,
-        "indexVersion",
-        getCategory().toString(),
-        scope);
-    solrMetricsContext.gauge(
-        () ->
-            (core != null && !core.isClosed()
-                ? getIndexVersion().generation
-                : parentContext.nullNumber()),
-        true,
-        GENERATION,
-        getCategory().toString(),
-        scope);
-    solrMetricsContext.gauge(
-        () -> (core != null && !core.isClosed() ? core.getIndexDir() : parentContext.nullString()),
-        true,
-        "indexPath",
-        getCategory().toString(),
-        scope);
-    solrMetricsContext.gauge(() -> isLeader, true, "isLeader", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> isFollower, true, "isFollower", getCategory().toString(), scope);
-    final MetricsMap fetcherMap =
-        new MetricsMap(
-            map -> {
+    Attributes replicationAttributes =
+        Attributes.builder()
+            .putAll(attributes)
+            .put(CATEGORY_ATTR, Category.REPLICATION.toString())
+            .build();
+    super.initializeMetrics(parentContext, replicationAttributes, scope);
+
+    indexSizeGauge =
+        solrMetricsContext.observableLongGauge(
+            "solr_replication_index_size",
+            "Size of the index in bytes",
+            gauge -> {
+              if (core != null && !core.isClosed()) {
+                gauge.record(core.getIndexSize(), replicationAttributes);
+              }
+            },
+            OtelUnit.BYTES);
+
+    indexVersionGauge =
+        solrMetricsContext.observableLongGauge(
+            "solr_replication_index_version",
+            "Current index version",
+            gauge -> {
+              if (core != null && !core.isClosed()) {
+                gauge.record(getIndexVersion().version, replicationAttributes);
+              }
+            });
+
+    generationGauge =
+        solrMetricsContext.observableLongGauge(
+            "solr_replication_generation",
+            "Current index generation",
+            gauge -> {
+              if (core != null && !core.isClosed()) {
+                gauge.record(getIndexVersion().generation, replicationAttributes);
+              }
+            });
+
+    isLeaderGauge =
+        solrMetricsContext.observableLongGauge(
+            "solr_replication_is_leader",
+            "Whether this node is a leader (1) or not (0)",
+            gauge -> gauge.record(isLeader ? 1 : 0, replicationAttributes));
+
+    isFollowerGauge =
+        solrMetricsContext.observableLongGauge(
+            "solr_replication_is_follower",
+            "Whether this node is a follower (1) or not (0)",
+            gauge -> gauge.record(isFollower ? 1 : 0, replicationAttributes));
+
+    replicationEnabledGauge =
+        solrMetricsContext.observableLongGauge(
+            "solr_replication_enabled",
+            "Whether replication is enabled (1) or not (0)",
+            gauge ->
+                gauge.record(
+                    (isLeader && replicationEnabled.get()) ? 1 : 0, replicationAttributes));
+
+    // Create measurements for fetcher metrics in a batch to ensure consistent fetcher reference
+    ObservableLongMeasurement isPollingDisabledGauge =
+        solrMetricsContext.longMeasurement(
+            "solr_replication_is_polling_disabled", "Whether polling is disabled (1) or not (0)");
+
+    ObservableLongMeasurement isReplicatingGauge =
+        solrMetricsContext.longMeasurement(
+            "solr_replication_is_replicating", "Whether replication is in progress (1) or not (0)");
+
+    ObservableLongMeasurement timeElapsedGauge =
+        solrMetricsContext.longMeasurement(
+            "solr_replication_time_elapsed",
+            "Time elapsed during replication in seconds",
+            OtelUnit.SECONDS);
+
+    ObservableLongMeasurement bytesDownloadedGauge =
+        solrMetricsContext.longMeasurement(
+            "solr_replication_bytes_downloaded",
+            "Total bytes downloaded during replication",
+            OtelUnit.BYTES);
+
+    ObservableLongMeasurement downloadSpeedGauge =
+        solrMetricsContext.longMeasurement(
+            "solr_replication_download_speed", "Download speed in bytes per second");
+
+    // Use batch callback to ensure consistent fetcher reference
+    fetcherMetricsBatch =
+        solrMetricsContext.batchCallback(
+            () -> {
               IndexFetcher fetcher = currentIndexFetcher;
               if (fetcher != null) {
-                map.put(LEADER_URL, fetcher.getLeaderCoreUrl());
-                if (getPollInterval() != null) {
-                  map.put(ReplicationAPIBase.POLL_INTERVAL, getPollInterval());
-                }
-                map.put("isPollingDisabled", isPollingDisabled());
-                map.put("isReplicating", isReplicating());
+                isPollingDisabledGauge.record(isPollingDisabled() ? 1 : 0, replicationAttributes);
+                isReplicatingGauge.record(isReplicating() ? 1 : 0, replicationAttributes);
+
                 long elapsed = fetcher.getReplicationTimeElapsed();
                 long val = fetcher.getTotalBytesDownloaded();
                 if (elapsed > 0) {
-                  map.put("timeElapsed", elapsed);
-                  map.put("bytesDownloaded", val);
-                  map.put("downloadSpeed", val / elapsed);
+                  timeElapsedGauge.record(elapsed, replicationAttributes);
+                  bytesDownloadedGauge.record(val, replicationAttributes);
+                  downloadSpeedGauge.record(val / elapsed, replicationAttributes);
                 }
-                Properties props = loadReplicationProperties();
-                addReplicationProperties(map::putNoEx, props);
               }
-            });
-    solrMetricsContext.gauge(fetcherMap, true, "fetcher", getCategory().toString(), scope);
-    solrMetricsContext.gauge(
-        () -> isLeader && includeConfFiles != null ? includeConfFiles : "",
-        true,
-        "confFilesToReplicate",
-        getCategory().toString(),
-        scope);
-    solrMetricsContext.gauge(
-        () -> isLeader ? getReplicateAfterStrings() : Collections.<String>emptyList(),
-        true,
-        REPLICATE_AFTER,
-        getCategory().toString(),
-        scope);
-    solrMetricsContext.gauge(
-        () -> isLeader && replicationEnabled.get(),
-        true,
-        "replicationEnabled",
-        getCategory().toString(),
-        scope);
+            },
+            isPollingDisabledGauge,
+            isReplicatingGauge,
+            timeElapsedGauge,
+            bytesDownloadedGauge,
+            downloadSpeedGauge);
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (indexSizeGauge != null) {
+      indexSizeGauge.close();
+    }
+    if (indexVersionGauge != null) {
+      indexVersionGauge.close();
+    }
+    if (generationGauge != null) {
+      generationGauge.close();
+    }
+    if (isLeaderGauge != null) {
+      isLeaderGauge.close();
+    }
+    if (isFollowerGauge != null) {
+      isFollowerGauge.close();
+    }
+    if (replicationEnabledGauge != null) {
+      replicationEnabledGauge.close();
+    }
+    if (fetcherMetricsBatch != null) {
+      fetcherMetricsBatch.close();
+    }
+
+    super.close();
   }
 
   // TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is

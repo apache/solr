@@ -23,6 +23,7 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.metrics.BatchCallback;
 import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.DoubleGauge;
 import io.opentelemetry.api.metrics.DoubleHistogram;
@@ -37,6 +38,7 @@ import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
+import io.opentelemetry.api.metrics.ObservableMeasurement;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -272,6 +274,22 @@ public class SolrMetricsContext {
       OtelUnit unit) {
     return metricManager.observableDoubleCounter(
         registryName, metricName, description, callback, unit);
+  }
+
+  public ObservableLongMeasurement longMeasurement(String metricName, String description) {
+    return longMeasurement(metricName, description, null);
+  }
+
+  public ObservableLongMeasurement longMeasurement(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.longMeasurement(registryName, metricName, description, unit);
+  }
+
+  public BatchCallback batchCallback(
+      Runnable callback,
+      ObservableMeasurement measurement,
+      ObservableMeasurement... additionalMeasurements) {
+    return metricManager.batchCallback(registryName, callback, measurement, additionalMeasurements);
   }
 
   /**
