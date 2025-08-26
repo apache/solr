@@ -76,7 +76,6 @@ public class CoreContainerProvider implements ServletContextListener {
   private HttpClient httpClient;
   private SolrMetricManager metricManager;
   private RateLimitManager rateLimitManager;
-  private String registryName;
   private OtelRuntimeJvmMetrics otelRuntimeJvmMetrics;
 
   /**
@@ -152,25 +151,12 @@ public class CoreContainerProvider implements ServletContextListener {
     //    }
 
     cores = null;
-    try {
-      if (metricManager != null) {
-        try {
-          metricManager.unregisterGauges(registryName, metricTag);
-        } catch (NullPointerException e) {
-          // okay
-        } catch (Exception e) {
-          log.warn("Exception closing FileCleaningTracker", e);
-        } finally {
-          metricManager = null;
-        }
-      }
-    } finally {
-      if (otelRuntimeJvmMetrics != null) otelRuntimeJvmMetrics.close();
-      if (cc != null) {
-        httpClient = null;
-        cc.shutdown();
-      }
+    if (otelRuntimeJvmMetrics != null) otelRuntimeJvmMetrics.close();
+    if (cc != null) {
+      httpClient = null;
+      cc.shutdown();
     }
+    metricManager = null;
   }
 
   private void init(ServletContext servletContext) {
@@ -401,9 +387,9 @@ public class CoreContainerProvider implements ServletContextListener {
 
   private void setupJvmMetrics(CoreContainer coresInit) {
     this.metricManager = coresInit.getMetricManager();
-    this.registryName = SolrMetricManager.getRegistryName(Group.jvm);
     this.otelRuntimeJvmMetrics =
-        new OtelRuntimeJvmMetrics().initialize(metricManager, registryName);
+        new OtelRuntimeJvmMetrics()
+            .initialize(metricManager, SolrMetricManager.getRegistryName(Group.jvm));
   }
 
   public RateLimitManager getRateLimitManager() {
