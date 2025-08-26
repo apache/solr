@@ -31,10 +31,9 @@ dependencies {
     }
 
     implementation project(':solr:solrj')
+    implementation project(':solr:api')
 
-    // declare dependencies we use even though already declared by solrj-core
     implementation libs.slf4j.api
-
 
     implementation(libs.apache.curator.client, {
         exclude group: 'org.apache.zookeeper', module: 'zookeeper'

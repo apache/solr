@@ -17,6 +17,8 @@ New Features
 * SOLR-14414: Introduce a new, experimental Admin UI that can be used aside the current Admin UI. The new module is
   loaded together with the existing Admin UI and available under the URL path /solr/compose. (Christos Malliaridis)
 
+* SOLR-17864: Standarized patterns for system property naming across Solr.  i.e enable.packages is now solr.packages.enabled.  (janhoy, Eric Pugh)
+
 Improvements
 ---------------------
 
@@ -209,6 +211,8 @@ Other Changes
 
 * SOLR-17703: SolrJ - Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to "JavaBin.." equivalent. (Abhishek Umarjikar)
 
+* SOLR-17286: When proxying requests to another node, use Jetty HttpClient not Apache HttpClient. (David Smiley)
+
 ==================  9.10.0 ==================
 New Features
 ---------------------
@@ -216,7 +220,7 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-17860: DocBasedVersionConstraintsProcessorFactory now supports PULL replicas. (Houston Putman)
 
 Optimizations
 ---------------------
@@ -235,14 +239,15 @@ Bug Fixes
 * SOLR-17789: When Solr forwards/proxies requests to another node that can service the request, it needs to pass authorization headers.
   (Timo Crabbé)
 
+* SOLR-17863: Fix race condition in SolrCore's fingerprint cache which caused leader election to hang. (Luke Kot-Zaniewski, Matthew Biscocho)
+
 Dependency Upgrades
 ---------------------
 (No changes)
 
 Other Changes
 ---------------------
-* SOLR-17286: When proxying requests to another node, use Jetty HttpClient not Apache HttpClient.
-  (David Smiley)
+* SOLR-17620: SolrCloud "live_node" now has metadata: version of Solr, roles (Yuntong Qu, David Smiley)
 
 ==================  9.9.1 ==================
 Bug Fixes
@@ -253,6 +258,8 @@ Bug Fixes
   substitution (hossman)
 
 * SOLR-17830: v1 Restore API no longer conflates backup-name and collection-name during validation. (Abhishek Umarjikar via Jason Gerlowski)
+
+* SOLR-17871: Http2SolrClient wasn't honoring idle timeout configuration above 30 seconds -- a regression. (Thomas Wöckinger, David Smiley)
 
 Dependency Upgrades
 ---------------------

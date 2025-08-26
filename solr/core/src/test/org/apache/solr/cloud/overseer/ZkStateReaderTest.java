@@ -16,6 +16,9 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_NODE_NAME;
+import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -24,6 +27,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
@@ -38,6 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.cloud.OverseerTest;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
@@ -61,6 +66,7 @@ import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
@@ -887,5 +893,83 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       assertTrue(prsZkNodeNotFoundExceptionThrown.get());
     }
+  }
+
+  /** Test when two live nodes have valid SemVer strings */
+  public void testFetchLowestSolrVersion_validNodes() throws Exception {
+    SolrZkClient zkClient = fixture.zkClient;
+    ZkStateReader reader = fixture.reader;
+    String livePath = ZkStateReader.LIVE_NODES_ZKNODE;
+
+    // Clear any existing live node children.
+    List<String> nodes = zkClient.getChildren(livePath, null, true);
+    for (String node : nodes) {
+      zkClient.delete(livePath + "/" + node, -1, true);
+    }
+
+    // Create two live nodes with valid SemVer strings.
+    String node1 = "node1_solr";
+    Map<String, Object> props1 = new HashMap<>();
+    props1.put(LIVE_NODE_SOLR_VERSION, "9.1.2");
+    props1.put(LIVE_NODE_NODE_NAME, node1);
+    byte[] data1 = Utils.toJSON(props1);
+    zkClient.create(livePath + "/" + node1, data1, CreateMode.EPHEMERAL, true);
+
+    String node2 = "node2_solr";
+    Map<String, Object> props2 = new HashMap<>();
+    props2.put(LIVE_NODE_SOLR_VERSION, "9.0.1");
+    props2.put(LIVE_NODE_NODE_NAME, node2);
+    byte[] data2 = Utils.toJSON(props2);
+    zkClient.create(livePath + "/" + node2, data2, CreateMode.EPHEMERAL, true);
+
+    var lowestVersion = reader.fetchLowestSolrVersion();
+    assertEquals(
+        "Expected lowest version to be 9.0.1", SolrVersion.valueOf("9.0.1"), lowestVersion);
+  }
+
+  /** Test when the only live node has empty data. */
+  public void testFetchLowestSolrVersion_noData() throws Exception {
+    SolrZkClient zkClient = fixture.zkClient;
+    ZkStateReader reader = fixture.reader;
+    String livePath = ZkStateReader.LIVE_NODES_ZKNODE;
+
+    // Clear any existing live node children.
+    List<String> nodes = zkClient.getChildren(livePath, null, true);
+    for (String node : nodes) {
+      zkClient.delete(livePath + "/" + node, -1, true);
+    }
+
+    // Create a live node with empty data.
+    String emptyNode = "empty_node";
+    zkClient.create(livePath + "/" + emptyNode, new byte[0], CreateMode.EPHEMERAL, true);
+
+    assertEquals("after empty node", SolrVersion.valueOf("9.9.0"), reader.fetchLowestSolrVersion());
+  }
+
+  /** Test when two live nodes exist; one is blank and the other has a high version */
+  public void testFetchLowestSolrVersion_blankAndHighVersion() throws Exception {
+    SolrZkClient zkClient = fixture.zkClient;
+    ZkStateReader reader = fixture.reader;
+    String livePath = ZkStateReader.LIVE_NODES_ZKNODE;
+
+    // Clear any existing live node children.
+    List<String> nodes = zkClient.getChildren(livePath, null, true);
+    for (String node : nodes) {
+      zkClient.delete(livePath + "/" + node, -1, true);
+    }
+
+    String node1 = "node1_solr";
+    zkClient.create(
+        livePath + "/" + node1,
+        Utils.toJSON(Map.<String, Object>of(LIVE_NODE_SOLR_VERSION, "888.0.0")),
+        CreateMode.EPHEMERAL,
+        true);
+
+    assertEquals("after high node", SolrVersion.LATEST, reader.fetchLowestSolrVersion());
+
+    String node2 = "node2_solr";
+    zkClient.create(livePath + "/" + node2, new byte[0], CreateMode.EPHEMERAL, true);
+
+    assertEquals("after empty node", SolrVersion.valueOf("9.9.0"), reader.fetchLowestSolrVersion());
   }
 }
