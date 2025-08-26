@@ -14,17 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.ui.components.configsets.store
 
-package org.apache.solr.ui.components.main.integration
+import com.arkivanov.mvikotlin.core.store.Store
+import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
+import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.State
 
-import org.apache.solr.ui.components.main.MainComponent
-import org.apache.solr.ui.components.root.RootComponent
-import org.apache.solr.ui.views.navigation.MainMenu
-
-val MainComponent.Child.asMainMenu: MainMenu
-    get() = when (this) {
-        // TODO Add additional mappings once more children are supported
-        is MainComponent.Child.Configsets -> MainMenu.Configsets
-        is MainComponent.Child.Environment -> MainMenu.Environment
-        is MainComponent.Child.Logging -> MainMenu.Logging
-    }
+internal interface ConfigsetsStore : Store<Intent, State, Nothing> {
+    sealed interface Intent
+    data class State(
+        val selectedTab: String = "SOLR_CONFIGSETS",
+    )
+}

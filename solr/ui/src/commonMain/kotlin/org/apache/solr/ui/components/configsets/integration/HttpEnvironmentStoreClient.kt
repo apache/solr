@@ -15,16 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.main.integration
+package org.apache.solr.ui.components.configsets.integration
 
-import org.apache.solr.ui.components.main.MainComponent
-import org.apache.solr.ui.components.root.RootComponent
-import org.apache.solr.ui.views.navigation.MainMenu
+import io.ktor.client.HttpClient
+import org.apache.solr.ui.components.configsets.store.ConfigsetsStoreProvider
 
-val MainComponent.Child.asMainMenu: MainMenu
-    get() = when (this) {
-        // TODO Add additional mappings once more children are supported
-        is MainComponent.Child.Configsets -> MainMenu.Configsets
-        is MainComponent.Child.Environment -> MainMenu.Environment
-        is MainComponent.Child.Logging -> MainMenu.Logging
-    }
+/**
+ * Client implementation of the [ConfigsetsStoreProvider.Client] that makes use
+ * of a preconfigured HTTP client for accessing the Solr API.
+ *
+ * @property httpClient HTTP client to use for accessing the API. The client has to be
+ * configured with a default request that includes the host, port and schema. The client
+ * should also include the necessary authentication data if authentication / authorization
+ * is enabled.
+ */
+class HttpEnvironmentStoreClient(
+    private val httpClient: HttpClient,
+) : ConfigsetsStoreProvider.Client

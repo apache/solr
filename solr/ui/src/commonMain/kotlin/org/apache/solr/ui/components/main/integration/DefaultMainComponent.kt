@@ -25,6 +25,8 @@ import com.arkivanov.decompose.value.Value
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
+import org.apache.solr.ui.components.configsets.ConfigsetsComponent
+import org.apache.solr.ui.components.configsets.integration.DefaultConfigsetsConponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.environment.integration.DefaultEnvironmentComponent
 import org.apache.solr.ui.components.logging.LoggingComponent
@@ -39,6 +41,7 @@ class DefaultMainComponent internal constructor(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     destination: String? = null,
+    private val configsetsComponent: (AppComponentContext) -> ConfigsetsComponent,
     private val environmentComponent: (AppComponentContext) -> EnvironmentComponent,
     private val loggingComponent: (AppComponentContext) -> LoggingComponent,
     private val output: (Output) -> Unit,
@@ -66,6 +69,13 @@ class DefaultMainComponent internal constructor(
         storeFactory = storeFactory,
         destination = destination,
         output = output,
+        configsetsComponent = { childContext ->
+            DefaultConfigsetsConponent(
+                componentContext = childContext,
+                storeFactory = storeFactory,
+                httpClient = httpClient,
+            )
+        },
         environmentComponent = { childContext ->
             DefaultEnvironmentComponent(
                 componentContext = childContext,
@@ -121,8 +131,7 @@ class DefaultMainComponent internal constructor(
         //     NavigationComponent.Child.Security(securityComponent(componentContext))
 
         // TODO Uncomment once Configsets available
-        // Configuration.Configsets ->
-        //     NavigationComponent.Child.Configsets(configsetsComponent(componentContext))
+        Configuration.Configsets -> Child.Configsets(configsetsComponent(componentContext))
 
         // TODO Uncomment once Collections available
         // Configuration.Collections ->

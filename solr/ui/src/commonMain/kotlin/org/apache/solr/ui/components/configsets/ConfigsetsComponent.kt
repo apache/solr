@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.main.integration
+package org.apache.solr.ui.components.configsets
 
-import org.apache.solr.ui.components.main.MainComponent
-import org.apache.solr.ui.components.root.RootComponent
-import org.apache.solr.ui.views.navigation.MainMenu
+import kotlinx.coroutines.flow.StateFlow
 
-val MainComponent.Child.asMainMenu: MainMenu
-    get() = when (this) {
-        // TODO Add additional mappings once more children are supported
-        is MainComponent.Child.Configsets -> MainMenu.Configsets
-        is MainComponent.Child.Environment -> MainMenu.Environment
-        is MainComponent.Child.Logging -> MainMenu.Logging
-    }
+/**
+ * Component interface that represents the configsets section.
+ */
+interface ConfigsetsComponent {
+
+    val model: StateFlow<Model>
+
+    /**
+     * State class that holds values of the []'s sate.
+     */
+    data class Model(
+        val selectedTab: String = "SOLR_CONFIGSETS",
+    )
+}
