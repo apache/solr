@@ -93,3 +93,17 @@ teardown() {
   solr start --jettyconfig "--module=server"
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 }
+
+@test "bootstrap configset using bootstrap_confdir and collection.configName" {
+  local confdir_path="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs/conf"
+  
+  # Verify the source configset directory exists
+  test -d "${confdir_path}"
+  
+  # Start Solr with bootstrap_confdir pointing to techproducts configset
+  solr start -Dbootstrap_confdir="${confdir_path}" -Dcollection.configName=techproducts
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  
+  # Verify the techproducts configset was uploaded
+  config_exists "techproducts"
+}
