@@ -41,6 +41,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -471,6 +472,72 @@ public class ZkControllerTest extends SolrCloudTestCase {
             }
           }
         } finally {
+          cc.shutdown();
+        }
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testVersionCompatibilityFailsStartup() throws Exception {
+    Path zkDir = createTempDir("testVersionCompatibilityFailsStartup");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+      
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+        
+        // Create cluster nodes first
+        ZkController.createClusterZkNodes(zkClient);
+        
+        // Manually create a live node with a high version (99.0.0) to simulate 
+        // a newer cluster that the current node (SolrVersion.LATEST=10.0.0) cannot join
+        String liveNodeName = "test_node:8983_solr";
+        String liveNodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + liveNodeName;
+        
+        // Create live node data with version 99.0.0
+        Map<String, Object> liveNodeData = Map.of(
+            LIVE_NODE_SOLR_VERSION, "99.0.0",
+            LIVE_NODE_NODE_NAME, liveNodeName
+        );
+        byte[] data = Utils.toJSON(liveNodeData);
+        
+        zkClient.create(liveNodePath, data, CreateMode.EPHEMERAL, true);
+        
+        // Verify the node was created and has the expected version
+        byte[] readData = zkClient.getData(liveNodePath, null, null, true);
+        assertNotNull("Live node should be created", readData);
+        
+        // Now try to create a ZkController - this should fail due to version incompatibility
+        CoreContainer cc = getCoreContainer();
+        ZkController zkController = null;
+        
+        try {
+          CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8984).build();
+          
+          SolrException exception = expectThrows(SolrException.class, () -> {
+            new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig);
+          });
+          
+          // Verify the exception is due to version incompatibility
+          assertEquals("Expected INVALID_STATE error code", 
+                       SolrException.ErrorCode.INVALID_STATE.code, exception.code());
+          assertTrue("Exception message should mention refusing to start: " + exception.getMessage(), 
+                     exception.getMessage().contains("Refusing to start Solr"));
+          assertTrue("Exception message should mention our version: " + exception.getMessage(), 
+                     exception.getMessage().contains("10.0.0"));
+          assertTrue("Exception message should mention cluster version: " + exception.getMessage(), 
+                     exception.getMessage().contains("99.0.0"));
+        } finally {
+          if (zkController != null) {
+            zkController.close();
+          }
           cc.shutdown();
         }
       }
