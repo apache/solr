@@ -28,6 +28,7 @@ import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
+import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 import static org.apache.solr.search.SolrIndexSearcher.EXECUTOR_MAX_CPU_THREADS;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
@@ -1019,22 +1020,18 @@ public class CoreContainer {
         Attributes.builder().put(CATEGORY_ATTR, SolrInfoBean.Category.CONTAINER.toString()).build();
 
     solrMetricsContext.observableLongGauge(
-        "solr_cc_cores_permanent",
-        "Number of permanent Solr cores loaded by CoreContainer",
+        "solr_cores_loaded",
+        "Number of Solr cores loaded by CoreContainer",
         measurement -> {
-          measurement.record(solrCores.getNumLoadedPermanentCores(), containerAttrs);
-        });
-    solrMetricsContext.observableLongGauge(
-        "solr_cc_cores_transient",
-        "Number of transient Solr cores loaded by CoreContainer",
-        measurement -> {
-          measurement.record(solrCores.getNumLoadedTransientCores(), containerAttrs);
-        });
-    solrMetricsContext.observableLongGauge(
-        "solr_cc_cores_unloaded",
-        "Number of Solr cores unloaded by CoreContainer",
-        measurement -> {
-          measurement.record(solrCores.getNumUnloadedCores(), containerAttrs);
+          measurement.record(
+              solrCores.getNumLoadedPermanentCores(),
+              containerAttrs.toBuilder().put(TYPE_ATTR, "permanent").build());
+          measurement.record(
+              solrCores.getNumLoadedTransientCores(),
+              containerAttrs.toBuilder().put(TYPE_ATTR, "transient").build());
+          measurement.record(
+              solrCores.getNumUnloadedCores(),
+              containerAttrs.toBuilder().put(TYPE_ATTR, "unloaded").build());
         });
 
     // NOCOMMIT: Can't remove these without impacting node state reporting
@@ -1062,59 +1059,40 @@ public class CoreContainer {
         cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
 
     solrMetricsContext.observableLongGauge(
-        "solr_cc_filesystem_total_space",
-        "Total size of Solr's data home directory",
-        measurement -> {
-          try {
-            measurement.record(Files.getFileStore(dataHome).getTotalSpace(), containerAttrs);
-          } catch (IOException e) {
-            throw new SolrException(
-                ErrorCode.SERVER_ERROR,
-                "Error retrieving total space for data home directory" + dataHome,
-                e);
-          }
-        },
-        OtelUnit.BYTES);
-    solrMetricsContext.observableLongGauge(
-        "solr_cc_filesystem_usable_space",
-        "Amount of space available in Solr's data home directory",
-        measurement -> {
-          try {
-            measurement.record(Files.getFileStore(dataHome).getUsableSpace(), containerAttrs);
-          } catch (IOException e) {
-            throw new SolrException(
-                ErrorCode.SERVER_ERROR,
-                "Error retrieving usable space for data home directory" + dataHome,
-                e);
-          }
-        },
-        OtelUnit.BYTES);
-    solrMetricsContext.observableLongGauge(
-        "solr_cc_filesystem_core_root_total_space",
-        "Total size of Solr's core root directory",
+        "solr_cores_filesystem_disk_space",
+        "Disk metrics for Solr's data home directory",
         measurement -> {
           try {
             measurement.record(
-                Files.getFileStore(cfg.getCoreRootDirectory()).getTotalSpace(), containerAttrs);
+                Files.getFileStore(dataHome).getTotalSpace(),
+                containerAttrs.toBuilder().put(TYPE_ATTR, "total_space").build());
+            measurement.record(
+                Files.getFileStore(dataHome).getUsableSpace(),
+                containerAttrs.toBuilder().put(TYPE_ATTR, "usable_space").build());
           } catch (IOException e) {
             throw new SolrException(
                 ErrorCode.SERVER_ERROR,
-                "Error retrieving total space for core root directory" + dataHome,
+                "Error retrieving disk space information for data home directory" + dataHome,
                 e);
           }
         },
         OtelUnit.BYTES);
     solrMetricsContext.observableLongGauge(
-        "solr_cc_filesystem_core_root_usable_space",
-        "Amount of space available in Solr's core root directory",
+        "solr_cores_root_disk_space",
+        "Disk metrics for Solr's core root directory",
         measurement -> {
           try {
             measurement.record(
-                Files.getFileStore(cfg.getCoreRootDirectory()).getUsableSpace(), containerAttrs);
+                Files.getFileStore(cfg.getCoreRootDirectory()).getTotalSpace(),
+                containerAttrs.toBuilder().put(TYPE_ATTR, "total_space").build());
+            measurement.record(
+                Files.getFileStore(cfg.getCoreRootDirectory()).getUsableSpace(),
+                containerAttrs.toBuilder().put(TYPE_ATTR, "usable_space").build());
           } catch (IOException e) {
             throw new SolrException(
                 ErrorCode.SERVER_ERROR,
-                "Error retrieving usable space for core root directory" + dataHome,
+                "Error retrieving disk space information for core root directory"
+                    + cfg.getCoreRootDirectory(),
                 e);
           }
         },
