@@ -487,6 +487,8 @@ public class ZkControllerTest extends SolrCloudTestCase {
     try {
       server.run();
       
+      // Manually create a live node with a high version (99.0.0) to simulate 
+      // a newer cluster that the current node (SolrVersion.LATEST=10.0.0) cannot join
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(server.getZkAddress())
@@ -496,8 +498,6 @@ public class ZkControllerTest extends SolrCloudTestCase {
         // Create cluster nodes first
         ZkController.createClusterZkNodes(zkClient);
         
-        // Manually create a live node with a high version (99.0.0) to simulate 
-        // a newer cluster that the current node (SolrVersion.LATEST=10.0.0) cannot join
         String liveNodeName = "test_node:8983_solr";
         String liveNodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + liveNodeName;
         
@@ -509,37 +509,31 @@ public class ZkControllerTest extends SolrCloudTestCase {
         byte[] data = Utils.toJSON(liveNodeData);
         
         zkClient.create(liveNodePath, data, CreateMode.EPHEMERAL, true);
+      }
+      
+      // Now try to create a ZkController - this should fail due to version incompatibility
+      CoreContainer cc = getCoreContainer();
+      ZkController zkController = null;
+      
+      try {
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8984).build();
         
-        // Verify the node was created and has the expected version
-        byte[] readData = zkClient.getData(liveNodePath, null, null, true);
-        assertNotNull("Live node should be created", readData);
+        SolrException exception = expectThrows(SolrException.class, () -> {
+          new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig);
+        });
         
-        // Now try to create a ZkController - this should fail due to version incompatibility
-        CoreContainer cc = getCoreContainer();
-        ZkController zkController = null;
-        
-        try {
-          CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8984).build();
-          
-          SolrException exception = expectThrows(SolrException.class, () -> {
-            new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig);
-          });
-          
-          // Verify the exception is due to version incompatibility
-          assertEquals("Expected INVALID_STATE error code", 
-                       SolrException.ErrorCode.INVALID_STATE.code, exception.code());
-          assertTrue("Exception message should mention refusing to start: " + exception.getMessage(), 
-                     exception.getMessage().contains("Refusing to start Solr"));
-          assertTrue("Exception message should mention our version: " + exception.getMessage(), 
-                     exception.getMessage().contains("10.0.0"));
-          assertTrue("Exception message should mention cluster version: " + exception.getMessage(), 
-                     exception.getMessage().contains("99.0.0"));
-        } finally {
-          if (zkController != null) {
-            zkController.close();
-          }
-          cc.shutdown();
-        }
+        // Verify the exception is due to version incompatibility
+        assertEquals("Expected INVALID_STATE error code", 
+                     SolrException.ErrorCode.INVALID_STATE.code, exception.code());
+        assertTrue("Exception message should mention refusing to start: " + exception.getMessage(), 
+                   exception.getMessage().contains("Refusing to start Solr"));
+        assertTrue("Exception message should mention our version: " + exception.getMessage(), 
+                   exception.getMessage().contains("10.0.0"));
+        assertTrue("Exception message should mention cluster version: " + exception.getMessage(), 
+                   exception.getMessage().contains("99.0.0"));
+      } finally {
+        if (zkController != null) zkController.close();
+        cc.shutdown();
       }
     } finally {
       server.shutdown();
