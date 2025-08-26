@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -970,7 +969,8 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         true);
 
     var lowestVersion1 = reader.fetchLowestSolrVersion();
-    assertTrue("Expected lowest version to be present for high version node", lowestVersion1.isPresent());
+    assertTrue(
+        "Expected lowest version to be present for high version node", lowestVersion1.isPresent());
     assertEquals("after high node", SolrVersion.valueOf("888.0.0"), lowestVersion1.get());
 
     String node2 = "node2_solr";
