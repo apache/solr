@@ -903,34 +903,34 @@ public class ReplicationHandler extends RequestHandlerBase
 
     replicationEnabledGauge =
         solrMetricsContext.observableLongGauge(
-            "solr_replication_enabled",
+            "solr_replication_is_enabled",
             "Whether replication is enabled (1) or not (0)",
             gauge ->
                 gauge.record(
                     (isLeader && replicationEnabled.get()) ? 1 : 0, replicationAttributes));
 
     // Create measurements for fetcher metrics in a batch to ensure consistent fetcher reference
-    ObservableLongMeasurement isPollingDisabledGauge =
+    ObservableLongMeasurement isPollingDisabled =
         solrMetricsContext.longMeasurement(
             "solr_replication_is_polling_disabled", "Whether polling is disabled (1) or not (0)");
 
-    ObservableLongMeasurement isReplicatingGauge =
+    ObservableLongMeasurement isReplicating =
         solrMetricsContext.longMeasurement(
             "solr_replication_is_replicating", "Whether replication is in progress (1) or not (0)");
 
-    ObservableLongMeasurement timeElapsedGauge =
+    ObservableLongMeasurement timeElapsed =
         solrMetricsContext.longMeasurement(
             "solr_replication_time_elapsed",
             "Time elapsed during replication in seconds",
             OtelUnit.SECONDS);
 
-    ObservableLongMeasurement bytesDownloadedGauge =
+    ObservableLongMeasurement bytesDownloaded =
         solrMetricsContext.longMeasurement(
             "solr_replication_bytes_downloaded",
             "Total bytes downloaded during replication",
             OtelUnit.BYTES);
 
-    ObservableLongMeasurement downloadSpeedGauge =
+    ObservableLongMeasurement downloadSpeed =
         solrMetricsContext.longMeasurement(
             "solr_replication_download_speed", "Download speed in bytes per second");
 
@@ -940,23 +940,23 @@ public class ReplicationHandler extends RequestHandlerBase
             () -> {
               IndexFetcher fetcher = currentIndexFetcher;
               if (fetcher != null) {
-                isPollingDisabledGauge.record(isPollingDisabled() ? 1 : 0, replicationAttributes);
-                isReplicatingGauge.record(isReplicating() ? 1 : 0, replicationAttributes);
+                isPollingDisabled.record(isPollingDisabled() ? 1 : 0, replicationAttributes);
+                isReplicating.record(isReplicating() ? 1 : 0, replicationAttributes);
 
                 long elapsed = fetcher.getReplicationTimeElapsed();
                 long val = fetcher.getTotalBytesDownloaded();
                 if (elapsed > 0) {
-                  timeElapsedGauge.record(elapsed, replicationAttributes);
-                  bytesDownloadedGauge.record(val, replicationAttributes);
-                  downloadSpeedGauge.record(val / elapsed, replicationAttributes);
+                  timeElapsed.record(elapsed, replicationAttributes);
+                  bytesDownloaded.record(val, replicationAttributes);
+                  downloadSpeed.record(val / elapsed, replicationAttributes);
                 }
               }
             },
-            isPollingDisabledGauge,
-            isReplicatingGauge,
-            timeElapsedGauge,
-            bytesDownloadedGauge,
-            downloadSpeedGauge);
+            isPollingDisabled,
+            isReplicating,
+            timeElapsed,
+            bytesDownloaded,
+            downloadSpeed);
   }
 
   @Override
