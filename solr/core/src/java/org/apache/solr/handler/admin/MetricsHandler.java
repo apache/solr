@@ -86,7 +86,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   public static final String SHARD_PARAM = "shard";
   public static final String REPLICA_PARAM = "replica";
   public static final String METRIC_NAME_PARAM = "name";
-  private final Set<String> labelFilterKeys =
+  private static final Set<String> labelFilterKeys =
       Set.of(CATEGORY_PARAM, CORE_PARAM, COLLECTION_PARAM, SHARD_PARAM, REPLICA_PARAM);
 
   // NOCOMMIT: This wt=prometheus will be removed as it will become the default for /admin/metrics
