@@ -25,7 +25,6 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
-import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
@@ -110,9 +109,6 @@ public class MetricsQuery {
           }
         }
       }
-
-      QueryRequest queryRequest = new QueryRequest(params);
-      queryRequest.setPath(path);
 
       List<JsonQuery> compiledQueries = new ArrayList<>();
       if (jsonQueries != null) {

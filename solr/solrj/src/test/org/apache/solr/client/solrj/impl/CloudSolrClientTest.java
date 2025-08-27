@@ -39,6 +39,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -599,12 +600,14 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("qt", "/admin/mbeans");
       params.set("stats", "true");
       params.set("key", key);
       params.set("cat", category);
       // use generic request to avoid extra processing of queries
-      QueryRequest req = new QueryRequest(params);
+      var req =
+          new GenericSolrRequest(
+                  SolrRequest.METHOD.GET, "/admin/mbeans", SolrRequestType.ADMIN, params)
+              .setRequiresCollection(true);
       resp = client.request(req);
     }
     String name;
@@ -672,7 +675,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
           params.set("action", "foobar"); // this should cause an error
 
           var request =
-              new GenericSolrRequest(METHOD.GET, adminPath, SolrRequestType.ADMIN, params);
+              new GenericSolrRequest(METHOD.GET, adminPath, SolrRequestType.ADMIN, params)
+                  .setRequiresCollection(true);
           try {
             NamedList<Object> resp = client.request(request);
             fail("call to foo for admin path " + adminPath + " should have failed");

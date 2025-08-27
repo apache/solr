@@ -31,8 +31,7 @@ import java.util.Set;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -260,13 +259,12 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     }
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/get");
     params.set(DISTRIB, false);
     params.set("getUpdates", missedUpdatesRequest.versionsAndRanges);
     params.set("onlyIfActive", false);
     params.set("skipDbq", true);
 
-    return request(params, "Failed on getting missed updates from the leader");
+    return doRtgRequest(params, "Failed on getting missed updates from the leader");
   }
 
   private boolean handleUpdates(
@@ -331,10 +329,12 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     return true;
   }
 
-  private NamedList<Object> request(ModifiableSolrParams params, String onFail) {
+  private NamedList<Object> doRtgRequest(ModifiableSolrParams params, String onFail) {
     try {
-      QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
-      QueryResponse rsp = clientToLeader.requestWithBaseUrl(leaderBaseUrl, coreName, request);
+      var request =
+          new GenericSolrRequest(
+              SolrRequest.METHOD.GET, "/get", SolrRequest.SolrRequestType.QUERY, params).setRequiresCollection(true);
+      var rsp = clientToLeader.requestWithBaseUrl(leaderBaseUrl, coreName, request);
       Exception exception = rsp.getException();
       if (exception != null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, onFail);
@@ -347,21 +347,19 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private NamedList<Object> getVersions() {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/get");
     params.set(DISTRIB, false);
     params.set("getVersions", nUpdates);
     params.set("fingerprint", doFingerprint);
 
-    return request(params, "Failed to get recent versions from leader");
+    return doRtgRequest(params, "Failed to get recent versions from leader");
   }
 
   private boolean alreadyInSync() {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/get");
     params.set(DISTRIB, false);
     params.set("getFingerprint", String.valueOf(Long.MAX_VALUE));
 
-    NamedList<Object> rsp = request(params, "Failed to get fingerprint from leader");
+    NamedList<Object> rsp = doRtgRequest(params, "Failed to get fingerprint from leader");
     IndexFingerprint leaderFingerprint = getFingerprint(rsp);
     return compareFingerprint(leaderFingerprint);
   }
