@@ -122,9 +122,7 @@ public abstract class ConfigSetService {
           "solr.configset.bootstrap.confdir must be a directory of configuration files, configPath: "
               + configPath);
     }
-    String confName =
-        System.getProperty(
-            ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP, "configuration1");
+    String confName = System.getProperty("solr.collection.config.name", "configuration1");
     this.uploadConfig(confName, configPath);
   }
 
