@@ -124,6 +124,10 @@ public class SolrCoreMetricManager implements Closeable {
     metricManager.removeRegistry(solrMetricsContext.getRegistryName());
     if (leaderRegistryName != null) metricManager.removeRegistry(leaderRegistryName);
 
+    // TODO: We are going to recreate the attributes and re-initialize/reregister metrics from
+    // tracked producers.
+    // There is some possible improvement that can be done here to not have to duplicate code in
+    // registerMetricProducer
     var attributes =
         Attributes.builder()
             .put(CORE_ATTR, core.getName())
@@ -165,6 +169,10 @@ public class SolrCoreMetricManager implements Closeable {
     // Track this producer for potential re-initialization during core rename
     registeredProducers.add(new MetricProducerInfo(producer, scope));
 
+    // TODO: We initialize metrics with attributes of the core. This happens again in
+    // reregisterCoreMetrics
+    // There is some possible improvement that can be done here to not have to duplicate code in
+    // reregisterCoreMetrics
     var attributesBuilder =
         Attributes.builder()
             .put(CORE_ATTR, core.getName())
