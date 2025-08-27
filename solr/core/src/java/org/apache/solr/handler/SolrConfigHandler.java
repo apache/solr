@@ -859,6 +859,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     }
 
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
+    // TODO use httpSolrClient.requestAsync instead; it has an executor
     int poolSize = Math.min(concurrentTasks.size(), 10);
     ExecutorService parallelExecutor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
