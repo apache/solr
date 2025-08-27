@@ -42,6 +42,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -410,7 +411,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     @Override
     protected SolrResponse createResponse(NamedList<Object> namedList) {
-      return null;
+      return new SimpleSolrResponse();
     }
   }
 

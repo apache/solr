@@ -58,6 +58,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
@@ -1035,7 +1036,7 @@ public class SolrConfigHandler extends RequestHandlerBase
 
     @Override
     protected SolrResponse createResponse(NamedList<Object> namedList) {
-      return null;
+      return new SimpleSolrResponse();
     }
   }
 
