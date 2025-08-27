@@ -50,6 +50,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
@@ -1014,8 +1015,9 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     commitTracker.close();
     softCommitTracker.close();
-    commitStats.close();
-
+    IOUtils.closeQuietly(commitStats);
+    IOUtils.closeQuietly(updateStats);
+    IOUtils.closeQuietly(softAutoCommits);
     numDocsPending.reset();
     try {
       super.close();

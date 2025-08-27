@@ -20,6 +20,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.ObservableLongCounter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -35,6 +36,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -67,6 +69,14 @@ public class ZkContainer {
   private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
 
   private SolrMetricProducer metricProducer;
+
+  private ObservableLongCounter zkOpsCounter;
+  private ObservableLongCounter zkReadBytesCounter;
+  private ObservableLongCounter zkWatchesFiredCounter;
+  private ObservableLongCounter zkWrittenBytesCounter;
+  private ObservableLongCounter zkCumulativeMultiOpsCounter;
+  private ObservableLongCounter zkChildFetchesCounter;
+  private ObservableLongCounter zkCumulativeChildrenFetchedCounter;
 
   public ZkContainer() {}
 
@@ -153,70 +163,77 @@ public class ZkContainer {
 
                 var metricsListener = zkController.getZkClient().getMetrics();
 
-                ctx.observableLongCounter(
-                    "solr_zk_ops",
-                    "Total number of ZooKeeper operations",
-                    measurement -> {
-                      measurement.record(
-                          metricsListener.getReads(),
-                          attributes.toBuilder().put(OPERATION_ATTR, "read").build());
-                      measurement.record(
-                          metricsListener.getDeletes(),
-                          attributes.toBuilder().put(OPERATION_ATTR, "delete").build());
-                      measurement.record(
-                          metricsListener.getWrites(),
-                          attributes.toBuilder().put(OPERATION_ATTR, "write").build());
-                      measurement.record(
-                          metricsListener.getMultiOps(),
-                          attributes.toBuilder().put(OPERATION_ATTR, "multi").build());
-                      measurement.record(
-                          metricsListener.getExistsChecks(),
-                          attributes.toBuilder().put(OPERATION_ATTR, "exists").build());
-                    });
+                zkOpsCounter =
+                    ctx.observableLongCounter(
+                        "solr_zk_ops",
+                        "Total number of ZooKeeper operations",
+                        measurement -> {
+                          measurement.record(
+                              metricsListener.getReads(),
+                              attributes.toBuilder().put(OPERATION_ATTR, "read").build());
+                          measurement.record(
+                              metricsListener.getDeletes(),
+                              attributes.toBuilder().put(OPERATION_ATTR, "delete").build());
+                          measurement.record(
+                              metricsListener.getWrites(),
+                              attributes.toBuilder().put(OPERATION_ATTR, "write").build());
+                          measurement.record(
+                              metricsListener.getMultiOps(),
+                              attributes.toBuilder().put(OPERATION_ATTR, "multi").build());
+                          measurement.record(
+                              metricsListener.getExistsChecks(),
+                              attributes.toBuilder().put(OPERATION_ATTR, "exists").build());
+                        });
 
-                ctx.observableLongCounter(
-                    "solr_zk_read",
-                    "Total bytes read from ZooKeeper",
-                    measurement -> {
-                      measurement.record(metricsListener.getBytesRead(), attributes);
-                    },
-                    OtelUnit.BYTES);
+                zkReadBytesCounter =
+                    ctx.observableLongCounter(
+                        "solr_zk_read",
+                        "Total bytes read from ZooKeeper",
+                        measurement -> {
+                          measurement.record(metricsListener.getBytesRead(), attributes);
+                        },
+                        OtelUnit.BYTES);
 
-                ctx.observableLongCounter(
-                    "solr_zk_watches_fired",
-                    "Total number of ZooKeeper watches fired",
-                    measurement -> {
-                      measurement.record(metricsListener.getWatchesFired(), attributes);
-                    });
+                zkWatchesFiredCounter =
+                    ctx.observableLongCounter(
+                        "solr_zk_watches_fired",
+                        "Total number of ZooKeeper watches fired",
+                        measurement -> {
+                          measurement.record(metricsListener.getWatchesFired(), attributes);
+                        });
 
-                ctx.observableLongCounter(
-                    "solr_zk_written",
-                    "Total bytes written to ZooKeeper",
-                    measurement -> {
-                      measurement.record(metricsListener.getBytesWritten());
-                    },
-                    OtelUnit.BYTES);
+                zkWrittenBytesCounter =
+                    ctx.observableLongCounter(
+                        "solr_zk_written",
+                        "Total bytes written to ZooKeeper",
+                        measurement -> {
+                          measurement.record(metricsListener.getBytesWritten());
+                        },
+                        OtelUnit.BYTES);
 
-                ctx.observableLongCounter(
-                    "solr_zk_cumulative_multi_ops_total",
-                    "Total cumulative multi-operations count",
-                    measurement -> {
-                      measurement.record(metricsListener.getCumulativeMultiOps());
-                    });
+                zkCumulativeMultiOpsCounter =
+                    ctx.observableLongCounter(
+                        "solr_zk_cumulative_multi_ops_total",
+                        "Total cumulative multi-operations count",
+                        measurement -> {
+                          measurement.record(metricsListener.getCumulativeMultiOps());
+                        });
 
-                ctx.observableLongCounter(
-                    "solr_zk_child_fetches",
-                    "Total number of ZooKeeper child node fetches",
-                    measurement -> {
-                      measurement.record(metricsListener.getChildFetches());
-                    });
+                zkChildFetchesCounter =
+                    ctx.observableLongCounter(
+                        "solr_zk_child_fetches",
+                        "Total number of ZooKeeper child node fetches",
+                        measurement -> {
+                          measurement.record(metricsListener.getChildFetches());
+                        });
 
-                ctx.observableLongCounter(
-                    "solr_zk_cumulative_children_fetched",
-                    "Total cumulative children fetched count",
-                    measurement -> {
-                      measurement.record(metricsListener.getCumulativeChildrenFetched());
-                    });
+                zkCumulativeChildrenFetchedCounter =
+                    ctx.observableLongCounter(
+                        "solr_zk_cumulative_children_fetched",
+                        "Total cumulative children fetched count",
+                        measurement -> {
+                          measurement.record(metricsListener.getCumulativeChildrenFetched());
+                        });
               }
 
               @Override
@@ -311,8 +328,18 @@ public class ZkContainer {
           zkController.close();
         }
       } finally {
-        if (zkServer != null) {
-          zkServer.stop();
+        try {
+          if (zkServer != null) {
+            zkServer.stop();
+          }
+        } finally {
+          IOUtils.closeQuietly(zkOpsCounter);
+          IOUtils.closeQuietly(zkReadBytesCounter);
+          IOUtils.closeQuietly(zkWatchesFiredCounter);
+          IOUtils.closeQuietly(zkWrittenBytesCounter);
+          IOUtils.closeQuietly(zkCumulativeMultiOpsCounter);
+          IOUtils.closeQuietly(zkChildFetchesCounter);
+          IOUtils.closeQuietly(zkCumulativeChildrenFetchedCounter);
         }
       }
     }
