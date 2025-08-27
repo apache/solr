@@ -88,7 +88,7 @@ The output will look like:
 Upload a configset, which is sent as a zipped file.
 A single, non-zipped file can also be uploaded with the `filePath` parameter.
 
-This functionality is enabled by default, but can be disabled via a runtime parameter `-Dconfigset.upload.enabled=false`.
+This functionality is enabled by default, but can be disabled via a runtime parameter `-Dsolr.configset.upload.enabled=false`.
 Disabling this feature is advisable if you want to expose Solr installation to untrusted users (even though you should never do that!).
 
 A configset is uploaded in a "trusted" mode if authentication is enabled and the upload operation is performed as an authenticated request.
