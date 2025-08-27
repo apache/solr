@@ -21,15 +21,14 @@ import io.opentelemetry.api.common.Attributes;
 import org.apache.http.config.Registry;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 
 /**
- * Sub-class of PoolingHttpClientConnectionManager which tracks metrics interesting to Solr.
- * Inspired by dropwizard metrics-httpclient library implementation.
+ * Instrumented version of PoolingHttpClientConnectionManager that exposes connection pool metrics via OpenTelemetry
  */
-public class InstrumentedPoolingHttpClientConnectionManager
+ public class InstrumentedPoolingHttpClientConnectionManager
     extends PoolingHttpClientConnectionManager implements SolrMetricProducer {
 
   private SolrMetricsContext solrMetricsContext;
@@ -44,26 +43,36 @@ public class InstrumentedPoolingHttpClientConnectionManager
     return solrMetricsContext;
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
-    solrMetricsContext.gauge(
-        () -> getTotalStats().getAvailable(),
-        true,
-        SolrMetricManager.mkName("availableConnections", scope));
+
+    var baseAttributes = attributes.toBuilder()
+      .put(CATEGORY_ATTR, SolrInfoBean.Category.HTTP.toString())
+      .build();
+
+    solrMetricsContext.observableLongGauge(
+            "solr_http_connection_pool_available_connections",
+            "The current number of available connections in the pool.",
+            (observableLongMeasurement ->
+                    observableLongMeasurement.record(getTotalStats().getAvailable(), baseAttributes)));
     // this acquires a lock on the connection pool; remove if contention sucks
-    solrMetricsContext.gauge(
-        () -> getTotalStats().getLeased(),
-        true,
-        SolrMetricManager.mkName("leasedConnections", scope));
-    solrMetricsContext.gauge(
-        () -> getTotalStats().getMax(), true, SolrMetricManager.mkName("maxConnections", scope));
-    solrMetricsContext.gauge(
-        () -> getTotalStats().getPending(),
-        true,
-        SolrMetricManager.mkName("pendingConnections", scope));
+    solrMetricsContext.observableLongGauge(
+            "solr_http_connection_pool_leased_connections",
+            "The current number of leased connections from the pool.",
+            (observableLongMeasurement ->
+                    observableLongMeasurement.record(getTotalStats().getLeased(), baseAttributes)));
+    solrMetricsContext.observableLongGauge(
+            "solr_http_connection_pool_max_connections",
+            "The maximum number of total connections in the pool.",
+            (observableLongMeasurement ->
+                    observableLongMeasurement.record(getTotalStats().getMax(), baseAttributes)));
+    solrMetricsContext.observableLongGauge(
+            "solr_http_connection_pool_pending_requests",
+            "The number of requests waiting for a connection from the pool.",
+            (observableLongMeasurement ->
+                    observableLongMeasurement.record(getTotalStats().getPending(), baseAttributes)));
   }
 
   @Override

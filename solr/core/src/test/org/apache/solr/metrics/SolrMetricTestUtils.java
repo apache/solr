@@ -142,6 +142,16 @@ public final class SolrMetricTestUtils {
         .orElse(null);
   }
 
+  public static GaugeSnapshot.GaugeDataPointSnapshot getGaugeDataPointSnapshot(
+          PrometheusMetricReader reader, String metricName) {
+    return reader.collect().stream()
+            .filter(ms -> ms.getMetadata().getPrometheusName().equals(metricName))
+            .findFirst()
+            .flatMap(ms -> ms.getDataPoints().stream().findFirst())
+            .map(dp -> (GaugeSnapshot.GaugeDataPointSnapshot) dp)
+            .orElse(null);
+  }
+
   public static Labels.Builder newCloudLabelsBuilder(SolrCore core) {
     return Labels.builder()
         .label("collection", core.getCoreDescriptor().getCloudDescriptor().getCollectionName())
