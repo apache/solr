@@ -97,7 +97,7 @@ public class ConfigSetAPIBase extends JerseyResource {
   }
 
   protected void ensureConfigSetUploadEnabled() {
-    if (EnvUtils.getPropertyAsBool("solr.configset.upload.enabled", true)) {
+    if (!EnvUtils.getPropertyAsBool("solr.configset.upload.enabled", true)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Configset upload feature is disabled. To enable this, start Solr with '-Dsolr.configset.upload.enabled=true'.");
