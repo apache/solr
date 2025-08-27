@@ -85,22 +85,17 @@ public abstract class ConfigSetService {
   }
 
   private void bootstrapConfigSet(CoreContainer coreContainer) {
-    // bootstrap _default conf, bootstrap_confdir and bootstrap_conf if provided via system property
+    // bootstrap _default conf and solr.configset.bootstrap.confdir if specified.
     try {
       // _default conf
       bootstrapDefaultConf();
 
-      // bootstrap_confdir
-      String confDir = System.getProperty("bootstrap_confdir");
+      // solr.configset.bootstrap.confdir
+      String confDir = System.getProperty("solr.configset.bootstrap.confdir");
       if (confDir != null) {
         bootstrapConfDir(confDir);
       }
 
-      // bootstrap_conf
-      boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
-      if (boostrapConf == true) {
-        bootstrapConf(coreContainer);
-      }
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Config couldn't be uploaded ", e);
@@ -125,7 +120,7 @@ public abstract class ConfigSetService {
     Path configPath = Path.of(confDir);
     if (!Files.isDirectory(configPath)) {
       throw new IllegalArgumentException(
-          "bootstrap_confdir must be a directory of configuration files, configPath: "
+          "solr.configset.bootstrap.confdir must be a directory of configuration files, configPath: "
               + configPath);
     }
     String confName =
@@ -196,28 +191,6 @@ public abstract class ConfigSetService {
             Path.of(confDir, "solrconfig.xml").normalize().toAbsolutePath(),
             Path.of(confDir, "conf", "solrconfig.xml").normalize().toAbsolutePath(),
             Path.of(configSetDir, confDir, "conf", "solrconfig.xml").normalize().toAbsolutePath()));
-  }
-
-  /** If in SolrCloud mode, upload configSets for each SolrCore in solr.xml. */
-  public static void bootstrapConf(CoreContainer cc) throws IOException {
-    // List<String> allCoreNames = cfg.getAllCoreNames();
-    List<CoreDescriptor> cds = cc.getCoresLocator().discover(cc);
-
-    if (log.isInfoEnabled()) {
-      log.info(
-          "bootstrapping config for {} cores into ZooKeeper using solr.xml from {}",
-          cds.size(),
-          cc.getSolrHome());
-    }
-
-    for (CoreDescriptor cd : cds) {
-      String coreName = cd.getName();
-      String confName = cd.getCollectionName();
-      if (StrUtils.isNullOrEmpty(confName)) confName = coreName;
-      Path udir = cd.getInstanceDir().resolve("conf");
-      log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
-      cc.getConfigSetService().uploadConfig(confName, udir);
-    }
   }
 
   /**

@@ -94,16 +94,16 @@ teardown() {
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 }
 
-@test "bootstrap configset using bootstrap_confdir and collection.configName" {
+@test "bootstrap configset using system property " {
   local confdir_path="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs/conf"
   test -d "${confdir_path}"
-  
+
   # This uploads the sample_techproducts_configs/conf directory as "techproducts_bootstrapped" configset
-  solr start -Dbootstrap_confdir="${confdir_path}" -Dcollection.configName=techproducts_bootstrapped
+  solr start -Dsolr.configset.bootstrap.confdir="${confdir_path}" -Dcollection.configName=techproducts_bootstrapped
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
-  
+
   # Allow time for the configset upload to complete
   sleep 1
-  
+
   config_exists "techproducts_bootstrapped"
 }

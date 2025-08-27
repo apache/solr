@@ -706,9 +706,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             if (!collectionProps.containsKey(ZkController.CONFIGNAME_PROP))
               collectionProps.put(ZkController.CONFIGNAME_PROP, defaultConfigName);
 
-          } else if (Boolean.getBoolean("bootstrap_conf")) {
-            // the conf name should be the collection name of this core
-            collectionProps.put(ZkController.CONFIGNAME_PROP, collection);
           } else {
             getConfName(
                 stateManager, collection, collectionPath, collectionProps, configSetService);

@@ -228,28 +228,6 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     }
   }
 
-  @Test
-  public void testBootstrapConf() throws IOException, KeeperException, InterruptedException {
-
-    Path solrHome = legacyExampleCollection1SolrHome();
-
-    CoreContainer cc = new CoreContainer(solrHome, new Properties());
-    System.setProperty("zkHost", zkServer.getZkAddress());
-
-    SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkServer.getZkHost())
-            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-            .build();
-    zkClient.makePath("/solr", false, true);
-    cc.setCoreConfigService(new ZkConfigSetService(zkClient));
-    assertFalse(cc.getConfigSetService().checkConfigExists("collection1"));
-    ConfigSetService.bootstrapConf(cc);
-    assertTrue(cc.getConfigSetService().checkConfigExists("collection1"));
-
-    zkClient.close();
-  }
-
   static SolrZkClient buildZkClient(
       String zkAddress,
       final ACLProvider aclProvider,
