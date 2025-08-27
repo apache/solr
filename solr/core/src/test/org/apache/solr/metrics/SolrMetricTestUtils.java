@@ -142,13 +142,12 @@ public final class SolrMetricTestUtils {
         .orElse(null);
   }
 
-  public static GaugeSnapshot.GaugeDataPointSnapshot getGaugeDataPointSnapshot(
+  public static DataPointSnapshot getDataPointSnapshot(
           PrometheusMetricReader reader, String metricName) {
     return reader.collect().stream()
             .filter(ms -> ms.getMetadata().getPrometheusName().equals(metricName))
             .findFirst()
             .flatMap(ms -> ms.getDataPoints().stream().findFirst())
-            .map(dp -> (GaugeSnapshot.GaugeDataPointSnapshot) dp)
             .orElse(null);
   }
 

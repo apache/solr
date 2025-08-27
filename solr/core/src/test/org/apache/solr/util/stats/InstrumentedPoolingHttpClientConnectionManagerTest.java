@@ -74,32 +74,32 @@ public class InstrumentedPoolingHttpClientConnectionManagerTest extends SolrTest
 
     @Test
     public void testInitializedMetrics() {
-        assertMetricValue(METRIC_AVAILABLE_CONNECTIONS, 0);
-        assertMetricValue(METRIC_LEASED_CONNECTIONS, 0);
-        assertMetricValue(METRIC_PENDING_REQUESTS, 0);
-        assertMetricValue(METRIC_MAX_CONNECTIONS, DEFAULT_HTTP_MAX_CONNECTIONS);
+        assertGaugeMetricValue(METRIC_AVAILABLE_CONNECTIONS, 0);
+        assertGaugeMetricValue(METRIC_LEASED_CONNECTIONS, 0);
+        assertGaugeMetricValue(METRIC_PENDING_REQUESTS, 0);
+        assertGaugeMetricValue(METRIC_MAX_CONNECTIONS, DEFAULT_HTTP_MAX_CONNECTIONS);
     }
 
     @Test
     public void testConnectionPoolLeasedMetrics() throws Exception {
         HttpRoute route = new HttpRoute(new HttpHost("localhost", 8080));
 
-        assertMetricValue(METRIC_LEASED_CONNECTIONS, 0);
+        assertGaugeMetricValue(METRIC_LEASED_CONNECTIONS, 0);
 
         HttpClientConnection conn = connectionManager
                 .requestConnection(route, null)
                 .get(1000, TimeUnit.MILLISECONDS);
 
-        assertMetricValue(METRIC_LEASED_CONNECTIONS, 1);
+        assertGaugeMetricValue(METRIC_LEASED_CONNECTIONS, 1);
 
         connectionManager.releaseConnection(conn, null, 0, null);
 
-        assertMetricValue(METRIC_LEASED_CONNECTIONS, 0);
+        assertGaugeMetricValue(METRIC_LEASED_CONNECTIONS, 0);
     }
 
-    private void assertMetricValue(String metricName, double expectedValue) {
-        GaugeSnapshot.GaugeDataPointSnapshot dataPointSnapshot =
-                SolrMetricTestUtils.getGaugeDataPointSnapshot(metricsReader, metricName);
+    private void assertGaugeMetricValue(String metricName, double expectedValue) {
+        GaugeSnapshot.GaugeDataPointSnapshot dataPointSnapshot = (GaugeSnapshot.GaugeDataPointSnapshot)
+                SolrMetricTestUtils.getDataPointSnapshot(metricsReader, metricName);
         assertNotNull(dataPointSnapshot);
         assertEquals(expectedValue, dataPointSnapshot.getValue(), 0.0);
     }
