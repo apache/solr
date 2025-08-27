@@ -123,6 +123,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
               .getCollection(DEFAULT_COLLECTION)
               .getSlice("shard1")
               .getReplicas(r -> r.getType().equals(Replica.Type.PULL));
+      waitForRecoveriesToFinish(DEFAULT_COLLECTION, true);
       for (Replica replica : pullReplicas) {
         CollectionAdminRequest.deleteReplica(DEFAULT_COLLECTION, "shard1", replica.getName())
             .process(cloudClient);
