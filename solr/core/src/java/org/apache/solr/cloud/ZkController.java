@@ -19,6 +19,9 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_NODE_NAME;
+import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_ROLES;
+import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.UNSUPPORTED_SOLR_XML;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
@@ -35,6 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,6 +56,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.curator.framework.api.ACLProvider;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -1185,10 +1190,13 @@ public class ZkController implements Closeable {
 
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
-    log.info("Register node as live in ZooKeeper:{}", nodePath);
+    log.info("Register node as live in ZooKeeper: {}", nodePath);
     Map<NodeRoles.Role, String> roles = cc.nodeRoles.getRoles();
+
     List<SolrZkClient.CuratorOpBuilder> ops = new ArrayList<>(roles.size() + 1);
-    ops.add(op -> op.create().withMode(CreateMode.EPHEMERAL).forPath(nodePath));
+
+    ops.add(
+        op -> op.create().withMode(CreateMode.EPHEMERAL).forPath(nodePath, buildLiveNodeData()));
 
     // Create the roles node as well
     roles.forEach(
@@ -1200,6 +1208,17 @@ public class ZkController implements Closeable {
                         .forPath(NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName)));
 
     zkClient.multi(ops);
+  }
+
+  private byte[] buildLiveNodeData() {
+    Map<String, Object> props = new LinkedHashMap<>();
+    props.put(LIVE_NODE_SOLR_VERSION, SolrVersion.LATEST.toString());
+    props.put(LIVE_NODE_NODE_NAME, getNodeName());
+
+    Map<NodeRoles.Role, String> roles = cc.nodeRoles.getRoles();
+    props.put(LIVE_NODE_ROLES, roles);
+
+    return Utils.toJSON(props);
   }
 
   public void removeEphemeralLiveNode() throws KeeperException, InterruptedException {

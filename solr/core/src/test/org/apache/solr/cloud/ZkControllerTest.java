@@ -17,6 +17,8 @@
 package org.apache.solr.cloud;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_NODE_NAME;
+import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.mockito.Mockito.mock;
@@ -36,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -175,6 +178,40 @@ public class ZkControllerTest extends SolrCloudTestCase {
           cc.shutdown();
         }
       }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @LogLevel(value = "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testLiveNodeDataStored() throws Exception {
+    Path zkDir = createTempDir("testLiveNodeDataStored");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+      CoreContainer cc = getCoreContainer();
+      CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
+
+      ZkController zkController = new ZkController(cc, server.getZkAddress(), 10000, cloudConfig);
+
+      String nodeName = zkController.getNodeName();
+      String liveNodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
+      SolrZkClient zkClient = zkController.getZkClient();
+      byte[] actualData = zkClient.getData(liveNodePath, null, null, true);
+
+      Map<String, Object> liveProps = (Map<String, Object>) Utils.fromJSON(actualData);
+      String expectedSolrVersion = SolrVersion.LATEST.toString();
+
+      assertEquals(
+          "Live node solrVersion incorrect",
+          expectedSolrVersion,
+          liveProps.get(LIVE_NODE_SOLR_VERSION));
+      assertEquals("Live node nodeName incorrect", nodeName, liveProps.get(LIVE_NODE_NODE_NAME));
+
+      zkController.close();
+      cc.shutdown();
     } finally {
       server.shutdown();
     }
