@@ -68,11 +68,17 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
             attrs.toBuilder().put(TYPE_ATTR, "running").build());
     this.idle =
         new AttributedLongTimer(
-            ctx.longHistogram("solr_executor_task_times", "Timing of ExecutorService tasks", OtelUnit.MILLISECONDS),
+            ctx.longHistogram(
+                "solr_executor_task_times",
+                "Timing of ExecutorService tasks",
+                OtelUnit.MILLISECONDS),
             attrs.toBuilder().put(TYPE_ATTR, "idle").build());
     this.duration =
         new AttributedLongTimer(
-            ctx.longHistogram("solr_executor_task_times", "Timing of ExecutorService tasks", OtelUnit.MILLISECONDS),
+            ctx.longHistogram(
+                "solr_executor_task_times",
+                "Timing of ExecutorService tasks",
+                OtelUnit.MILLISECONDS),
             attrs.toBuilder().put(TYPE_ATTR, "duration").build());
 
     if (delegate instanceof ThreadPoolExecutor) {
