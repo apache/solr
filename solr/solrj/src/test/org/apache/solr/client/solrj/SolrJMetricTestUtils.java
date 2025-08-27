@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -29,7 +28,7 @@ import org.apache.solr.common.util.NamedList;
 
 public final class SolrJMetricTestUtils {
 
-  public static double getPrometheusMetricValue(CloudSolrClient solrClient, String metricName)
+  public static double getPrometheusMetricValue(SolrClient solrClient, String metricName)
       throws SolrServerException, IOException {
     var req =
         new GenericSolrRequest(

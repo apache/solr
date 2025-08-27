@@ -137,7 +137,6 @@ import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.jersey.JerseyAppHandlerCache;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -2329,18 +2328,18 @@ public class CoreContainer {
     SolrIdentifierValidator.validateCoreName(toName);
     try (SolrCore core = getCore(name)) {
       if (core != null) {
-        String oldRegistryName = core.getCoreMetricManager().getRegistryName();
-        String newRegistryName = SolrCoreMetricManager.createRegistryName(core, toName);
-        metricManager.swapRegistries(oldRegistryName, newRegistryName);
         // The old coreDescriptor is obsolete, so remove it. registerCore will put it back.
         CoreDescriptor cd = core.getCoreDescriptor();
         solrCores.removeCoreDescriptor(cd);
         cd.setProperty("name", toName);
         solrCores.addCoreDescriptor(cd);
+        // Before setting the new name, delete the old metrics registry then reregister metrics
+        // under the new core name
+        metricManager.removeRegistry(core.getCoreMetricManager().getRegistryName());
         core.setName(toName);
+        core.getCoreMetricManager().reregisterCoreMetrics();
         registerCore(cd, core, true, false);
         SolrCore old = solrCores.remove(name);
-
         coresLocator.rename(this, old.getCoreDescriptor(), core.getCoreDescriptor());
       }
     }
