@@ -20,6 +20,8 @@ package org.apache.solr.handler.admin;
 import io.opentelemetry.api.common.Attributes;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -68,6 +70,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   public void testMultipleMetricNamesFiltering() throws Exception {
     String expectedRequestsMetricName = "solr_core_requests";
     String expectedSearcherMetricName = "solr_core_searcher_new";
+    var expected = Set.of(expectedRequestsMetricName, expectedSearcherMetricName);
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
     assertQ(req("*:*"), "//result[@numFound='0']");
@@ -82,10 +85,12 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             MetricsHandler.METRIC_NAME_PARAM,
             expectedRequestsMetricName + "," + expectedSearcherMetricName),
         resp);
+
     var metrics = (MetricSnapshots) resp.getValues().get("metrics");
     assertEquals(2, metrics.size());
-    assertEquals(expectedRequestsMetricName, metrics.get(0).getMetadata().getPrometheusName());
-    assertEquals(expectedSearcherMetricName, metrics.get(1).getMetadata().getPrometheusName());
+    Set<String> actual =
+        metrics.stream().map(m -> m.getMetadata().getPrometheusName()).collect(Collectors.toSet());
+    assertEquals(expected, actual);
 
     handler.close();
   }
@@ -249,6 +254,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
         resp);
 
     var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    assertEquals(1, metrics.size());
     var actualDatapoint = metrics.get(0).getDataPoints().getFirst();
     assertEquals(expectedMetricName, metrics.get(0).getMetadata().getPrometheusName());
     assertEquals("CORE", actualDatapoint.getLabels().get(MetricsHandler.CATEGORY_PARAM));

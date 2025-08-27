@@ -17,6 +17,7 @@
 package org.apache.solr.metrics.otel;
 
 import io.prometheus.metrics.model.snapshots.Labels;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -33,34 +34,21 @@ public class FilterablePrometheusMetricReaderTest extends SolrTestCaseJ4 {
 
   @Test
   public void testFilterMatchingLabel() {
-    SortedMap<String, Set<String>> requiredLabels =
-        new TreeMap<>() {
-          {
-            put("key1", Set.of("value1"));
-          }
-        };
+    SortedMap<String, Set<String>> requiredLabels = new TreeMap<>(Map.of("key1", Set.of("value1")));
     assertTrue(FilterablePrometheusMetricReader.requiredLabelsFilter(actualLabels, requiredLabels));
   }
 
   @Test
   public void testFilterOneMatchingLabelValue() {
     SortedMap<String, Set<String>> requiredLabels =
-        new TreeMap<>() {
-          {
-            put("key1", Set.of("value1", "value123", "value456", "value789"));
-          }
-        };
+        new TreeMap<>(Map.of("key1", Set.of("value1", "value123", "value456", "value789")));
     assertTrue(FilterablePrometheusMetricReader.requiredLabelsFilter(actualLabels, requiredLabels));
   }
 
   @Test
   public void testFilterNoMatchingLabel() {
     SortedMap<String, Set<String>> requiredLabels =
-        new TreeMap<>() {
-          {
-            put("dummyKey", Set.of("dummyValue"));
-          }
-        };
+        new TreeMap<>(Map.of("dummyKey", Set.of("dummyValue")));
     assertFalse(
         FilterablePrometheusMetricReader.requiredLabelsFilter(actualLabels, requiredLabels));
   }
@@ -68,24 +56,14 @@ public class FilterablePrometheusMetricReaderTest extends SolrTestCaseJ4 {
   @Test
   public void testFilterAllMultipleMatchingLabels() {
     SortedMap<String, Set<String>> requiredLabels =
-        new TreeMap<>() {
-          {
-            put("key1", Set.of("value1"));
-            put("key2", Set.of("value2"));
-          }
-        };
+        new TreeMap<>(Map.of("key1", Set.of("value1"), "key2", Set.of("value2")));
     assertTrue(FilterablePrometheusMetricReader.requiredLabelsFilter(actualLabels, requiredLabels));
   }
 
   @Test
   public void testFilterMultipleWithOneLabelValueNotMatching() {
     SortedMap<String, Set<String>> requiredLabels =
-        new TreeMap<>() {
-          {
-            put("key1", Set.of("value1"));
-            put("key2", Set.of("value999"));
-          }
-        };
+        new TreeMap<>(Map.of("key1", Set.of("value1"), "key2", Set.of("value999")));
     assertFalse(
         FilterablePrometheusMetricReader.requiredLabelsFilter(actualLabels, requiredLabels));
   }
@@ -93,12 +71,7 @@ public class FilterablePrometheusMetricReaderTest extends SolrTestCaseJ4 {
   @Test
   public void testFilterMultipleWithOneLabelMissing() {
     SortedMap<String, Set<String>> requiredLabels =
-        new TreeMap<>() {
-          {
-            put("key1", Set.of("value1"));
-            put("key999", Set.of("value2"));
-          }
-        };
+        new TreeMap<>(Map.of("key1", Set.of("value1"), "key999", Set.of("value2")));
     assertFalse(
         FilterablePrometheusMetricReader.requiredLabelsFilter(actualLabels, requiredLabels));
   }
@@ -107,24 +80,15 @@ public class FilterablePrometheusMetricReaderTest extends SolrTestCaseJ4 {
   public void testFilterLabelsWithMixedValues() {
     // Scenario with multiple label values some matching and some not
     SortedMap<String, Set<String>> requiredLabels =
-        new TreeMap<>() {
-          {
-            put("key1", Set.of("value1", "value123"));
-            put("key2", Set.of("value456", "value2"));
-          }
-        };
+        new TreeMap<>(
+            Map.of("key1", Set.of("value1", "value123"), "key2", Set.of("value456", "value2")));
     assertTrue(FilterablePrometheusMetricReader.requiredLabelsFilter(actualLabels, requiredLabels));
   }
 
   @Test
   public void testFilterEmptyLabelValues() {
     // Edge case where label has empty set of allowed values
-    SortedMap<String, Set<String>> requiredLabels =
-        new TreeMap<>() {
-          {
-            put("key1", Set.of());
-          }
-        };
+    SortedMap<String, Set<String>> requiredLabels = new TreeMap<>(Map.of("key1", Set.of()));
     assertFalse(
         FilterablePrometheusMetricReader.requiredLabelsFilter(actualLabels, requiredLabels));
   }

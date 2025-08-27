@@ -216,7 +216,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       return Set.of();
     }
 
-    Set<String> paramSet = new HashSet<>();
+    List<String> paramSet = new ArrayList<>();
     for (String param : paramValues) {
       paramSet.addAll(StrUtils.splitSmart(param, ','));
     }
