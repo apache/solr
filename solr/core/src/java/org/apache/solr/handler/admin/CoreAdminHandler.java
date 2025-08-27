@@ -75,13 +75,12 @@ import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCores;
 import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.stats.MetricUtils;
+import org.apache.solr.util.stats.OtelInstrumentedExecutorService;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,20 +134,18 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     super.initializeMetrics(parentContext, attributes, scope);
     coreAdminAsyncTracker.standardExecutor =
-        MetricUtils.instrumentedExecutorService(
+        new OtelInstrumentedExecutorService(
             coreAdminAsyncTracker.standardExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName(
-                "parallelCoreAdminExecutor", getCategory().name(), scope, "threadPool"));
+            solrMetricsContext,
+            getCategory(),
+            "parallelCoreAdminExecutor");
 
     coreAdminAsyncTracker.expensiveExecutor =
-        MetricUtils.instrumentedExecutorService(
+        new OtelInstrumentedExecutorService(
             coreAdminAsyncTracker.expensiveExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName(
-                "parallelCoreExpensiveAdminExecutor", getCategory().name(), scope, "threadPool"));
+            solrMetricsContext,
+            getCategory(),
+            "parallelCoreExpensiveAdminExecutor");
   }
 
   @Override

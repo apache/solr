@@ -164,7 +164,7 @@ import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.StartupLoggingUtils;
-import org.apache.solr.util.stats.MetricUtils;
+import org.apache.solr.util.stats.OtelInstrumentedExecutorService;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
@@ -853,14 +853,11 @@ public class CoreContainer {
 
     // NOCOMMIT: Do we need this for OTEL or is this specific for reporters?
     coreContainerWorkExecutor =
-        MetricUtils.instrumentedExecutorService(
+        new OtelInstrumentedExecutorService(
             coreContainerWorkExecutor,
-            null,
-            metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
-            SolrMetricManager.mkName(
-                "coreContainerWorkExecutor",
-                SolrInfoBean.Category.CONTAINER.toString(),
-                "threadPool"));
+            solrMetricsContext,
+            SolrInfoBean.Category.CONTAINER,
+            "coreContainerWorkExecutor");
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
@@ -1132,14 +1129,13 @@ public class CoreContainer {
 
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor =
-        MetricUtils.instrumentedExecutorService(
+        new OtelInstrumentedExecutorService(
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
                 new SolrNamedThreadFactory("coreLoadExecutor")),
-            null,
-            metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
-            SolrMetricManager.mkName(
-                "coreLoadExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
+            solrMetricsContext,
+            SolrInfoBean.Category.CONTAINER,
+            "coreLoadExecutor");
 
     coreSorter =
         loader.newInstance(

@@ -46,7 +46,7 @@ import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
 import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
-import org.apache.solr.util.stats.MetricUtils;
+import org.apache.solr.util.stats.OtelInstrumentedExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -213,17 +213,11 @@ public class UpdateShardHandler implements SolrInfoBean {
     defaultConnectionManager.initializeMetrics(
         solrMetricsContext, Attributes.empty(), expandedScope);
     updateExecutor =
-        MetricUtils.instrumentedExecutorService(
-            updateExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName("updateOnlyExecutor", expandedScope, "threadPool"));
+        new OtelInstrumentedExecutorService(
+            updateExecutor, solrMetricsContext, getCategory(), "updateOnlyExecutor");
     recoveryExecutor =
-        MetricUtils.instrumentedExecutorService(
-            recoveryExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName("recoveryExecutor", expandedScope, "threadPool"));
+        new OtelInstrumentedExecutorService(
+            recoveryExecutor, solrMetricsContext, getCategory(), "recoveryExecutor");
   }
 
   @Override
