@@ -367,7 +367,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       final String registryName = unescape(parts[0]);
       final String metricName = unescape(parts[1]);
       final String propertyName = parts.length > 2 ? unescape(parts[2]) : null;
-      if (!metricManager.hasRegistry(registryName)) {
+      if (!metricManager.hasDropwizardRegistry(registryName)) {
         errors.add(key, "registry '" + registryName + "' not found");
         continue;
       }
