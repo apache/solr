@@ -37,7 +37,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
     // the default is 180s and our waitForState times out in 90s,
     // so we lower this so that we can still test timeouts
     System.setProperty("leaderConflictResolveWait", "5000");
-    System.setProperty("prepRecoveryReadTimeoutExtraWait", "1000");
+    System.setProperty("solr.cloud.prep.recovery.read.timeout.additional.ms", "1000");
 
     configureCluster(2)
         .addConfig(
