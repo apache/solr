@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer.MetricTimer;
@@ -67,11 +68,11 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
             attrs.toBuilder().put(TYPE_ATTR, "running").build());
     this.idle =
         new AttributedLongTimer(
-            ctx.longHistogram("solr_executor_task_times", "Timing of ExecutorService tasks"),
+            ctx.longHistogram("solr_executor_task_times", "Timing of ExecutorService tasks", OtelUnit.MILLISECONDS),
             attrs.toBuilder().put(TYPE_ATTR, "idle").build());
     this.duration =
         new AttributedLongTimer(
-            ctx.longHistogram("solr_executor_task_times", "Timing of ExecutorService tasks"),
+            ctx.longHistogram("solr_executor_task_times", "Timing of ExecutorService tasks", OtelUnit.MILLISECONDS),
             attrs.toBuilder().put(TYPE_ATTR, "duration").build());
 
     if (delegate instanceof ThreadPoolExecutor) {
