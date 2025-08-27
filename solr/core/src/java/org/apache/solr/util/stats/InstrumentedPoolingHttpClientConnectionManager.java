@@ -48,31 +48,27 @@ import org.apache.solr.metrics.SolrMetricsContext;
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
 
-    var baseAttributes = attributes.toBuilder()
+    Attributes baseAttributes = attributes.toBuilder()
       .put(CATEGORY_ATTR, SolrInfoBean.Category.HTTP.toString())
       .build();
 
     solrMetricsContext.observableLongGauge(
-            "solr_http_connection_pool_available_connections",
-            "The current number of available connections in the pool.",
-            (observableLongMeasurement ->
-                    observableLongMeasurement.record(getTotalStats().getAvailable(), baseAttributes)));
-    // this acquires a lock on the connection pool; remove if contention sucks
-    solrMetricsContext.observableLongGauge(
-            "solr_http_connection_pool_leased_connections",
-            "The current number of leased connections from the pool.",
-            (observableLongMeasurement ->
-                    observableLongMeasurement.record(getTotalStats().getLeased(), baseAttributes)));
-    solrMetricsContext.observableLongGauge(
-            "solr_http_connection_pool_max_connections",
-            "The maximum number of total connections in the pool.",
-            (observableLongMeasurement ->
-                    observableLongMeasurement.record(getTotalStats().getMax(), baseAttributes)));
-    solrMetricsContext.observableLongGauge(
-            "solr_http_connection_pool_pending_requests",
-            "The number of requests waiting for a connection from the pool.",
-            (observableLongMeasurement ->
-                    observableLongMeasurement.record(getTotalStats().getPending(), baseAttributes)));
+            "solr_http_connection_pool",
+            "Metrics around the HTTP Connection Pool",
+            (observableLongMeasurement -> {
+                observableLongMeasurement.record(
+                        getTotalStats().getAvailable(),
+                        baseAttributes.toBuilder().put(TYPE_ATTR, "available_connections").build());
+                observableLongMeasurement.record(
+                        getTotalStats().getLeased(),
+                        baseAttributes.toBuilder().put(TYPE_ATTR, "leased_connections").build());
+                observableLongMeasurement.record(
+                        getTotalStats().getMax(),
+                        baseAttributes.toBuilder().put(TYPE_ATTR, "max_connections").build());
+                observableLongMeasurement.record(
+                        getTotalStats().getPending(),
+                        baseAttributes.toBuilder().put(TYPE_ATTR, "pending_connections").build());
+            }));
   }
 
   @Override

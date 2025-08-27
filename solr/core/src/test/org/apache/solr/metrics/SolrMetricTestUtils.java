@@ -142,15 +142,6 @@ public final class SolrMetricTestUtils {
         .orElse(null);
   }
 
-  public static DataPointSnapshot getDataPointSnapshot(
-          PrometheusMetricReader reader, String metricName) {
-    return reader.collect().stream()
-            .filter(ms -> ms.getMetadata().getPrometheusName().equals(metricName))
-            .findFirst()
-            .flatMap(ms -> ms.getDataPoints().stream().findFirst())
-            .orElse(null);
-  }
-
   public static Labels.Builder newCloudLabelsBuilder(SolrCore core) {
     return Labels.builder()
         .label("collection", core.getCoreDescriptor().getCloudDescriptor().getCollectionName())

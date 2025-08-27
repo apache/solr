@@ -3,6 +3,7 @@ package org.apache.solr.util.stats;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpHost;
 import org.apache.http.config.Registry;
@@ -29,10 +30,11 @@ public class InstrumentedPoolingHttpClientConnectionManagerTest extends SolrTest
     private PrometheusMetricReader metricsReader;
 
     private static final int DEFAULT_HTTP_MAX_CONNECTIONS = 20;
-    private static final String METRIC_MAX_CONNECTIONS = "solr_http_connection_pool_max_connections";
-    private static final String METRIC_AVAILABLE_CONNECTIONS = "solr_http_connection_pool_available_connections";
-    private static final String METRIC_LEASED_CONNECTIONS = "solr_http_connection_pool_leased_connections";
-    private static final String METRIC_PENDING_REQUESTS = "solr_http_connection_pool_pending_requests";
+    private static final String METRIC_NAME = "solr_http_connection_pool";
+    private static final String METRIC_TYPE_AVAILABLE_CONNECTIONS = "available_connections";
+    private static final String METRIC_TYPE_MAX_CONNECTIONS = "max_connections";
+    private static final String METRIC_TYPE_LEASED_CONNECTIONS = "leased_connections";
+    private static final String METRIC_TYPE_PENDING_CONNECTIONS = "pending_connections";
 
     @BeforeClass
     public static void beforeClass() throws Exception {
@@ -78,32 +80,37 @@ public class InstrumentedPoolingHttpClientConnectionManagerTest extends SolrTest
 
     @Test
     public void testInitializedMetrics() {
-        assertGaugeMetricValue(METRIC_AVAILABLE_CONNECTIONS, 0);
-        assertGaugeMetricValue(METRIC_LEASED_CONNECTIONS, 0);
-        assertGaugeMetricValue(METRIC_PENDING_REQUESTS, 0);
-        assertGaugeMetricValue(METRIC_MAX_CONNECTIONS, DEFAULT_HTTP_MAX_CONNECTIONS);
+        assertGaugeMetricValueForType(METRIC_TYPE_AVAILABLE_CONNECTIONS, 0);
+        assertGaugeMetricValueForType(METRIC_TYPE_LEASED_CONNECTIONS, 0);
+        assertGaugeMetricValueForType(METRIC_TYPE_PENDING_CONNECTIONS, 0);
+        assertGaugeMetricValueForType(METRIC_TYPE_MAX_CONNECTIONS, DEFAULT_HTTP_MAX_CONNECTIONS);
     }
 
     @Test
     public void testConnectionPoolLeasedMetrics() throws Exception {
         HttpRoute route = new HttpRoute(new HttpHost("localhost", 8080));
 
-        assertGaugeMetricValue(METRIC_LEASED_CONNECTIONS, 0);
+        assertGaugeMetricValueForType(METRIC_TYPE_LEASED_CONNECTIONS, 0);
 
         HttpClientConnection conn = connectionManager
                 .requestConnection(route, null)
                 .get(1000, TimeUnit.MILLISECONDS);
 
-        assertGaugeMetricValue(METRIC_LEASED_CONNECTIONS, 1);
+        assertGaugeMetricValueForType(METRIC_TYPE_LEASED_CONNECTIONS, 1);
 
         connectionManager.releaseConnection(conn, null, 0, null);
 
-        assertGaugeMetricValue(METRIC_LEASED_CONNECTIONS, 0);
+        assertGaugeMetricValueForType(METRIC_TYPE_LEASED_CONNECTIONS, 0);
     }
 
-    private void assertGaugeMetricValue(String metricName, double expectedValue) {
+    private void assertGaugeMetricValueForType(String metricType, double expectedValue) {
+        Labels labels = Labels.builder()
+                .label("category", "HTTP")
+                .label("otel_scope_name", "org.apache.solr")
+                .label("type", metricType)
+                .build();
         GaugeSnapshot.GaugeDataPointSnapshot dataPointSnapshot = (GaugeSnapshot.GaugeDataPointSnapshot)
-                SolrMetricTestUtils.getDataPointSnapshot(metricsReader, metricName);
+                SolrMetricTestUtils.getDataPointSnapshot(metricsReader, METRIC_NAME, labels);
         assertNotNull(dataPointSnapshot);
         assertEquals(expectedValue, dataPointSnapshot.getValue(), 0.0);
     }
