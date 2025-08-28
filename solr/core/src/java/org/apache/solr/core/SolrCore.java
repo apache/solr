@@ -24,7 +24,6 @@ import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.ObservableLongGauge;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -262,12 +261,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private AttributedLongCounter newSearcherOtherErrorsCounter;
   private AttributedLongTimer newSearcherTimer;
   private AttributedLongTimer newSearcherWarmupTimer;
-  private ObservableLongGauge refCounter;
-  private ObservableLongGauge diskSpaceGauge;
-  private ObservableLongGauge indexSizeGauge;
-  private ObservableLongGauge segmentCounter;
-  private ObservableLongGauge coreStartTimeGauge;
-  private ObservableLongGauge coreIsLeader;
+  private List<AutoCloseable> toClose;
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
@@ -1332,6 +1326,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
+    final List<AutoCloseable> observables = new ArrayList<>();
 
     Attributes baseSearcherAttributes =
         Attributes.builder()
@@ -1377,15 +1372,15 @@ public class SolrCore implements SolrInfoBean, Closeable {
             baseSearcherTimerMetric,
             Attributes.builder().putAll(baseSearcherAttributes).put(TYPE_ATTR, "warmup").build());
 
-    this.refCounter =
+    observables.add(
         parentContext.observableLongGauge(
             "solr_core_ref_count",
             "The current number of active references to a Solr core",
             (observableLongMeasurement -> {
               observableLongMeasurement.record(getOpenCount(), baseGaugeCoreAttributes);
-            }));
+            })));
 
-    this.diskSpaceGauge =
+    observables.add(
         parentContext.observableLongGauge(
             "solr_core_disk_space",
             "Solr core disk space metrics",
@@ -1416,9 +1411,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
                 observableLongMeasurement.record(0L, usableSpaceAttributes);
               }
             }),
-            OtelUnit.BYTES);
+            OtelUnit.BYTES));
 
-    this.indexSizeGauge =
+    observables.add(
         parentContext.observableLongGauge(
             "solr_core_index_size",
             "Index size for a Solr core",
@@ -1426,20 +1421,20 @@ public class SolrCore implements SolrInfoBean, Closeable {
               if (!isClosed())
                 observableLongMeasurement.record(getIndexSize(), baseGaugeCoreAttributes);
             }),
-            OtelUnit.BYTES);
+            OtelUnit.BYTES));
 
-    this.segmentCounter =
+    observables.add(
         parentContext.observableLongGauge(
             "solr_core_segment_count",
             "Number of segments in a Solr core",
             (observableLongMeasurement -> {
               if (isReady())
                 observableLongMeasurement.record(getSegmentCount(), baseGaugeCoreAttributes);
-            }));
+            })));
 
     // NOCOMMIT: Do we need these start_time metrics? I think at minimum it should be optional
     // otherwise we fall into metric bloat for something people may not care about.
-    this.coreStartTimeGauge =
+    observables.add(
         parentContext.observableLongGauge(
             "solr_core_start_time",
             "Start time of a Solr core",
@@ -1450,10 +1445,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
                       .putAll(baseGaugeCoreAttributes)
                       .put(TYPE_ATTR, "start_time")
                       .build());
-            }));
+            })));
 
     if (coreContainer.isZooKeeperAware())
-      this.coreIsLeader =
+      observables.add(
           parentContext.observableLongGauge(
               "solr_core_is_leader",
               "Indicates whether this Solr core is currently the leader",
@@ -1461,7 +1456,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
                 observableLongMeasurement.record(
                     (coreDescriptor.getCloudDescriptor().isLeader()) ? 1 : 0,
                     baseGaugeCoreAttributes);
-              }));
+              })));
+
+    this.toClose = List.copyOf(observables);
 
     // NOCOMMIT: Temporary to see metrics
     newSearcherCounter.inc();
@@ -1817,15 +1814,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
         assert false : "Too many closes on SolrCore";
       } else if (count == 0) {
         doClose();
+        IOUtils.closeQuietly(toClose);
       }
     } finally {
       MDCLoggingContext.clear(); // balance out from SolrCore open with close
-      IOUtils.closeQuietly(refCounter);
-      IOUtils.closeQuietly(diskSpaceGauge);
-      IOUtils.closeQuietly(indexSizeGauge);
-      IOUtils.closeQuietly(segmentCounter);
-      IOUtils.closeQuietly(coreStartTimeGauge);
-      IOUtils.closeQuietly(coreIsLeader);
     }
   }
 

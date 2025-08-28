@@ -23,7 +23,6 @@ import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.ObservableLongGauge;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -269,9 +268,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected AttributedLongCounter applyingBufferedOpsCounter;
   protected AttributedLongCounter replayOpsCounter;
   protected AttributedLongCounter copyOverOldUpdatesCounter;
-  protected ObservableLongGauge bufferedOpsGauge;
-  protected ObservableLongGauge replayLogsRemainingGauge;
-  protected ObservableLongGauge sizeRemainingGauge;
+  protected List<AutoCloseable> toClose;
   protected SolrMetricsContext solrMetricsContext;
 
   public static class LogPtr {
@@ -634,6 +631,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
+    final List<AutoCloseable> observables = new ArrayList<>();
     solrMetricsContext = parentContext.getChildContext(this);
 
     // NOCOMMIT: We do not need a scope attribute
@@ -644,29 +642,31 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             .put(CATEGORY_ATTR, SolrInfoBean.Category.TLOG.toString())
             .build();
 
-    bufferedOpsGauge =
+    observables.add(
         solrMetricsContext.observableLongGauge(
             "solr_core_update_log_buffered_ops",
             "The current number of buffered operations",
             (observableLongMeasurement ->
-                observableLongMeasurement.record(computeBufferedOps(), baseAttributes)));
+                observableLongMeasurement.record(computeBufferedOps(), baseAttributes))));
 
-    replayLogsRemainingGauge =
+    observables.add(
         solrMetricsContext.observableLongGauge(
             "solr_core_update_log_replay_logs_remaining",
             "The current number of tlogs remaining to be replayed",
             (observableLongMeasurement -> {
               observableLongMeasurement.record(logs.size(), baseAttributes);
-            }));
+            })));
 
-    sizeRemainingGauge =
+    observables.add(
         solrMetricsContext.observableLongGauge(
             "solr_core_update_log_size_remaining",
             "The total size in bytes of all tlogs remaining to be replayed",
             (observableLongMeasurement -> {
               observableLongMeasurement.record(getTotalLogsSize(), baseAttributes);
             }),
-            OtelUnit.BYTES);
+            OtelUnit.BYTES));
+
+    toClose = List.copyOf(observables);
 
     // NOCOMMIT: Do we want to keep this? Metric was just state with the numeric enum value.
     // Without context this doesn't mean anything and can be very confusing. Maybe keep the numeric
@@ -1711,9 +1711,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     } catch (IOException e) {
       log.warn("exception releasing tlog dir", e);
     } finally {
-      IOUtils.closeQuietly(bufferedOpsGauge);
-      IOUtils.closeQuietly(replayLogsRemainingGauge);
-      IOUtils.closeQuietly(sizeRemainingGauge);
+      IOUtils.closeQuietly(toClose);
     }
   }
 
