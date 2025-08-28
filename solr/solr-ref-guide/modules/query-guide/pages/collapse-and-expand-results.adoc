@@ -128,7 +128,7 @@ Setting the size above the number of results expected in the result set will eli
 |Optional |Default: `true`
 |===
 +
-In combination with the <<Collapsing Query Parser>> all elevated docs are visible at the beginning of the result set.
+In combination with the xref:query-elevation-component.adoc[Query Elevation Component] all elevated docs are visible at the beginning of the result set.
 If this parameter is `false`, only the representative is visible if the elevated docs has the same collapse key.
 
 
