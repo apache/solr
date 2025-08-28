@@ -47,6 +47,8 @@ apache-zookeeper = "3.9.3"
 # @keep for version alignment
 apiguardian = "1.1.2"
 aqute-bnd = "6.4.1"
+# @keep Asciidoctor kroki version used in ref-guide
+asciidoctor-kroki = "0.18.1"
 # @keep Asciidoctor mathjax version used in ref-guide
 asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
