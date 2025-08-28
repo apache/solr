@@ -117,23 +117,21 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSomeStuff() {
-    clearIndex();
+    try (SolrCore core = h.getCoreContainer().getCore("collection1")) {
+      // test that we got the expected config, not just hardcoded defaults
+      assertNotNull(core.getRequestHandler("/mock"));
 
-    SolrCore core = h.getCore();
-
-    // test that we got the expected config, not just hardcoded defaults
-    assertNotNull(core.getRequestHandler("/mock"));
-
-    // test stats call
-    var refCount =
-        SolrMetricTestUtils.getGaugeDatapoint(
-            core,
-            "solr_core_ref_count",
-            SolrMetricTestUtils.newStandaloneLabelsBuilder(core).label("category", "CORE").build());
-    assertNotNull(refCount);
-
-    assertTrue(refCount.getValue() > 0);
-
+      // test stats call
+      var refCount =
+          SolrMetricTestUtils.getGaugeDatapoint(
+              core,
+              "solr_core_ref_count",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label("category", "CORE")
+                  .build());
+      assertNotNull(refCount);
+      assertTrue(refCount.getValue() > 0);
+    }
     assertQ(
         "test query on empty index",
         req("qlkciyopsbgzyvkylsjhchghjrdf"),

@@ -261,6 +261,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private AttributedLongCounter newSearcherOtherErrorsCounter;
   private AttributedLongTimer newSearcherTimer;
   private AttributedLongTimer newSearcherWarmupTimer;
+  private List<AutoCloseable> toClose;
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
@@ -1324,6 +1325,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
+    final List<AutoCloseable> observables = new ArrayList<>();
 
     Attributes baseSearcherAttributes =
         Attributes.builder()
@@ -1369,86 +1371,93 @@ public class SolrCore implements SolrInfoBean, Closeable {
             baseSearcherTimerMetric,
             Attributes.builder().putAll(baseSearcherAttributes).put(TYPE_ATTR, "warmup").build());
 
-    parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
+    observables.add(
+        parentContext.observableLongGauge(
+            "solr_core_ref_count",
+            "The current number of active references to a Solr core",
+            (observableLongMeasurement -> {
+              observableLongMeasurement.record(getOpenCount(), baseGaugeCoreAttributes);
+            })));
 
-    parentContext.observableLongGauge(
-        "solr_core_ref_count",
-        "The current number of active references to a Solr core",
-        (observableLongMeasurement -> {
-          observableLongMeasurement.record(getOpenCount(), baseGaugeCoreAttributes);
-        }));
+    observables.add(
+        parentContext.observableLongGauge(
+            "solr_core_disk_space",
+            "Solr core disk space metrics",
+            (observableLongMeasurement -> {
 
-    parentContext.observableLongGauge(
-        "solr_core_disk_space",
-        "Solr core disk space metrics",
-        (observableLongMeasurement -> {
+              // initialize disk total / free metrics
+              Path dataDirPath = Path.of(dataDir);
+              var totalSpaceAttributes =
+                  Attributes.builder()
+                      .putAll(baseGaugeCoreAttributes)
+                      .put(TYPE_ATTR, "total_space")
+                      .build();
+              var usableSpaceAttributes =
+                  Attributes.builder()
+                      .putAll(baseGaugeCoreAttributes)
+                      .put(TYPE_ATTR, "usable_space")
+                      .build();
+              try {
+                observableLongMeasurement.record(
+                    Files.getFileStore(dataDirPath).getTotalSpace(), totalSpaceAttributes);
+              } catch (IOException e) {
+                observableLongMeasurement.record(0L, totalSpaceAttributes);
+              }
+              try {
+                observableLongMeasurement.record(
+                    Files.getFileStore(dataDirPath).getUsableSpace(), usableSpaceAttributes);
+              } catch (IOException e) {
+                observableLongMeasurement.record(0L, usableSpaceAttributes);
+              }
+            }),
+            OtelUnit.BYTES));
 
-          // initialize disk total / free metrics
-          Path dataDirPath = Path.of(dataDir);
-          var totalSpaceAttributes =
-              Attributes.builder()
-                  .putAll(baseGaugeCoreAttributes)
-                  .put(TYPE_ATTR, "total_space")
-                  .build();
-          var usableSpaceAttributes =
-              Attributes.builder()
-                  .putAll(baseGaugeCoreAttributes)
-                  .put(TYPE_ATTR, "usable_space")
-                  .build();
-          try {
-            observableLongMeasurement.record(
-                Files.getFileStore(dataDirPath).getTotalSpace(), totalSpaceAttributes);
-          } catch (IOException e) {
-            observableLongMeasurement.record(0L, totalSpaceAttributes);
-          }
-          try {
-            observableLongMeasurement.record(
-                Files.getFileStore(dataDirPath).getUsableSpace(), usableSpaceAttributes);
-          } catch (IOException e) {
-            observableLongMeasurement.record(0L, usableSpaceAttributes);
-          }
-        }),
-        OtelUnit.BYTES);
+    observables.add(
+        parentContext.observableLongGauge(
+            "solr_core_index_size",
+            "Index size for a Solr core",
+            (observableLongMeasurement -> {
+              if (!isClosed())
+                observableLongMeasurement.record(getIndexSize(), baseGaugeCoreAttributes);
+            }),
+            OtelUnit.BYTES));
 
-    parentContext.observableLongGauge(
-        "solr_core_index_size",
-        "Index size for a Solr core",
-        (observableLongMeasurement -> {
-          if (!isClosed())
-            observableLongMeasurement.record(getIndexSize(), baseGaugeCoreAttributes);
-        }),
-        OtelUnit.BYTES);
-
-    parentContext.observableLongGauge(
-        "solr_core_segment_count",
-        "Number of segments in a Solr core",
-        (observableLongMeasurement -> {
-          if (isReady())
-            observableLongMeasurement.record(getSegmentCount(), baseGaugeCoreAttributes);
-        }));
+    observables.add(
+        parentContext.observableLongGauge(
+            "solr_core_segment_count",
+            "Number of segments in a Solr core",
+            (observableLongMeasurement -> {
+              if (isReady())
+                observableLongMeasurement.record(getSegmentCount(), baseGaugeCoreAttributes);
+            })));
 
     // NOCOMMIT: Do we need these start_time metrics? I think at minimum it should be optional
     // otherwise we fall into metric bloat for something people may not care about.
-    parentContext.observableLongGauge(
-        "solr_core_start_time",
-        "Start time of a Solr core",
-        (observableLongMeasurement -> {
-          observableLongMeasurement.record(
-              startTime.getTime(),
-              Attributes.builder()
-                  .putAll(baseGaugeCoreAttributes)
-                  .put(TYPE_ATTR, "start_time")
-                  .build());
-        }));
+    observables.add(
+        parentContext.observableLongGauge(
+            "solr_core_start_time",
+            "Start time of a Solr core",
+            (observableLongMeasurement -> {
+              observableLongMeasurement.record(
+                  startTime.getTime(),
+                  Attributes.builder()
+                      .putAll(baseGaugeCoreAttributes)
+                      .put(TYPE_ATTR, "start_time")
+                      .build());
+            })));
 
     if (coreContainer.isZooKeeperAware())
-      parentContext.observableLongGauge(
-          "solr_core_is_leader",
-          "Indicates whether this Solr core is currently the leader",
-          (observableLongMeasurement -> {
-            observableLongMeasurement.record(
-                (coreDescriptor.getCloudDescriptor().isLeader()) ? 1 : 0, baseGaugeCoreAttributes);
-          }));
+      observables.add(
+          parentContext.observableLongGauge(
+              "solr_core_is_leader",
+              "Indicates whether this Solr core is currently the leader",
+              (observableLongMeasurement -> {
+                observableLongMeasurement.record(
+                    (coreDescriptor.getCloudDescriptor().isLeader()) ? 1 : 0,
+                    baseGaugeCoreAttributes);
+              })));
+
+    this.toClose = Collections.unmodifiableList(observables);
 
     // NOCOMMIT: Temporary to see metrics
     newSearcherCounter.inc();
@@ -1804,6 +1813,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         assert false : "Too many closes on SolrCore";
       } else if (count == 0) {
         doClose();
+        IOUtils.closeQuietly(toClose);
       }
     } finally {
       MDCLoggingContext.clear(); // balance out from SolrCore open with close

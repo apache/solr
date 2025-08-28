@@ -23,6 +23,11 @@ import org.slf4j.LoggerFactory;
 public class IOUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static void closeQuietly(Iterable<? extends AutoCloseable> closeables) {
+    if (closeables == null) return;
+    for (AutoCloseable closeable : closeables) closeQuietly(closeable);
+  }
+
   public static void closeQuietly(AutoCloseable closeable) {
     try {
       if (closeable != null) {
