@@ -31,6 +31,7 @@ import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.schema.IndexSchema;
@@ -90,7 +91,7 @@ public abstract class ConfigSetService {
       bootstrapDefaultConf();
 
       // solr.configset.bootstrap.confdir
-      String confDir = System.getProperty("solr.configset.bootstrap.confdir");
+      String confDir = EnvUtils.getProperty("solr.configset.bootstrap.confdir");
       if (confDir != null) {
         bootstrapConfDir(confDir);
       }
@@ -108,7 +109,7 @@ public abstract class ConfigSetService {
         log.warn(
             "The _default configset could not be uploaded. Please provide 'solr.configset.default.confdir' parameter that points to a configset {} {}",
             "intended to be the default. Current 'solr.configset.default.confdir' value:",
-            System.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE));
+            EnvUtils.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
         this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
       }
@@ -128,7 +129,7 @@ public abstract class ConfigSetService {
           "solr.configset.bootstrap.confdir must be a directory of configuration files, configPath: "
               + configPath);
     }
-    String confName = System.getProperty("solr.collection.config.name", "configuration1");
+    String confName = EnvUtils.getProperty("solr.collection.config.name", "configuration1");
     this.uploadConfig(confName, configPath);
   }
 
@@ -141,7 +142,7 @@ public abstract class ConfigSetService {
    */
   public static Path getDefaultConfigDirPath() {
     String confDir =
-        System.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE);
+        EnvUtils.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE);
     if (confDir != null) {
       Path path = resolvePathWithSolrInstallDir(confDir);
       if (Files.exists(path)) {
@@ -149,7 +150,7 @@ public abstract class ConfigSetService {
       }
     }
 
-    String installDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    String installDir = EnvUtils.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
     if (installDir != null) {
       Path installPath = resolvePathWithSolrInstallDir(installDir);
       Path subPath = Path.of("server", "solr", "configsets", "_default", "conf");
@@ -164,25 +165,20 @@ public abstract class ConfigSetService {
 
   /**
    * Resolves a path string into a Path object, handling both absolute and relative paths. If the
-   * path is relative and solr.install.dir system property is set, the path is resolved against the
-   * Solr installation directory. Otherwise, it's converted to an absolute path based on the current
-   * working directory.
+   * path is relative then it resolves it against Solr installation directory by looking up the
+   * solr.install.dir system property.
    *
-   * @param pathStr The path string to resolve
+   * @param pathStr The path of the directory to resolve
    * @return The resolved Path object
    * @see SolrDispatchFilter#SOLR_INSTALL_DIR_ATTRIBUTE
    */
   public static Path resolvePathWithSolrInstallDir(String pathStr) {
     Path path = Path.of(pathStr);
 
-    // Convert to absolute path if it's relative and solr.install.dir is set
+    // Convert to absolute path if it's relative
     if (!path.isAbsolute()) {
-      String installDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
-      if (installDir != null) {
-        path = Path.of(installDir).resolve(path).normalize();
-      } else {
-        path = path.toAbsolutePath().normalize();
-      }
+      String installDir = EnvUtils.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+      path = Path.of(installDir).resolve(path).normalize();
     }
 
     return path;
