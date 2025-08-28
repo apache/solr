@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -35,17 +36,14 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kotlinx.serialization.json.JsonNull.content
-import org.apache.solr.ui.components.configsets.data.ListConfigSets
+import org.apache.solr.ui.components.configsets.data.ListConfigsets
 
 private val configsetTabs = listOf(
     "Overview",
@@ -64,7 +62,7 @@ fun ConfigsetsNavBarComponent(
     selectTab: (Int) -> Unit,
     selectedConfigSet: String,
     selectConfigset: (String) -> Unit,
-    availableConfigsets: ListConfigSets,
+    availableConfigsets: ListConfigsets,
     modifier: Modifier = Modifier,
     content: @Composable (tab: String, configset: String) -> Unit = { tab, _ ->
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(tab) }
@@ -82,7 +80,7 @@ fun ConfigsetsNavBarComponent(
     Column(modifier) {
         ScrollableTabRow(
             selectedTabIndex = selectedTab,
-            edgePadding = 12.dp,
+            edgePadding = 16.dp,
             divider = { HorizontalDivider(thickness = 1.dp) },
             indicator = { pos ->
                 TabRowDefaults.SecondaryIndicator(Modifier.tabIndicatorOffset(pos[selectedTab]))
@@ -99,14 +97,14 @@ fun ConfigsetsNavBarComponent(
 
         Row(
             modifier = Modifier
-                .fillMaxWidth(0.2f)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.widthIn(min = 256.dp).weight(1f),
             ) {
                 OutlinedTextField(
                     value = selectedConfigSet,

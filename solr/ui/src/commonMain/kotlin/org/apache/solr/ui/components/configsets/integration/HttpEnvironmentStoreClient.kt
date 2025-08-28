@@ -21,7 +21,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.http.isSuccess
-import org.apache.solr.ui.components.configsets.data.ListConfigSets
+import org.apache.solr.ui.components.configsets.data.ListConfigsets
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStoreProvider
 
 /**
@@ -36,7 +36,7 @@ import org.apache.solr.ui.components.configsets.store.ConfigsetsStoreProvider
 class HttpEnvironmentStoreClient(
     private val httpClient: HttpClient,
 ) : ConfigsetsStoreProvider.Client {
-    override suspend fun fetchConfigSets(): Result<ListConfigSets> {
+    override suspend fun fetchConfigSets(): Result<ListConfigsets> {
         val response = httpClient.get("api/configsets")
         return when {
             response.status.isSuccess() -> Result.success(response.body())

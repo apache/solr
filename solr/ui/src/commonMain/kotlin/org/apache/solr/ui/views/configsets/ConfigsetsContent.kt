@@ -80,8 +80,3 @@ fun ConfigsetsContent(
         },
     )
 }
-
-@Composable
-fun OverviewContent(component: OverviewComponent, modifier: Modifier = Modifier) {
-    Text("Overview section")
-}
