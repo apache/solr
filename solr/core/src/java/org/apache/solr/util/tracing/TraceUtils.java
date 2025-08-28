@@ -58,6 +58,21 @@ public class TraceUtils {
   public static final AttributeKey<List<String>> TAG_OPS = AttributeKey.stringArrayKey("ops");
   public static final AttributeKey<String> TAG_CLASS = AttributeKey.stringKey("class");
 
+  /** Is the OTEL Java Agent present? */
+  public static final boolean OTEL_AGENT_PRESENT;
+
+  static {
+    // https://github.com/open-telemetry/opentelemetry-java-instrumentation/discussions/9173
+    boolean b;
+    try {
+      Class.forName("io.opentelemetry.javaagent.OpenTelemetryAgent");
+      b = true;
+    } catch (ClassNotFoundException e) {
+      b = false;
+    }
+    OTEL_AGENT_PRESENT = b;
+  }
+
   @Deprecated
   private static final AttributeKey<String> TAG_HTTP_METHOD_DEP =
       AttributeKey.stringKey("http.method");
@@ -75,6 +90,10 @@ public class TraceUtils {
    * trace data.
    */
   public static Predicate<Span> IS_RECORDING = DEFAULT_IS_RECORDING;
+
+  public static void resetRecordingFlag() {
+    IS_RECORDING = DEFAULT_IS_RECORDING;
+  }
 
   public static Tracer getGlobalTracer() {
     return GlobalOpenTelemetry.getTracer("solr");
