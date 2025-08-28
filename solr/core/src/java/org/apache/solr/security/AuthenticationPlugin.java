@@ -39,7 +39,7 @@ import org.eclipse.jetty.client.Request;
  */
 public abstract class AuthenticationPlugin implements SolrInfoBean {
 
-  public static final String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
+  public static final String AUTHENTICATION_PLUGIN_PROP = "solr.security.auth.plugin";
   public static final String HTTP_HEADER_X_SOLR_AUTHDATA = "X-Solr-AuthData";
 
   // Metrics

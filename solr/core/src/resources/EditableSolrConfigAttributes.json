@@ -56,8 +56,8 @@
     "boolTofilterOptimizer":1,
     "maxBooleanClauses":1},
   "requestDispatcher":{
-    "handleSelect":0,
-    "requestParsers":{
+     "requestParsers":{
       "multipartUploadLimitInKB":0,
-      "formdataUploadLimitInKB":0}}
+      "formdataUploadLimitInKB":0}
+  }
 }

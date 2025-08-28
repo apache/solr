@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -91,7 +92,7 @@ public class TestPackages extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("enable.packages", "true");
+    System.setProperty("solr.packages.enabled", "true");
     configureCluster(4)
         .withJettyConfig(jetty -> jetty.enableV2(true))
         .addConfig("conf", configset("conf3"))
@@ -105,7 +106,7 @@ public class TestPackages extends SolrCloudTestCase {
     if (cluster != null) {
       cluster.shutdown();
     }
-    System.clearProperty("enable.packages");
+    System.clearProperty("solr.packages.enabled");
 
     super.tearDown();
   }
@@ -294,6 +295,7 @@ public class TestPackages extends SolrCloudTestCase {
         new GenericSolrRequest(
                 SolrRequest.METHOD.GET,
                 "/stream",
+                SolrRequest.SolrRequestType.ADMIN,
                 new MapSolrParams(
                     Map.of("collection", COLLECTION_NAME, WT, JAVABIN, "action", "plugins")))
             .setRequiresCollection(true),
@@ -435,18 +437,14 @@ public class TestPackages extends SolrCloudTestCase {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("collection", COLLECTION_NAME);
-    new GenericSolrRequest(SolrRequest.METHOD.POST, "/config/params", params) {
+    new GenericSolrRequest(
+        SolrRequest.METHOD.POST, "/config/params", SolrRequest.SolrRequestType.ADMIN, params) {
       @Override
       public RequestWriter.ContentWriter getContentWriter(String expectedType) {
         return new RequestWriter.StringPayloadContentWriter(
             "{set:{PKG_VERSIONS:{mypkg : '1.1'}}}", ClientUtils.TEXT_JSON);
       }
-
-      @Override
-      public boolean requiresCollection() {
-        return true;
-      }
-    }.process(cluster.getSolrClient());
+    }.setRequiresCollection(true).process(cluster.getSolrClient());
 
     add.version = "2.1";
     add.files = Arrays.asList(new String[] {FILE3, URP2, EXPR1});
@@ -464,18 +462,14 @@ public class TestPackages extends SolrCloudTestCase {
     verifyComponent(
         cluster.getSolrClient(), COLLECTION_NAME, "requestHandler", "/runtime", "mypkg", "1.1");
 
-    new GenericSolrRequest(SolrRequest.METHOD.POST, "/config/params", params) {
+    new GenericSolrRequest(
+        SolrRequest.METHOD.POST, "/config/params", SolrRequest.SolrRequestType.ADMIN, params) {
       @Override
       public RequestWriter.ContentWriter getContentWriter(String expectedType) {
         return new RequestWriter.StringPayloadContentWriter(
             "{set:{PKG_VERSIONS:{mypkg : '2.1'}}}", ClientUtils.TEXT_JSON);
       }
-
-      @Override
-      public boolean requiresCollection() {
-        return true;
-      }
-    }.process(cluster.getSolrClient());
+    }.setRequiresCollection(true).process(cluster.getSolrClient());
 
     // now, let's force every collection using 'mypkg' to refresh
     // so that it uses version 2.1
@@ -566,13 +560,15 @@ public class TestPackages extends SolrCloudTestCase {
                 "meta",
                 "true"));
 
-    GenericSolrRequest req1 =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/" + componentType, params)
-            .setRequiresCollection(true);
     TestDistribFileStore.assertResponseValues(
         10,
         client,
-        req1,
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET,
+                "/config/" + componentType,
+                SolrRequest.SolrRequestType.ADMIN,
+                params)
+            .setRequiresCollection(true),
         Map.of(
             ":config:" + componentType + ":" + componentName + ":_packageinfo_:package", pkg,
             ":config:" + componentType + ":" + componentName + ":_packageinfo_:version", version));
@@ -879,7 +875,7 @@ public class TestPackages extends SolrCloudTestCase {
       req.process(client);
       fail("should have failed with message : " + expectErrorMsg);
     } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-      String msg = e.getMetaData()._getStr(errPath, "");
+      String msg = Objects.requireNonNullElse(e.getMetaData()._getStr(errPath), "");
       assertTrue(
           "should have failed with message: " + expectErrorMsg + "actual message : " + msg,
           msg.contains(expectErrorMsg));

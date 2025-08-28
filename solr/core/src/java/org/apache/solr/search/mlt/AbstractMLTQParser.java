@@ -136,18 +136,15 @@ abstract class AbstractMLTQParser extends QParser {
       newQ.setMinimumNumberShouldMatch(rawMLTQuery.getMinimumNumberShouldMatch());
 
       for (BooleanClause clause : rawMLTQuery) {
-        Query q = clause.getQuery();
+        Query q = clause.query();
         float originalBoost = 1f;
         if (q instanceof BoostQuery bq) {
           q = bq.getQuery();
           originalBoost = bq.getBoost();
         }
         Float fieldBoost = boostFields.get(((TermQuery) q).getTerm().field());
-        q =
-            ((fieldBoost != null)
-                ? new BoostQuery(q, fieldBoost * originalBoost)
-                : clause.getQuery());
-        newQ.add(q, clause.getOccur());
+        q = ((fieldBoost != null) ? new BoostQuery(q, fieldBoost * originalBoost) : clause.query());
+        newQ.add(q, clause.occur());
       }
       return QueryUtils.build(newQ, this);
     }

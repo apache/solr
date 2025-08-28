@@ -50,7 +50,7 @@ public class RecoveryZkTestWithAuth extends SolrCloudTestCase {
       System.setProperty(
           HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY,
           "org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory");
-      System.setProperty("basicauth", SecurityJson.USER_PASS);
+      System.setProperty("solr.security.auth.basicauth.credentials", SecurityJson.USER_PASS);
     }
 
     cluster =

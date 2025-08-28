@@ -45,7 +45,7 @@ import org.junit.Test;
 
 // NOCOMMIT: This test is broken from OTEL migration and the /admin/plugins endpoint. Placing
 // BadApple test but this must be fixed before this feature gets merged to a release branch
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
 public class SolrStandaloneScraperTest extends SolrTestCaseJ4 {
 
   @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();

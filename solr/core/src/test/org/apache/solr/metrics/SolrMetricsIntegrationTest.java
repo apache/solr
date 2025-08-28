@@ -103,6 +103,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
   // NOCOMMIT: Comeback and fix this test after merging the SolrZKClient metrics migration
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testZkMetrics() throws Exception {
     System.setProperty("metricsEnabled", "true");
     MiniSolrCloudCluster cluster =

@@ -39,6 +39,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -615,15 +617,18 @@ public class SearchHandler extends RequestHandlerBase
                           if (resp == null) {
                             return false;
                           }
-                          Object recursive = resp.findRecursive("responseHeader", "partialResults");
+                          Object recursive =
+                              resp._get(List.of("responseHeader", "partialResults"), null);
                           if (recursive != null) {
                             Object message =
                                 "[Shard:"
                                     + response.getShardAddress()
                                     + "]"
-                                    + resp.findRecursive(
-                                        "responseHeader",
-                                        RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY);
+                                    + resp._get(
+                                        List.of(
+                                            "responseHeader",
+                                            RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY),
+                                        null);
                             detailMesg.compareAndSet(null, message); // first one, ingore rest
                           }
                           return recursive != null;
@@ -633,11 +638,17 @@ public class SearchHandler extends RequestHandlerBase
               rsp.setPartialResults(rb.req);
             }
             // Was there an exception?
-            if (srsp.getException() != null) {
+            // In the case of tolerant search, we need to check all responses to see if there was an
+            // exception.
+            Optional<Throwable> shardException =
+                srsp.getShardRequest().responses.stream()
+                    .map(ShardResponse::getException)
+                    .filter(Objects::nonNull)
+                    .findFirst();
+            if (shardException.isPresent()) {
               // If things are not tolerant, abort everything and rethrow
               if (!tolerant) {
-                shardHandler1.cancelAll();
-                throwSolrException(srsp.getException());
+                throwSolrException(shardException.get());
               } else {
                 // Check if the purpose includes 'PURPOSE_GET_TOP_IDS'
                 boolean includesTopIdsPurpose =
@@ -650,7 +661,7 @@ public class SearchHandler extends RequestHandlerBase
                 boolean allShardsFailed = includesTopIdsPurpose && allResponsesHaveExceptions;
                 // if all shards fail, fail the request despite shards.tolerant
                 if (allShardsFailed) {
-                  throwSolrException(srsp.getException());
+                  throwSolrException(shardException.get());
                 } else {
                   rsp.setPartialResults(rb.req);
                   if (publishCpuTime) {

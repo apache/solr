@@ -188,8 +188,6 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
             "shard1",
             ZkStateReader.CORE_NAME_PROP,
             notLeader.getStr(ZkStateReader.CORE_NAME_PROP),
-            ZkStateReader.ROLES_PROP,
-            "",
             ZkStateReader.STATE_PROP,
             Replica.State.DOWN.toString());
 

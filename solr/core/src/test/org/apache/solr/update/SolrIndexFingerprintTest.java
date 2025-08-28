@@ -17,6 +17,7 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
+import java.util.stream.IntStream;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.solr.SolrTestCaseJ4;
@@ -28,7 +29,7 @@ public class SolrIndexFingerprintTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
+    initCore("solrconfig-nomergepolicyfactory.xml", "schema.xml");
   }
 
   @Test
@@ -36,21 +37,14 @@ public class SolrIndexFingerprintTest extends SolrTestCaseJ4 {
     long maxVersion = Long.MAX_VALUE;
     SolrCore core = h.getCore();
 
-    // Create a set of 3 segments
-    assertU(adoc("id", "101"));
-    assertU(adoc("id", "102"));
-    assertU(adoc("id", "103"));
-    assertU(commit());
-
-    assertU(adoc("id", "104"));
-    assertU(adoc("id", "105"));
-    assertU(adoc("id", "106"));
-    assertU(commit());
-
-    assertU(adoc("id", "107"));
-    assertU(adoc("id", "108"));
-    assertU(adoc("id", "109"));
-    assertU(commit());
+    int numDocs = RANDOM_MULTIPLIER == 1 ? 3 : 500;
+    // Create a set of many segments (to catch race conditions, i.e. SOLR-17863)
+    IntStream.range(0, numDocs)
+        .forEach(
+            i -> {
+              assertU(adoc("id", "" + i));
+              assertU(commit());
+            });
 
     try (var searcher = core.getSearcher().get()) {
       // Compute fingerprint sequentially to compare with parallel computation

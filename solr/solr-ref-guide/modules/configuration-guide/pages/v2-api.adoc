@@ -20,7 +20,7 @@
 The v2 API is a modernized self-documenting API interface covering most current Solr APIs.
 It is anticipated that once the v2 API reaches full coverage, and Solr-internal API usages like SolrJ and the Admin UI have been converted from the old API to the v2 API, the old API will eventually be retired.
 Today, the two API styles coexist, and all the old APIs will continue to work without any change.
-You can disable all v2 API endpoints if desired by starting your servers with this system property: `-Ddisable.v2.api=true`.
+You can disable all v2 API endpoints if desired by starting your servers with this system property: `-Dsolr.api.v2.enabled=false`.
 
 NOTE: The v2 API is classified as "experimental".
 It may change in backwards-incompatible ways as it evolves to cover additional functionality.
@@ -51,7 +51,6 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 |`/api/cores/_core-name_` |Reload, rename, delete, and unload a core.
 |`/api/node` |Perform overseer operation, rejoin leader election.
 |`/api/cluster` |Add role, remove role, set cluster property.
-|`/api/c/.system/blob` |Upload and download blobs and metadata.
 |===
 
 == Introspect
@@ -157,7 +156,7 @@ See the state of the cluster:
 ----
 $ curl http://localhost:8983/api/cluster
 
-{"responseHeader":{"status":0,"QTime":0},"collections":["gettingstarted",".system"]}
+{"responseHeader":{"status":0,"QTime":0},"collections":["gettingstarted"]}
 ----
 
 Set a cluster property:

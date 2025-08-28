@@ -392,7 +392,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
 
   // NOCOMMIT: Failing from JMX reporter
   @Test
-  @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
+  @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testCollectionsAPI() throws Exception {
 
     // create new collections rapid fire

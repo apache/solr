@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.function.IntFunction;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.FieldNameValueSource;
@@ -45,7 +45,7 @@ public class MissingAgg extends SimpleAggValueSource {
       if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
         Query query = null;
         if (sf.hasDocValues()) {
-          query = new DocValuesFieldExistsQuery(sf.getName());
+          query = new FieldExistsQuery(sf.getName());
         } else {
           query = sf.getType().getRangeQuery(null, sf, null, null, false, false);
         }

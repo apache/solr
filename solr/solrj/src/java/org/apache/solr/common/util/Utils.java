@@ -216,6 +216,12 @@ public class Utils {
     }
   }
 
+  public static Object fromJavabin(InputStream is) throws IOException {
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      return jbc.unmarshal(is);
+    }
+  }
+
   public static Collection<?> getDeepCopy(Collection<?> c, int maxDepth, boolean mutable) {
     return getDeepCopy(c, maxDepth, mutable, false);
   }

@@ -89,7 +89,7 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createTestCluster() throws Exception {
-    System.setProperty("cloudSolrClientMaxStaleRetries", "1");
+    System.setProperty("solr.solrj.cloud.max.stale.retries", "1");
     System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "1000");
 
     configureCluster(2) // 2 + random().nextInt(3)
@@ -99,7 +99,7 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   @AfterClass
   public static void tearDownCluster() {
-    System.clearProperty("cloudSolrClientMaxStaleRetries");
+    System.clearProperty("solr.solrj.cloud.max.stale.retries");
     System.clearProperty("zkReaderGetLeaderRetryTimeoutMs");
     TestInjection.reset();
   }
@@ -319,7 +319,7 @@ public class TestPullReplica extends SolrCloudTestCase {
               "Replicas shouldn't process the add document request: " + statsResponse,
               ((Map<String, Object>)
                       (statsResponse.getResponse())
-                          .findRecursive("plugins", "UPDATE", "updateHandler", "stats"))
+                          ._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
                   .get("UPDATE.updateHandler.adds"));
         }
       }

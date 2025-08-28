@@ -40,6 +40,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -69,7 +70,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
   @Test
   // NOCOMMIT: This test is broken from OTEL migration and the /admin/plugins endpoint. Placing
   // BadApple test but this must be fixed before this feature gets merged to a release branch
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testPKIAuthWorksForPullReplication() throws Exception {
     int numPullReplicas = 2;
     withBasicAuth(
@@ -156,10 +157,9 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
 
   @SuppressWarnings("unchecked")
   private Object getUpdateHandlerMetric(QueryResponse statsResponse, String metric) {
+    NamedList<Object> entries = statsResponse.getResponse();
     return ((Map<String, Object>)
-            statsResponse
-                .getResponse()
-                .findRecursive("plugins", "UPDATE", "updateHandler", "stats"))
+            entries._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
         .get(metric);
   }
 }

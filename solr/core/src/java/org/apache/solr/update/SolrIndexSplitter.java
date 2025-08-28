@@ -48,7 +48,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -75,6 +75,7 @@ import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -551,7 +552,7 @@ public class SolrIndexSplitter {
       return new ConstantScoreWeight(this, boost) {
 
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           RTimerTree t = timings.sub("findDocsToDelete");
           t.resume();
           FixedBitSet set = findDocsToDelete(context);
@@ -576,8 +577,8 @@ public class SolrIndexSplitter {
               log.error("### INVALID DELS {}", dels.cardinality());
             }
           }
-          return new ConstantScoreScorer(
-              this, score(), scoreMode, new BitSetIterator(set, set.length()));
+          return new SolrDefaultScorerSupplier(
+              new ConstantScoreScorer(score(), scoreMode, new BitSetIterator(set, set.length())));
         }
 
         @Override

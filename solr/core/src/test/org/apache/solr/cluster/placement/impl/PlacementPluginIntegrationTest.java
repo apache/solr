@@ -388,7 +388,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   // NOCOMMIT: This test fails because of CollectionMetricsBuilder. Need to dive deeper into what
   // this is and if we need to shim otel into this metrics map.
   @Test
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testNodeTypeIntegration() throws Exception {
     // this functionality relies on System.getProperty which we cannot set on individual
     // nodes in a mini cluster.
@@ -442,7 +442,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
   // NOCOMMIT: This test needs to be fixed after migrating the collection metrics builder
   @Test
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testAttributeFetcherImpl() throws Exception {
     CollectionAdminResponse rsp =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)

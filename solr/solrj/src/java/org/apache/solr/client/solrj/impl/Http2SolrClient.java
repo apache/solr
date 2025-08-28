@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -68,7 +69,6 @@ import org.eclipse.jetty.client.MultiPartRequestContent;
 import org.eclipse.jetty.client.Origin.Address;
 import org.eclipse.jetty.client.Origin.Protocol;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
-import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -94,15 +94,12 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
- * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
+ * An HTTP {@link SolrClient} using Jetty {@link HttpClient}. This is Solr's most mature client for
+ * direct HTTP.
  *
- * <ul>
- *   <li>{@link Http2SolrClient} sends requests in HTTP/2
- *   <li>{@link Http2SolrClient} can point to multiple urls
- *   <li>{@link Http2SolrClient} does not expose its internal httpClient like {@link
- *       HttpSolrClient#getHttpClient()}, sharing connection pools should be done by {@link
- *       Http2SolrClient.Builder#withHttpClient(Http2SolrClient)}
- * </ul>
+ * <p>Despite the name, this client supports HTTP 1.1 and 2 -- toggle with {@link
+ * HttpSolrClientBuilderBase#useHttp1_1(boolean)}. In retrospect, the name should have been {@code
+ * HttpJettySolrClient}.
  */
 public class Http2SolrClient extends HttpSolrClientBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -113,6 +110,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
   private static volatile SSLConfig defaultSSLConfig;
 
   private final HttpClient httpClient;
+
+  private final long idleTimeoutMillis;
 
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   protected AsyncTracker asyncTracker = new AsyncTracker();
@@ -129,6 +128,19 @@ public class Http2SolrClient extends HttpSolrClientBase {
     super(serverBaseUrl, builder);
 
     if (builder.httpClient != null) {
+      // Validate that no conflicting options are provided when using an existing HttpClient
+      if (builder.followRedirects != null
+          || builder.connectionTimeoutMillis != null
+          || builder.maxConnectionsPerHost != null
+          || builder.useHttp1_1 != null
+          || builder.proxyHost != null
+          || builder.sslConfig != null
+          || builder.cookieStore != null
+          || builder.keyStoreReloadIntervalSecs != null) {
+        throw new IllegalArgumentException(
+            "You cannot provide the HttpClient and also specify options that are used to build a new client");
+      }
+
       this.httpClient = builder.httpClient;
       if (this.executor == null) {
         this.executor = builder.executor;
@@ -144,8 +156,19 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.listenerFactory.addAll(builder.listenerFactory);
     }
     updateDefaultMimeTypeForParser();
-
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
+    this.idleTimeoutMillis = builder.getIdleTimeoutMillis();
+
+    try {
+      applyHttpClientBuilderFactory();
+    } catch (RuntimeException e) {
+      try {
+        this.close();
+      } catch (Exception exceptionOnClose) {
+        e.addSuppressed(exceptionOnClose);
+      }
+      throw e;
+    }
 
     assert ObjectReleaseTracker.track(this);
   }
@@ -158,24 +181,40 @@ public class Http2SolrClient extends HttpSolrClientBase {
     this.authenticationStore = (AuthenticationStoreHolder) httpClient.getAuthenticationStore();
   }
 
+  private void applyHttpClientBuilderFactory() {
+    String factoryClassName =
+        System.getProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+    if (factoryClassName != null) {
+      log.debug("Using Http Builder Factory: {}", factoryClassName);
+      HttpClientBuilderFactory factory;
+      try {
+        factory =
+            Class.forName(factoryClassName)
+                .asSubclass(HttpClientBuilderFactory.class)
+                .getDeclaredConstructor()
+                .newInstance();
+      } catch (InstantiationException
+          | IllegalAccessException
+          | ClassNotFoundException
+          | InvocationTargetException
+          | NoSuchMethodException e) {
+        throw new RuntimeException("Unable to instantiate " + Http2SolrClient.class.getName(), e);
+      }
+      factory.setup(this);
+    }
+  }
+
   @Deprecated(since = "9.7")
   public void addListenerFactory(HttpListenerFactory factory) {
     this.listenerFactory.add(factory);
   }
 
-  // internal usage only
-  HttpClient getHttpClient() {
+  /** internal use only */
+  public HttpClient getHttpClient() {
     return httpClient;
   }
 
-  // internal usage only
-  ProtocolHandlers getProtocolHandlers() {
-    return httpClient.getProtocolHandlers();
-  }
-
   private HttpClient createHttpClient(Builder builder) {
-    HttpClient httpClient;
-
     executor = builder.executor;
     if (executor == null) {
       BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
@@ -187,21 +226,24 @@ public class Http2SolrClient extends HttpSolrClientBase {
       shutdownExecutor = false;
     }
 
-    SslContextFactory.Client sslContextFactory;
-    if (builder.sslConfig == null) {
-      sslContextFactory = getDefaultSslContextFactory();
-    } else {
-      sslContextFactory = builder.sslConfig.createClientContextFactory();
-    }
+    SSLConfig sslConfig =
+        builder.sslConfig != null ? builder.sslConfig : Http2SolrClient.defaultSSLConfig;
+    SslContextFactory.Client sslContextFactory =
+        (sslConfig == null)
+            ? getDefaultSslContextFactory()
+            : sslConfig.createClientContextFactory();
 
+    Long keyStoreReloadIntervalSecs = builder.keyStoreReloadIntervalSecs;
+    if (keyStoreReloadIntervalSecs == null && Boolean.getBoolean("solr.keyStoreReload.enabled")) {
+      keyStoreReloadIntervalSecs = Long.getLong("solr.jetty.sslContext.reload.scanInterval", 30);
+    }
     if (sslContextFactory != null
         && sslContextFactory.getKeyStoreResource() != null
-        && builder.keyStoreReloadIntervalSecs != null
-        && builder.keyStoreReloadIntervalSecs > 0) {
+        && keyStoreReloadIntervalSecs != null
+        && keyStoreReloadIntervalSecs > 0) {
       scanner = new KeyStoreScanner(sslContextFactory);
       try {
-        scanner.setScanInterval(
-            (int) Math.min(builder.keyStoreReloadIntervalSecs, Integer.MAX_VALUE));
+        scanner.setScanInterval((int) Math.min(keyStoreReloadIntervalSecs, Integer.MAX_VALUE));
         scanner.start();
         if (log.isDebugEnabled()) {
           log.debug("Key Store Scanner started");
@@ -223,8 +265,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
     clientConnector.setSslContextFactory(sslContextFactory);
     clientConnector.setSelectors(2);
 
+    HttpClient httpClient;
     HttpClientTransport transport;
-    if (builder.useHttp1_1) {
+    if (builder.shouldUseHttp1_1()) {
       if (log.isDebugEnabled()) {
         log.debug("Create Http2SolrClient with HTTP/1.1 transport");
       }
@@ -252,16 +295,17 @@ public class Http2SolrClient extends HttpSolrClientBase {
     httpClient.setMaxRequestsQueuedPerDestination(
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
-    httpClient.setIdleTimeout(idleTimeoutMillis);
+    httpClient.setConnectTimeout(builder.getConnectionTimeoutMillis());
+    httpClient.setIdleTimeout(-1); // don't enforce an idle timeout at this level
+    // note: idle & request timeouts are set per request
 
-    if (builder.cookieStore != null) {
-      httpClient.setHttpCookieStore(builder.cookieStore);
+    var cookieStore = builder.getCookieStore();
+    if (cookieStore != null) {
+      httpClient.setHttpCookieStore(cookieStore);
     }
 
     this.authenticationStore = new AuthenticationStoreHolder();
     httpClient.setAuthenticationStore(this.authenticationStore);
-
-    httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
 
     setupProxy(builder, httpClient);
 
@@ -286,7 +330,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       proxy = new Socks4Proxy(address, builder.proxyIsSecure);
     } else {
       final Protocol protocol;
-      if (builder.useHttp1_1) {
+      if (builder.shouldUseHttp1_1()) {
         protocol = HttpClientTransportOverHTTP.HTTP11;
       } else {
         // see HttpClientTransportOverHTTP2#newOrigin
@@ -327,6 +371,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   public void setAuthenticationStore(AuthenticationStore authenticationStore) {
     this.authenticationStore.updateAuthenticationStore(authenticationStore);
+  }
+
+  /** (visible for testing) */
+  public long getIdleTimeout() {
+    return idleTimeoutMillis;
   }
 
   public static class OutStream implements Closeable {
@@ -468,7 +517,13 @@ public class Http2SolrClient extends HttpSolrClientBase {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing success");
                         future.complete(body);
-                      } catch (SolrClient.RemoteSolrException | SolrServerException e) {
+                      } catch (CancellationException e) {
+                        mdcCopyHelper.onBegin(null);
+                        log.debug("response processing cancelled", e);
+                        if (!future.isDone()) {
+                          future.cancel(true);
+                        }
+                      } catch (Throwable e) {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing failed", e);
                         future.completeExceptionally(e);
@@ -514,6 +569,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     try {
       InputStreamResponseListener listener = new InputStreamReleaseTrackingResponseListener();
       req = sendRequest(makeRequest(solrRequest, url, false), listener);
+      // only waits for headers, so use the idle timeout
       Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
       url = req.getURI().toString();
       InputStream is = listener.getInputStream();
@@ -589,12 +645,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
     ResponseParser parser =
         solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
     String contentType = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
+
     String mimeType = null;
     String encoding = null;
     if (contentType != null) {
       mimeType = MimeTypes.getContentTypeWithoutCharset(contentType);
       encoding = MimeTypes.getCharsetFromContentType(contentType);
     }
+
     String responseMethod = response.getRequest() == null ? "" : response.getRequest().getMethod();
     return processErrorsAndResponse(
         response.getStatus(),
@@ -621,12 +679,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
     req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
+    req.idleTimeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
+    req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
 
-    if (requestTimeoutMillis > 0) {
-      req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
-    } else {
-      req.timeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
-    }
     if (solrRequest.getUserPrincipal() != null) {
       req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
     }
@@ -999,7 +1054,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
       return this;
     }
 
-    private HttpCookieStore getDefaultCookieStore() {
+    private HttpCookieStore getCookieStore() {
+      if (cookieStore == null) {
+        return cookieStore;
+      }
       if (Boolean.getBoolean("solr.http.disableCookies")) {
         return new HttpCookieStore.Empty();
       }
@@ -1016,65 +1074,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     @Override
     public Http2SolrClient build() {
-      if (sslConfig == null) {
-        sslConfig = Http2SolrClient.defaultSSLConfig;
-      }
-      if (cookieStore == null) {
-        cookieStore = getDefaultCookieStore();
-      }
-      if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
-        idleTimeoutMillis = (long) HttpClientUtil.DEFAULT_SO_TIMEOUT;
-      }
-      if (connectionTimeoutMillis == null) {
-        connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
-      }
-
-      if (keyStoreReloadIntervalSecs != null
-          && keyStoreReloadIntervalSecs > 0
-          && this.httpClient != null) {
-        log.warn("keyStoreReloadIntervalSecs can't be set when using external httpClient");
-        keyStoreReloadIntervalSecs = null;
-      } else if (keyStoreReloadIntervalSecs == null
-          && this.httpClient == null
-          && Boolean.getBoolean("solr.keyStoreReload.enabled")) {
-        keyStoreReloadIntervalSecs = Long.getLong("solr.jetty.sslContext.reload.scanInterval", 30);
-      }
-
-      Http2SolrClient client = new Http2SolrClient(baseSolrUrl, this);
-      try {
-        httpClientBuilderSetup(client);
-      } catch (RuntimeException e) {
-        try {
-          client.close();
-        } catch (Exception exceptionOnClose) {
-          e.addSuppressed(exceptionOnClose);
-        }
-        throw e;
-      }
-      return client;
-    }
-
-    private void httpClientBuilderSetup(Http2SolrClient client) {
-      String factoryClassName =
-          System.getProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
-      if (factoryClassName != null) {
-        log.debug("Using Http Builder Factory: {}", factoryClassName);
-        HttpClientBuilderFactory factory;
-        try {
-          factory =
-              Class.forName(factoryClassName)
-                  .asSubclass(HttpClientBuilderFactory.class)
-                  .getDeclaredConstructor()
-                  .newInstance();
-        } catch (InstantiationException
-            | IllegalAccessException
-            | ClassNotFoundException
-            | InvocationTargetException
-            | NoSuchMethodException e) {
-          throw new RuntimeException("Unable to instantiate " + Http2SolrClient.class.getName(), e);
-        }
-        factory.setup(client);
-      }
+      return new Http2SolrClient(baseSolrUrl, this);
     }
 
     /**
@@ -1087,17 +1087,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.basicAuthAuthorizationStr == null) {
         this.basicAuthAuthorizationStr = http2SolrClient.basicAuthAuthorizationStr;
       }
-      if (this.followRedirects == null) {
-        this.followRedirects = http2SolrClient.httpClient.isFollowRedirects();
-      }
       if (this.idleTimeoutMillis == null) {
         this.idleTimeoutMillis = http2SolrClient.idleTimeoutMillis;
       }
-      if (this.requestWriter == null) {
-        this.requestWriter = http2SolrClient.requestWriter;
-      }
       if (this.requestTimeoutMillis == null) {
         this.requestTimeoutMillis = http2SolrClient.requestTimeoutMillis;
+      }
+      if (this.requestWriter == null) {
+        this.requestWriter = http2SolrClient.requestWriter;
       }
       if (this.responseParser == null) {
         this.responseParser = http2SolrClient.parser;
@@ -1106,8 +1103,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
         this.urlParamNames = http2SolrClient.urlParamNames;
       }
       if (this.listenerFactory == null) {
-        this.listenerFactory = new ArrayList<HttpListenerFactory>();
-        http2SolrClient.listenerFactory.forEach(this.listenerFactory::add);
+        this.listenerFactory = new ArrayList<>(http2SolrClient.listenerFactory);
       }
       if (this.executor == null) {
         this.executor = http2SolrClient.executor;

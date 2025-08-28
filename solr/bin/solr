@@ -68,7 +68,7 @@ if [ $$ -ne $(ps -o pid='' -p $$ || echo 0) ] ; then
   exit 1
 fi
 
-# This helps with debugging when running bats tests but not the whole script is compliant yet
+# This helps with debugging when running bats tests however the whole script is not compliant yet
 # set -u
 # set -o pipefail
 
@@ -114,7 +114,7 @@ fi
 
 # Export variables we want to make visible to Solr sub-process
 for var in $(compgen -v); do
-  if [[ "$var" =~ ^(SOLR_.*|DEFAULT_CONFDIR|ZK_.*|GCS_BUCKET|GCS_.*|S3_.*|OTEL_.*|AWS_.*)$ ]]; then
+  if [[ "$var" =~ ^(SOLR_.*|ZK_.*|GCS_BUCKET|GCS_.*|S3_.*|OTEL_.*|AWS_.*)$ ]]; then
     export "${var?}"
   fi
 done
@@ -301,7 +301,7 @@ fi
 export SOLR_URL_SCHEME
 
 # Gracefully wait for existing requests on shutdown
-if [ "${SOLR_JETTY_GRACEFUL:-true}" == "true" ]; then
+if [ "${SOLR_JETTY_GRACEFUL:-false}" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=graceful")
 fi
 
@@ -316,10 +316,10 @@ if [ "${SOLR_GZIP_ENABLED:-true}" == "true" ]; then
 fi
 
 # Jetty configuration for new Admin UI
-if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ] ||
-   [ "${SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED:-false}" == "true" ]; then
-  # Do not enable new Admin UI
-  echo -e "New Admin UI not enabled"
+if [ "${SOLR_UI_ENABLED:-true}" == "false" ] ||
+   [ "${SOLR_UI_EXPERIMENTAL_ENABLED:-true}" == "false" ]; then
+  # Do not enable new Solr UI
+  echo -e "New Solr UI not enabled"
 else
   # Enable new Admin UI
   SOLR_JETTY_CONFIG+=("--module=new-ui")
@@ -418,7 +418,7 @@ function print_usage() {
     echo "                          you could pass: --jvm-opts \"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983\""
     echo "                          In most cases, you should wrap the additional parameters in double quotes."
     echo ""
-    echo "  -j <jettyParams>      Additional parameters to pass to Jetty when starting Solr."
+    echo "  -j/--jettyconfig <jettyParams> Additional parameters to pass to Jetty when starting Solr."
     echo "                          For example, to add configuration folder that jetty should read"
     echo "                          you could pass: -j \"--include-jetty-dir=/etc/jetty/custom/server/\""
     echo "                          In most cases, you should wrap the additional parameters in double quotes."
@@ -495,9 +495,10 @@ function jetty_port() {
 # useful for doing cross-platform work from the command-line using Java
 function run_tool() {
 
-  # shellcheck disable=SC2086
+  # shellcheck disable=SC2086,SC2164
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} ${SOLR_TOOL_OPTS:-} -Dsolr.install.dir="$SOLR_TIP" \
     -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" -Dsolr.pid.dir="$SOLR_PID_DIR" \
+    -Djava.io.tmpdir="$(cd "${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"; pwd -P)" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
     org.apache.solr.cli.SolrCLI "$@"
 
@@ -517,8 +518,9 @@ function stop_solr() {
 
   if [ -n "$SOLR_PID"  ]; then
     echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting up to $SOLR_STOP_WAIT seconds to allow Jetty process $SOLR_PID to stop gracefully."
-    # shellcheck disable=SC2086
-    "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_TOOL_OPTS:-} -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
+    # shellcheck disable=SC2086,SC2164
+    "$JAVA" -Djava.io.tmpdir="$(cd "${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"; pwd -P)" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_TOOL_OPTS:-} \
+      -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
       (loops=0
       while true
       do
@@ -792,7 +794,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -j|--jettyconfig)
-            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+            if [[ -z "$2" ]]; then
               print_usage "$SCRIPT_CMD" "Jetty config is required when using the $1 option!"
               exit 1
             fi
@@ -859,14 +861,6 @@ fi
 # Default placement plugin
 if [[ -n "${SOLR_PLACEMENTPLUGIN_DEFAULT:-}" ]] ; then
   SCRIPT_SOLR_OPTS+=("-Dsolr.placementplugin.default=$SOLR_PLACEMENTPLUGIN_DEFAULT")
-fi
-
-# Remote streaming and stream body
-if [ "${SOLR_ENABLE_REMOTE_STREAMING:-false}" == "true" ]; then
-  SCRIPT_SOLR_OPTS+=("-Dsolr.enableRemoteStreaming=true")
-fi
-if [ "${SOLR_ENABLE_STREAM_BODY:-false}" == "true" ]; then
-  SCRIPT_SOLR_OPTS+=("-Dsolr.enableStreamBody=true")
 fi
 
 : ${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}
@@ -1022,9 +1016,6 @@ elif [[ $SOLR_HOME != /* ]]; then
   fi
 fi
 
-# Set the default configset dir to be bootstrapped as _default
-: "${DEFAULT_CONFDIR:="$SOLR_SERVER_DIR/solr/configsets/_default/conf"}"
-
 # This is quite hacky, but examples rely on a different log4j2.xml
 # so that we can write logs for examples to $SOLR_HOME/../logs
 : "${SOLR_LOGS_DIR:="$SOLR_SERVER_DIR/logs"}"
@@ -1161,14 +1152,6 @@ else
   SECURITY_MANAGER_OPTS=()
 fi
 
-# Enable Admin UI by default, and give the option for users to disable it
-if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ]; then
-  SOLR_ADMIN_UI="-DdisableAdminUI=true"
-  echo -e "ADMIN UI Disabled"
-else
-  SOLR_ADMIN_UI="-DdisableAdminUI=false"
-fi
-
 JAVA_MEM_OPTS=()
 if [ -z "${SOLR_HEAP:-}" ] && [ -n "${SOLR_JAVA_MEM:-}" ]; then
   JAVA_MEM_OPTS=($SOLR_JAVA_MEM)
@@ -1218,17 +1201,10 @@ function start_solr() {
     GC_TUNE_ARR=($GC_TUNE) # Stuff the string from outside into first value of the array
   fi
 
-  if [ -n "${SOLR_WAIT_FOR_ZK:-}" ]; then
-    SCRIPT_SOLR_OPTS+=("-DwaitForZk=$SOLR_WAIT_FOR_ZK")
-  fi
-
   if [ -n "${SOLR_DATA_HOME:-}" ]; then
     SCRIPT_SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
   fi
 
-  if [ -n "${SOLR_DELETE_UNKNOWN_CORES:-}" ]; then
-    SCRIPT_SOLR_OPTS+=("-Dsolr.deleteUnknownCores=$SOLR_DELETE_UNKNOWN_CORES")
-  fi
 
   # If SSL-related system props are set, add them to SCRIPT_SOLR_OPTS
   if [ "$SOLR_SSL_ENABLED" == "true" ]; then
@@ -1310,10 +1286,14 @@ function start_solr() {
 
   # Add vector optimizations module
   SCRIPT_SOLR_OPTS+=("--add-modules" "jdk.incubator.vector")
+  # Support native madvise for MemorySegmentIndexInputProvider
+  SCRIPT_SOLR_OPTS+=("--enable-native-access=ALL-UNNAMED")
 
+  # shellcheck disable=SC2164
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE_ARR[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
-    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" -Dsolr.log.dir="$SOLR_LOGS_DIR" \
+    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" -Dsolr.logs.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
+    "-Djava.io.tmpdir=$(cd "${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"; pwd -P)" \
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
@@ -1321,7 +1301,7 @@ function start_solr() {
     # OOME is thrown. Program operation after OOME is unpredictable.
     "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" "-Dsolr.install.symDir=$SOLR_TIP_SYM" \
-    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SCRIPT_SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}" "${SOLR_OPTS[@]}")
+    "${LOG4J_CONFIG[@]}" "${SCRIPT_SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_OPTS[@]}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"
   if [[ -n "${SOLR_HEAP_DUMP_DIR:-}" ]]; then
