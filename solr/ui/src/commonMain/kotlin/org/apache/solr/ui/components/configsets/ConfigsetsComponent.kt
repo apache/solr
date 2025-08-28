@@ -22,6 +22,7 @@ import com.arkivanov.decompose.value.Value
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.configsets.data.ListConfigsets
 import org.apache.solr.ui.components.configsets.overview.OverviewComponent
+import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 /**
  * Contract for the Configsets feature.
@@ -65,12 +66,12 @@ interface ConfigsetsComponent {
     /**
      * UI model for the Configsets screen.
      *
-     * @property selectedTab Zero-based index of the active tab.
+     * @property selectedTab Active tab.
      * @property configSets List of available configsets (domain model).
      * @property selectedConfigset Name of the active configset (non-null when available).
      */
     data class Model(
-        val selectedTab: Int,
+        val selectedTab: ConfigsetsTab = ConfigsetsTab.Overview,
         val configSets: ListConfigsets,
         val selectedConfigset: String = "",
     )
@@ -79,7 +80,7 @@ interface ConfigsetsComponent {
     val model: StateFlow<Model>
 
     /** Select the active tab by index. */
-    fun onSelectTab(index: Int)
+    fun onSelectTab(tab: ConfigsetsTab)
 
     /** Select the active configset by name. */
     fun onSelectConfigset(name: String)

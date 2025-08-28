@@ -28,6 +28,7 @@ import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.configsets.data.ListConfigsets
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.State
+import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 /**
  * Store provider that [provide]s instances of [ConfigsetsStore].
@@ -62,7 +63,7 @@ internal class ConfigsetsStoreProvider(
 
     private sealed interface Message {
         data class ConfigSetsUpdated(val configsets: ListConfigsets) : Message
-        data class SelectedTabChanged(val tabIndex: Int = 0) : Message
+        data class SelectedTabChanged(val tab: ConfigsetsTab) : Message
         data class SelectedConfigSetChanged(val configsetName: String) : Message
     }
 
@@ -74,7 +75,7 @@ internal class ConfigsetsStoreProvider(
         }
         override fun executeIntent(intent: Intent) = when (intent) {
             is Intent.FetchConfigSets -> fetchConfigSets()
-            is Intent.SelectTab -> dispatch(Message.SelectedTabChanged(intent.tabIndex))
+            is Intent.SelectTab -> dispatch(Message.SelectedTabChanged(intent.tab))
             is Intent.SelectConfigSet -> dispatch(Message.SelectedConfigSetChanged(intent.configSetName))
         }
         private fun fetchConfigSets() {
@@ -94,7 +95,7 @@ internal class ConfigsetsStoreProvider(
     private object ReducerImpl : Reducer<State, Message> {
         override fun State.reduce(msg: Message): State = when (msg) {
             is Message.ConfigSetsUpdated -> copy(configSets = msg.configsets)
-            is Message.SelectedTabChanged -> copy(selectedTab = msg.tabIndex)
+            is Message.SelectedTabChanged -> copy(selectedTab = msg.tab)
             is Message.SelectedConfigSetChanged -> copy(selectedConfigset = msg.configsetName)
         }
     }
