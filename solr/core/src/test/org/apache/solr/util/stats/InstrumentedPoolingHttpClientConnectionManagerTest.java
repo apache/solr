@@ -1,22 +1,13 @@
 package org.apache.solr.util.stats;
 
-import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpHost;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.routing.HttpRoute;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricTestUtils;
-import org.apache.solr.metrics.SolrMetricsContext;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -26,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 public class InstrumentedPoolingHttpClientConnectionManagerTest extends SolrTestCaseJ4 {
 
-    private InstrumentedPoolingHttpClientConnectionManager connectionManager;
+    private static InstrumentedPoolingHttpClientConnectionManager connectionManager;
     private PrometheusMetricReader metricsReader;
 
     @BeforeClass
@@ -39,35 +30,17 @@ public class InstrumentedPoolingHttpClientConnectionManagerTest extends SolrTest
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        Registry<ConnectionSocketFactory > socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
-                .register("http", PlainConnectionSocketFactory.INSTANCE)
-                .build();
-
-        connectionManager = new InstrumentedPoolingHttpClientConnectionManager(socketFactoryRegistry);
-
-        SolrMetricsContext solrMetricsContext = h.getCoreContainer()
-                .getMetricsHandler()
-                .getSolrMetricsContext();
-
-        Attributes attributes = Attributes.builder()
-                .put(SolrMetricProducer.CATEGORY_ATTR, SolrInfoBean.Category.HTTP.toString())
-                .build();
-
-        connectionManager.initializeMetrics(solrMetricsContext, attributes, "test");
+        connectionManager = (InstrumentedPoolingHttpClientConnectionManager) h.getCoreContainer()
+                .getUpdateShardHandler()
+                .getDefaultConnectionManager();
         metricsReader = SolrMetricTestUtils.getPrometheusMetricReader(h.getCoreContainer(), "solr.node");
-    }
-
-    @After
-    @Override
-    public void tearDown() throws Exception {
-        if (connectionManager != null) {
-            connectionManager.close();
-        }
-        super.tearDown();
     }
 
     @AfterClass
     public static void afterClass() throws Exception {
+        if (connectionManager != null) {
+            connectionManager.close();
+        }
         deleteCore();
     }
 
@@ -76,8 +49,8 @@ public class InstrumentedPoolingHttpClientConnectionManagerTest extends SolrTest
         assertGaugeMetricValueForType("available_connections", 0);
         assertGaugeMetricValueForType("leased_connections", 0);
         assertGaugeMetricValueForType("pending_connections", 0);
-        // The default maximum when no configuration override is provided
-        assertGaugeMetricValueForType("max_connections", 20);
+        // The overridden value of max connections for the connection pool via configuration
+        assertGaugeMetricValueForType("max_connections", 100000);
     }
 
     @Test
