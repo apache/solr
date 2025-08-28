@@ -18,17 +18,19 @@ package org.apache.solr.ui.views.configsets
 
 import ConfigsetsNavBarComponent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.ui.Alignment
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
+import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
 import org.apache.solr.ui.components.configsets.overview.OverviewComponent
 
@@ -44,15 +46,18 @@ fun ConfigsetsContent(
     horizontalArrangement = Arrangement.spacedBy(16.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
 ) {
-    // if you actually need the store model, keep this:
-    // val model by component.model.collectAsState()
+    val model by component.model.collectAsState()
 
     // Decompose child to access OverviewComponent
     val stack by component.childStack.subscribeAsState()
     val currentChild = stack.active.instance
 
     ConfigsetsNavBarComponent(
-        availableConfigsets = listOf("basic_configs", "my_custom_conf", "news_core_v2"),
+        selectedTab = model.selectedTab,
+        selectTab = { i: Int -> component.onSelectTab(i) },
+        selectedConfigSet = model.selectedConfigset,
+        selectConfigset = { s: String -> component.onSelectConfigset(s) },
+        availableConfigsets = model.configSets,
         content = { tab, configset ->
             when (tab) {
                 "Overview" -> {
@@ -72,10 +77,11 @@ fun ConfigsetsContent(
                     }
                 }
             }
-        }
+        },
     )
 }
+
 @Composable
-fun OverviewContent(component: OverviewComponent)  {
+fun OverviewContent(component: OverviewComponent, modifier: Modifier = Modifier) {
     Text("Overview section")
 }

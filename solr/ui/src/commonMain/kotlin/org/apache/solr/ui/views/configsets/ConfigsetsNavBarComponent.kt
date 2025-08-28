@@ -44,6 +44,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.serialization.json.JsonNull.content
+import org.apache.solr.ui.components.configsets.data.ListConfigSets
 
 private val configsetTabs = listOf(
     "Overview",
@@ -58,21 +60,23 @@ private val configsetTabs = listOf(
 
 @Composable
 fun ConfigsetsNavBarComponent(
-    availableConfigsets: List<String>,
+    selectedTab: Int,
+    selectTab: (Int) -> Unit,
+    selectedConfigSet: String,
+    selectConfigset: (String) -> Unit,
+    availableConfigsets: ListConfigSets,
     modifier: Modifier = Modifier,
     content: @Composable (tab: String, configset: String) -> Unit = { tab, _ ->
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(tab) }
     },
 ) {
-    if (availableConfigsets.isEmpty()) {
+    if (availableConfigsets.names.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No configsets available")
         }
         return
     }
 
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    var selectedConfigset by rememberSaveable { mutableStateOf(availableConfigsets.first()) }
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier) {
@@ -87,7 +91,7 @@ fun ConfigsetsNavBarComponent(
             configsetTabs.forEachIndexed { i, label ->
                 Tab(
                     selected = selectedTab == i,
-                    onClick = { selectedTab = i },
+                    onClick = { selectTab(i) },
                     text = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 )
             }
@@ -105,7 +109,7 @@ fun ConfigsetsNavBarComponent(
                 modifier = Modifier.weight(1f),
             ) {
                 OutlinedTextField(
-                    value = selectedConfigset,
+                    value = selectedConfigSet,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Configset") },
@@ -113,13 +117,12 @@ fun ConfigsetsNavBarComponent(
                     modifier = Modifier.menuAnchor().fillMaxWidth(),
                 )
                 ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    availableConfigsets.forEach { name ->
+                    availableConfigsets.names.forEach { name ->
                         DropdownMenuItem(
                             text = { Text(name) },
                             onClick = {
-                                selectedConfigset = name
+                                selectConfigset(name)
                                 expanded = false
-                                selectedTab = 0 // Overview
                             },
                         )
                     }
@@ -128,7 +131,7 @@ fun ConfigsetsNavBarComponent(
         }
 
         Box(Modifier.fillMaxSize().padding(16.dp)) {
-            content(configsetTabs[selectedTab], selectedConfigset)
+            content(configsetTabs[selectedTab], selectedConfigSet)
         }
     }
 }

@@ -22,6 +22,8 @@ import org.apache.solr.ui.components.configsets.store.ConfigsetsStore
 
 internal val configsetsStateToModel: (ConfigsetsStore.State) -> ConfigsetsComponent.Model = {
     ConfigsetsComponent.Model(
+        configSets = it.configSets,
+        selectedConfigset = it.selectedConfigset,
         selectedTab = it.selectedTab,
     )
 }

@@ -23,12 +23,15 @@ import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.apache.solr.ui.components.configsets.data.ListConfigSets
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.State
 
 /**
- * Store provider that [provide]s instances of [EnvironmentStore].
+ * Store provider that [provide]s instances of [ConfigsetsStore].
  *
  * @property storeFactory Store factory to use for creating the store.
  * @property client Client implementation to use for resolving [Intent]s and [Action]s.
@@ -46,30 +49,62 @@ internal class ConfigsetsStoreProvider(
         Store<Intent, State, Nothing> by storeFactory.create(
             name = "ConfigsetsStore",
             initialState = State(),
-            bootstrapper = SimpleBootstrapper(),
+            bootstrapper = SimpleBootstrapper(Action.FetchInitialConfigsets),
             executorFactory = ::ExecutorImpl,
             reducer = ReducerImpl,
         ) {}
 
-    private sealed interface Action
+    private sealed interface Action {
+        /**
+         * Action used for initiating the initial fetch of configsets data.
+         */
+        data object FetchInitialConfigsets : Action
+    }
 
-    private sealed interface Message
+    private sealed interface Message {
+        data class ConfigSetsUpdated(val configsets: ListConfigSets) : Message
+        data class SelectedTabChanged(val tabIndex: Int = 0) : Message
+        data class SelectedConfigSetChanged(val configsetName: String) : Message
+    }
 
-    private inner class ExecutorImpl : CoroutineExecutor<Intent, Action, State, Message, Nothing>(mainContext)
+    private inner class ExecutorImpl : CoroutineExecutor<Intent, Action, State, Message, Nothing>(mainContext) {
+        override fun executeAction(action: Action) = when (action) {
+            Action.FetchInitialConfigsets -> {
+                fetchConfigSets()
+            }
+        }
+        override fun executeIntent(intent: Intent) = when (intent) {
+            is Intent.FetchConfigSets -> fetchConfigSets()
+            is Intent.SelectTab -> dispatch(Message.SelectedTabChanged(intent.tabIndex))
+            is Intent.SelectConfigSet -> dispatch(Message.SelectedConfigSetChanged(intent.configSetName))
+        }
+        private fun fetchConfigSets() {
+            scope.launch {
+                withContext(ioContext) {
+                    client.fetchConfigSets()
+                }.onSuccess { sets ->
+                    dispatch(Message.ConfigSetsUpdated(sets))
+                }
+            }
+        }
+    }
 
     /**
      * Reducer implementation that consumes [Message]s and updates the store's [State].
      */
     private object ReducerImpl : Reducer<State, Message> {
         override fun State.reduce(msg: Message): State = when (msg) {
-            else -> {
-                copy()
-            }
+            is Message.ConfigSetsUpdated -> copy(configSets = msg.configsets)
+            is Message.SelectedTabChanged -> copy(selectedTab = msg.tabIndex)
+            is Message.SelectedConfigSetChanged -> copy(selectedConfigset = msg.configsetName)
         }
     }
 
     /**
      * Client interface for fetching configsets information.
      */
-    interface Client
+    interface Client {
+        /** To fetch a list of configsets. */
+        suspend fun fetchConfigSets(): Result<ListConfigSets>
+    }
 }
