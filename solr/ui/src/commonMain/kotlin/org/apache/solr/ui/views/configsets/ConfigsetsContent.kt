@@ -33,6 +33,8 @@ import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
 import org.apache.solr.ui.components.configsets.overview.OverviewComponent
+import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
+import org.jetbrains.compose.resources.stringResource
 
 // import your OverviewContent
 
@@ -54,26 +56,25 @@ fun ConfigsetsContent(
 
     ConfigsetsNavBarComponent(
         selectedTab = model.selectedTab,
-        selectTab = { i: Int -> component.onSelectTab(i) },
+        selectTab = { tab: ConfigsetsTab -> component.onSelectTab(tab) },
         selectedConfigSet = model.selectedConfigset,
         selectConfigset = { s: String -> component.onSelectConfigset(s) },
         availableConfigsets = model.configSets,
-        content = { tab, configset ->
+        content = { tab, _ ->
             when (tab) {
-                "Overview" -> {
-                    val oc = (currentChild as? Child.Overview)?.component
-                    if (oc != null) {
-                        OverviewContent(component = oc)
-                    } else {
-                        // fallback if you add more children later
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Overview unavailable")
-                        }
+                ConfigsetsTab.Overview -> {
+                    when (val child = currentChild) {
+                        is Child.Overview ->
+                            OverviewContent(component = child.component)
+                        else ->
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("Overview unavailable")
+                            }
                     }
                 }
                 else -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(tab)
+                        Text(tab.name)
                     }
                 }
             }

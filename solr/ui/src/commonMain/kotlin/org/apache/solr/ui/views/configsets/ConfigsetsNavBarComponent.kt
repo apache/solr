@@ -44,28 +44,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.configsets.data.ListConfigsets
-
-private val configsetTabs = listOf(
-    "Overview",
-    "Libraries",
-    "Files",
-    "Schema",
-    "Update Configuration",
-    "Index / Query",
-    "Request Handlers / Dispatchers",
-    "Search Components",
-)
+import org.apache.solr.ui.generated.resources.Res
+import org.apache.solr.ui.generated.resources.configsets_files
+import org.apache.solr.ui.generated.resources.configsets_index_query
+import org.apache.solr.ui.generated.resources.configsets_overview
+import org.apache.solr.ui.generated.resources.configsets_request_handlers
+import org.apache.solr.ui.generated.resources.configsets_schema
+import org.apache.solr.ui.generated.resources.configsets_search_components
+import org.apache.solr.ui.generated.resources.configsets_update_configuration
+import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ConfigsetsNavBarComponent(
-    selectedTab: Int,
-    selectTab: (Int) -> Unit,
+    selectedTab: ConfigsetsTab,
+    selectTab: (ConfigsetsTab) -> Unit,
     selectedConfigSet: String,
     selectConfigset: (String) -> Unit,
     availableConfigsets: ListConfigsets,
     modifier: Modifier = Modifier,
-    content: @Composable (tab: String, configset: String) -> Unit = { tab, _ ->
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(tab) }
+    content: @Composable (tab: ConfigsetsTab, configset: String) -> Unit = { tab, _ ->
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(stringResource(tabLabelRes(tab))) }
     },
 ) {
     if (availableConfigsets.names.isEmpty()) {
@@ -76,21 +75,23 @@ fun ConfigsetsNavBarComponent(
     }
 
     var expanded by remember { mutableStateOf(false) }
-
+    val selectedIndex = ConfigsetsTab.entries.indexOf(selectedTab)
     Column(modifier) {
         ScrollableTabRow(
-            selectedTabIndex = selectedTab,
+            selectedTabIndex = selectedIndex,
             edgePadding = 16.dp,
             divider = { HorizontalDivider(thickness = 1.dp) },
             indicator = { pos ->
-                TabRowDefaults.SecondaryIndicator(Modifier.tabIndicatorOffset(pos[selectedTab]))
+                TabRowDefaults.SecondaryIndicator(
+                    Modifier.tabIndicatorOffset(pos[selectedIndex]),
+                )
             },
         ) {
-            configsetTabs.forEachIndexed { i, label ->
+            ConfigsetsTab.entries.forEach { tab ->
                 Tab(
-                    selected = selectedTab == i,
-                    onClick = { selectTab(i) },
-                    text = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    selected = selectedTab == tab,
+                    onClick = { selectTab(tab) },
+                    text = { Text(stringResource(tabLabelRes(tab)), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 )
             }
         }
@@ -129,7 +130,17 @@ fun ConfigsetsNavBarComponent(
         }
 
         Box(Modifier.fillMaxSize().padding(16.dp)) {
-            content(configsetTabs[selectedTab], selectedConfigSet)
+            content(selectedTab, selectedConfigSet)
         }
     }
+}
+
+private fun tabLabelRes(item: ConfigsetsTab) = when (item) {
+    ConfigsetsTab.Overview -> Res.string.configsets_overview
+    ConfigsetsTab.Files -> Res.string.configsets_files
+    ConfigsetsTab.Schema -> Res.string.configsets_schema
+    ConfigsetsTab.UpdateConfig -> Res.string.configsets_update_configuration
+    ConfigsetsTab.IndexQuery -> Res.string.configsets_index_query
+    ConfigsetsTab.Handlers -> Res.string.configsets_request_handlers
+    ConfigsetsTab.SearchComponents -> Res.string.configsets_search_components
 }

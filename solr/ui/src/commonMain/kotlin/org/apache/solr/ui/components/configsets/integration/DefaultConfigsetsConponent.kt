@@ -37,6 +37,7 @@ import org.apache.solr.ui.components.configsets.store.ConfigsetsStoreProvider
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.coroutineScope
 import org.apache.solr.ui.utils.map
+import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 /**
  * Default implementation of the [ConfigsetsComponent].
@@ -116,8 +117,8 @@ class DefaultConfigsetsConponent internal constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override val model = store.stateFlow.map(mainScope, configsetsStateToModel)
 
-    override fun onSelectTab(index: Int) {
-        store.accept(ConfigsetsStore.Intent.SelectTab(index))
+    override fun onSelectTab(tab: ConfigsetsTab) {
+        store.accept(ConfigsetsStore.Intent.SelectTab(tab))
     }
 
     override fun onSelectConfigset(name: String) {

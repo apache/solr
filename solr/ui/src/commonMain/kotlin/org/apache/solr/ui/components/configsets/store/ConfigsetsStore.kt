@@ -20,13 +20,14 @@ import com.arkivanov.mvikotlin.core.store.Store
 import org.apache.solr.ui.components.configsets.data.ListConfigsets
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.State
+import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 internal interface ConfigsetsStore : Store<Intent, State, Nothing> {
     sealed interface Intent {
         /**
          * Intent for selecting tab.
          */
-        data class SelectTab(val tabIndex: Int) : Intent
+        data class SelectTab(val tab: ConfigsetsTab) : Intent
 
         /**
          * Intent for fetching configsets from the solr.
@@ -36,7 +37,7 @@ internal interface ConfigsetsStore : Store<Intent, State, Nothing> {
         data class SelectConfigSet(val configSetName: String) : Intent
     }
     data class State(
-        val selectedTab: Int = 0,
+        val selectedTab: ConfigsetsTab = ConfigsetsTab.Overview,
         val selectedConfigset: String = "",
         val configSets: ListConfigsets = ListConfigsets(),
     )
