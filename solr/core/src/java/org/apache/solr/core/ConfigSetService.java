@@ -116,7 +116,13 @@ public abstract class ConfigSetService {
   }
 
   private void bootstrapConfDir(String confDir) throws IOException {
-    Path configPath = Path.of(confDir);
+    if (!confDir.endsWith("conf")) {
+      throw new IllegalArgumentException(
+          "solr.configset.bootstrap.confdir must point to 'conf' directory, confDir: " + confDir);
+    }
+
+    Path configPath = resolvePathWithSolrInstallDir(confDir);
+
     if (!Files.isDirectory(configPath)) {
       throw new IllegalArgumentException(
           "solr.configset.bootstrap.confdir must be a directory of configuration files, configPath: "
@@ -131,14 +137,13 @@ public abstract class ConfigSetService {
    * sysprop "solr.configset.default.confdir". If not found, tries to find the _default dir relative
    * to the sysprop "solr.install.dir". Returns null if not found anywhere.
    *
-   * @lucene.internal
    * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
    */
   public static Path getDefaultConfigDirPath() {
     String confDir =
         System.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE);
     if (confDir != null) {
-      Path path = Path.of(confDir);
+      Path path = resolvePathWithSolrInstallDir(confDir);
       if (Files.exists(path)) {
         return path;
       }
@@ -146,14 +151,41 @@ public abstract class ConfigSetService {
 
     String installDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
     if (installDir != null) {
+      Path installPath = resolvePathWithSolrInstallDir(installDir);
       Path subPath = Path.of("server", "solr", "configsets", "_default", "conf");
-      Path path = Path.of(installDir).resolve(subPath);
+      Path path = installPath.resolve(subPath);
       if (Files.exists(path)) {
         return path;
       }
     }
 
     return null;
+  }
+
+  /**
+   * Resolves a path string into a Path object, handling both absolute and relative paths. If the
+   * path is relative and solr.install.dir system property is set, the path is resolved against the
+   * Solr installation directory. Otherwise, it's converted to an absolute path based on the current
+   * working directory.
+   *
+   * @param pathStr The path string to resolve
+   * @return The resolved Path object
+   * @see SolrDispatchFilter#SOLR_INSTALL_DIR_ATTRIBUTE
+   */
+  public static Path resolvePathWithSolrInstallDir(String pathStr) {
+    Path path = Path.of(pathStr);
+
+    // Convert to absolute path if it's relative and solr.install.dir is set
+    if (!path.isAbsolute()) {
+      String installDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+      if (installDir != null) {
+        path = Path.of(installDir).resolve(path).normalize();
+      } else {
+        path = path.toAbsolutePath().normalize();
+      }
+    }
+
+    return path;
   }
 
   // Order is important here since "confDir" may be
