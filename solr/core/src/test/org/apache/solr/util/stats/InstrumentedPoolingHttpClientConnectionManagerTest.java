@@ -29,13 +29,6 @@ public class InstrumentedPoolingHttpClientConnectionManagerTest extends SolrTest
     private InstrumentedPoolingHttpClientConnectionManager connectionManager;
     private PrometheusMetricReader metricsReader;
 
-    private static final int DEFAULT_HTTP_MAX_CONNECTIONS = 20;
-    private static final String METRIC_NAME = "solr_http_connection_pool";
-    private static final String METRIC_TYPE_AVAILABLE_CONNECTIONS = "available_connections";
-    private static final String METRIC_TYPE_MAX_CONNECTIONS = "max_connections";
-    private static final String METRIC_TYPE_LEASED_CONNECTIONS = "leased_connections";
-    private static final String METRIC_TYPE_PENDING_CONNECTIONS = "pending_connections";
-
     @BeforeClass
     public static void beforeClass() throws Exception {
         initCore("solrconfig-minimal.xml", "schema.xml");
@@ -80,27 +73,28 @@ public class InstrumentedPoolingHttpClientConnectionManagerTest extends SolrTest
 
     @Test
     public void testInitializedMetrics() {
-        assertGaugeMetricValueForType(METRIC_TYPE_AVAILABLE_CONNECTIONS, 0);
-        assertGaugeMetricValueForType(METRIC_TYPE_LEASED_CONNECTIONS, 0);
-        assertGaugeMetricValueForType(METRIC_TYPE_PENDING_CONNECTIONS, 0);
-        assertGaugeMetricValueForType(METRIC_TYPE_MAX_CONNECTIONS, DEFAULT_HTTP_MAX_CONNECTIONS);
+        assertGaugeMetricValueForType("available_connections", 0);
+        assertGaugeMetricValueForType("leased_connections", 0);
+        assertGaugeMetricValueForType("pending_connections", 0);
+        // The default maximum when no configuration override is provided
+        assertGaugeMetricValueForType("max_connections", 20);
     }
 
     @Test
-    public void testConnectionPoolLeasedMetrics() throws Exception {
+    public void testLeasedConnectionsMetrics() throws Exception {
         HttpRoute route = new HttpRoute(new HttpHost("localhost", 8080));
 
-        assertGaugeMetricValueForType(METRIC_TYPE_LEASED_CONNECTIONS, 0);
+        assertGaugeMetricValueForType("leased_connections", 0);
 
         HttpClientConnection conn = connectionManager
                 .requestConnection(route, null)
                 .get(1000, TimeUnit.MILLISECONDS);
 
-        assertGaugeMetricValueForType(METRIC_TYPE_LEASED_CONNECTIONS, 1);
+        assertGaugeMetricValueForType("leased_connections", 1);
 
         connectionManager.releaseConnection(conn, null, 0, null);
 
-        assertGaugeMetricValueForType(METRIC_TYPE_LEASED_CONNECTIONS, 0);
+        assertGaugeMetricValueForType("leased_connections", 0);
     }
 
     private void assertGaugeMetricValueForType(String metricType, double expectedValue) {
@@ -110,7 +104,7 @@ public class InstrumentedPoolingHttpClientConnectionManagerTest extends SolrTest
                 .label("type", metricType)
                 .build();
         GaugeSnapshot.GaugeDataPointSnapshot dataPointSnapshot = (GaugeSnapshot.GaugeDataPointSnapshot)
-                SolrMetricTestUtils.getDataPointSnapshot(metricsReader, METRIC_NAME, labels);
+                SolrMetricTestUtils.getDataPointSnapshot(metricsReader, "solr_http_connection_pool", labels);
         assertNotNull(dataPointSnapshot);
         assertEquals(expectedValue, dataPointSnapshot.getValue(), 0.0);
     }

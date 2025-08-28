@@ -21,6 +21,7 @@ import io.opentelemetry.api.common.Attributes;
 import org.apache.http.config.Registry;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.pool.PoolStats;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -56,17 +57,18 @@ import org.apache.solr.metrics.SolrMetricsContext;
             "solr_http_connection_pool",
             "Metrics around the HTTP Connection Pool",
             (observableLongMeasurement -> {
+                PoolStats poolStats = getTotalStats();
                 observableLongMeasurement.record(
-                        getTotalStats().getAvailable(),
+                        poolStats.getAvailable(),
                         baseAttributes.toBuilder().put(TYPE_ATTR, "available_connections").build());
                 observableLongMeasurement.record(
-                        getTotalStats().getLeased(),
+                        poolStats.getLeased(),
                         baseAttributes.toBuilder().put(TYPE_ATTR, "leased_connections").build());
                 observableLongMeasurement.record(
-                        getTotalStats().getMax(),
+                        poolStats.getMax(),
                         baseAttributes.toBuilder().put(TYPE_ATTR, "max_connections").build());
                 observableLongMeasurement.record(
-                        getTotalStats().getPending(),
+                        poolStats.getPending(),
                         baseAttributes.toBuilder().put(TYPE_ATTR, "pending_connections").build());
             }));
   }
