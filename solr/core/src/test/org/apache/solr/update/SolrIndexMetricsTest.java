@@ -16,18 +16,17 @@
  */
 package org.apache.solr.update;
 
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import java.util.Map;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Test;
+
+import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 
 /** Test proper registration and collection of index and directory metrics. */
 public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
@@ -61,28 +60,46 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     addDocs();
 
-    MetricRegistry registry =
-        h.getCoreContainer()
-            .getMetricManager()
-            .registry(h.getCore().getCoreMetricManager().getRegistryName());
-    assertNotNull(registry);
+    try (SolrCore core = h.getCoreContainer().getCore("collection1")) {
+      // check basic index meters
+      var minorMergeTimer =
+          SolrMetricTestUtils.getHistogramDatapoint(
+              core,
+              "solr_indexwriter_minor_merge_milliseconds",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      assertTrue("minorMerge: " + minorMergeTimer.getCount(), minorMergeTimer.getCount() >= 3);
+      var majorMergeTimer =
+          SolrMetricTestUtils.getHistogramDatapoint(
+              core,
+              "solr_indexwriter_major_merge_milliseconds",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      // major merge timer should have a value of 0, and because 0 values are not reported, no datapoint is available
+      assertNull("majorMergeTimer", majorMergeTimer);
 
-    Map<String, Metric> metrics = registry.getMetrics();
+      // check detailed meters
+      var majorMergeDocs =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_indexwriter_major_merged_docs",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      // major merge docs should be null because mergeDetails is false
+      assertNull("majorMergeDocs", majorMergeDocs);
 
-    // NOCOMMIT: As we migrate more metrics to OTEL, this will need to migrate to check prometheus
-    // reader instead
-    assertEquals(
-        10, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
-
-    // check basic index meters
-    Timer timer = (Timer) metrics.get("INDEX.merge.minor");
-    assertTrue("minorMerge: " + timer.getCount(), timer.getCount() >= 3);
-    timer = (Timer) metrics.get("INDEX.merge.major");
-    assertEquals("majorMerge: " + timer.getCount(), 0, timer.getCount());
-    // check detailed meters
-    assertNull((Meter) metrics.get("INDEX.merge.major.docs"));
-    Meter meter = (Meter) metrics.get("INDEX.flush");
-    assertTrue("flush: " + meter.getCount(), meter.getCount() > 10);
+      var flushCounter =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_indexwriter_flush",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      assertTrue("flush: " + flushCounter.getValue(), flushCounter.getValue() > 10);
+    }
   }
 
   @Test
@@ -119,27 +136,50 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     addDocs();
 
-    MetricRegistry registry =
-        h.getCoreContainer()
-            .getMetricManager()
-            .registry(h.getCore().getCoreMetricManager().getRegistryName());
-    assertNotNull(registry);
+    try (SolrCore core = h.getCoreContainer().getCore("collection1")) {
+      var prometheusMetricReader = SolrMetricTestUtils.getPrometheusMetricReader(core);
+      assertNotNull(prometheusMetricReader);
+      MetricSnapshots otelMetrics = prometheusMetricReader.collect();
+      assertTrue("Metrics count: " + otelMetrics.size(), otelMetrics.size() >= 20);
 
-    Map<String, Metric> metrics = registry.getMetrics();
+      // check basic index meters
+      var minorMergeTimer =
+          SolrMetricTestUtils.getHistogramDatapoint(
+              core,
+              "solr_indexwriter_minor_merge_milliseconds",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      assertTrue("minorMerge: " + minorMergeTimer.getCount(), minorMergeTimer.getCount() >= 3);
+      var majorMergeTimer =
+          SolrMetricTestUtils.getHistogramDatapoint(
+              core,
+              "solr_indexwriter_major_merge_milliseconds",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      // major merge timer should have a value of 0, and because 0 values are not reported, no datapoint is available
+      assertNull("majorMergeTimer", majorMergeTimer);
 
-    assertTrue(
-        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count() >= 12);
+      // check detailed meters
+      var majorMergeDocs =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_indexwriter_major_merged_docs",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      // major merge docs should have a value of 0, and because 0 values are not reported, no datapoint is available
+      assertNull("majorMergeDocs", majorMergeDocs);
 
-    // check basic index meters
-    Timer timer = (Timer) metrics.get("INDEX.merge.minor");
-    assertTrue("minorMerge: " + timer.getCount(), timer.getCount() >= 3);
-    timer = (Timer) metrics.get("INDEX.merge.major");
-    assertEquals("majorMerge: " + timer.getCount(), 0, timer.getCount());
-    // check detailed meters
-    Meter meter = (Meter) metrics.get("INDEX.merge.major.docs");
-    assertEquals("majorMergeDocs: " + meter.getCount(), 0, meter.getCount());
-
-    meter = (Meter) metrics.get("INDEX.flush");
-    assertTrue("flush: " + meter.getCount(), meter.getCount() > 10);
+      var flushCounter =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_indexwriter_flush",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      assertTrue("flush: " + flushCounter.getValue(), flushCounter.getValue() > 10);
+    }
   }
 }
