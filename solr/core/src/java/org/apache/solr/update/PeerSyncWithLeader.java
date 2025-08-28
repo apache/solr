@@ -333,7 +333,8 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     try {
       var request =
           new GenericSolrRequest(
-              SolrRequest.METHOD.GET, "/get", SolrRequest.SolrRequestType.QUERY, params).setRequiresCollection(true);
+                  SolrRequest.METHOD.GET, "/get", SolrRequest.SolrRequestType.QUERY, params)
+              .setRequiresCollection(true);
       var rsp = clientToLeader.requestWithBaseUrl(leaderBaseUrl, coreName, request);
       Exception exception = rsp.getException();
       if (exception != null) {
