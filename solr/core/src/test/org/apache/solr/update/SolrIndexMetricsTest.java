@@ -23,6 +23,7 @@ import com.codahale.metrics.Timer;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
@@ -89,30 +90,25 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
     System.setProperty("solr.tests.metrics.merge", "false");
     System.setProperty("solr.tests.metrics.mergeDetails", "false");
     initCore("solrconfig-indexmetrics.xml", "schema.xml");
-
     addDocs();
-
-    MetricRegistry registry =
-        h.getCoreContainer()
-            .getMetricManager()
-            .registry(h.getCore().getCoreMetricManager().getRegistryName());
-    assertNotNull(registry);
-    var indexSize =
-        SolrMetricTestUtils.getGaugeDatapoint(
-            h.getCore(),
-            "solr_core_index_size_bytes",
-            SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
-                .label("category", "CORE")
-                .build());
-    var segmentSize =
-        SolrMetricTestUtils.getGaugeDatapoint(
-            h.getCore(),
-            "solr_core_segment_count",
-            SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
-                .label("category", "CORE")
-                .build());
-    assertNotNull(indexSize);
-    assertNotNull(segmentSize);
+    try (SolrCore core = h.getCoreContainer().getCore("collection1")) {
+      var indexSize =
+          SolrMetricTestUtils.getGaugeDatapoint(
+              core,
+              "solr_core_index_size_bytes",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label("category", "CORE")
+                  .build());
+      var segmentSize =
+          SolrMetricTestUtils.getGaugeDatapoint(
+              core,
+              "solr_core_segment_count",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label("category", "CORE")
+                  .build());
+      assertNotNull(indexSize);
+      assertNotNull(segmentSize);
+    }
   }
 
   @Test
