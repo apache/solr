@@ -33,6 +33,8 @@ import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.BoolField;
@@ -149,7 +151,22 @@ public class FieldValueFeature extends Feature {
      * @throws IOException as defined by abstract class Feature
      */
     @Override
-    public FeatureScorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      return new ScorerSupplier() {
+        @Override
+        public Scorer get(long leadCost) throws IOException {
+          return featureScorer(context);
+        }
+
+        @Override
+        public long cost() {
+          return context.reader().maxDoc();
+        }
+      };
+    }
+
+    @Override
+    public FeatureScorer featureScorer(LeafReaderContext context) throws IOException {
       if (schemaField != null
           && (!schemaField.stored() || useDocValuesForStored)
           && schemaField.hasDocValues()) {

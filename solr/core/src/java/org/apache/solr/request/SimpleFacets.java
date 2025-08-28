@@ -335,6 +335,7 @@ public class SimpleFacets {
     }
 
     AllGroupsCollector<?> collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
+    // Use deprecated search method for non-parallel search
     searcher.search(QueryUtils.combineQueryAndFilter(facetQuery, docSet.makeQuery()), collector);
     return collector.getGroupCount();
   }
@@ -819,11 +820,11 @@ public class SimpleFacets {
         result.getFacetEntries(offset, limit < 0 ? Integer.MAX_VALUE : limit);
     for (GroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
       // :TODO:can we filter earlier than this to make it more efficient?
-      if (termFilter != null && !termFilter.test(facetEntry.getValue())) {
+      if (termFilter != null && !termFilter.test(facetEntry.value())) {
         continue;
       }
-      facetFieldType.indexedToReadable(facetEntry.getValue(), charsRef);
-      facetCounts.add(charsRef.toString(), facetEntry.getCount());
+      facetFieldType.indexedToReadable(facetEntry.value(), charsRef);
+      facetCounts.add(charsRef.toString(), facetEntry.count());
     }
 
     if (missing) {
@@ -915,8 +916,17 @@ public class SimpleFacets {
                   result.add(key, getTermCounts(facetValue, parsed));
                 }
                 return result;
-              } catch (SolrException | ExitableDirectoryReader.ExitingReaderException se) {
+              } catch (SolrException se) {
                 throw se;
+              } catch (ExitableDirectoryReader.ExitingReaderException ex) {
+                log.warn("Query timed out during facet.field: {}", facetValue, ex);
+                // Set partial results flag for timeout handling in distributed search
+                if (rb != null && rb.rsp != null) {
+                  rb.rsp.setPartialResults(rb.req);
+                }
+                NamedList<Object> result = new SimpleOrderedMap<>();
+                result.add(key, new SimpleOrderedMap<>());
+                return result;
               } catch (Exception e) {
                 throw new SolrException(
                     ErrorCode.SERVER_ERROR, "Exception during facet.field: " + facetValue, e);
@@ -1184,7 +1194,7 @@ public class SimpleFacets {
                 for (int subindex = 0; subindex < numSubs; subindex++) {
                   MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
                   if (sub.postingsEnum == null) continue;
-                  int base = sub.slice.start;
+                  int base = sub.slice.start();
                   int docid;
                   while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                     if (fastForRandomSet.get(docid + base)) {

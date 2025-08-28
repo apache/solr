@@ -300,7 +300,7 @@ public class XMLLoader extends ContentStreamLoader {
           deleteCmd.clear();
           break;
 
-          // Add everything to the text
+        // Add everything to the text
         case XMLStreamConstants.SPACE:
         case XMLStreamConstants.CDATA:
         case XMLStreamConstants.CHARACTERS:
@@ -356,7 +356,7 @@ public class XMLLoader extends ContentStreamLoader {
     while (!complete) {
       int event = parser.next();
       switch (event) {
-          // Add everything to the text
+        // Add everything to the text
         case XMLStreamConstants.SPACE:
         case XMLStreamConstants.CDATA:
         case XMLStreamConstants.CHARACTERS:

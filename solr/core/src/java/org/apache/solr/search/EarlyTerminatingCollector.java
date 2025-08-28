@@ -58,7 +58,7 @@ public class EarlyTerminatingCollector extends FilterCollector {
     assert null != delegate;
     this.maxDocsToCollect = maxDocsToCollect;
     this.pendingDocsToCollect = docsToCollect;
-    this.chunkSize = Math.min(100, maxDocsToCollect / 10);
+    this.chunkSize = Math.max(1, Math.min(100, maxDocsToCollect / 10));
   }
 
   @Override

@@ -49,6 +49,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -551,7 +552,7 @@ public class SolrIndexSplitter {
       return new ConstantScoreWeight(this, boost) {
 
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           RTimerTree t = timings.sub("findDocsToDelete");
           t.resume();
           FixedBitSet set = findDocsToDelete(context);
@@ -576,8 +577,19 @@ public class SolrIndexSplitter {
               log.error("### INVALID DELS {}", dels.cardinality());
             }
           }
-          return new ConstantScoreScorer(
-              this, score(), scoreMode, new BitSetIterator(set, set.length()));
+          final float score = score();
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(long leadCost) {
+              return new ConstantScoreScorer(
+                  score, scoreMode, new BitSetIterator(set, set.length()));
+            }
+
+            @Override
+            public long cost() {
+              return set.cardinality();
+            }
+          };
         }
 
         @Override

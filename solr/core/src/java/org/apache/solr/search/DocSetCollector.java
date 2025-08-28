@@ -108,6 +108,7 @@ public class DocSetCollector extends SimpleCollector {
     private int size = 0;
     private final int smallSetSize;
     private ArrayList<int[]> arrays;
+    private ArrayList<Integer> arraySizes; // Track actual used size of each array
 
     public ExpandingIntArray(int smallSetSize) {
       this.smallSetSize = smallSetSize;
@@ -115,8 +116,21 @@ public class DocSetCollector extends SimpleCollector {
     }
 
     private void addNewArray() {
+      // Mark the previous array as complete with its actual used size
+      if (arrays != null && arrays.size() > 0) {
+        if (arraySizes == null) {
+          arraySizes = new ArrayList<>();
+        }
+        arraySizes.add(indexForNextAddInCurrentAddArray);
+      }
+
       int arrSize = Math.max(10, currentAddArray.length << 1);
-      arrSize = Math.min(arrSize, smallSetSize - size); // max out at the smallSetSize
+      arrSize =
+          Math.max(
+              1,
+              Math.min(
+                  arrSize,
+                  smallSetSize - size)); // Ensure at least 1 element // max out at the smallSetSize
       this.currentAddArray = new int[arrSize];
       if (arrays == null) {
         arrays = new ArrayList<>();
@@ -141,8 +155,15 @@ public class DocSetCollector extends SimpleCollector {
         int resultPos = 0;
         for (int i = 0; i < arrays.size(); i++) {
           int[] srcArray = arrays.get(i);
-          int intsToCopy =
-              (i < (arrays.size() - 1)) ? srcArray.length : indexForNextAddInCurrentAddArray;
+          int intsToCopy;
+          if (i < (arrays.size() - 1)) {
+            // Use tracked size for completed arrays
+            intsToCopy =
+                (arraySizes != null && i < arraySizes.size()) ? arraySizes.get(i) : srcArray.length;
+          } else {
+            // For the last array, use current position
+            intsToCopy = indexForNextAddInCurrentAddArray;
+          }
           for (int j = 0; j < intsToCopy; j++) {
             bits.set(srcArray[j]);
           }
@@ -158,8 +179,15 @@ public class DocSetCollector extends SimpleCollector {
         int resultPos = 0;
         for (int i = 0; i < arrays.size(); i++) {
           int[] srcArray = arrays.get(i);
-          int intsToCopy =
-              (i < (arrays.size() - 1)) ? srcArray.length : indexForNextAddInCurrentAddArray;
+          int intsToCopy;
+          if (i < (arrays.size() - 1)) {
+            // Use tracked size for completed arrays
+            intsToCopy =
+                (arraySizes != null && i < arraySizes.size()) ? arraySizes.get(i) : srcArray.length;
+          } else {
+            // For the last array, use current position
+            intsToCopy = indexForNextAddInCurrentAddArray;
+          }
           System.arraycopy(srcArray, 0, result, resultPos, intsToCopy);
           resultPos += intsToCopy;
         }

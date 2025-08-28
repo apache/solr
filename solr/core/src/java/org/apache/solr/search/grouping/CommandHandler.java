@@ -30,7 +30,6 @@ import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.TermGroupSelector;
@@ -126,6 +125,7 @@ public class CommandHandler {
   private final boolean needDocSet;
   private final boolean truncateGroups;
   private final boolean includeHitCount;
+  private boolean partialResults = false;
   private int totalHitCount;
 
   private DocSet docSet;
@@ -227,6 +227,7 @@ public class CommandHandler {
     if (docSet != null) {
       queryResult.setDocSet(docSet);
     }
+    queryResult.setPartialResults(partialResults);
     if (queryResult.isPartialResults()) {
       queryResult.setPartialResults(
           partialResultsStatus(
@@ -241,14 +242,13 @@ public class CommandHandler {
 
   /**
    * Invokes search with the specified filter and collector. If a time limit has been specified then
-   * wrap the collector in the TimeLimitingCollector
+   * set timeout on the searcher before search.
    */
   private void searchWithTimeLimiter(Query query, ProcessedFilter filter, Collector collector)
       throws IOException {
+    // Apply timeout using IndexSearcher.setTimeout if needed
     if (queryCommand.getTimeAllowed() > 0) {
-      collector =
-          new TimeLimitingCollector(
-              collector, TimeLimitingCollector.getGlobalCounter(), queryCommand.getTimeAllowed());
+      searcher.setTimeout(SolrIndexSearcher.QueryLimitsTimeout.INSTANCE);
     }
 
     TotalHitCountCollector hitCountCollector = new TotalHitCountCollector();
@@ -265,8 +265,14 @@ public class CommandHandler {
 
     try {
       searcher.search(query, collector);
-    } catch (TimeLimitingCollector.TimeExceededException
-        | ExitableDirectoryReader.ExitingReaderException x) {
+
+      // Check for timeout after search
+      if (queryCommand.getTimeAllowed() > 0 && searcher.timedOut()) {
+        partialResults = true;
+        log.warn("Query timed out: [{}]", query);
+      }
+    } catch (ExitableDirectoryReader.ExitingReaderException x) {
+      partialResults = true;
       log.warn("Query: {}; ", query, x);
     }
 

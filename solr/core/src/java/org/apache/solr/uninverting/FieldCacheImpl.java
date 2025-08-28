@@ -886,8 +886,11 @@ public class FieldCacheImpl implements FieldCache {
 
       @Override
       public BytesRef lookupOrd(int ord) {
-        if (ord < 0) {
-          throw new IllegalArgumentException("ord must be >=0 (got ord=" + ord + ")");
+        // ord=-1 represents missing values, ord >= numOrd is out of bounds
+        // ord=0 is a valid ordinal (the first term)
+        if (ord < 0 || ord >= numOrd) {
+          // This should never happen in normal operation
+          throw new IllegalArgumentException("Invalid ord: " + ord + " (numOrd=" + numOrd + ")");
         }
         bytes.fill(term, termOrdToBytesOffset.get(ord));
         return term;
@@ -1097,13 +1100,9 @@ public class FieldCacheImpl implements FieldCache {
         }
 
         @Override
-        public BytesRef binaryValue() {
-          final long pointer = docToOffset.get(docID);
-          if (pointer == 0) {
-            term.length = 0;
-          } else {
-            bytes.fill(term, pointer);
-          }
+        public BytesRef binaryValue() throws IOException {
+          final int offset = (int) docToOffset.get(docID);
+          bytes.fill(term, offset);
           return term;
         }
       };

@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
@@ -38,6 +37,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -81,9 +81,9 @@ class JoinQuery extends Query implements SolrSearcherRequirer {
   }
 
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
+  public Query rewrite(IndexSearcher searcher) throws IOException {
     // don't rewrite the subQuery
-    return super.rewrite(reader);
+    return super.rewrite(searcher);
   }
 
   @Override
@@ -158,7 +158,8 @@ class JoinQuery extends Query implements SolrSearcherRequirer {
     DocSet resultSet;
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      // Ensure resultSet is computed first
       if (resultSet == null) {
         boolean debug = rb != null && rb.isDebug();
         RTimer timer = (debug ? new RTimer() : null);
@@ -187,12 +188,23 @@ class JoinQuery extends Query implements SolrSearcherRequirer {
         }
       }
 
-      // Although this set only includes live docs, other filters can be pushed down to queries.
+      // Check if this context has any matching documents before creating ScorerSupplier
       DocIdSetIterator readerSetIterator = resultSet.iterator(context);
       if (readerSetIterator == null) {
         return null;
       }
-      return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
+
+      return new ScorerSupplier() {
+        @Override
+        public Scorer get(long leadCost) throws IOException {
+          return new ConstantScoreScorer(score(), scoreMode, readerSetIterator);
+        }
+
+        @Override
+        public long cost() {
+          return resultSet.size();
+        }
+      };
     }
 
     @Override
@@ -334,7 +346,7 @@ class JoinQuery extends Query implements SolrSearcherRequirer {
             for (int subindex = 0; subindex < numSubs; subindex++) {
               MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
               if (sub.postingsEnum == null) continue;
-              int base = sub.slice.start;
+              int base = sub.slice.start();
               int docid;
               while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                 if (fastForRandomSet.get(docid + base)) {
@@ -411,7 +423,7 @@ class JoinQuery extends Query implements SolrSearcherRequirer {
                 for (int subindex = 0; subindex < numSubs; subindex++) {
                   MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
                   if (sub.postingsEnum == null) continue;
-                  int base = sub.slice.start;
+                  int base = sub.slice.start();
                   int docid;
                   while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                     resultListDocs++;

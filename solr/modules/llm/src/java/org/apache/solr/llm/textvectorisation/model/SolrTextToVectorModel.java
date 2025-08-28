@@ -89,15 +89,16 @@ public class SolrTextToVectorModel implements Accountable {
               Duration timeOut = Duration.ofSeconds((Long) params.get(paramName));
               builder.getClass().getMethod(paramName, Duration.class).invoke(builder, timeOut);
             }
-            case MAX_SEGMENTS_PER_BATCH_PARAM, MAX_RETRIES_PARAM -> builder
-                .getClass()
-                .getMethod(paramName, Integer.class)
-                .invoke(builder, ((Long) params.get(paramName)).intValue());
+            case MAX_SEGMENTS_PER_BATCH_PARAM, MAX_RETRIES_PARAM ->
+                builder
+                    .getClass()
+                    .getMethod(paramName, Integer.class)
+                    .invoke(builder, ((Long) params.get(paramName)).intValue());
 
-              /*
-               * For primitive params if there's only one setter available, we call it.
-               * If there's choice we default to the string one
-               */
+            /*
+             * For primitive params if there's only one setter available, we call it.
+             * If there's choice we default to the string one
+             */
             default -> {
               ArrayList<Method> paramNameMatches = new ArrayList<>();
               for (var method : builder.getClass().getMethods()) {

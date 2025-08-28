@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
@@ -32,7 +31,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -45,6 +43,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.AttributeSource;
@@ -157,7 +156,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
+  public Query rewrite(IndexSearcher searcher) throws IOException {
     return this;
   }
 
@@ -529,30 +528,59 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (disi == null) {
         return null;
       }
-      return new ConstantScoreScorer(this, score(), scoreMode, disi);
+      return new ConstantScoreScorer(score(), scoreMode, disi);
     }
 
+    // Note: bulkScorer override removed as Weight.bulkScorer is now final in Lucene 10
+    // The default implementation in Weight will be used instead
+
     @Override
-    public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       final SegState weightOrBitSet = getSegState(context);
+
+      // Check for no-match conditions before creating ScorerSupplier
       if (weightOrBitSet.weight != null) {
-        return weightOrBitSet.weight.bulkScorer(context);
+        ScorerSupplier supplier = weightOrBitSet.weight.scorerSupplier(context);
+        if (supplier == null) {
+          return null;
+        }
+
+        return new ScorerSupplier() {
+          @Override
+          public Scorer get(long leadCost) throws IOException {
+            return supplier.get(leadCost);
+          }
+
+          @Override
+          public long cost() {
+            return supplier.cost();
+          }
+        };
       } else {
-        final Scorer scorer = scorer(weightOrBitSet.set);
+        Scorer scorer = scorer(weightOrBitSet.set);
         if (scorer == null) {
           return null;
         }
-        return new DefaultBulkScorer(scorer);
-      }
-    }
 
-    @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
-      final SegState weightOrBitSet = getSegState(context);
-      if (weightOrBitSet.weight != null) {
-        return weightOrBitSet.weight.scorer(context);
-      } else {
-        return scorer(weightOrBitSet.set);
+        return new ScorerSupplier() {
+          @Override
+          public Scorer get(long leadCost) throws IOException {
+            return scorer;
+          }
+
+          @Override
+          public long cost() {
+            if (weightOrBitSet.set != null) {
+              try {
+                DocIdSetIterator iter = weightOrBitSet.set.iterator();
+                return iter != null ? iter.cost() : 0;
+              } catch (IOException e) {
+                return 0;
+              }
+            }
+            return 0;
+          }
+        };
       }
     }
 

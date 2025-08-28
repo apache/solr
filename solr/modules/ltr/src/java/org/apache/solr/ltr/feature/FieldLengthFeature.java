@@ -24,6 +24,8 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.util.SmallFloat;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -114,7 +116,22 @@ public class FieldLengthFeature extends Feature {
     }
 
     @Override
-    public FeatureScorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      return new ScorerSupplier() {
+        @Override
+        public Scorer get(long leadCost) throws IOException {
+          return featureScorer(context);
+        }
+
+        @Override
+        public long cost() {
+          return context.reader().maxDoc();
+        }
+      };
+    }
+
+    @Override
+    public FeatureScorer featureScorer(LeafReaderContext context) throws IOException {
       NumericDocValues norms = context.reader().getNormValues(field);
       if (norms == null) {
         return new ValueFeatureScorer(

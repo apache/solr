@@ -27,6 +27,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.QueryBitSetProducer;
@@ -155,13 +156,24 @@ public class BlockJoinParentQParser extends FiltersQParser {
         throws IOException {
       return new ConstantScoreWeight(BitSetProducerQuery.this, boost) {
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           BitSet bitSet = bitSetProducer.getBitSet(context);
           if (bitSet == null) {
             return null;
           }
           DocIdSetIterator disi = new BitSetIterator(bitSet, bitSet.approximateCardinality());
-          return new ConstantScoreScorer(this, boost, scoreMode, disi);
+          final float score = score();
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(long leadCost) {
+              return new ConstantScoreScorer(score, scoreMode, disi);
+            }
+
+            @Override
+            public long cost() {
+              return disi.cost();
+            }
+          };
         }
 
         @Override

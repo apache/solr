@@ -51,6 +51,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
@@ -200,7 +201,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     public void setCost(int cost) {}
 
     @Override
-    public Query rewrite(IndexReader reader) throws IOException {
+    public Query rewrite(IndexSearcher searcher) throws IOException {
       return this;
     }
 
@@ -253,28 +254,47 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       return new ConstantScoreWeight(this, boost) {
 
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           final LeafReader reader = context.reader();
           Terms terms = reader.terms(field);
           if (terms == null) {
             return null;
           }
+
           TermsEnum termsEnum = terms.iterator();
           PostingsEnum docs = null;
           DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
           for (int i = 0; i < finalContexts.size(); i++) {
             TermStates ts = finalContexts.get(i);
-            TermState termState = ts.get(context);
-            if (termState != null) {
-              Term term = finalTerms.get(i);
-              termsEnum.seekExact(term.bytes(), ts.get(context));
-              docs = termsEnum.postings(docs, PostingsEnum.NONE);
-              builder.add(docs);
+            var termStateSupplier = ts.get(context);
+            if (termStateSupplier != null) {
+              TermState termState = termStateSupplier.get();
+              if (termState != null) {
+                Term term = finalTerms.get(i);
+                termsEnum.seekExact(term.bytes(), termState);
+                docs = termsEnum.postings(docs, PostingsEnum.NONE);
+                builder.add(docs);
+              }
             }
           }
           DocIdSet docIdSet = builder.build();
           DocIdSetIterator disi = docIdSet.iterator();
-          return disi == null ? null : new ConstantScoreScorer(this, score(), scoreMode, disi);
+          if (disi == null) {
+            return null;
+          }
+
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+              // disi is already computed and non-null
+              return new ConstantScoreScorer(score(), scoreMode, disi);
+            }
+
+            @Override
+            public long cost() {
+              return finalTerms.size();
+            }
+          };
         }
 
         @Override
@@ -593,17 +613,30 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
       DocSet docs;
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+        // Ensure docs are computed first
         if (docs == null) {
           docs = getDocSet(searcher);
         }
 
-        // Although this set only includes live docs, other filters can be pushed down to queries.
+        // Check if this context has any matching documents before creating ScorerSupplier
         DocIdSetIterator readerSetIterator = docs.iterator(context);
         if (readerSetIterator == null) {
           return null;
         }
-        return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
+
+        return new ScorerSupplier() {
+          @Override
+          public Scorer get(long leadCost) throws IOException {
+            // readerSetIterator is already computed and non-null
+            return new ConstantScoreScorer(score(), scoreMode, readerSetIterator);
+          }
+
+          @Override
+          public long cost() {
+            return docs.size();
+          }
+        };
       }
 
       @Override

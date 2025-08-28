@@ -19,13 +19,21 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
+import java.util.WeakHashMap;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.TokenizerFactory;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
+import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
@@ -33,6 +41,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.QueryBuilder;
+import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.parser.SolrQueryParserBase;
 import org.apache.solr.query.SolrRangeQuery;
@@ -48,6 +57,9 @@ public class TextField extends FieldType {
   protected boolean autoGeneratePhraseQueries;
   protected boolean enableGraphQueries;
   protected SolrQueryParserBase.SynonymQueryStyle synonymQueryStyle;
+  
+  // Cache for PathHierarchyTokenizer detection to avoid repeated analysis
+  private static final Map<Analyzer, Boolean> pathHierarchyCache = new WeakHashMap<>();
 
   /**
    * Analyzer set by schema for text types to use when searching fields of this type, subclasses can
@@ -225,9 +237,129 @@ public class TextField extends FieldType {
     }
   }
 
+  /**
+   * Checks if the analyzer uses PathHierarchyTokenizer or ReversePathHierarchyTokenizer.
+   * This is needed because these tokenizers changed behavior in Lucene 10.
+   * 
+   * <p>Uses caching and factory inspection where possible to avoid expensive reflection.
+   * For TokenizerChain and CustomAnalyzer, we can directly check the TokenizerFactory.
+   * Only falls back to instance checking for uncommon analyzer types.
+   *
+   * @param analyzer The analyzer to check
+   * @param field The field name (used for fallback TokenStream creation)
+   * @param queryText Sample text to test with (used for fallback TokenStream creation)
+   * @return true if PathHierarchyTokenizer is detected
+   */
+  private static boolean isPathHierarchyAnalyzer(Analyzer analyzer, String field, String queryText) {
+    if (analyzer == null) {
+      return false;
+    }
+    
+    // Use cache to avoid repeated detection for the same analyzer
+    return pathHierarchyCache.computeIfAbsent(analyzer, 
+        a -> detectPathHierarchy(a, field, queryText));
+  }
+  
+  /**
+   * Performs the actual PathHierarchyTokenizer detection logic.
+   * This method is called only when the result is not cached.
+   */
+  private static boolean detectPathHierarchy(Analyzer analyzer, String field, String queryText) {
+    // Most Solr analyzers are TokenizerChain - check factory directly
+    if (analyzer instanceof TokenizerChain) {
+      TokenizerChain chain = (TokenizerChain) analyzer;
+      TokenizerFactory factory = chain.getTokenizerFactory();
+      String factoryClass = factory.getClass().getName();
+      return factoryClass.contains("PathHierarchyTokenizerFactory") || 
+             factoryClass.contains("ReversePathHierarchyTokenizerFactory");
+    }
+    
+    // CustomAnalyzer is also common in Solr
+    if (analyzer instanceof CustomAnalyzer) {
+      CustomAnalyzer custom = (CustomAnalyzer) analyzer;
+      TokenizerFactory factory = custom.getTokenizerFactory();
+      String factoryClass = factory.getClass().getName();
+      return factoryClass.contains("PathHierarchyTokenizerFactory") ||
+             factoryClass.contains("ReversePathHierarchyTokenizerFactory");
+    }
+    
+    // Fallback for other analyzer types: check actual tokenizer instance
+    // Only needed for edge cases where analyzer isn't TokenizerChain/CustomAnalyzer
+    if (queryText == null || queryText.isEmpty()) {
+      // Can't create TokenStream without query text, assume not path hierarchy
+      return false;
+    }
+    
+    try (TokenStream stream = analyzer.tokenStream(field, queryText)) {
+      return stream instanceof PathHierarchyTokenizer || 
+             stream instanceof ReversePathHierarchyTokenizer;
+    } catch (IOException e) {
+      // Can't create stream, assume not path hierarchy
+      return false;
+    }
+  }
+
+  /**
+   * Creates a BooleanQuery with SHOULD clauses for PathHierarchyTokenizer output. This preserves
+   * the original Lucene 9 behavior where all tokens were at position 0 and could match as synonyms.
+   *
+   * @param analyzer The analyzer (must be PathHierarchyTokenizer-based)
+   * @param field The field name
+   * @param queryText The query text
+   * @return BooleanQuery with OR clauses for each path component
+   */
+  private static Query createPathHierarchyQuery(Analyzer analyzer, String field, String queryText) {
+    try (TokenStream stream = analyzer.tokenStream(field, queryText)) {
+      TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
+      stream.reset();
+
+      while (stream.incrementToken()) {
+        Term term = new Term(field, termAtt.getBytesRef());
+        bq.add(new TermQuery(term), BooleanClause.Occur.SHOULD);
+      }
+
+      stream.end();
+      return bq.build();
+
+    } catch (IOException e) {
+      // Fall back to default behavior if something goes wrong
+      return new QueryBuilder(analyzer).createPhraseQuery(field, queryText);
+    }
+  }
+
+  /**
+   * Parses a field query using the provided analyzer, with special handling for
+   * PathHierarchyTokenizer.
+   *
+   * <p><strong>Lucene 10 Compatibility Fix:</strong> PathHierarchyTokenizer behavior changed in
+   * Lucene 10. Previously all tokens were emitted at position 0 (synonym-like), but now they have
+   * incrementing positions which breaks phrase query matching for hierarchical paths.
+   *
+   * <p><strong>Example of the behavior change:</strong><br>
+   * Input: "/a/b/c"<br>
+   * Lucene 9: "/a" (pos=0), "/a/b" (pos=0), "/a/b/c" (pos=0) → phrase query works<br>
+   * Lucene 10: "/a" (pos=0), "/a/b" (pos=1), "/a/b/c" (pos=2) → phrase query fails
+   *
+   * <p><strong>Solution:</strong> For PathHierarchyTokenizer, we create a BooleanQuery with SHOULD
+   * clauses to preserve the original behavior where any ancestor path matches.
+   *
+   * <p><em>Note:</em> This method has historically worked this way because it has no knowledge of
+   * quotes in the original query text.
+   *
+   * @param parser The query parser (currently unused)
+   * @param analyzer The analyzer to use for tokenization
+   * @param field The field name
+   * @param queryText The query text to analyze
+   * @return A Query object (BooleanQuery for path hierarchy, PhraseQuery for others)
+   */
   static Query parseFieldQuery(QParser parser, Analyzer analyzer, String field, String queryText) {
-    // note, this method always worked this way (but nothing calls it?) because it has no idea of
-    // quotes...
+    if (isPathHierarchyAnalyzer(analyzer, field, queryText)) {
+      return createPathHierarchyQuery(analyzer, field, queryText);
+    }
+
+    // Default behavior for all other analyzers
     return new QueryBuilder(analyzer).createPhraseQuery(field, queryText);
   }
 

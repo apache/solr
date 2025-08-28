@@ -33,7 +33,8 @@ public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
   private static final String ICU_FIELD_UDVAS_PROPNAME = "tests.icu_collation_field.udvas";
   private static final String ICU_TYPE_UDVAS_PROPNAME = "tests.icu_collation_fieldType.udvas";
   private static final String TEST_LUCENE_MATCH_VERSION_PROPNAME = "tests.luceneMatchVersion";
-  private static final Version WARN_CEILING = Version.LUCENE_8_12_0;
+  // Test backward compatibility: someone upgrading to Solr 10 but keeping old luceneMatchVersion
+  private static final Version WARN_CEILING = Version.fromBits(8, 11, 0);
   private static String home;
 
   @BeforeClass

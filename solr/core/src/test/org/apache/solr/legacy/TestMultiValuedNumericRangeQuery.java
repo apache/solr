@@ -26,6 +26,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.index.RandomIndexWriter;
@@ -79,16 +80,19 @@ public class TestMultiValuedNumericRangeQuery extends SolrTestCase {
               "asc", format.format(lower), format.format(upper), true, true);
       LegacyNumericRangeQuery<Integer> tq =
           LegacyNumericRangeQuery.newIntRange("trie", lower, upper, true, true);
-      TopScoreDocCollector trCollector = TopScoreDocCollector.create(1, Integer.MAX_VALUE);
-      TopScoreDocCollector nrCollector = TopScoreDocCollector.create(1, Integer.MAX_VALUE);
+
+      TopScoreDocCollectorManager trManager = new TopScoreDocCollectorManager(1, Integer.MAX_VALUE);
+      TopScoreDocCollector trCollector = trManager.newCollector();
+      TopScoreDocCollectorManager nrManager = new TopScoreDocCollectorManager(1, Integer.MAX_VALUE);
+      TopScoreDocCollector nrCollector = nrManager.newCollector();
       searcher.search(cq, trCollector);
       searcher.search(tq, nrCollector);
       TopDocs trTopDocs = trCollector.topDocs();
       TopDocs nrTopDocs = nrCollector.topDocs();
       assertEquals(
           "Returned count for LegacyNumericRangeQuery and TermRangeQuery must be equal",
-          trTopDocs.totalHits.value,
-          nrTopDocs.totalHits.value);
+          trTopDocs.totalHits.value(),
+          nrTopDocs.totalHits.value());
     }
     reader.close();
     directory.close();

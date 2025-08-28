@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
@@ -185,7 +186,7 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
                 String.valueOf(dataSize),
                 "stages",
                 "prepare,process",
-                "multiThreaded",
+                CommonParams.MULTI_THREADED,
                 "true",
                 "memAllowed",
                 "0.2"));

@@ -221,8 +221,8 @@ public class DocValuesStats {
         si.advance(doc);
       }
       if (doc == si.docID()) {
-        long ord;
-        while ((ord = si.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        for (int i = 0; i < si.docValueCount(); i++) {
+          long ord = si.nextOrd();
           int term = (int) ord;
           if (map != null) {
             term = (int) ordMap.get(term);

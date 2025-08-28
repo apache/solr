@@ -2432,8 +2432,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             concurrentClient.lastError.getMessage().contains("Conflict"));
       } else if (client
           instanceof
-          SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient
-          concurrentClient) {
+          SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {
         client.commit(); // just to be sure the client has sent the doc
         assertNotNull(
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);

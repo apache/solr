@@ -32,6 +32,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
@@ -70,25 +71,35 @@ public class HashRangeQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
-        SortedDocValues docValues = context.reader().getSortedDocValues(field);
-        int[] cache = getCache(context);
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+        return new ScorerSupplier() {
+          @Override
+          public Scorer get(long leadCost) throws IOException {
+            SortedDocValues docValues = context.reader().getSortedDocValues(field);
+            int[] cache = getCache(context);
 
-        TwoPhaseIterator iterator =
-            new TwoPhaseIterator(docValues) {
-              @Override
-              public boolean matches() throws IOException {
-                int hash = cache != null ? cache[docValues.docID()] : hash(docValues);
-                return hash >= lower && hash <= upper;
-              }
+            TwoPhaseIterator iterator =
+                new TwoPhaseIterator(docValues) {
+                  @Override
+                  public boolean matches() throws IOException {
+                    int hash = cache != null ? cache[docValues.docID()] : hash(docValues);
+                    return hash >= lower && hash <= upper;
+                  }
 
-              @Override
-              public float matchCost() {
-                return cache != null ? 2 : 100;
-              }
-            };
+                  @Override
+                  public float matchCost() {
+                    return cache != null ? 2 : 100;
+                  }
+                };
 
-        return new ConstantScoreScorer(this, boost, scoreMode, iterator);
+            return new ConstantScoreScorer(boost, scoreMode, iterator);
+          }
+
+          @Override
+          public long cost() {
+            return context.reader().maxDoc();
+          }
+        };
       }
 
       private int[] getCache(LeafReaderContext context) throws IOException {

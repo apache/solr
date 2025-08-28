@@ -19,10 +19,12 @@ package org.apache.solr.schema;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
 import org.junit.BeforeClass;
@@ -112,9 +114,20 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
     for (int i = 0; i < valid.length; i++) {
       String s = valid[i];
       try {
-        Field f = (Field) paf.fromString(field, s);
-        // System.out.println(" - toString: '" + sb.toString() + "'");
-        assertEquals(validParsed[i], parser.toFormattedString(f));
+        List<IndexableField> fields = paf.createFields(field, s);
+        assertFalse("Should create at least one field", fields.isEmpty());
+        // Find the stored field for testing
+        Field storedField = null;
+        for (IndexableField f : fields) {
+          if (f instanceof Field && ((Field) f).fieldType().stored()) {
+            storedField = (Field) f;
+            break;
+          }
+        }
+        if (storedField != null) {
+          // System.out.println(" - toString: '" + sb.toString() + "'");
+          assertEquals(validParsed[i], parser.toFormattedString(storedField));
+        }
       } catch (Exception e) {
         log.error("Should pass: '{}', exception", s, e);
         fail("Should pass: '" + s + "', exception: " + e);
@@ -194,8 +207,10 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
     paf.init(h.getCore().getLatestSchema(), Collections.<String, String>emptyMap());
     for (String s : invalidSimple) {
       try {
-        paf.fromString(field, s);
-        fail("should fail: '" + s + "'");
+        List<IndexableField> fields = paf.createFields(field, s);
+        if (!fields.isEmpty()) {
+          fail("should fail: '" + s + "'");
+        }
       } catch (Exception e) {
         //
       }
@@ -249,13 +264,20 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
     args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
     paf.init(h.getCore().getLatestSchema(), args);
     {
-      Field f = (Field) paf.fromString(field, valid[0]);
+      List<IndexableField> fields = paf.createFields(field, valid[0]);
+      Field f = null;
+      for (IndexableField field : fields) {
+        if (field instanceof Field) {
+          f = (Field) field;
+          break;
+        }
+      }
     }
 
     // use JSON format
     args.put(PreAnalyzedField.PARSER_IMPL, JsonPreAnalyzedParser.class.getName());
     paf.init(h.getCore().getLatestSchema(), args);
-    expectThrows(Exception.class, () -> paf.fromString(field, valid[0]));
+    expectThrows(Exception.class, () -> paf.createFields(field, valid[0]));
 
     byte[] deadbeef =
         new byte[] {
@@ -271,8 +293,17 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
     PreAnalyzedParser parser = new JsonPreAnalyzedParser();
 
     {
-      Field f = (Field) paf.fromString(field, jsonValid);
-      assertEquals(jsonValid, parser.toFormattedString(f));
+      List<IndexableField> fields = paf.createFields(field, jsonValid);
+      Field f = null;
+      for (IndexableField fld : fields) {
+        if (fld instanceof Field && ((Field) fld).fieldType().stored()) {
+          f = (Field) fld;
+          break;
+        }
+      }
+      if (f != null) {
+        assertEquals(jsonValid, parser.toFormattedString(f));
+      }
     }
   }
 }

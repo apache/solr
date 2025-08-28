@@ -90,10 +90,21 @@ public abstract class ServletUtils {
           public void close() {
             // even though we skip closes, we let local tests know not to close so that a full
             // understanding can take place
-            assert !Thread.currentThread()
-                    .getStackTrace()[2]
-                    .getClassName()
-                    .matches("org\\.apache\\.(?:solr|lucene).*")
+            // Allow Lucene's IOUtils.closeWhileHandlingException to close streams (legitimate error
+            // cleanup)
+            StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+            // Look through the stack to find IOUtils.closeWhileHandlingException
+            boolean isLuceneIOUtilsErrorHandling = false;
+            for (int i = 1; i < stack.length && i <= 10; i++) {
+              if (stack[i].getClassName().equals("org.apache.lucene.util.IOUtils")
+                  && stack[i].getMethodName().equals("closeWhileHandlingException")) {
+                isLuceneIOUtilsErrorHandling = true;
+                break;
+              }
+            }
+            StackTraceElement caller = stack[2];
+            assert !caller.getClassName().matches("org\\.apache\\.(?:solr|lucene).*")
+                    || isLuceneIOUtilsErrorHandling
                 : CLOSE_STREAM_MSG;
             this.stream = ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM;
           }
@@ -119,10 +130,21 @@ public abstract class ServletUtils {
           public void close() {
             // even though we skip closes, we let local tests know not to close so that a full
             // understanding can take place
-            assert !Thread.currentThread()
-                    .getStackTrace()[2]
-                    .getClassName()
-                    .matches("org\\.apache\\.(?:solr|lucene).*")
+            // Allow Lucene's IOUtils.closeWhileHandlingException to close streams (legitimate error
+            // cleanup)
+            StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+            // Look through the stack to find IOUtils.closeWhileHandlingException
+            boolean isLuceneIOUtilsErrorHandling = false;
+            for (int i = 1; i < stack.length && i <= 10; i++) {
+              if (stack[i].getClassName().equals("org.apache.lucene.util.IOUtils")
+                  && stack[i].getMethodName().equals("closeWhileHandlingException")) {
+                isLuceneIOUtilsErrorHandling = true;
+                break;
+              }
+            }
+            StackTraceElement caller = stack[2];
+            assert !caller.getClassName().matches("org\\.apache\\.(?:solr|lucene).*")
+                    || isLuceneIOUtilsErrorHandling
                 : CLOSE_STREAM_MSG;
             stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
           }

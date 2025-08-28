@@ -21,7 +21,7 @@ import static org.apache.lucene.codecs.lucene90.Lucene90StoredFieldsFormat.MODE_
 import java.io.IOException;
 import java.util.Map;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene912.Lucene912Codec.Mode;
+import org.apache.lucene.codecs.lucene101.Lucene101Codec.Mode;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
@@ -50,13 +50,9 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     PerFieldPostingsFormat format = (PerFieldPostingsFormat) codec.postingsFormat();
     assertEquals("Direct", format.getPostingsFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_standard_f");
-    assertEquals(
-        TestUtil.getDefaultPostingsFormat().getName(),
-        format.getPostingsFormatForField(schemaField.getName()).getName());
+    assertEquals("Lucene101", format.getPostingsFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_f");
-    assertEquals(
-        TestUtil.getDefaultPostingsFormat().getName(),
-        format.getPostingsFormatForField(schemaField.getName()).getName());
+    assertEquals("Lucene101", format.getPostingsFormatForField(schemaField.getName()).getName());
   }
 
   public void testDocValuesFormats() {
@@ -83,12 +79,8 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
 
     assertEquals("Direct", format.getPostingsFormatForField("foo_direct").getName());
     assertEquals("Direct", format.getPostingsFormatForField("bar_direct").getName());
-    assertEquals(
-        TestUtil.getDefaultPostingsFormat().getName(),
-        format.getPostingsFormatForField("foo_standard").getName());
-    assertEquals(
-        TestUtil.getDefaultPostingsFormat().getName(),
-        format.getPostingsFormatForField("bar_standard").getName());
+    assertEquals("Lucene101", format.getPostingsFormatForField("foo_standard").getName());
+    assertEquals("Lucene101", format.getPostingsFormatForField("bar_standard").getName());
   }
 
   public void testDynamicFieldsDocValuesFormats() {

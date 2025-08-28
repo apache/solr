@@ -16,7 +16,7 @@
  */
 package org.apache.solr.uninverting;
 
-import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
+// NO_MORE_ORDS removed in Lucene 10 - use docValueCount() instead
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.util.ArrayList;
@@ -435,11 +435,15 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
       if (docID == NO_MORE_DOCS) {
         break;
       }
-      long expectedOrd;
-      while ((expectedOrd = expected.nextOrd()) != NO_MORE_ORDS) {
-        assertEquals(expectedOrd, actual.nextOrd());
+      long expectedCount = expected.docValueCount();
+      long actualCount = actual.docValueCount();
+      assertEquals(expectedCount, actualCount);
+
+      for (int i = 0; i < expectedCount; i++) {
+        long expectedOrd = expected.nextOrd();
+        long actualOrd = actual.nextOrd();
+        assertEquals(expectedOrd, actualOrd);
       }
-      assertEquals(NO_MORE_ORDS, actual.nextOrd());
     }
 
     // compare ord dictionary

@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.ByteVectorValues;
+import org.apache.lucene.index.DocValuesSkipper;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FloatVectorValues;
@@ -302,7 +303,6 @@ public class TestDocSet extends SolrTestCase {
         return maxDoc;
       }
 
-      @Override
       @Deprecated
       public Fields getTermVectors(int docID) {
         return null;
@@ -359,6 +359,11 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
+      public DocValuesSkipper getDocValuesSkipper(String field) {
+        return null;
+      }
+
+      @Override
       public NumericDocValues getNormValues(String field) {
         return null;
       }
@@ -394,7 +399,6 @@ public class TestDocSet extends SolrTestCase {
       @Override
       protected void doClose() {}
 
-      @Override
       @Deprecated
       public void document(int doc, StoredFieldVisitor visitor) {}
 

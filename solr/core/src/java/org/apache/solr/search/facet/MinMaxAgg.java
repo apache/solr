@@ -537,10 +537,13 @@ public class MinMaxAgg extends SimpleAggValueSource {
     public void collectValues(int doc, int slotNum) throws IOException {
       long newOrd = MISSING;
       if (minmax == 1) { // min
-        newOrd = subDv.nextOrd();
+        if (subDv.docValueCount() > 0) {
+          newOrd = subDv.nextOrd();
+        }
       } else { // max
         long ord;
-        while ((ord = subDv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        for (int i = 0; i < subDv.docValueCount(); i++) {
+          ord = subDv.nextOrd();
           newOrd = ord;
         }
       }

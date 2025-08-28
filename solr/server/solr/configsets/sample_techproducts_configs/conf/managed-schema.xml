@@ -828,7 +828,7 @@
         <filter name="germanNormalization"/>
         <filter name="germanLightStem"/>
         <!-- less aggressive: <filter name="germanMinimalStem"/> -->
-        <!-- more aggressive: <filter name="snowballPorter" language="German2"/> -->
+        <!-- more aggressive: <filter name="snowballPorter" language="German"/> -->
       </analyzer>
     </fieldType>
 

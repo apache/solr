@@ -90,6 +90,7 @@ import org.apache.solr.search.Grouping;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryCommand;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.QueryUtils;
@@ -375,10 +376,10 @@ public class QueryComponent extends SearchComponent {
       return;
     }
 
-    final boolean multiThreaded = params.getBool(CommonParams.MULTI_THREADED, false);
-
     // -1 as flag if not set.
     long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
+
+    final boolean multiThreaded = params.getBool(CommonParams.MULTI_THREADED, false);
 
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setMultiThreaded(multiThreaded);
@@ -566,10 +567,12 @@ public class QueryComponent extends SearchComponent {
         }
         rsp.add("sort_values", sortVals);
       } catch (ExitableDirectoryReader.ExitingReaderException x) {
+        // Query timed out during field sort values
+        log.warn("Query timed out during field sort values", x);
         // it's hard to understand where we stopped, so yield nothing
-        // search handler will flag partial results
+        // Mark this as partial results so merging logic can handle it properly
+        rsp.setPartialResults(req);
         rsp.add("sort_values", new NamedList<>());
-        throw x;
       }
     }
   }
@@ -1787,6 +1790,10 @@ public class QueryComponent extends SearchComponent {
     }
     rb.setResult(result);
 
+    // Check QueryLimits after main search operation
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    queryLimits.maybeExitWithPartialResults("QueryComponent process");
+
     ResultContext ctx = new BasicResultContext(rb);
     rsp.addResponse(ctx);
     rsp.getToLog()
@@ -1845,7 +1852,6 @@ public class QueryComponent extends SearchComponent {
       this.score = score;
     }
 
-    @Override
     public int docID() {
       return docid;
     }

@@ -340,9 +340,10 @@ public class SolrIndexConfig implements MapSerializable {
         ((ConcurrentMergeScheduler) scheduler)
             .setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
         Boolean ioThrottle = (Boolean) args.remove("ioThrottle");
-        if (ioThrottle != null && !ioThrottle) { // by-default 'enabled'
-          ((ConcurrentMergeScheduler) scheduler).disableAutoIOThrottle();
+        if (ioThrottle != null && ioThrottle) { // Only enable when explicitly enabled
+          ((ConcurrentMergeScheduler) scheduler).enableAutoIOThrottle();
         }
+        // Default behavior matches Lucene 10's new default: disabled
         SolrPluginUtils.invokeSetters(scheduler, args);
       } else {
         SolrPluginUtils.invokeSetters(scheduler, mergeSchedulerInfo.initArgs);

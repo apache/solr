@@ -479,11 +479,6 @@ public class RankQueryTestPlugin extends QParserPlugin {
       }
 
       @Override
-      public int docID() {
-        return docid;
-      }
-
-      @Override
       public float score() {
         return score;
       }

@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
 import org.junit.BeforeClass;
@@ -84,7 +85,7 @@ public class TestQueryLimits extends SolrCloudTestCase {
                   "true",
                   "facet.field",
                   "val_i",
-                  "multiThreaded",
+                  CommonParams.MULTI_THREADED,
                   "false"));
       assertNotNull(
           "should have partial results for expr " + matchingExpr,

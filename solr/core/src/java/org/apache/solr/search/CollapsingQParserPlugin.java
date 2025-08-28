@@ -521,11 +521,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               new FieldInfo(
                   fieldInfo.name,
                   fieldInfo.number,
-                  fieldInfo.hasVectors(),
+                  fieldInfo.hasTermVectors(),
                   fieldInfo.hasNorms(),
                   fieldInfo.hasPayloads(),
                   fieldInfo.getIndexOptions(),
                   DocValuesType.NONE,
+                  fieldInfo.docValuesSkipIndexType(),
                   fieldInfo.getDocValuesGen(),
                   fieldInfo.attributes(),
                   fieldInfo.getPointDimensionCount(),
@@ -581,7 +582,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return score;
     }
 
-    @Override
     public int docID() {
       return docId;
     }

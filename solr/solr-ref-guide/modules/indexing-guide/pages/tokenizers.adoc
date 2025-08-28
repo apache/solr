@@ -669,6 +669,8 @@ See the `solr/modules/analysis-extras/README.md` for information on which jars y
 
 This tokenizer creates synonyms from file path hierarchies.
 
+NOTE: Starting with Lucene 10, this tokenizer produces sequential tokens (positionIncrement=1) instead of overlapping tokens (positionIncrement=0). This change can affect phrase queries and position-aware search logic that relied on the previous overlapping behavior.
+
 *Factory class:* `solr.PathHierarchyTokenizerFactory`
 
 *Arguments:*

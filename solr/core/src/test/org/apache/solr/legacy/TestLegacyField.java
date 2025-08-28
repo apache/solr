@@ -203,7 +203,7 @@ public class TestLegacyField extends SolrTestCase {
 
   private void trySetTokenStreamValue(Field f) {
     expectThrows(
-        IllegalArgumentException.class,
+        UnsupportedOperationException.class,
         () -> {
           f.setTokenStream(new CannedTokenStream(new Token("foo", 0, 3)));
         });

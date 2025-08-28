@@ -76,20 +76,17 @@ class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
       throws IOException {
     if (subDv.advanceExact(doc)) {
 
-      int segOrd = (int) subDv.nextOrd();
-      assert segOrd >= 0;
-
       FixedBitSet bits = arr[slotNum];
       if (bits == null) {
         bits = new FixedBitSet(nTerms);
         arr[slotNum] = bits;
       }
 
-      do {
+      for (int i = 0; i < subDv.docValueCount(); i++) {
+        int segOrd = (int) subDv.nextOrd();
         int ord = toGlobal == null ? segOrd : (int) toGlobal.get(segOrd);
         bits.set(ord);
-        segOrd = (int) subDv.nextOrd();
-      } while (segOrd >= 0);
+      }
     }
   }
 }

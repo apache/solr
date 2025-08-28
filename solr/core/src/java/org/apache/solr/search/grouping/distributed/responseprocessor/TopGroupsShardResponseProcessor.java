@@ -212,7 +212,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
 
       final TopDocs mergedTopDocs;
       if (withinGroupSort.equals(Sort.RELEVANCE)) {
-        mergedTopDocs = TopDocs.merge(start, topN, topDocs.toArray(new TopDocs[0]));
+        mergedTopDocs = TopDocs.merge(start, topN, topDocs.toArray(new TopDocs[0]), null);
       } else {
         mergedTopDocs =
             TopDocs.merge(withinGroupSort, start, topN, topDocs.toArray(new TopFieldDocs[0]));
@@ -233,7 +233,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     int i = 0;
     for (TopGroups<BytesRef> topGroups : rb.mergedTopGroups.values()) {
       for (GroupDocs<BytesRef> group : topGroups.groups) {
-        for (ScoreDoc scoreDoc : group.scoreDocs) {
+        for (ScoreDoc scoreDoc : group.scoreDocs()) {
           ShardDoc solrDoc = (ShardDoc) scoreDoc;
           // Include the first if there are duplicate IDs
           if (!resultIds.containsKey(solrDoc.id)) {

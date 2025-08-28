@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
@@ -322,25 +323,11 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
     if (blockCacheFileTypes != null && !isCachableFile(name)) {
       return false;
     }
-    switch (context.context) {
-        // depending on params, we don't cache on merges or when only reading once
-      case MERGE:
-        {
-          return cacheMerges;
-        }
-      case READ:
-        {
-          if (context.readOnce) {
-            return cacheReadOnce;
-          } else {
-            return true;
-          }
-        }
-      default:
-        {
-          return true;
-        }
-    }
+    return switch (context.context()) {
+      // depending on params, we don't cache on merges or when only reading once
+      case MERGE -> cacheMerges;
+      default -> true;
+    };
   }
 
   /** Determine whether write caching should be used for a particular file/context. */
@@ -353,17 +340,8 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
     if (blockCacheFileTypes != null && !isCachableFile(name)) {
       return false;
     }
-    switch (context.context) {
-      case MERGE:
-        {
-          // we currently don't cache any merge context writes
-          return false;
-        }
-      default:
-        {
-          return true;
-        }
-    }
+    // we currently don't cache any merge context writes
+    return Objects.requireNonNull(context.context()) != IOContext.Context.MERGE;
   }
 
   @Override

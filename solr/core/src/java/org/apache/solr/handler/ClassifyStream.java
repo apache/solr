@@ -156,7 +156,7 @@ public class ClassifyStream extends TupleStream implements Expressible {
     double[] tfs = new double[termToIndex.size()];
 
     TokenStream tokenStream = analyzer.tokenStream(analyzerField, text);
-    CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
+    CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
     tokenStream.reset();
 
     int termCount = 0;

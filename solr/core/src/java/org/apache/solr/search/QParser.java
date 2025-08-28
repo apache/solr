@@ -340,8 +340,8 @@ public abstract class QParser {
     return switch (q) {
       case null -> new LongConstValueSource(0);
       case FunctionQuery functionQuery -> functionQuery.getValueSource();
-      case FunctionScoreQuery functionQuery -> ValueSource.fromDoubleValuesSource(
-          functionQuery.getSource());
+      case FunctionScoreQuery functionQuery ->
+          ValueSource.fromDoubleValuesSource(functionQuery.getSource());
       default -> new QueryValueSource(q, 0.0f);
     };
   }

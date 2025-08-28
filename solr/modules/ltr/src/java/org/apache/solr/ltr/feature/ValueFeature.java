@@ -23,6 +23,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -141,7 +143,31 @@ public class ValueFeature extends Feature {
     }
 
     @Override
-    public FeatureScorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      // Check if a feature scorer can be created before creating ScorerSupplier
+      if (featureValue == null) {
+        return null;
+      }
+
+      return new ScorerSupplier() {
+        @Override
+        public Scorer get(long leadCost) throws IOException {
+          // featureValue is already checked to be non-null
+          return new ValueFeatureScorer(
+              ValueFeatureWeight.this,
+              featureValue,
+              DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
+        }
+
+        @Override
+        public long cost() {
+          return context.reader().maxDoc();
+        }
+      };
+    }
+
+    @Override
+    public FeatureScorer featureScorer(LeafReaderContext context) throws IOException {
       if (featureValue != null) {
         return new ValueFeatureScorer(
             this, featureValue, DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));

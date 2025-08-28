@@ -89,7 +89,7 @@ public class AnalyzeEvaluator extends SourceEvaluator {
     List<String> tokens = new ArrayList<>();
 
     try (TokenStream tokenStream = analyzer.tokenStream(analyzerField, value)) {
-      CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
+      CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
       tokenStream.reset();
       while (tokenStream.incrementToken()) {
         tokens.add(termAtt.toString());

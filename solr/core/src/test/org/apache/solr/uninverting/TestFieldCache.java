@@ -272,21 +272,40 @@ public class TestFieldCache extends SolrTestCase {
     for (int i = 0; i < NUM_DOCS; i++) {
       // This will remove identical terms. A DocTermOrds doesn't return duplicate ords for a docId
       List<BytesRef> values = new ArrayList<>(new LinkedHashSet<>(Arrays.asList(multiValued[i])));
+
+      // Count expected non-null values
+      int expectedValueCount = 0;
       for (BytesRef v : values) {
         if (v == null) {
-          // why does this test use null values... instead of an empty list: confusing
           break;
         }
-        if (i > termOrds.docID()) {
-          assertEquals(i, termOrds.nextDoc());
-        }
-        long ord = termOrds.nextOrd();
-        assertNotEquals(ord, SortedSetDocValues.NO_MORE_ORDS);
-        BytesRef scratch = termOrds.lookupOrd(ord);
-        assertEquals(v, scratch);
+        expectedValueCount++;
       }
-      if (i == termOrds.docID()) {
-        assertEquals(SortedSetDocValues.NO_MORE_ORDS, termOrds.nextOrd());
+
+      // Advance to document i if needed
+      if (termOrds.docID() < i) {
+        termOrds.advance(i);
+      }
+
+      // Check if document i has values
+      if (termOrds.docID() == i) {
+        // Document has values - verify count and content
+        long docValueCount = termOrds.docValueCount();
+        assertEquals("Document " + i + " value count mismatch", expectedValueCount, docValueCount);
+
+        int valueIndex = 0;
+        for (int ordIdx = 0; ordIdx < docValueCount; ordIdx++) {
+          long ord = termOrds.nextOrd();
+          BytesRef scratch = termOrds.lookupOrd(ord);
+          // Find the corresponding value (skip nulls)
+          while (valueIndex < values.size() && values.get(valueIndex) == null) {
+            valueIndex++;
+          }
+          if (valueIndex < values.size()) {
+            assertEquals(values.get(valueIndex), scratch);
+            valueIndex++;
+          }
+        }
       }
     }
 
@@ -500,8 +519,8 @@ public class TestFieldCache extends SolrTestCase {
 
     SortedSetDocValues sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sorted", null);
     assertEquals(0, sortedSet.nextDoc());
+    assertEquals(1, sortedSet.docValueCount());
     assertEquals(0, sortedSet.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
     assertEquals(1, sortedSet.getValueCount());
 
     bits = FieldCache.DEFAULT.getDocsWithField(ar, "sorted", null);
@@ -567,9 +586,9 @@ public class TestFieldCache extends SolrTestCase {
 
     sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sortedset", null);
     assertEquals(0, sortedSet.nextDoc());
+    assertEquals(2, sortedSet.docValueCount());
     assertEquals(0, sortedSet.nextOrd());
     assertEquals(1, sortedSet.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
     assertEquals(2, sortedSet.getValueCount());
 
     bits = FieldCache.DEFAULT.getDocsWithField(ar, "sortedset", null);

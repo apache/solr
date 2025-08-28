@@ -31,6 +31,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
@@ -88,7 +89,7 @@ public class TopLevelJoinQuery extends JoinQuery implements SolrSearcherRequirer
       final boolean toMultivalued = toSearcher.getSchema().getFieldOrNull(toField).multiValued();
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           if (toBitsetBounds.lower == BitsetBounds.NO_MATCHES) {
             return null;
           }
@@ -101,33 +102,42 @@ public class TopLevelJoinQuery extends JoinQuery implements SolrSearcherRequirer
             return null;
           }
 
-          final int docBase = context.docBase;
-          return new ConstantScoreScorer(
-              this,
-              this.score(),
-              scoreMode,
-              new TwoPhaseIterator(toApproximation) {
-                @Override
-                public boolean matches() throws IOException {
-                  final boolean hasDoc =
-                      topLevelToDocValues.advanceExact(docBase + approximation.docID());
-                  if (hasDoc) {
-                    for (long ord = topLevelToDocValues.nextOrd();
-                        ord != -1L;
-                        ord = topLevelToDocValues.nextOrd()) {
-                      if (toOrdBitSet.get(ord)) {
-                        return true;
-                      }
-                    }
-                  }
-                  return false;
-                }
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(long leadCost) throws IOException {
 
-                @Override
-                public float matchCost() {
-                  return 10.0F;
-                }
-              });
+              final int docBase = context.docBase;
+              return new ConstantScoreScorer(
+                  score(),
+                  scoreMode,
+                  new TwoPhaseIterator(toApproximation) {
+                    @Override
+                    public boolean matches() throws IOException {
+                      final boolean hasDoc =
+                          topLevelToDocValues.advanceExact(docBase + approximation.docID());
+                      if (hasDoc) {
+                        for (int i = 0; i < topLevelToDocValues.docValueCount(); i++) {
+                          long ord = topLevelToDocValues.nextOrd();
+                          if (toOrdBitSet.get(ord)) {
+                            return true;
+                          }
+                        }
+                      }
+                      return false;
+                    }
+
+                    @Override
+                    public float matchCost() {
+                      return 10.0F;
+                    }
+                  });
+            }
+
+            @Override
+            public long cost() {
+              return toOrdBitSet.cardinality();
+            }
+          };
         }
 
         @Override
@@ -143,7 +153,7 @@ public class TopLevelJoinQuery extends JoinQuery implements SolrSearcherRequirer
   private Weight createNoMatchesWeight(float boost) {
     return new ConstantScoreWeight(this, boost) {
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
         return null;
       }
 

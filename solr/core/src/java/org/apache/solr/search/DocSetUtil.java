@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.lucene.index.DirectoryReader;
@@ -28,6 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -146,14 +148,32 @@ public class DocSetUtil {
       throws IOException {
 
     int maxDoc = searcher.getIndexReader().maxDoc();
-    DocSetCollector collector = new DocSetCollector(maxDoc);
 
     // This may throw an ExitableDirectoryReader.ExitingReaderException
     // but we should not catch it here, as we don't know how this DocSet will be used (it could be
     // negated before use) or cached.
-    searcher.search(query, collector);
 
-    return getDocSet(collector, searcher);
+    // Check if IndexSearcher has an executor
+    boolean hasExecutor = searcher.getTaskExecutor() != null;
+
+    if (hasExecutor) {
+      // With executor, use a proper CollectorManager that creates new collectors
+      final int smallSetSize = smallSetSize(maxDoc);
+      DocSetCollectorManager manager = new DocSetCollectorManager(maxDoc, smallSetSize);
+      FixedBitSet bitSet = searcher.search(query, manager);
+      if (bitSet != null) {
+        BitDocSet result = new BitDocSet(bitSet, bitSet.cardinality());
+        // Apply the same deduplication logic as the non-executor path
+        return getDocSet(result, searcher);
+      } else {
+        return DocSet.empty();
+      }
+    } else {
+      // Without executor, use the simple collector approach
+      DocSetCollector collector = new DocSetCollector(maxDoc);
+      searcher.search(query, collector);
+      return getDocSet(collector, searcher);
+    }
   }
 
   public static DocSet createDocSet(SolrIndexSearcher searcher, Term term) throws IOException {
@@ -334,5 +354,53 @@ public class DocSetUtil {
       }
       dest.set(adjustedSegDocBase + segOrd, adjustedSegDocBase + limit);
     } while (segOrd > srcOffset);
+  }
+
+  /** CollectorManager for creating DocSetCollectors in parallel execution */
+  private static class DocSetCollectorManager
+      implements CollectorManager<DocSetCollector, FixedBitSet> {
+    private final int maxDoc;
+    private final int smallSetSize;
+
+    public DocSetCollectorManager(int maxDoc, int smallSetSize) {
+      this.maxDoc = maxDoc;
+      this.smallSetSize = smallSetSize;
+    }
+
+    @Override
+    public DocSetCollector newCollector() throws IOException {
+      return new DocSetCollector(smallSetSize, maxDoc);
+    }
+
+    @Override
+    public FixedBitSet reduce(Collection<DocSetCollector> collectors) throws IOException {
+      // Combine results from all collectors
+      FixedBitSet result = null;
+      int totalSize = 0;
+
+      for (DocSetCollector collector : collectors) {
+        totalSize += collector.size();
+        DocSet docSet = collector.getDocSet();
+
+        if (docSet instanceof BitDocSet) {
+          BitDocSet bitDocSet = (BitDocSet) docSet;
+          if (result == null) {
+            result = bitDocSet.getBits().clone();
+          } else {
+            result.or(bitDocSet.getBits());
+          }
+        } else if (docSet instanceof SortedIntDocSet) {
+          if (result == null) {
+            result = new FixedBitSet(maxDoc);
+          }
+          SortedIntDocSet sortedSet = (SortedIntDocSet) docSet;
+          for (DocIterator iter = sortedSet.iterator(); iter.hasNext(); ) {
+            result.set(iter.nextDoc());
+          }
+        }
+      }
+
+      return result;
+    }
   }
 }

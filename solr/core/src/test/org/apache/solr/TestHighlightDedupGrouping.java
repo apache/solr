@@ -17,12 +17,10 @@
 package org.apache.solr;
 
 import java.io.IOException;
-import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.AfterClass;
 import org.junit.Test;
 
 /**
@@ -34,12 +32,6 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
   private static final String id_s1 = "id_s1"; // string copy of the id for highlighting
   private static final String group_ti1 = "group_ti1";
   private static final String shard_i1 = "shard_i1";
-
-  @AfterClass
-  public static void afterClass() throws Exception {
-    TimeLimitingCollector.getGlobalTimerThread().stopTimer();
-    TimeLimitingCollector.getGlobalTimerThread().join();
-  }
 
   @Test
   @ShardsFixed(num = 2)

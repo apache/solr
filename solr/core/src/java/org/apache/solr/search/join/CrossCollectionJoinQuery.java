@@ -34,6 +34,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
@@ -324,16 +325,28 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       if (docs == null) {
         docs = getDocSet();
       }
 
+      // Check if this context has any matching documents before creating ScorerSupplier
       DocIdSetIterator readerSetIterator = docs.iterator(context);
       if (readerSetIterator == null) {
         return null;
       }
-      return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
+
+      return new ScorerSupplier() {
+        @Override
+        public Scorer get(long leadCost) throws IOException {
+          return new ConstantScoreScorer(score(), scoreMode, readerSetIterator);
+        }
+
+        @Override
+        public long cost() {
+          return docs.size();
+        }
+      };
     }
 
     @Override

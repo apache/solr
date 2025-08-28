@@ -84,7 +84,8 @@ public class TestQuerySenderNoQuery extends SolrTestCaseJ4 {
                       core.getSolrConfig().indexConfig,
                       "testQuerySenderNoQuery",
                       false,
-                      core.getDirectoryFactory());
+                      core.getDirectoryFactory(),
+                      core.getSolrConfig().booleanQueryMaxClauseCount);
 
               qsl.newSearcher(newSearcher, currentSearcher); // get newSearcher.
               assertNull("Req (newsearcher) is not null", mock.req);

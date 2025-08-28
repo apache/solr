@@ -917,6 +917,7 @@ public class FacetComponent extends SearchComponent {
   // The implementation below uses the first encountered shard's
   // facet_intervals as the basis for subsequent shards' data to be merged.
   private void doDistribIntervals(FacetInfo fi, NamedList<?> facet_counts) {
+
     @SuppressWarnings("unchecked")
     SimpleOrderedMap<SimpleOrderedMap<Integer>> facet_intervals =
         (SimpleOrderedMap<SimpleOrderedMap<Integer>>) facet_counts.get(FACET_INTERVALS_KEY);
@@ -925,12 +926,19 @@ public class FacetComponent extends SearchComponent {
 
       for (Map.Entry<String, SimpleOrderedMap<Integer>> entry : facet_intervals) {
         final String field = entry.getKey();
+
         SimpleOrderedMap<Integer> existingCounts = fi.intervalFacets.get(field);
+
         if (existingCounts == null) {
+
           // first time we've seen this field, no merging
           fi.intervalFacets.add(field, entry.getValue());
 
+          // Debug the added counts
+          for (Map.Entry<String, Integer> intervalEntry : entry.getValue()) {}
+
         } else {
+
           // not the first time, merge current field counts
           Iterator<Map.Entry<String, Integer>> newItr = entry.getValue().iterator();
           Iterator<Map.Entry<String, Integer>> exItr = existingCounts.iterator();
@@ -950,7 +958,12 @@ public class FacetComponent extends SearchComponent {
                   ErrorCode.SERVER_ERROR,
                   "Interval facet shard response has extra key: " + newItem.getKey());
             }
-            exItem.setValue(exItem.getValue() + newItem.getValue());
+
+            int oldValue = exItem.getValue();
+            int newValue = newItem.getValue();
+            int mergedValue = oldValue + newValue;
+
+            exItem.setValue(mergedValue);
           }
           if (newItr.hasNext()) {
             throw new SolrException(

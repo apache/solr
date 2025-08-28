@@ -299,6 +299,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
           if (sub == null) {
             continue;
           }
+
           final SortedDocValues singleton = DocValues.unwrapSingleton(sub);
           if (singleton != null) {
             // some codecs may optimize SORTED_SET storage for single-valued fields
@@ -322,36 +323,19 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     assert longs.docID() != -1;
     final int docValueCount = longs.docValueCount();
     assert docValueCount > 0 : "Should have at least one value for this document";
-    int currentInterval = 0;
+    // Track which intervals have already been counted for this document
+    boolean[] intervalCounted = new boolean[intervals.length];
     for (int i = 0; i < docValueCount; i++) {
-      boolean evaluateNextInterval = true;
       long value = longs.nextValue();
-      while (evaluateNextInterval && currentInterval < intervals.length) {
-        IntervalCompareResult result = intervals[currentInterval].includes(value);
-        switch (result) {
-          case INCLUDED:
-            /*
-             * Increment the current interval and move to the next one using
-             * the same value
-             */
-            intervals[currentInterval].incCount();
-            currentInterval++;
-            break;
-          case LOWER_THAN_START:
-            /*
-             * None of the next intervals will match this value (all of them have
-             * higher start value). Move to the next value for this document.
-             */
-            evaluateNextInterval = false;
-            break;
-          case GREATER_THAN_END:
-            /*
-             * Next interval may match this value
-             */
-            currentInterval++;
-            break;
+      // Check against all intervals for this value, but only count each interval once per document
+      for (int intervalIdx = 0; intervalIdx < intervals.length; intervalIdx++) {
+        if (!intervalCounted[intervalIdx]) {
+          IntervalCompareResult result = intervals[intervalIdx].includes(value);
+          if (result == IntervalCompareResult.INCLUDED) {
+            intervals[intervalIdx].incCount();
+            intervalCounted[intervalIdx] = true; // Mark this interval as counted for this document
+          }
         }
-        // Maybe return if currentInterval == intervals.length?
       }
     }
   }
@@ -369,34 +353,22 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         ssdv.advance(doc);
       }
       if (doc == ssdv.docID()) {
-        long currOrd;
-        int currentInterval = 0;
-        while ((currOrd = ssdv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-          boolean evaluateNextInterval = true;
-          while (evaluateNextInterval && currentInterval < intervals.length) {
-            IntervalCompareResult result = intervals[currentInterval].includes(currOrd);
-            switch (result) {
-              case INCLUDED:
-                /*
-                 * Increment the current interval and move to the next one using
-                 * the same value
-                 */
-                intervals[currentInterval].incCount();
-                currentInterval++;
-                break;
-              case LOWER_THAN_START:
-                /*
-                 * None of the next intervals will match this value (all of them have
-                 * higher start value). Move to the next value for this document.
-                 */
-                evaluateNextInterval = false;
-                break;
-              case GREATER_THAN_END:
-                /*
-                 * Next interval may match this value
-                 */
-                currentInterval++;
-                break;
+        // Track which intervals have been counted for this document
+        boolean[] intervalCounted = new boolean[intervals.length];
+
+        // Process all ordinals for this document
+        for (int i = 0; i < ssdv.docValueCount(); i++) {
+          long currOrd = ssdv.nextOrd();
+
+          // Check this ordinal against all intervals
+          for (int intervalIdx = 0; intervalIdx < intervals.length; intervalIdx++) {
+            // Only count each interval once per document
+            if (!intervalCounted[intervalIdx]) {
+              IntervalCompareResult result = intervals[intervalIdx].includes(currOrd);
+              if (result == IntervalCompareResult.INCLUDED) {
+                intervals[intervalIdx].incCount();
+                intervalCounted[intervalIdx] = true;
+              }
             }
           }
         }

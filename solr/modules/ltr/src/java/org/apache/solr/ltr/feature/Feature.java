@@ -26,6 +26,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -268,7 +269,9 @@ public abstract class Feature extends Query implements Accountable {
     }
 
     @Override
-    public abstract FeatureScorer scorer(LeafReaderContext context) throws IOException;
+    public abstract ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException;
+
+    public abstract FeatureScorer featureScorer(LeafReaderContext context) throws IOException;
 
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
@@ -277,7 +280,7 @@ public abstract class Feature extends Query implements Accountable {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      final FeatureScorer r = scorer(context);
+      final FeatureScorer r = featureScorer(context);
       float score = getDefaultValue();
       if (r != null) {
         r.iterator().advance(doc);
@@ -307,12 +310,18 @@ public abstract class Feature extends Query implements Accountable {
       protected final String name;
       private DocInfo docInfo;
       protected final DocIdSetIterator itr;
+      private final FeatureWeight featureWeight;
 
       public FeatureScorer(Feature.FeatureWeight weight, DocIdSetIterator itr) {
-        super(weight);
+        super();
         this.itr = itr;
+        this.featureWeight = weight;
         name = weight.getName();
         docInfo = null;
+      }
+
+      public FeatureWeight getFeatureWeight() {
+        return featureWeight;
       }
 
       @Override

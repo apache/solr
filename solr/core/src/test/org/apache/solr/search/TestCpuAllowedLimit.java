@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
@@ -161,7 +162,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 String.valueOf(sleepMs),
                 "stages",
                 "prepare,process",
-                "multiThreaded",
+                CommonParams.MULTI_THREADED,
                 "false",
                 "timeAllowed",
                 "500"));
@@ -182,7 +183,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 String.valueOf(sleepMs),
                 "stages",
                 "prepare,process",
-                "multiThreaded",
+                CommonParams.MULTI_THREADED,
                 "true",
                 "timeAllowed",
                 "500"));
@@ -219,7 +220,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "prepare,process",
                 "cpuAllowed",
                 "100",
-                "multiThreaded",
+                CommonParams.MULTI_THREADED,
                 "false"));
     // System.err.println("rsp=" + rsp.jsonStr());
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
@@ -238,7 +239,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "100",
                 "partialResults",
                 "false",
-                "multiThreaded",
+                CommonParams.MULTI_THREADED,
                 "false",
                 "_",
                 "foo"));
@@ -261,7 +262,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "prepare,process",
                 "cpuAllowed",
                 "100",
-                "multiThreaded",
+                CommonParams.MULTI_THREADED,
                 "true"));
     // System.err.println("rsp=" + rsp.jsonStr());
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));

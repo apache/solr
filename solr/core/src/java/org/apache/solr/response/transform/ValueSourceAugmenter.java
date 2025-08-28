@@ -173,11 +173,6 @@ public class ValueSourceAugmenter extends DocTransformer {
 
     int docBase;
     int localDocId;
-
-    @Override
-    public int docID() {
-      return localDocId;
-    }
   }
 
   /** Always returns true */
@@ -202,7 +197,6 @@ public class ValueSourceAugmenter extends DocTransformer {
       this.score = score;
     }
 
-    @Override
     public int docID() {
       return docid;
     }

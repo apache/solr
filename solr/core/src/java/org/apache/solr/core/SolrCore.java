@@ -2368,6 +2368,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         // (caches take a little while to instantiate)
         final boolean useCaches = !realtime;
         final String newName = realtime ? "realtime" : "main";
+        int maxBooleanClauses = getSolrConfig().booleanQueryMaxClauseCount;
         tmp =
             new SolrIndexSearcher(
                 this,
@@ -2378,7 +2379,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
                 true,
                 useCaches,
                 true,
-                directoryFactory);
+                directoryFactory,
+                maxBooleanClauses);
 
       } else {
         // newestSearcher == null at this point
@@ -2388,6 +2390,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
           // so that we pick up any uncommitted changes and so we don't go backwards
           // in time on a core reload
           DirectoryReader newReader = newReaderCreator.call();
+          int maxBooleanClauses = getSolrConfig().booleanQueryMaxClauseCount;
           tmp =
               new SolrIndexSearcher(
                   this,
@@ -2398,7 +2401,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
                   true,
                   !realtime,
                   true,
-                  directoryFactory);
+                  directoryFactory,
+                  maxBooleanClauses);
         } else {
           RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(this);
           DirectoryReader newReader = null;
@@ -2407,6 +2411,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
           } finally {
             writer.decref();
           }
+          int maxBooleanClauses = getSolrConfig().booleanQueryMaxClauseCount;
           tmp =
               new SolrIndexSearcher(
                   this,
@@ -2417,7 +2422,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
                   true,
                   !realtime,
                   true,
-                  directoryFactory);
+                  directoryFactory,
+                  maxBooleanClauses);
         }
       }
 

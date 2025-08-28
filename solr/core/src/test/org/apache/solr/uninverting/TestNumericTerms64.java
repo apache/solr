@@ -144,7 +144,7 @@ public class TestNumericTerms64 extends SolrTestCase {
           LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
       TopDocs topDocs =
           searcher.search(tq, noDocs, new Sort(new SortField(field, SortField.Type.LONG, true)));
-      if (topDocs.totalHits.value == 0) continue;
+      if (topDocs.totalHits.value() == 0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
       long last =

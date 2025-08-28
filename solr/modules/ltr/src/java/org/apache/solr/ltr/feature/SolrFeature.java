@@ -27,6 +27,7 @@ import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -225,7 +226,29 @@ public class SolrFeature extends Feature {
     }
 
     @Override
-    public FeatureScorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      // Check if a feature scorer can be created before creating ScorerSupplier
+      FeatureScorer featScorer = featureScorer(context);
+      if (featScorer == null) {
+        return null;
+      }
+
+      return new ScorerSupplier() {
+        @Override
+        public Scorer get(long leadCost) throws IOException {
+          // featScorer is already computed and non-null
+          return featScorer;
+        }
+
+        @Override
+        public long cost() {
+          return context.reader().maxDoc();
+        }
+      };
+    }
+
+    @Override
+    public FeatureScorer featureScorer(LeafReaderContext context) throws IOException {
       Scorer solrScorer = solrQueryWeight.scorer(context);
       if (solrScorer == null) {
         return null;
@@ -243,7 +266,8 @@ public class SolrFeature extends Feature {
       @Override
       public float score() throws IOException {
         try {
-          return in.score();
+          float s = in.score();
+          return s;
         } catch (UnsupportedOperationException e) {
           throw new FeatureException(
               e.toString() + ": " + "Unable to extract feature for " + name, e);

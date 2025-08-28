@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
@@ -39,6 +38,7 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -82,7 +82,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     termsFilter {
       @Override
       Query makeFilter(String fname, BytesRef[] bytesRefs) {
-        return new TermInSetQuery(fname, bytesRefs); // constant scores
+        return new TermInSetQuery(fname, Arrays.asList(bytesRefs)); // constant scores
       }
     },
     booleanQuery {
@@ -193,13 +193,15 @@ public class TermsQParserPlugin extends QParserPlugin {
 
   private static class TopLevelDocValuesTermsQuery extends TermInSetQuery {
     private final String fieldName;
+    private final BytesRef[] terms;
     private SortedSetDocValues topLevelDocValues;
     private LongBitSet topLevelTermOrdinals;
     private boolean matchesAtLeastOneTerm = false;
 
     public TopLevelDocValuesTermsQuery(String field, BytesRef... terms) {
-      super(MultiTermQuery.DOC_VALUES_REWRITE, field, terms);
+      super(MultiTermQuery.DOC_VALUES_REWRITE, field, Arrays.asList(terms));
       this.fieldName = field;
+      this.terms = terms;
     }
 
     @Override
@@ -215,10 +217,9 @@ public class TermsQParserPlugin extends QParserPlugin {
       topLevelDocValues =
           DocValues.getSortedSet(((SolrIndexSearcher) searcher).getSlowAtomicReader(), fieldName);
       topLevelTermOrdinals = new LongBitSet(topLevelDocValues.getValueCount());
-      PrefixCodedTerms.TermIterator iterator = getTermData().iterator();
 
       long lastTermOrdFound = 0;
-      for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
+      for (BytesRef term : terms) {
         long currentTermOrd = lookupTerm(topLevelDocValues, term, lastTermOrdFound);
         if (currentTermOrd >= 0L) {
           matchesAtLeastOneTerm = true;
@@ -229,7 +230,7 @@ public class TermsQParserPlugin extends QParserPlugin {
 
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           if (!matchesAtLeastOneTerm) {
             return null;
           }
@@ -240,30 +241,39 @@ public class TermsQParserPlugin extends QParserPlugin {
           }
 
           final int docBase = context.docBase;
-          return new ConstantScoreScorer(
-              this,
-              this.score(),
-              scoreMode,
-              new TwoPhaseIterator(segmentDocValues) {
-                @Override
-                public boolean matches() throws IOException {
-                  topLevelDocValues.advanceExact(docBase + approximation.docID());
-                  for (long ord = topLevelDocValues.nextOrd();
-                      ord != -1L;
-                      ord = topLevelDocValues.nextOrd()) {
-                    if (topLevelTermOrdinals.get(ord)) {
-                      return true;
+          final float score = this.score();
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+              return new ConstantScoreScorer(
+                  score,
+                  scoreMode,
+                  new TwoPhaseIterator(segmentDocValues) {
+                    @Override
+                    public boolean matches() throws IOException {
+                      topLevelDocValues.advanceExact(docBase + approximation.docID());
+                      for (int i = 0; i < topLevelDocValues.docValueCount(); i++) {
+                        long ord = topLevelDocValues.nextOrd();
+                        if (topLevelTermOrdinals.get(ord)) {
+                          return true;
+                        }
+                      }
+
+                      return false;
                     }
-                  }
 
-                  return false;
-                }
+                    @Override
+                    public float matchCost() {
+                      return 10.0F;
+                    }
+                  });
+            }
 
-                @Override
-                public float matchCost() {
-                  return 10.0F;
-                }
-              });
+            @Override
+            public long cost() {
+              return segmentDocValues.getValueCount();
+            }
+          };
         }
 
         @Override

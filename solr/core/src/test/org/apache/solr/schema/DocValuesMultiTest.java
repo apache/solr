@@ -94,15 +94,17 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
 
         SortedSetDocValues dv = reader.getSortedSetDocValues("stringdv");
         assertEquals(0, dv.nextDoc());
+        long docValueCount = dv.docValueCount();
+        assertEquals(2, docValueCount);
         assertEquals(0, dv.nextOrd());
         assertEquals(1, dv.nextOrd());
-        assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
 
         dv = reader.getSortedSetDocValues("booldv");
         assertEquals(0, dv.nextDoc());
+        docValueCount = dv.docValueCount();
+        assertEquals(2, docValueCount);
         assertEquals(0, dv.nextOrd());
         assertEquals(1, dv.nextOrd());
-        assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
 
       } finally {
         searcherRef.decref();

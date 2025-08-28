@@ -374,7 +374,7 @@ public class SolrDocumentFetcher {
       Predicate<String> readAsBytes = ResultContext.READASBYTES.get();
       if (readAsBytes != null && readAsBytes.test(fieldInfo.name)) {
         final FieldType ft = new FieldType(TextField.TYPE_STORED);
-        ft.setStoreTermVectors(fieldInfo.hasVectors());
+        ft.setStoreTermVectors(fieldInfo.hasTermVectors());
         ft.setOmitNorms(fieldInfo.omitsNorms());
         ft.setIndexOptions(fieldInfo.getIndexOptions());
         Objects.requireNonNull(value, "String value should not be null");
@@ -683,9 +683,8 @@ public class SolrDocumentFetcher {
         final SortedSetDocValues values = e.getSortedSetDocValues(localId, leafReader, readerOrd);
         if (values != null) {
           final List<Object> outValues = new ArrayList<>();
-          for (long ord = values.nextOrd();
-              ord != SortedSetDocValues.NO_MORE_ORDS;
-              ord = values.nextOrd()) {
+          for (int i = 0; i < values.docValueCount(); i++) {
+            long ord = values.nextOrd();
             BytesRef value = values.lookupOrd(ord);
             outValues.add(e.schemaField.getType().toObject(e.schemaField, value));
           }

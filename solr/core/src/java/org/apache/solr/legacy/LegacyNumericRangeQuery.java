@@ -199,6 +199,29 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
   }
 
   /**
+   * Private constructor that accepts a rewrite method. Used by factory methods that need to specify
+   * custom rewrite behavior.
+   */
+  private LegacyNumericRangeQuery(
+      final String field,
+      final int precisionStep,
+      final LegacyNumericType dataType,
+      T min,
+      T max,
+      final boolean minInclusive,
+      final boolean maxInclusive,
+      final MultiTermQuery.RewriteMethod rewriteMethod) {
+    super(field, rewriteMethod);
+    if (precisionStep < 1) throw new IllegalArgumentException("precisionStep must be >=1");
+    this.precisionStep = precisionStep;
+    this.dataType = Objects.requireNonNull(dataType, "LegacyNumericType must not be null");
+    this.min = min;
+    this.max = max;
+    this.minInclusive = minInclusive;
+    this.maxInclusive = maxInclusive;
+  }
+
+  /**
    * Factory that creates a <code>LegacyNumericRangeQuery</code>, that queries a <code>long</code>
    * range using the given <a href="#precisionStepDesc"><code>precisionStep</code></a>. You can have
    * half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries) by setting the min or max
@@ -369,6 +392,58 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
         max,
         minInclusive,
         maxInclusive);
+  }
+
+  /**
+   * Factory that creates a <code>LegacyNumericRangeQuery</code>, that queries a <code>long</code>
+   * range using the given <a href="#precisionStepDesc"><code>precisionStep</code></a> and rewrite
+   * method. You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries) by
+   * setting the min or max value to <code>null</code>. By setting inclusive to false, it will match
+   * all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   */
+  public static LegacyNumericRangeQuery<Long> newLongRange(
+      final String field,
+      final int precisionStep,
+      Long min,
+      Long max,
+      final boolean minInclusive,
+      final boolean maxInclusive,
+      final MultiTermQuery.RewriteMethod rewriteMethod) {
+    return new LegacyNumericRangeQuery<>(
+        field,
+        precisionStep,
+        LegacyNumericType.LONG,
+        min,
+        max,
+        minInclusive,
+        maxInclusive,
+        rewriteMethod);
+  }
+
+  /**
+   * Factory that creates a <code>LegacyNumericRangeQuery</code>, that queries a <code>int</code>
+   * range using the given <a href="#precisionStepDesc"><code>precisionStep</code></a> and rewrite
+   * method. You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries) by
+   * setting the min or max value to <code>null</code>. By setting inclusive to false, it will match
+   * all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   */
+  public static LegacyNumericRangeQuery<Integer> newIntRange(
+      final String field,
+      final int precisionStep,
+      Integer min,
+      Integer max,
+      final boolean minInclusive,
+      final boolean maxInclusive,
+      final MultiTermQuery.RewriteMethod rewriteMethod) {
+    return new LegacyNumericRangeQuery<>(
+        field,
+        precisionStep,
+        LegacyNumericType.INT,
+        min,
+        max,
+        minInclusive,
+        maxInclusive,
+        rewriteMethod);
   }
 
   @Override

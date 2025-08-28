@@ -19,9 +19,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -30,6 +28,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 
@@ -66,8 +65,8 @@ public class MatchCostQuery extends Query {
   }
 
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
-    final Query rewrite = delegate.rewrite(reader);
+  public Query rewrite(IndexSearcher searcher) throws IOException {
+    final Query rewrite = delegate.rewrite(searcher);
     if (delegate.equals(rewrite)) {
       return this; // unchanged
     }
@@ -95,62 +94,67 @@ public class MatchCostQuery extends Query {
         return weight.explain(context, doc);
       }
 
-      // do not delegate scorerSupplier(); use the default implementation that calls our
-      // scorer() so that we can wrap TPI
-
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
-        final Scorer scorer = weight.scorer(context);
-        if (scorer == null) {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+        final ScorerSupplier supplier = weight.scorerSupplier(context);
+        if (supplier == null) {
           return null;
         }
-        final TwoPhaseIterator tpi = scorer.twoPhaseIterator();
-        if (tpi == null || tpi.matchCost() == matchCost) {
-          return scorer; // needn't wrap/delegate
-        }
-        return new Scorer(weight) { // pass delegated weight
-
+        return new ScorerSupplier() {
           @Override
-          public TwoPhaseIterator twoPhaseIterator() {
-            return new TwoPhaseIterator(tpi.approximation()) {
+          public Scorer get(long leadCost) throws IOException {
+            final Scorer scorer = supplier.get(leadCost);
+            if (scorer == null) {
+              return null;
+            }
+            final TwoPhaseIterator tpi = scorer.twoPhaseIterator();
+            if (tpi == null || tpi.matchCost() == matchCost) {
+              return scorer; // needn't wrap/delegate
+            }
+            return new Scorer() {
+
               @Override
-              public boolean matches() throws IOException {
-                return tpi.matches();
+              public TwoPhaseIterator twoPhaseIterator() {
+                return new TwoPhaseIterator(tpi.approximation()) {
+                  @Override
+                  public boolean matches() throws IOException {
+                    return tpi.matches();
+                  }
+
+                  @Override
+                  public float matchCost() {
+                    return matchCost;
+                  }
+                };
               }
 
               @Override
-              public float matchCost() {
-                return matchCost;
+              public DocIdSetIterator iterator() {
+                return scorer.iterator();
+              }
+
+              @Override
+              public float getMaxScore(int upTo) throws IOException {
+                return scorer.getMaxScore(upTo);
+              }
+
+              @Override
+              public float score() throws IOException {
+                return scorer.score();
+              }
+
+              @Override
+              public int docID() {
+                return scorer.docID();
               }
             };
           }
 
           @Override
-          public DocIdSetIterator iterator() {
-            return scorer.iterator();
-          }
-
-          @Override
-          public float getMaxScore(int upTo) throws IOException {
-            return scorer.getMaxScore(upTo);
-          }
-
-          @Override
-          public float score() throws IOException {
-            return scorer.score();
-          }
-
-          @Override
-          public int docID() {
-            return scorer.docID();
+          public long cost() {
+            return supplier.cost();
           }
         };
-      }
-
-      // delegate because thus there's no need to care about TPI matchCost if called
-      @Override
-      public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
-        return weight.bulkScorer(context);
       }
     };
   }

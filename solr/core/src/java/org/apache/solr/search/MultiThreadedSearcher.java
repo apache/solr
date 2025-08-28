@@ -55,6 +55,7 @@ public class MultiThreadedSearcher {
       boolean needDocSet,
       QueryResult queryResult)
       throws IOException {
+
     Collection<CollectorManager<Collector, Object>> collectors = new ArrayList<>();
 
     int firstCollectorsSize = 0;
@@ -356,7 +357,7 @@ public class MultiThreadedSearcher {
         } else {
           mergedTopDocs = TopDocs.merge(0, len, topDocs);
         }
-        totalHits = (int) mergedTopDocs.totalHits.value;
+        totalHits = (int) mergedTopDocs.totalHits.value();
       }
       return new TopDocsResult(mergedTopDocs, totalHits);
     }

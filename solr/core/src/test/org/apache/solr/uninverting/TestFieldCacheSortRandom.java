@@ -46,6 +46,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopFieldDocs;
@@ -86,6 +87,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
 
     int numDocs = 0;
     final List<BytesRef> docValues = new ArrayList<>();
+    final Set<Integer> missingDocs = new HashSet<>(); // Track which docs have missing values
     // TODO: deletions
     while (numDocs < NUM_DOCS) {
       final Document doc = new Document();
@@ -124,7 +126,9 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
         if (VERBOSE) {
           System.out.println("  " + numDocs + ": <missing>");
         }
-        docValues.add(null);
+        // Track that this document has a missing value
+        missingDocs.add(numDocs);
+        docValues.add(null); // Use null to represent missing values in our expected list
       }
 
       doc.add(new IntPoint("id", numDocs));
@@ -147,7 +151,8 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       System.out.println("  reader=" + r);
     }
 
-    final IndexSearcher s = newSearcher(r, false);
+    // Explicitly disable parallel search to ensure deterministic results
+    final IndexSearcher s = newSearcher(r, false, true, false);
     final int ITERS = atLeast(100);
     for (int iter = 0; iter < ITERS; iter++) {
       final boolean reverse = random.nextBoolean();
@@ -171,7 +176,8 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
         sort = new Sort(sf, SortField.FIELD_DOC);
       }
       final int hitCount = TestUtil.nextInt(random, 1, r.maxDoc() + 20);
-      final RandomQuery f = new RandomQuery(random.nextLong(), random.nextFloat(), docValues);
+      final RandomQuery f =
+          new RandomQuery(random.nextLong(), random.nextFloat(), docValues, missingDocs);
       int queryType = random.nextInt(2);
       if (queryType == 0) {
         hits = s.search(new ConstantScoreQuery(f), hitCount, sort, false);
@@ -200,8 +206,13 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
           new Comparator<BytesRef>() {
             @Override
             public int compare(BytesRef a, BytesRef b) {
-              if (a == null) {
-                if (b == null) {
+              // In Lucene 10, only null represents missing values
+              // Empty BytesRef (length == 0) is a valid empty string value
+              boolean aIsMissing = (a == null);
+              boolean bIsMissing = (b == null);
+
+              if (aIsMissing) {
+                if (bIsMissing) {
                   return 0;
                 }
                 if (sortMissingLast) {
@@ -209,7 +220,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
                 } else {
                   return -1;
                 }
-              } else if (b == null) {
+              } else if (bIsMissing) {
                 if (sortMissingLast) {
                   return -1;
                 } else {
@@ -229,9 +240,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
         System.out.println("  expected:");
         for (int idx = 0; idx < expected.size(); idx++) {
           BytesRef br = expected.get(idx);
-          if (br == null && missingIsNull == false) {
-            br = new BytesRef();
-          }
+          // In Lucene 10, missing values are already BytesRef(), no conversion needed
           System.out.println("    " + idx + ": " + (br == null ? "<missing>" : br.utf8ToString()));
           if (idx == hitCount - 1) {
             break;
@@ -251,27 +260,22 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
                   + ": "
                   + (br == null ? "<missing>" : br.utf8ToString())
                   + " id="
-                  + s.doc(fd.doc).get("id"));
+                  + s.storedFields().document(fd.doc).get("id"));
         }
       }
       for (int hitIDX = 0; hitIDX < hits.scoreDocs.length; hitIDX++) {
         final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
         BytesRef br = expected.get(hitIDX);
-        if (br == null && missingIsNull == false) {
-          br = new BytesRef();
-        }
-
-        // Normally, the old codecs (that don't support
-        // docsWithField via doc values) will always return
-        // an empty BytesRef for the missing case; however,
-        // if all docs in a given segment were missing, in
-        // that case it will return null!  So we must map
-        // null here, too:
+        // In Lucene 10, sorting returns null for missing values
+        // Empty BytesRef is a valid value (empty string), not a missing value
         BytesRef br2 = (BytesRef) fd.fields[0];
-        if (br2 == null && missingIsNull == false) {
-          br2 = new BytesRef();
-        }
 
+        // Only null represents missing values, empty BytesRef is a valid empty string
+        if (br == null && br2 == null) {
+          // Both are missing values - they are equal
+          continue;
+        }
+        // Otherwise compare normally (including empty strings)
         assertEquals(br, br2);
       }
     }
@@ -284,21 +288,24 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
     private final long seed;
     private float density;
     private final List<BytesRef> docValues;
+    private final Set<Integer> missingDocs;
     public final List<BytesRef> matchValues =
         Collections.synchronizedList(new ArrayList<BytesRef>());
 
     // density should be 0.0 ... 1.0
-    public RandomQuery(long seed, float density, List<BytesRef> docValues) {
+    public RandomQuery(
+        long seed, float density, List<BytesRef> docValues, Set<Integer> missingDocs) {
       this.seed = seed;
       this.density = density;
       this.docValues = docValues;
+      this.missingDocs = missingDocs;
     }
 
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           Random random = new Random(seed ^ context.docBase);
           final int maxDoc = context.reader().maxDoc();
           final NumericDocValues idSource = DocValues.getNumeric(context.reader(), "id");
@@ -309,12 +316,37 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
               bits.set(docID);
               // System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
               assertEquals(docID, idSource.advance(docID));
-              matchValues.add(docValues.get((int) idSource.longValue()));
+              // Use the ID value to look up the original doc value
+              int originalDocID = (int) idSource.longValue();
+              if (originalDocID < docValues.size()) {
+                if (missingDocs.contains(originalDocID)) {
+                  matchValues.add(null);
+                } else {
+                  BytesRef docValue = docValues.get(originalDocID);
+                  // Note: docValue can be an actual empty string (length 0), which is NOT the same
+                  // as missing
+                  if (docValue == null) {
+                    throw new IllegalStateException(
+                        "Non-missing doc " + originalDocID + " has null docValue!");
+                  }
+                  matchValues.add(docValue);
+                }
+              }
             }
           }
 
-          return new ConstantScoreScorer(
-              this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+              return new ConstantScoreScorer(
+                  score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
+            }
+
+            @Override
+            public long cost() {
+              return bits.approximateCardinality();
+            }
+          };
         }
 
         @Override

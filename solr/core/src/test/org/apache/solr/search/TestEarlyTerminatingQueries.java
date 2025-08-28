@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.ThreadCpuTimer;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -71,7 +72,7 @@ public class TestEarlyTerminatingQueries extends SolrCloudTestCase {
                 "5",
                 "rows",
                 "5",
-                "multiThreaded",
+                CommonParams.MULTI_THREADED,
                 "false"));
     assertEquals(
         "should have partial results for maxHitsAllowed",

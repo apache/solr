@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -164,10 +165,23 @@ class PreAnalyzedUpdateProcessor extends FieldMutatingUpdateProcessor {
       if (o == null) {
         continue;
       }
-      Field pre = (Field) parser.createField(sf, o);
-      if (pre != null) {
-        res.addValue(pre);
-      } else { // restore the original value
+      try {
+        // In Lucene 10, createFields returns a list of fields
+        // For pre-analyzed fields, this is typically a single field that handles both stored and
+        // indexed content
+        List<IndexableField> fields = parser.createFields(sf, o);
+        if (fields != null && !fields.isEmpty()) {
+          // Add the field(s) returned - typically a single field that handles both stored and
+          // indexed
+          for (IndexableField field : fields) {
+            res.addValue(field);
+          }
+        } else { // restore the original value
+          log.warn("Could not parse field {} - using original value as is: {}", src.getName(), o);
+          res.addValue(o);
+        }
+      } catch (Exception e) {
+        // If parsing fails, fall back to the original value
         log.warn("Could not parse field {} - using original value as is: {}", src.getName(), o);
         res.addValue(o);
       }

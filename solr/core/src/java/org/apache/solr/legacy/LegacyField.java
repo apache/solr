@@ -80,12 +80,12 @@ public class LegacyField extends Field {
     return super.tokenStream(analyzer, reuse);
   }
 
-  @Override
+  // Note: Field.setTokenStream() was removed in Lucene 10.0
+  // This method is no longer supported and will throw an exception
   public void setTokenStream(TokenStream tokenStream) {
-    final LegacyFieldType fieldType = (LegacyFieldType) fieldType();
-    if (fieldType.numericType() != null) {
-      throw new IllegalArgumentException("cannot set private TokenStream on numeric fields");
-    }
-    super.setTokenStream(tokenStream);
+    throw new UnsupportedOperationException(
+        "Field.setTokenStream() was removed in Lucene 10.0. "
+            + "Either provide two fields (one with a TokenStream and another with a value), "
+            + "or create a sub-class of Field that overrides tokenStream(Analyzer, TokenStream).");
   }
 }

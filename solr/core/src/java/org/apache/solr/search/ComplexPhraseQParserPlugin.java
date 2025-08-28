@@ -20,6 +20,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -128,8 +129,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
               try {
                 org.apache.lucene.search.Query wildcardQuery =
                     reverseAwareParser.getWildcardQuery(t.field(), t.text());
-                setRewriteMethod(wildcardQuery);
-                return wildcardQuery;
+                return setRewriteMethod(wildcardQuery, t);
               } catch (SyntaxError e) {
                 throw new RuntimeException(e);
               }
@@ -143,11 +143,38 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
               return query;
             }
 
-            private Query setRewriteMethod(org.apache.lucene.search.Query query) {
+            private Query setRewriteMethod(
+                org.apache.lucene.search.Query query, org.apache.lucene.index.Term term) {
               if (query instanceof MultiTermQuery) {
-                ((MultiTermQuery) query)
-                    .setRewriteMethod(
-                        org.apache.lucene.search.MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+                switch (query) {
+                  case org.apache.lucene.search.WildcardQuery wq -> {
+                    return new org.apache.lucene.search.WildcardQuery(
+                        wq.getTerm(),
+                        Operations.DEFAULT_DETERMINIZE_WORK_LIMIT,
+                        MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+                  }
+                  case org.apache.lucene.search.PrefixQuery pq -> {
+                    return new org.apache.lucene.search.PrefixQuery(
+                        pq.getPrefix(), MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+                  }
+                  case org.apache.lucene.search.AutomatonQuery aq -> {
+                    // AutomatonQuery doesn't have getTerm(), but we need a term for the constructor
+                    // Use the term passed in if available, otherwise create a dummy term with the
+                    // field
+                    org.apache.lucene.index.Term aqTerm =
+                        term != null ? term : new org.apache.lucene.index.Term(aq.getField(), "");
+                    return new org.apache.lucene.search.AutomatonQuery(
+                        aqTerm,
+                        aq.getAutomaton(),
+                        aq.isAutomatonBinary(),
+                        MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+                  }
+                  default -> {
+                    // For other MultiTermQuery types, return as-is since we can't easily recreate
+                    // them
+                    return query;
+                  }
+                }
               }
               return query;
             }

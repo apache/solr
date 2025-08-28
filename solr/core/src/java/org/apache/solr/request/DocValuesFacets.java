@@ -415,15 +415,15 @@ public class DocValuesFacets {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (si.advanceExact(doc)) {
-        // strange do-while to collect the missing count (first ord is NO_MORE_ORDS)
-        int term = (int) si.nextOrd();
-        do {
+        // strange do-while to collect the missing count (negative ords indicate no more values)
+        for (int i = 0; i < si.docValueCount(); i++) {
+          int term = (int) si.nextOrd();
           if (map != null) {
             term = (int) ordMap.get(term);
           }
           int arrIdx = term - startTermIndex;
           if (arrIdx >= 0 && arrIdx < counts.length) counts[arrIdx]++;
-        } while ((term = (int) si.nextOrd()) >= 0);
+        }
       } else if (startTermIndex == -1) {
         counts[0]++; // missing count
       }
@@ -448,10 +448,10 @@ public class DocValuesFacets {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (si.advanceExact(doc)) {
-        int term = (int) si.nextOrd();
-        do {
+        for (int i = 0; i < si.docValueCount(); i++) {
+          int term = (int) si.nextOrd();
           segCounts[1 + term]++;
-        } while ((term = (int) si.nextOrd()) >= 0);
+        }
       } else {
         counts[0]++; // missing
       }

@@ -24,6 +24,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.SolrTestCaseJ4;
@@ -48,13 +50,17 @@ public class BJQFilterAccessibleTest extends SolrTestCaseJ4 {
   public void testAbilityToCreateBJQfromAnotherPackage() throws IOException {
     try (SolrQueryRequest req = lrf.makeRequest()) {
       TermQuery childQuery = new TermQuery(new Term("child_s", "l"));
-      Query parentQuery = new WildcardQuery(new Term("parent_s", "*"));
+      Query parentQuery =
+          new WildcardQuery(
+              new Term("parent_s", "*"),
+              Operations.DEFAULT_DETERMINIZE_WORK_LIMIT,
+              MultiTermQuery.CONSTANT_SCORE_REWRITE);
       ToParentBlockJoinQuery tpbjq =
           new ToParentBlockJoinQuery(
               childQuery,
               BlockJoinParentQParser.getCachedBitSetProducer(req, parentQuery),
               ScoreMode.Max);
-      assertEquals(6, req.getSearcher().search(tpbjq, 10).totalHits.value);
+      assertEquals(6, req.getSearcher().search(tpbjq, 10).totalHits.value());
     }
   }
 }

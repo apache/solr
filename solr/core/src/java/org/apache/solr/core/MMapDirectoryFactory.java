@@ -34,8 +34,10 @@ import org.slf4j.LoggerFactory;
  * <p>Can set the following parameters:
  *
  * <ul>
- *   <li>unmap -- See {@link MMapDirectory#setUseUnmap(boolean)}
- *   <li>preload -- See {@link MMapDirectory#setPreload(boolean)}
+ *   <li>unmap -- Unmapping is now controlled via system property
+ *       org.apache.lucene.store.MMapDirectory.enableUnmapHack
+ *   <li>preload -- Controls whether to preload files into physical memory. See {@link
+ *       MMapDirectory#setPreload(java.util.function.BiPredicate)}
  *   <li>maxChunkSize -- The Max chunk size. See {@link MMapDirectory#MMapDirectory(Path,
  *       LockFactory, long)}
  * </ul>
@@ -65,7 +67,7 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
   @Override
   protected Directory create(String path, LockFactory lockFactory) throws IOException {
     MMapDirectory mapDirectory = new MMapDirectory(Path.of(path), lockFactory, maxChunk);
-    mapDirectory.setPreload(preload);
+    mapDirectory.setPreload((s, ioContext) -> preload);
     return mapDirectory;
   }
 }

@@ -799,7 +799,8 @@ public class DocTermOrds implements Accountable {
     public long nextOrd() {
       while (bufferUpto == bufferLength) {
         if (bufferLength < buffer.length) {
-          return NO_MORE_ORDS;
+          throw new IllegalStateException(
+              "nextOrd() called more than docValueCount() times for the current document");
         } else {
           bufferLength = read(buffer);
           bufferUpto = 0;
@@ -810,25 +811,42 @@ public class DocTermOrds implements Accountable {
 
     @Override
     public int docValueCount() {
-      if (arr == null) {
-        // This value was inlined, and then read into a single buffer
-        return bufferLength;
-      } else {
-        // scan logic taken from read()
-        int start = index[doc] & 0x7fffffff;
-        int cursor = start;
-        for (; ; ) {
-          int delta = 0;
-          for (; ; ) {
-            byte b = arr[cursor++];
-            delta = (delta << 7) | (b & 0x7f);
-            if ((b & 0x80) == 0) break;
-          }
-          if (delta == 0) break;
-        }
+      // For Lucene 10 migration (LUCENE-10603): docValueCount() must return exactly
+      // the number of ordinals that can be retrieved by calling nextOrd().
+      // We need to simulate the same buffered reading logic that nextOrd() uses.
 
-        return cursor - start - 1;
+      // Save current state
+      int savedTnum = this.tnum;
+      int savedUpto = this.upto;
+      int savedBufferUpto = this.bufferUpto;
+      int savedBufferLength = this.bufferLength;
+
+      // Reset to start of document
+      this.tnum = 0;
+      if ((index[doc] & 0x80000000) != 0) {
+        // a pointer
+        this.upto = index[doc] & 0x7fffffff;
+      } else {
+        // inline
+        this.upto = index[doc];
       }
+
+      // Count all values by simulating successive read() calls
+      int totalCount = 0;
+      int[] tempBuffer = new int[buffer.length];
+      int readCount;
+      while ((readCount = read(tempBuffer)) == tempBuffer.length) {
+        totalCount += readCount;
+      }
+      totalCount += readCount; // Add the final partial buffer
+
+      // Restore original state
+      this.tnum = savedTnum;
+      this.upto = savedUpto;
+      this.bufferUpto = savedBufferUpto;
+      this.bufferLength = savedBufferLength;
+
+      return totalCount;
     }
 
     /**

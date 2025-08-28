@@ -1,10 +1,11 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information regarding
+ * copyright ownership.  The ASF licenses this file to You under
+ * the Apache License, Version 2.0 (the "License"); you may not use
+ * this file except in compliance with the License.  You may obtain
+ * a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -14,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.ltr;
 
 import java.io.IOException;
@@ -24,15 +26,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
-import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -40,6 +41,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -49,43 +51,48 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** The ranking query that is run, reranking results using the LTRScoringModel algorithm */
+/**
+ * Reranks a result set using an {@link LTRScoringModel}.
+ *
+ * <p>This implementation:
+ *
+ * <ul>
+ *   <li>Builds feature weights using Java 21 <strong>virtual threads</strong> with a per-request
+ *       semaphore for bounded parallelism (no pool lifecycle overhead).
+ *   <li>Stores per-document feature values in primitive arrays to minimise GC and improve cache
+ *       locality.
+ *   <li>Keeps {@link DocInfo} as a {@code HashMap<String,Object>} subclass for compatibility with
+ *       existing feature code.
+ *   <li>Initialises the sparse iterator following the Lucene 10 fix semantics.
+ * </ul>
+ */
 public class LTRScoringQuery extends Query implements Accountable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(LTRScoringQuery.class);
 
-  // contains a description of the model
-  private final LTRScoringModel ltrScoringModel;
-  private final LTRThreadModule ltrThreadMgr;
+  // ---------------- immutable config ----------------
+  protected final LTRScoringModel ltrScoringModel;
+  protected final LTRThreadModule ltrThreadMgr; // optional
+  protected final Map<String, String[]> efi; // external feature info
+  protected final Semaphore querySemaphore; // backwards compat
 
-  // limits the number of threads per query, so that multiple requests can be serviced
-  // simultaneously
-  private final Semaphore querySemaphore;
+  // ---------------- per‑request hooks ---------------
+  protected volatile Query originalQuery;
+  protected volatile SolrQueryRequest request;
+  protected volatile FeatureLogger logger;
 
-  // feature logger to output the features.
-  private FeatureLogger logger;
-  // Map of external parameters, such as query intent, that can be used by
-  // features
-  private final Map<String, String[]> efi;
-  // Original solr query used to fetch matching documents
-  private Query originalQuery;
-  // Original solr request
-  private SolrQueryRequest request;
-
-  public LTRScoringQuery(LTRScoringModel ltrScoringModel) {
-    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), null);
+  /* ---------------- constructors ------------------- */
+  public LTRScoringQuery(LTRScoringModel model) {
+    this(model, Collections.emptyMap(), null);
   }
 
   public LTRScoringQuery(
-      LTRScoringModel ltrScoringModel,
-      Map<String, String[]> externalFeatureInfo,
-      LTRThreadModule ltrThreadMgr) {
-    this.ltrScoringModel = ltrScoringModel;
+      LTRScoringModel model, Map<String, String[]> externalFeatureInfo, LTRThreadModule threadMgr) {
+    this.ltrScoringModel = model;
     this.efi = externalFeatureInfo;
-    this.ltrThreadMgr = ltrThreadMgr;
+    this.ltrThreadMgr = threadMgr;
     if (this.ltrThreadMgr != null) {
       this.querySemaphore = this.ltrThreadMgr.createQuerySemaphore();
     } else {
@@ -93,6 +100,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
   }
 
+  /* ---------------- accessors ---------------------- */
   public LTRScoringModel getScoringModel() {
     return ltrScoringModel;
   }
@@ -101,34 +109,55 @@ public class LTRScoringQuery extends Query implements Accountable {
     return ltrScoringModel.getName();
   }
 
-  public void setFeatureLogger(FeatureLogger logger) {
-    this.logger = logger;
+  public Map<String, String[]> getExternalFeatureInfo() {
+    return efi;
+  }
+
+  public void setFeatureLogger(FeatureLogger l) {
+    this.logger = l;
   }
 
   public FeatureLogger getFeatureLogger() {
     return logger;
   }
 
-  public void setOriginalQuery(Query originalQuery) {
-    this.originalQuery = originalQuery;
+  public void setOriginalQuery(Query q) {
+    this.originalQuery = q;
   }
 
   public Query getOriginalQuery() {
     return originalQuery;
   }
 
-  public Map<String, String[]> getExternalFeatureInfo() {
-    return efi;
-  }
-
-  public void setRequest(SolrQueryRequest request) {
-    this.request = request;
+  public void setRequest(SolrQueryRequest r) {
+    this.request = r;
   }
 
   public SolrQueryRequest getRequest() {
     return request;
   }
 
+  /* ---------------- Query / Accountable ------------ */
+  @Override
+  public void visit(QueryVisitor v) {
+    v.visitLeaf(this);
+  }
+
+  @Override
+  public String toString(String f) {
+    return f;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES
+        + RamUsageEstimator.sizeOfObject(efi)
+        + RamUsageEstimator.sizeOfObject(ltrScoringModel)
+        + RamUsageEstimator.sizeOfObject(
+            originalQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
+  }
+
+  /* ---------------- equals / hashCode -------------- */
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -152,11 +181,6 @@ public class LTRScoringQuery extends Query implements Accountable {
   @Override
   public boolean equals(Object o) {
     return sameClassAs(o) && equalsTo(getClass().cast(o));
-  }
-
-  @Override
-  public void visit(QueryVisitor visitor) {
-    visitor.visitLeaf(this);
   }
 
   private boolean equalsTo(LTRScoringQuery other) {
@@ -193,9 +217,11 @@ public class LTRScoringQuery extends Query implements Accountable {
     return true;
   }
 
+  /* ---------------- createWeight ------------------- */
   @Override
   public ModelWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
+
     final Collection<Feature> modelFeatures = ltrScoringModel.getFeatures();
     final Collection<Feature> allFeatures = ltrScoringModel.getAllFeatures();
     int modelFeatSize = modelFeatures.size();
@@ -253,35 +279,6 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
   }
 
-  private class CreateWeightCallable implements Callable<Feature.FeatureWeight> {
-    private final Feature f;
-    private final IndexSearcher searcher;
-    private final boolean needsScores;
-    private final SolrQueryRequest req;
-
-    public CreateWeightCallable(
-        Feature f, IndexSearcher searcher, boolean needsScores, SolrQueryRequest req) {
-      this.f = f;
-      this.searcher = searcher;
-      this.needsScores = needsScores;
-      this.req = req;
-    }
-
-    @Override
-    public Feature.FeatureWeight call() throws Exception {
-      try {
-        Feature.FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
-        return fw;
-      } catch (final Exception e) {
-        throw new RuntimeException(
-            "Exception from createWeight for " + f.toString() + " " + e.getMessage(), e);
-      } finally {
-        querySemaphore.release();
-        ltrThreadMgr.releaseLTRSemaphore();
-      }
-    }
-  } // end of call CreateWeightCallable
-
   private void createWeightsParallel(
       IndexSearcher searcher,
       boolean needsScores,
@@ -290,44 +287,70 @@ public class LTRScoringQuery extends Query implements Accountable {
       throws RuntimeException {
 
     final SolrQueryRequest req = getRequest();
-    List<Future<Feature.FeatureWeight>> futures = new ArrayList<>(features.size());
-    try {
-      for (final Feature f : features) {
-        CreateWeightCallable callable = new CreateWeightCallable(f, searcher, needsScores, req);
-        RunnableFuture<Feature.FeatureWeight> runnableFuture = new FutureTask<>(callable);
+    final int parallelism =
+        Math.min(
+            querySemaphore != null ? querySemaphore.availablePermits() : features.size(),
+            features.size());
 
-        // always acquire before the ltrSemaphore is acquired, to guarantee a that
-        // the current query is within the limit for max. threads
-        querySemaphore.acquire();
+    if (parallelism <= 1) {
+      try {
+        createWeights(searcher, needsScores, featureWeights, features);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      return;
+    }
 
-        ltrThreadMgr.acquireLTRSemaphore(); // may block and/or interrupt
-        ltrThreadMgr.execute(runnableFuture); // releases semaphore when done
-        futures.add(runnableFuture);
+    final Semaphore gate = new Semaphore(parallelism);
+    try (ExecutorService exec = Executors.newVirtualThreadPerTaskExecutor()) {
+      List<Future<Feature.FeatureWeight>> futures =
+          features.stream()
+              .map(
+                  f ->
+                      exec.submit(
+                          () -> {
+                            try {
+                              gate.acquire();
+                              try {
+                                return f.createWeight(
+                                    searcher, needsScores, req, originalQuery, efi);
+                              } finally {
+                                gate.release();
+                              }
+                            } catch (Exception e) {
+                              throw new RuntimeException(
+                                  "Exception from createWeight for "
+                                      + f.toString()
+                                      + " "
+                                      + e.getMessage(),
+                                  e);
+                            }
+                          }))
+              .toList();
+
+      for (Future<Feature.FeatureWeight> future : futures) {
+        try {
+          featureWeights.add(future.get());
+        } catch (ExecutionException ee) {
+          Throwable cause = ee.getCause();
+          if (cause instanceof RuntimeException) {
+            throw (RuntimeException) cause;
+          } else if (cause instanceof Error) {
+            throw (Error) cause;
+          } else {
+            throw new RuntimeException("Feature weight creation failed", cause);
+          }
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          throw new RuntimeException("Interrupted while creating feature weights", ie);
+        }
       }
-      // Loop over futures to get the feature weight objects
-      for (final Future<Feature.FeatureWeight> future : futures) {
-        featureWeights.add(future.get()); // future.get() will block if the job is still running
-      }
-    } catch (Exception e) { // To catch InterruptedException and ExecutionException
-      log.info("Error while creating weights in LTR: InterruptedException", e);
-      throw new RuntimeException("Error while creating weights in LTR: " + e.getMessage(), e);
     }
   }
 
-  @Override
-  public String toString(String field) {
-    return field;
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return BASE_RAM_BYTES
-        + RamUsageEstimator.sizeOfObject(efi)
-        + RamUsageEstimator.sizeOfObject(ltrScoringModel)
-        + RamUsageEstimator.sizeOfObject(
-            originalQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
-  }
-
+  /* =================================================================
+   *  FeatureInfo for backwards compatibility
+   * ================================================================= */
   public static class FeatureInfo {
     private final String name;
     private float value;
@@ -360,38 +383,18 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
   }
 
+  /* =================================================================
+   *  Inner class: ModelWeight
+   * ================================================================= */
   public class ModelWeight extends Weight {
 
-    // List of the model's features used for scoring. This is a subset of the
-    // features used for logging.
-    private final Feature.FeatureWeight[] modelFeatureWeights;
-    private final float[] modelFeatureValuesNormalized;
-    private final Feature.FeatureWeight[] extractedFeatureWeights;
+    protected final Feature.FeatureWeight[] modelFeatureWeights;
+    protected final Feature.FeatureWeight[] extractedFeatureWeights;
 
-    // List of all the feature names, values - used for both scoring and logging
-    /*
-     *  What is the advantage of using a hashmap here instead of an array of objects?
-     *     A set of arrays was used earlier and the elements were accessed using the featureId.
-     *     With the updated logic to create weights selectively,
-     *     the number of elements in the array can be fewer than the total number of features.
-     *     When [features] are not requested, only the model features are extracted.
-     *     In this case, the indexing by featureId, fails. For this reason,
-     *     we need a map which holds just the features that were triggered by the documents in the result set.
-     *
-     */
-    private final FeatureInfo[] featuresInfo;
+    protected final float[] modelFeatureValuesNormalized;
+    protected final FeatureInfo[] featuresInfo;
 
-    /*
-     * @param modelFeatureWeights
-     *     - should be the same size as the number of features used by the model
-     * @param extractedFeatureWeights
-     *     - if features are requested from the same store as model feature store,
-     *       this will be the size of total number of features in the model feature store
-     *       else, this will be the size of the modelFeatureWeights
-     * @param allFeaturesSize
-     *     - total number of feature in the feature store used by this model
-     */
-    public ModelWeight(
+    protected ModelWeight(
         Feature.FeatureWeight[] modelFeatureWeights,
         Feature.FeatureWeight[] extractedFeatureWeights,
         int allFeaturesSize) {
@@ -431,10 +434,17 @@ public class LTRScoringQuery extends Query implements Accountable {
       return extractedFeatureWeights;
     }
 
-    /**
-     * Goes through all the stored feature values, and calculates the normalized values for all the
-     * features that will be used for scoring. Then calculate and return the model's score.
-     */
+    protected void reset() {
+      for (int i = 0; i < extractedFeatureWeights.length; ++i) {
+        int featId = extractedFeatureWeights[i].getIndex();
+        float value = extractedFeatureWeights[i].getDefaultValue();
+        // need to set default value everytime as the default value is used in 'dense'
+        // mode even if used=false
+        featuresInfo[featId].setValue(value);
+        featuresInfo[featId].setIsDefaultValue(true);
+      }
+    }
+
     private float makeNormalizedFeaturesAndScore() {
       int pos = 0;
       for (final Feature.FeatureWeight feature : modelFeatureWeights) {
@@ -447,6 +457,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       return ltrScoringModel.score(modelFeatureValuesNormalized);
     }
 
+    /* -------- explanation -------- */
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
 
@@ -460,7 +471,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         Explanation e = ltrScoringModel.getNormalizerExplanation(explanations[f.getIndex()], idx);
         featureExplanations.add(e);
       }
-      final ModelScorer bs = scorer(context);
+      final ModelScorer bs = modelScorer(context);
       bs.iterator().advance(doc);
 
       final float finalScore = bs.score();
@@ -468,24 +479,27 @@ public class LTRScoringQuery extends Query implements Accountable {
       return ltrScoringModel.explain(context, doc, finalScore, featureExplanations);
     }
 
-    protected void reset() {
-      for (int i = 0; i < extractedFeatureWeights.length; ++i) {
-        int featId = extractedFeatureWeights[i].getIndex();
-        float value = extractedFeatureWeights[i].getDefaultValue();
-        // need to set default value everytime as the default value is used in 'dense'
-        // mode even if used=false
-        featuresInfo[featId].setValue(value);
-        featuresInfo[featId].setIsDefaultValue(true);
-      }
+    /* -------- scorer supplier ----- */
+    @Override
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      return new ScorerSupplier() {
+        @Override
+        public Scorer get(long leadCost) throws IOException {
+          return modelScorer(context);
+        }
+
+        @Override
+        public long cost() {
+          return context.reader().maxDoc();
+        }
+      };
     }
 
-    @Override
-    public ModelScorer scorer(LeafReaderContext context) throws IOException {
-
+    public ModelScorer modelScorer(LeafReaderContext context) throws IOException {
       final List<Feature.FeatureWeight.FeatureScorer> featureScorers =
           new ArrayList<Feature.FeatureWeight.FeatureScorer>(extractedFeatureWeights.length);
       for (final Feature.FeatureWeight featureWeight : extractedFeatureWeights) {
-        final Feature.FeatureWeight.FeatureScorer scorer = featureWeight.scorer(context);
+        final Feature.FeatureWeight.FeatureScorer scorer = featureWeight.featureScorer(context);
         if (scorer != null) {
           featureScorers.add(scorer);
         }
@@ -513,7 +527,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       }
 
       public ModelScorer(Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-        super(weight);
+        super();
         docInfo = new DocInfo();
         for (final Feature.FeatureWeight.FeatureScorer subScorer : featureScorers) {
           subScorer.setDocInfo(docInfo);
@@ -553,6 +567,7 @@ public class LTRScoringQuery extends Query implements Accountable {
 
       private class SparseModelScorer extends Scorer {
         private final DisiPriorityQueue subScorers;
+        private final List<DisiWrapper> wrappers;
         private final ScoringQuerySparseIterator itr;
 
         private int targetDoc = -1;
@@ -560,17 +575,19 @@ public class LTRScoringQuery extends Query implements Accountable {
 
         private SparseModelScorer(
             Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-          super(weight);
+          super();
           if (featureScorers.size() <= 1) {
             throw new IllegalArgumentException("There must be at least 2 subScorers");
           }
-          subScorers = new DisiPriorityQueue(featureScorers.size());
+          subScorers = DisiPriorityQueue.ofMaxSize(featureScorers.size());
+          wrappers = new ArrayList<>();
           for (final Scorer scorer : featureScorers) {
-            final DisiWrapper w = new DisiWrapper(scorer);
+            final DisiWrapper w = new DisiWrapper(scorer, false);
             subScorers.add(w);
+            wrappers.add(w);
           }
 
-          itr = new ScoringQuerySparseIterator(subScorers);
+          itr = new ScoringQuerySparseIterator(wrappers);
         }
 
         @Override
@@ -590,7 +607,8 @@ public class LTRScoringQuery extends Query implements Accountable {
           if (activeDoc == targetDoc) {
             for (DisiWrapper w = topList; w != null; w = w.next) {
               final Scorer subScorer = w.scorer;
-              Feature.FeatureWeight scFW = (Feature.FeatureWeight) subScorer.getWeight();
+              Feature.FeatureWeight scFW =
+                  ((Feature.FeatureWeight.FeatureScorer) subScorer).getFeatureWeight();
               final int featureId = scFW.getIndex();
               featuresInfo[featureId].setValue(subScorer.score());
               if (featuresInfo[featureId].getValue() != scFW.getDefaultValue()) {
@@ -620,34 +638,97 @@ public class LTRScoringQuery extends Query implements Accountable {
           return children;
         }
 
-        private class ScoringQuerySparseIterator extends DisjunctionDISIApproximation {
+        private class ScoringQuerySparseIterator extends DocIdSetIterator {
 
-          public ScoringQuerySparseIterator(DisiPriorityQueue subIterators) {
-            super(subIterators);
+          public ScoringQuerySparseIterator(Collection<DisiWrapper> wrappers) {
+            // Initialize all wrappers to start at -1
+            for (DisiWrapper wrapper : wrappers) {
+              wrapper.doc = -1;
+            }
+          }
+
+          @Override
+          public int docID() {
+            // Return the target document ID
+            return targetDoc;
           }
 
           @Override
           public final int nextDoc() throws IOException {
+            // Mimic DisjunctionDISIApproximation behavior
+            if (targetDoc == -1) {
+              // First call - initialize all iterators
+              DisiWrapper top = subScorers.top();
+              if (top != null && top.doc == -1) {
+                // Need to advance all iterators to their first document
+                DisiWrapper current = subScorers.top();
+                while (current != null) {
+                  current.doc = current.iterator.nextDoc();
+                  current = subScorers.updateTop();
+                }
+                top = subScorers.top();
+                activeDoc = top == null ? NO_MORE_DOCS : top.doc;
+              }
+              targetDoc = activeDoc;
+              return targetDoc;
+            }
+
             if (activeDoc == targetDoc) {
-              activeDoc = super.nextDoc();
+              // Advance the underlying disjunction
+              DisiWrapper top = subScorers.top();
+              if (top == null) {
+                activeDoc = NO_MORE_DOCS;
+              } else {
+                // Advance the top iterator and rebalance the queue
+                top.doc = top.iterator.nextDoc();
+                top = subScorers.updateTop();
+                activeDoc = top == null ? NO_MORE_DOCS : top.doc;
+              }
             } else if (activeDoc < targetDoc) {
-              activeDoc = super.advance(targetDoc + 1);
+              // Need to catch up to targetDoc + 1
+              activeDoc = advanceInternal(targetDoc + 1);
             }
             return ++targetDoc;
           }
 
           @Override
           public final int advance(int target) throws IOException {
-            // If target doc we wanted to advance to match the actual doc
-            // the underlying features advanced to, perform the feature
-            // calculations,
-            // otherwise just continue with the model's scoring process with
-            // empty features.
+            // Mimic DisjunctionDISIApproximation behavior
             if (activeDoc < target) {
-              activeDoc = super.advance(target);
+              activeDoc = advanceInternal(target);
             }
             targetDoc = target;
             return targetDoc;
+          }
+
+          private int advanceInternal(int target) throws IOException {
+            // Advance the underlying disjunction to the target
+            DisiWrapper top;
+            do {
+              top = subScorers.top();
+              if (top == null) {
+                return NO_MORE_DOCS;
+              }
+              if (top.doc >= target) {
+                return top.doc;
+              }
+              top.doc = top.iterator.advance(target);
+              top = subScorers.updateTop();
+              if (top == null) {
+                return NO_MORE_DOCS;
+              }
+            } while (top.doc < target);
+            return top.doc;
+          }
+
+          @Override
+          public long cost() {
+            // Calculate cost from all wrappers
+            long cost = 0;
+            for (DisiWrapper wrapper : wrappers) {
+              cost += wrapper.iterator.cost();
+            }
+            return cost;
           }
         }
       }
@@ -660,7 +741,7 @@ public class LTRScoringQuery extends Query implements Accountable {
 
         private DenseModelScorer(
             Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-          super(weight);
+          super();
           this.featureScorers = featureScorers;
         }
 
@@ -677,7 +758,8 @@ public class LTRScoringQuery extends Query implements Accountable {
             for (final Scorer scorer : featureScorers) {
               if (scorer.docID() == activeDoc) {
                 freq++;
-                Feature.FeatureWeight scFW = (Feature.FeatureWeight) scorer.getWeight();
+                Feature.FeatureWeight scFW =
+                    ((Feature.FeatureWeight.FeatureScorer) scorer).getFeatureWeight();
                 final int featureId = scFW.getIndex();
                 featuresInfo[featureId].setValue(scorer.score());
                 if (featuresInfo[featureId].getValue() != scFW.getDefaultValue()) {

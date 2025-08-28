@@ -24,10 +24,12 @@ import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Field;
@@ -41,6 +43,7 @@ import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.solr.analysis.SolrAnalyzer;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
@@ -122,15 +125,91 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   }
 
   @Override
-  public IndexableField createField(SchemaField field, Object value) {
-    IndexableField f = null;
+  public List<IndexableField> createFields(SchemaField field, Object value) {
+    if (value == null || value.toString().trim().length() == 0) {
+      return Collections.emptyList();
+    }
+
+    List<IndexableField> fields = new ArrayList<>();
+    PreAnalyzedTokenizer parse = new PreAnalyzedTokenizer(parser);
+
     try {
-      f = fromString(field, String.valueOf(value));
-    } catch (Exception e) {
-      log.warn("Error parsing pre-analyzed field '{}'", field.getName(), e);
+      Reader reader = new StringReader(value.toString());
+      parse.setReader(reader);
+      parse.decodeInput(reader); // consume - this may throw IOException
+      parse.reset();
+
+      org.apache.lucene.document.FieldType type = createFieldType(field);
+      if (type == null) {
+        parse.close();
+        return Collections.emptyList();
+      }
+
+      // In Lucene 10, we need to create a single field that can handle both stored and indexed
+      // content
+      // We'll use a custom Field subclass that provides the stored value and overrides
+      // tokenStream()
+      if (parse.hasTokenStream()
+          || parse.getStringValue() != null
+          || parse.getBinaryValue() != null) {
+        // Create a pre-analyzed field that can provide both stored value and token stream
+        PreAnalyzedFieldValue fieldValue =
+            new PreAnalyzedFieldValue(
+                field.getName(), parse, parse.getStringValue(), parse.getBinaryValue(), type);
+        fields.add(fieldValue);
+      }
+    } catch (IOException e) {
+      // Re-throw as RuntimeException to propagate the error
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Error parsing pre-analyzed field '" + field.getName() + "'",
+          e);
+    }
+
+    return fields;
+  }
+
+  /** Custom Field that can provide both stored value and token stream for pre-analyzed content */
+  private static class PreAnalyzedFieldValue extends Field {
+    private final PreAnalyzedTokenizer tokenizer;
+
+    public PreAnalyzedFieldValue(
+        String name,
+        PreAnalyzedTokenizer tokenizer,
+        String stringValue,
+        byte[] binaryValue,
+        org.apache.lucene.document.FieldType type) {
+      super(name, type);
+      this.tokenizer = tokenizer;
+
+      // Set the stored value if present
+      if (stringValue != null && type.stored()) {
+        this.fieldsData = stringValue;
+      } else if (binaryValue != null && type.stored()) {
+        this.fieldsData = binaryValue;
+      }
+    }
+
+    @Override
+    public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
+      if (tokenizer != null
+          && tokenizer.hasTokenStream()
+          && type.indexOptions() != IndexOptions.NONE) {
+        return tokenizer;
+      }
       return null;
     }
-    return f;
+
+    @Override
+    public TokenStream tokenStreamValue() {
+      // Return the tokenizer if it has a token stream and the field is indexed
+      if (tokenizer != null
+          && tokenizer.hasTokenStream()
+          && type.indexOptions() != IndexOptions.NONE) {
+        return tokenizer;
+      }
+      return null;
+    }
   }
 
   @Override
@@ -178,19 +257,27 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
     newType.setTokenized(field.isTokenized());
     newType.setStored(field.stored());
     newType.setOmitNorms(field.omitNorms());
-    IndexOptions options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-    if (field.omitTermFreqAndPositions()) {
-      options = IndexOptions.DOCS;
-    } else if (field.omitPositions()) {
-      options = IndexOptions.DOCS_AND_FREQS;
-    } else if (field.storeOffsetsWithPositions()) {
-      options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+
+    // Only set index options if field is indexed
+    if (field.indexed()) {
+      IndexOptions options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+      if (field.omitTermFreqAndPositions()) {
+        options = IndexOptions.DOCS;
+      } else if (field.omitPositions()) {
+        options = IndexOptions.DOCS_AND_FREQS;
+      } else if (field.storeOffsetsWithPositions()) {
+        options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+      }
+      newType.setIndexOptions(options);
+      newType.setStoreTermVectors(field.storeTermVector());
+      newType.setStoreTermVectorOffsets(field.storeTermOffsets());
+      newType.setStoreTermVectorPositions(field.storeTermPositions());
+      newType.setStoreTermVectorPayloads(field.storeTermPayloads());
+    } else {
+      // Field is not indexed, set IndexOptions to NONE
+      newType.setIndexOptions(IndexOptions.NONE);
     }
-    newType.setIndexOptions(options);
-    newType.setStoreTermVectors(field.storeTermVector());
-    newType.setStoreTermVectorOffsets(field.storeTermOffsets());
-    newType.setStoreTermVectorPositions(field.storeTermPositions());
-    newType.setStoreTermVectorPayloads(field.storeTermPayloads());
+
     return newType;
   }
 
@@ -222,53 +309,6 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
      * @throws IOException If there is a low-level I/O error.
      */
     public String toFormattedString(Field f) throws IOException;
-  }
-
-  public IndexableField fromString(SchemaField field, String val) throws Exception {
-    if (val == null || val.trim().length() == 0) {
-      return null;
-    }
-    PreAnalyzedTokenizer parse = new PreAnalyzedTokenizer(parser);
-    Reader reader = new StringReader(val);
-    parse.setReader(reader);
-    parse.decodeInput(reader); // consume
-    parse.reset();
-    org.apache.lucene.document.FieldType type = createFieldType(field);
-    if (type == null) {
-      parse.close();
-      return null;
-    }
-    Field f = null;
-    if (parse.getStringValue() != null) {
-      if (field.stored()) {
-        f = new Field(field.getName(), parse.getStringValue(), type);
-      } else {
-        type.setStored(false);
-      }
-    } else if (parse.getBinaryValue() != null) {
-      if (field.isBinary()) {
-        f = new Field(field.getName(), parse.getBinaryValue(), type);
-      }
-    } else {
-      type.setStored(false);
-    }
-
-    if (parse.hasTokenStream()) {
-      if (field.indexed()) {
-        type.setTokenized(true);
-        if (f != null) {
-          f.setTokenStream(parse);
-        } else {
-          f = new Field(field.getName(), parse, type);
-        }
-      } else {
-        if (f != null) {
-          type.setIndexOptions(IndexOptions.NONE);
-          type.setTokenized(false);
-        }
-      }
-    }
-    return f;
   }
 
   /** Token stream that works from a list of saved states. */
