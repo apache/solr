@@ -41,8 +41,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -251,6 +251,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
 
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
+    // TODO use httpSolrClient.requestAsync instead; it has an executor
     int poolSize = Math.min(concurrentTasks.size(), 10);
     ExecutorService parallelExecutor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
@@ -372,44 +373,46 @@ public final class ManagedIndexSchema extends IndexSchema {
     @Override
     public Integer call() throws Exception {
       int remoteVersion = -1;
-      try (HttpSolrClient solr =
-          new HttpSolrClient.Builder(baseUrl).withDefaultCollection(coreName).build()) {
-        // eventually, this loop will get killed by the ExecutorService's timeout
-        while (remoteVersion == -1
-            || (remoteVersion < expectedZkVersion
-                && !zkController.getCoreContainer().isShutDown())) {
-          try {
-            HttpSolrClient.HttpUriRequestResponse mrr = solr.httpUriRequest(this);
-            NamedList<Object> zkversionResp = mrr.future.get();
-            if (zkversionResp != null) remoteVersion = (Integer) zkversionResp.get("zkversion");
 
-            if (remoteVersion < expectedZkVersion) {
-              // rather than waiting and re-polling, let's be proactive and tell the replica
-              // to refresh its schema from ZooKeeper, if that fails, then the
-              // Thread.sleep(1000); // slight delay before requesting version again
-              log.error(
-                  "Replica {} returned schema version {} and has not applied schema version {}",
-                  coreName,
-                  remoteVersion,
-                  expectedZkVersion);
-            }
+      // eventually, this loop will get killed by the ExecutorService's timeout
+      while (remoteVersion == -1
+          || (remoteVersion < expectedZkVersion && !zkController.getCoreContainer().isShutDown())) {
+        try {
+          NamedList<Object> zkversionResp =
+              zkController
+                  .getCoreContainer()
+                  .getDefaultHttpSolrClient()
+                  .requestWithBaseUrl(baseUrl, coreName, this)
+                  .getResponse();
+          if (zkversionResp != null) remoteVersion = (Integer) zkversionResp.get("zkversion");
 
-          } catch (Exception e) {
-            if (e instanceof InterruptedException) {
-              Thread.currentThread().interrupt();
-              break; // stop looping
-            } else {
-              log.warn("Failed to get /schema/zkversion from {} due to: ", baseUrl, e);
-            }
+          if (remoteVersion < expectedZkVersion) {
+            // rather than waiting and re-polling, let's be proactive and tell the replica
+            // to refresh its schema from ZooKeeper, if that fails, then the
+            // Thread.sleep(1000); // slight delay before requesting version again
+            log.error(
+                "Replica {} returned schema version {} and has not applied schema version {}",
+                coreName,
+                remoteVersion,
+                expectedZkVersion);
+          }
+
+        } catch (Exception e) {
+          if (e instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+            break; // stop looping
+          } else {
+            log.warn("Failed to get /schema/zkversion from {} due to: ", baseUrl, e);
           }
         }
       }
+
       return remoteVersion;
     }
 
     @Override
     protected SolrResponse createResponse(NamedList<Object> namedList) {
-      return null;
+      return new SimpleSolrResponse();
     }
   }
 

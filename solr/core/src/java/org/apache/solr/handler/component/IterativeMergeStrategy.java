@@ -18,17 +18,13 @@ package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -37,31 +33,27 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class IterativeMergeStrategy implements MergeStrategy {
 
   protected volatile ExecutorService executorService;
 
-  protected volatile CloseableHttpClient httpClient;
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  protected volatile Http2SolrClient httpSolrClient;
 
   @Override
   public void merge(ResponseBuilder rb, ShardRequest sreq) {
     rb._responseDocs = new SolrDocumentList(); // Null pointers will occur otherwise.
     rb.onePassDistributedQuery = true; // Turn off the second pass distributed.
+    httpSolrClient = rb.req.getCoreContainer().getDefaultHttpSolrClient();
+    // TODO use httpSolrClient.requestAsync instead; it has an executor
     executorService =
         ExecutorUtil.newMDCAwareCachedThreadPool(
             new SolrNamedThreadFactory("IterativeMergeStrategy"));
-    httpClient = getHttpClient();
     try {
       process(rb, sreq);
     } catch (Exception e) {
       throw new RuntimeException(e);
     } finally {
-      HttpClientUtil.close(httpClient);
       executorService.shutdownNow();
     }
   }
@@ -85,20 +77,16 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
   public void handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) {}
 
   public class CallBack implements Callable<CallBack> {
-    private SolrClient solrClient;
+    private final String shardBaseUrl;
+    private final String shardCoreName;
+
     private QueryRequest req;
     private QueryResponse response;
     private ShardResponse originalShardResponse;
 
     public CallBack(ShardResponse originalShardResponse, QueryRequest req) {
-      final String shardBaseUrl = URLUtil.extractBaseUrl(originalShardResponse.getShardAddress());
-      final String shardCoreName =
-          URLUtil.extractCoreFromCoreUrl(originalShardResponse.getShardAddress());
-      this.solrClient =
-          new Builder(shardBaseUrl)
-              .withDefaultCollection(shardCoreName)
-              .withHttpClient(httpClient)
-              .build();
+      this.shardBaseUrl = URLUtil.extractBaseUrl(originalShardResponse.getShardAddress());
+      this.shardCoreName = URLUtil.extractCoreFromCoreUrl(originalShardResponse.getShardAddress());
       this.req = req;
       this.originalShardResponse = originalShardResponse;
       req.setMethod(SolrRequest.METHOD.POST);
@@ -116,7 +104,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
 
     @Override
     public CallBack call() throws Exception {
-      this.response = req.process(solrClient);
+      response = httpSolrClient.requestWithBaseUrl(shardBaseUrl, shardCoreName, req);
       return this;
     }
   }
@@ -134,13 +122,4 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
   }
 
   protected abstract void process(ResponseBuilder rb, ShardRequest sreq) throws Exception;
-
-  private CloseableHttpClient getHttpClient() {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
-    CloseableHttpClient httpClient = HttpClientUtil.createClient(params);
-
-    return httpClient;
-  }
 }

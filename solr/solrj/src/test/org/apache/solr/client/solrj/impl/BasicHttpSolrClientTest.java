@@ -104,13 +104,16 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
   public static class SlowStreamServlet extends HttpServlet {
 
+    public static final int PACKET_MS = 500;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-      IntStream.range(0, 10)
+      String countStr = req.getParameter("count");
+      IntStream.range(0, countStr == null ? 10 : Integer.parseInt(countStr))
           .forEach(
               i -> {
                 try {
-                  Thread.sleep(500);
+                  Thread.sleep(PACKET_MS);
                   resp.getOutputStream().write(String.valueOf(i).getBytes(StandardCharsets.UTF_8));
                   resp.getOutputStream().flush();
                 } catch (IOException | InterruptedException e) {
