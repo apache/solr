@@ -207,4 +207,6 @@ dependencies {
   testRuntimeOnly(libs.mockito.subclass, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
+  testImplementation libs.apache.httpcomponents.httpclient
+  testImplementation libs.apache.httpcomponents.httpcore
 }

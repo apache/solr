@@ -43,7 +43,7 @@ dependencies {
   implementation libs.eclipse.jetty.io
   runtimeOnly libs.eclipse.jetty.alpnjavaclient
 
-  api(libs.apache.httpcomponents.httpmime, {
+  implementation(libs.apache.httpcomponents.httpmime, {
     exclude group: "commons-codec", module: "commons-codec"
     exclude group: "commons-logging", module: "commons-logging"
   })
