@@ -82,6 +82,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -156,7 +157,7 @@ public class ReplicationHandler extends RequestHandlerBase
   SolrCore core;
   private ObservableLongGauge indexSizeGauge;
   private ObservableLongGauge indexVersionGauge;
-  private ObservableLongGauge generationGauge;
+  private ObservableLongGauge indexGenerationGauge;
   private ObservableLongGauge isLeaderGauge;
   private ObservableLongGauge isFollowerGauge;
   private ObservableLongGauge replicationEnabledGauge;
@@ -879,9 +880,9 @@ public class ReplicationHandler extends RequestHandlerBase
               }
             });
 
-    generationGauge =
+    indexGenerationGauge =
         solrMetricsContext.observableLongGauge(
-            "solr_replication_generation",
+            "solr_replication_index_generation",
             "Current index generation",
             gauge -> {
               if (core != null && !core.isClosed()) {
@@ -926,7 +927,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
     ObservableLongMeasurement bytesDownloaded =
         solrMetricsContext.longMeasurement(
-            "solr_replication_bytes_downloaded",
+            "solr_replication_downloaded_size",
             "Total bytes downloaded during replication",
             OtelUnit.BYTES);
 
@@ -961,28 +962,13 @@ public class ReplicationHandler extends RequestHandlerBase
 
   @Override
   public void close() throws IOException {
-    if (indexSizeGauge != null) {
-      indexSizeGauge.close();
-    }
-    if (indexVersionGauge != null) {
-      indexVersionGauge.close();
-    }
-    if (generationGauge != null) {
-      generationGauge.close();
-    }
-    if (isLeaderGauge != null) {
-      isLeaderGauge.close();
-    }
-    if (isFollowerGauge != null) {
-      isFollowerGauge.close();
-    }
-    if (replicationEnabledGauge != null) {
-      replicationEnabledGauge.close();
-    }
-    if (fetcherMetricsBatch != null) {
-      fetcherMetricsBatch.close();
-    }
-
+    IOUtils.closeQuietly(indexSizeGauge);
+    IOUtils.closeQuietly(indexVersionGauge);
+    IOUtils.closeQuietly(indexGenerationGauge);
+    IOUtils.closeQuietly(isLeaderGauge);
+    IOUtils.closeQuietly(isFollowerGauge);
+    IOUtils.closeQuietly(replicationEnabledGauge);
+    IOUtils.closeQuietly(fetcherMetricsBatch);
     super.close();
   }
 
