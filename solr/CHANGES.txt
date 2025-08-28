@@ -213,6 +213,8 @@ Other Changes
 
 * SOLR-17286: When proxying requests to another node, use Jetty HttpClient not Apache HttpClient. (David Smiley)
 
+* SOLR-17874: Switch remaining usages of Apache HttpClient to use the internally managed Jetty HttpClient instance. (David Smiley)
+
 ==================  9.10.0 ==================
 New Features
 ---------------------
