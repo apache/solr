@@ -32,7 +32,6 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.TLOG_FILE;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.BatchCallback;
-import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -155,13 +154,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   SolrCore core;
-  private ObservableLongGauge indexSizeGauge;
-  private ObservableLongGauge indexVersionGauge;
-  private ObservableLongGauge indexGenerationGauge;
-  private ObservableLongGauge isLeaderGauge;
-  private ObservableLongGauge isFollowerGauge;
-  private ObservableLongGauge replicationEnabledGauge;
-  private BatchCallback fetcherMetricsBatch;
+  private BatchCallback metricsCallback;
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
@@ -859,116 +852,102 @@ public class ReplicationHandler extends RequestHandlerBase
             .build();
     super.initializeMetrics(parentContext, replicationAttributes, scope);
 
-    indexSizeGauge =
-        solrMetricsContext.observableLongGauge(
-            "solr_replication_index_size",
-            "Size of the index in bytes",
-            gauge -> {
-              if (core != null && !core.isClosed()) {
-                gauge.record(core.getIndexSize(), replicationAttributes);
-              }
-            },
-            OtelUnit.BYTES);
+    ObservableLongMeasurement indexSizeMetric =
+        solrMetricsContext.longMeasurement(
+            "solr_replication_index_size", "Size of the index in bytes", OtelUnit.BYTES);
 
-    indexVersionGauge =
-        solrMetricsContext.observableLongGauge(
-            "solr_replication_index_version",
-            "Current index version",
-            gauge -> {
-              if (core != null && !core.isClosed()) {
-                gauge.record(getIndexVersion().version, replicationAttributes);
-              }
-            });
+    ObservableLongMeasurement indexVersionMetric =
+        solrMetricsContext.longMeasurement(
+            "solr_replication_index_version", "Current index version");
 
-    indexGenerationGauge =
-        solrMetricsContext.observableLongGauge(
-            "solr_replication_index_generation",
-            "Current index generation",
-            gauge -> {
-              if (core != null && !core.isClosed()) {
-                gauge.record(getIndexVersion().generation, replicationAttributes);
-              }
-            });
+    ObservableLongMeasurement indexGenerationMetric =
+        solrMetricsContext.longMeasurement(
+            "solr_replication_index_generation", "Current index generation");
 
-    isLeaderGauge =
-        solrMetricsContext.observableLongGauge(
-            "solr_replication_is_leader",
-            "Whether this node is a leader (1) or not (0)",
-            gauge -> gauge.record(isLeader ? 1 : 0, replicationAttributes));
+    ObservableLongMeasurement isLeaderMetric =
+        solrMetricsContext.longMeasurement(
+            "solr_replication_is_leader", "Whether this node is a leader (1) or not (0)");
 
-    isFollowerGauge =
-        solrMetricsContext.observableLongGauge(
-            "solr_replication_is_follower",
-            "Whether this node is a follower (1) or not (0)",
-            gauge -> gauge.record(isFollower ? 1 : 0, replicationAttributes));
+    ObservableLongMeasurement isFollowerMetric =
+        solrMetricsContext.longMeasurement(
+            "solr_replication_is_follower", "Whether this node is a follower (1) or not (0)");
 
-    replicationEnabledGauge =
-        solrMetricsContext.observableLongGauge(
-            "solr_replication_is_enabled",
-            "Whether replication is enabled (1) or not (0)",
-            gauge ->
-                gauge.record(
-                    (isLeader && replicationEnabled.get()) ? 1 : 0, replicationAttributes));
+    ObservableLongMeasurement replicationEnabledMetric =
+        solrMetricsContext.longMeasurement(
+            "solr_replication_is_enabled", "Whether replication is enabled (1) or not (0)");
 
-    // Create measurements for fetcher metrics in a batch to ensure consistent fetcher reference
-    ObservableLongMeasurement isPollingDisabled =
+    ObservableLongMeasurement isPollingDisabledMetric =
         solrMetricsContext.longMeasurement(
             "solr_replication_is_polling_disabled", "Whether polling is disabled (1) or not (0)");
 
-    ObservableLongMeasurement isReplicating =
+    ObservableLongMeasurement isReplicatingMetric =
         solrMetricsContext.longMeasurement(
             "solr_replication_is_replicating", "Whether replication is in progress (1) or not (0)");
 
-    ObservableLongMeasurement timeElapsed =
+    ObservableLongMeasurement timeElapsedMetric =
         solrMetricsContext.longMeasurement(
             "solr_replication_time_elapsed",
             "Time elapsed during replication in seconds",
             OtelUnit.SECONDS);
 
-    ObservableLongMeasurement bytesDownloaded =
+    ObservableLongMeasurement bytesDownloadedMetric =
         solrMetricsContext.longMeasurement(
             "solr_replication_downloaded_size",
             "Total bytes downloaded during replication",
             OtelUnit.BYTES);
 
-    ObservableLongMeasurement downloadSpeed =
+    ObservableLongMeasurement downloadSpeedMetric =
         solrMetricsContext.longMeasurement(
             "solr_replication_download_speed", "Download speed in bytes per second");
 
-    // Use batch callback to ensure consistent fetcher reference
-    fetcherMetricsBatch =
+    metricsCallback =
         solrMetricsContext.batchCallback(
             () -> {
+              if (core != null && !core.isClosed()) {
+                indexSizeMetric.record(core.getIndexSize(), replicationAttributes);
+
+                CommitVersionInfo vInfo = getIndexVersion();
+                if (vInfo != null) {
+                  indexVersionMetric.record(vInfo.version, replicationAttributes);
+                  indexGenerationMetric.record(vInfo.generation, replicationAttributes);
+                }
+              }
+
+              isLeaderMetric.record(isLeader ? 1 : 0, replicationAttributes);
+              isFollowerMetric.record(isFollower ? 1 : 0, replicationAttributes);
+              replicationEnabledMetric.record(
+                  (isLeader && replicationEnabled.get()) ? 1 : 0, replicationAttributes);
+
               IndexFetcher fetcher = currentIndexFetcher;
               if (fetcher != null) {
-                isPollingDisabled.record(isPollingDisabled() ? 1 : 0, replicationAttributes);
-                isReplicating.record(isReplicating() ? 1 : 0, replicationAttributes);
+                isPollingDisabledMetric.record(isPollingDisabled() ? 1 : 0, replicationAttributes);
+                isReplicatingMetric.record(isReplicating() ? 1 : 0, replicationAttributes);
 
                 long elapsed = fetcher.getReplicationTimeElapsed();
                 long val = fetcher.getTotalBytesDownloaded();
                 if (elapsed > 0) {
-                  timeElapsed.record(elapsed, replicationAttributes);
-                  bytesDownloaded.record(val, replicationAttributes);
-                  downloadSpeed.record(val / elapsed, replicationAttributes);
+                  timeElapsedMetric.record(elapsed, replicationAttributes);
+                  bytesDownloadedMetric.record(val, replicationAttributes);
+                  downloadSpeedMetric.record(val / elapsed, replicationAttributes);
                 }
               }
             },
-            isPollingDisabled,
-            isReplicating,
-            timeElapsed,
-            bytesDownloaded,
-            downloadSpeed);
+            indexSizeMetric,
+            indexVersionMetric,
+            indexGenerationMetric,
+            isLeaderMetric,
+            isFollowerMetric,
+            replicationEnabledMetric,
+            isPollingDisabledMetric,
+            isReplicatingMetric,
+            timeElapsedMetric,
+            bytesDownloadedMetric,
+            downloadSpeedMetric);
   }
 
   @Override
   public void close() throws IOException {
-    IOUtils.closeQuietly(indexSizeGauge);
-    IOUtils.closeQuietly(indexVersionGauge);
-    IOUtils.closeQuietly(indexGenerationGauge);
-    IOUtils.closeQuietly(isLeaderGauge);
-    IOUtils.closeQuietly(isFollowerGauge);
-    IOUtils.closeQuietly(replicationEnabledGauge);
-    IOUtils.closeQuietly(fetcherMetricsBatch);
+    IOUtils.closeQuietly(metricsCallback);
     super.close();
   }
 
