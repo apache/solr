@@ -28,7 +28,7 @@
       <!-- Writer -->
       <Arg>
         <New class="org.eclipse.jetty.server.AsyncRequestLogWriter">
-          <Arg><Property name="solr.log.dir" default="logs"/>/yyyy_mm_dd.request.log</Arg>
+          <Arg><Property name="solr.logs.dir" default="logs"/>/yyyy_mm_dd.request.log</Arg>
           <Set name="filenameDateFormat">yyyy_MM_dd</Set>
           <Set name="retainDays"><Property name="solr.log.requestlog.retaindays" default="3"/></Set>
           <Set name="append">true</Set>

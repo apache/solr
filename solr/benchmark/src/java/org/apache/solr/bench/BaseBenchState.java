@@ -103,7 +103,7 @@ public class BaseBenchState {
 
     workDir = System.getProperty("workBaseDir", "build/work");
 
-    System.setProperty("solr.log.dir", workDir + "/logs");
+    System.setProperty("solr.logs.dir", workDir + "/logs");
     System.setProperty("solr.log.name", benchmarkParams.id());
   }
 

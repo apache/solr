@@ -42,13 +42,13 @@ As soon as the configuration is modified, the corresponding classloaders are rel
 
 == Package Loading Security
 Packages are disabled by default.
-Start all your nodes with the system property `-Denable.packages=true` to use this feature.
+Start all your nodes with the system property `-Dsolr.packages.enabled=true` to use this feature.
 
 *Example*
 [source,bash]
 ----
 
-bin/solr start -Denable.packages=true
+bin/solr start -Dsolr.packages.enabled=true
 ----
 
 === Upload Your Keys

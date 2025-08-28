@@ -4,6 +4,7 @@
   "enabled": true,
   "dependencyDashboard": false,
   "enabledManagers": ["gradle", "github-actions"],
+  "labels": ["exempt-stale"],
   "includePaths": ["gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*"],
   "postUpgradeTasks": {
     "commands": [

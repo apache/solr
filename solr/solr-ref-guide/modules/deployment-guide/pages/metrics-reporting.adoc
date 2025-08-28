@@ -149,7 +149,7 @@ If this section is not defined, the following default configuration is used whic
   <hiddenSysProps>
     <str>javax.net.ssl.keyStorePassword</str>
     <str>javax.net.ssl.trustStorePassword</str>
-    <str>basicauth</str>
+    <str>solr.security.auth.basicauth.credentials</str>
     <str>zkDigestPassword</str>
     <str>zkDigestReadonlyPassword</str>
   </hiddenSysProps>
@@ -527,8 +527,8 @@ This can be used in conjunction with the `solr.xml` example provided earlier in 
   ...
     <RollingFile
         name="MetricsFile"
-        fileName="${sys:solr.log.dir}/solr_metrics.log"
-        filePattern="${sys:solr.log.dir}/solr_metrics.log.%i" >
+        fileName="${sys:solr.logs.dir}/solr_metrics.log"
+        filePattern="${sys:solr.logs.dir}/solr_metrics.log.%i" >
       <PatternLayout>
         <Pattern>
           %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core} %X{trace_id}] %m%n

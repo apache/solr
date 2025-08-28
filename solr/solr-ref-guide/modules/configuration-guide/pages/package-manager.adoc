@@ -42,11 +42,11 @@ The package manager (CLI) allows you to:
 === Enable the Package Manager
 
 The package manager is disabled by default.
-To enable it, start all Solr nodes with the `-Denable.packages=true` parameter.
+To enable it, start all Solr nodes with the `-Dsolr.packages.enabled=true` parameter.
 
 [source,bash]
 ----
-$ bin/solr start -Denable.packages=true
+$ bin/solr start -Dsolr.packages.enabled=true
 ----
 
 WARNING: There are security consequences to enabling the package manager.
