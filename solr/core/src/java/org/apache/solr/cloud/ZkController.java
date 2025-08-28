@@ -226,7 +226,7 @@ public class ZkController implements Closeable {
 
   private final DistributedClusterStateUpdater distributedClusterStateUpdater;
 
-  private Optional<DistributedCollectionConfigSetCommandRunner> distributedCommandRunner;
+  private final Optional<DistributedCollectionConfigSetCommandRunner> distributedCommandRunner;
 
   private LeaderElector overseerElector;
 
@@ -374,6 +374,11 @@ public class ZkController implements Closeable {
         .addListener(onDisconnect, zkConnectionListenerCallbackExecutor);
     // Refuse to start if ZK has a non empty /clusterstate.json or a /solr.xml file
     checkNoOldClusterstate(zkClient);
+
+    this.distributedCommandRunner =
+        cloudConfig.getDistributedCollectionConfigSetExecution()
+            ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
+            : Optional.empty();
 
     this.overseerRunningMap = Overseer.getRunningMap(zkClient);
     this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
@@ -691,7 +696,7 @@ public class ZkController implements Closeable {
 
   /** Non-empty if the Collection API is executed in a distributed way (Overseer is disabled). */
   public Optional<DistributedCollectionConfigSetCommandRunner> getDistributedCommandRunner() {
-    return Objects.requireNonNull(this.distributedCommandRunner);
+    return this.distributedCommandRunner;
   }
 
   /** Waits for pending tasks to complete. Should be called before {@link #close()}. */
@@ -1022,11 +1027,6 @@ public class ZkController implements Closeable {
 
       checkForExistingEphemeralNode();
       registerLiveNodesListener();
-
-      this.distributedCommandRunner =
-          cloudConfig.getDistributedCollectionConfigSetExecution()
-              ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
-              : Optional.empty();
 
       // Start the overseer now since the following code may need it's processing.
       // Note: even when using distributed processing, we still create an Overseer anyway since
