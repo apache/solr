@@ -17,12 +17,27 @@
 
 package org.apache.solr.ui.components.configsets
 
+import com.arkivanov.decompose.router.stack.ChildStack
+import com.arkivanov.decompose.value.Value
 import kotlinx.coroutines.flow.StateFlow
+import org.apache.solr.ui.components.configsets.overview.OverviewComponent
 
 /**
  * Component interface that represents the configsets section.
  */
 interface ConfigsetsComponent {
+
+    /**
+     * Child stack that holds the navigation state.
+     */
+    val childStack: Value<ChildStack<*, Child>>
+
+    /**
+     * Child interface that defines all available children of the [ConfigsetsComponent].
+     */
+    sealed interface Child {
+        data class Overview(val component: OverviewComponent) : Child
+    }
 
     val model: StateFlow<Model>
 
@@ -31,5 +46,6 @@ interface ConfigsetsComponent {
      */
     data class Model(
         val selectedTab: String = "SOLR_CONFIGSETS",
+        //val configsets: List<String> = emptyList(),
     )
 }

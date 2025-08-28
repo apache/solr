@@ -60,10 +60,8 @@ private val configsetTabs = listOf(
 fun ConfigsetsNavBarComponent(
     availableConfigsets: List<String>,
     modifier: Modifier = Modifier,
-    content: @Composable (tab: String, configset: String) -> Unit = { tab, configset ->
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("$tab")
-        }
+    content: @Composable (tab: String, configset: String) -> Unit = { tab, _ ->
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(tab) }
     },
 ) {
     if (availableConfigsets.isEmpty()) {
@@ -78,15 +76,12 @@ fun ConfigsetsNavBarComponent(
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier) {
-        // Tabs
         ScrollableTabRow(
             selectedTabIndex = selectedTab,
             edgePadding = 12.dp,
             divider = { HorizontalDivider(thickness = 1.dp) },
             indicator = { pos ->
-                TabRowDefaults.SecondaryIndicator(
-                    Modifier.tabIndicatorOffset(pos[selectedTab]),
-                )
+                TabRowDefaults.SecondaryIndicator(Modifier.tabIndicatorOffset(pos[selectedTab]))
             },
         ) {
             configsetTabs.forEachIndexed { i, label ->
@@ -98,7 +93,6 @@ fun ConfigsetsNavBarComponent(
             }
         }
 
-        // Configset dropdown
         Row(
             modifier = Modifier
                 .fillMaxWidth(0.2f)
@@ -125,7 +119,7 @@ fun ConfigsetsNavBarComponent(
                             onClick = {
                                 selectedConfigset = name
                                 expanded = false
-                                selectedTab = 0 // reset to Overview
+                                selectedTab = 0 // Overview
                             },
                         )
                     }
@@ -133,7 +127,6 @@ fun ConfigsetsNavBarComponent(
             }
         }
 
-        // Content area
         Box(Modifier.fillMaxSize().padding(16.dp)) {
             content(configsetTabs[selectedTab], selectedConfigset)
         }
