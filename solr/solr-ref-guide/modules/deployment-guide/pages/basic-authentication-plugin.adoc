@@ -335,7 +335,7 @@ Alternatively, users can use SolrJ's `PreemptiveBasicAuthClientBuilderFactory` t
 To enable this feature, users should set the following system property `-Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory`.
 `PreemptiveBasicAuthClientBuilderFactory` allows applications to provide credentials in two different ways:
 
-. The `basicauth` system property can be passed, containing the credentials directly (e.g., `-Dbasicauth=username:password`).
+. The `solr.security.auth.basicauth.credentials` system property can be passed, containing the credentials directly (e.g., `-Dsolr.security.auth.basicauth.credentials=username:password`).
 This option is straightforward, but may expose the credentials in the command line, depending on how they're set.
 . The `solr.httpclient.config` system property can be passed, containing a path to a properties file holding the credentials.
 Inside this file the username and password can be specified as `httpBasicAuthUser` and `httpBasicAuthPassword`, respectively.
@@ -356,7 +356,7 @@ Add the following line to the `solr.in.sh` or `solr.in.cmd` file:
 [source,bash]
 ----
 SOLR_AUTH_TYPE="basic"
-SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
+SOLR_AUTHENTICATION_OPTS="-Dsolr.security.auth.basicauth.credentials=solr:SolrRocks"
 ----
 
 This tells the `bin/solr` command line to to use "basic" as the type of authentication, and to pass credentials with the user-name "solr" and password "SolrRocks".

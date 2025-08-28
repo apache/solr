@@ -57,7 +57,8 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
    * this will expose the password on the command-line, it is not very secure. But this mechanism is
    * added for backwards compatibility.
    */
-  public static final String SYS_PROP_BASIC_AUTH_CREDENTIALS = "basicauth";
+  public static final String SYS_PROP_BASIC_AUTH_CREDENTIALS =
+      "solr.security.auth.basicauth.credentials";
 
   private static PreemptiveAuth requestInterceptor = new PreemptiveAuth(new BasicScheme());
 
@@ -152,7 +153,7 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
             || StrUtils.isNullOrEmpty(ss.get(0))
             || StrUtils.isNullOrEmpty(ss.get(1))) {
           throw new IllegalArgumentException(
-              "Invalid Authentication credentials: Please provide 'basicauth' in the 'user:password' format");
+              "Invalid Authentication credentials: Please provide 'solr.security.auth.basicauth.credentials' in the 'user:password' format");
         }
         defaultParams =
             new MapSolrParams(
