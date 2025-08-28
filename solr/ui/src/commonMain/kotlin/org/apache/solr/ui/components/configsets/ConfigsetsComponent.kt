@@ -20,9 +20,8 @@ package org.apache.solr.ui.components.configsets
 import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.value.Value
 import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.components.configsets.data.ListConfigSets
+import org.apache.solr.ui.components.configsets.data.ListConfigsets
 import org.apache.solr.ui.components.configsets.overview.OverviewComponent
-import org.apache.solr.ui.components.main.MainComponent.Child
 
 /**
  * Contract for the Configsets feature.
@@ -72,7 +71,7 @@ interface ConfigsetsComponent {
      */
     data class Model(
         val selectedTab: Int,
-        val configSets: ListConfigSets,
+        val configSets: ListConfigsets,
         val selectedConfigset: String = "",
     )
 

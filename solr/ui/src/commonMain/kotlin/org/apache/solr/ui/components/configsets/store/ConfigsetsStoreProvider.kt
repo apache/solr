@@ -25,8 +25,7 @@ import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.apache.solr.ui.components.configsets.data.ListConfigSets
-import org.apache.solr.ui.components.configsets.store.ConfigsetsStore
+import org.apache.solr.ui.components.configsets.data.ListConfigsets
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.State
 
@@ -62,7 +61,7 @@ internal class ConfigsetsStoreProvider(
     }
 
     private sealed interface Message {
-        data class ConfigSetsUpdated(val configsets: ListConfigSets) : Message
+        data class ConfigSetsUpdated(val configsets: ListConfigsets) : Message
         data class SelectedTabChanged(val tabIndex: Int = 0) : Message
         data class SelectedConfigSetChanged(val configsetName: String) : Message
     }
@@ -105,6 +104,6 @@ internal class ConfigsetsStoreProvider(
      */
     interface Client {
         /** To fetch a list of configsets. */
-        suspend fun fetchConfigSets(): Result<ListConfigSets>
+        suspend fun fetchConfigSets(): Result<ListConfigsets>
     }
 }

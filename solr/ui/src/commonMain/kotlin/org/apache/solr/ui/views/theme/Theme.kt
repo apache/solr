@@ -52,8 +52,8 @@ fun SolrTheme(
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
-        useDarkTheme -> lightScheme
-        else -> darkScheme
+        useDarkTheme -> darkScheme
+        else -> lightScheme
     }
 
     CompositionLocalProvider(

@@ -17,7 +17,7 @@
 package org.apache.solr.ui.components.configsets.store
 
 import com.arkivanov.mvikotlin.core.store.Store
-import org.apache.solr.ui.components.configsets.data.ListConfigSets
+import org.apache.solr.ui.components.configsets.data.ListConfigsets
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.State
 
@@ -38,6 +38,6 @@ internal interface ConfigsetsStore : Store<Intent, State, Nothing> {
     data class State(
         val selectedTab: Int = 0,
         val selectedConfigset: String = "",
-        val configSets: ListConfigSets = ListConfigSets(),
+        val configSets: ListConfigsets = ListConfigsets(),
     )
 }

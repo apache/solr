@@ -14,6 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ui.components.configsets.overview
+package org.apache.solr.ui.components.configsets.data
 
-interface OverviewComponent
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+/**
+ * List of config sets.
+ */
+@Serializable
+data class ListConfigsets(
+    @SerialName("configSets")
+    val names: List<String> = emptyList(),
+)
