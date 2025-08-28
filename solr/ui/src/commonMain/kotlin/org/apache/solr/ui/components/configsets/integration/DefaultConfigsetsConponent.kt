@@ -28,11 +28,11 @@ import io.ktor.client.HttpClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.serializer
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
 import org.apache.solr.ui.components.configsets.overview.OverviewComponent
 import org.apache.solr.ui.components.configsets.overview.integration.DefaultOverviewComponent
+import org.apache.solr.ui.components.configsets.store.ConfigsetsStore
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStoreProvider
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.coroutineScope
@@ -75,12 +75,13 @@ class DefaultConfigsetsConponent internal constructor(
                 storeFactory = storeFactory,
                 httpClient = httpClient,
             )
-        }
+        },
     )
+
     @Serializable
     private sealed interface Configuration {
         @Serializable
-        data object Overview: Configuration
+        data object Overview : Configuration
     }
 
     private fun createChild(
@@ -114,4 +115,12 @@ class DefaultConfigsetsConponent internal constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override val model = store.stateFlow.map(mainScope, configsetsStateToModel)
+
+    override fun onSelectTab(index: Int) {
+        store.accept(ConfigsetsStore.Intent.SelectTab(index))
+    }
+
+    override fun onSelectConfigset(name: String) {
+        store.accept(ConfigsetsStore.Intent.SelectConfigSet(name))
+    }
 }

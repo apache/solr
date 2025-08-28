@@ -17,12 +17,27 @@
 package org.apache.solr.ui.components.configsets.store
 
 import com.arkivanov.mvikotlin.core.store.Store
+import org.apache.solr.ui.components.configsets.data.ListConfigSets
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.State
 
 internal interface ConfigsetsStore : Store<Intent, State, Nothing> {
-    sealed interface Intent
+    sealed interface Intent {
+        /**
+         * Intent for selecting tab.
+         */
+        data class SelectTab(val tabIndex: Int) : Intent
+
+        /**
+         * Intent for fetching configsets from the solr.
+         */
+        data object FetchConfigSets : Intent
+
+        data class SelectConfigSet(val configSetName: String) : Intent
+    }
     data class State(
-        val selectedTab: String = "SOLR_CONFIGSETS",
+        val selectedTab: Int = 0,
+        val selectedConfigset: String = "",
+        val configSets: ListConfigSets = ListConfigSets(),
     )
 }

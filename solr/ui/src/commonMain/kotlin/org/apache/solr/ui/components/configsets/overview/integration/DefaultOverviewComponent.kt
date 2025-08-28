@@ -9,6 +9,5 @@ class DefaultOverviewComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     httpClient: HttpClient,
-) : OverviewComponent, AppComponentContext by componentContext {
-    
-}
+) : OverviewComponent,
+    AppComponentContext by componentContext
