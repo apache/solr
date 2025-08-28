@@ -122,7 +122,8 @@ public class DriverImpl implements Driver {
     return uri;
   }
 
-  private void loadParams(URI uri, Properties props) throws SQLException {
+  /** Decode the uri query parameters and put them onto {@code props}. */
+  private void loadParams(URI uri, Properties props) {
     String query = uri.getRawQuery();
     if (query != null) {
       for (String param : query.split("&")) {

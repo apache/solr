@@ -22,7 +22,7 @@ import java.util.Objects;
 
 /** A basic name-only {@link Principal}. */
 public final class SimplePrincipal implements Principal {
-  // nocommit javadoc prevented me from using a record!
+  // TODO use a record.  But javadoc tooling complained as it was confused (Java version issue?)
   private final String name;
 
   public SimplePrincipal(String name) {
