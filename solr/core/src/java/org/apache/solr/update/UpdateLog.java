@@ -666,7 +666,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             }),
             OtelUnit.BYTES));
 
-    toClose = List.copyOf(observables);
+    toClose = Collections.unmodifiableList(observables);
 
     // NOCOMMIT: Do we want to keep this? Metric was just state with the numeric enum value.
     // Without context this doesn't mean anything and can be very confusing. Maybe keep the numeric

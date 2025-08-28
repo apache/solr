@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -230,7 +231,7 @@ public class ZkContainer {
                         measurement -> {
                           measurement.record(metricsListener.getCumulativeChildrenFetched());
                         }));
-                toClose = List.copyOf(observables);
+                toClose = Collections.unmodifiableList(observables);
               }
 
               @Override

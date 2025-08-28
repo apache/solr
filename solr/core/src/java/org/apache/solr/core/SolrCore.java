@@ -1458,7 +1458,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
                     baseGaugeCoreAttributes);
               })));
 
-    this.toClose = List.copyOf(observables);
+    this.toClose = Collections.unmodifiableList(observables);
 
     // NOCOMMIT: Temporary to see metrics
     newSearcherCounter.inc();

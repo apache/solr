@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -362,7 +363,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
                   baseAttributes.toBuilder().put(OPERATION_ATTR, "docs_pending").build());
             }));
 
-    this.toClose = List.copyOf(observables);
+    this.toClose = Collections.unmodifiableList(observables);
 
     var baseSubmittedOpsMetric =
         solrMetricsContext.longCounter(
