@@ -21,14 +21,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
+import com.arkivanov.decompose.extensions.compose.subscribeAsState
+import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
+import org.apache.solr.ui.components.configsets.overview.OverviewComponent
+
+// import your OverviewContent
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -40,10 +44,38 @@ fun ConfigsetsContent(
     horizontalArrangement = Arrangement.spacedBy(16.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
 ) {
-    val model by component.model.collectAsState()
-    var selected by rememberSaveable { mutableIntStateOf(0) }
-    // Example usage
+    // if you actually need the store model, keep this:
+    // val model by component.model.collectAsState()
+
+    // Decompose child to access OverviewComponent
+    val stack by component.childStack.subscribeAsState()
+    val currentChild = stack.active.instance
+
     ConfigsetsNavBarComponent(
         availableConfigsets = listOf("basic_configs", "my_custom_conf", "news_core_v2"),
+        content = { tab, configset ->
+            when (tab) {
+                "Overview" -> {
+                    val oc = (currentChild as? Child.Overview)?.component
+                    if (oc != null) {
+                        OverviewContent(component = oc)
+                    } else {
+                        // fallback if you add more children later
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Overview unavailable")
+                        }
+                    }
+                }
+                else -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(tab)
+                    }
+                }
+            }
+        }
     )
+}
+@Composable
+fun OverviewContent(component: OverviewComponent)  {
+    Text("Overview section")
 }
