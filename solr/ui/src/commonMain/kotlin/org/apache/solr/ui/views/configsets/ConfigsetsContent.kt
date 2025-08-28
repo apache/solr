@@ -32,11 +32,8 @@ import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
-import org.apache.solr.ui.components.configsets.overview.OverviewComponent
 import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
-import org.jetbrains.compose.resources.stringResource
 
-// import your OverviewContent
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

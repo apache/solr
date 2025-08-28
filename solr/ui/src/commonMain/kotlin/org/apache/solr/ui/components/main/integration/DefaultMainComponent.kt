@@ -130,7 +130,6 @@ class DefaultMainComponent internal constructor(
         // Configuration.Security ->
         //     NavigationComponent.Child.Security(securityComponent(componentContext))
 
-        // TODO Uncomment once Configsets available
         Configuration.Configsets -> Child.Configsets(configsetsComponent(componentContext))
 
         // TODO Uncomment once Collections available
