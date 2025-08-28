@@ -28,7 +28,6 @@ import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.bench.MiniClusterState.MiniClusterBenchState;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
@@ -98,13 +97,9 @@ public class StreamingSearch {
     public void setupIteration(MiniClusterState.MiniClusterBenchState miniClusterState)
         throws SolrServerException, IOException {
       SolrClientCache solrClientCache;
-      if (useHttp1) {
-        var httpClient = HttpClientUtil.createClient(null); // TODO tune params?
-        solrClientCache = new SolrClientCache(httpClient);
-      } else {
-        http2SolrClient = newHttp2SolrClient();
-        solrClientCache = new SolrClientCache(http2SolrClient);
-      }
+      // TODO tune params?
+      var client = new Http2SolrClient.Builder().useHttp1_1(useHttp1).build();
+      solrClientCache = new SolrClientCache(client);
 
       streamContext = new StreamContext();
       streamContext.setSolrClientCache(solrClientCache);
@@ -144,11 +139,5 @@ public class StreamingSearch {
     } finally {
       tupleStream.close();
     }
-  }
-
-  public static Http2SolrClient newHttp2SolrClient() {
-    // TODO tune params?
-    var builder = new Http2SolrClient.Builder();
-    return builder.build();
   }
 }

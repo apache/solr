@@ -45,6 +45,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
     rb._responseDocs = new SolrDocumentList(); // Null pointers will occur otherwise.
     rb.onePassDistributedQuery = true; // Turn off the second pass distributed.
     httpSolrClient = rb.req.getCoreContainer().getDefaultHttpSolrClient();
+    // TODO use httpSolrClient.requestAsync instead; it has an executor
     executorService =
         ExecutorUtil.newMDCAwareCachedThreadPool(
             new SolrNamedThreadFactory("IterativeMergeStrategy"));

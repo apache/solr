@@ -113,22 +113,22 @@ public class SolrTestCase extends LuceneTestCase {
               });
 
   /**
-   * Sets the <code>solr.default.confdir</code> system property to the value of {@link
+   * Sets the <code>solr.configset.default.confdir</code> system property to the value of {@link
    * ExternalPaths#DEFAULT_CONFIGSET} if and only if the system property is not already set, and the
    * <code>DEFAULT_CONFIGSET</code> exists and is a readable directory.
    *
    * <p>Logs INFO/WARNing messages as appropriate based on these 2 conditions.
    *
-   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
    */
   @BeforeClass
   public static void beforeSolrTestCase() {
     final String existingValue =
-        EnvUtils.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+        EnvUtils.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE);
     if (null != existingValue) {
       log.info(
           "Test env includes configset dir system property '{}'='{}'",
-          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
           existingValue);
       return;
     }
@@ -136,18 +136,18 @@ public class SolrTestCase extends LuceneTestCase {
     if (Files.isReadable(extPath /* implies exists() */) && Files.isDirectory(extPath)) {
       log.info(
           "Setting '{}' system property to test-framework derived value of '{}'",
-          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
           ExternalPaths.DEFAULT_CONFIGSET);
       assert null == existingValue;
       System.setProperty(
-          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
           ExternalPaths.DEFAULT_CONFIGSET.toString());
     } else {
       log.warn(
           "System property '{}' is not already set, but test-framework derived value ('{}') either "
               + "does not exist or is not a readable directory, you may need to set the property yourself "
               + "for tests to run properly",
-          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
           ExternalPaths.DEFAULT_CONFIGSET);
     }
 

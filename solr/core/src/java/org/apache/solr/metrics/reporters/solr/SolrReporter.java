@@ -175,7 +175,7 @@ public class SolrReporter extends ScheduledReporter {
      * Default is false.
      *
      * @param cloudClient use CloudSolrClient when true, {@link
-     *     org.apache.solr.client.solrj.impl.HttpSolrClient} otherwise.
+     *     org.apache.solr.client.solrj.impl.Http2SolrClient} otherwise.
      * @return {@code this}
      */
     public Builder cloudClient(boolean cloudClient) {

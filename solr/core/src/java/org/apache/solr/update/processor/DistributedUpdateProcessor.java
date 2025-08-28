@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -681,8 +680,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     params.set(DISTRIB, false);
     params.set("getInputDocument", id);
     params.set("onlyIfActive", true);
-    SolrRequest<SimpleSolrResponse> ur =
-        new GenericSolrRequest(METHOD.GET, "/get", params).setRequiresCollection(true);
+    var ur =
+        new GenericSolrRequest(METHOD.GET, "/get", SolrRequest.SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
 
     String leaderUrl = getLeaderUrl(id);
 

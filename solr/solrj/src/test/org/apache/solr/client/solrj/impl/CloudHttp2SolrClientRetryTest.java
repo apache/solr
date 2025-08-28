@@ -69,7 +69,6 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
 
       var metricsRequest =
           new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
-      metricsRequest.setRequiresCollection(false);
 
       NamedList<Object> namedList = solrClient.request(metricsRequest);
       System.out.println(namedList);

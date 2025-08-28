@@ -39,19 +39,19 @@ import org.apache.solr.core.SolrCore;
  */
 public final class LoadAdminUiServlet extends HttpServlet {
 
-  // check system properties for whether or not admin UI is disabled, default is false
-  private static final boolean disabled =
-      Boolean.parseBoolean(System.getProperty("disableAdminUI", "false"));
+  // check system properties for whether the admin UI is disabled, default is false
+  private static final boolean uiEnabled =
+      Boolean.parseBoolean(System.getProperty("solr.ui.enabled", "true"));
   // list of comma separated URLs to inject into the CSP connect-src directive
   public static final String SYSPROP_CSP_CONNECT_SRC_URLS = "solr.ui.headers.csp.connect-src.urls";
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    if (disabled) {
+    if (!uiEnabled) {
       response.sendError(
           404,
-          "Solr Admin UI is disabled. To enable it, change the default value of SOLR_ADMIN_UI_"
-              + "ENABLED in bin/solr.in.sh or solr.in.cmd.");
+          "Solr Admin UI is disabled. To enable it, change the value of SOLR_UI_ENABLED"
+              + " in bin/solr.in.sh or solr.in.cmd.");
       return;
     }
     request = ServletUtils.closeShield(request);
