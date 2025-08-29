@@ -37,6 +37,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -905,7 +906,58 @@ public class QueryComponent extends SearchComponent {
     return true;
   }
 
+  protected abstract static class ShardDocQueue {
+    public abstract void push(ShardDoc shardDoc);
+
+    public abstract ShardDoc pop();
+
+    public abstract int size();
+  }
+  ;
+
+  private static class DefaultShardDocQueue extends ShardDocQueue {
+    private final ShardFieldSortedHitQueue queue;
+
+    public DefaultShardDocQueue(SortField[] sortFields, int size, SolrIndexSearcher searcher) {
+      queue = new ShardFieldSortedHitQueue(sortFields, size, searcher);
+    }
+
+    public void push(ShardDoc shardDoc) {
+      queue.insertWithOverflow(shardDoc);
+    }
+
+    public ShardDoc pop() {
+      return queue.pop();
+    }
+
+    public int size() {
+      return queue.size();
+    }
+  }
+  ;
+
+  protected static class ShardDocQueueFactory
+      implements BiFunction<SortField[], Integer, ShardDocQueue> {
+
+    private final SolrIndexSearcher searcher;
+
+    public ShardDocQueueFactory(SolrIndexSearcher searcher) {
+      this.searcher = searcher;
+    }
+
+    @Override
+    public ShardDocQueue apply(SortField[] sortFields, Integer size) {
+      return new DefaultShardDocQueue(sortFields, size, searcher);
+    }
+  }
+  ;
+
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
+    implementMergeIds(rb, sreq, new ShardDocQueueFactory(rb.req.getSearcher()));
+  }
+
+  private void implementMergeIds(
+      ResponseBuilder rb, ShardRequest sreq, ShardDocQueueFactory shardDocQueueFactory) {
     List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
     if (mergeStrategies != null) {
       mergeStrategies.sort(MergeStrategy.MERGE_COMP);
@@ -952,9 +1004,8 @@ public class QueryComponent extends SearchComponent {
 
     // Merge the docs via a priority queue so we don't have to sort *all* of the
     // documents... we only need to order the top (rows+start)
-    final ShardFieldSortedHitQueue queue =
-        new ShardFieldSortedHitQueue(
-            sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
+    final ShardDocQueue shardDocQueue =
+        shardDocQueueFactory.apply(sortFields, ss.getOffset() + ss.getCount());
 
     NamedList<Object> shardInfo = null;
     if (rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
@@ -1160,19 +1211,19 @@ public class QueryComponent extends SearchComponent {
 
         shardDoc.sortFieldValues = unmarshalledSortFieldValues;
 
-        queue.insertWithOverflow(shardDoc);
+        shardDocQueue.push(shardDoc);
       } // end for-each-doc-in-response
     } // end for-each-response
 
     // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
     // So we want to pop the last documents off the queue to get
     // the docs offset -> queuesize
-    int resultSize = queue.size() - ss.getOffset();
+    int resultSize = shardDocQueue.size() - ss.getOffset();
     resultSize = Math.max(0, resultSize); // there may not be any docs in range
 
     Map<Object, ShardDoc> resultIds = new HashMap<>();
     for (int i = resultSize - 1; i >= 0; i--) {
-      ShardDoc shardDoc = queue.pop();
+      ShardDoc shardDoc = shardDocQueue.pop();
       shardDoc.positionInResponse = i;
       // Need the toString() for correlation with other lists that must
       // be strings (like keys in highlighting, explain, etc)
