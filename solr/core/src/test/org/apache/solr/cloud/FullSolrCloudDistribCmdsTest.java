@@ -467,12 +467,17 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
                 (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
 
         { // HACK: Check the leaderProps for the shard hosted on the node we're going to kill...
-          final Replica leaderProps =
+          List<Replica> replicas =
               cloudClient
                   .getClusterState()
                   .getCollection(collectionName)
-                  .getLeaderReplicas(leaderToPartition.getNodeName())
-                  .get(0);
+                  .getReplicasOnNode(leaderToPartition.getNodeName());
+          assertNotNull(replicas);
+          assertFalse(replicas.isEmpty());
+          List<Replica> leaderReplicas = replicas.stream().filter(Replica::isLeader).toList();
+          assertFalse(leaderReplicas.isEmpty());
+          final Replica leaderProps = leaderReplicas.get(0);
+
           // No point in this test if these aren't true...
           assertNotNull(
               "Sanity check: leaderProps isn't a leader?: " + leaderProps.toString(),
