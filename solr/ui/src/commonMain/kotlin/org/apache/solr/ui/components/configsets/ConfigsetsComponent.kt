@@ -20,33 +20,12 @@ package org.apache.solr.ui.components.configsets
 import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.value.Value
 import kotlinx.coroutines.flow.StateFlow
+import org.apache.solr.ui.components.configsets.data.Configset
 import org.apache.solr.ui.components.configsets.data.ListConfigsets
-import org.apache.solr.ui.components.configsets.overview.OverviewComponent
+import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
 import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
-/**
- * Contract for the Configsets feature.
- *
- * Responsibilities:
- * - Owns tab/navigation state within the Configsets screen.
- * - Loads and exposes the list of available configsets.
- * - Persists the currently selected tab and configset.
- *
- * Exposed state:
- * - [model]: reactive UI model (configset names, selected tab, selected configset).
- *
- * Actions:
- * - [onSelectTab]: update the active tab.
- * - [onSelectConfigset]: change the active configset.
- *
- * Notes:
- * - Scope: feature-local only; app-level navigation is owned by [MainComponent].
- * - State restoration is implementation-defined (e.g., MVIKotlin Store / Decompose StateKeeper).
- *
- * See also:
- * - Decompose (component lifecycle & composition)
- * - MVIKotlin (unidirectional data flow)
- */
+/** Component contract for Configsets: manages tab state, available configsets, and current selection. */
 interface ConfigsetsComponent {
 
     /**
@@ -56,23 +35,17 @@ interface ConfigsetsComponent {
 
     /**
      * All possible navigation targets (children) within the Configsets feature.
-     *
-     * Each child wraps its own component, which holds the state and logic for that screen.
      */
     sealed interface Child {
-        data class Overview(val component: OverviewComponent) : Child
+        data class Overview(val component: ConfigsetsOverviewComponent) : Child
     }
 
     /**
-     * UI model for the Configsets screen.
-     *
-     * @property selectedTab Active tab.
-     * @property configSets List of available configsets (domain model).
-     * @property selectedConfigset Name of the active configset (non-null when available).
+     * Model that holds the data of the [ConfigsetsComponent].
      */
     data class Model(
+        val configsets: List<Configset> = emptyList(),
         val selectedTab: ConfigsetsTab = ConfigsetsTab.Overview,
-        val configSets: ListConfigsets,
         val selectedConfigset: String = "",
     )
 

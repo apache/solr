@@ -30,10 +30,8 @@ internal interface ConfigsetsStore : Store<Intent, State, Nothing> {
         data class SelectTab(val tab: ConfigsetsTab) : Intent
 
         /**
-         * Intent for fetching configsets from the solr.
+         * Intent for selecting configset.
          */
-        data object FetchConfigSets : Intent
-
         data class SelectConfigSet(val configSetName: String) : Intent
     }
     data class State(

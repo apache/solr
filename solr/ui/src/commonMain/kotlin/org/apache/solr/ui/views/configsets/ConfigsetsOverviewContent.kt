@@ -14,16 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ui.components.configsets.overview.integration
+package org.apache.solr.ui.views.configsets
 
-import com.arkivanov.mvikotlin.core.store.StoreFactory
-import io.ktor.client.HttpClient
-import org.apache.solr.ui.components.configsets.overview.OverviewComponent
-import org.apache.solr.ui.utils.AppComponentContext
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
 
-class DefaultOverviewComponent(
-    componentContext: AppComponentContext,
-    storeFactory: StoreFactory,
-    httpClient: HttpClient,
-) : OverviewComponent,
-    AppComponentContext by componentContext
+@Composable
+fun ConfigsetsOverviewContent(component: ConfigsetsOverviewComponent, modifier: Modifier = Modifier) {
+    Text("Overview section")
+}

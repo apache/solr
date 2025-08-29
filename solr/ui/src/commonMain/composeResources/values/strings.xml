@@ -51,10 +51,6 @@
   <string name="nav_thread_dump">Thread Dump</string>
 
   <!-- Configsets (nav) -->
-  <string name="configsets_overview">Overview</string>
-  <string name="configsets_libraries">Libraries</string>
-  <string name="configsets_files">Files</string>
-  <string name="configsets_schema">Schema</string>
   <string name="configsets_update_configuration">Update Configuration</string>
   <string name="configsets_index_query">Index / Query</string>
   <string name="configsets_request_handlers">Request Handlers / Dispatchers</string>
@@ -77,6 +73,9 @@
   <string name="solr_query_syntax">Solr Query Syntax</string>
   <string name="support">Support</string>
   <string name="connecting">Connecting...</string>
+  <string name="overview">Overview</string>
+  <string name="files">Files</string>
+  <string name="schema">Schema</string>
 
   <!-- Input Labels -->
   <string name="label_username">Username</string>

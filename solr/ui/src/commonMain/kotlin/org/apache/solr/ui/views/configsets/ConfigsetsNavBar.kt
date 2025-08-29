@@ -43,38 +43,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import org.apache.solr.ui.components.configsets.data.ListConfigsets
+import org.apache.solr.ui.components.configsets.data.Configset
 import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.configsets_files
 import org.apache.solr.ui.generated.resources.configsets_index_query
-import org.apache.solr.ui.generated.resources.configsets_overview
-import org.apache.solr.ui.generated.resources.configsets_request_handlers
-import org.apache.solr.ui.generated.resources.configsets_schema
 import org.apache.solr.ui.generated.resources.configsets_search_components
 import org.apache.solr.ui.generated.resources.configsets_update_configuration
+import org.apache.solr.ui.generated.resources.files
+import org.apache.solr.ui.generated.resources.overview
+import org.apache.solr.ui.generated.resources.schema
 import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 import org.jetbrains.compose.resources.stringResource
 
+
 @Composable
-fun ConfigsetsNavBarComponent(
+fun ConfigsetsNavBar(
     selectedTab: ConfigsetsTab,
     selectTab: (ConfigsetsTab) -> Unit,
-    selectedConfigSet: String,
-    selectConfigset: (String) -> Unit,
-    availableConfigsets: ListConfigsets,
+    availableConfigsets: List<Configset>,
     modifier: Modifier = Modifier,
-    content: @Composable (tab: ConfigsetsTab, configset: String) -> Unit = { tab, _ ->
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(stringResource(tabLabelRes(tab))) }
-    },
 ) {
-    if (availableConfigsets.names.isEmpty()) {
+    if (availableConfigsets.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No configsets available")
         }
         return
     }
 
-    var expanded by remember { mutableStateOf(false) }
     val selectedIndex = ConfigsetsTab.entries.indexOf(selectedTab)
     Column(modifier) {
         ScrollableTabRow(
@@ -95,52 +89,15 @@ fun ConfigsetsNavBarComponent(
                 )
             }
         }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded },
-                modifier = Modifier.widthIn(min = 256.dp).weight(1f),
-            ) {
-                OutlinedTextField(
-                    value = selectedConfigSet,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Configset") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth(),
-                )
-                ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    availableConfigsets.names.forEach { name ->
-                        DropdownMenuItem(
-                            text = { Text(name) },
-                            onClick = {
-                                selectConfigset(name)
-                                expanded = false
-                            },
-                        )
-                    }
-                }
-            }
-        }
-
-        Box(Modifier.fillMaxSize().padding(16.dp)) {
-            content(selectedTab, selectedConfigSet)
-        }
     }
 }
 
 private fun tabLabelRes(item: ConfigsetsTab) = when (item) {
-    ConfigsetsTab.Overview -> Res.string.configsets_overview
-    ConfigsetsTab.Files -> Res.string.configsets_files
-    ConfigsetsTab.Schema -> Res.string.configsets_schema
+    ConfigsetsTab.Overview -> Res.string.overview
+    ConfigsetsTab.Files -> Res.string.files
+    ConfigsetsTab.Schema -> Res.string.schema
     ConfigsetsTab.UpdateConfig -> Res.string.configsets_update_configuration
     ConfigsetsTab.IndexQuery -> Res.string.configsets_index_query
-    ConfigsetsTab.Handlers -> Res.string.configsets_request_handlers
+    ConfigsetsTab.Handlers -> Res.string.configsets_index_query
     ConfigsetsTab.SearchComponents -> Res.string.configsets_search_components
 }

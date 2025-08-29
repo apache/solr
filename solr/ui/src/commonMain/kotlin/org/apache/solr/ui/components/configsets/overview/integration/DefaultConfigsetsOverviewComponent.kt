@@ -14,6 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ui.components.configsets.overview
+package org.apache.solr.ui.components.configsets.overview.integration
 
-interface OverviewComponent
+import com.arkivanov.mvikotlin.core.store.StoreFactory
+import io.ktor.client.HttpClient
+import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
+import org.apache.solr.ui.utils.AppComponentContext
+
+class DefaultConfigsetsOverviewComponent(
+    componentContext: AppComponentContext,
+    storeFactory: StoreFactory,
+    httpClient: HttpClient,
+) : ConfigsetsOverviewComponent,
+    AppComponentContext by componentContext

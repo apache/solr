@@ -16,12 +16,14 @@
  */
 package org.apache.solr.ui.views.configsets
 
-import ConfigsetsNavBarComponent
+import ConfigsetsNavBar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,7 +35,6 @@ import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
 import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
-
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -51,30 +52,30 @@ fun ConfigsetsContent(
     val stack by component.childStack.subscribeAsState()
     val currentChild = stack.active.instance
 
-    ConfigsetsNavBarComponent(
-        selectedTab = model.selectedTab,
-        selectTab = { tab: ConfigsetsTab -> component.onSelectTab(tab) },
-        selectedConfigSet = model.selectedConfigset,
-        selectConfigset = { s: String -> component.onSelectConfigset(s) },
-        availableConfigsets = model.configSets,
-        content = { tab, _ ->
-            when (tab) {
-                ConfigsetsTab.Overview -> {
-                    when (val child = currentChild) {
-                        is Child.Overview ->
-                            OverviewContent(component = child.component)
-                        else ->
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("Overview unavailable")
-                            }
-                    }
-                }
-                else -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(tab.name)
-                    }
-                }
+    val renderTab: @Composable (ConfigsetsTab, String) -> Unit = { tab, _ ->
+        when (tab) {
+            ConfigsetsTab.Overview -> when (val child = currentChild) {
+                is Child.Overview -> ConfigsetsOverviewContent(component = child.component)
+                else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Overview unavailable") }
             }
-        },
-    )
+            else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(tab.name) }
+        }
+    }
+
+    Column(Modifier.fillMaxSize()) {
+        ConfigsetsNavBar(
+            selectedTab = model.selectedTab,
+            selectTab = { tab: ConfigsetsTab -> component.onSelectTab(tab) },
+            availableConfigsets = model.configsets,
+        )
+        ConfigsetsDropdown(
+            selectedConfigSet = model.selectedConfigset,
+            selectConfigset = { s: String -> component.onSelectConfigset(s) },
+            availableConfigsets = model.configsets,
+        )
+
+        Box(Modifier.fillMaxSize().padding(16.dp)) {
+            renderTab(model.selectedTab, model.selectedConfigset)
+        }
+    }
 }

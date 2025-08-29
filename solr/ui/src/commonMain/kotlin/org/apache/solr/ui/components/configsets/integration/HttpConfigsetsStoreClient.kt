@@ -33,7 +33,7 @@ import org.apache.solr.ui.components.configsets.store.ConfigsetsStoreProvider
  * should also include the necessary authentication data if authentication / authorization
  * is enabled.
  */
-class HttpEnvironmentStoreClient(
+class HttpConfigsetsStoreClient(
     private val httpClient: HttpClient,
 ) : ConfigsetsStoreProvider.Client {
     override suspend fun fetchConfigSets(): Result<ListConfigsets> {
