@@ -34,7 +34,9 @@ dependencies {
   implementation 'com.google.guava:guava'
   implementation 'io.dropwizard.metrics:metrics-core'
   // Caffeine cache to implement HDFS block caching  
-  implementation 'com.github.ben-manes.caffeine:caffeine'
+  implementation('com.github.ben-manes.caffeine:caffeine') {
+    exclude group: 'com.google.errorprone'
+  }
 
   implementation 'commons-cli:commons-cli'
 
