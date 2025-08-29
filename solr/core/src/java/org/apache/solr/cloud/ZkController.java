@@ -74,6 +74,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
 import org.apache.solr.common.cloud.DefaultZkCredentialsInjector;
@@ -956,7 +957,11 @@ public class ZkController implements Closeable {
    */
   public static void createClusterZkNodes(SolrZkClient zkClient)
       throws KeeperException, InterruptedException, IOException {
-    ZkMaintenanceUtils.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
+    if (!zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, true)) {
+      ZkMaintenanceUtils.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
+      // only init this if we appear to be creating the cluster; not "legacy" clusters (<10)
+      initClusterSolrVersion(zkClient);
+    }
     ZkMaintenanceUtils.ensureExists(ZkStateReader.NODE_ROLES, zkClient);
     for (NodeRoles.Role role : NodeRoles.Role.values()) {
       ZkMaintenanceUtils.ensureExists(NodeRoles.getZNodeForRole(role), zkClient);
@@ -970,6 +975,16 @@ public class ZkController implements Closeable {
     byte[] emptyJson = "{}".getBytes(StandardCharsets.UTF_8);
     ZkMaintenanceUtils.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH, emptyJson, zkClient);
     repairSecurityJson(zkClient);
+  }
+
+  private static void initClusterSolrVersion(SolrZkClient zkClient) throws IOException {
+    var clusterProperties = new ClusterProperties(zkClient);
+    String v =
+        clusterProperties.getClusterProperty(ZkStateReader.CLUSTER_SOLR_VERSION, (String) null);
+    if (v == null) {
+      clusterProperties.setClusterProperty(
+          ZkStateReader.CLUSTER_SOLR_VERSION, SolrVersion.LATEST_STRING);
+    }
   }
 
   private static void repairSecurityJson(SolrZkClient zkClient)
