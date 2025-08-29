@@ -27,16 +27,13 @@ import org.apache.solr.handler.component.ShardHandler;
 
 public class DistributedCollectionCommandContext implements CollectionCommandContext {
   private final CoreContainer coreContainer;
-  private final DistributedClusterStateUpdater distributedClusterStateUpdater;
+  private volatile DistributedClusterStateUpdater distributedClusterStateUpdater;
   private final ExecutorService executorService;
 
   public DistributedCollectionCommandContext(
       CoreContainer coreContainer, ExecutorService executorService) {
     // note: coreContainer.getZkController() is not yet instantiated; don't call it right now
     this.coreContainer = coreContainer;
-    this.distributedClusterStateUpdater =
-        new DistributedClusterStateUpdater(
-            coreContainer.getConfig().getCloudConfig().getDistributedClusterStateUpdates());
     this.executorService = executorService;
   }
 
@@ -69,7 +66,20 @@ public class DistributedCollectionCommandContext implements CollectionCommandCon
 
   @Override
   public DistributedClusterStateUpdater getDistributedClusterStateUpdater() {
-    return this.distributedClusterStateUpdater;
+    if (distributedClusterStateUpdater == null) {
+      synchronized (this) {
+        if (distributedClusterStateUpdater == null) {
+          // Read distributed cluster state updates setting from cluster properties
+          boolean useDistributedUpdates = false;
+          if (coreContainer.getZkController() != null) {
+            useDistributedUpdates = coreContainer.getZkController().getZkStateReader()
+                .getClusterProperty(ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES, false);
+          }
+          distributedClusterStateUpdater = new DistributedClusterStateUpdater(useDistributedUpdates);
+        }
+      }
+    }
+    return distributedClusterStateUpdater;
   }
 
   @Override

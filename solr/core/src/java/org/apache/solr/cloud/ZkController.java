@@ -307,8 +307,9 @@ public class ZkController implements Closeable {
     this.cloudConfig = cloudConfig;
 
     // Use the configured way to do cluster state update (Overseer queue vs distributed)
+    // Initialize with default value first, will be updated after zkStateReader is available
     distributedClusterStateUpdater =
-        new DistributedClusterStateUpdater(cloudConfig.getDistributedClusterStateUpdates());
+        new DistributedClusterStateUpdater(false);
 
     this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
 
@@ -373,11 +374,6 @@ public class ZkController implements Closeable {
     // Refuse to start if ZK has a non empty /clusterstate.json or a /solr.xml file
     checkNoOldClusterstate(zkClient);
 
-    this.distributedCommandRunner =
-        cloudConfig.getDistributedCollectionConfigSetExecution()
-            ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
-            : Optional.empty();
-
     this.overseerRunningMap = Overseer.getRunningMap(zkClient);
     this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
     this.overseerFailureMap = Overseer.getFailureMap(zkClient);
@@ -389,6 +385,24 @@ public class ZkController implements Closeable {
             () -> {
               if (cc != null) cc.securityNodeChanged();
             });
+
+    // Now that zkStateReader is available, update the distributed cluster state updater with the actual setting
+    boolean useDistributedUpdates = zkStateReader.getClusterProperty(ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES, false);
+    boolean useDistributedConfigSet = zkStateReader.getClusterProperty(ZkStateReader.DISTRIBUTED_COLLECTION_CONFIG_SET_EXECUTION, false);
+    
+    // Validate cluster properties
+    if (useDistributedConfigSet && !useDistributedUpdates) {
+      log.warn("Cluster property '{}' is true but '{}' is false. Distributed collection config set execution requires distributed cluster state updates to be enabled.",
+               ZkStateReader.DISTRIBUTED_COLLECTION_CONFIG_SET_EXECUTION, ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES);
+    }
+    
+    distributedClusterStateUpdater = new DistributedClusterStateUpdater(useDistributedUpdates);
+
+    // Initialize the distributed command runner now that we have the cluster properties
+    this.distributedCommandRunner =
+        useDistributedConfigSet
+            ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
+            : Optional.empty();
 
     init();
 
