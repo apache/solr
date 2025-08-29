@@ -31,8 +31,8 @@ import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -85,22 +85,17 @@ public abstract class ConfigSetService {
   }
 
   private void bootstrapConfigSet(CoreContainer coreContainer) {
-    // bootstrap _default conf, bootstrap_confdir and bootstrap_conf if provided via system property
+    // bootstrap _default conf and solr.configset.bootstrap.confdir if specified.
     try {
       // _default conf
       bootstrapDefaultConf();
 
-      // bootstrap_confdir
-      String confDir = System.getProperty("bootstrap_confdir");
+      // solr.configset.bootstrap.confdir
+      String confDir = EnvUtils.getProperty("solr.configset.bootstrap.confdir");
       if (confDir != null) {
         bootstrapConfDir(confDir);
       }
 
-      // bootstrap_conf
-      boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
-      if (boostrapConf == true) {
-        bootstrapConf(coreContainer);
-      }
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Config couldn't be uploaded ", e);
@@ -114,7 +109,7 @@ public abstract class ConfigSetService {
         log.warn(
             "The _default configset could not be uploaded. Please provide 'solr.configset.default.confdir' parameter that points to a configset {} {}",
             "intended to be the default. Current 'solr.configset.default.confdir' value:",
-            System.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE));
+            EnvUtils.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
         this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
       }
@@ -122,15 +117,14 @@ public abstract class ConfigSetService {
   }
 
   private void bootstrapConfDir(String confDir) throws IOException {
-    Path configPath = Path.of(confDir);
+    Path configPath = resolvePathWithSolrInstallDir(confDir);
+
     if (!Files.isDirectory(configPath)) {
       throw new IllegalArgumentException(
-          "bootstrap_confdir must be a directory of configuration files, configPath: "
+          "solr.configset.bootstrap.confdir must be a directory of configuration files, configPath: "
               + configPath);
     }
-    String confName =
-        System.getProperty(
-            ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP, "configuration1");
+    String confName = EnvUtils.getProperty("solr.collection.config.name", "configuration1");
     this.uploadConfig(confName, configPath);
   }
 
@@ -139,29 +133,50 @@ public abstract class ConfigSetService {
    * sysprop "solr.configset.default.confdir". If not found, tries to find the _default dir relative
    * to the sysprop "solr.install.dir". Returns null if not found anywhere.
    *
-   * @lucene.internal
    * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
    */
   public static Path getDefaultConfigDirPath() {
     String confDir =
-        System.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE);
+        EnvUtils.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE);
     if (confDir != null) {
-      Path path = Path.of(confDir);
+      Path path = resolvePathWithSolrInstallDir(confDir);
       if (Files.exists(path)) {
         return path;
       }
     }
 
-    String installDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    String installDir = EnvUtils.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
     if (installDir != null) {
+      Path installPath = resolvePathWithSolrInstallDir(installDir);
       Path subPath = Path.of("server", "solr", "configsets", "_default", "conf");
-      Path path = Path.of(installDir).resolve(subPath);
+      Path path = installPath.resolve(subPath);
       if (Files.exists(path)) {
         return path;
       }
     }
 
     return null;
+  }
+
+  /**
+   * Resolves a path string into a Path object, handling both absolute and relative paths. If the
+   * path is relative then it resolves it against Solr installation directory by looking up the
+   * solr.install.dir system property.
+   *
+   * @param pathStr The path of the directory to resolve
+   * @return The resolved Path object
+   * @see SolrDispatchFilter#SOLR_INSTALL_DIR_ATTRIBUTE
+   */
+  public static Path resolvePathWithSolrInstallDir(String pathStr) {
+    Path path = Path.of(pathStr);
+
+    // Convert to absolute path if it's relative
+    if (!path.isAbsolute()) {
+      String installDir = EnvUtils.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+      path = Path.of(installDir).resolve(path).normalize();
+    }
+
+    return path;
   }
 
   // Order is important here since "confDir" may be
@@ -196,28 +211,6 @@ public abstract class ConfigSetService {
             Path.of(confDir, "solrconfig.xml").normalize().toAbsolutePath(),
             Path.of(confDir, "conf", "solrconfig.xml").normalize().toAbsolutePath(),
             Path.of(configSetDir, confDir, "conf", "solrconfig.xml").normalize().toAbsolutePath()));
-  }
-
-  /** If in SolrCloud mode, upload configSets for each SolrCore in solr.xml. */
-  public static void bootstrapConf(CoreContainer cc) throws IOException {
-    // List<String> allCoreNames = cfg.getAllCoreNames();
-    List<CoreDescriptor> cds = cc.getCoresLocator().discover(cc);
-
-    if (log.isInfoEnabled()) {
-      log.info(
-          "bootstrapping config for {} cores into ZooKeeper using solr.xml from {}",
-          cds.size(),
-          cc.getSolrHome());
-    }
-
-    for (CoreDescriptor cd : cds) {
-      String coreName = cd.getName();
-      String confName = cd.getCollectionName();
-      if (StrUtils.isNullOrEmpty(confName)) confName = coreName;
-      Path udir = cd.getInstanceDir().resolve("conf");
-      log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
-      cc.getConfigSetService().uploadConfig(confName, udir);
-    }
   }
 
   /**
