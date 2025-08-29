@@ -27,7 +27,7 @@ develocity {
     buildScan {
         uploadInBackground = !isCIBuild
 
-        publishing.onlyIf { true }
+        publishing.onlyIf { it.authenticated }
         obfuscation {
             ipAddresses { addresses -> addresses.collect { address -> "0.0.0.0"} }
         }
