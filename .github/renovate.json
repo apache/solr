@@ -95,7 +95,7 @@
     }
   ],
   "schedule": ["* * * * *"],
-  "prConcurrentLimit": 100,
-  "prHourlyLimit": 10,
+  "prConcurrentLimit": 300,
+  "prHourlyLimit": 20,
   "minimumReleaseAge": "5 days"
 }
