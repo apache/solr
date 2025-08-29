@@ -232,4 +232,41 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     assertEquals(4, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "3", "4", "1", "6");
   }
+
+  /**
+   * Tests the combined query feature with faceting and highlighting.
+   *
+   * @throws Exception if any unexpected error occurs during the test execution.
+   */
+  @Test
+  public void testQueriesWithFacetAndHighlights() throws Exception {
+    prepareIndexDocs();
+    QueryResponse rsp;
+    rsp =
+        queryServer(
+            createParams(
+                CommonParams.JSON,
+                "{\"queries\":"
+                    + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
+                    + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
+                    + "\"limit\":5,"
+                    + "\"fields\":[\"id\",\"score\",\"title\"],"
+                    + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"nullfirst\","
+                    + "\"combiner.query\":[\"lexical1\",\"lexical2\"], \"hl\": true, \"hl.fl\": \"title\",\"hl.q\":\"test doc\"}}",
+                "shards",
+                getShardsString(),
+                CommonParams.QT,
+                "/search"));
+    assertEquals(5, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "2", "1", "4", "5", "8");
+    assertEquals("nullfirst", rsp.getFacetFields().getFirst().getName());
+    assertEquals("[1 (4), 0 (3), 2 (3)]", rsp.getFacetFields().getFirst().getValues().toString());
+    assertEquals(5, rsp.getHighlighting().size());
+    assertEquals(
+        "title <em>test</em> for <em>doc</em> 1",
+        rsp.getHighlighting().get("1").get("title").getFirst());
+    assertEquals(
+        "title <em>test</em> for <em>doc</em> 8",
+        rsp.getHighlighting().get("8").get("title").getFirst());
+  }
 }
