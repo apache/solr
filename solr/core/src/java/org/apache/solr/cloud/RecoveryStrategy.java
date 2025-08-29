@@ -229,9 +229,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     log.info("Attempting to replicate from core [{}] on node [{}].", leaderCore, leaderBaseUrl);
 
-    // send commit if replica could be a leader
+    // send commit if replica could be a leader and this collection is not in a read-only state
     if (replicaType.leaderEligible) {
-      commitOnLeader(leaderBaseUrl, leaderCore);
+      if (!zkController
+          .getClusterState()
+          .getCollection(coreDescriptor.getCollectionName())
+          .isReadOnly()) {
+        commitOnLeader(leaderBaseUrl, leaderCore);
+      }
     }
 
     // use rep handler directly, so we can do this sync rather than async

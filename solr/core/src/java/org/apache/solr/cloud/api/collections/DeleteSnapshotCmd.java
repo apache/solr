@@ -126,7 +126,7 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
 
           log.info(
               "Sending deletesnapshot request to core={} with commitName={}", coreName, commitName);
-          shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
+          shardRequestTracker.sendShardRequest(replica, params, shardHandler);
         }
       }
     }
