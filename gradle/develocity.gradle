@@ -25,7 +25,7 @@ develocity {
     projectId = "solr"
 
     buildScan {
-        //uploadInBackground = !isCIBuild
+        uploadInBackground = !isCIBuild
 
         publishing.onlyIf { true }
         obfuscation {
