@@ -41,7 +41,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 // Prometheus Exporter will be deprecated
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
 public class SolrStandaloneScraperBasicAuthTest extends SolrTestCaseJ4 {
 
   @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();

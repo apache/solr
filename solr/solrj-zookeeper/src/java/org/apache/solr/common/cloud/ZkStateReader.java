@@ -46,6 +46,7 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.common.AlreadyClosedException;
@@ -76,7 +77,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String BASE_URL_PROP = "base_url";
   public static final String NODE_NAME_PROP = "node_name";
   public static final String CORE_NODE_NAME_PROP = "core_node_name";
-  public static final String ROLES_PROP = "roles";
   public static final String STATE_PROP = "state";
   // if this flag equals to false and the replica does not exist in cluster state, set state op
   // become no op (default is true)
@@ -166,6 +166,12 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
   public static final String ELECTION_NODE = "election";
+
+  /** Live node JSON property keys. */
+  public static final String LIVE_NODE_SOLR_VERSION = "solrVersion";
+
+  public static final String LIVE_NODE_NODE_NAME = "nodeName";
+  public static final String LIVE_NODE_ROLES = "roles";
 
   /** "Interesting" but not actively watched Collections. */
   private final ConcurrentHashMap<String, LazyCollectionRef> lazyCollectionStates =
@@ -863,6 +869,41 @@ public class ZkStateReader implements SolrCloseable {
 
   public void removeLiveNodesListener(LiveNodesListener listener) {
     liveNodesListeners.remove(listener);
+  }
+
+  /**
+   * Returns the lowest Solr version among all live nodes in the cluster. It's not greater than
+   * {@link SolrVersion#LATEST_STRING}. Will not return null. If older Solr nodes have joined that
+   * don't declare their version, the result won't be accurate, but it's at least an upper bound on
+   * the possible version it might be.
+   *
+   * @return the lowest Solr version of the cluster; not null
+   */
+  public SolrVersion fetchLowestSolrVersion() throws KeeperException, InterruptedException {
+    List<String> liveNodeNames = zkClient.getChildren(LIVE_NODES_ZKNODE, null, true);
+    SolrVersion lowest = SolrVersion.LATEST; // current software
+    // the last version to not specify its version in live nodes
+    final SolrVersion UNSPECIFIED_VERSION = SolrVersion.valueOf("9.9.0");
+    for (String nodeName : liveNodeNames) {
+      String path = LIVE_NODES_ZKNODE + "/" + nodeName;
+      byte[] data = zkClient.getData(path, null, null, true);
+      if (data == null || data.length == 0) {
+        return UNSPECIFIED_VERSION;
+      }
+
+      @SuppressWarnings("unchecked")
+      Map<String, Object> props = (Map<String, Object>) Utils.fromJSON(data);
+      String nodeVersionStr = (String) props.get(LIVE_NODE_SOLR_VERSION);
+      if (nodeVersionStr == null) { // weird
+        log.warn("No Solr version found: {}", props);
+        return UNSPECIFIED_VERSION;
+      }
+      SolrVersion nodeVersion = SolrVersion.valueOf(nodeVersionStr);
+      if (nodeVersion.compareTo(lowest) < 0) {
+        lowest = nodeVersion;
+      }
+    }
+    return lowest;
   }
 
   /**

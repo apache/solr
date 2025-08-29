@@ -42,7 +42,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.VectorUtil;
 import org.apache.solr.client.api.util.SolrVersion;
@@ -73,7 +72,6 @@ public class CoreContainerProvider implements ServletContextListener {
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private CoreContainer cores;
   private Properties extraProperties;
-  private HttpClient httpClient;
   private SolrMetricManager metricManager;
   private RateLimitManager rateLimitManager;
   private OtelRuntimeJvmMetrics otelRuntimeJvmMetrics;
@@ -112,14 +110,6 @@ public class CoreContainerProvider implements ServletContextListener {
     return cores;
   }
 
-  /**
-   * @see SolrDispatchFilter#getHttpClient()
-   */
-  HttpClient getHttpClient() throws UnavailableException {
-    checkReady();
-    return httpClient;
-  }
-
   private void checkReady() throws UnavailableException {
     // TODO throw AlreadyClosedException instead?
     if (cores == null) {
@@ -153,7 +143,6 @@ public class CoreContainerProvider implements ServletContextListener {
     cores = null;
     if (otelRuntimeJvmMetrics != null) otelRuntimeJvmMetrics.close();
     if (cc != null) {
-      httpClient = null;
       cc.shutdown();
     }
     metricManager = null;
@@ -205,7 +194,6 @@ public class CoreContainerProvider implements ServletContextListener {
               });
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
-      this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
 
       SolrZkClient zkClient = null;
@@ -285,7 +273,7 @@ public class CoreContainerProvider implements ServletContextListener {
               "Solr typically starts with \"-XX:+CrashOnOutOfMemoryError\" that will crash on any OutOfMemoryError exception. "
                   + "Unable to get the specific file due to an exception."
                   + "The cause of the OOME will be logged in a crash file in the logs directory: %s",
-              System.getProperty("solr.log.dir"));
+              System.getProperty("solr.logs.dir"));
       log.info(logMessage, e);
     }
   }

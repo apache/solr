@@ -60,8 +60,6 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   private final org.apache.solr.response.ResultContext rctx;
   private final SolrDocumentFetcher docFetcher; // a collaborator of SolrIndexSearcher
   private final DocList docs;
-  private boolean doScore;
-  private boolean doMatchScore;
 
   private final DocTransformer transformer;
   private final DocIterator docIterator;

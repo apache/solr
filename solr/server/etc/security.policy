@@ -196,11 +196,11 @@ grant {
   permission java.io.FilePermission "${solr.data.home}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.data.home}${/}-", "read,write,delete,readlink";
 
-  permission java.io.FilePermission "${solr.default.confdir}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.default.confdir}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.configset.default.confdir}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.configset.default.confdir}${/}-", "read,write,delete,readlink";
 
-  permission java.io.FilePermission "${solr.log.dir}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.log.dir}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.logs.dir}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.logs.dir}${/}-", "read,write,delete,readlink";
 
   permission java.io.FilePermission "${solr.allowPaths}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.allowPaths}${/}-", "read,write,delete,readlink";
