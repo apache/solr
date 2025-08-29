@@ -1422,14 +1422,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
             }),
             OtelUnit.BYTES));
 
-    observables.add(
-        parentContext.observableLongGauge(
-            "solr_core_segment_count",
-            "Number of segments in a Solr core",
-            (observableLongMeasurement -> {
-              if (isReady())
-                observableLongMeasurement.record(getSegmentCount(), baseGaugeCoreAttributes);
-            })));
+    parentContext.observableLongGauge(
+        "solr_core_segments",
+        "Number of segments in a Solr core",
+        (observableLongMeasurement -> {
+          if (isReady())
+            observableLongMeasurement.record(getSegmentCount(), baseGaugeCoreAttributes);
+        }));
 
     // NOCOMMIT: Do we need these start_time metrics? I think at minimum it should be optional
     // otherwise we fall into metric bloat for something people may not care about.

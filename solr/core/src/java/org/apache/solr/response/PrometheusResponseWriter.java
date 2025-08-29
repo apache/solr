@@ -18,27 +18,14 @@ package org.apache.solr.response;
 
 import static org.apache.solr.handler.admin.MetricsHandler.OPEN_METRICS_WT;
 
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
-import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.prometheus.metrics.expositionformats.OpenMetricsTextFormatWriter;
 import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
-import io.prometheus.metrics.model.snapshots.CounterSnapshot;
-import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
-import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
-import io.prometheus.metrics.model.snapshots.InfoSnapshot;
-import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.request.SolrQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Response writer for Prometheus metrics. This is used only by the {@link MetricsHandler} */
 @SuppressWarnings(value = "unchecked")
@@ -49,23 +36,17 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
   private static final String CONTENT_TYPE_OPEN_METRICS =
       "application/openmetrics-text; version=1.0.0; charset=utf-8";
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   @Override
   public void write(
       OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException {
 
-    Map<String, PrometheusMetricReader> readers =
-        (Map<String, PrometheusMetricReader>) response.getValues().get("metrics");
-
-    List<MetricSnapshot> snapshots =
-        readers.values().stream().flatMap(r -> r.collect().stream()).toList();
-
+    var metrics = response.getValues().get("metrics");
+    MetricSnapshots snapshots = (MetricSnapshots) metrics;
     if (writeOpenMetricsFormat(request)) {
-      new OpenMetricsTextFormatWriter(false, true).write(out, mergeSnapshots(snapshots));
+      new OpenMetricsTextFormatWriter(false, true).write(out, snapshots);
     } else {
-      new PrometheusTextFormatWriter(false).write(out, mergeSnapshots(snapshots));
+      new PrometheusTextFormatWriter(false).write(out, snapshots);
     }
   }
 
@@ -91,91 +72,5 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
 
     return acceptHeader.contains("application/openmetrics-text")
         && (acceptHeader.contains("version=1.0.0"));
-  }
-
-  /**
-   * Merge a collection of individual {@link MetricSnapshot} instances into one {@link
-   * MetricSnapshots}. This is necessary because we create a {@link SdkMeterProvider} per Solr core
-   * resulting in duplicate metric names across cores which is an illegal format if not under the
-   * same prometheus grouping.
-   */
-  private MetricSnapshots mergeSnapshots(List<MetricSnapshot> snapshots) {
-    Map<String, CounterSnapshot.Builder> counterSnapshotMap = new HashMap<>();
-    Map<String, GaugeSnapshot.Builder> gaugeSnapshotMap = new HashMap<>();
-    Map<String, HistogramSnapshot.Builder> histogramSnapshotMap = new HashMap<>();
-    InfoSnapshot otelInfoSnapshots = null;
-
-    for (MetricSnapshot snapshot : snapshots) {
-      String metricName = snapshot.getMetadata().getPrometheusName();
-
-      switch (snapshot) {
-        case CounterSnapshot counterSnapshot -> {
-          CounterSnapshot.Builder builder =
-              counterSnapshotMap.computeIfAbsent(
-                  metricName,
-                  k -> {
-                    var base =
-                        CounterSnapshot.builder()
-                            .name(counterSnapshot.getMetadata().getName())
-                            .help(counterSnapshot.getMetadata().getHelp());
-                    return counterSnapshot.getMetadata().hasUnit()
-                        ? base.unit(counterSnapshot.getMetadata().getUnit())
-                        : base;
-                  });
-          counterSnapshot.getDataPoints().forEach(builder::dataPoint);
-        }
-        case GaugeSnapshot gaugeSnapshot -> {
-          GaugeSnapshot.Builder builder =
-              gaugeSnapshotMap.computeIfAbsent(
-                  metricName,
-                  k -> {
-                    var base =
-                        GaugeSnapshot.builder()
-                            .name(gaugeSnapshot.getMetadata().getName())
-                            .help(gaugeSnapshot.getMetadata().getHelp());
-                    return gaugeSnapshot.getMetadata().hasUnit()
-                        ? base.unit(gaugeSnapshot.getMetadata().getUnit())
-                        : base;
-                  });
-          gaugeSnapshot.getDataPoints().forEach(builder::dataPoint);
-        }
-        case HistogramSnapshot histogramSnapshot -> {
-          HistogramSnapshot.Builder builder =
-              histogramSnapshotMap.computeIfAbsent(
-                  metricName,
-                  k -> {
-                    var base =
-                        HistogramSnapshot.builder()
-                            .name(histogramSnapshot.getMetadata().getName())
-                            .help(histogramSnapshot.getMetadata().getHelp());
-                    return histogramSnapshot.getMetadata().hasUnit()
-                        ? base.unit(histogramSnapshot.getMetadata().getUnit())
-                        : base;
-                  });
-          histogramSnapshot.getDataPoints().forEach(builder::dataPoint);
-        }
-        case InfoSnapshot infoSnapshot -> {
-          // InfoSnapshot is a special case in that each SdkMeterProvider will create a duplicate
-          // metric called target_info containing OTEL SDK metadata. Only one of these need to be
-          // kept
-          if (otelInfoSnapshots == null)
-            otelInfoSnapshots =
-                new InfoSnapshot(infoSnapshot.getMetadata(), infoSnapshot.getDataPoints());
-        }
-        default -> {
-          log.warn(
-              "Unexpected snapshot type: {} for metric {}",
-              snapshot.getClass().getName(),
-              snapshot.getMetadata().getName());
-        }
-      }
-    }
-
-    MetricSnapshots.Builder snapshotsBuilder = MetricSnapshots.builder();
-    counterSnapshotMap.values().forEach(b -> snapshotsBuilder.metricSnapshot(b.build()));
-    gaugeSnapshotMap.values().forEach(b -> snapshotsBuilder.metricSnapshot(b.build()));
-    histogramSnapshotMap.values().forEach(b -> snapshotsBuilder.metricSnapshot(b.build()));
-    if (otelInfoSnapshots != null) snapshotsBuilder.metricSnapshot(otelInfoSnapshots);
-    return snapshotsBuilder.build();
   }
 }
