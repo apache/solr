@@ -227,7 +227,8 @@ public class ZkControllerTest extends SolrCloudTestCase {
     try {
       server.run();
       CoreContainer cc = getCoreContainer();
-      CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
+      CloudConfig cloudConfig =
+          new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "/solr").build();
 
       ZkController zkController = new ZkController(cc, server.getZkAddress(), 10000, cloudConfig);
 
