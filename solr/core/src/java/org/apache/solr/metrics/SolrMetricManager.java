@@ -1080,6 +1080,7 @@ public class SolrMetricManager {
         context, registry, new GaugeWrapper<>(gauge, tag), strategy, metricName, metricPath);
   }
 
+  // NOCOMMIT: No longer need
   public int unregisterGauges(String registryName, String tagSegment) {
     if (tagSegment == null) {
       return 0;
