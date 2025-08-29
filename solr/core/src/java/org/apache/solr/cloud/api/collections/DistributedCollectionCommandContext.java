@@ -27,15 +27,12 @@ import org.apache.solr.handler.component.ShardHandler;
 
 public class DistributedCollectionCommandContext implements CollectionCommandContext {
   private final CoreContainer coreContainer;
-  private final DistributedClusterStateUpdater distributedClusterStateUpdater;
   private final ExecutorService executorService;
 
   public DistributedCollectionCommandContext(
       CoreContainer coreContainer, ExecutorService executorService) {
     // note: coreContainer.getZkController() is not yet instantiated; don't call it right now
     this.coreContainer = coreContainer;
-    // Get the distributed cluster state updater from ZkController now that it's initialized properly
-    this.distributedClusterStateUpdater = coreContainer.getZkController().getDistributedClusterStateUpdater();
     this.executorService = executorService;
   }
 
@@ -68,7 +65,7 @@ public class DistributedCollectionCommandContext implements CollectionCommandCon
 
   @Override
   public DistributedClusterStateUpdater getDistributedClusterStateUpdater() {
-    return distributedClusterStateUpdater;
+    return this.coreContainer.getZkController().getDistributedClusterStateUpdater();
   }
 
   @Override

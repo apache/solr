@@ -383,7 +383,7 @@ public class ZkController implements Closeable {
             });
 
     // Now that zkStateReader is available, read the overseer enabled setting
-    // When overseerEnabled is false, both distributed features should be enabled  
+    // When overseerEnabled is false, both distributed features should be enabled
     Object clusterProperty = zkStateReader.getClusterProperty(ZkStateReader.OVERSEER_ENABLED, null);
     boolean overseerEnabled;
     if (clusterProperty != null) {
@@ -393,8 +393,8 @@ public class ZkController implements Closeable {
     }
     boolean useDistributedUpdates = !overseerEnabled;
     boolean useDistributedCommandRunner = !overseerEnabled;
-    
-    distributedClusterStateUpdater = new DistributedClusterStateUpdater(useDistributedUpdates);
+
+    this.distributedClusterStateUpdater = new DistributedClusterStateUpdater(useDistributedUpdates);
 
     // Initialize the distributed command runner now that we have the cluster properties
     this.distributedCommandRunner =

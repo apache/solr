@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -53,6 +52,4 @@ public class TestClusterProperties extends SolrCloudTestCase {
     CollectionAdminRequest.setClusterProperty(propertyName, "valueA")
         .process(cluster.getSolrClient());
   }
-
-
 }

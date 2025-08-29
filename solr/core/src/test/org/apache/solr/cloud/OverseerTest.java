@@ -208,7 +208,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
               "");
       final Overseer overseer = MiniSolrCloudCluster.getOpenOverseer(overseers);
       // This being an Overseer test, we force it to use the Overseer based cluster state update.
-      // Look for "new Overseer" calls in this class.
       assertFalse(overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate());
       ZkDistributedQueue q = overseer.getStateUpdateQueue();
       q.offer(m);
@@ -1024,8 +1023,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
               "/admin/cores",
               reader,
               zkController,
-              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983)
-                  .build());
+              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build());
       overseers.add(overseer);
       ElectionContext ec =
           new OverseerElectionContext(zkClient, overseer, server.getZkAddress().replace("/", "_"));
@@ -1838,12 +1836,12 @@ public class OverseerTest extends SolrTestCaseJ4 {
     httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
     httpShardHandlerFactorys.add(httpShardHandlerFactory);
 
-    ZkController zkController = createMockZkController(address, null, reader);
-    zkControllers.add(zkController);
-    
     // Set system property to ensure tests use Overseer mode
     System.setProperty("solr.cloud.overseer.enabled", "true");
-    
+
+    ZkController zkController = createMockZkController(address, null, reader);
+    zkControllers.add(zkController);
+
     // Create an Overseer with associated configuration to NOT USE distributed state update. Tests
     // in this class really test the Overseer.
     Overseer overseer =
@@ -1853,8 +1851,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             "/admin/cores",
             reader,
             zkController,
-            new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983)
-                .build());
+            new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build());
     overseers.add(overseer);
     ElectionContext ec = new OverseerElectionContext(zkClient, overseer, address.replace("/", "_"));
     overseerElector.setup(ec);
@@ -1914,6 +1911,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
     when(zkController.getCoreContainer()).thenReturn(mockAlwaysUpCoreContainer);
     when(zkController.getZkClient()).thenReturn(zkClient);
     when(zkController.getZkStateReader()).thenReturn(reader);
+    when(zkController.getDistributedClusterStateUpdater())
+        .thenReturn(new DistributedClusterStateUpdater(false));
     // primitive support for CC.runAsync
     doAnswer(
             invocable -> {
