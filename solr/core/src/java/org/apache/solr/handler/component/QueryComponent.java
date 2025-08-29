@@ -922,14 +922,17 @@ public class QueryComponent extends SearchComponent {
       queue = new ShardFieldSortedHitQueue(sortFields, size, searcher);
     }
 
+    @Override
     public void push(ShardDoc shardDoc) {
       queue.insertWithOverflow(shardDoc);
     }
 
+    @Override
     public ShardDoc pop() {
       return queue.pop();
     }
 
+    @Override
     public int size() {
       return queue.size();
     }
