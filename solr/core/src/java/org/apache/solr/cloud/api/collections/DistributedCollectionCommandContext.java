@@ -69,11 +69,12 @@ public class DistributedCollectionCommandContext implements CollectionCommandCon
     if (distributedClusterStateUpdater == null) {
       synchronized (this) {
         if (distributedClusterStateUpdater == null) {
-          // Read distributed cluster state updates setting from cluster properties
-          boolean useDistributedUpdates = false;
+          // Read overseer enabled setting from cluster properties 
+          // When overseerEnabled is false, distributed updates should be enabled
+          boolean useDistributedUpdates = true; // default if zkController not available yet
           if (coreContainer.getZkController() != null) {
-            useDistributedUpdates = coreContainer.getZkController().getZkStateReader()
-                .getClusterProperty(ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES, false);
+            useDistributedUpdates = !"true".equals(String.valueOf(coreContainer.getZkController().getZkStateReader()
+                .getClusterProperty(ZkStateReader.OVERSEER_ENABLED, "true")));
           }
           distributedClusterStateUpdater = new DistributedClusterStateUpdater(useDistributedUpdates);
         }

@@ -306,11 +306,6 @@ public class ZkController implements Closeable {
 
     this.cloudConfig = cloudConfig;
 
-    // Use the configured way to do cluster state update (Overseer queue vs distributed)
-    // Initialize with default value first, will be updated after zkStateReader is available
-    distributedClusterStateUpdater =
-        new DistributedClusterStateUpdater(false);
-
     this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
 
     this.zkServerAddress = zkServerAddress;
@@ -386,15 +381,11 @@ public class ZkController implements Closeable {
               if (cc != null) cc.securityNodeChanged();
             });
 
-    // Now that zkStateReader is available, update the distributed cluster state updater with the actual setting
-    boolean useDistributedUpdates = zkStateReader.getClusterProperty(ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES, false);
-    boolean useDistributedConfigSet = zkStateReader.getClusterProperty(ZkStateReader.DISTRIBUTED_COLLECTION_CONFIG_SET_EXECUTION, false);
-    
-    // Validate cluster properties
-    if (useDistributedConfigSet && !useDistributedUpdates) {
-      log.warn("Cluster property '{}' is true but '{}' is false. Distributed collection config set execution requires distributed cluster state updates to be enabled.",
-               ZkStateReader.DISTRIBUTED_COLLECTION_CONFIG_SET_EXECUTION, ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES);
-    }
+    // Now that zkStateReader is available, read the overseer enabled setting
+    // When overseerEnabled is false, both distributed features should be enabled  
+    boolean overseerEnabled = "true".equals(String.valueOf(zkStateReader.getClusterProperty(ZkStateReader.OVERSEER_ENABLED, "true")));
+    boolean useDistributedUpdates = !overseerEnabled;
+    boolean useDistributedConfigSet = !overseerEnabled;
     
     distributedClusterStateUpdater = new DistributedClusterStateUpdater(useDistributedUpdates);
 

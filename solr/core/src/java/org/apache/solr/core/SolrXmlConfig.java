@@ -570,6 +570,14 @@ public class SolrXmlConfig {
         case "stateCompressor":
           builder.setStateCompressorClass(value);
           break;
+        case "distributedClusterStateUpdates":
+          log.warn("The 'distributedClusterStateUpdates' parameter in solr.xml is deprecated. " +
+                   "Use the 'overseerEnabled' cluster property instead. This setting will be ignored.");
+          break;
+        case "distributedCollectionConfigSetExecution":
+          log.warn("The 'distributedCollectionConfigSetExecution' parameter in solr.xml is deprecated. " +
+                   "Use the 'overseerEnabled' cluster property instead. This setting will be ignored.");
+          break;
         default:
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,

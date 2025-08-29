@@ -55,28 +55,16 @@ public class TestClusterProperties extends SolrCloudTestCase {
   }
 
   @Test
-  public void testDistributedClusterStateUpdatesProperty() throws Exception {
-    // Test setting and getting the distributed cluster state updates property
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES, "true")
+  public void testOverseerEnabledProperty() throws Exception {
+    // Test setting and getting the overseer enabled property
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.OVERSEER_ENABLED, "false")
         .process(cluster.getSolrClient());
-    assertEquals(Boolean.TRUE, props.getClusterProperty(ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES, false));
+    // When property is set as string, it returns as string
+    assertEquals("false", props.getClusterProperty(ZkStateReader.OVERSEER_ENABLED, "true"));
 
-    // Test default value
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES, null)
+    // Test default value when property is removed (should return the default)
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.OVERSEER_ENABLED, null)
         .process(cluster.getSolrClient());
-    assertEquals(Boolean.FALSE, props.getClusterProperty(ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES, false));
-  }
-
-  @Test
-  public void testDistributedCollectionConfigSetExecutionProperty() throws Exception {
-    // Test setting and getting the distributed collection config set execution property
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.DISTRIBUTED_COLLECTION_CONFIG_SET_EXECUTION, "true")
-        .process(cluster.getSolrClient());
-    assertEquals(Boolean.TRUE, props.getClusterProperty(ZkStateReader.DISTRIBUTED_COLLECTION_CONFIG_SET_EXECUTION, false));
-
-    // Test default value
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.DISTRIBUTED_COLLECTION_CONFIG_SET_EXECUTION, null)
-        .process(cluster.getSolrClient());
-    assertEquals(Boolean.FALSE, props.getClusterProperty(ZkStateReader.DISTRIBUTED_COLLECTION_CONFIG_SET_EXECUTION, false));
+    assertEquals("true", props.getClusterProperty(ZkStateReader.OVERSEER_ENABLED, "true"));
   }
 }
