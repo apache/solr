@@ -38,11 +38,11 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.ConfigSetApiLockFactory;
 import org.apache.solr.cloud.ConfigSetCmds;
+import org.apache.solr.cloud.CuratorDistributedCollectionLockFactory;
+import org.apache.solr.cloud.CuratorDistributedConfigSetLockFactory;
 import org.apache.solr.cloud.DistributedApiAsyncTracker;
 import org.apache.solr.cloud.DistributedMultiLock;
 import org.apache.solr.cloud.OverseerSolrResponse;
-import org.apache.solr.cloud.ZkDistributedCollectionLockFactory;
-import org.apache.solr.cloud.ZkDistributedConfigSetLockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -404,8 +404,9 @@ public class DistributedCollectionConfigSetCommandRunner {
         // below
         DistributedMultiLock lock =
             new CollectionApiLockFactory(
-                    new ZkDistributedCollectionLockFactory(
-                        ccc.getZkStateReader().getZkClient(), ZK_COLLECTION_LOCKS))
+                    new CuratorDistributedCollectionLockFactory(
+                        ccc.getZkStateReader().getZkClient().getCuratorFramework(),
+                        ZK_COLLECTION_LOCKS))
                 .createCollectionApiLock(action.lockLevel, collName, shardId, replicaName);
 
         try {
@@ -498,8 +499,9 @@ public class DistributedCollectionConfigSetCommandRunner {
       // After this call, we MUST execute the lock.release(); in the finally below
       DistributedMultiLock lock =
           new ConfigSetApiLockFactory(
-                  new ZkDistributedConfigSetLockFactory(
-                      ccc.getZkStateReader().getZkClient(), ZK_CONFIG_SET_LOCKS))
+                  new CuratorDistributedConfigSetLockFactory(
+                      ccc.getZkStateReader().getZkClient().getCuratorFramework(),
+                      ZK_CONFIG_SET_LOCKS))
               .createConfigSetApiLock(configSetName, baseConfigSetName);
 
       try {
