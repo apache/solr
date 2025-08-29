@@ -25,9 +25,9 @@ develocity {
     projectId = "solr"
 
     buildScan {
-        uploadInBackground = !isCIBuild
+        //uploadInBackground = !isCIBuild
 
-        publishing.onlyIf { it.authenticated }
+        publishing.onlyIf { true }
         obfuscation {
             ipAddresses { addresses -> addresses.collect { address -> "0.0.0.0"} }
         }
