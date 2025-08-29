@@ -117,11 +117,6 @@ public abstract class ConfigSetService {
   }
 
   private void bootstrapConfDir(String confDir) throws IOException {
-    if (!confDir.endsWith("conf")) {
-      throw new IllegalArgumentException(
-          "solr.configset.bootstrap.confdir must point to 'conf' directory, confDir: " + confDir);
-    }
-
     Path configPath = resolvePathWithSolrInstallDir(confDir);
 
     if (!Files.isDirectory(configPath)) {
