@@ -224,6 +224,8 @@ Improvements
 ---------------------
 * SOLR-17860: DocBasedVersionConstraintsProcessorFactory now supports PULL replicas. (Houston Putman)
 
+* SOLR-17883: SolrCLI tools such as "bin/solr zk" can now access jars located in `<install_dir>/lib`.
+
 Optimizations
 ---------------------
 (No changes)
