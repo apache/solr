@@ -18,11 +18,12 @@
 package org.apache.solr.ui.components.configsets.integration
 
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
+import org.apache.solr.ui.components.configsets.data.Configset
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore
 
 internal val configsetsStateToModel: (ConfigsetsStore.State) -> ConfigsetsComponent.Model = {
     ConfigsetsComponent.Model(
-        configSets = it.configSets,
+        configsets = it.configSets.configSets.map { s -> Configset(s) },
         selectedConfigset = it.selectedConfigset,
         selectedTab = it.selectedTab,
     )

@@ -14,14 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ui.views.configsets
+package org.apache.solr.ui.components.configsets.overview
 
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import org.apache.solr.ui.components.configsets.overview.OverviewComponent
-
-@Composable
-fun OverviewContent(component: OverviewComponent, modifier: Modifier = Modifier) {
-    Text("Overview section")
-}
+interface ConfigsetsOverviewComponent

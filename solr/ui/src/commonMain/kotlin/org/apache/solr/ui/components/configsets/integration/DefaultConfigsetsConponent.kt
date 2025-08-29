@@ -30,9 +30,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.Serializable
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
-import org.apache.solr.ui.components.configsets.overview.OverviewComponent
-import org.apache.solr.ui.components.configsets.overview.integration.DefaultOverviewComponent
-import org.apache.solr.ui.components.configsets.store.ConfigsetsStore
+import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
+import org.apache.solr.ui.components.configsets.overview.integration.DefaultConfigsetsOverviewComponent
+import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStoreProvider
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.coroutineScope
@@ -47,7 +47,7 @@ class DefaultConfigsetsConponent internal constructor(
     storeFactory: StoreFactory,
     httpClient: HttpClient,
     destination: String? = null,
-    private val overviewComponent: (AppComponentContext) -> OverviewComponent,
+    private val overviewComponent: (AppComponentContext) -> ConfigsetsOverviewComponent,
 ) : ConfigsetsComponent,
     AppComponentContext by componentContext {
 
@@ -71,7 +71,7 @@ class DefaultConfigsetsConponent internal constructor(
         httpClient = httpClient,
         destination = null,
         overviewComponent = { childContext ->
-            DefaultOverviewComponent(
+            DefaultConfigsetsOverviewComponent(
                 componentContext = childContext,
                 storeFactory = storeFactory,
                 httpClient = httpClient,
@@ -108,7 +108,7 @@ class DefaultConfigsetsConponent internal constructor(
     private val store = instanceKeeper.getStore {
         ConfigsetsStoreProvider(
             storeFactory = storeFactory,
-            client = HttpEnvironmentStoreClient(httpClient),
+            client = HttpConfigsetsStoreClient(httpClient),
             mainContext = mainScope.coroutineContext,
             ioContext = ioScope.coroutineContext,
         ).provide()
@@ -118,10 +118,10 @@ class DefaultConfigsetsConponent internal constructor(
     override val model = store.stateFlow.map(mainScope, configsetsStateToModel)
 
     override fun onSelectTab(tab: ConfigsetsTab) {
-        store.accept(ConfigsetsStore.Intent.SelectTab(tab))
+        store.accept(Intent.SelectTab(tab))
     }
 
     override fun onSelectConfigset(name: String) {
-        store.accept(ConfigsetsStore.Intent.SelectConfigSet(name))
+        store.accept(Intent.SelectConfigSet(name))
     }
 }

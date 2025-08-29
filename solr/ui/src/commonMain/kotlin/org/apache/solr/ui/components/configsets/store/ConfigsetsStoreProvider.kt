@@ -74,7 +74,6 @@ internal class ConfigsetsStoreProvider(
             }
         }
         override fun executeIntent(intent: Intent) = when (intent) {
-            is Intent.FetchConfigSets -> fetchConfigSets()
             is Intent.SelectTab -> dispatch(Message.SelectedTabChanged(intent.tab))
             is Intent.SelectConfigSet -> dispatch(Message.SelectedConfigSetChanged(intent.configSetName))
         }
