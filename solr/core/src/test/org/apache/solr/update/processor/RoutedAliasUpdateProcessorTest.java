@@ -205,8 +205,10 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         String nodeName = jettySolrRunner.getNodeName();
         String collectionName = core.getCollectionName();
         DocCollection collectionOrNull = clusterState.getCollectionOrNull(collectionName);
-        List<Replica> leaderReplicas = collectionOrNull.getLeaderReplicas(nodeName);
-        if (leaderReplicas != null) {
+        if (collectionOrNull != null) {
+          List<Replica> replicas = collectionOrNull.getReplicasOnNode(nodeName);
+          assertNotNull(replicas);
+          List<Replica> leaderReplicas = replicas.stream().filter(Replica::isLeader).toList();
           for (Replica leaderReplica : leaderReplicas) {
             leaders.add(leaderReplica.getCoreName());
           }
