@@ -26,6 +26,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -33,8 +34,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.http.NoHttpResponseException;
-import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
@@ -365,9 +364,7 @@ public class PeerSync implements SolrMetricProducer {
         boolean connectTimeoutExceptionInChain =
             connectTimeoutExceptionInChain(srsp.getException());
         if (connectTimeoutExceptionInChain
-            || solrException instanceof ConnectTimeoutException
             || solrException instanceof SocketTimeoutException
-            || solrException instanceof NoHttpResponseException
             || solrException instanceof SocketException) {
 
           log.warn(
@@ -427,7 +424,7 @@ public class PeerSync implements SolrMetricProducer {
   private boolean connectTimeoutExceptionInChain(Throwable exception) {
     Throwable t = exception;
     while (true) {
-      if (t instanceof ConnectTimeoutException) {
+      if (t instanceof ConnectException) { // note: Apache HttpClient used "ConnectTimeoutException"
         return true;
       }
       Throwable cause = t.getCause();

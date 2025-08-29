@@ -37,8 +37,6 @@ dependencies {
   implementation libs.bc.jose4j
 
   implementation libs.dropwizard.metrics.core
-  implementation libs.apache.httpcomponents.httpclient
-  implementation libs.apache.httpcomponents.httpcore
   implementation libs.eclipse.jetty.client
   implementation libs.eclipse.jetty.http
   implementation libs.eclipse.jetty.toolchain.servletapi
@@ -68,4 +66,6 @@ dependencies {
   testImplementation libs.squareup.okhttp3.mockwebserver
   testImplementation libs.squareup.okhttp3.okhttp
   testRuntimeOnly libs.netty.codechttp
+  testImplementation libs.apache.httpcomponents.httpclient
+  testImplementation libs.apache.httpcomponents.httpcore
 }

@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -154,18 +153,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
         response.sendError(401, "Unauthorized request");
         return false;
       }
-    }
-
-    @Override
-    public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder httpClientBuilder) {
-      interceptor =
-          (req, rsp) -> {
-            req.addHeader("username", requestUsername);
-            req.addHeader("password", requestPassword);
-          };
-
-      HttpClientUtil.addRequestInterceptor(interceptor);
-      return httpClientBuilder;
     }
 
     @Override

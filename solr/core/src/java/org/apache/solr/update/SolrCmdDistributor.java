@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
@@ -584,9 +583,7 @@ public class SolrCmdDistributor implements Closeable {
      * @return true if Solr should retry in case of hitting this exception false otherwise
      */
     private boolean isRetriableException(Throwable t) {
-      return t instanceof SocketException
-          || t instanceof NoHttpResponseException
-          || t instanceof SocketTimeoutException;
+      return t instanceof SocketException || t instanceof SocketTimeoutException;
     }
 
     @Override

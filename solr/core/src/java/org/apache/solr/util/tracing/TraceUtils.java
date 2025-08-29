@@ -30,7 +30,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import org.apache.http.HttpRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.eclipse.jetty.client.Request;
 
@@ -152,14 +151,6 @@ public class TraceUtils {
   public static void injectTraceContext(Request req) {
     TextMapPropagator textMapPropagator = getTextMapPropagator();
     textMapPropagator.inject(Context.current(), req, REQUEST_INJECTOR);
-  }
-
-  private static final TextMapSetter<HttpRequest> HTTP_REQUEST_INJECTOR =
-      (req, k, v) -> req.setHeader(k, v);
-
-  public static void injectTraceContext(HttpRequest req) {
-    TextMapPropagator textMapPropagator = getTextMapPropagator();
-    textMapPropagator.inject(Context.current(), req, HTTP_REQUEST_INJECTOR);
   }
 
   public static Span startHttpRequestSpan(HttpServletRequest request, Context context) {
