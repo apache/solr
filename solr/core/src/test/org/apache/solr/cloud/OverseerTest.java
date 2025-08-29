@@ -60,7 +60,6 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -999,8 +998,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
 
-      // Set overseerEnabled=true to ensure tests use Overseer mode
-      new ClusterProperties(zkClient).setClusterProperties(Map.of(ZkStateReader.OVERSEER_ENABLED, "true"));
+      // Set system property to ensure tests use Overseer mode
+      System.setProperty("solr.cloud.overseer.enabled", "true");
 
       mockController =
           new MockZKController(server.getZkAddress(), "127.0.0.1:8983_solr", overseers);
@@ -1842,12 +1841,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
     ZkController zkController = createMockZkController(address, null, reader);
     zkControllers.add(zkController);
     
-    // Set overseerEnabled=true to ensure tests use Overseer mode
-    try {
-      new ClusterProperties(zkClient).setClusterProperties(Map.of(ZkStateReader.OVERSEER_ENABLED, "true"));
-    } catch (Exception e) {
-      // Cluster properties may already be set
-    }
+    // Set system property to ensure tests use Overseer mode
+    System.setProperty("solr.cloud.overseer.enabled", "true");
     
     // Create an Overseer with associated configuration to NOT USE distributed state update. Tests
     // in this class really test the Overseer.
