@@ -1127,16 +1127,18 @@ public class MiniSolrCloudCluster {
      * update strategy to be either Overseer based or distributed. <b>This method can be useful when
      * debugging tests</b> failing in only one of the two modes to have all local runs exhibit the
      * issue, as well obviously for tests that are not compatible with one of the two modes.
+     * Alternatively, a system property can be used in lieu of this method.
      *
-     * <p>If this method is not called, the strategy being used will default to Overseer mode
-     * (overseerEnabled=true) unless explicitly configured (cluster property or sys prop).
+     * <p>If this method is not called nor set via system property, the strategy being used will
+     * default to Overseer mode (overseerEnabled=true). However, note {@link SolrCloudTestCase}
+     * (above this) randomly chooses the mode.
      *
      * <p>For tests that need to explicitly test distributed vs Overseer behavior, use this method
      * to control which mode is used. The cluster property 'overseerEnabled' will be set
      * accordingly.
      *
-     * @param overseerEnabled When {@code true}, Collection and Config Set API commands are executed
-     *     in a distributed way by nodes. When {@code false}, they are executed by Overseer.
+     * @param overseerEnabled When {@code false}, Collection and Config Set API commands are
+     *     executed in a distributed way by nodes. When {@code true}, they are executed by Overseer.
      */
     public Builder withOverseer(boolean overseerEnabled) {
       this.overseerEnabled = overseerEnabled;
