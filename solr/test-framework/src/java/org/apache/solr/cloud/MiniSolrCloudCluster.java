@@ -141,8 +141,6 @@ public class MiniSolrCloudCluster {
               ? PRE_GENERATED_PUBLIC_KEY_URL.toExternalForm()
               : "")
           + "}</str> \n"
-          + "    <str name=\"distributedClusterStateUpdates\">${solr.distributedClusterStateUpdates:false}</str> \n"
-          + "    <str name=\"distributedCollectionConfigSetExecution\">${solr.distributedCollectionConfigSetExecution:false}</str> \n"
           + "  </solrcloud>\n"
           +
           // NOTE: this turns off the metrics collection unless overridden by a sysprop
@@ -1134,24 +1132,12 @@ public class MiniSolrCloudCluster {
      * debugging tests</b> failing in only one of the two modes to have all local runs exhibit the
      * issue, as well obviously for tests that are not compatible with one of the two modes.
      *
-     * <p>If this method is not called, the strategy being used will be random if the configuration
-     * passed to the cluster ({@code solr.xml} equivalent) contains a placeholder similar to:
+     * <p>If this method is not called, the strategy being used will default to Overseer mode
+     * (overseerEnabled=true) unless explicitly configured via cluster properties.
      *
-     * <pre>{@code
-     * <solrcloud>
-     *   ....
-     *   <str name="distributedClusterStateUpdates">${solr.distributedClusterStateUpdates:false}</str>
-     *   <str name="distributedCollectionConfigSetExecution">${solr.distributedCollectionConfigSetExecution:false}</str>
-     *   ....
-     * </solrcloud>
-     * }</pre>
-     *
-     * For an example of a configuration supporting this setting, see {@link
-     * MiniSolrCloudCluster#DEFAULT_CLOUD_SOLR_XML}. When a test sets a different {@code solr.xml}
-     * config (using {@link #withSolrXml}), if the config does not contain the placeholder, the
-     * strategy will be defined by the values assigned to {@code useDistributedClusterStateUpdates}
-     * and {@code useDistributedCollectionConfigSetExecution} in {@link
-     * org.apache.solr.core.CloudConfig.CloudConfigBuilder}.
+     * <p>For tests that need to explicitly test distributed vs Overseer behavior, use this method
+     * to control which mode is used. The cluster property 'overseerEnabled' will be set
+     * accordingly.
      *
      * @param distributedCollectionConfigSetApi When {@code true}, Collection and Config Set API
      *     commands are executed in a distributed way by nodes. When {@code false}, they are
@@ -1213,16 +1199,10 @@ public class MiniSolrCloudCluster {
       // Hard coding values here will impact such tests.
       // To hard code behavior for tests not having these placeholders - and for SolrCloud as well
       // for that matter! -
-      // change the values assigned to useDistributedClusterStateUpdates and
-      // useDistributedCollectionConfigSetExecution in
-      // org.apache.solr.core.CloudConfig.CloudConfigBuilder. Do not forget then to revert before
-      // commit!
-      System.setProperty(
-          "solr.distributedCollectionConfigSetExecution",
-          Boolean.toString(useDistributedCollectionConfigSetExecution));
-      System.setProperty(
-          "solr.distributedClusterStateUpdates",
-          Boolean.toString(useDistributedClusterStateUpdate));
+      // Set overseerEnabled cluster property based on distributed mode settings
+      // When distributed mode is enabled, overseer should be disabled
+      boolean overseerEnabled = !useDistributedClusterStateUpdate;
+      this.clusterProperties.put("overseerEnabled", Boolean.toString(overseerEnabled));
 
       // eager init to prevent OTEL init races caused by test setup
       if (!disableTraceIdGeneration && TracerConfigurator.TRACE_ID_GEN_ENABLED) {

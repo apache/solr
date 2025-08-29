@@ -102,6 +102,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Compressor;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -383,15 +384,21 @@ public class ZkController implements Closeable {
 
     // Now that zkStateReader is available, read the overseer enabled setting
     // When overseerEnabled is false, both distributed features should be enabled  
-    boolean overseerEnabled = "true".equals(String.valueOf(zkStateReader.getClusterProperty(ZkStateReader.OVERSEER_ENABLED, "true")));
+    Object clusterProperty = zkStateReader.getClusterProperty(ZkStateReader.OVERSEER_ENABLED, null);
+    boolean overseerEnabled;
+    if (clusterProperty != null) {
+      overseerEnabled = "true".equals(String.valueOf(clusterProperty));
+    } else {
+      overseerEnabled = EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
+    }
     boolean useDistributedUpdates = !overseerEnabled;
-    boolean useDistributedConfigSet = !overseerEnabled;
+    boolean useDistributedCommandRunner = !overseerEnabled;
     
     distributedClusterStateUpdater = new DistributedClusterStateUpdater(useDistributedUpdates);
 
     // Initialize the distributed command runner now that we have the cluster properties
     this.distributedCommandRunner =
-        useDistributedConfigSet
+        useDistributedCommandRunner
             ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
             : Optional.empty();
 

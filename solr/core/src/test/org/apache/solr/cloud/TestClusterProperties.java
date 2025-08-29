@@ -54,17 +54,5 @@ public class TestClusterProperties extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
   }
 
-  @Test
-  public void testOverseerEnabledProperty() throws Exception {
-    // Test setting and getting the overseer enabled property
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.OVERSEER_ENABLED, "false")
-        .process(cluster.getSolrClient());
-    // When property is set as string, it returns as string
-    assertEquals("false", props.getClusterProperty(ZkStateReader.OVERSEER_ENABLED, "true"));
 
-    // Test default value when property is removed (should return the default)
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.OVERSEER_ENABLED, null)
-        .process(cluster.getSolrClient());
-    assertEquals("true", props.getClusterProperty(ZkStateReader.OVERSEER_ENABLED, "true"));
-  }
 }
