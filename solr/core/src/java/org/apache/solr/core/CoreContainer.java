@@ -137,7 +137,6 @@ import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.jersey.JerseyAppHandlerCache;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -249,9 +248,7 @@ public class CoreContainer {
 
   private volatile HttpSolrClientProvider solrClientProvider;
 
-  private volatile ExecutorService coreContainerWorkExecutor =
-      ExecutorUtil.newMDCAwareCachedThreadPool(
-          new SolrNamedThreadFactory("coreContainerWorkExecutor"));
+  private volatile ExecutorService coreLoadExecutor;
 
   private final OrderedExecutor<BytesRef> replayUpdatesExecutor;
 
@@ -851,17 +848,6 @@ public class CoreContainer {
         new SolrMetricsContext(
             metricManager, SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag);
 
-    // NOCOMMIT: Do we need this for OTEL or is this specific for reporters?
-    coreContainerWorkExecutor =
-        MetricUtils.instrumentedExecutorService(
-            coreContainerWorkExecutor,
-            null,
-            metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
-            SolrMetricManager.mkName(
-                "coreContainerWorkExecutor",
-                SolrInfoBean.Category.CONTAINER.toString(),
-                "threadPool"));
-
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
     if (shardHandlerFactory instanceof SolrMetricProducer metricProducer) {
@@ -1131,7 +1117,7 @@ public class CoreContainer {
     }
 
     // setup executor to load cores in parallel
-    ExecutorService coreLoadExecutor =
+    coreLoadExecutor =
         MetricUtils.instrumentedExecutorService(
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
@@ -1201,11 +1187,9 @@ public class CoreContainer {
       backgroundCloser.start();
 
     } finally {
-      if (asyncSolrCoreLoad) {
-        coreContainerWorkExecutor.execute(
-            () -> ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor));
-      } else {
-        ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor);
+      coreLoadExecutor.shutdown(); // doesn't block
+      if (!asyncSolrCoreLoad) {
+        ExecutorUtil.awaitTerminationForever(coreLoadExecutor);
       }
     }
 
@@ -1395,7 +1379,7 @@ public class CoreContainer {
         zkSys.zkController.tryCancelAllElections();
       }
 
-      ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
+      ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor); // actually already shutdown
 
       // First wake up the closer thread, it'll terminate almost immediately since it checks
       // isShutDown.
@@ -1854,7 +1838,8 @@ public class CoreContainer {
         // this mostly happens when the core is deleted when this node is down
         // but it can also happen if connecting to the wrong zookeeper
         final boolean deleteUnknownCores =
-            Boolean.parseBoolean(System.getProperty("solr.deleteUnknownCores", "false"));
+            Boolean.parseBoolean(
+                System.getProperty("solr.cloud.startup.delete.unknown.cores.enabled", "false"));
         log.error(
             "SolrCore {} in {} is not in cluster state.{}",
             dcore.getName(),
@@ -2329,18 +2314,18 @@ public class CoreContainer {
     SolrIdentifierValidator.validateCoreName(toName);
     try (SolrCore core = getCore(name)) {
       if (core != null) {
-        String oldRegistryName = core.getCoreMetricManager().getRegistryName();
-        String newRegistryName = SolrCoreMetricManager.createRegistryName(core, toName);
-        metricManager.swapRegistries(oldRegistryName, newRegistryName);
         // The old coreDescriptor is obsolete, so remove it. registerCore will put it back.
         CoreDescriptor cd = core.getCoreDescriptor();
         solrCores.removeCoreDescriptor(cd);
         cd.setProperty("name", toName);
         solrCores.addCoreDescriptor(cd);
+        // Before setting the new name, delete the old metrics registry then reregister metrics
+        // under the new core name
+        metricManager.removeRegistry(core.getCoreMetricManager().getRegistryName());
         core.setName(toName);
+        core.getCoreMetricManager().reregisterCoreMetrics();
         registerCore(cd, core, true, false);
         SolrCore old = solrCores.remove(name);
-
         coresLocator.rename(this, old.getCoreDescriptor(), core.getCoreDescriptor());
       }
     }
@@ -2611,6 +2596,8 @@ public class CoreContainer {
   }
 
   /**
+   * Checks whether a tragic exception was thrown during update (including update log).
+   *
    * @param solrCore the core against which we check if there has been a tragic exception
    * @return whether this Solr core has tragic exception
    * @see org.apache.lucene.index.IndexWriter#getTragicException()
@@ -2623,19 +2610,6 @@ public class CoreContainer {
       // failed to open an indexWriter
       tragicException = e;
     }
-
-    if (tragicException != null && isZooKeeperAware()) {
-      getZkController().giveupLeadership(solrCore.getCoreDescriptor());
-
-      try {
-        // If the error was something like a full file system disconnect, this probably won't help
-        // But if it is a transient disk failure then it's worth a try
-        solrCore.getSolrCoreState().newIndexWriter(solrCore, false); // should we rollback?
-      } catch (IOException e) {
-        log.warn("Could not roll index writer after tragedy");
-      }
-    }
-
     return tragicException != null;
   }
 

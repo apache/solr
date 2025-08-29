@@ -4,6 +4,7 @@
   "enabled": true,
   "dependencyDashboard": false,
   "enabledManagers": ["gradle", "github-actions"],
+  "labels": ["exempt-stale"],
   "includePaths": ["gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*"],
   "postUpgradeTasks": {
     "commands": [
@@ -86,6 +87,11 @@
         "https://gitbox.apache.org/repos/asf?p=commons-configuration.git"
       ],
       "changelogUrl": "https://commons.apache.org/proper/commons-configuration/changes-report.html"
+    },
+    {
+      "description": "Group these UI dependency upgrades together in same PR",
+      "matchPackagePrefixes": ["com.arkivanov", "org.jetbrains.compose"],
+      "groupName": "Admin UI libraries"
     }
   ],
   "schedule": ["* * * * *"],

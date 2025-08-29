@@ -194,9 +194,9 @@ IF "%SOLR_GZIP_ENABLED%"=="true" (
 )
 
 REM Jetty configuration for new Admin UI
-IF "%SOLR_ADMIN_UI_DISABLED%"=="true" (
+IF "%SOLR_UI_ENABLED%"=="false" (
   REM Do not load jetty-configuration if Admin UI explicitly disabled
-) ELSE IF "%SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED%"=="true" (
+) ELSE IF "%SOLR_UI_EXPERIMENTAL_ENABLED%"=="false" (
   REM Do not load jetty-configuration if new Admin UI explicitly disabled
 ) ELSE (
   REM Enable new Admin UI by loading jetty-configuration
@@ -324,7 +324,7 @@ goto err
 @echo                 you could pass: --jvm-opts "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983"
 @echo                 In most cases, you should wrap the additional parameters in double quotes.
 @echo.
-@echo   -j opts       Additional parameters to pass to Jetty when starting Solr.
+@echo   -j/--jettyconfig opts Additional parameters to pass to Jetty when starting Solr.
 @echo                 For example, to add configuration folder that jetty should read
 @echo                 you could pass: -j "--include-jetty-dir=/etc/jetty/custom/server/"
 @echo                 In most cases, you should wrap the additional parameters in double quotes.
@@ -728,14 +728,6 @@ IF DEFINED SOLR_PLACEMENTPLUGIN_DEFAULT (
   set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.placementplugin.default=%SOLR_PLACEMENTPLUGIN_DEFAULT%"
 )
 
-REM Remote streaming and stream body
-IF "%SOLR_ENABLE_REMOTE_STREAMING%"=="true" (
-  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.enableRemoteStreaming=true"
-)
-IF "%SOLR_ENABLE_STREAM_BODY%"=="true" (
-  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.enableStreamBody=true"
-)
-
 IF "%SOLR_SERVER_DIR%"=="" set "SOLR_SERVER_DIR=%DEFAULT_SERVER_DIR%"
 
 IF NOT EXIST "%SOLR_SERVER_DIR%" (
@@ -925,14 +917,6 @@ IF "%SOLR_MODE%"=="solrcloud" (
 
   set "CLOUD_MODE_OPTS=-DzkClientTimeout=!ZK_CLIENT_TIMEOUT!"
 
-  IF NOT "%SOLR_WAIT_FOR_ZK%"=="" (
-    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DwaitForZk=%SOLR_WAIT_FOR_ZK%"
-  )
-
-  IF NOT "%SOLR_DELETE_UNKNOWN_CORES%"=="" (
-    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dsolr.deleteUnknownCores=%SOLR_DELETE_UNKNOWN_CORES%"
-  )
-
   IF NOT "%ZK_HOST%"=="" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
   ) ELSE (
@@ -1006,13 +990,6 @@ IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
 -Dsolr.internal.network.permission=*
 )
 
-REM Enable ADMIN UI by default, and give the option for users to disable it
-IF "%SOLR_ADMIN_UI_DISABLED%"=="true" (
-  set DISABLE_ADMIN_UI="true"
-) else (
-  set DISABLE_ADMIN_UI="false"
-)
-
 IF NOT "%SOLR_HEAP%"=="" set SOLR_JAVA_MEM=-Xms%SOLR_HEAP% -Xmx%SOLR_HEAP%
 IF "%SOLR_JAVA_MEM%"=="" set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 IF "%SOLR_JAVA_STACK_SIZE%"=="" set SOLR_JAVA_STACK_SIZE=-Xss256k
@@ -1031,6 +1008,9 @@ IF "%GC_TUNE%"=="" (
 
 REM Add vector optimizations module
 set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
+
+REM Support native madvise for MemorySegmentIndexInputProvider
+set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --enable-native-access=ALL-UNNAMED
 
 IF "%GC_LOG_OPTS%"=="" (
   set GC_LOG_OPTS="-Xlog:gc*"
@@ -1094,7 +1074,6 @@ REM OOME is thrown. Program operation after OOME is unpredictable.
 set START_OPTS=%START_OPTS% -XX:+CrashOnOutOfMemoryError
 set START_OPTS=%START_OPTS% -XX:ErrorFile="%SOLR_LOGS_DIR%\jvm_crash_%%p.log"
 set START_OPTS=%START_OPTS% !GC_TUNE! %GC_LOG_OPTS%
-set START_OPTS=%START_OPTS% -DdisableAdminUI=%DISABLE_ADMIN_UI%
 IF NOT "!CLOUD_MODE_OPTS!"=="" set "START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!"
 IF NOT "!IP_ACL_OPTS!"=="" set "START_OPTS=%START_OPTS% !IP_ACL_OPTS!"
 IF NOT "!REMOTE_JMX_OPTS!"=="" set "START_OPTS=%START_OPTS% !REMOTE_JMX_OPTS!"
@@ -1111,7 +1090,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
 set SOLR_LOGS_DIR_QUOTED="%SOLR_LOGS_DIR%"
 set SOLR_DATA_HOME_QUOTED="%SOLR_DATA_HOME%"
 
-set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED%"
+set "START_OPTS=%START_OPTS% -Dsolr.logs.dir=%SOLR_LOGS_DIR_QUOTED%"
 IF NOT "%SOLR_DATA_HOME%"=="" set "START_OPTS=%START_OPTS% -Dsolr.data.home=%SOLR_DATA_HOME_QUOTED%"
 IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
 
@@ -1141,15 +1120,13 @@ IF NOT EXIST "%SOLR_SERVER_DIR%\tmp" (
   mkdir "%SOLR_SERVER_DIR%\tmp"
 )
 
-IF "%DEFAULT_CONFDIR%"=="" set "DEFAULT_CONFDIR=%SOLR_SERVER_DIR%\solr\configsets\_default\conf"
-
 IF "%FG%"=="1" (
   REM run solr in the foreground
   title "Solr-%SOLR_PORT%"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
   "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
-    -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
+    -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" ^
     -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%"
 ) ELSE (
@@ -1157,7 +1134,7 @@ IF "%FG%"=="1" (
     "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.log.muteconsole ^
-    -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
+    -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" ^
     -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
@@ -1166,7 +1143,7 @@ IF "%FG%"=="1" (
     set SOLR_START_WAIT=180
   )
   REM now wait to see Solr come online ...
-  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%"^
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.cli.SolrCLI status --max-wait-secs !SOLR_START_WAIT!
