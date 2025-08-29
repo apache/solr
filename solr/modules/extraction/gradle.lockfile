@@ -236,6 +236,6 @@ org.tallison:isoparser:1.9.41.7=compileClasspath,jarValidation,runtimeClasspath,
 org.tallison:jmatio:1.5=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 org.tallison:metadata-extractor:2.17.1.0=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 org.tukaani:xz:1.9=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
-org.xerial.snappy:snappy-java:1.1.10.5=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
+org.xerial.snappy:snappy-java:1.1.10.8=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 xerces:xercesImpl:2.12.2=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 empty=apiHelper,apiHelperTest,compileOnlyHelper,compileOnlyHelperTest,missingdoclet,packaging,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared,signatures

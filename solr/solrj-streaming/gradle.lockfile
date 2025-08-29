@@ -178,5 +178,5 @@ org.semver4j:semver4j:5.3.0=jarValidation,permitTestUsedUndeclared,runtimeClassp
 org.slf4j:jcl-over-slf4j:2.0.16=jarValidation,permitTestUsedUndeclared,runtimeClasspath,testRuntimeClasspath
 org.slf4j:slf4j-api:1.7.30=permitTestUnusedDeclared
 org.slf4j:slf4j-api:2.0.16=compileClasspath,jarValidation,permitTestUsedUndeclared,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-org.xerial.snappy:snappy-java:1.1.10.5=jarValidation,testRuntimeClasspath
+org.xerial.snappy:snappy-java:1.1.10.8=jarValidation,testRuntimeClasspath
 empty=apiHelper,apiHelperTest,compileOnlyHelper,compileOnlyHelperTest,missingdoclet,permitAggregatorUse,permitTestAggregatorUse,permitUnusedDeclared,permitUsedUndeclared,signatures

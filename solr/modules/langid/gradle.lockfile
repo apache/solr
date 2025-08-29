@@ -161,5 +161,5 @@ org.semver4j:semver4j:5.3.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatf
 org.slf4j:jcl-over-slf4j:2.0.16=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 org.slf4j:jul-to-slf4j:2.0.16=solrPlatformLibs
 org.slf4j:slf4j-api:2.0.16=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
-org.xerial.snappy:snappy-java:1.1.10.5=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
+org.xerial.snappy:snappy-java:1.1.10.8=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 empty=apiHelper,apiHelperTest,compileOnlyHelper,compileOnlyHelperTest,missingdoclet,packaging,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared,signatures
