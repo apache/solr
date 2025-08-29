@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -51,5 +52,31 @@ public class TestClusterProperties extends SolrCloudTestCase {
     String propertyName = "pluginA.propertyA";
     CollectionAdminRequest.setClusterProperty(propertyName, "valueA")
         .process(cluster.getSolrClient());
+  }
+
+  @Test
+  public void testDistributedClusterStateUpdatesProperty() throws Exception {
+    // Test setting and getting the distributed cluster state updates property
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES, "true")
+        .process(cluster.getSolrClient());
+    assertEquals(Boolean.TRUE, props.getClusterProperty(ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES, false));
+
+    // Test default value
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES, null)
+        .process(cluster.getSolrClient());
+    assertEquals(Boolean.FALSE, props.getClusterProperty(ZkStateReader.DISTRIBUTED_CLUSTER_STATE_UPDATES, false));
+  }
+
+  @Test
+  public void testDistributedCollectionConfigSetExecutionProperty() throws Exception {
+    // Test setting and getting the distributed collection config set execution property
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.DISTRIBUTED_COLLECTION_CONFIG_SET_EXECUTION, "true")
+        .process(cluster.getSolrClient());
+    assertEquals(Boolean.TRUE, props.getClusterProperty(ZkStateReader.DISTRIBUTED_COLLECTION_CONFIG_SET_EXECUTION, false));
+
+    // Test default value
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.DISTRIBUTED_COLLECTION_CONFIG_SET_EXECUTION, null)
+        .process(cluster.getSolrClient());
+    assertEquals(Boolean.FALSE, props.getClusterProperty(ZkStateReader.DISTRIBUTED_COLLECTION_CONFIG_SET_EXECUTION, false));
   }
 }
