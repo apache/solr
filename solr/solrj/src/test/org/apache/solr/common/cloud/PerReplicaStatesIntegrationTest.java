@@ -286,7 +286,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
     String PRS_COLL = "prs_test_coll2";
     MiniSolrCloudCluster cluster =
         configureCluster(3)
-            .withDistributedClusterStateUpdates(false, false)
+            .withOverseer(true)
             .addConfig(
                 "conf",
                 getFile("solrj")

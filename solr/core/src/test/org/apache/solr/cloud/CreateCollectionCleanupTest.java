@@ -56,7 +56,6 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
           + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
           + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
           + "    <int name=\"createCollectionWaitTimeTillActive\">${createCollectionWaitTimeTillActive:10}</int>\n"
-          + "    <str name=\"distributedClusterStateUpdates\">${solr.distributedClusterStateUpdates:false}</str> \n"
           + "  </solrcloud>\n"
           + "  \n"
           + "</solr>\n";
@@ -67,7 +66,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(CLOUD_SOLR_XML_WITH_10S_CREATE_COLL_WAIT)
-        .useOtherCollectionConfigSetExecution()
+        .flipOverseerEnablement()
         .configure();
   }
 
