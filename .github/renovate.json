@@ -7,9 +7,8 @@
     "executionMode": "branch"
   },
   "schedule": ["* * * * *"],
-  "prConcurrentLimit": 3,
-  "prHourlyLimit": 3,
+  "prConcurrentLimit": 300,
+  "prHourlyLimit": 20,
   "branchPrefix": "renovate-9x/",
-  "commitMessageSuffix": " (branch_9x)",
-  "dryRun": "extract"
+  "commitMessageSuffix": " (branch_9x)"
 }
