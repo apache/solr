@@ -19,6 +19,8 @@ New Features
 
 * SOLR-17864: Standarized patterns for system property naming across Solr.  i.e enable.packages is now solr.packages.enabled.  (janhoy, Eric Pugh)
 
+* SOLR-17780: Add support for scalar quantized dense vectors (Kevin Liang via Alessandro Benedetti)
+
 Improvements
 ---------------------
 
