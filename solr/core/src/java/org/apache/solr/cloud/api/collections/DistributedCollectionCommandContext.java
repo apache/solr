@@ -27,13 +27,15 @@ import org.apache.solr.handler.component.ShardHandler;
 
 public class DistributedCollectionCommandContext implements CollectionCommandContext {
   private final CoreContainer coreContainer;
-  private volatile DistributedClusterStateUpdater distributedClusterStateUpdater;
+  private final DistributedClusterStateUpdater distributedClusterStateUpdater;
   private final ExecutorService executorService;
 
   public DistributedCollectionCommandContext(
       CoreContainer coreContainer, ExecutorService executorService) {
     // note: coreContainer.getZkController() is not yet instantiated; don't call it right now
     this.coreContainer = coreContainer;
+    // Get the distributed cluster state updater from ZkController now that it's initialized properly
+    this.distributedClusterStateUpdater = coreContainer.getZkController().getDistributedClusterStateUpdater();
     this.executorService = executorService;
   }
 
@@ -66,20 +68,6 @@ public class DistributedCollectionCommandContext implements CollectionCommandCon
 
   @Override
   public DistributedClusterStateUpdater getDistributedClusterStateUpdater() {
-    if (distributedClusterStateUpdater == null) {
-      synchronized (this) {
-        if (distributedClusterStateUpdater == null) {
-          // Read overseer enabled setting from cluster properties 
-          // When overseerEnabled is false, distributed updates should be enabled
-          boolean useDistributedUpdates = true; // default if zkController not available yet
-          if (coreContainer.getZkController() != null) {
-            useDistributedUpdates = !"true".equals(String.valueOf(coreContainer.getZkController().getZkStateReader()
-                .getClusterProperty(ZkStateReader.OVERSEER_ENABLED, "true")));
-          }
-          distributedClusterStateUpdater = new DistributedClusterStateUpdater(useDistributedUpdates);
-        }
-      }
-    }
     return distributedClusterStateUpdater;
   }
 
