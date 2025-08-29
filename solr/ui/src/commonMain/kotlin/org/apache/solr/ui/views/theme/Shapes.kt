@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.dp
  * Custom shapes that do not use rounded corners for elements.
  */
 internal val SolrShapes = Shapes(
+    extraSmall = CutCornerShape(0.dp),
     small = CutCornerShape(0.dp),
     medium = CutCornerShape(0.dp),
     large = CutCornerShape(0.dp),
+    extraLarge = CutCornerShape(0.dp),
 )

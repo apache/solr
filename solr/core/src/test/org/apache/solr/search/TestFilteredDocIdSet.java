@@ -33,7 +33,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.index.RandomIndexWriter;
@@ -125,7 +125,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
 
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
+    assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value());
 
     // Now search w/ a Query which returns a null Scorer
     DocSetQuery f = new DocSetQuery(DocSet.empty());
@@ -135,7 +135,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
             .add(new MatchAllDocsQuery(), Occur.MUST)
             .add(f, Occur.FILTER)
             .build();
-    assertEquals(0, searcher.search(filtered, 10).totalHits.value);
+    assertEquals(0, searcher.search(filtered, 10).totalHits.value());
     reader.close();
     dir.close();
   }
@@ -151,7 +151,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
 
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
+    assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value());
 
     // Now search w/ a Query which returns a null Scorer
     Query f =
@@ -166,7 +166,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
               }
 
               @Override
-              public Scorer scorer(LeafReaderContext leafReaderContext) {
+              public ScorerSupplier scorerSupplier(LeafReaderContext leafReaderContext) {
                 return null;
               }
 
@@ -201,7 +201,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
             .add(new MatchAllDocsQuery(), Occur.MUST)
             .add(f, Occur.FILTER)
             .build();
-    assertEquals(0, searcher.search(filtered, 10).totalHits.value);
+    assertEquals(0, searcher.search(filtered, 10).totalHits.value());
     reader.close();
     dir.close();
   }

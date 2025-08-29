@@ -20,6 +20,7 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +33,8 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides convenient access to System Properties for Solr. It also converts 'SOLR_FOO' env vars to
@@ -39,21 +42,42 @@ import org.apache.solr.common.SolrException;
  * use this in lieu of JDK equivalents.
  */
 public class EnvUtils {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /** Maps ENV keys to sys prop keys for special/custom mappings */
   private static final Map<String, String> CUSTOM_MAPPINGS = new HashMap<>();
+
+  /** Maps deprecated sys prop keys to current sys prop keys with special/custom mappings */
+  private static final Map<String, String> DEPRECATED_MAPPINGS = new HashMap<>();
 
   private static final Map<String, String> camelCaseToDotsMap = new ConcurrentHashMap<>();
 
   static {
     try {
       Properties props = new Properties();
-      try (InputStream stream =
-          EnvUtils.class.getClassLoader().getResourceAsStream("EnvToSyspropMappings.properties")) {
-        props.load(new InputStreamReader(Objects.requireNonNull(stream), StandardCharsets.UTF_8));
+      Properties deprecatedProps = new Properties();
+      try (InputStream environmentToSystemPropertyMappings =
+              EnvUtils.class
+                  .getClassLoader()
+                  .getResourceAsStream("EnvToSyspropMappings.properties");
+          InputStream deprecatedSystemPropertyMappings =
+              EnvUtils.class
+                  .getClassLoader()
+                  .getResourceAsStream("DeprecatedSystemPropertyMappings.properties")) {
+        props.load(
+            new InputStreamReader(
+                Objects.requireNonNull(environmentToSystemPropertyMappings),
+                StandardCharsets.UTF_8));
+        deprecatedProps.load(
+            new InputStreamReader(
+                Objects.requireNonNull(deprecatedSystemPropertyMappings), StandardCharsets.UTF_8));
         for (String key : props.stringPropertyNames()) {
           CUSTOM_MAPPINGS.put(key, props.getProperty(key));
         }
-        init(false, System.getenv());
+        for (String key : deprecatedProps.stringPropertyNames()) {
+          DEPRECATED_MAPPINGS.put(key, deprecatedProps.getProperty(key));
+        }
+        init(false, System.getenv(), System.getProperties());
       }
     } catch (IOException e) {
       throw new SolrException(
@@ -179,7 +203,8 @@ public class EnvUtils {
   /**
    * Re-reads environment variables and updates the internal map. Mainly for internal and test use.
    */
-  static synchronized void init(boolean overwrite, Map<String, String> env) {
+  static synchronized void init(
+      boolean overwrite, Map<String, String> env, Properties sysProperties) {
     // Convert eligible environment variables to system properties
     for (String key : env.keySet()) {
       if (key.startsWith("SOLR_") || CUSTOM_MAPPINGS.containsKey(key)) {
@@ -187,6 +212,36 @@ public class EnvUtils {
         // Existing system properties take precedence
         if (!sysPropKey.isBlank() && (overwrite || getProperty(sysPropKey, null) == null)) {
           setProperty(sysPropKey, env.get(key));
+        }
+      }
+    }
+
+    // Convert deprecated keys to non deprecated versions
+    for (String key : sysProperties.stringPropertyNames()) {
+      if (DEPRECATED_MAPPINGS.containsKey(key)) {
+        String deprecatedKey = key;
+        key = DEPRECATED_MAPPINGS.get(deprecatedKey);
+        log.warn(
+            "You are passing in deprecated system property {} and should upgrade to using {} instead.  The deprecated property support will be removed in future version of Solr.",
+            deprecatedKey,
+            key);
+
+        if (key.endsWith(".enabled") && deprecatedKey.endsWith(".disabled")) {
+          log.warn(
+              "Converting from legacy system property {} to modern .enabled equivalent {} by flipping the boolean property value.",
+              deprecatedKey,
+              key);
+          setProperty(key, String.valueOf(!Boolean.getBoolean(deprecatedKey)));
+        } else if (deprecatedKey.equals("disable.config.edit")
+            || deprecatedKey.equals("disable.v2.api")
+            || deprecatedKey.equals("solr.hide.stack.trace")) {
+          log.warn(
+              "Converting from legacy system property {} to modern .enabled equivalent {} by flipping the boolean property value.",
+              deprecatedKey,
+              key);
+          setProperty(key, String.valueOf(!Boolean.getBoolean(deprecatedKey)));
+        } else {
+          setProperty(key, sysProperties.getProperty(deprecatedKey));
         }
       }
     }

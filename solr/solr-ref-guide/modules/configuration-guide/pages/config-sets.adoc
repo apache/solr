@@ -57,7 +57,7 @@ By default the excluded file types are:
 However, users can impose stricter or looser limits on their systems by providing a comma separated list of file types
 (without the preceding dot, e.g. `jar,class,csv`), to either of the following settings:
 
-- System Property: `-DsolrConfigSetForbiddenFileTypes`
+- System Property: `-Dsolr.configset.forbidden.file.types`
 - Environment Variable: `SOLR_CONFIG_SET_FORBIDDEN_FILE_TYPES`
 
 == Configsets in User-Managed Clusters or Single-Node Installations

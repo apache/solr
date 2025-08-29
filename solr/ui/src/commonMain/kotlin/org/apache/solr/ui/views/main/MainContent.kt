@@ -55,13 +55,14 @@ fun MainContent(
                 .width(224.dp),
             selectedItem = childStack.active.instance.asMainMenu,
             onNavigate = component::onNavigate,
+            onLogout = component::onLogout,
         )
 
         Children(
             stack = component.childStack,
             modifier = Modifier.weight(1f),
         ) {
-            when(val child = it.instance) {
+            when (val child = it.instance) {
                 is MainComponent.Child.Environment -> EnvironmentContent(
                     component = child.component,
                     modifier = Modifier.fillMaxWidth()

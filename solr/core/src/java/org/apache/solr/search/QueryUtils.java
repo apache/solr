@@ -164,7 +164,7 @@ public class QueryUtils {
 
     if (clauses.size() == 1) {
       // if only one clause, dispense with the wrapping BooleanQuery
-      Query negClause = clauses.iterator().next().getQuery();
+      Query negClause = clauses.iterator().next().query();
       // we shouldn't need to worry about adjusting the boosts since the negative
       // clause would have never been selected in a positive query, and hence would
       // not contribute to a score.
@@ -175,7 +175,7 @@ public class QueryUtils {
 
       // the inverse of -a -b is a OR b
       for (BooleanClause clause : clauses) {
-        newBqB.add(clause.getQuery(), BooleanClause.Occur.SHOULD);
+        newBqB.add(clause.query(), BooleanClause.Occur.SHOULD);
       }
       return newBqB.build();
     }

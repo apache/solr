@@ -306,13 +306,13 @@ NOTE: Tests expect every field in this schema to be sortable.
   <fieldType name="bool_last" class="solr.BoolField" stored="true" indexed="true" sortMissingLast="true"/>
   <fieldType name="bool_first" class="solr.BoolField" stored="true" indexed="true" sortMissingFirst="true"/>
 
-  <fieldType name="enum" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>
-  <fieldType name="enum_last" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"
+  <fieldType name="enum" class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  <fieldType name="enum_last" class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="severity"
              sortMissingLast="true"/>
-  <fieldType name="enum_first" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"
+  <fieldType name="enum_first" class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="severity"
              sortMissingFirst="true"/>
-  <fieldType name="enum_dv" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true"/>
-  <fieldType name="enum_dv_last" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true" sortMissingLast="true"/>
-  <fieldType name="enum_dv_first" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true" sortMissingFirst="true"/>
+  <fieldType name="enum_dv" class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  <fieldType name="enum_dv_last" class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="severity" sortMissingLast="true"/>
+  <fieldType name="enum_dv_first" class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="severity" sortMissingFirst="true"/>
 
 </schema>

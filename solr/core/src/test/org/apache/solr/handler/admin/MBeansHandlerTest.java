@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 
 // NOCOMMIT: Test fails because of the /admin/mbeans endpoint. Need to create a bridge or shim after
 // migrating all metrics to support this.
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
 public class MBeansHandlerTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

@@ -72,7 +72,7 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       System.arraycopy(
           firstPassTopDocs.scoreDocs, 0, firstPassResults, 0, firstPassTopDocs.scoreDocs.length);
     }
-    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
+    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value()));
 
     ScoreDoc[][] reRankedPerModel =
         rerank(searcher, topN, getFirstPassDocsRanked(firstPassTopDocs));
@@ -144,7 +144,7 @@ public class LTRInterleavingRescorer extends LTRRescorer {
         docBase = readerContext.docBase;
         for (int i = 0; i < modelWeights.length; i++) {
           if (modelWeights[i] != null) {
-            scorers[i] = modelWeights[i].scorer(readerContext);
+            scorers[i] = modelWeights[i].modelScorer(readerContext);
           }
         }
       }

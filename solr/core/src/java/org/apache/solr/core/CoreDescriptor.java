@@ -54,7 +54,6 @@ public class CoreDescriptor {
   public static final String CORE_SCHEMA = "schema";
   public static final String CORE_SHARD = "shard";
   public static final String CORE_COLLECTION = "collection";
-  public static final String CORE_ROLES = "roles";
   public static final String CORE_PROPERTIES = "properties";
   public static final String CORE_LOADONSTARTUP = "loadOnStartup";
   public static final String CORE_TRANSIENT = "transient";
@@ -110,9 +109,7 @@ public class CoreDescriptor {
           // cloud props
           CORE_SHARD,
           CORE_COLLECTION,
-          CORE_ROLES,
-          CORE_NODE_NAME,
-          CloudDescriptor.NUM_SHARDS);
+          CORE_NODE_NAME);
 
   private final CloudDescriptor cloudDesc;
 
