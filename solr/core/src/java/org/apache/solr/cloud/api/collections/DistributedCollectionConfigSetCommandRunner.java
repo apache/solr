@@ -44,6 +44,7 @@ import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.ZkDistributedCollectionLockFactory;
 import org.apache.solr.cloud.ZkDistributedConfigSetLockFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ConfigSetParams;
@@ -106,7 +107,9 @@ public class DistributedCollectionConfigSetCommandRunner {
 
   private volatile boolean shuttingDown = false;
 
-  public DistributedCollectionConfigSetCommandRunner(CoreContainer coreContainer) {
+  public DistributedCollectionConfigSetCommandRunner(
+      CoreContainer coreContainer, SolrZkClient zkClient) {
+    // note: coreContainer.getZkController() is not yet instantiated; don't call it right now
     this.coreContainer = coreContainer;
 
     if (log.isInfoEnabled()) {
@@ -144,8 +147,7 @@ public class DistributedCollectionConfigSetCommandRunner {
         new DistributedCollectionCommandContext(
             this.coreContainer, this.distributedCollectionApiExecutorService);
     commandMapper = new CollApiCmds.CommandMap(ccc);
-    asyncTaskTracker =
-        new DistributedApiAsyncTracker(ccc.getZkStateReader().getZkClient(), ZK_ASYNC_ROOT);
+    asyncTaskTracker = new DistributedApiAsyncTracker(zkClient, ZK_ASYNC_ROOT);
   }
 
   /** See {@link DistributedApiAsyncTracker#getAsyncTaskRequestStatus(String)} */
