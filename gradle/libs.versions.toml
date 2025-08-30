@@ -171,7 +171,7 @@ nlopez-compose = "0.4.27"
 nodegradle-node = "7.1.0"
 # @keep Node JS version used in node.gradle (LTS)
 nodejs = "22.18.0"
-openapi = "7.6.0"
+openapi = "7.14.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.46.0"
 osgi-annotation = "8.1.0"
