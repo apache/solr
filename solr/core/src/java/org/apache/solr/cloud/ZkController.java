@@ -602,6 +602,35 @@ public class ZkController implements Closeable {
     }
   }
 
+  /**
+   * Checks version compatibility with other nodes in the cluster. Refuses to start if there's a
+   * major version difference between our Solr version and other nodes in the cluster. Note: uses
+   * live nodes.
+   */
+  private void checkClusterVersionCompatibility() throws InterruptedException, KeeperException {
+    Optional<SolrVersion> lowestVersion = zkStateReader.fetchLowestSolrVersion();
+    if (lowestVersion.isPresent()) {
+      SolrVersion ourVersion = SolrVersion.LATEST;
+      SolrVersion clusterVersion = lowestVersion.get();
+
+      if (ourVersion.lessThan(clusterVersion)) {
+        log.warn(
+            "Our Solr version {} is older than cluster version {}", ourVersion, clusterVersion);
+
+        if (ourVersion.getMajorVersion() < clusterVersion.getMajorVersion()) {
+          String message =
+              String.format(
+                  Locale.ROOT,
+                  "Refusing to start Solr to avoid lowering the lowest major version of nodes in the cluster. "
+                      + "Our version: %s, lowest version in cluster: %s.",
+                  ourVersion,
+                  clusterVersion);
+          throw new SolrException(ErrorCode.INVALID_STATE, message);
+        }
+      }
+    }
+  }
+
   public CloudSolrClient getSolrClient() {
     return getSolrCloudManager().getSolrClient();
   }
@@ -1022,6 +1051,7 @@ public class ZkController implements Closeable {
 
       checkForExistingEphemeralNode();
       registerLiveNodesListener();
+      checkClusterVersionCompatibility();
 
       // Start the overseer now since the following code may need it's processing.
       // Note: even when using distributed processing, we still create an Overseer anyway since
