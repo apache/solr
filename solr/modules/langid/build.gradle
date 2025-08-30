@@ -24,8 +24,12 @@ dependencies {
   implementation project(':solr:solrj')
 
   implementation(libs.apache.tika.core) { transitive = false }
+  implementation(libs.apache.tika.langdetect) { transitive = false }
+  implementation(libs.apache.tika.langdetect.optimaize) { transitive = false }
+  
   implementation libs.commonsio.commonsio
   implementation libs.cybozulabs.langdetect
+  implementation libs.optimaize.langdetect
   implementation libs.apache.opennlp.tools
   implementation libs.slf4j.api
 
