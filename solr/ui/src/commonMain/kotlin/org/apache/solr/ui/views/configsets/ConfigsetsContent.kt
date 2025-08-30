@@ -66,7 +66,6 @@ fun ConfigsetsContent(
         ConfigsetsNavBar(
             selectedTab = model.selectedTab,
             selectTab = { tab: ConfigsetsTab -> component.onSelectTab(tab) },
-            availableConfigsets = model.configsets,
         )
         ConfigsetsDropdown(
             selectedConfigSet = model.selectedConfigset,
