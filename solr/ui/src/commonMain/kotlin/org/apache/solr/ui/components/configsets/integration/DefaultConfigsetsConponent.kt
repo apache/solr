@@ -46,7 +46,7 @@ class DefaultConfigsetsConponent internal constructor(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     httpClient: HttpClient,
-    destination: String? = null,
+    destination: ConfigsetsTab? = null,
     private val overviewComponent: (AppComponentContext) -> ConfigsetsOverviewComponent,
 ) : ConfigsetsComponent,
     AppComponentContext by componentContext {
@@ -95,9 +95,9 @@ class DefaultConfigsetsConponent internal constructor(
     /**
      * Calculates the initial stack based on the destination provided.
      */
-    private fun calculateInitialStack(destination: String?): List<Configuration> = listOf(
+    private fun calculateInitialStack(destination: ConfigsetsTab?): List<Configuration> = listOf(
         when (destination) {
-            "Overview" -> Configuration.Overview
+            ConfigsetsTab.Overview -> Configuration.Overview
             else -> Configuration.Overview
         },
     )
@@ -123,5 +123,9 @@ class DefaultConfigsetsConponent internal constructor(
 
     override fun onSelectConfigset(name: String) {
         store.accept(Intent.SelectConfigSet(name))
+    }
+
+    override fun setMenuExpanded(expanded: Boolean) {
+        store.accept(Intent.SetMenuExpanded(expanded))
     }
 }

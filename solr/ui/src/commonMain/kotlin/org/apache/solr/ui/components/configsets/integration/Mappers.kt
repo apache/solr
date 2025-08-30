@@ -26,5 +26,6 @@ internal val configsetsStateToModel: (ConfigsetsStore.State) -> ConfigsetsCompon
         configsets = it.configSets.configSets.map { s -> Configset(s) },
         selectedConfigset = it.selectedConfigset,
         selectedTab = it.selectedTab,
+        expanded = it.expanded,
     )
 }

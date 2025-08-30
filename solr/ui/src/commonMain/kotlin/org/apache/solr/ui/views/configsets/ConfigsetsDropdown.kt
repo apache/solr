@@ -24,53 +24,65 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.configsets.data.Configset
+import org.apache.solr.ui.generated.resources.Res
+import org.apache.solr.ui.generated.resources.nav_configsets
+import org.apache.solr.ui.generated.resources.no_configsets
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfigsetsDropdown(
-    selectedConfigSet: String,
+    selectedConfigSet: String?,
     selectConfigset: (String) -> Unit,
     availableConfigsets: List<Configset>,
+    expanded: Boolean,
+    setMenuExpanded: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by remember { mutableStateOf(false) }
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ExposedDropdownMenuBox(
             expanded = expanded,
-            onExpandedChange = { expanded = !expanded },
+            onExpandedChange = { setMenuExpanded(!expanded) },
             modifier = Modifier.widthIn(min = 256.dp).weight(1f),
         ) {
             OutlinedTextField(
-                value = selectedConfigSet,
+                value = selectedConfigSet ?: "",
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Configset") },
+                label = { Text(stringResource(Res.string.nav_configsets)) },
+                placeholder = {
+                    if (availableConfigsets.isEmpty()) {
+                        Text(stringResource(Res.string.no_configsets))
+                    }
+                },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                modifier = Modifier
+                    .menuAnchor(
+                        MenuAnchorType.PrimaryNotEditable,
+                        availableConfigsets.isNotEmpty(),
+                    )
+                    .fillMaxWidth(),
             )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { setMenuExpanded(false) }) {
                 availableConfigsets.forEach { configset ->
                     DropdownMenuItem(
                         text = { Text(configset.name) },
                         onClick = {
                             selectConfigset(configset.name)
-                            expanded = false
+                            setMenuExpanded(false)
                         },
                     )
                 }
