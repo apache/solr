@@ -65,6 +65,7 @@ internal class ConfigsetsStoreProvider(
         data class ConfigSetsUpdated(val configsets: ListConfigsets) : Message
         data class SelectedTabChanged(val tab: ConfigsetsTab) : Message
         data class SelectedConfigSetChanged(val configsetName: String) : Message
+        data class SetMenuExpanded(val expanded: Boolean) : Message
     }
 
     private inner class ExecutorImpl : CoroutineExecutor<Intent, Action, State, Message, Nothing>(mainContext) {
@@ -76,6 +77,7 @@ internal class ConfigsetsStoreProvider(
         override fun executeIntent(intent: Intent) = when (intent) {
             is Intent.SelectTab -> dispatch(Message.SelectedTabChanged(intent.tab))
             is Intent.SelectConfigSet -> dispatch(Message.SelectedConfigSetChanged(intent.configSetName))
+            is Intent.SetMenuExpanded -> dispatch(Message.SetMenuExpanded(intent.expanded))
         }
         private fun fetchConfigSets() {
             scope.launch {
@@ -96,6 +98,7 @@ internal class ConfigsetsStoreProvider(
             is Message.ConfigSetsUpdated -> copy(configSets = msg.configsets)
             is Message.SelectedTabChanged -> copy(selectedTab = msg.tab)
             is Message.SelectedConfigSetChanged -> copy(selectedConfigset = msg.configsetName)
+            is Message.SetMenuExpanded -> copy(expanded = msg.expanded)
         }
     }
 

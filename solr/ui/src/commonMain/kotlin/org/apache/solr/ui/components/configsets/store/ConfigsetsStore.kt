@@ -33,10 +33,16 @@ internal interface ConfigsetsStore : Store<Intent, State, Nothing> {
          * Intent for selecting configset.
          */
         data class SelectConfigSet(val configSetName: String) : Intent
+
+        /**
+         * Intent for expanding/collapsing the configsets menu.
+         */
+        data class SetMenuExpanded(val expanded: Boolean) : Intent
     }
     data class State(
         val selectedTab: ConfigsetsTab = ConfigsetsTab.Overview,
-        val selectedConfigset: String = "",
+        val selectedConfigset: String? = null,
         val configSets: ListConfigsets = ListConfigsets(),
+        val expanded: Boolean = false,
     )
 }

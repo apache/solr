@@ -46,7 +46,9 @@ interface ConfigsetsComponent {
     data class Model(
         val configsets: List<Configset> = emptyList(),
         val selectedTab: ConfigsetsTab = ConfigsetsTab.Overview,
-        val selectedConfigset: String = "",
+        val selectedConfigset: String? = null,
+        val expanded: Boolean = false,
+
     )
 
     /** Hot, observable stream of [Model] for Compose/UI. */
@@ -57,4 +59,7 @@ interface ConfigsetsComponent {
 
     /** Select the active configset by name. */
     fun onSelectConfigset(name: String)
+
+    /** Toggle the expanded state of the dropdown menu. */
+    fun setMenuExpanded(expanded: Boolean)
 }

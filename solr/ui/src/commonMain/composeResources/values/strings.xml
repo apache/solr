@@ -55,6 +55,7 @@
   <string name="configsets_index_query">Index / Query</string>
   <string name="configsets_request_handlers">Request Handlers / Dispatchers</string>
   <string name="configsets_search_components">Search Components</string>
+  <string name="no_configsets">No configsets available</string>
 
   <!-- Placeholders (ph) -->
   <string name="ph_solr_url">http://127.0.0.1:8983/</string>

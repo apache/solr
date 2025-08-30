@@ -72,10 +72,16 @@ fun ConfigsetsContent(
             selectedConfigSet = model.selectedConfigset,
             selectConfigset = { s: String -> component.onSelectConfigset(s) },
             availableConfigsets = model.configsets,
+            expanded = model.expanded,
+            setMenuExpanded = component::setMenuExpanded,
         )
 
-        Box(Modifier.fillMaxSize().padding(16.dp)) {
-            renderTab(model.selectedTab, model.selectedConfigset)
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        ) {
+            renderTab(model.selectedTab, model.selectedConfigset ?: "")
         }
     }
 }
