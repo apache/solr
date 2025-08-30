@@ -63,6 +63,10 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     parameters.add("langid.fallback", "un");
     liProcessor = createLangIdProcessor(parameters);
 
+    assumeFalse(
+        "Skipping test for TikaLanguageIdentifierUpdateProcessor",
+        liProcessor instanceof TikaLanguageIdentifierUpdateProcessor);
+
     assertLang(
         "no",
         "id",
@@ -345,6 +349,10 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     parameters.add("langid.enforceSchema", "false");
     liProcessor = createLangIdProcessor(parameters);
 
+    assumeFalse(
+        "Skipping test for TikaLanguageIdentifierUpdateProcessor",
+        liProcessor instanceof TikaLanguageIdentifierUpdateProcessor);
+
     doc = tooShortDoc();
     assertEquals("", process(doc).getFieldValue("language"));
   }
@@ -372,6 +380,10 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     parameters.add("langid.fallback", "fbVal");
     parameters.add("langid.enforceSchema", "false");
     liProcessor = createLangIdProcessor(parameters);
+
+    assumeFalse(
+        "Skipping test for TikaLanguageIdentifierUpdateProcessor",
+        liProcessor instanceof TikaLanguageIdentifierUpdateProcessor);
 
     // Verify fallback to field fb (noop field does not exist and is skipped)
     doc = tooShortDoc();

@@ -76,6 +76,7 @@ commons-io = "2.15.1"
 compose = "1.8.2"
 cutterslade-analyze = "1.10.0"
 cybozulabs-langdetect = "1.1-20120112"
+optimaize-langdetect = "0.6"
 decompose = "3.3.0"
 diffplug-spotless = "7.2.1"
 dropwizard-metrics = "4.2.26"
@@ -291,6 +292,8 @@ apache-poi-poi = { module = "org.apache.poi:poi", version.ref = "apache-poi" }
 apache-rat-rat = { module = "org.apache.rat:apache-rat", version.ref = "apache-rat" }
 apache-tika-core = { module = "org.apache.tika:tika-core", version.ref = "apache-tika" }
 apache-tika-parsers = { module = "org.apache.tika:tika-parsers", version.ref = "apache-tika" }
+apache-tika-langdetect = { module = "org.apache.tika:tika-langdetect", version.ref = "apache-tika" }
+apache-tika-langdetect-optimaize = { module = "org.apache.tika:tika-langdetect-optimaize", version.ref = "apache-tika" }
 apache-tomcat-annotationsapi = { module = "org.apache.tomcat:annotations-api", version.ref = "apache-tomcat" }
 apache-zookeeper-jute = { module = "org.apache.zookeeper:zookeeper-jute", version.ref = "apache-zookeeper" }
 apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", version.ref = "apache-zookeeper" }
@@ -313,6 +316,7 @@ commonscli-commonscli = { module = "commons-cli:commons-cli", version.ref = "com
 commonscodec-commonscodec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
 commonsio-commonsio = { module = "commons-io:commons-io", version.ref = "commons-io" }
 cybozulabs-langdetect = { module = "com.cybozu.labs:langdetect", version.ref = "cybozulabs-langdetect" }
+optimaize-langdetect = { module = "com.optimaize.languagedetector:language-detector", version.ref = "optimaize-langdetect" }
 decompose-decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }
 decompose-extensions-compose = { module = "com.arkivanov.decompose:extensions-compose", version.ref = "decompose" }
 dropwizard-metrics-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard-metrics" }

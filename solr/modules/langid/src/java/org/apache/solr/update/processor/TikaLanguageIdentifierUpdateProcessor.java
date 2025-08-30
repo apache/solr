@@ -16,13 +16,16 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.tika.language.LanguageIdentifier;
+import org.apache.tika.language.detect.LanguageConfidence;
+import org.apache.tika.language.detect.LanguageDetector;
+import org.apache.tika.language.detect.LanguageResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,23 +52,46 @@ public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpd
     String content = SolrInputDocumentReader.asString(solrDocReader);
     List<DetectedLanguage> languages = new ArrayList<>();
     if (content.length() != 0) {
-      LanguageIdentifier identifier = new LanguageIdentifier(content);
-      // FIXME: Hack - we get the distance from toString and calculate our own certainty score
-      Double distance =
-          Double.parseDouble(
-              tikaSimilarityPattern.matcher(identifier.toString()).replaceFirst("$1"));
-      // This formula gives: 0.02 => 0.8, 0.1 => 0.5 which is a better sweetspot than
-      // isReasonablyCertain()
-      Double certainty = 1 - (5 * distance);
-      if (certainty < 0) certainty = 0d;
-      DetectedLanguage language = new DetectedLanguage(identifier.getLanguage(), certainty);
-      languages.add(language);
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Language detected as {} with a certainty of {} (Tika distance={})",
-            language,
-            language.getCertainty(),
-            identifier);
+      try {
+        LanguageDetector detector = LanguageDetector.getDefaultLanguageDetector();
+        detector.loadModels();
+        detector.addText(content);
+        LanguageResult result = detector.detect();
+
+        if (result != null) {
+          // Convert LanguageConfidence enum to a numeric certainty value
+          Double certainty = 0d;
+          LanguageConfidence confidence = result.getConfidence();
+
+          if (confidence != null) {
+            switch (confidence) {
+              case HIGH:
+                certainty = 0.9d;
+                break;
+              case MEDIUM:
+                certainty = 0.5d;
+                break;
+              case LOW:
+                certainty = 0.2d;
+                break;
+              default:
+                certainty = 0.0d;
+            }
+          }
+
+          DetectedLanguage language = new DetectedLanguage(result.getLanguage(), certainty);
+          languages.add(language);
+
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "Language detected as {} with a certainty of {} (Tika language result={})",
+                language,
+                language.getCertainty(),
+                result);
+          }
+        }
+      } catch (IOException e) {
+        log.warn("Failed to load language detector models", e);
       }
     } else {
       log.debug("No input text to detect language from, returning empty list");
