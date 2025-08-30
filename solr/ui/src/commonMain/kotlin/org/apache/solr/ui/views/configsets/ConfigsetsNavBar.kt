@@ -27,11 +27,9 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import org.apache.solr.ui.components.configsets.data.Configset
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.configsets_index_query
 import org.apache.solr.ui.generated.resources.configsets_search_components
@@ -46,16 +44,8 @@ import org.jetbrains.compose.resources.stringResource
 fun ConfigsetsNavBar(
     selectedTab: ConfigsetsTab,
     selectTab: (ConfigsetsTab) -> Unit,
-    availableConfigsets: List<Configset>,
     modifier: Modifier = Modifier,
 ) {
-    if (availableConfigsets.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No configsets available")
-        }
-        return
-    }
-
     val selectedIndex = ConfigsetsTab.entries.indexOf(selectedTab)
     Column(modifier) {
         ScrollableTabRow(
