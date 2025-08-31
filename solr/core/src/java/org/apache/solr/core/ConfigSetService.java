@@ -171,10 +171,10 @@ public abstract class ConfigSetService {
     Path path = Path.of(pathStr);
 
     // Convert to absolute path if it's relative
-//    if (!path.isAbsolute()) {
-//      String installDir = EnvUtils.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
-//      path = Path.of(installDir).resolve(path).normalize();
-//    }
+    //    if (!path.isAbsolute()) {
+    //      String installDir = EnvUtils.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    //      path = Path.of(installDir).resolve(path).normalize();
+    //    }
 
     return path;
   }
