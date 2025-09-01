@@ -173,7 +173,7 @@ nodegradle-node = "7.1.0"
 nodejs = "22.18.0"
 openapi = "7.6.0"
 openjdk-jmh = "1.37"
-opentelemetry = "1.46.0"
+opentelemetry = "1.53.0"
 osgi-annotation = "8.1.0"
 oshai-logging = "7.0.13"
 # @keep for version alignment
