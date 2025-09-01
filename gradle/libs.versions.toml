@@ -141,7 +141,7 @@ jetbrains-annotations = "26.0.2"
 # @keep for version alignment
 joda-time = "2.14.0"
 junit = "4.13.2"
-junit-jupiter = "5.8.1"
+junit-jupiter = "5.13.4"
 kotlin = "2.2.0"
 # @keep for version alignment
 kotlinx-atomicfu = "0.29.0"
