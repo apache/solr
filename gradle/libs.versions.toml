@@ -198,7 +198,7 @@ thisptr-jacksonjq = "0.0.13"
 threeten-bp = "1.6.8"
 undercouch-download = "5.5.0"
 xerces = "2.12.2"
-xerial-snappy = "1.1.10.5"
+xerial-snappy = "1.1.10.8"
 
 [plugins]
 benmanes-versions = { id = "com.github.ben-manes.versions", version.ref = "benmanes-versions" }

@@ -209,5 +209,5 @@ org.slf4j:jcl-over-slf4j:2.0.16=apiHelper,jarValidation,runtimeClasspath,runtime
 org.slf4j:jul-to-slf4j:2.0.16=solrPlatformLibs
 org.slf4j:slf4j-api:2.0.16=apiHelper,compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 org.threeten:threetenbp:1.6.9=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
-org.xerial.snappy:snappy-java:1.1.10.5=apiHelper,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
+org.xerial.snappy:snappy-java:1.1.10.8=apiHelper,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 empty=apiHelperTest,compileOnlyHelper,compileOnlyHelperTest,missingdoclet,packaging,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared,signatures
