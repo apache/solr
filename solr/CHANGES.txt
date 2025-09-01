@@ -18,6 +18,10 @@ Bug Fixes
 
 * SOLR-17871: Http2SolrClient wasn't honoring idle timeout configuration above 30 seconds -- a regression. (Thomas Wöckinger, David Smiley)
 
+* SOLR-17876: Http2SolrClient: followRedirects=true: if Http2SolrClient was created with followRedirects=true,
+  and then was used to create future clients (via builder.withHttpClient), then redirect processing was wrongly
+  disabled on the shared instance. (David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
