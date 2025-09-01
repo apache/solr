@@ -37,6 +37,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -90,6 +91,7 @@ import org.apache.solr.search.Grouping;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryCommand;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.QueryUtils;
@@ -555,7 +557,13 @@ public class QueryComponent extends SearchComponent {
             }
 
             doc -= currentLeaf.docBase; // adjust for what segment this is in
-            leafComparator.setScorer(new ScoreAndDoc(doc, score));
+            leafComparator.setScorer(
+                new Scorable() {
+                  @Override
+                  public float score() {
+                    return score;
+                  }
+                });
             leafComparator.copy(0, doc);
             Object val = comparator.value(0);
             if (null != ft) val = ft.marshalSortValue(val);
@@ -898,7 +906,55 @@ public class QueryComponent extends SearchComponent {
     return true;
   }
 
+  protected abstract static class ShardDocQueue {
+    public abstract void push(ShardDoc shardDoc);
+
+    public abstract ShardDoc pop();
+
+    public abstract int size();
+  }
+  ;
+
+  protected static class ShardDocQueueFactory
+      implements BiFunction<SortField[], Integer, ShardDocQueue> {
+
+    private final SolrIndexSearcher searcher;
+
+    public ShardDocQueueFactory(SolrIndexSearcher searcher) {
+      this.searcher = searcher;
+    }
+
+    @Override
+    public ShardDocQueue apply(SortField[] sortFields, Integer size) {
+      return new ShardDocQueue() {
+        private final ShardFieldSortedHitQueue queue =
+            new ShardFieldSortedHitQueue(sortFields, size, searcher);
+
+        @Override
+        public void push(ShardDoc shardDoc) {
+          queue.insertWithOverflow(shardDoc);
+        }
+
+        @Override
+        public ShardDoc pop() {
+          return queue.pop();
+        }
+
+        @Override
+        public int size() {
+          return queue.size();
+        }
+      };
+    }
+  }
+  ;
+
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
+    implementMergeIds(rb, sreq, new ShardDocQueueFactory(rb.req.getSearcher()));
+  }
+
+  private void implementMergeIds(
+      ResponseBuilder rb, ShardRequest sreq, ShardDocQueueFactory shardDocQueueFactory) {
     List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
     if (mergeStrategies != null) {
       mergeStrategies.sort(MergeStrategy.MERGE_COMP);
@@ -945,9 +1001,8 @@ public class QueryComponent extends SearchComponent {
 
     // Merge the docs via a priority queue so we don't have to sort *all* of the
     // documents... we only need to order the top (rows+start)
-    final ShardFieldSortedHitQueue queue =
-        new ShardFieldSortedHitQueue(
-            sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
+    final ShardDocQueue shardDocQueue =
+        shardDocQueueFactory.apply(sortFields, ss.getOffset() + ss.getCount());
 
     NamedList<Object> shardInfo = null;
     if (rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
@@ -1153,19 +1208,19 @@ public class QueryComponent extends SearchComponent {
 
         shardDoc.sortFieldValues = unmarshalledSortFieldValues;
 
-        queue.insertWithOverflow(shardDoc);
+        shardDocQueue.push(shardDoc);
       } // end for-each-doc-in-response
     } // end for-each-response
 
     // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
     // So we want to pop the last documents off the queue to get
     // the docs offset -> queuesize
-    int resultSize = queue.size() - ss.getOffset();
+    int resultSize = shardDocQueue.size() - ss.getOffset();
     resultSize = Math.max(0, resultSize); // there may not be any docs in range
 
     Map<Object, ShardDoc> resultIds = new HashMap<>();
     for (int i = resultSize - 1; i >= 0; i--) {
-      ShardDoc shardDoc = queue.pop();
+      ShardDoc shardDoc = shardDocQueue.pop();
       shardDoc.positionInResponse = i;
       // Need the toString() for correlation with other lists that must
       // be strings (like keys in highlighting, explain, etc)
@@ -1787,6 +1842,11 @@ public class QueryComponent extends SearchComponent {
     }
     rb.setResult(result);
 
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    if (queryLimits.maybeExitWithPartialResults("QueryComponent")) {
+      return;
+    }
+
     ResultContext ctx = new BasicResultContext(rb);
     rsp.addResponse(ctx);
     rsp.getToLog()
@@ -1828,31 +1888,5 @@ public class QueryComponent extends SearchComponent {
     }
 
     return localQueryID;
-  }
-
-  /**
-   * Fake scorer for a single document
-   *
-   * <p>TODO: when SOLR-5595 is fixed, this wont be needed, as we dont need to recompute sort values
-   * here from the comparator
-   */
-  protected static class ScoreAndDoc extends Scorable {
-    final int docid;
-    final float score;
-
-    ScoreAndDoc(int docid, float score) {
-      this.docid = docid;
-      this.score = score;
-    }
-
-    @Override
-    public int docID() {
-      return docid;
-    }
-
-    @Override
-    public float score() throws IOException {
-      return score;
-    }
   }
 }

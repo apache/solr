@@ -216,7 +216,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
       Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
       throws IOException {
     boolean success = false;
-    try (ChecksumIndexInput is = sourceDir.openChecksumInput(sourceFileName, IOContext.READONCE);
+    try (ChecksumIndexInput is = sourceDir.openChecksumInput(sourceFileName);
         IndexOutput os = destDir.createOutput(destFileName, IOContext.READONCE)) {
       os.copyBytes(is, is.length() - CodecUtil.footerLength());
 
@@ -247,7 +247,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    * @since 8.3.0
    */
   default Checksum checksum(Directory dir, String fileName) throws IOException {
-    try (IndexInput in = dir.openChecksumInput(fileName, IOContext.READONCE)) {
+    try (IndexInput in = dir.openChecksumInput(fileName)) {
       return new Checksum(CodecUtil.retrieveChecksum(in), in.length());
     }
   }

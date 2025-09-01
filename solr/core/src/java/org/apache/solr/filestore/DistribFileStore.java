@@ -344,18 +344,19 @@ public class DistribFileStore implements FileStore {
   private void distribute(FileInfo info) {
     try {
       String dirName = info.path.substring(0, info.path.lastIndexOf('/'));
+
       coreContainer
           .getZkController()
           .getZkClient()
-          .makePath(ZK_PACKAGESTORE + dirName, false, true);
-      coreContainer
-          .getZkController()
-          .getZkClient()
-          .create(
+          .makePath(
               ZK_PACKAGESTORE + info.path,
               info.getDetails().getMetaData().sha512.getBytes(UTF_8),
               CreateMode.PERSISTENT,
-              true);
+              null,
+              false,
+              true,
+              0);
+
     } catch (Exception e) {
       throw new SolrException(SERVER_ERROR, "Unable to create an entry in ZK", e);
     }
@@ -452,7 +453,7 @@ public class DistribFileStore implements FileStore {
   }
 
   @Override
-  public void get(String path, Consumer<FileEntry> consumer, boolean fetchmissing)
+  public void get(String path, Consumer<FileEntry> consumer, boolean fetchMissing)
       throws IOException {
     Path file = getRealPath(path);
     String simpleName = file.getFileName().toString();
@@ -573,7 +574,6 @@ public class DistribFileStore implements FileStore {
         @SuppressWarnings({"rawtypes"})
         List myFiles = list(path, s -> true);
         for (Object f : l) {
-          // TODO: https://issues.apache.org/jira/browse/SOLR-15426
           // l should be a List<String> and myFiles should be a List<FileDetails>, so contains
           // should always return false!
           if (!myFiles.contains(f)) {

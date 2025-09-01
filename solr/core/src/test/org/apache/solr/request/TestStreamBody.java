@@ -68,7 +68,7 @@ public class TestStreamBody extends RestTestBase {
   // SOLR-3161
   @Test
   public void testQtUpdateFails() throws Exception {
-    System.setProperty("solr.enableStreamBody", "true");
+    System.setProperty("solr.requests.streaming.body.enabled", "true");
     startSolr();
 
     SolrQuery query = new SolrQuery();

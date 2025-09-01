@@ -49,7 +49,7 @@ object SolrTheme {
 @Composable
 fun SolrTheme(
     useDarkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
         useDarkTheme -> darkScheme

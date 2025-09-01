@@ -123,8 +123,8 @@ public class TestSolrCoreParser extends SolrTestCaseJ4 {
     assertTrue(query instanceof BooleanQuery);
     final BooleanQuery bq = (BooleanQuery) query;
     assertEquals(2, bq.clauses().size());
-    assertTrue(bq.clauses().get(0).getQuery() instanceof MatchAllDocsQuery);
-    assertTrue(bq.clauses().get(1).getQuery() instanceof MatchNoDocsQuery);
+    assertTrue(bq.clauses().get(0).query() instanceof MatchAllDocsQuery);
+    assertTrue(bq.clauses().get(1).query() instanceof MatchNoDocsQuery);
   }
 
   // test custom query (HandyQueryBuilder) wrapping a SpanQuery
@@ -144,7 +144,7 @@ public class TestSolrCoreParser extends SolrTestCaseJ4 {
     final BooleanQuery bq = (BooleanQuery) query;
     assertEquals(2, bq.clauses().size());
     for (int ii = 0; ii < bq.clauses().size(); ++ii) {
-      final Query clauseQuery = bq.clauses().get(ii).getQuery();
+      final Query clauseQuery = bq.clauses().get(ii).query();
       switch (ii) {
         case 0:
           assertTrue(clauseQuery instanceof SpanOrQuery);
@@ -204,8 +204,8 @@ public class TestSolrCoreParser extends SolrTestCaseJ4 {
       assertTrue(query instanceof BooleanQuery);
       final BooleanQuery bq = (BooleanQuery) query;
       assertEquals(2, bq.clauses().size());
-      checkChooseOneWordQuery(span, bq.clauses().get(0).getQuery(), fieldName, randomTerms);
-      checkApacheLuceneSolr(bq.clauses().get(1).getQuery(), fieldName);
+      checkChooseOneWordQuery(span, bq.clauses().get(0).query(), fieldName, randomTerms);
+      checkApacheLuceneSolr(bq.clauses().get(1).query(), fieldName);
     }
   }
 

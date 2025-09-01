@@ -426,7 +426,7 @@ public class TestMinHashQParser extends SolrTestCaseJ4 {
     assertEquals(4, bq.clauses().size());
     for (BooleanClause clause : bq.clauses()) {
       assertEquals(
-          3, ((BooleanQuery) ((ConstantScoreQuery) clause.getQuery()).getQuery()).clauses().size());
+          3, ((BooleanQuery) ((ConstantScoreQuery) clause.query()).getQuery()).clauses().size());
     }
   }
 

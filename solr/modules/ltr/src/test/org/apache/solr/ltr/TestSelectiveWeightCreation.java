@@ -137,7 +137,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     final IndexSearcher searcher = getSearcher(r);
     // first run the standard query
     final TopDocs hits = searcher.search(bqBuilder.build(), 10);
-    assertEquals(2, hits.totalHits.value);
+    assertEquals(2, hits.totalHits.value());
     assertEquals("10", searcher.storedFields().document(hits.scoreDocs[0].doc).get("id"));
     assertEquals("11", searcher.storedFields().document(hits.scoreDocs[1].doc).get("id"));
 
