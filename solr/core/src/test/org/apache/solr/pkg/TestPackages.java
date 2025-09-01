@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -535,7 +536,8 @@ public class TestPackages extends SolrCloudTestCase {
           10,
           () ->
               NavigableObject.wrap(
-                  Utils.executeGET(client.getHttpClient(), jetty.getBaseUrl() + uri, parser)),
+                  HttpClientUtil.executeGET(
+                      client.getHttpClient(), jetty.getBaseUrl() + uri, parser)),
           expected);
     }
   }
@@ -690,7 +692,8 @@ public class TestPackages extends SolrCloudTestCase {
             public NavigableObject call() throws Exception {
               try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
                 return (NavigableObject)
-                    Utils.executeGET(solrClient.getHttpClient(), path, Utils.JAVABINCONSUMER);
+                    HttpClientUtil.executeGET(
+                        solrClient.getHttpClient(), path, Utils.JAVABINCONSUMER);
               }
             }
           },

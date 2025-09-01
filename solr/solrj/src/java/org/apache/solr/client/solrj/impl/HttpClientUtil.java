@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +41,8 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.config.RequestConfig.Builder;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -57,6 +60,8 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.http.util.EntityUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -192,6 +197,73 @@ public class HttpClientUtil {
           | InvocationTargetException
           | NoSuchMethodException e) {
         throw new RuntimeException("Unable to instantiate Solr HttpClientBuilderFactory", e);
+      }
+    }
+  }
+
+  public static <T> T executeGET(
+      HttpClient client, String url, Utils.InputStreamConsumer<T> consumer) throws SolrException {
+    return executeHttpMethod(client, url, consumer, new HttpGet(url));
+  }
+
+  public static <T> T executeHttpMethod(
+      HttpClient client,
+      String url,
+      Utils.InputStreamConsumer<T> consumer,
+      HttpRequestBase httpMethod) {
+    T result = null;
+    HttpResponse rsp;
+    try {
+      rsp = client.execute(httpMethod);
+    } catch (IOException e) {
+      log.error("Error in request to url : {}", url, e);
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Error sending request");
+    }
+    int statusCode = rsp.getStatusLine().getStatusCode();
+    if (statusCode != 200) {
+      try {
+        log.error(
+            "Failed a request to: {}, status: {}, body: {}",
+            url,
+            rsp.getStatusLine(),
+            EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8)); // nowarn
+      } catch (IOException e) {
+        log.error("could not print error", e);
+      }
+      throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), "Unknown error");
+    }
+    HttpEntity entity = rsp.getEntity();
+    try {
+      InputStream is = entity.getContent();
+      if (consumer != null) {
+
+        result = consumer.accept(is);
+      }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
+    } finally {
+      consumeFully(entity);
+    }
+    return result;
+  }
+
+  /**
+   * If the passed entity has content, make sure it is fully read and closed.
+   *
+   * @param entity to consume or null
+   */
+  public static void consumeFully(HttpEntity entity) {
+    if (entity != null) {
+      try {
+        // make sure the stream is full read
+        Utils.readFully(entity.getContent());
+      } catch (UnsupportedOperationException e) {
+        // nothing to do then
+      } catch (IOException e) {
+        // quiet
+      } finally {
+        // close the stream
+        EntityUtils.consumeQuietly(entity);
       }
     }
   }
