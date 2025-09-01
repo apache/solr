@@ -26,6 +26,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -671,11 +674,13 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       }
 
       // too little time to succeed
-      QueryRequest req = new QueryRequest();
+      int packets = LuceneTestCase.RANDOM_MULTIPLIER == 1 ? 10 : 80; // 60 crosses a default timeout
+      long timeToSendMs = (long) packets * BasicHttpSolrClientTest.SlowStreamServlet.PACKET_MS;
+      QueryRequest req = new QueryRequest(SolrParams.of("count", "" + packets));
       req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
       assertIsTimeout(expectThrows(SolrServerException.class, () -> oldClient.request(req)));
 
-      int newIdleTimeoutMs = 10 * 1000; // enough time to succeed
+      long newIdleTimeoutMs = timeToSendMs + 1000; // enough time to succeed
       try (Http2SolrClient idleTimeoutChangedClient =
           new Http2SolrClient.Builder(url)
               .withHttpClient(oldClient)
@@ -685,7 +690,9 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         assertEquals(newIdleTimeoutMs, idleTimeoutChangedClient.getIdleTimeout());
         NamedList<Object> response = idleTimeoutChangedClient.request(req);
         try (InputStream is = (InputStream) response.get("stream")) {
-          assertEquals("0123456789", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+          String expect =
+              IntStream.range(0, packets).mapToObj(String::valueOf).collect(Collectors.joining());
+          assertEquals(expect, new String(is.readAllBytes(), StandardCharsets.UTF_8));
         }
       }
     }
