@@ -232,7 +232,9 @@ public class EnvUtils {
               deprecatedKey,
               key);
           setProperty(key, String.valueOf(!Boolean.getBoolean(deprecatedKey)));
-        } else if (deprecatedKey.equals("solr.hide.stack.trace")) {
+        } else if (deprecatedKey.equals("disable.config.edit")
+            || deprecatedKey.equals("disable.v2.api")
+            || deprecatedKey.equals("solr.hide.stack.trace")) {
           log.warn(
               "Converting from legacy system property {} to modern .enabled equivalent {} by flipping the boolean property value.",
               deprecatedKey,

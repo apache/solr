@@ -1091,11 +1091,6 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
     CLOUD_MODE_OPTS+=("-DcreateZkChroot=$ZK_CREATE_CHROOT")
   fi
 
-  # and if collection1 needs to be bootstrapped
-  if [ -e "$SOLR_HOME/collection1/core.properties" ]; then
-    CLOUD_MODE_OPTS+=('-Dbootstrap_confdir=./solr/collection1/conf' '-Dcollection.configName=myconf' '-DnumShards=1')
-  fi
-
   if [ "${SOLR_SOLRXML_REQUIRED:-false}" == "true" ]; then
     CLOUD_MODE_OPTS+=("-Dsolr.solrxml.required=true")
   fi
