@@ -61,6 +61,31 @@ Users who previously relied on collection-specific URLs to avoid including the c
 * Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to JavaBinRequestWriter, JavaBinResponseParser, StreamingJavaBinResponseParser.
 This makes it clear that they pertain specifically to “JavaBin” rather than binary in general.
 
+=== SolrCloud Overseer
+
+SolrCloud now supports disabling the "Overseer", which is an elected node responsible for processing all cluster administration requests and collection state updates.
+When disabled, _any_ node that either receives such a request or wishes to do it internally will execute the command.
+It was possible to disable the Overseer since Solr 9 using undocumented configuration in solr.xml (`distributedClusterStateUpdates` & `distributedCollectionConfigSetExecution`) that have since been removed.
+Now this mode is toggled either with a boolean xref:deployment-guide:cluster-node-management.adoc#clusterprop[cluster property] `overseerEnabled`, or an env var `SOLR_CLOUD_OVERSEER_ENABLED`.
+In Solr 11, the Overseer might cease to exist, in an effort to simplify SolrCloud and maintenance.
+
+Upgrades: This choice cannot be changed with a rolling upgrade; doing so is highly risky.
+All nodes in the cluster must always have a consistent understanding of the overseer's enablement.
+If using the cluster property toggle, use the xref:deployment-guide:zookeeper-utilities.adoc#set-a-cluster-property[bin/solr cluster] CLI utility to set it while the cluster is offline.
+If using the env var; ensure each Solr node is configured to start with the setting set consistently.
+
+When the Overseer is disabled, it is nonetheless still elected, which can be influenced by node roles.
+If you are using any xref:configuration-guide:cluster-singleton-plugins.adoc[cluster singleton plugins], they execute on the node elected to be the Overseer.
+
+In general, most users won't notice a difference.
+Commands should execute faster without the Overseer.
+Debugging some SolrCloud problems with the Overseer is more challenging than without since the Overseer is complex (a principal reason for it's disablement).
+But the Overseer centralized some processing that results in efficiencies for large clusters in some scenarios.
+If you have a collection that has many replicas (hundreds), and many are co-located on the same node, then node stops and starts will internally interact with ZooKeeper more.
+Using xref:configuration-guide:configuring-solr-xml.adoc[minStateByteLenForCompression] will help.
+Creating a replica (either via collection creation or other circumstances) can take more time without the Overseer if these creation commands are delivered to many nodes around the cluster.
+That can be avoided simply by sending admin requests to a consistent node.
+
 === Service installer
 
 The service installer now installs a `systemd` startup script instead of an `init.d` startup script. It is up to the user to uninstall any existing `init.d` script when upgrading.
@@ -119,7 +144,7 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * The ConcurrentMergeScheduler's autoIOThrottle default changed to `false` but `true` may be configured to retain prior behaviour. (SOLR-17631).
 
-* BlobHandler and the `.system` collection have been removed in favour of FileStore API.  (SOLR-17851). 
+* BlobHandler and the `.system` collection have been removed in favour of FileStore API.  (SOLR-17851).
 
 
 === Security
