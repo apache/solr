@@ -907,7 +907,7 @@ public class QueryComponent extends SearchComponent {
   }
 
   protected abstract static class ShardDocQueue {
-    public abstract void push(ShardDoc shardDoc);
+    public abstract boolean push(ShardDoc shardDoc);
 
     public abstract ShardDoc pop();
 
@@ -927,12 +927,32 @@ public class QueryComponent extends SearchComponent {
     @Override
     public ShardDocQueue apply(SortField[] sortFields, Integer size) {
       return new ShardDocQueue() {
+
+        // id to shard mapping, to eliminate any accidental dups
+        private final HashMap<Object, String> uniqueDoc = new HashMap<>();
+
         private final ShardFieldSortedHitQueue queue =
             new ShardFieldSortedHitQueue(sortFields, size, searcher);
 
         @Override
-        public void push(ShardDoc shardDoc) {
+        public boolean push(ShardDoc shardDoc) {
+          final String prevShard = uniqueDoc.put(shardDoc.id, shardDoc.shard);
+          if (prevShard != null) {
+            // duplicate detected
+
+            // For now, just always use the first encountered since we can't currently
+            // remove the previous one added to the priority queue.  If we switched
+            // to the Java5 PriorityQueue, this would be easier.
+            return false;
+            // make which duplicate is used deterministic based on shard
+            // if (prevShard.compareTo(shardDoc.shard) >= 0) {
+            //  TODO: remove previous from priority queue
+            //  return false;
+            // }
+          }
+
           queue.insertWithOverflow(shardDoc);
+          return true;
         }
 
         @Override
@@ -995,9 +1015,6 @@ public class QueryComponent extends SearchComponent {
 
     IndexSchema schema = rb.req.getSchema();
     SchemaField uniqueKeyField = schema.getUniqueKeyField();
-
-    // id to shard mapping, to eliminate any accidental dups
-    HashMap<Object, String> uniqueDoc = new HashMap<>();
 
     // Merge the docs via a priority queue so we don't have to sort *all* of the
     // documents... we only need to order the top (rows+start)
@@ -1173,23 +1190,6 @@ public class QueryComponent extends SearchComponent {
       for (int i = 0; i < docs.size(); i++) {
         SolrDocument doc = docs.get(i);
         Object id = doc.getFieldValue(uniqueKeyField.getName());
-
-        String prevShard = uniqueDoc.put(id, srsp.getShard());
-        if (prevShard != null) {
-          // duplicate detected
-          numFound--;
-
-          // For now, just always use the first encountered since we can't currently
-          // remove the previous one added to the priority queue.  If we switched
-          // to the Java5 PriorityQueue, this would be easier.
-          continue;
-          // make which duplicate is used deterministic based on shard
-          // if (prevShard.compareTo(srsp.shard) >= 0) {
-          //  TODO: remove previous from priority queue
-          //  continue;
-          // }
-        }
-
         ShardDoc shardDoc = new ShardDoc();
         shardDoc.id = id;
         shardDoc.shard = srsp.getShard();
@@ -1208,7 +1208,9 @@ public class QueryComponent extends SearchComponent {
 
         shardDoc.sortFieldValues = unmarshalledSortFieldValues;
 
-        shardDocQueue.push(shardDoc);
+        if (!shardDocQueue.push(shardDoc)) {
+          numFound--;
+        }
       } // end for-each-doc-in-response
     } // end for-each-response
 
