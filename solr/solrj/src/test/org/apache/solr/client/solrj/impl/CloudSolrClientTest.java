@@ -675,8 +675,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
           params.set("action", "foobar"); // this should cause an error
 
           var request =
-              new GenericSolrRequest(METHOD.GET, adminPath, SolrRequestType.ADMIN, params)
-                  .setRequiresCollection(true);
+              new GenericSolrRequest(METHOD.GET, adminPath, SolrRequestType.ADMIN, params);
           try {
             NamedList<Object> resp = client.request(request);
             fail("call to foo for admin path " + adminPath + " should have failed");
