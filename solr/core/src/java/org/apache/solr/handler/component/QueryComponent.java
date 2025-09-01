@@ -915,30 +915,6 @@ public class QueryComponent extends SearchComponent {
   }
   ;
 
-  private static class DefaultShardDocQueue extends ShardDocQueue {
-    private final ShardFieldSortedHitQueue queue;
-
-    public DefaultShardDocQueue(SortField[] sortFields, int size, SolrIndexSearcher searcher) {
-      queue = new ShardFieldSortedHitQueue(sortFields, size, searcher);
-    }
-
-    @Override
-    public void push(ShardDoc shardDoc) {
-      queue.insertWithOverflow(shardDoc);
-    }
-
-    @Override
-    public ShardDoc pop() {
-      return queue.pop();
-    }
-
-    @Override
-    public int size() {
-      return queue.size();
-    }
-  }
-  ;
-
   protected static class ShardDocQueueFactory
       implements BiFunction<SortField[], Integer, ShardDocQueue> {
 
@@ -950,7 +926,25 @@ public class QueryComponent extends SearchComponent {
 
     @Override
     public ShardDocQueue apply(SortField[] sortFields, Integer size) {
-      return new DefaultShardDocQueue(sortFields, size, searcher);
+      return new ShardDocQueue() {
+        private final ShardFieldSortedHitQueue queue =
+            new ShardFieldSortedHitQueue(sortFields, size, searcher);
+
+        @Override
+        public void push(ShardDoc shardDoc) {
+          queue.insertWithOverflow(shardDoc);
+        }
+
+        @Override
+        public ShardDoc pop() {
+          return queue.pop();
+        }
+
+        @Override
+        public int size() {
+          return queue.size();
+        }
+      };
     }
   }
   ;
