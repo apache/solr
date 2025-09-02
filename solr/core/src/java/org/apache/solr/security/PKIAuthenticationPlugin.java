@@ -40,7 +40,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
@@ -57,7 +56,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.CryptoKeys;
@@ -384,7 +382,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       return null;
     }
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
-    HttpEntity entity = null;
     try {
       final var solrParams = new ModifiableSolrParams();
       solrParams.add("wt", "json");
@@ -409,8 +406,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     } catch (Exception e) {
       log.error("Exception trying to get public key from: {}", url, e);
       return null;
-    } finally {
-      Utils.consumeFully(entity);
     }
   }
 
