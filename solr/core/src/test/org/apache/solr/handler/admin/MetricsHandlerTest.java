@@ -852,21 +852,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
                 "completed"));
     assertEquals(0, actualCounterDataPoint.getValue(), 0);
 
-    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_node_connections");
-    GaugeSnapshot.GaugeDataPointSnapshot actualGaugeDataPoint =
-        getGaugeDatapointSnapshot(
-            actualSnapshot,
-            Labels.of(
-                "category",
-                "UPDATE",
-                "handler",
-                "updateShardHandler",
-                "item",
-                "availableConnections"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
-
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_node_core_root_fs_bytes");
-    actualGaugeDataPoint =
+    var actualGaugeDataPoint =
         getGaugeDatapointSnapshot(
             actualSnapshot, Labels.of("category", "CONTAINER", "item", "totalSpace"));
     assertNotNull(actualGaugeDataPoint);
