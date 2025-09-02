@@ -91,8 +91,8 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -284,10 +284,10 @@ public class IndexFetcher {
     String compress = (String) initArgs.get(COMPRESSION);
     useInternalCompression = ReplicationHandler.INTERNAL.equals(compress);
     useExternalCompression = ReplicationHandler.EXTERNAL.equals(compress);
-    soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
+    soTimeout = getParameter(initArgs, SolrHttpConstants.PROP_SO_TIMEOUT, 120000, null);
 
-    String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
-    String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
+    String httpBasicAuthUser = (String) initArgs.get(SolrHttpConstants.PROP_BASIC_AUTH_USER);
+    String httpBasicAuthPassword = (String) initArgs.get(SolrHttpConstants.PROP_BASIC_AUTH_PASS);
     solrClient =
         createSolrClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, leaderBaseUrl);
   }

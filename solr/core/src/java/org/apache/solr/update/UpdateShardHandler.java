@@ -30,6 +30,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -87,8 +88,8 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private SolrMetricsContext solrMetricsContext;
 
-  private int socketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
-  private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+  private int socketTimeout = SolrHttpConstants.DEFAULT_SO_TIMEOUT;
+  private int connectionTimeout = SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
     defaultConnectionManager =
@@ -98,15 +99,15 @@ public class UpdateShardHandler implements SolrInfoBean {
     if (cfg != null) {
       defaultConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       defaultConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
-      clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
+      clientParams.set(SolrHttpConstants.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
       clientParams.set(
-          HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
+          SolrHttpConstants.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
       // following is done only for logging complete configuration.
       // The maxConnections and maxConnectionsPerHost have already been specified on the connection
       // manager
-      clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, cfg.getMaxUpdateConnections());
+      clientParams.set(SolrHttpConstants.PROP_MAX_CONNECTIONS, cfg.getMaxUpdateConnections());
       clientParams.set(
-          HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, cfg.getMaxUpdateConnectionsPerHost());
+          SolrHttpConstants.PROP_MAX_CONNECTIONS_PER_HOST, cfg.getMaxUpdateConnectionsPerHost());
       socketTimeout = cfg.getDistributedSocketTimeout();
       connectionTimeout = cfg.getDistributedConnectionTimeout();
     }

@@ -78,42 +78,19 @@ import org.slf4j.LoggerFactory;
  * @deprecated Used to configure the Apache HTTP client. Please use the Http2 client
  */
 @Deprecated(since = "9.0")
-public class HttpClientUtil {
+public class HttpClientUtil implements SolrHttpConstants {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static final int DEFAULT_CONNECT_TIMEOUT = 60000;
-  public static final int DEFAULT_SO_TIMEOUT = 600000;
-  public static final int DEFAULT_MAXCONNECTIONSPERHOST = 100000;
-  public static final int DEFAULT_MAXCONNECTIONS = 100000;
 
   private static final int VALIDATE_AFTER_INACTIVITY_DEFAULT = 3000;
   private static final int EVICT_IDLE_CONNECTIONS_DEFAULT = 50000;
   private static final String VALIDATE_AFTER_INACTIVITY = "validateAfterInactivity";
   private static final String EVICT_IDLE_CONNECTIONS = "evictIdleConnections";
 
-  // Maximum connections allowed per host
-  public static final String PROP_MAX_CONNECTIONS_PER_HOST = "maxConnectionsPerHost";
-  // Maximum total connections allowed
-  public static final String PROP_MAX_CONNECTIONS = "maxConnections";
   // Retry http requests on error
   public static final String PROP_USE_RETRY = "retry";
   // Allow compression (deflate,gzip) if server supports it
   public static final String PROP_ALLOW_COMPRESSION = "allowCompression";
-  // Basic auth username
-  public static final String PROP_BASIC_AUTH_USER = "httpBasicAuthUser";
-  // Basic auth password
-  public static final String PROP_BASIC_AUTH_PASS = "httpBasicAuthPassword";
-
-  /**
-   * System property consulted to determine if the default {@link SocketFactoryRegistryProvider}
-   * will require hostname validation of SSL Certificates. The default behavior is to enforce peer
-   * name validation.
-   *
-   * <p>This property will have no effect if {@link #setSocketFactoryRegistryProvider} is used to
-   * override the default {@link SocketFactoryRegistryProvider}
-   */
-  public static final String SYS_PROP_CHECK_PEER_NAME = "solr.ssl.checkPeerName";
 
   // * NOTE* The following params configure the default request config and this
   // is overridden by SolrJ clients. Use the setters on the SolrJ clients
@@ -121,22 +98,6 @@ public class HttpClientUtil {
 
   // Follow redirects
   public static final String PROP_FOLLOW_REDIRECTS = "followRedirects";
-
-  // socket timeout measured in ms, closes a socket if read
-  // takes longer than x ms to complete. throws
-  // java.net.SocketTimeoutException: Read timed out exception
-  public static final String PROP_SO_TIMEOUT = "socketTimeout";
-  // connection timeout measures in ms, closes a socket if connection
-  // cannot be established within x ms. with a
-  // java.net.SocketTimeoutException: Connection timed out
-  public static final String PROP_CONNECTION_TIMEOUT = "connTimeout";
-
-  /**
-   * A Java system property to select the {@linkplain HttpClientBuilderFactory} used for configuring
-   * the {@linkplain HttpClientBuilder} instance by default.
-   */
-  public static final String SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY =
-      "solr.httpclient.builder.factory";
 
   /**
    * A Java system property to select the {@linkplain SocketFactoryRegistryProvider} used for
