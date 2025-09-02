@@ -33,7 +33,7 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-densevector-quantized-bits.xml",
-        "ScalarQuantizedDenseVectorField fields must have bit size of 4 (half-byte) or 7 (signed-byte) v_scalar_bits");
+        "ScalarQuantizedDenseVectorField bits must be one of: 4, 7; bits=6 v_scalar_bits");
   }
 
   @Test
@@ -41,7 +41,7 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-densevector-quantized-compress.xml",
-        "ScalarQuantizedDenseVectorField fields must have bit size of 4 to enable compression v_scalar_compressed");
+        "ScalarQuantizedDenseVectorField fields compress=true only applies when bits=4: v_scalar_compressed");
   }
 
   @Test
@@ -49,7 +49,7 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-densevector-quantized-confidence-interval-low.xml",
-        "ScalarQuantizedDenseVectorField fields must have non-dynamic confidence interval between 0.9 and 1.0 v_scalar_ci");
+        "ScalarQuantizedDenseVectorField confidenceInterval must be between 0.9 and 1.0 or 0; confidenceInterval=0.8: v_scalar_ci");
   }
 
   @Test
@@ -58,7 +58,7 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-densevector-quantized-confidence-interval-high.xml",
-        "ScalarQuantizedDenseVectorField fields must have non-dynamic confidence interval between 0.9 and 1.0 v_scalar_ci");
+        "ScalarQuantizedDenseVectorField confidenceInterval must be between 0.9 and 1.0 or 0; confidenceInterval=1.5: v_scalar_ci");
   }
 
   @Test
