@@ -912,6 +912,8 @@ public class QueryComponent extends SearchComponent {
     public abstract ShardDoc pop();
 
     public abstract int size();
+
+    public abstract Map<Object, ShardDoc> resultIds(int offset);
   }
   ;
 
@@ -963,6 +965,27 @@ public class QueryComponent extends SearchComponent {
         @Override
         public int size() {
           return queue.size();
+        }
+
+        @Override
+        public Map<Object, ShardDoc> resultIds(int offset) {
+          final Map<Object, ShardDoc> resultIds = new HashMap<>();
+
+          // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
+          // So we want to pop the last documents off the queue to get
+          // the docs offset -> queuesize
+          int resultSize = queue.size() - offset;
+          resultSize = Math.max(0, resultSize); // there may not be any docs in range
+
+          for (int i = resultSize - 1; i >= 0; i--) {
+            ShardDoc shardDoc = queue.pop();
+            shardDoc.positionInResponse = i;
+            // Need the toString() for correlation with other lists that must
+            // be strings (like keys in highlighting, explain, etc)
+            resultIds.put(shardDoc.id.toString(), shardDoc);
+          }
+
+          return resultIds;
         }
       };
     }
@@ -1214,20 +1237,7 @@ public class QueryComponent extends SearchComponent {
       } // end for-each-doc-in-response
     } // end for-each-response
 
-    // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
-    // So we want to pop the last documents off the queue to get
-    // the docs offset -> queuesize
-    int resultSize = shardDocQueue.size() - ss.getOffset();
-    resultSize = Math.max(0, resultSize); // there may not be any docs in range
-
-    Map<Object, ShardDoc> resultIds = new HashMap<>();
-    for (int i = resultSize - 1; i >= 0; i--) {
-      ShardDoc shardDoc = shardDocQueue.pop();
-      shardDoc.positionInResponse = i;
-      // Need the toString() for correlation with other lists that must
-      // be strings (like keys in highlighting, explain, etc)
-      resultIds.put(shardDoc.id.toString(), shardDoc);
-    }
+    final Map<Object, ShardDoc> resultIds = shardDocQueue.resultIds(ss.getOffset());
 
     // Add hits for distributed requests
     // https://issues.apache.org/jira/browse/SOLR-3518
