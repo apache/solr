@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import java.io.IOException;
@@ -74,6 +75,8 @@ public class SolrIndexWriter extends IndexWriter {
 
   public static final String COMMIT_COMMAND_VERSION = "commitCommandVer";
 
+  public static final AttributeKey<String> MERGE_TYPE_ATTR = AttributeKey.stringKey("merge_type");
+
   private final Object CLOSE_LOCK = new Object();
 
   String name;
@@ -97,8 +100,7 @@ public class SolrIndexWriter extends IndexWriter {
   private final AtomicInteger runningMinorMergesSegments = new AtomicInteger();
   private final AtomicLong runningMajorMergesDocs = new AtomicLong();
   private final AtomicLong runningMinorMergesDocs = new AtomicLong();
-  private ObservableLongGauge majorMergeStats;
-  private ObservableLongGauge minorMergeStats;
+  private ObservableLongGauge mergeStats;
 
   private final SolrMetricsContext solrMetricsContext;
   // merge diagnostics.
@@ -207,14 +209,14 @@ public class SolrIndexWriter extends IndexWriter {
         majorMergedDocs =
             new AttributedLongCounter(
                 solrMetricsContext.longCounter(
-                    "solr_indexriter_major_merged_docs",
-                    "Number of documents merged while merging segments above the majorMergeDocs threshold"),
+                    "solr_indexwriter_major_merged_docs",
+                    "Number of documents merged while merging segments above the majorMergeDocs threshold (" + majorMergeDocs + ")"),
                 baseAttributes);
         majorDeletedDocs =
             new AttributedLongCounter(
                 solrMetricsContext.longCounter(
-                    "solr_indexriter_major_deleted_docs",
-                    "Number of deleted documents that were expunged while merging segments above the majorMergeDocs threshold"),
+                    "solr_indexwriter_major_deleted_docs",
+                    "Number of deleted documents that were expunged while merging segments above the majorMergeDocs threshold (" + majorMergeDocs + ")"),
                 baseAttributes);
       }
       if (mergeTotals) {
@@ -222,14 +224,14 @@ public class SolrIndexWriter extends IndexWriter {
             new AttributedLongTimer(
                 solrMetricsContext.longHistogram(
                     "solr_indexwriter_minor_merge",
-                    "Time spent merging segments below the majorMergeDocs threshold",
+                    "Time spent merging segments below or equal to the majorMergeDocs threshold (" + majorMergeDocs + ")",
                     OtelUnit.MILLISECONDS),
                 baseAttributes);
         majorMerge =
             new AttributedLongTimer(
                 solrMetricsContext.longHistogram(
                     "solr_indexwriter_major_merge",
-                    "Time spent merging segments above the majorMergeDocs threshold",
+                    "Time spent merging segments above the majorMergeDocs threshold (" + majorMergeDocs + ")",
                     OtelUnit.MILLISECONDS),
                 baseAttributes);
         mergeErrors =
@@ -239,35 +241,29 @@ public class SolrIndexWriter extends IndexWriter {
                     "Number of merge errors"),
                 baseAttributes);
         String tag = core.getMetricTag();
-        majorMergeStats =
+        mergeStats =
             solrMetricsContext.observableLongGauge(
                 "solr_indexwriter_major_merge_stats",
-                "Metrics around currently running segment merges above the majorMergeDocs threshold",
+                "Metrics around currently running segment merges; major := above the majorMergeDocs threshold (" + majorMergeDocs + "), minor := below or equal to the threshold",
                 (observableLongMeasurement -> {
                   observableLongMeasurement.record(
                       runningMajorMerges.get(),
-                      baseAttributes.toBuilder().put(TYPE_ATTR, "running").build());
+                      baseAttributes.toBuilder().put(TYPE_ATTR, "running").put(MERGE_TYPE_ATTR, "major").build());
                   observableLongMeasurement.record(
                       runningMajorMergesDocs.get(),
-                      baseAttributes.toBuilder().put(TYPE_ATTR, "running_docs").build());
+                      baseAttributes.toBuilder().put(TYPE_ATTR, "running_docs").put(MERGE_TYPE_ATTR, "major").build());
                   observableLongMeasurement.record(
                       runningMajorMergesSegments.get(),
-                      baseAttributes.toBuilder().put(TYPE_ATTR, "running_segments").build());
-                }));
-        minorMergeStats =
-            solrMetricsContext.observableLongGauge(
-                "solr_indexwriter_minor_merge_stats",
-                "Metrics around currently running segment merges below the majorMergeDocs threshold",
-                (observableLongMeasurement -> {
+                      baseAttributes.toBuilder().put(TYPE_ATTR, "running_segments").put(MERGE_TYPE_ATTR, "major").build());
                   observableLongMeasurement.record(
                       runningMinorMerges.get(),
-                      baseAttributes.toBuilder().put(TYPE_ATTR, "running").build());
+                      baseAttributes.toBuilder().put(TYPE_ATTR, "running").put(MERGE_TYPE_ATTR, "minor").build());
                   observableLongMeasurement.record(
                       runningMinorMergesDocs.get(),
-                      baseAttributes.toBuilder().put(TYPE_ATTR, "running_docs").build());
+                      baseAttributes.toBuilder().put(TYPE_ATTR, "running_docs").put(MERGE_TYPE_ATTR, "minor").build());
                   observableLongMeasurement.record(
                       runningMinorMergesSegments.get(),
-                      baseAttributes.toBuilder().put(TYPE_ATTR, "running_segments").build());
+                      baseAttributes.toBuilder().put(TYPE_ATTR, "running_segments").put(MERGE_TYPE_ATTR, "minor").build());
                 }));
         flushes =
             new AttributedLongCounter(
@@ -454,6 +450,9 @@ public class SolrIndexWriter extends IndexWriter {
 
       if (directoryFactory != null) {
         directoryFactory.release(directory);
+      }
+      if (mergeStats != null) {
+        IOUtils.closeQuietly(mergeStats);
       }
       if (solrMetricsContext != null) {
         solrMetricsContext.unregister();

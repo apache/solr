@@ -140,7 +140,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var prometheusMetricReader = SolrMetricTestUtils.getPrometheusMetricReader(core);
       assertNotNull(prometheusMetricReader);
       MetricSnapshots otelMetrics = prometheusMetricReader.collect();
-      assertTrue("Metrics count: " + otelMetrics.size(), otelMetrics.size() >= 20);
+      assertTrue("Metrics count: " + otelMetrics.size(), otelMetrics.size() >= 19);
 
       // check basic index meters
       var minorMergeTimer =
@@ -150,7 +150,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .build());
-      assertTrue("minorMerge: " + minorMergeTimer.getCount(), minorMergeTimer.getCount() >= 3);
+      assertTrue("minorMergeTimer: " + minorMergeTimer.getCount(), minorMergeTimer.getCount() >= 3);
       var majorMergeTimer =
           SolrMetricTestUtils.getHistogramDatapoint(
               core,
@@ -180,6 +180,68 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .build());
       assertTrue("flush: " + flushCounter.getValue(), flushCounter.getValue() > 10);
+    }
+  }
+
+  public void testIndexMetricsMajorAndMinorMergesWithDetails() throws Exception {
+    System.setProperty("solr.tests.metrics.merge", "false"); // test mergeDetails override too
+    System.setProperty("solr.tests.metrics.mergeDetails", "true");
+    System.setProperty("solr.tests.metrics.majorMergeDocs", "450");
+    initCore("solrconfig-indexmetrics.xml", "schema.xml");
+
+    addDocs();
+
+    try (SolrCore core = h.getCoreContainer().getCore("collection1")) {
+      var prometheusMetricReader = SolrMetricTestUtils.getPrometheusMetricReader(core);
+      assertNotNull(prometheusMetricReader);
+      MetricSnapshots otelMetrics = prometheusMetricReader.collect();
+      assertTrue("Metrics count: " + otelMetrics.size(), otelMetrics.size() >= 18);
+
+      // addDocs() adds 1000 documents and then sends a commit.  maxBufferedDocs==100, segmentsPerTier==3,
+      //     maxMergeAtOnce==3 and majorMergeDocs==450.  Thus, new documents form segments with 100 docs, merges are
+      //     called for when there are 3 segments at the lowest tier, and the merges are as follows:
+      //     1. 100 + 100 + 100 ==> new 300 doc segment, below the 450 threshold ==> minor merge
+      //     2. 100 + 100 + 100 ==> new 300 doc segment, below the 450 threshold ==> minor merge
+      //     3. 300 + 100 + 100 ==> new 500 doc segment, above the 450 threshold ==> major merge
+      //     4. 300 + 100 + 100 ==> new 500 doc segment, above the 450 threshold ==> major merge
+
+      // check basic index meters
+      var minorMergeTimer =
+          SolrMetricTestUtils.getHistogramDatapoint(
+              core,
+              "solr_indexwriter_minor_merge_milliseconds",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      assertTrue("minorMergeTimer: " + minorMergeTimer.getCount(), minorMergeTimer.getCount() == 2);
+      var majorMergeTimer =
+          SolrMetricTestUtils.getHistogramDatapoint(
+              core,
+              "solr_indexwriter_major_merge_milliseconds",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      assertTrue("majorMergeTimer: " + majorMergeTimer.getCount(), majorMergeTimer.getCount() == 2);
+
+      // check detailed meters
+      var majorMergeDocs =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_indexwriter_major_merged_docs",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      // majorMergeDocs is the total number of docs merged during major merge operations
+      assertTrue("majorMergeDocs: " + majorMergeDocs.getValue(), majorMergeDocs.getValue() == 1000);
+
+      var flushCounter =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_indexwriter_flush",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      assertTrue("flush: " + flushCounter.getValue(), flushCounter.getValue() >= 10);
     }
   }
 }
