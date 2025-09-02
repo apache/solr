@@ -19,6 +19,13 @@ apply plugin: 'java-library'
 
 description = 'Solr Integration with Tika for extracting content from binary file formats such as Microsoft Word and Adobe PDF'
 
+configurations.configureEach {
+  // Spotbugs Annotations are only needed for old findbugs
+  // annotation usage like in Zookeeper during compilation time.
+  // It is not included in the release so exclude from checks.
+  exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+}
+
 dependencies {
   implementation platform(project(':platform'))
   implementation project(':solr:core')
