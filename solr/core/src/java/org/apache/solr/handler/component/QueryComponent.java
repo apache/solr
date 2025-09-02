@@ -909,10 +909,6 @@ public class QueryComponent extends SearchComponent {
   protected abstract static class ShardDocQueue {
     public abstract boolean push(ShardDoc shardDoc);
 
-    public abstract ShardDoc pop();
-
-    public abstract int size();
-
     public abstract Map<Object, ShardDoc> resultIds(int offset);
   }
   ;
@@ -955,16 +951,6 @@ public class QueryComponent extends SearchComponent {
 
           queue.insertWithOverflow(shardDoc);
           return true;
-        }
-
-        @Override
-        public ShardDoc pop() {
-          return queue.pop();
-        }
-
-        @Override
-        public int size() {
-          return queue.size();
         }
 
         @Override
