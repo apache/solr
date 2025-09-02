@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.configsets_index_query
+import org.apache.solr.ui.generated.resources.configsets_request_handlers
 import org.apache.solr.ui.generated.resources.configsets_search_components
 import org.apache.solr.ui.generated.resources.configsets_update_configuration
 import org.apache.solr.ui.generated.resources.files
@@ -75,6 +76,6 @@ private fun tabLabelRes(item: ConfigsetsTab) = when (item) {
     ConfigsetsTab.Schema -> Res.string.schema
     ConfigsetsTab.UpdateConfig -> Res.string.configsets_update_configuration
     ConfigsetsTab.IndexQuery -> Res.string.configsets_index_query
-    ConfigsetsTab.Handlers -> Res.string.configsets_index_query
+    ConfigsetsTab.Handlers -> Res.string.configsets_request_handlers
     ConfigsetsTab.SearchComponents -> Res.string.configsets_search_components
 }
