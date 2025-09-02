@@ -17,9 +17,6 @@
 package org.apache.solr.blockcache;
 
 import io.opentelemetry.api.common.Attributes;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrInfoBean;
@@ -54,12 +51,11 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
   private SolrMetricsContext solrMetricsContext;
   private long previous = System.nanoTime();
 
-  private List<AutoCloseable> toClose;
+  private AutoCloseable toClose;
 
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    final List<AutoCloseable> observables = new ArrayList<>();
     solrMetricsContext = parentContext.getChildContext(this);
     var baseAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
@@ -73,7 +69,8 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
     var bufferCacheStats =
         solrMetricsContext.doubleMeasurement(
             "solr_buffer_cache_stats", "Buffer cache per second stats");
-    observables.add(
+
+    this.toClose =
         solrMetricsContext.batchCallback(
             () -> {
               long now = System.nanoTime();
@@ -144,9 +141,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
             blockcacheStats,
             perSecStats,
             hitRatio,
-            bufferCacheStats));
-
-    this.toClose = Collections.unmodifiableList(observables);
+            bufferCacheStats);
   }
 
   private float getPerSecond(long value, double seconds) {
