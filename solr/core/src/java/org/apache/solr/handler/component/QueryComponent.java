@@ -1239,7 +1239,7 @@ public class QueryComponent extends SearchComponent {
     responseDocs.setNumFoundExact(hitCountIsExact);
     responseDocs.setStart(ss.getOffset());
     // size appropriately
-    for (int i = 0; i < resultSize; i++) responseDocs.add(null);
+    for (int i = 0; i < resultIds.size(); i++) responseDocs.add(null);
 
     // save these results in a private area so we can access them
     // again when retrieving stored fields.
