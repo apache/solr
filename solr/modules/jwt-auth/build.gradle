@@ -67,7 +67,6 @@ dependencies {
   testImplementation libs.nimbusds.josejwt
   testImplementation libs.squareup.okhttp3.mockwebserver
   testImplementation libs.squareup.okhttp3.okhttp
+  testImplementation libs.squareup.okhttp3.okhttp.jvm
   testRuntimeOnly libs.netty.codechttp
-
-  permitTestUsedUndeclared libs.squareup.okhttp3.okhttp.jvm
 }
