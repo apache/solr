@@ -22,7 +22,7 @@ It is extending JSON Query DSL ultimately enabling Hybrid Search.
 
 [NOTE]
 ====
-This feature is currently unsupported for grouping and Cursors. In User-Managed (aka Standalone) Mode, the `shards` parameter must be provided to enable this feature.
+This feature is currently unsupported for grouping and Cursors.
 ====
 
 == Query DSL Structure
@@ -82,7 +82,6 @@ Combined Query Feature has a separate handler with class `solr.CombinedQuerySear
 
 ```
 <requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
-<bool name="httpCaching">true</bool>
 .....
 </requestHandler>
 ```

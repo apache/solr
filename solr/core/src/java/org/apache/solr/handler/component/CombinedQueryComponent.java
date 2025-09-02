@@ -82,34 +82,32 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
 
   @Override
   public void inform(SolrCore core) {
-    if (initParams != null && initParams.size() > 0) {
-      for (Map.Entry<String, ?> initEntry : initParams) {
-        if ("combiners".equals(initEntry.getKey())
-            && initEntry.getValue() instanceof NamedList<?> all) {
-          for (int i = 0; i < all.size(); i++) {
-            String name = all.getName(i);
-            NamedList<?> combinerConfig = (NamedList<?>) all.getVal(i);
-            String className = (String) combinerConfig.get("class");
-            QueryAndResponseCombiner combiner =
-                core.getResourceLoader().newInstance(className, QueryAndResponseCombiner.class);
-            combiner.init(combinerConfig);
-            combiners.compute(
-                name,
-                (k, existingCombiner) -> {
-                  if (existingCombiner == null) {
-                    return combiner;
-                  }
-                  throw new SolrException(
-                      SolrException.ErrorCode.BAD_REQUEST,
-                      "Found more than one combiner with same name");
-                });
-          }
+    for (Map.Entry<String, ?> initEntry : initParams) {
+      if ("combiners".equals(initEntry.getKey())
+          && initEntry.getValue() instanceof NamedList<?> all) {
+        for (int i = 0; i < all.size(); i++) {
+          String name = all.getName(i);
+          NamedList<?> combinerConfig = (NamedList<?>) all.getVal(i);
+          String className = (String) combinerConfig.get("class");
+          QueryAndResponseCombiner combiner =
+              core.getResourceLoader().newInstance(className, QueryAndResponseCombiner.class);
+          combiner.init(combinerConfig);
+          combiners.compute(
+              name,
+              (k, existingCombiner) -> {
+                if (existingCombiner == null) {
+                  return combiner;
+                }
+                throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    "Found more than one combiner with same name");
+              });
         }
       }
-      Object maxQueries = initParams.get("maxCombinerQueries");
-      if (maxQueries != null) {
-        this.maxCombinerQueries = Integer.parseInt(maxQueries.toString());
-      }
+    }
+    Object maxQueries = initParams.get("maxCombinerQueries");
+    if (maxQueries != null) {
+      this.maxCombinerQueries = Integer.parseInt(maxQueries.toString());
     }
     combiners.computeIfAbsent(
         CombinerParams.RECIPROCAL_RANK_FUSION,
@@ -154,9 +152,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
 
   /**
    * Overrides the process method to handle CombinedQueryResponseBuilder instances. This method
-   * processes the responses from multiple shards, combines them using the specified
-   * QueryAndResponseCombiner strategy, and sets the appropriate results and metadata in the
-   * CombinedQueryResponseBuilder.
+   * processes the responses from multiple queries in the SearchIndexer, combines them using the
+   * specified QueryAndResponseCombiner strategy, and sets the appropriate results and metadata in
+   * the CombinedQueryResponseBuilder.
    *
    * @param rb the ResponseBuilder object to process
    * @throws IOException if an I/O error occurs during processing
@@ -184,46 +182,8 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           setMaxHitsTerminatedEarly |= queryResult.getMaxHitsTerminatedEarly();
         }
       }
-      String algorithm =
-          rb.req
-              .getParams()
-              .get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER);
-      QueryAndResponseCombiner combinerStrategy =
-          QueryAndResponseCombiner.getImplementation(algorithm, combiners);
-      QueryResult combinedQueryResult = combinerStrategy.combine(queryResults, rb.req.getParams());
-      combinedQueryResult.setPartialResults(partialResults);
-      combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
-      combinedQueryResult.setMaxHitsTerminatedEarly(setMaxHitsTerminatedEarly);
-      crb.setResult(combinedQueryResult);
-      if (rb.isDebug()) {
-        String[] queryKeys = rb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
-        List<Query> queries = crb.responseBuilders.stream().map(ResponseBuilder::getQuery).toList();
-        NamedList<Explanation> explanations =
-            combinerStrategy.getExplanations(
-                queryKeys,
-                queries,
-                queryResults,
-                rb.req.getSearcher(),
-                rb.req.getSchema(),
-                rb.req.getParams());
-        rb.addDebugInfo("combinerExplanations", explanations);
-      }
-      ResultContext ctx = new BasicResultContext(crb);
-      crb.rsp.addResponse(ctx);
-      crb.rsp.addToLog(
-          "hits",
-          crb.getResults() == null || crb.getResults().docList == null
-              ? 0
-              : crb.getResults().docList.matches());
-      if (!crb.req.getParams().getBool(ShardParams.IS_SHARD, false)) {
-        // for non-distributed request and future cursor improvement
-        if (null != crb.getNextCursorMark()) {
-          crb.rsp.add(
-              CursorMarkParams.CURSOR_MARK_NEXT,
-              crb.responseBuilders.getFirst().getNextCursorMark().getSerializedTotem());
-        }
-      }
-
+      prepareCombinedResponseBuilder(
+          rb, crb, queryResults, partialResults, segmentTerminatedEarly, setMaxHitsTerminatedEarly);
       if (crb.mergeFieldHandler != null) {
         crb.mergeFieldHandler.handleMergeFields(crb, crb.req.getSearcher());
       } else {
@@ -232,6 +192,53 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       doPrefetch(crb);
     } else {
       super.process(rb);
+    }
+  }
+
+  private void prepareCombinedResponseBuilder(
+      ResponseBuilder rb,
+      CombinedQueryResponseBuilder crb,
+      List<QueryResult> queryResults,
+      boolean partialResults,
+      boolean segmentTerminatedEarly,
+      boolean setMaxHitsTerminatedEarly)
+      throws IOException {
+    String algorithm =
+        rb.req.getParams().get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER);
+    QueryAndResponseCombiner combinerStrategy =
+        QueryAndResponseCombiner.getImplementation(algorithm, combiners);
+    QueryResult combinedQueryResult = combinerStrategy.combine(queryResults, rb.req.getParams());
+    combinedQueryResult.setPartialResults(partialResults);
+    combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
+    combinedQueryResult.setMaxHitsTerminatedEarly(setMaxHitsTerminatedEarly);
+    crb.setResult(combinedQueryResult);
+    if (rb.isDebug()) {
+      String[] queryKeys = rb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
+      List<Query> queries = crb.responseBuilders.stream().map(ResponseBuilder::getQuery).toList();
+      NamedList<Explanation> explanations =
+          combinerStrategy.getExplanations(
+              queryKeys,
+              queries,
+              queryResults,
+              rb.req.getSearcher(),
+              rb.req.getSchema(),
+              rb.req.getParams());
+      rb.addDebugInfo("combinerExplanations", explanations);
+    }
+    ResultContext ctx = new BasicResultContext(crb);
+    crb.rsp.addResponse(ctx);
+    crb.rsp.addToLog(
+        "hits",
+        crb.getResults() == null || crb.getResults().docList == null
+            ? 0
+            : crb.getResults().docList.matches());
+    if (!crb.req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      // for non-distributed request and future cursor improvement
+      if (null != crb.getNextCursorMark()) {
+        crb.rsp.add(
+            CursorMarkParams.CURSOR_MARK_NEXT,
+            crb.responseBuilders.getFirst().getNextCursorMark().getSerializedTotem());
+      }
     }
   }
 
