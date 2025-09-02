@@ -68,4 +68,6 @@ dependencies {
   testImplementation libs.squareup.okhttp3.mockwebserver
   testImplementation libs.squareup.okhttp3.okhttp
   testRuntimeOnly libs.netty.codechttp
+
+  permitUsedUndeclared libs.squareup.okhttp3.okhttp.jvm
 }
