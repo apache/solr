@@ -82,8 +82,8 @@ teardown() {
 }
 
 @test "deprecated system properties converted to modern properties" {
-  solr start -Denable.packages=true
-  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'You are passing in deprecated system property enable.packages and should upgrade to using solr.packages.enabled instead.'
+  solr start -Ddisable.v2.api=true
+  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'You are passing in deprecated system property disable.v2.api and should upgrade to using solr.api.v2.enabled instead.'
 }
 
 @test "start with custom jetty options" {
@@ -94,7 +94,7 @@ teardown() {
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 }
 
-@test "bootstrap configset using bootstrap_confdir and collection.configName" {
+@test "bootstrapping a configset" {
   local confdir_path="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs/conf"
   
   # Verify the source configset directory exists
