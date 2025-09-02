@@ -69,7 +69,6 @@ import org.eclipse.jetty.client.MultiPartRequestContent;
 import org.eclipse.jetty.client.Origin.Address;
 import org.eclipse.jetty.client.Origin.Protocol;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
-import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -210,14 +209,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
     this.listenerFactory.add(factory);
   }
 
-  // internal usage only
-  HttpClient getHttpClient() {
+  /** internal use only */
+  public HttpClient getHttpClient() {
     return httpClient;
-  }
-
-  // internal usage only
-  ProtocolHandlers getProtocolHandlers() {
-    return httpClient.getProtocolHandlers();
   }
 
   private HttpClient createHttpClient(Builder builder) {
@@ -302,6 +296,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
     httpClient.setConnectTimeout(builder.getConnectionTimeoutMillis());
+    httpClient.setIdleTimeout(-1); // don't enforce an idle timeout at this level
     // note: idle & request timeouts are set per request
 
     var cookieStore = builder.getCookieStore();

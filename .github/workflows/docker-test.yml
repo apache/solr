@@ -21,7 +21,7 @@ jobs:
     env:
       SOLR_DOCKER_IMAGE_REPO: github-pr/solr
       SOLR_DOCKER_IMAGE_TAG: ${{github.event.number}}
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
 
     steps:
     - name: Checkout code

@@ -113,8 +113,8 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
       // format does not expose any validation, however by constructing
       // we will run lucene level argument validation
       buildKnnVectorsFormat();
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+    } catch (IllegalArgumentException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, getClass().getSimpleName() + " "  + e.getMessage() + ": " + field.getName(), e);
     }
   }
 

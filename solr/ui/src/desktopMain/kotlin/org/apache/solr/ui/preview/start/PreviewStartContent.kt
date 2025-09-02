@@ -29,24 +29,23 @@ import org.apache.solr.ui.views.start.StartContent
 
 @Preview
 @Composable
-fun PreviewStartContent() = PreviewContainer {
+private fun PreviewStartContent() = PreviewContainer {
     StartContent(component = PreviewStartComponent)
 }
 
 @Preview
 @Composable
-fun PreviewStartContentWithError() = PreviewContainer {
+private fun PreviewStartContentWithError() = PreviewContainer {
     StartContent(component = PreviewStartComponentWithError)
 }
 
-
 @Preview
 @Composable
-fun PreviewStartContentWithConnecting() = PreviewContainer {
+private fun PreviewStartContentWithConnecting() = PreviewContainer {
     StartContent(component = PreviewStartComponentWithConnecting)
 }
 
-private object PreviewStartComponent: StartComponent {
+private object PreviewStartComponent : StartComponent {
     override val model: StateFlow<StartComponent.Model> =
         MutableStateFlow(StartComponent.Model())
 
@@ -54,24 +53,23 @@ private object PreviewStartComponent: StartComponent {
     override fun onConnect() = Unit
 }
 
-private object PreviewStartComponentWithError: StartComponent {
+private object PreviewStartComponentWithError : StartComponent {
     override val model: StateFlow<StartComponent.Model> = MutableStateFlow(
         StartComponent.Model(
             url = "some-invalid-url!",
             error = Res.string.error_invalid_url,
-        )
+        ),
     )
 
     override fun onSolrUrlChange(url: String) = Unit
     override fun onConnect() = Unit
 }
 
-
-private object PreviewStartComponentWithConnecting: StartComponent {
+private object PreviewStartComponentWithConnecting : StartComponent {
     override val model: StateFlow<StartComponent.Model> = MutableStateFlow(
         StartComponent.Model(
             isConnecting = true,
-        )
+        ),
     )
 
     override fun onSolrUrlChange(url: String) = Unit

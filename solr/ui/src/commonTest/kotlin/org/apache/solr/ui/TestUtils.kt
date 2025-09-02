@@ -28,17 +28,15 @@ import kotlinx.coroutines.test.TestScope
  *
  * @param handlers The handlers to attach to the mock engine that will handle the requests
  * in the same order.
- * 
+ *
  */
 fun TestScope.createMockEngine(
     vararg handlers: MockRequestHandler,
     reuseHandlers: Boolean = true,
-): MockEngine {
-    return MockEngine(
-        MockEngineConfig().apply {
-            dispatcher = StandardTestDispatcher(testScheduler)
-            handlers.forEach(::addHandler)
-            this.reuseHandlers = reuseHandlers
-        }
-    )
-}
+): MockEngine = MockEngine(
+    MockEngineConfig().apply {
+        dispatcher = StandardTestDispatcher(testScheduler)
+        handlers.forEach(::addHandler)
+        this.reuseHandlers = reuseHandlers
+    },
+)
