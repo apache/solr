@@ -683,15 +683,13 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                   stateManager, collection, collectionPath, collectionProps, configSetService);
             }
 
-          } else if (System.getProperty("bootstrap_confdir") != null) {
+          } else if (EnvUtils.getProperty("solr.configset.bootstrap.confdir") != null) {
             String defaultConfigName =
-                System.getProperty(
-                    ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP,
-                    collection);
+                EnvUtils.getProperty("solr.configset.bootstrap.config.name", collection);
 
-            // if we are bootstrapping a collection, default the config for
-            // a new collection to the collection we are bootstrapping
             log.info("Setting config for collection: {} to {}", collection, defaultConfigName);
+
+            collectionProps.put(ZkController.CONFIGNAME_PROP, defaultConfigName);
 
             Properties sysProps = System.getProperties();
             for (String sprop : System.getProperties().stringPropertyNames()) {
@@ -700,11 +698,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                     sprop.substring(ZkController.COLLECTION_PARAM_PREFIX.length()),
                     sysProps.getProperty(sprop));
               }
-            }
-
-            // if the config name wasn't passed in, use the default
-            if (!collectionProps.containsKey(ZkController.CONFIGNAME_PROP)) {
-              collectionProps.put(ZkController.CONFIGNAME_PROP, defaultConfigName);
             }
 
           } else {

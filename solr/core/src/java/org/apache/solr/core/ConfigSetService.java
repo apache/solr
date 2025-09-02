@@ -31,6 +31,7 @@ import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.schema.IndexSchema;
@@ -84,13 +85,13 @@ public abstract class ConfigSetService {
   }
 
   private void bootstrapConfigSet(CoreContainer coreContainer) {
-    // bootstrap _default conf, bootstrap_confdir and bootstrap_conf if provided via system property
+    // bootstrap _default conf and solr.configset.bootstrap.confdir if provided via system property
     try {
       // _default conf
       bootstrapDefaultConf();
 
       // bootstrap_confdir
-      String confDir = System.getProperty("bootstrap_confdir");
+      String confDir = EnvUtils.getProperty("solr.configset.bootstrap.confdir");
       if (confDir != null) {
         bootstrapConfDir(confDir);
       }
@@ -122,8 +123,7 @@ public abstract class ConfigSetService {
               + configPath);
     }
     String confName =
-        System.getProperty(
-            ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP, "configuration1");
+        EnvUtils.getProperty("solr.configset.bootstrap.config.name", "configuration1");
     this.uploadConfig(confName, configPath);
   }
 
