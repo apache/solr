@@ -26,6 +26,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.metrics.BatchCallback;
 import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.DoubleCounterBuilder;
 import io.opentelemetry.api.metrics.DoubleGauge;
@@ -50,6 +51,7 @@ import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
+import io.opentelemetry.api.metrics.ObservableMeasurement;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
@@ -370,6 +372,51 @@ public class SolrMetricManager {
     if (unit != null) builder.setUnit(unit);
 
     return builder.buildWithCallback(callback);
+  }
+
+  BatchCallback batchCallback(
+      String registry,
+      Runnable callback,
+      ObservableMeasurement measurement,
+      ObservableMeasurement... additionalMeasurements) {
+    return meterProvider(registry)
+        .get(OTEL_SCOPE_NAME)
+        .batchCallback(callback, measurement, additionalMeasurements);
+  }
+
+  ObservableLongMeasurement longMeasurement(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    return longGaugeBuilder(registry, gaugeName, description, unit).buildObserver();
+  }
+
+  ObservableDoubleMeasurement doubleMeasurement(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    return doubleGaugeBuilder(registry, gaugeName, description, unit).buildObserver();
+  }
+
+  private LongGaugeBuilder longGaugeBuilder(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    LongGaugeBuilder builder =
+        meterProvider(registry)
+            .get(OTEL_SCOPE_NAME)
+            .gaugeBuilder(gaugeName)
+            .setDescription(description)
+            .ofLongs();
+    if (unit != null) builder.setUnit(unit.getSymbol());
+
+    return builder;
+  }
+
+  private DoubleGaugeBuilder doubleGaugeBuilder(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    DoubleGaugeBuilder builder =
+        meterProvider(registry)
+            .get(OTEL_SCOPE_NAME)
+            .gaugeBuilder(gaugeName)
+            .setDescription(description);
+    if (unit != null) builder.setUnit(unit.getSymbol());
+
+    return builder;
   }
 
   // for unit tests
