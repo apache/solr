@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
@@ -453,7 +454,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     }
     try (Directory dir = FSDirectory.open(backup)) {
       // Lucene 10 changed CheckIndex levels from 0-3 to 1-3, so we use 1 (minimum level)
-      TestUtil.checkIndex(dir, 1, true, true, null);
+      TestUtil.checkIndex(dir, CheckIndex.Level.MIN_VALUE, true, true, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
         assertEquals("numDocs in " + backup, numDocs, r.numDocs());
         if (null != expectedSegmentsFileName) {

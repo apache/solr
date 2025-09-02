@@ -70,15 +70,15 @@ import org.jetbrains.compose.resources.stringResource
  *
  * @param onNavigate Navigation handler function.
  * @param onLogout Logout handler function.
- * @param selectedItem The currently selected navigation item.
  * @param modifier Modifier to apply to the root composable.
+ * @param selectedItem The currently selected navigation item.
  */
 @Composable
 fun NavigationSideBar(
     onNavigate: (MainMenu) -> Unit,
     onLogout: () -> Unit,
-    selectedItem: MainMenu? = null,
     modifier: Modifier = Modifier,
+    selectedItem: MainMenu? = null,
 ) = Row(modifier = modifier) {
     val scrollState = rememberScrollState(48 * (selectedItem?.ordinal ?: 0))
 
@@ -121,13 +121,16 @@ private fun MenuElement(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
     enabled: Boolean = true,
-    onClick: () -> Unit,
+    onClick: () -> Unit = {},
 ) {
     val alpha = if (enabled) 1f else 0.38f
     Tab(
         modifier = modifier.background(
-            if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha)
-            else Color.Unspecified,
+            if (selected) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha)
+            } else {
+                Color.Unspecified
+            },
         ),
         selected = selected,
         enabled = enabled,
