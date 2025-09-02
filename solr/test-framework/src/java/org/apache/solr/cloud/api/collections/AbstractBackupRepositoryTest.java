@@ -151,7 +151,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       final int expectedNumBytes = storedBytes.length;
       final byte[] retrievedBytes = new byte[expectedNumBytes];
       try (final IndexInput is =
-          repo.openInput(getBaseUri(), "file.txt", new IOContext(IOContext.Context.READ))) {
+          // TBD
+          repo.openInput(getBaseUri(), "file.txt", IOContext.DEFAULT)) {
         assertEquals(expectedNumBytes, is.length());
         is.readBytes(retrievedBytes, 0, expectedNumBytes);
       }

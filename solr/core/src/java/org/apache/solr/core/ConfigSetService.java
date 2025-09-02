@@ -112,9 +112,9 @@ public abstract class ConfigSetService {
       Path configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {
         log.warn(
-            "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
-            "intended to be the default. Current 'solr.default.confdir' value:",
-            System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
+            "The _default configset could not be uploaded. Please provide 'solr.configset.default.confdir' parameter that points to a configset {} {}",
+            "intended to be the default. Current 'solr.configset.default.confdir' value:",
+            System.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
         this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
       }
@@ -136,14 +136,15 @@ public abstract class ConfigSetService {
 
   /**
    * Gets the absolute filesystem path of the _default configset to bootstrap from. First tries the
-   * sysprop "solr.default.confdir". If not found, tries to find the _default dir relative to the
-   * sysprop "solr.install.dir". Returns null if not found anywhere.
+   * sysprop "solr.configset.default.confdir". If not found, tries to find the _default dir relative
+   * to the sysprop "solr.install.dir". Returns null if not found anywhere.
    *
    * @lucene.internal
-   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
    */
   public static Path getDefaultConfigDirPath() {
-    String confDir = System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+    String confDir =
+        System.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE);
     if (confDir != null) {
       Path path = Path.of(confDir);
       if (Files.exists(path)) {

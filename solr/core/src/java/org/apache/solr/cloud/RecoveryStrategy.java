@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreContainer;
@@ -799,11 +800,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
         return null;
       }
 
-      Replica leaderReplica;
+      Replica leaderReplica = null;
       try {
         leaderReplica =
             zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId());
       } catch (SolrException e) {
+        // ignore
+      }
+      if (leaderReplica == null) {
         Thread.sleep(500);
         continue;
       }
@@ -916,7 +920,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // side
     int readTimeout =
         conflictWaitMs
-            + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
+            + EnvUtils.getPropertyAsInteger(
+                "solr.cloud.prep.recovery.read.timeout.additional.ms", 8000);
     try (SolrClient client =
         recoverySolrClientBuilder(
                 leaderBaseUrl,

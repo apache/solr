@@ -82,8 +82,7 @@ public class CreateCollectionSnapshot extends AdminAPIBase
         createRemoteMessage(collName, requestBody.followAliases, snapshotName, requestBody.async);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
-            coreContainer.getDistributedCollectionCommandRunner(),
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.CREATESNAPSHOT,
             DEFAULT_COLLECTION_OP_TIMEOUT);

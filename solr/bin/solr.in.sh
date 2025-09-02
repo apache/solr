@@ -75,7 +75,7 @@
 #SOLR_HOST="192.168.1.1"
 
 # By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
-#SOLR_WAIT_FOR_ZK="30"
+#SOLR_CLOUD_WAIT_FOR_ZK_SECONDS="30"
 
 # By default Solr will log a warning for cores that are not registered in Zookeeper at startup
 # but otherwise ignore them. This protects against misconfiguration (e.g. connecting to the
@@ -191,7 +191,7 @@
 # Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
 #SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
 #SOLR_AUTH_TYPE="basic"
-#SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
+#SOLR_AUTHENTICATION_OPTS="-Dsolr.security.auth.basicauth.credentials=solr:SolrRocks"
 
 # Settings for ZK ACL
 #SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider \
@@ -248,14 +248,14 @@
 #SOLR_SECURITY_MANAGER_ENABLED=true
 
 # This variable provides you with the option to disable the Admin UI. If you uncomment the variable below and
-# change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
+# change the value to false. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 # scripts.
-# SOLR_ADMIN_UI_DISABLED=false
+# SOLR_UI_ENABLED=true
 
 # This variable provides you with the option to disable the new experimental Admin UI. If you uncomment the variable
-# below and change the value to true, Jetty will not load the new-ui module which update the CSP directive for the
-# new UI endpoints. This property is ignored if SOLR_ADMIN_UI_DISABLED is true.
-# SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED=false
+# below and change the value to false, Jetty will not load the new-ui module which update the CSP directive for the
+# new UI endpoints. This property is ignored if SOLR_UI_ENABLED is false.
+# SOLR_UI_EXPERIMENTAL_ENABLED=false
 
 # Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 # Sometimes it may be necessary to place a core or a backup on a different location or a different disk

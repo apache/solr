@@ -30,6 +30,7 @@ import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
 import org.apache.solr.cloud.OverseerSolrResponse;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -46,6 +47,7 @@ import org.mockito.ArgumentCaptor;
 public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
 
   private CoreContainer mockCoreContainer;
+  private ZkController mockZkController;
   private SolrQueryRequest mockQueryRequest;
   private SolrQueryResponse queryResponse;
   private MigrateReplicas migrateReplicasAPI;
@@ -63,9 +65,10 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
     super.setUp();
 
     mockCoreContainer = mock(CoreContainer.class);
+    mockZkController = mock(ZkController.class);
     mockCommandRunner = mock(DistributedCollectionConfigSetCommandRunner.class);
-    when(mockCoreContainer.getDistributedCollectionCommandRunner())
-        .thenReturn(Optional.of(mockCommandRunner));
+    when(mockCoreContainer.getZkController()).thenReturn(mockZkController);
+    when(mockZkController.getDistributedCommandRunner()).thenReturn(Optional.of(mockCommandRunner));
     when(mockCommandRunner.runCollectionCommand(any(), any(), anyLong(), nullable(String.class)))
         .thenReturn(new OverseerSolrResponse(new NamedList<>()));
     mockQueryRequest = mock(SolrQueryRequest.class);

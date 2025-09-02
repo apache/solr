@@ -545,8 +545,11 @@ public class AtomicUpdateDocumentMerger {
     final String name = sif.getName();
     SolrInputField existingField = toDoc.get(name);
 
-    Collection<Object> original =
-        existingField != null ? existingField.getValues() : new ArrayList<>();
+    Collection<Object> original = existingField != null ? existingField.getValues() : null;
+
+    if (original == null) {
+      original = new ArrayList<>();
+    }
 
     int initialSize = original.size();
     if (fieldVal instanceof Collection) {

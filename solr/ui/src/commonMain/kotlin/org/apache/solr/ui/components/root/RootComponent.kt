@@ -19,7 +19,7 @@ package org.apache.solr.ui.components.root
 
 import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.value.Value
-import org.apache.solr.ui.components.auth.UnauthenticatedComponent
+import org.apache.solr.ui.components.auth.AuthenticationComponent
 import org.apache.solr.ui.components.main.MainComponent
 import org.apache.solr.ui.components.start.StartComponent
 
@@ -35,10 +35,10 @@ interface RootComponent {
 
     sealed interface Child {
 
-        data class Start(val component: StartComponent): Child
+        data class Start(val component: StartComponent) : Child
 
-        data class Main(val component: MainComponent): Child
+        data class Main(val component: MainComponent) : Child
 
-        data class Unauthenticated(val component: UnauthenticatedComponent): Child
+        data class Authentication(val component: AuthenticationComponent) : Child
     }
 }
