@@ -16,6 +16,13 @@
  */
 package org.apache.solr.update;
 
+import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
+import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
+import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
+
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
@@ -49,13 +56,6 @@ import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
-import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
-import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 
 /**
  * An IndexWriter that is configured via Solr config mechanisms.
@@ -197,11 +197,11 @@ public class SolrIndexWriter extends IndexWriter {
               .put(CATEGORY_ATTR, SolrInfoBean.Category.INDEX.toString())
               .put(CORE_ATTR, coreName);
       if (core.getCoreContainer().isZooKeeperAware()) {
-          String collectionName = core.getCoreDescriptor().getCollectionName();
-          baseAttributesBuilder
-              .put(COLLECTION_ATTR, collectionName)
-              .put(SHARD_ATTR, core.getCoreDescriptor().getCloudDescriptor().getShardId())
-              .put(REPLICA_ATTR, Utils.parseMetricsReplicaName(collectionName, coreName));
+        String collectionName = core.getCoreDescriptor().getCollectionName();
+        baseAttributesBuilder
+            .put(COLLECTION_ATTR, collectionName)
+            .put(SHARD_ATTR, core.getCoreDescriptor().getCloudDescriptor().getShardId())
+            .put(REPLICA_ATTR, Utils.parseMetricsReplicaName(collectionName, coreName));
       }
       var baseAttributes = baseAttributesBuilder.build();
       if (mergeDetails) {
@@ -210,13 +210,17 @@ public class SolrIndexWriter extends IndexWriter {
             new AttributedLongCounter(
                 solrMetricsContext.longCounter(
                     "solr_indexwriter_major_merged_docs",
-                    "Number of documents merged while merging segments above the majorMergeDocs threshold (" + majorMergeDocs + ")"),
+                    "Number of documents merged while merging segments above the majorMergeDocs threshold ("
+                        + majorMergeDocs
+                        + ")"),
                 baseAttributes);
         majorDeletedDocs =
             new AttributedLongCounter(
                 solrMetricsContext.longCounter(
                     "solr_indexwriter_major_deleted_docs",
-                    "Number of deleted documents that were expunged while merging segments above the majorMergeDocs threshold (" + majorMergeDocs + ")"),
+                    "Number of deleted documents that were expunged while merging segments above the majorMergeDocs threshold ("
+                        + majorMergeDocs
+                        + ")"),
                 baseAttributes);
       }
       if (mergeTotals) {
@@ -224,46 +228,69 @@ public class SolrIndexWriter extends IndexWriter {
             new AttributedLongTimer(
                 solrMetricsContext.longHistogram(
                     "solr_indexwriter_merge",
-                    "Time spent merging segments below or equal to the majorMergeDocs threshold (" + majorMergeDocs + ")",
+                    "Time spent merging segments below or equal to the majorMergeDocs threshold ("
+                        + majorMergeDocs
+                        + ")",
                     OtelUnit.MILLISECONDS),
                 baseAttributes.toBuilder().put(MERGE_TYPE_ATTR, "minor").build());
         majorMerge =
             new AttributedLongTimer(
                 solrMetricsContext.longHistogram(
                     "solr_indexwriter_merge",
-                    "Time spent merging segments above the majorMergeDocs threshold (" + majorMergeDocs + ")",
+                    "Time spent merging segments above the majorMergeDocs threshold ("
+                        + majorMergeDocs
+                        + ")",
                     OtelUnit.MILLISECONDS),
                 baseAttributes.toBuilder().put(MERGE_TYPE_ATTR, "major").build());
         mergeErrors =
             new AttributedLongCounter(
                 solrMetricsContext.longCounter(
-                    "solr_indexwriter_merge_errors",
-                    "Number of merge errors"),
+                    "solr_indexwriter_merge_errors", "Number of merge errors"),
                 baseAttributes);
         String tag = core.getMetricTag();
         mergeStats =
             solrMetricsContext.observableLongGauge(
                 "solr_indexwriter_merge_stats",
-                "Metrics around currently running segment merges; major := above the majorMergeDocs threshold (" + majorMergeDocs + "), minor := below or equal to the threshold",
+                "Metrics around currently running segment merges; major := above the majorMergeDocs threshold ("
+                    + majorMergeDocs
+                    + "), minor := below or equal to the threshold",
                 (observableLongMeasurement -> {
                   observableLongMeasurement.record(
                       runningMajorMerges.get(),
-                      baseAttributes.toBuilder().put(TYPE_ATTR, "running").put(MERGE_TYPE_ATTR, "major").build());
+                      baseAttributes.toBuilder()
+                          .put(TYPE_ATTR, "running")
+                          .put(MERGE_TYPE_ATTR, "major")
+                          .build());
                   observableLongMeasurement.record(
                       runningMajorMergesDocs.get(),
-                      baseAttributes.toBuilder().put(TYPE_ATTR, "running_docs").put(MERGE_TYPE_ATTR, "major").build());
+                      baseAttributes.toBuilder()
+                          .put(TYPE_ATTR, "running_docs")
+                          .put(MERGE_TYPE_ATTR, "major")
+                          .build());
                   observableLongMeasurement.record(
                       runningMajorMergesSegments.get(),
-                      baseAttributes.toBuilder().put(TYPE_ATTR, "running_segments").put(MERGE_TYPE_ATTR, "major").build());
+                      baseAttributes.toBuilder()
+                          .put(TYPE_ATTR, "running_segments")
+                          .put(MERGE_TYPE_ATTR, "major")
+                          .build());
                   observableLongMeasurement.record(
                       runningMinorMerges.get(),
-                      baseAttributes.toBuilder().put(TYPE_ATTR, "running").put(MERGE_TYPE_ATTR, "minor").build());
+                      baseAttributes.toBuilder()
+                          .put(TYPE_ATTR, "running")
+                          .put(MERGE_TYPE_ATTR, "minor")
+                          .build());
                   observableLongMeasurement.record(
                       runningMinorMergesDocs.get(),
-                      baseAttributes.toBuilder().put(TYPE_ATTR, "running_docs").put(MERGE_TYPE_ATTR, "minor").build());
+                      baseAttributes.toBuilder()
+                          .put(TYPE_ATTR, "running_docs")
+                          .put(MERGE_TYPE_ATTR, "minor")
+                          .build());
                   observableLongMeasurement.record(
                       runningMinorMergesSegments.get(),
-                      baseAttributes.toBuilder().put(TYPE_ATTR, "running_segments").put(MERGE_TYPE_ATTR, "minor").build());
+                      baseAttributes.toBuilder()
+                          .put(TYPE_ATTR, "running_segments")
+                          .put(MERGE_TYPE_ATTR, "minor")
+                          .build());
                 }));
         flushes =
             new AttributedLongCounter(
@@ -271,7 +298,6 @@ public class SolrIndexWriter extends IndexWriter {
                     "solr_indexwriter_flush",
                     "Number of times added/deleted documents have been flushed to the Directory"),
                 baseAttributes);
-
       }
     }
   }

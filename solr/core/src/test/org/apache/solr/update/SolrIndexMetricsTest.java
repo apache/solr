@@ -16,6 +16,9 @@
  */
 package org.apache.solr.update;
 
+import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
+import static org.apache.solr.update.SolrIndexWriter.MERGE_TYPE_ATTR;
+
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -25,9 +28,6 @@ import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Test;
-
-import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
-import static org.apache.solr.update.SolrIndexWriter.MERGE_TYPE_ATTR;
 
 /** Test proper registration and collection of index and directory metrics. */
 public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
@@ -80,7 +80,8 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "major")
                   .build());
-      // major merge timer should have a value of 0, and because 0 values are not reported, no datapoint is available
+      // major merge timer should have a value of 0, and because 0 values are not reported, no
+      // datapoint is available
       assertNull("majorMergeTimer", majorMergeTimer);
 
       // check detailed meters
@@ -163,7 +164,8 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "major")
                   .build());
-      // major merge timer should have a value of 0, and because 0 values are not reported, no datapoint is available
+      // major merge timer should have a value of 0, and because 0 values are not reported, no
+      // datapoint is available
       assertNull("majorMergeTimer", majorMergeTimer);
 
       // check detailed meters
@@ -174,7 +176,8 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .build());
-      // major merge docs should have a value of 0, and because 0 values are not reported, no datapoint is available
+      // major merge docs should have a value of 0, and because 0 values are not reported, no
+      // datapoint is available
       assertNull("majorMergeDocs", majorMergeDocs);
 
       var flushCounter =
@@ -202,8 +205,10 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       MetricSnapshots otelMetrics = prometheusMetricReader.collect();
       assertTrue("Metrics count: " + otelMetrics.size(), otelMetrics.size() >= 18);
 
-      // addDocs() adds 1000 documents and then sends a commit.  maxBufferedDocs==100, segmentsPerTier==3,
-      //     maxMergeAtOnce==3 and majorMergeDocs==450.  Thus, new documents form segments with 100 docs, merges are
+      // addDocs() adds 1000 documents and then sends a commit.  maxBufferedDocs==100,
+      // segmentsPerTier==3,
+      //     maxMergeAtOnce==3 and majorMergeDocs==450.  Thus, new documents form segments with 100
+      // docs, merges are
       //     called for when there are 3 segments at the lowest tier, and the merges are as follows:
       //     1. 100 + 100 + 100 ==> new 300 doc segment, below the 450 threshold ==> minor merge
       //     2. 100 + 100 + 100 ==> new 300 doc segment, below the 450 threshold ==> minor merge
