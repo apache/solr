@@ -17,7 +17,6 @@
 package org.apache.solr.metrics.prometheus.node;
 
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
@@ -27,7 +26,6 @@ import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 public class SolrNodeHandlerMetric extends SolrNodeMetric {
   public static final String NODE_REQUESTS = "solr_metrics_node_requests";
   public static final String NODE_SECONDS_TOTAL = "solr_metrics_node_requests_time";
-  public static final String NODE_CONNECTIONS = "solr_metrics_node_connections";
 
   public SolrNodeHandlerMetric(Metric dropwizardMetric, String metricName) {
     super(dropwizardMetric, metricName);
@@ -36,7 +34,6 @@ public class SolrNodeHandlerMetric extends SolrNodeMetric {
   /*
    * Metric examples being exported
    * ADMIN./admin/collections.requests
-   * UPDATE.updateShardHandler.maxConnections
    */
 
   @Override
@@ -53,8 +50,6 @@ public class SolrNodeHandlerMetric extends SolrNodeMetric {
     if (metricName.endsWith(".totalTime")) {
       labels.remove("type");
       formatter.exportCounter(NODE_SECONDS_TOTAL, (Counter) dropwizardMetric, getLabels());
-    } else if (metricName.endsWith("Connections")) {
-      formatter.exportGauge(NODE_CONNECTIONS, (Gauge<?>) dropwizardMetric, getLabels());
     } else if (dropwizardMetric instanceof Meter) {
       formatter.exportMeter(NODE_REQUESTS, (Meter) dropwizardMetric, getLabels());
     } else if (dropwizardMetric instanceof Counter) {
