@@ -97,6 +97,13 @@ public class HighlightComponent extends SearchComponent
     rb.doHighlights = solrConfigHighlighter.isHighlightingEnabled(params);
     if (rb.doHighlights) {
       rb.setNeedDocList(true);
+      if (rb instanceof CombinedQueryResponseBuilder crb) {
+        crb.responseBuilders.forEach(
+            thisRb -> {
+              thisRb.setNeedDocList(true);
+              thisRb.doHighlights = true;
+            });
+      }
       String hlq = params.get(HighlightParams.Q);
       String hlparser =
           Objects.requireNonNullElse(

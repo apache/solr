@@ -35,11 +35,12 @@ import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.DocListAndSet;
+import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SortedIntDocSet;
 
 /**
  * This class implements a query and response combiner that uses the Reciprocal Rank Fusion (RRF)
@@ -68,16 +69,17 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
   @Override
   public QueryResult combine(List<QueryResult> rankedLists, SolrParams solrParams) {
     int kVal = solrParams.getInt(CombinerParams.COMBINER_RRF_K, this.k);
-    List<DocList> docLists = getDocListsFromQueryResults(rankedLists);
+    List<DocListAndSet> docListAndSet = getDocListsAndSetFromQueryResults(rankedLists);
     QueryResult combinedResult = new QueryResult();
-    combineResults(combinedResult, docLists, false, kVal);
+    combineResults(combinedResult, docListAndSet, false, kVal);
     return combinedResult;
   }
 
-  private static List<DocList> getDocListsFromQueryResults(List<QueryResult> rankedLists) {
-    List<DocList> docLists = new ArrayList<>(rankedLists.size());
+  private static List<DocListAndSet> getDocListsAndSetFromQueryResults(
+      List<QueryResult> rankedLists) {
+    List<DocListAndSet> docLists = new ArrayList<>(rankedLists.size());
     for (QueryResult rankedList : rankedLists) {
-      docLists.add(rankedList.getDocList());
+      docLists.add(rankedList.getDocListAndSet());
     }
     return docLists;
   }
@@ -115,21 +117,29 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
 
   private Map<Integer, Integer[]> combineResults(
       QueryResult combinedRankedList,
-      List<DocList> rankedLists,
+      List<DocListAndSet> rankedListAndSets,
       boolean saveRankPositionsForExplain,
       int kVal) {
     Map<Integer, Integer[]> docIdToRanks = null;
+    DocSet combinedDocSet = null;
     HashMap<Integer, Float> docIdToScore = new HashMap<>();
+    List<DocList> docLists = new ArrayList<>();
     long totalMatches = 0;
-    for (DocList rankedList : rankedLists) {
-      DocIterator docs = rankedList.iterator();
-      totalMatches = Math.max(totalMatches, rankedList.matches());
+    for (DocListAndSet rankedListAndSet : rankedListAndSets) {
+      DocIterator docs = rankedListAndSet.docList.iterator();
+      totalMatches = Math.max(totalMatches, rankedListAndSet.docList.matches());
       int ranking = 1;
       while (docs.hasNext()) {
         int docId = docs.nextDoc();
         float rrfScore = 1f / (kVal + ranking);
         docIdToScore.compute(docId, (id, score) -> (score == null) ? rrfScore : score + rrfScore);
         ranking++;
+      }
+      docLists.add(rankedListAndSet.docList);
+      if (combinedDocSet == null) {
+        combinedDocSet = rankedListAndSet.docSet;
+      } else if (rankedListAndSet.docSet != null) {
+        combinedDocSet = combinedDocSet.union(rankedListAndSet.docSet);
       }
     }
     List<Map.Entry<Integer, Float>> sortedByScoreDescending =
@@ -149,7 +159,7 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
     }
 
     if (saveRankPositionsForExplain) {
-      docIdToRanks = getRanks(rankedLists, combinedResultsDocIds);
+      docIdToRanks = getRanks(docLists, combinedResultsDocIds);
     }
 
     DocSlice combinedResultSlice =
@@ -162,8 +172,7 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
             combinedResultScores.length > 0 ? combinedResultScores[0] : 0,
             TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO);
     combinedRankedList.setDocList(combinedResultSlice);
-    SortedIntDocSet docSet = new SortedIntDocSet(combinedResultsDocIds, combinedResultsLength);
-    combinedRankedList.setDocSet(docSet);
+    combinedRankedList.setDocSet(combinedDocSet);
     return docIdToRanks;
   }
 
@@ -198,7 +207,8 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
     NamedList<Explanation> docIdsExplanations = new SimpleOrderedMap<>();
     QueryResult combinedRankedList = new QueryResult();
     Map<Integer, Integer[]> docIdToRanks =
-        combineResults(combinedRankedList, getDocListsFromQueryResults(queryResult), true, kVal);
+        combineResults(
+            combinedRankedList, getDocListsAndSetFromQueryResults(queryResult), true, kVal);
     DocList combinedDocList = combinedRankedList.getDocList();
 
     DocIterator iterator = combinedDocList.iterator();

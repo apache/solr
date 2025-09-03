@@ -82,6 +82,14 @@ public class FacetComponent extends SearchComponent {
       rb.setNeedDocSet(true);
       rb.doFacets = true;
 
+      if (rb instanceof CombinedQueryResponseBuilder crb) {
+        crb.responseBuilders.forEach(
+            thisRb -> {
+              thisRb.setNeedDocSet(true);
+              thisRb.doFacets = true;
+            });
+      }
+
       // Deduplicate facet params
       ModifiableSolrParams params = new ModifiableSolrParams();
       SolrParams origParams = rb.req.getParams();

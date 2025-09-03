@@ -70,7 +70,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
       doc.addField("id", Integer.toString(i));
       doc.addField("text", "test text for doc " + i);
       doc.addField("title", "title test for doc " + i);
-      doc.addField("mod3_s1",  (i % 3));
+      doc.addField("mod3_idv", (i % 3));
       docs.add(doc);
     }
     // cosine distance vector1= 1.0
@@ -193,7 +193,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                 "{\"queries\":"
                     + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
                     + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
-                    + "\"limit\":5,\"sort\":\"mod3_s1 desc\""
+                    + "\"limit\":5,\"sort\":\"mod3_idv desc\""
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
                 "shards",
@@ -234,6 +234,35 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
   }
 
   /**
+   * Tests the vector query functionality with faceting by setting the k value asserting if top-K
+   * influences the facets.
+   *
+   * @throws Exception if any unexpected error occurs during the test execution.
+   */
+  @Test
+  public void testVectorQueryWithFaceting() throws Exception {
+    prepareIndexDocs();
+    QueryResponse rsp;
+    rsp =
+        queryServer(
+            createParams(
+                CommonParams.JSON,
+                "{\"queries\":"
+                    + "{\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 4, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
+                    + "\"limit\":2,\"offset\":1"
+                    + "\"fields\":[\"id\",\"score\",\"title\"],"
+                    + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\","
+                    + "\"combiner.query\":[\"vector\"]}}",
+                "shards",
+                getShardsString(),
+                CommonParams.QT,
+                "/search"));
+    assertEquals(2, rsp.getResults().size());
+    assertEquals(8, rsp.getResults().getNumFound());
+    assertEquals("[1 (4), 0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
+  }
+
+  /**
    * Tests the combined query feature with faceting and highlighting.
    *
    * @throws Exception if any unexpected error occurs during the test execution.
@@ -251,7 +280,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^=2 OR 5^=1)\"}}},"
                     + "\"limit\":3,"
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_s1\","
+                    + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\","
                     + "\"combiner.query\":[\"lexical1\",\"lexical2\"], \"hl\": true, \"hl.fl\": \"title\",\"hl.q\":\"test doc\"}}",
                 "shards",
                 getShardsString(),
@@ -259,7 +288,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                 "/search"));
     assertEquals(3, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2", "3", "4");
-    assertEquals("mod3_s1", rsp.getFacetFields().getFirst().getName());
+    assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
     assertEquals("[2 (2), 0 (1), 1 (1)]", rsp.getFacetFields().getFirst().getValues().toString());
     assertEquals(3, rsp.getHighlighting().size());
     assertEquals(
