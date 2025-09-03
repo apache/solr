@@ -61,12 +61,12 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
+import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -118,7 +118,6 @@ import org.apache.solr.core.NodeRoles;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.component.HttpShardHandler;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
@@ -224,6 +223,8 @@ public class ZkController implements Closeable {
   private final NodesSysPropsCacher sysPropsCacher;
 
   private final DistributedClusterStateUpdater distributedClusterStateUpdater;
+
+  private final Optional<DistributedCollectionConfigSetCommandRunner> distributedCommandRunner;
 
   private LeaderElector overseerElector;
 
@@ -372,6 +373,11 @@ public class ZkController implements Closeable {
     // Refuse to start if ZK has a non empty /clusterstate.json or a /solr.xml file
     checkNoOldClusterstate(zkClient);
 
+    this.distributedCommandRunner =
+        cloudConfig.getDistributedCollectionConfigSetExecution()
+            ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
+            : Optional.empty();
+
     this.overseerRunningMap = Overseer.getRunningMap(zkClient);
     this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
     this.overseerFailureMap = Overseer.getFailureMap(zkClient);
@@ -393,10 +399,7 @@ public class ZkController implements Closeable {
     }
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
-    final var client =
-        (Http2SolrClient)
-            ((HttpShardHandlerFactory) getCoreContainer().getShardHandlerFactory()).getClient();
-    this.sysPropsCacher = new NodesSysPropsCacher(client, zkStateReader);
+    this.sysPropsCacher = new NodesSysPropsCacher(cc.getDefaultHttpSolrClient(), zkStateReader);
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -715,6 +718,22 @@ public class ZkController implements Closeable {
     return sysPropsCacher;
   }
 
+  /** Non-empty if the Collection API is executed in a distributed way (Overseer is disabled). */
+  public Optional<DistributedCollectionConfigSetCommandRunner> getDistributedCommandRunner() {
+    return this.distributedCommandRunner;
+  }
+
+  /** Waits for pending tasks to complete. Should be called before {@link #close()}. */
+  public void waitForPendingTasksToComplete() {
+    if (distributedCommandRunner.isPresent()) {
+      // Local (i.e. distributed) Collection API processing
+      distributedCommandRunner.get().stopAndWaitForPendingTasksToComplete();
+    } else {
+      // Overseer based processing
+      getOverseerCollectionQueue().allowOverseerPendingTasksToComplete();
+    }
+  }
+
   private ContextKey closeExistingElectionContext(CoreDescriptor cd, boolean sessionExpired) {
     // look for old context - if we find it, cancel it
     String collection = cd.getCloudDescriptor().getCollectionName();
@@ -813,6 +832,7 @@ public class ZkController implements Closeable {
     } finally {
 
       sysPropsCacher.close();
+
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudManager));
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudSolrClient));
 
@@ -1033,7 +1053,9 @@ public class ZkController implements Closeable {
       registerLiveNodesListener();
       checkClusterVersionCompatibility();
 
-      // start the overseer first as following code may need it's processing
+      // Start the overseer now since the following code may need it's processing.
+      // Note: even when using distributed processing, we still create an Overseer anyway since
+      //    cluster singleton processing is linked to the elected Overseer.
       if (!zkRunOnly) {
         overseerElector = new LeaderElector(zkClient);
         this.overseer =

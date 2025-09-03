@@ -417,7 +417,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
       ignoreException("Configset upload feature is disabled");
       for (boolean enabled : new boolean[] {true, false}) {
-        System.setProperty("configset.upload.enabled", String.valueOf(enabled));
+        System.setProperty("solr.configset.upload.enabled", String.valueOf(enabled));
         try {
           long statusCode =
               uploadConfigSet("regular", "test-enabled-is-" + enabled, null, zkClient, v2);
@@ -428,7 +428,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               enabled ? 0l : 400l,
               statusCode);
         } finally {
-          System.clearProperty("configset.upload.enabled");
+          System.clearProperty("solr.configset.upload.enabled");
         }
       }
       unIgnoreException("Configset upload feature is disabled");
