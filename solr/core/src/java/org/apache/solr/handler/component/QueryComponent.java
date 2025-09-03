@@ -37,7 +37,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -913,77 +912,61 @@ public class QueryComponent extends SearchComponent {
   }
   ;
 
-  protected static class ShardDocQueueFactory
-      implements BiFunction<SortField[], Integer, ShardDocQueue> {
+  protected ShardDocQueue newShardDocQueue(
+      SolrIndexSearcher searcher, SortField[] sortFields, Integer size) {
+    return new ShardDocQueue() {
 
-    private final SolrIndexSearcher searcher;
+      // id to shard mapping, to eliminate any accidental dups
+      private final HashMap<Object, String> uniqueDoc = new HashMap<>();
 
-    public ShardDocQueueFactory(SolrIndexSearcher searcher) {
-      this.searcher = searcher;
-    }
+      private final ShardFieldSortedHitQueue queue =
+          new ShardFieldSortedHitQueue(sortFields, size, searcher);
 
-    @Override
-    public ShardDocQueue apply(SortField[] sortFields, Integer size) {
-      return new ShardDocQueue() {
+      @Override
+      public boolean push(ShardDoc shardDoc) {
+        final String prevShard = uniqueDoc.put(shardDoc.id, shardDoc.shard);
+        if (prevShard != null) {
+          // duplicate detected
 
-        // id to shard mapping, to eliminate any accidental dups
-        private final HashMap<Object, String> uniqueDoc = new HashMap<>();
-
-        private final ShardFieldSortedHitQueue queue =
-            new ShardFieldSortedHitQueue(sortFields, size, searcher);
-
-        @Override
-        public boolean push(ShardDoc shardDoc) {
-          final String prevShard = uniqueDoc.put(shardDoc.id, shardDoc.shard);
-          if (prevShard != null) {
-            // duplicate detected
-
-            // For now, just always use the first encountered since we can't currently
-            // remove the previous one added to the priority queue.  If we switched
-            // to the Java5 PriorityQueue, this would be easier.
-            return false;
-            // make which duplicate is used deterministic based on shard
-            // if (prevShard.compareTo(shardDoc.shard) >= 0) {
-            //  TODO: remove previous from priority queue
-            //  return false;
-            // }
-          }
-
-          queue.insertWithOverflow(shardDoc);
-          return true;
+          // For now, just always use the first encountered since we can't currently
+          // remove the previous one added to the priority queue.  If we switched
+          // to the Java5 PriorityQueue, this would be easier.
+          return false;
+          // make which duplicate is used deterministic based on shard
+          // if (prevShard.compareTo(shardDoc.shard) >= 0) {
+          //  TODO: remove previous from priority queue
+          //  return false;
+          // }
         }
 
-        @Override
-        public Map<Object, ShardDoc> resultIds(int offset) {
-          final Map<Object, ShardDoc> resultIds = new HashMap<>();
+        queue.insertWithOverflow(shardDoc);
+        return true;
+      }
 
-          // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
-          // So we want to pop the last documents off the queue to get
-          // the docs offset -> queuesize
-          int resultSize = queue.size() - offset;
-          resultSize = Math.max(0, resultSize); // there may not be any docs in range
+      @Override
+      public Map<Object, ShardDoc> resultIds(int offset) {
+        final Map<Object, ShardDoc> resultIds = new HashMap<>();
 
-          for (int i = resultSize - 1; i >= 0; i--) {
-            ShardDoc shardDoc = queue.pop();
-            shardDoc.positionInResponse = i;
-            // Need the toString() for correlation with other lists that must
-            // be strings (like keys in highlighting, explain, etc)
-            resultIds.put(shardDoc.id.toString(), shardDoc);
-          }
+        // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
+        // So we want to pop the last documents off the queue to get
+        // the docs offset -> queuesize
+        int resultSize = queue.size() - offset;
+        resultSize = Math.max(0, resultSize); // there may not be any docs in range
 
-          return resultIds;
+        for (int i = resultSize - 1; i >= 0; i--) {
+          ShardDoc shardDoc = queue.pop();
+          shardDoc.positionInResponse = i;
+          // Need the toString() for correlation with other lists that must
+          // be strings (like keys in highlighting, explain, etc)
+          resultIds.put(shardDoc.id.toString(), shardDoc);
         }
-      };
-    }
+
+        return resultIds;
+      }
+    };
   }
-  ;
 
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
-    implementMergeIds(rb, sreq, new ShardDocQueueFactory(rb.req.getSearcher()));
-  }
-
-  private void implementMergeIds(
-      ResponseBuilder rb, ShardRequest sreq, ShardDocQueueFactory shardDocQueueFactory) {
     List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
     if (mergeStrategies != null) {
       mergeStrategies.sort(MergeStrategy.MERGE_COMP);
@@ -1028,7 +1011,7 @@ public class QueryComponent extends SearchComponent {
     // Merge the docs via a priority queue so we don't have to sort *all* of the
     // documents... we only need to order the top (rows+start)
     final ShardDocQueue shardDocQueue =
-        shardDocQueueFactory.apply(sortFields, ss.getOffset() + ss.getCount());
+        newShardDocQueue(rb.req.getSearcher(), sortFields, ss.getOffset() + ss.getCount());
 
     NamedList<Object> shardInfo = null;
     if (rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
