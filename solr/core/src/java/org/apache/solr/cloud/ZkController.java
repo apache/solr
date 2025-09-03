@@ -389,6 +389,12 @@ public class ZkController implements Closeable {
     if (overseerEnabled == null) {
       overseerEnabled = EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
     }
+    if (overseerEnabled) {
+      log.info("The Overseer is enabled.  It will process all cluster commands & state updates.");
+    } else {
+      log.info(
+          "The Overseer is disabled.  Cluster commands & state updates will happen on any/all nodes.");
+    }
     this.distributedClusterStateUpdater = new DistributedClusterStateUpdater(!overseerEnabled);
     this.distributedCommandRunner =
         !overseerEnabled
