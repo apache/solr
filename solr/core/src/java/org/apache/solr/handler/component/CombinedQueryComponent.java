@@ -166,11 +166,11 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       boolean segmentTerminatedEarly = false;
       boolean setMaxHitsTerminatedEarly = false;
       List<QueryResult> queryResults = new ArrayList<>();
-      for (ResponseBuilder rbNow : crb.responseBuilders) {
+      for (ResponseBuilder thisRb : crb.responseBuilders) {
         // Just a placeholder for future implementation for Cursors
-        rbNow.setCursorMark(crb.getCursorMark());
-        super.process(rbNow);
-        DocListAndSet docListAndSet = rbNow.getResults();
+        thisRb.setCursorMark(crb.getCursorMark());
+        super.process(thisRb);
+        DocListAndSet docListAndSet = thisRb.getResults();
         QueryResult queryResult = new QueryResult();
         queryResult.setDocListAndSet(docListAndSet);
         queryResults.add(queryResult);

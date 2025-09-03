@@ -52,11 +52,6 @@ Below is a sample JSON query payload:
                 "query": "title:sales"
             }
         },
-        "lexical2": {
-            "lucene": {
-                "query": "title:report"
-            }
-        },
         "vector": {
             "knn": {
                 "f": "vector",
