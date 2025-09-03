@@ -36,6 +36,10 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.cloud.wait.for.zk.seconds|solr.wait.for.zk|30|Specifies the number of seconds to wait for ZooKeeper connection in SolrCloud mode.
 
+|solr.configset.bootstrap.confdir|bootstrap_confdir||Defines the directory of a configuration to be loaded as a configset when starting Solr.  Often ends in `/conf`.
+
+|solr.configset.bootstrap.config.name|collection.configName||Specifies the configuration name for the bootstrapped configset.  Use with "solr.configset.bootstrap.confdir".
+
 |solr.configset.default.confdir|solr.default.confdir|"_default"|Defines the default configuration directory for configsets.
 
 |solr.configset.forbidden.file.types|solr.config.set.forbidden.file.types, solrConfigSetForbiddenFileTypes|jar,jnilib,dll,so,dylib,exe|Specifies file types that are forbidden in configsets.
