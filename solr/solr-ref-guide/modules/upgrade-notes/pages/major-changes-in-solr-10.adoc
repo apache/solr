@@ -61,6 +61,8 @@ Users who previously relied on collection-specific URLs to avoid including the c
 * Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to JavaBinRequestWriter, JavaBinResponseParser, StreamingJavaBinResponseParser.
 This makes it clear that they pertain specifically to “JavaBin” rather than binary in general.
 
+* The system property `solr.httpclient.builder.factory` now only configures SolrClients using a Jetty based HttpClient, not an Apache one.
+
 === Service installer
 
 The service installer now installs a `systemd` startup script instead of an `init.d` startup script. It is up to the user to uninstall any existing `init.d` script when upgrading.
@@ -119,7 +121,7 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * The ConcurrentMergeScheduler's autoIOThrottle default changed to `false` but `true` may be configured to retain prior behaviour. (SOLR-17631).
 
-* BlobHandler and the `.system` collection have been removed in favour of FileStore API.  (SOLR-17851). 
+* BlobHandler and the `.system` collection have been removed in favour of FileStore API.  (SOLR-17851).
 
 
 === Security
