@@ -144,6 +144,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         ResponseBuilder rbNew = new ResponseBuilder(rb.req, new SolrQueryResponse(), rb.components);
         rbNew.setQueryString(unparsedQuery);
         super.prepare(rbNew);
+        crb.setFilters(rbNew.getFilters());
         crb.responseBuilders.add(rbNew);
       }
     }

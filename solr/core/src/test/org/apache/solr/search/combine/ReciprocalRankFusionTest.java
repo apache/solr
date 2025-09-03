@@ -33,6 +33,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryResult;
+import org.apache.solr.search.SortedIntDocSet;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -64,6 +65,7 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
     QueryResult result = reciprocalRankFusion.combine(rankedList, solrParams);
     assertEquals(20, reciprocalRankFusion.getK());
     assertEquals(3, result.getDocList().size());
+    assertEquals(4, result.getDocSet().size());
   }
 
   private static List<QueryResult> getQueryResults() {
@@ -77,6 +79,7 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
             3,
             0.67f,
             TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO));
+    r1.setDocSet(new SortedIntDocSet(new int[] {1, 2, 3}, 3));
     QueryResult r2 = new QueryResult();
     r2.setDocList(
         new DocSlice(
@@ -87,6 +90,7 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
             2,
             0.87f,
             TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO));
+    r2.setDocSet(new SortedIntDocSet(new int[] {0, 1}, 2));
     return List.of(r1, r2);
   }
 

@@ -41,4 +41,22 @@ public class CombinedQueryResponseBuilder extends ResponseBuilder {
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
     super(req, rsp, components);
   }
+
+  /**
+   * Propagates all the properties from parent ResponseBuilder to the all the children which are
+   * being set later after the CombinedQueryComponent is prepared.
+   */
+  public final void propagate() {
+    responseBuilders.forEach(
+        thisRb -> {
+          thisRb.setNeedDocSet(isNeedDocSet());
+          thisRb.setNeedDocList(isNeedDocList());
+          thisRb.doFacets = doFacets;
+          thisRb.doHighlights = doHighlights;
+          thisRb.doExpand = doExpand;
+          thisRb.doTerms = doTerms;
+          thisRb.doStats = doStats;
+          thisRb.setDistribStatsDisabled(isDistribStatsDisabled());
+        });
+  }
 }

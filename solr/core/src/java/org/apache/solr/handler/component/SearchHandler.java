@@ -490,6 +490,11 @@ public class SearchHandler extends RequestHandlerBase
       }
     }
 
+    // propagate the CombinedQueryResponseBuilder's state to all subBuilders after prepare
+    if (rb instanceof CombinedQueryResponseBuilder crb) {
+      crb.propagate();
+    }
+
     if (!rb.isDistrib) {
       // a normal non-distributed request
       try {
