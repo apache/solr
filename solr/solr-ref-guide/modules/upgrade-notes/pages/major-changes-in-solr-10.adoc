@@ -47,6 +47,11 @@ To learn about the updated options in each CLI tool, use the `--help` option or 
 Additionally, the `bin/solr delete` command no longer deletes a configset when you delete a collection.  Previously if you deleted a collection, it would also delete it's associated configset if it was the only user of it.
 Now you have to explicitly provide a  `--delete-config` option to delete the configsets.  This decouples the lifecycle of a configset from that of a collection.
 
+The `bin/solr start --bootstrap_conf` flag is a legacy feature for converting from Solr to SolrCloud mode and has been removed.
+
+The system property "bootstrap_confdir" (recently renamed to "solr.configset.bootstrap.confdir") used in `bin/solr start` allwowed a collection creation command to default to the examination of system properties in the absence of proper creation parameters by the same name (like "collection.configName"). 
+That no longer happens in Solr 10.  It is only used to load a configuration as a ConfigSet.
+
 === SolrJ
 
 * Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.
