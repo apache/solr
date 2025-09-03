@@ -174,26 +174,6 @@ public class HttpClientUtil {
         throw new RuntimeException("Unable to instantiate Solr SocketFactoryRegistryProvider", e);
       }
     }
-
-    // Configure the HttpClientBuilder if user has specified the factory type.
-    String factoryClassName = System.getProperty(SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
-    if (factoryClassName != null) {
-      log.debug("Using {}", factoryClassName);
-      try {
-        HttpClientBuilderFactory factory =
-            Class.forName(factoryClassName)
-                .asSubclass(HttpClientBuilderFactory.class)
-                .getDeclaredConstructor()
-                .newInstance();
-        httpClientBuilder = factory.getHttpClientBuilder(SolrHttpClientBuilder.create());
-      } catch (InstantiationException
-          | IllegalAccessException
-          | ClassNotFoundException
-          | InvocationTargetException
-          | NoSuchMethodException e) {
-        throw new RuntimeException("Unable to instantiate Solr HttpClientBuilderFactory", e);
-      }
-    }
   }
 
   public abstract static class SocketFactoryRegistryProvider {
