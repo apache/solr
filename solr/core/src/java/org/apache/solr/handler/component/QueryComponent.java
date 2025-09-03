@@ -1206,25 +1206,12 @@ public class QueryComponent extends SearchComponent {
       } // end for-each-doc-in-response
     } // end for-each-response
 
-    final Map<Object, ShardDoc> resultIds = shardDocQueue.resultIds(ss.getOffset());
-
     // Add hits for distributed requests
     // https://issues.apache.org/jira/browse/SOLR-3518
     rb.rsp.addToLog("hits", numFound);
 
-    SolrDocumentList responseDocs = new SolrDocumentList();
-    if (maxScore != null) responseDocs.setMaxScore(maxScore);
-    responseDocs.setNumFound(numFound);
-    responseDocs.setNumFoundExact(hitCountIsExact);
-    responseDocs.setStart(ss.getOffset());
-    // size appropriately
-    for (int i = 0; i < resultIds.size(); i++) responseDocs.add(null);
-
-    // save these results in a private area so we can access them
-    // again when retrieving stored fields.
-    // TODO: use ResponseBuilder (w/ comments) or the request context?
-    rb.resultIds = resultIds;
-    rb.setResponseDocs(responseDocs);
+    setResultIdsAndResponseDocs(
+        rb, shardDocQueue, maxScore, numFound, hitCountIsExact, ss.getOffset());
 
     populateNextCursorMarkFromMergedShards(rb);
 
@@ -1268,6 +1255,30 @@ public class QueryComponent extends SearchComponent {
                 SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, approximateTotalHits);
       }
     }
+  }
+
+  protected void setResultIdsAndResponseDocs(
+      ResponseBuilder rb,
+      ShardDocQueue shardDocQueue,
+      Float maxScore,
+      long numFound,
+      boolean hitCountIsExact,
+      int offset) {
+    final Map<Object, ShardDoc> resultIds = shardDocQueue.resultIds(offset);
+
+    final SolrDocumentList responseDocs = new SolrDocumentList();
+    if (maxScore != null) responseDocs.setMaxScore(maxScore);
+    responseDocs.setNumFound(numFound);
+    responseDocs.setNumFoundExact(hitCountIsExact);
+    responseDocs.setStart(offset);
+    // size appropriately
+    for (int i = 0; i < resultIds.size(); i++) responseDocs.add(null);
+
+    // save these results in a private area so we can access them
+    // again when retrieving stored fields.
+    // TODO: use ResponseBuilder (w/ comments) or the request context?
+    rb.resultIds = resultIds;
+    rb.setResponseDocs(responseDocs);
   }
 
   /**
