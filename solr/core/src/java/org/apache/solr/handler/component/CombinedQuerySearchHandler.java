@@ -72,4 +72,13 @@ public class CombinedQuerySearchHandler extends SearchHandler {
     names.add(TermsComponent.COMPONENT_NAME);
     return names;
   }
+
+  @Override
+  protected void postPrepareComponents(ResponseBuilder rb) {
+    super.postPrepareComponents(rb);
+    // propagate the CombinedQueryResponseBuilder's state to all subBuilders after prepare
+    if (rb instanceof CombinedQueryResponseBuilder crb) {
+      crb.propagate();
+    }
+  }
 }
