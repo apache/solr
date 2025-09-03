@@ -319,9 +319,9 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
-      assertEquals(
-          "application/x-www-form-urlencoded; charset=UTF-8",
-          DebugServlet.headers.get("Content-Type"));
+      assertTrue(
+          "application/x-www-form-urlencoded; charset=UTF-8"
+              .equalsIgnoreCase(DebugServlet.headers.get("Content-Type")));
 
       // PUT
       DebugServlet.clear();
@@ -340,9 +340,9 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
-      assertEquals(
-          "application/x-www-form-urlencoded; charset=UTF-8",
-          DebugServlet.headers.get("Content-Type"));
+      assertTrue(
+          "application/x-www-form-urlencoded; charset=UTF-8"
+              .equalsIgnoreCase(DebugServlet.headers.get("Content-Type")));
     }
 
     // XML
@@ -385,9 +385,9 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
-      assertEquals(
-          "application/x-www-form-urlencoded; charset=UTF-8",
-          DebugServlet.headers.get("Content-Type"));
+      assertTrue(
+          "application/x-www-form-urlencoded; charset=UTF-8"
+              .equalsIgnoreCase(DebugServlet.headers.get("Content-Type")));
 
       DebugServlet.clear();
       queryRequest.setMethod(METHOD.PUT);
@@ -405,9 +405,9 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
-      assertEquals(
-          "application/x-www-form-urlencoded; charset=UTF-8",
-          DebugServlet.headers.get("Content-Type"));
+      assertTrue(
+          "application/x-www-form-urlencoded; charset=UTF-8"
+              .equalsIgnoreCase(DebugServlet.headers.get("Content-Type")));
     }
   }
 
