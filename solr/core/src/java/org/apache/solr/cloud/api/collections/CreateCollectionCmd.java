@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -681,23 +680,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
               // return another option
               getConfName(
                   stateManager, collection, collectionPath, collectionProps, configSetService);
-            }
-
-          } else if (EnvUtils.getProperty("solr.configset.bootstrap.confdir") != null) {
-            String defaultConfigName =
-                EnvUtils.getProperty("solr.configset.bootstrap.config.name", collection);
-
-            log.info("Setting config for collection: {} to {}", collection, defaultConfigName);
-
-            collectionProps.put(ZkController.CONFIGNAME_PROP, defaultConfigName);
-
-            Properties sysProps = System.getProperties();
-            for (String sprop : System.getProperties().stringPropertyNames()) {
-              if (sprop.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
-                collectionProps.put(
-                    sprop.substring(ZkController.COLLECTION_PARAM_PREFIX.length()),
-                    sysProps.getProperty(sprop));
-              }
             }
 
           } else {
