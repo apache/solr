@@ -475,7 +475,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
             : new HttpPut(fullQueryUrl);
 
     if (!isMultipart) {
-      postOrPut.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+      postOrPut.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
     }
 
     List<FormBodyPart> parts = new ArrayList<>();

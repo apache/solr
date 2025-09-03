@@ -176,7 +176,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     HttpPost httpPost = new HttpPost(url);
     httpPost.setHeader(header);
     httpPost.setEntity(new ByteArrayEntity(jsonCommand.replace("'", "\"").getBytes(UTF_8)));
-    httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
+    httpPost.addHeader("Content-Type", "application/json; charset=utf-8");
     HttpResponse r = cl.execute(httpPost);
     int statusCode = r.getStatusLine().getStatusCode();
     Utils.consumeFully(r.getEntity());

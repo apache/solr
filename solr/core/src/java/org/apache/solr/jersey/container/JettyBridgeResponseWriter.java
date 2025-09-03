@@ -57,9 +57,6 @@ public class JettyBridgeResponseWriter implements ContainerResponseWriter {
     final jakarta.ws.rs.core.Response.StatusType statusInfo = context.getStatusInfo();
     httpServletResponse.setStatus(statusInfo.getStatusCode());
 
-    if (contentLength != -1 && contentLength < Integer.MAX_VALUE) {
-      httpServletResponse.setContentLength((int) contentLength);
-    }
     for (final Map.Entry<String, List<String>> e : context.getStringHeaders().entrySet()) {
       for (final String value : e.getValue()) {
         httpServletResponse.addHeader(e.getKey(), value);
