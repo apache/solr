@@ -149,6 +149,10 @@ Deprecation Removals
 
 * SOLR-17742: Removed the handleSelect option of <requestDispatcher>.  (Gaurav Tuli, David Smiley)
 
+* SOLR-17872: Solr no longer uses Apache HttpClient.  Nonetheless SolrJ still includes deprecated SolrClient implementations
+ for that (which will be removed eventually), and many tests still use it.  Also, there were server metrics
+ relating to HTTP client connection pools that no longer exist.  (David Smiley)
+
 Dependency Upgrades
 ---------------------
 
