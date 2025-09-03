@@ -70,7 +70,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
       doc.addField("id", Integer.toString(i));
       doc.addField("text", "test text for doc " + i);
       doc.addField("title", "title test for doc " + i);
-      doc.addField("nullfirst", String.valueOf(i % 3));
+      doc.addField("mod3_s1",  (i % 3));
       docs.add(doc);
     }
     // cosine distance vector1= 1.0
@@ -193,7 +193,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                 "{\"queries\":"
                     + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
                     + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
-                    + "\"limit\":5,\"sort\":\"nullfirst desc\""
+                    + "\"limit\":5,\"sort\":\"mod3_s1 desc\""
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
                 "shards",
@@ -247,26 +247,26 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
             createParams(
                 CommonParams.JSON,
                 "{\"queries\":"
-                    + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
-                    + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
-                    + "\"limit\":5,"
+                    + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
+                    + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^=2 OR 5^=1)\"}}},"
+                    + "\"limit\":3,"
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"nullfirst\","
+                    + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_s1\","
                     + "\"combiner.query\":[\"lexical1\",\"lexical2\"], \"hl\": true, \"hl.fl\": \"title\",\"hl.q\":\"test doc\"}}",
                 "shards",
                 getShardsString(),
                 CommonParams.QT,
                 "/search"));
-    assertEquals(5, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "2", "1", "4", "5", "8");
-    assertEquals("nullfirst", rsp.getFacetFields().getFirst().getName());
-    assertEquals("[1 (4), 0 (3), 2 (3)]", rsp.getFacetFields().getFirst().getValues().toString());
-    assertEquals(5, rsp.getHighlighting().size());
+    assertEquals(3, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "2", "3", "4");
+    assertEquals("mod3_s1", rsp.getFacetFields().getFirst().getName());
+    assertEquals("[2 (2), 0 (1), 1 (1)]", rsp.getFacetFields().getFirst().getValues().toString());
+    assertEquals(3, rsp.getHighlighting().size());
     assertEquals(
-        "title <em>test</em> for <em>doc</em> 1",
-        rsp.getHighlighting().get("1").get("title").getFirst());
+        "title <em>test</em> for <em>doc</em> 2",
+        rsp.getHighlighting().get("2").get("title").getFirst());
     assertEquals(
-        "title <em>test</em> for <em>doc</em> 8",
-        rsp.getHighlighting().get("8").get("title").getFirst());
+        "title <em>test</em> for <em>doc</em> 4",
+        rsp.getHighlighting().get("4").get("title").getFirst());
   }
 }
