@@ -27,6 +27,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
+import static org.apache.solr.update.SolrIndexWriter.MERGE_TYPE_ATTR;
 
 /** Test proper registration and collection of index and directory metrics. */
 public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
@@ -65,17 +66,19 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var minorMergeTimer =
           SolrMetricTestUtils.getHistogramDatapoint(
               core,
-              "solr_indexwriter_minor_merge_milliseconds",
+              "solr_indexwriter_merge_milliseconds",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "minor")
                   .build());
       assertTrue("minorMerge: " + minorMergeTimer.getCount(), minorMergeTimer.getCount() >= 3);
       var majorMergeTimer =
           SolrMetricTestUtils.getHistogramDatapoint(
               core,
-              "solr_indexwriter_major_merge_milliseconds",
+              "solr_indexwriter_merge_milliseconds",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "major")
                   .build());
       // major merge timer should have a value of 0, and because 0 values are not reported, no datapoint is available
       assertNull("majorMergeTimer", majorMergeTimer);
@@ -146,17 +149,19 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var minorMergeTimer =
           SolrMetricTestUtils.getHistogramDatapoint(
               core,
-              "solr_indexwriter_minor_merge_milliseconds",
+              "solr_indexwriter_merge_milliseconds",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "minor")
                   .build());
       assertTrue("minorMergeTimer: " + minorMergeTimer.getCount(), minorMergeTimer.getCount() >= 3);
       var majorMergeTimer =
           SolrMetricTestUtils.getHistogramDatapoint(
               core,
-              "solr_indexwriter_major_merge_milliseconds",
+              "solr_indexwriter_merge_milliseconds",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "major")
                   .build());
       // major merge timer should have a value of 0, and because 0 values are not reported, no datapoint is available
       assertNull("majorMergeTimer", majorMergeTimer);
@@ -209,17 +214,19 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var minorMergeTimer =
           SolrMetricTestUtils.getHistogramDatapoint(
               core,
-              "solr_indexwriter_minor_merge_milliseconds",
+              "solr_indexwriter_merge_milliseconds",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "minor")
                   .build());
       assertTrue("minorMergeTimer: " + minorMergeTimer.getCount(), minorMergeTimer.getCount() == 2);
       var majorMergeTimer =
           SolrMetricTestUtils.getHistogramDatapoint(
               core,
-              "solr_indexwriter_major_merge_milliseconds",
+              "solr_indexwriter_merge_milliseconds",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "major")
                   .build());
       assertTrue("majorMergeTimer: " + majorMergeTimer.getCount(), majorMergeTimer.getCount() == 2);
 

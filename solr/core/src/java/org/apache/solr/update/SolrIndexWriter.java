@@ -223,17 +223,17 @@ public class SolrIndexWriter extends IndexWriter {
         minorMerge =
             new AttributedLongTimer(
                 solrMetricsContext.longHistogram(
-                    "solr_indexwriter_minor_merge",
+                    "solr_indexwriter_merge",
                     "Time spent merging segments below or equal to the majorMergeDocs threshold (" + majorMergeDocs + ")",
                     OtelUnit.MILLISECONDS),
-                baseAttributes);
+                baseAttributes.toBuilder().put(MERGE_TYPE_ATTR, "minor").build());
         majorMerge =
             new AttributedLongTimer(
                 solrMetricsContext.longHistogram(
-                    "solr_indexwriter_major_merge",
+                    "solr_indexwriter_merge",
                     "Time spent merging segments above the majorMergeDocs threshold (" + majorMergeDocs + ")",
                     OtelUnit.MILLISECONDS),
-                baseAttributes);
+                baseAttributes.toBuilder().put(MERGE_TYPE_ATTR, "major").build());
         mergeErrors =
             new AttributedLongCounter(
                 solrMetricsContext.longCounter(
@@ -243,7 +243,7 @@ public class SolrIndexWriter extends IndexWriter {
         String tag = core.getMetricTag();
         mergeStats =
             solrMetricsContext.observableLongGauge(
-                "solr_indexwriter_major_merge_stats",
+                "solr_indexwriter_merge_stats",
                 "Metrics around currently running segment merges; major := above the majorMergeDocs threshold (" + majorMergeDocs + "), minor := below or equal to the threshold",
                 (observableLongMeasurement -> {
                   observableLongMeasurement.record(
@@ -451,9 +451,7 @@ public class SolrIndexWriter extends IndexWriter {
       if (directoryFactory != null) {
         directoryFactory.release(directory);
       }
-      if (mergeStats != null) {
-        IOUtils.closeQuietly(mergeStats);
-      }
+      IOUtils.closeQuietly(mergeStats);
       if (solrMetricsContext != null) {
         solrMetricsContext.unregister();
       }
