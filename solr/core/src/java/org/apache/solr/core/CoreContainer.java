@@ -55,9 +55,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.http.auth.AuthSchemeProvider;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.config.Lookup;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
@@ -67,11 +64,6 @@ import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
-import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
-import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.AuthSchemeRegistryProvider;
-import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.CredentialsProviderProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -148,7 +140,6 @@ import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
-import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
@@ -594,58 +585,10 @@ public class CoreContainer {
   }
 
   private void setupHttpClientForAuthPlugin(Object authcPlugin) {
-    if (authcPlugin instanceof HttpClientBuilderPlugin builderPlugin) {
-      // Setup HttpClient for internode communication
-      SolrHttpClientBuilder builder =
-          builderPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
-
-      // The Hadoop Auth Plugin was removed in SOLR-17540, however leaving the below reference
-      // for future readers, as there may be an option to simplify this logic.
-      //
-      // this caused plugins like KerberosPlugin to register its intercepts, but this intercept
-      // logic is also handled by the pki authentication code when it decides to let the plugin
-      // handle auth via its intercept - so you would end up with two intercepts
-      // -->
-      //  shardHandlerFactory.setSecurityBuilder(builderPlugin); // calls setup for the authcPlugin
-      //  updateShardHandler.setSecurityBuilder(builderPlugin);
-      // <--
-
-      // This should not happen here at all - it's only currently required due to its effect on
-      // http1 clients in a test or two incorrectly counting on it for their configuration.
-      // -->
-
-      SolrHttpClientContextBuilder httpClientBuilder = new SolrHttpClientContextBuilder();
-      if (builder.getCredentialsProviderProvider() != null) {
-        httpClientBuilder.setDefaultCredentialsProvider(
-            new CredentialsProviderProvider() {
-
-              @Override
-              public CredentialsProvider getCredentialsProvider() {
-                return builder.getCredentialsProviderProvider().getCredentialsProvider();
-              }
-            });
-      }
-      if (builder.getAuthSchemeRegistryProvider() != null) {
-        httpClientBuilder.setAuthSchemeRegistryProvider(
-            new AuthSchemeRegistryProvider() {
-
-              @Override
-              public Lookup<AuthSchemeProvider> getAuthSchemeRegistry() {
-                return builder.getAuthSchemeRegistryProvider().getAuthSchemeRegistry();
-              }
-            });
-      }
-
-      HttpClientUtil.setHttpClientRequestContextBuilder(httpClientBuilder);
-
-      // <--
-    }
-
     // Always register PKI auth interceptor, which will then delegate the decision of who should
     // secure each request to the configured authentication plugin.
     if (pkiAuthenticationSecurityBuilder != null
         && !pkiAuthenticationSecurityBuilder.isInterceptorRegistered()) {
-      pkiAuthenticationSecurityBuilder.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
       shardHandlerFactory.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
       updateShardHandler.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
       solrClientProvider.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
