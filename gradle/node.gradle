@@ -40,7 +40,7 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
 
     node {
         download = true
-        version = "16.20.2" // LTS
+        version = "22.18.0" // LTS
 
         def nodeDistUrl = "${ -> propertyOrEnvOrDefault("solr.node.distUrl", "SOLR_NODE_DIST_URL", '') }"
         if (!nodeDistUrl.isEmpty()) {
