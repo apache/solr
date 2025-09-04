@@ -259,6 +259,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   private volatile boolean newSearcherReady = false;
 
+  private final Attributes coreAttributes;
   private AttributedLongCounter newSearcherCounter;
   private AttributedLongCounter newSearcherMaxReachedCounter;
   private AttributedLongCounter newSearcherOtherErrorsCounter;
@@ -1088,6 +1089,17 @@ public class SolrCore implements SolrInfoBean, Closeable {
       this.solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
+      if (coreContainer.isZooKeeperAware()) {
+        this.coreAttributes =
+            Attributes.builder()
+                .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
+                .put(CORE_ATTR, coreDescriptor.getName())
+                .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
+                .build();
+      } else {
+        this.coreAttributes = Attributes.builder().put(CORE_ATTR, coreDescriptor.getName()).build();
+      }
+
       if (updateHandler == null) {
         directoryFactory = initDirectoryFactory();
         recoveryStrategyBuilder = initRecoveryStrategyBuilder();
@@ -1109,21 +1121,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       setLatestSchema(schema);
 
       // initialize core metrics
-      if (coreContainer.isZooKeeperAware()) {
-        initializeMetrics(
-            solrMetricsContext,
-            Attributes.builder()
-                .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
-                .put(CORE_ATTR, coreDescriptor.getName())
-                .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
-                .build(),
-            "");
-      } else {
-        initializeMetrics(
-            solrMetricsContext,
-            Attributes.builder().put(CORE_ATTR, coreDescriptor.getName()).build(),
-            "");
-      }
+      initializeMetrics(solrMetricsContext, coreAttributes, "");
 
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
@@ -1131,8 +1129,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
       // also register it here for back-compat
-      // NOCOMMIT SOLR-17458: Add Otel
-      solrFieldCacheBean.initializeMetrics(solrMetricsContext, Attributes.empty(), "core");
+      solrFieldCacheBean.initializeMetrics(
+          solrMetricsContext,
+          coreAttributes.toBuilder().put(CATEGORY_ATTR, Category.CACHE.toString()).build(),
+          "");
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
