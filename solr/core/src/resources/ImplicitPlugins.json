@@ -77,10 +77,6 @@
       "class": "solr.SystemInfoHandler",
       "useParams":"_ADMIN_SYSTEM"
     },
-    "/admin/mbeans": {
-      "class": "solr.SolrInfoMBeanHandler",
-      "useParams":"_ADMIN_MBEANS"
-    },
     "/admin/plugins": {
       "class": "solr.PluginInfoHandler"
     },

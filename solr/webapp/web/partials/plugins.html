@@ -31,12 +31,12 @@ limitations under the License.
             </dl>
           </li>
           <li class="stats clearfix" ng-show="plugin.stats">
-            <span>stats:</span>
+            <span>metrics:</span>
             <ul>
               <li ng-repeat="(key, value) in plugin.stats" ng-class="{odd: $odd}">
                   <dl class="clearfix">
                       <dt>{{key}}:</dt>
-                      <dd>{{value}}</dd>
+                      <dd class="prometheus-metric">{{value}}</dd>
                   </dl>
               </li>
             </ul>
@@ -55,7 +55,7 @@ limitations under the License.
         </li>
         <li class="PLUGINCHANGES"><a ng-click="startRecording()">Watch Changes</a></li>
         <li class="RELOAD"><a ng-click="refresh()">Refresh Values</a></li>
-        <li class="NOTE"><p>NOTE: Only selected metrics are shown here. Full metrics can be accessed via /admin/metrics handler.</p></li>
+        <li class="NOTE"><p>NOTE: Metrics are displayed in Prometheus format. Full metrics can be accessed via /admin/metrics handler.</p></li>
     </ul>
   </div>
 

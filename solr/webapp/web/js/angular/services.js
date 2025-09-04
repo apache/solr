@@ -23,7 +23,15 @@ solrAdminServices.factory('System',
   }])
 .factory('Metrics',
     ['$resource', function($resource) {
-      return $resource('admin/metrics', {"wt":"json", "nodes": "@nodes", "prefix":"@prefix", "_":Date.now()});
+      return $resource('admin/metrics', {"wt":"json", "nodes": "@nodes", "prefix":"@prefix", "core":"@core", "_":Date.now()}, {
+        "prometheus": {
+          method: 'GET',
+          params: {wt: 'prometheus', core: '@core'},
+          transformResponse: function(data) {
+            return {data: data};
+          }
+        }
+      });
     }])
 .factory('CollectionsV2',
     function() {
@@ -424,6 +432,6 @@ solrAdminServices.factory('System',
           }
           return params;
         };
-        
+
         return service;
       }]);

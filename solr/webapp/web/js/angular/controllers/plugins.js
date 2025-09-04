@@ -15,10 +15,8 @@
  limitations under the License.
 */
 
-//NOCOMMIT: This plugin seems tied to the Admin UIs plugin management but is tied to dropwizard metrics failing some tests.
-// This needs to change how it gets these metrics or we need to make a shim to the /admin/plugins handler for this to support it
 solrAdminApp.controller('PluginsController',
-    function($scope, $rootScope, $routeParams, $location, Mbeans, Constants) {
+    function($scope, $rootScope, $routeParams, $location, Mbeans, Metrics, Constants) {
         $scope.resetMenu("plugins", Constants.IS_CORE_PAGE);
 
         if ($routeParams.legacytype) {
@@ -29,9 +27,15 @@ solrAdminApp.controller('PluginsController',
         }
 
         $scope.refresh = function() {
-            Mbeans.stats({core: $routeParams.core}, function (data) {
-                var type = $location.search().type;
-                $scope.types = getPluginTypes(data, type);
+            var params = {};
+            if ($routeParams.core) {
+                params.core = $routeParams.core;
+            }
+
+            var type = $location.search().type;
+
+            Metrics.prometheus(params, function (response) {
+                $scope.types = getPluginTypesFromMetrics(response.data, type);
                 $scope.type = getSelectedType($scope.types, type);
 
                 if ($scope.type && $routeParams.entry) {
@@ -66,22 +70,155 @@ solrAdminApp.controller('PluginsController',
 
         $scope.startRecording = function() {
             $scope.isRecording = true;
-            Mbeans.reference({core: $routeParams.core}, function(data) {
-                $scope.reference = data.reference;
-                console.log($scope.reference);
-            })
+            $scope.refresh();
         }
 
         $scope.stopRecording = function() {
             $scope.isRecording = false;
-            console.log($scope.reference);
-            Mbeans.delta({core: $routeParams.core}, $scope.reference, function(data) {
-                parseDelta($scope.types, data);
-            });
+            $scope.refresh();
         }
 
         $scope.refresh();
     });
+
+var getPluginTypesFromMetrics = function(metricsText, selected) {
+    var keys = [];
+
+    // Parse Prometheus format metrics
+    var lines = metricsText.split('\n');
+    var categoriesMap = {};
+    var metricMetadata = {}; // Store HELP and TYPE info for each metric
+
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+
+        // Skip empty lines
+        if (line === '') {
+            continue;
+        }
+
+        // Parse HELP comments - format: # HELP metric_name description
+        if (line.startsWith('# HELP ')) {
+            var helpMatch = line.match(/^# HELP\s+([^\s]+)\s+(.*)$/);
+            if (helpMatch) {
+                var metricName = helpMatch[1];
+                var description = helpMatch[2];
+                if (!metricMetadata[metricName]) {
+                    metricMetadata[metricName] = {};
+                }
+                metricMetadata[metricName].description = description;
+            }
+            continue;
+        }
+
+        // Parse TYPE comments - format: # TYPE metric_name type
+        if (line.startsWith('# TYPE ')) {
+            var typeMatch = line.match(/^# TYPE\s+([^\s]+)\s+(.*)$/);
+            if (typeMatch) {
+                var metricName = typeMatch[1];
+                var type = typeMatch[2];
+                if (!metricMetadata[metricName]) {
+                    metricMetadata[metricName] = {};
+                }
+                metricMetadata[metricName].type = type;
+            }
+            continue;
+        }
+
+        // Skip other comments
+        if (line.startsWith('#')) {
+            continue;
+        }
+
+        // Parse metric line - format: metric_name{labels} value timestamp
+        var metricMatch = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*)\{([^}]*)\}\s+([^\s]+)(\s+[^\s]+)?$/);
+        if (!metricMatch) {
+            // Try without labels - format: metric_name value timestamp
+            metricMatch = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*)\s+([^\s]+)(\s+[^\s]+)?$/);
+            if (metricMatch) {
+                // Skip metrics without category labels for prometheus format
+                continue;
+            }
+            continue;
+        }
+
+        var metricName = metricMatch[1];
+        var labelsStr = metricMatch[2];
+        var value = metricMatch[3];
+
+        // Parse labels
+        var labels = {};
+        if (labelsStr) {
+            var labelPairs = labelsStr.split(',');
+            for (var j = 0; j < labelPairs.length; j++) {
+                var labelMatch = labelPairs[j].trim().match(/^([^=]+)="([^"]*)"$/);
+                if (labelMatch) {
+                    labels[labelMatch[1]] = labelMatch[2];
+                }
+            }
+        }
+
+        // Use category from labels only - don't fall back to metric name parsing
+        var category = labels.category;
+
+        // Skip metrics that don't have a category label
+        if (!category) {
+            continue;
+        }
+
+        if (!categoriesMap[category]) {
+            categoriesMap[category] = {};
+        }
+
+        if (!categoriesMap[category][metricName]) {
+            categoriesMap[category][metricName] = {};
+        }
+
+        // Create a descriptive key for the metric variant
+        var labelParts = [];
+        for (var labelKey in labels) {
+            if (labelKey !== 'category') {
+                labelParts.push(labelKey + '=' + labels[labelKey]);
+            }
+        }
+        var variantKey = labelParts.length > 0 ? labelParts.join(', ') : 'default';
+
+        categoriesMap[category][metricName][variantKey] = value;
+    }
+
+    // Convert to the expected format
+    for (var categoryName in categoriesMap) {
+        var lower = categoryName.toLowerCase();
+        var metrics = [];
+
+        for (var metricName in categoriesMap[categoryName]) {
+            var metricData = categoriesMap[categoryName][metricName];
+            var metadata = metricMetadata[metricName] || {};
+            metrics.push({
+                name: metricName,
+                changed: false,
+                stats: metricData,
+                open: false,
+                properties: {
+                    description: metadata.description,
+                    type: metadata.type
+                }
+            });
+        }
+
+        if (metrics.length > 0) {
+            keys.push({
+                name: categoryName,
+                selected: lower == selected,
+                changes: 0,
+                lower: lower,
+                plugins: metrics
+            });
+        }
+    }
+
+    return keys;
+};
 
 var getPluginTypes = function(data, selected) {
     var keys = [];
@@ -98,7 +235,6 @@ var getPluginTypes = function(data, selected) {
                    plugins: plugins
         });
     }
-    keys.sort(function(a,b) {return a.name > b.name});
     return keys;
 };
 
