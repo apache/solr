@@ -26,51 +26,77 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 |===
 |Property Name|Previous Property Name (if any)|Default Value|Description
 
+|solr.admin.handler.systeminfo.dns.prevent.reverse.lookup.enabled|solr.dns.prevent.reverse.lookup|false|Controls whether reverse DNS lookups are prevented in the system info handler.
+
 |solr.api.config.edit.enabled|!disable.config.edit|true|Controls whether configuration editing via API is enabled. When set to `true`, configuration editing is enabled.
 
 |solr.api.v2.enabled|!disable.v2.api|true|Controls whether the V2 API is enabled. When set to `true`, the V2 API is enabled.
 
-|solr.cloud.prep.recovery.read.timeout.additional.ms|prep.recovery.read.timeout.extra.wait|1000|Specifies additional milliseconds to wait during recovery read operations in SolrCloud mode.
+|solr.auth.jwt.outbound.http.enabled|solr.auth.jwt.allowOutboundHttp|false|Controls whether JWT authentication for outbound HTTP connections is enabled.
 
-|solr.cloud.startup.delete.unknown.cores.enabled|solr.delete.unknown.cores|false|Controls whether unknown cores are deleted at startup in SolrCloud mode.
+|solr.auth.superuser|solr.authorization.superuser|solr|Specifies the superuser for authorization. This user has all permissions when using SASL authentication.
 
-|solr.cloud.wait.for.zk.seconds|solr.wait.for.zk|30|Specifies the number of seconds to wait for ZooKeeper connection in SolrCloud mode.
+|solr.circuitbreaker.errorcode|solr.circuitbreaker.errorcode|503|Defines the HTTP error code returned when a circuit breaker is triggered.
 
-|solr.configset.bootstrap.confdir|bootstrap_confdir||Defines the directory of a configuration to be loaded as a configset when starting Solr.  Often ends in `/conf`.
+|solr.cloud.prep.recovery.read.timeout.additional.ms|prepRecoveryReadTimeoutExtraWait|8000|Specifies additional milliseconds to wait during recovery read operations in SolrCloud mode.
 
-|solr.configset.bootstrap.config.name|collection.configName||Specifies the configuration name for the bootstrapped configset.  Use with "solr.configset.bootstrap.confdir".
+|solr.cloud.startup.delete.unknown.cores.enabled|solr.deleteUnknownCores|false|Controls whether unknown cores are deleted at startup in SolrCloud mode.
+
+|solr.cloud.wait.for.zk.seconds|waitForZk|30|Specifies the number of seconds to wait for ZooKeeper connection in SolrCloud mode.
+
+|solr.configset.bootstrap.confdir|bootstrap_confdir||Defines the directory of a configuration to be loaded as a configset when starting Solr. Often ends in `/conf`.
+
+|solr.configset.bootstrap.config.name|collection.configName||Specifies the configuration name for the bootstrapped configset. Use with "solr.configset.bootstrap.confdir".
+
+|solr.configset.create.auth.checks.disabled|solr.disableConfigSetsCreateAuthChecks|false|Controls whether authentication checks are disabled when creating configsets.
 
 |solr.configset.default.confdir|solr.default.confdir|"_default"|Defines the default configuration directory for configsets.
 
-|solr.configset.forbidden.file.types|solr.config.set.forbidden.file.types, solrConfigSetForbiddenFileTypes|jar,jnilib,dll,so,dylib,exe|Specifies file types that are forbidden in configsets.
+|solr.configset.forbidden.file.types|solrConfigSetForbiddenFileTypes|jar,jnilib,dll,so,dylib,exe|Specifies file types that are forbidden in configsets.
 
 |solr.configset.upload.enabled|configset.upload.enabled|true|Controls whether configset uploads are enabled.
 
 |solr.filestore.filesize.max|max.file.store.size|100MB|Defines the maximum file size allowed in Solr's filestore.
 
+|solr.index.replication.fingerprint.disabled|solr.disableFingerprint|false|Controls whether index fingerprinting for replication is disabled.
+
+|solr.index.updatelog.enabled|enable.update.log|true (in default solrconfig.xml)|Controls whether the UpdateLog is enabled. The UpdateLog is required for atomic updates, real-time get, and transaction log replay.
+
 |solr.logs.dir|solr.log.dir|server/logs|Specifies the directory where Solr logs are stored.
+
+|solr.metrics.fieldcache.entries.disabled|disableSolrFieldCacheMBeanEntryList|false|Controls whether Solr FieldCache MBean entry list is disabled for metrics reporting.
 
 |solr.packages.enabled|enable.packages|false|Controls whether the package management system is enabled.
 
-|solr.requests.streaming.body.enabled|solr.enable.stream.body|true|Controls whether streaming request bodies are enabled.
+|solr.requests.allow.urls|solr.disable.allowUrls||Specifies URLs that are allowed for streaming. See also solr.requests.streaming.remote.enabled.
 
-|solr.requests.streaming.remote.enabled|solr.enable.remote.streaming|false|Controls whether remote streaming is enabled for requests.
+|solr.requests.streaming.body.enabled|solr.enableStreamBody|false|Controls whether streaming request bodies are enabled.
+
+|solr.requests.streaming.remote.enabled|solr.enableRemoteStreaming|false|Controls whether remote streaming is enabled for requests.
 
 |solr.resourceloading.restricted.enabled|!solr.allow.unsafe.resourceloading|true|Controls whether resource loading restrictions are enabled. When set to `true`, resource loading restrictions are enabled.
 
-|solr.responses.hidden.sys.props|solr.hidden.sys.props||Defines system properties that are hidden in responses.
+|solr.responses.hidden.sys.props|solr.hiddenSysProps||Defines system properties that are hidden in responses.
 
-|solr.responses.stacktrace.enabled|!solr.hide.stack.trace|false|Controls whether stack traces are included in responses. When set to `true`, stack traces are included in responses.
+|solr.responses.stacktrace.enabled|!solr.hideStackTrace|false|Controls whether stack traces are included in responses. When set to `true`, stack traces are included in responses.
 
 |solr.security.auth.basicauth.credentials|basicauth||Defines basic authentication credentials.
 
-|solr.security.auth.plugin|authentication.plugin||Specifies the authentication plugin to use.
+|solr.security.auth.plugin|authenticationPlugin||Specifies the authentication plugin to use.
 
-|solr.solrj.cloud.max.stale.retries|cloud.solr.client.max.stale.retries|5|Sets the maximum number of retries for stale connection attempts in SolrJ cloud client.
+|solr.solrj.cloud.max.stale.retries|cloudSolrClientMaxStaleRetries|5|Sets the maximum number of retries for stale connection attempts in SolrJ cloud client.
 
-|solr.ui.enabled|!solr.admin.ui.disabled|true|Controls whether the Solr Admin UI is enabled. When set to `true`, the Solr Admin UI is enabled.
+|solr.streamingexpressions.facet.tiered.enabled|solr.facet.stream.tiered|true|Controls whether tiered faceting is enabled for streaming expressions.
+
+|solr.tracing.always.on.enabled|solr.alwaysOnTraceId|true|Controls whether trace IDs are always generated, even when no request contains a trace ID.
+
+|solr.tracing.requestid.disabled|solr.disableRequestId|false|Controls whether request ID generation is disabled.
+
+|solr.ui.enabled|!disableAdminUI|true|Controls whether the Solr Admin UI is enabled. When set to `true`, the Solr Admin UI is enabled.
 
 |solr.ui.experimental.enabled|!solr.admin.ui.experimental.disabled|true|Controls whether experimental features in the Solr Admin UI are enabled. When set to `true`, experimental features in the UI are enabled.
+
+|solr.zookeeper.chroot.create|createZkChroot|false|Controls whether a ZooKeeper chroot is created if it doesn't exist.
 |===
 
 == Property Naming Conventions
