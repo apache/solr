@@ -214,7 +214,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
     combinedQueryResult.setMaxHitsTerminatedEarly(setMaxHitsTerminatedEarly);
     crb.setResult(combinedQueryResult);
-    if (rb.isDebugQuery()) {
+    if (rb.isDebugResults()) {
       String[] queryKeys = rb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
       List<Query> queries = crb.responseBuilders.stream().map(ResponseBuilder::getQuery).toList();
       NamedList<Explanation> explanations =

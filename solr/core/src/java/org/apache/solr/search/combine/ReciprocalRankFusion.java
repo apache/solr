@@ -19,6 +19,7 @@ package org.apache.solr.search.combine;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +106,9 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
     }
     List<Map.Entry<String, Float>> sortedByScoreDescending =
         docIdToScore.entrySet().stream()
-            .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+            .sorted(
+                Comparator.comparing(Map.Entry<String, Float>::getValue, Comparator.reverseOrder())
+                    .thenComparing(Map.Entry::getKey))
             .toList();
     for (Map.Entry<String, Float> scoredDoc : sortedByScoreDescending) {
       String docId = scoredDoc.getKey();
