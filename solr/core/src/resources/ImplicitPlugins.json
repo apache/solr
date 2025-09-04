@@ -77,9 +77,6 @@
       "class": "solr.SystemInfoHandler",
       "useParams":"_ADMIN_SYSTEM"
     },
-    "/admin/plugins": {
-      "class": "solr.PluginInfoHandler"
-    },
     "/admin/file": {
       "class": "solr.ShowFileRequestHandler",
       "useParams":"_ADMIN_FILE"
