@@ -557,8 +557,15 @@ public class ZkControllerTest extends SolrCloudTestCase {
     try {
       server.run();
 
-      // Manually create a live node with a higher minor version (10.1.0) to simulate
-      // a newer cluster that the current node (SolrVersion.LATEST=10.0.0) cannot join
+      // Create a higher minor version based on SolrVersion.LATEST for cluster simulation
+      SolrVersion currentVersion = SolrVersion.LATEST;
+      SolrVersion higherMinorVersion = SolrVersion.forIntegers(
+          currentVersion.getMajorVersion(), 
+          currentVersion.getMinorVersion() + 1, 
+          currentVersion.getPatchVersion());
+
+      // Manually create a live node with a higher minor version to simulate
+      // a newer cluster that the current node (SolrVersion.LATEST) cannot join
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(server.getZkAddress())
@@ -571,9 +578,9 @@ public class ZkControllerTest extends SolrCloudTestCase {
         String liveNodeName = "test_node:8983_solr";
         String liveNodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + liveNodeName;
 
-        // Create live node data with version 10.1.0 (same major, higher minor than LATEST 10.0.0)
+        // Create live node data with higher minor version (same major, higher minor than LATEST)
         Map<String, Object> liveNodeData =
-            Map.of(LIVE_NODE_SOLR_VERSION, "10.1.0", LIVE_NODE_NODE_NAME, liveNodeName);
+            Map.of(LIVE_NODE_SOLR_VERSION, higherMinorVersion.toString(), LIVE_NODE_NODE_NAME, liveNodeName);
         byte[] data = Utils.toJSON(liveNodeData);
 
         // persistent since we're about to close this zkClient
@@ -606,10 +613,10 @@ public class ZkControllerTest extends SolrCloudTestCase {
             exception.getMessage().contains("minor version"));
         assertTrue(
             "Exception message should mention our version: " + exception.getMessage(),
-            exception.getMessage().contains("10.0.0"));
+            exception.getMessage().contains(currentVersion.toString()));
         assertTrue(
             "Exception message should mention cluster version: " + exception.getMessage(),
-            exception.getMessage().contains("10.1.0"));
+            exception.getMessage().contains(higherMinorVersion.toString()));
       } finally {
         cc.shutdown();
       }
