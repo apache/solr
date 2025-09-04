@@ -500,7 +500,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(coreContainerMock.getPlacementPluginFactory()).thenReturn(placementPluginFactory);
     when(coreContainerMock.getConfigSetService())
         .thenReturn(new ZkConfigSetService(solrZkClientMock));
-    when(updateShardHandlerMock.getDefaultHttpClient()).thenReturn(httpClientMock);
 
     when(zkControllerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
     when(cloudDataProviderMock.getClusterStateProvider()).thenReturn(clusterStateProviderMock);

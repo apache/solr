@@ -33,7 +33,7 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-densevector-quantized-bits.xml",
-        "ScalarQuantizedDenseVectorField bits must be one of: 4, 7; bits=6 v_scalar_bits");
+        "ScalarQuantizedDenseVectorField bits must be one of: 4, 7; bits=6: v_scalar_bits");
   }
 
   @Test
@@ -41,7 +41,7 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-densevector-quantized-compress.xml",
-        "ScalarQuantizedDenseVectorField fields compress=true only applies when bits=4: v_scalar_compressed");
+        "ScalarQuantizedDenseVectorField compress=true only applies when bits=4: v_scalar_compressed");
   }
 
   @Test
