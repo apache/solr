@@ -25,8 +25,10 @@ import org.apache.solr.uninverting.UninvertingReader;
 /** A SolrInfoBean that provides introspection of the Solr FieldCache */
 public class SolrFieldCacheBean implements SolrInfoBean {
 
-  private boolean enableEntryList = EnvUtils.getPropertyAsBool("solr.metrics.fieldcache.entries.enabled",true);
-  private boolean enableJmxEntryList = EnvUtils.getPropertyAsBool("solr.metrics.fieldcache.entries.jmx.enabled",true);
+  private boolean enableEntryList =
+      EnvUtils.getPropertyAsBool("solr.metrics.fieldcache.entries.enabled", true);
+  private boolean enableJmxEntryList =
+      EnvUtils.getPropertyAsBool("solr.metrics.fieldcache.entries.jmx.enabled", true);
 
   private SolrMetricsContext solrMetricsContext;
 
