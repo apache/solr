@@ -30,6 +30,9 @@
 
   <indexConfig>
     <lockType>${solr.lock.type:native}</lockType>
+    <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
+      <int name="targetSearchConcurrency">16</int>
+    </mergePolicyFactory>
   </indexConfig>
   <jmx/>
   <updateHandler class="solr.DirectUpdateHandler2">

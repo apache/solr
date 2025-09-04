@@ -22,7 +22,6 @@ package org.apache.solr.savedsearch.search;
 import java.io.IOException;
 import java.util.Collection;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -107,15 +106,6 @@ class ReverseSearchQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
-      Scorer scorer = presearchWeight.scorer(context);
-      if (scorer == null) {
-        return null;
-      }
-      return new ReverseSearchScorer(scorer, reverseSearchContext, context);
-    }
-
-    @Override
     public boolean isCacheable(LeafReaderContext ctx) {
       return false;
     }
@@ -126,21 +116,17 @@ class ReverseSearchQuery extends Query {
     }
 
     @Override
-    public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
-      return super.bulkScorer(context);
-    }
-
-    @Override
     public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
-      Scorer scorer = scorer(context);
+      Scorer scorer = presearchWeight.scorer(context);
       if (scorer == null) {
         return null;
       }
+      Scorer wrappedScorer = new ReverseSearchScorer(scorer, reverseSearchContext, context);
       return new ScorerSupplier() {
 
         @Override
         public Scorer get(long leadCost) {
-          return scorer;
+          return wrappedScorer;
         }
 
         @Override
@@ -171,7 +157,6 @@ class ReverseSearchQuery extends Query {
         ReverseSearchContext reverseSearchContext,
         LeafReaderContext leafReaderContext)
         throws IOException {
-      super(presearchScorer.getWeight());
       this.presearchScorer = presearchScorer;
       this.savedSearchCache = reverseSearchContext.queryCache;
       this.queryDecoder = reverseSearchContext.queryDecoder;
@@ -200,11 +185,6 @@ class ReverseSearchQuery extends Query {
     @Override
     public int docID() {
       return presearchScorer.docID();
-    }
-
-    @Override
-    public Weight getWeight() {
-      return presearchScorer.getWeight();
     }
 
     @Override

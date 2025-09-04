@@ -373,16 +373,17 @@ public class DefaultSavedSearchCache extends SolrCacheBase
       var reader = searcher.getIndexReader();
       int batchSize = Math.min(MAX_BATCH_SIZE, cache.getInitialSize());
       boolean isDone = false;
-      int countBasedBatches = cache.getInitialSize() / batchSize - 1;
-      long targetInitialRam = ((DefaultSavedSearchCache) newCache).initialRamMB * 1024L * 1024L;
+      int countBasedBatches = cache.getInitialSize() / batchSize;
+      long targetInitialRam = cache.initialRamMB * 1024L * 1024L;
       long estimatedWeight = 0;
       SolrCore core = searcher.getCore();
       SavedSearchDecoder decoder = new SavedSearchDecoder(core);
       long maxEncounteredVersion = cache.versionHighWaterMark;
       for (LeafReaderContext ctx : reader.leaves()) {
+        var leafSearcher = new IndexSearcher(ctx.reader());
         var topDocs =
-            new IndexSearcher(ctx.reader())
-                .search(versionRangeQuery(cache.versionHighWaterMark), batchSize, VERSION_SORT)
+            leafSearcher.search(
+                    versionRangeQuery(cache.versionHighWaterMark), batchSize, VERSION_SORT)
                 .scoreDocs;
         Arrays.sort(topDocs, (a, b) -> Long.compare(b.doc, a.doc));
         long maxLeafVersion = -1;
@@ -401,8 +402,7 @@ public class DefaultSavedSearchCache extends SolrCacheBase
             }
           }
           topDocs =
-              new IndexSearcher(ctx.reader())
-                  .search(versionRangeQuery(maxLeafVersion + 1), batchSize, VERSION_SORT)
+              leafSearcher.search(versionRangeQuery(maxLeafVersion + 1), batchSize, VERSION_SORT)
                   .scoreDocs;
           Arrays.sort(topDocs, (a, b) -> Long.compare(b.doc, a.doc));
           if (targetInitialRam > 0L) {

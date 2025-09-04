@@ -75,7 +75,7 @@ public class SavedSearchDataValues {
     if (mqIt != null && mqIt.advanceExact(currentDoc)) {
       return mqIt.lookupOrd(mqIt.ordValue()).utf8ToString();
     }
-    return reader.document(currentDoc).get(MONITOR_QUERY);
+    return reader.storedFields().document(currentDoc).get(MONITOR_QUERY);
   }
 
   public long getVersion() throws IOException {
