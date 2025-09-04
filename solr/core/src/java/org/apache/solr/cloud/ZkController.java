@@ -622,7 +622,7 @@ public class ZkController implements Closeable {
           String message =
               String.format(
                   Locale.ROOT,
-                  "Refusing to start Solr to avoid lowering the lowest major version of nodes in the cluster. "
+                  "Refusing to start Solr, since our version is lower than the lowest version currently running in the cluster. "
                       + "Our version: %s, lowest version in cluster: %s.",
                   ourVersion,
                   clusterVersion);
