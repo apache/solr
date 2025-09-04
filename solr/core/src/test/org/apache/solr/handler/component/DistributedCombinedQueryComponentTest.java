@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -35,7 +34,6 @@ import org.junit.Test;
  * functionality of the CombinedQueryComponent in a Solr distributed search environment. It focuses
  * on testing the integration of lexical and vector queries using the combiner component.
  */
-@ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class DistributedCombinedQueryComponentTest extends BaseDistributedSearchTestCase {
 
   private static final int NUM_DOCS = 10;
@@ -205,7 +203,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
   }
 
   /**
-   * Tests the hybrid query functionality of the system.
+   * Tests the hybrid query functionality of the system with various setting of pagination.
    *
    * @throws Exception if any unexpected error occurs during the test execution.
    */
@@ -222,7 +220,36 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                 "{\"queries\":"
                     + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
                     + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
-                    + "\"limit\":4,\"offset\":1"
+                    + "\"fields\":[\"id\",\"score\",\"title\"],"
+                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"]}}",
+                "shards",
+                getShardsString(),
+                CommonParams.QT,
+                "/search"));
+    assertFieldValues(rsp.getResults(), id, "2", "3", "4", "1", "6", "10", "8", "7", "5");
+    rsp =
+        queryServer(
+            createParams(
+                CommonParams.JSON,
+                "{\"queries\":"
+                    + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
+                    + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
+                    + "\"limit\":4,"
+                    + "\"fields\":[\"id\",\"score\",\"title\"],"
+                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"]}}",
+                "shards",
+                getShardsString(),
+                CommonParams.QT,
+                "/search"));
+    assertFieldValues(rsp.getResults(), id, "2", "3", "4", "1");
+    rsp =
+        queryServer(
+            createParams(
+                CommonParams.JSON,
+                "{\"queries\":"
+                    + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
+                    + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
+                    + "\"limit\":4,\"offset\":3,"
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"]}}",
                 "shards",
@@ -230,7 +257,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                 CommonParams.QT,
                 "/search"));
     assertEquals(4, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "3", "4", "1", "6");
+    assertFieldValues(rsp.getResults(), id, "1", "6", "10", "8");
   }
 
   /**

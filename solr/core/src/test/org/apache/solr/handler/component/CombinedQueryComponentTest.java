@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,11 +29,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * The CombinedQueryComponentTest class is a unit test suite for the CombinedQueryComponent in Solr.
- * It verifies the functionality of the component by performing various queries and validating the
- * responses.
+ * The CombinedQueryComponentTest class is an integration test suite for the CombinedQueryComponent
+ * in Solr. It verifies the functionality of the component by performing various queries and
+ * validating the responses.
  */
-@ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
 
   private static final int NUM_DOCS = 10;

@@ -19,7 +19,6 @@ package org.apache.solr.search.combine;
 import static org.apache.solr.common.params.CombinerParams.COMBINER_RRF_K;
 import static org.apache.solr.common.params.CombinerParams.RECIPROCAL_RANK_FUSION;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +40,6 @@ import org.junit.Test;
  * The ReciprocalRankFusionTest class is a unit test suite for the {@link ReciprocalRankFusion}
  * class. It verifies the correctness of the fusion algorithm and its supporting methods.
  */
-@ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
 
   public static ReciprocalRankFusion reciprocalRankFusion;

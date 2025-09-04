@@ -153,9 +153,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
 
   /**
    * Overrides the process method to handle CombinedQueryResponseBuilder instances. This method
-   * processes the responses from multiple queries in the SearchIndexer, combines them using the
-   * specified QueryAndResponseCombiner strategy, and sets the appropriate results and metadata in
-   * the CombinedQueryResponseBuilder.
+   * processes the responses from multiple queries, combines them using the specified
+   * QueryAndResponseCombiner strategy, and sets the appropriate results and metadata in the
+   * CombinedQueryResponseBuilder.
    *
    * @param rb the ResponseBuilder object to process
    * @throws IOException if an I/O error occurs during processing
@@ -167,6 +167,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       boolean segmentTerminatedEarly = false;
       boolean setMaxHitsTerminatedEarly = false;
       List<QueryResult> queryResults = new ArrayList<>();
+      // TODO: to be parallelized
       for (ResponseBuilder thisRb : crb.responseBuilders) {
         // Just a placeholder for future implementation for Cursors
         thisRb.setCursorMark(crb.getCursorMark());
@@ -213,7 +214,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
     combinedQueryResult.setMaxHitsTerminatedEarly(setMaxHitsTerminatedEarly);
     crb.setResult(combinedQueryResult);
-    if (rb.isDebug()) {
+    if (rb.isDebugQuery()) {
       String[] queryKeys = rb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
       List<Query> queries = crb.responseBuilders.stream().map(ResponseBuilder::getQuery).toList();
       NamedList<Explanation> explanations =

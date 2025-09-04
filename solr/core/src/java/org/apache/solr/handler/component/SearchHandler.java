@@ -697,6 +697,11 @@ public class SearchHandler extends RequestHandlerBase
     }
   }
 
+  /**
+   * Operations to be performed post prepare for all components.
+   *
+   * @param rb the ResponseBuilder containing the request and context, such as sort specifications.
+   */
   protected void postPrepareComponents(ResponseBuilder rb) {
     // Once all of our components have been prepared, check if this request involves a SortSpec.
     // If it does, and if our request includes a cursorMark param, then parse & init the
