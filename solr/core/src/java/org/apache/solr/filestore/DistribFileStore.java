@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
@@ -62,9 +63,9 @@ import org.slf4j.LoggerFactory;
 @NotThreadSafe
 public class DistribFileStore implements FileStore {
   static final long MAX_PKG_SIZE =
-      Long.parseLong(System.getProperty("max.file.store.size", String.valueOf(100 * 1024 * 1024)));
+      EnvUtils.getPropertyAsLong("solr.filestore.filesize.max", (long) (100 * 1024 * 1024));
 
-  /** This is where al the files in the package store are listed */
+  /** This is where all the files in the package store are listed */
   static final String ZK_PACKAGESTORE = "/packagestore";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

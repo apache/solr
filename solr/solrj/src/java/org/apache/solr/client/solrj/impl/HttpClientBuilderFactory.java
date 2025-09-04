@@ -19,22 +19,11 @@ package org.apache.solr.client.solrj.impl;
 import java.io.Closeable;
 
 /**
- * Factory interface for configuring {@linkplain SolrHttpClientBuilder}. This relies on the internal
- * HttpClient implementation and is subject to change.
+ * A config hook for post-configuration of a {@linkplain Http2SolrClient} by its builder.
  *
+ * @see HttpClientUtil#SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY
  * @lucene.experimental
  */
 public interface HttpClientBuilderFactory extends Closeable {
-
-  /**
-   * This method configures the {@linkplain SolrHttpClientBuilder} by overriding the configuration
-   * of passed SolrHttpClientBuilder or as a new instance.
-   *
-   * @param builder The instance of the {@linkplain SolrHttpClientBuilder} which should be
-   *     configured (optional).
-   * @return the {@linkplain SolrHttpClientBuilder}
-   */
-  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder);
-
-  public default void setup(Http2SolrClient client) {}
+  default void setup(Http2SolrClient client) {}
 }
