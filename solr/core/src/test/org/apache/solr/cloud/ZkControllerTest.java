@@ -534,6 +534,9 @@ public class ZkControllerTest extends SolrCloudTestCase {
             "Exception message should mention refusing to start: " + exception.getMessage(),
             exception.getMessage().contains("Refusing to start Solr"));
         assertTrue(
+            "Exception message should mention minor version: " + exception.getMessage(),
+            exception.getMessage().contains("minor version"));
+        assertTrue(
             "Exception message should mention our version: " + exception.getMessage(),
             exception.getMessage().contains("10.0.0"));
         assertTrue(

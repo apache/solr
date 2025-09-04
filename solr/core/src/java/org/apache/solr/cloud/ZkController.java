@@ -604,8 +604,8 @@ public class ZkController implements Closeable {
 
   /**
    * Checks version compatibility with other nodes in the cluster. Refuses to start if there's a
-   * major or minor version difference between our Solr version and other nodes in the cluster. Note: uses
-   * live nodes.
+   * major.minor version difference between our Solr version and other nodes in the cluster. Note:
+   * uses live nodes.
    */
   private void checkClusterVersionCompatibility() throws InterruptedException, KeeperException {
     Optional<SolrVersion> lowestVersion = zkStateReader.fetchLowestSolrVersion();
@@ -628,7 +628,7 @@ public class ZkController implements Closeable {
                   clusterVersion);
           throw new SolrException(ErrorCode.INVALID_STATE, message);
         }
-        
+
         // Check minor version compatibility within the same major version
         if (ourVersion.getMajorVersion() == clusterVersion.getMajorVersion() &&
             ourVersion.getMinorVersion() < clusterVersion.getMinorVersion()) {
