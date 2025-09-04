@@ -559,10 +559,11 @@ public class ZkControllerTest extends SolrCloudTestCase {
 
       // Create a higher minor version based on SolrVersion.LATEST for cluster simulation
       SolrVersion currentVersion = SolrVersion.LATEST;
-      SolrVersion higherMinorVersion = SolrVersion.forIntegers(
-          currentVersion.getMajorVersion(), 
-          currentVersion.getMinorVersion() + 1, 
-          currentVersion.getPatchVersion());
+      SolrVersion higherMinorVersion =
+          SolrVersion.forIntegers(
+              currentVersion.getMajorVersion(),
+              currentVersion.getMinorVersion() + 1,
+              currentVersion.getPatchVersion());
 
       // Manually create a live node with a higher minor version to simulate
       // a newer cluster that the current node (SolrVersion.LATEST) cannot join
@@ -580,7 +581,11 @@ public class ZkControllerTest extends SolrCloudTestCase {
 
         // Create live node data with higher minor version (same major, higher minor than LATEST)
         Map<String, Object> liveNodeData =
-            Map.of(LIVE_NODE_SOLR_VERSION, higherMinorVersion.toString(), LIVE_NODE_NODE_NAME, liveNodeName);
+            Map.of(
+                LIVE_NODE_SOLR_VERSION,
+                higherMinorVersion.toString(),
+                LIVE_NODE_NODE_NAME,
+                liveNodeName);
         byte[] data = Utils.toJSON(liveNodeData);
 
         // persistent since we're about to close this zkClient

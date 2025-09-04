@@ -630,8 +630,8 @@ public class ZkController implements Closeable {
         }
 
         // Check minor version compatibility within the same major version
-        if (ourVersion.getMajorVersion() == clusterVersion.getMajorVersion() &&
-            ourVersion.getMinorVersion() < clusterVersion.getMinorVersion()) {
+        if (ourVersion.getMajorVersion() == clusterVersion.getMajorVersion()
+            && ourVersion.getMinorVersion() < clusterVersion.getMinorVersion()) {
           String message =
               String.format(
                   Locale.ROOT,
