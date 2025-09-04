@@ -547,6 +547,74 @@ public class ZkControllerTest extends SolrCloudTestCase {
     }
   }
 
+  @Ignore("Would need to disable ObjectReleaseTracker")
+  public void testMinorVersionCompatibilityFailsStartup() throws Exception {
+    Path zkDir = createTempDir("testMinorVersionCompatibilityFailsStartup");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+
+      // Manually create a live node with a higher minor version (10.1.0) to simulate
+      // a newer cluster that the current node (SolrVersion.LATEST=10.0.0) cannot join
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+
+        // Create cluster nodes first
+        ZkController.createClusterZkNodes(zkClient);
+
+        String liveNodeName = "test_node:8983_solr";
+        String liveNodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + liveNodeName;
+
+        // Create live node data with version 10.1.0 (same major, higher minor than LATEST 10.0.0)
+        Map<String, Object> liveNodeData =
+            Map.of(LIVE_NODE_SOLR_VERSION, "10.1.0", LIVE_NODE_NODE_NAME, liveNodeName);
+        byte[] data = Utils.toJSON(liveNodeData);
+
+        // persistent since we're about to close this zkClient
+        zkClient.create(liveNodePath, data, CreateMode.PERSISTENT, true);
+      }
+
+      // Now try to create a ZkController - this should fail due to minor version incompatibility
+      CoreContainer cc = getCoreContainer();
+      try {
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8984).build();
+
+        SolrException exception =
+            expectThrows(
+                SolrException.class,
+                () -> {
+                  var zc = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig);
+                  zc.close();
+                });
+
+        // Verify the exception is due to minor version incompatibility
+        assertEquals(
+            "Expected INVALID_STATE error code",
+            SolrException.ErrorCode.INVALID_STATE.code,
+            exception.code());
+        assertTrue(
+            "Exception message should mention refusing to start: " + exception.getMessage(),
+            exception.getMessage().contains("Refusing to start Solr"));
+        assertTrue(
+            "Exception message should mention minor version: " + exception.getMessage(),
+            exception.getMessage().contains("minor version"));
+        assertTrue(
+            "Exception message should mention our version: " + exception.getMessage(),
+            exception.getMessage().contains("10.0.0"));
+        assertTrue(
+            "Exception message should mention cluster version: " + exception.getMessage(),
+            exception.getMessage().contains("10.1.0"));
+      } finally {
+        cc.shutdown();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
   public void testCheckNoOldClusterstate() throws Exception {
     Path zkDir = createTempDir("testCheckNoOldClusterstate");
     ZkTestServer server = new ZkTestServer(zkDir);

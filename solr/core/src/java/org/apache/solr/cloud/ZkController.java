@@ -604,7 +604,7 @@ public class ZkController implements Closeable {
 
   /**
    * Checks version compatibility with other nodes in the cluster. Refuses to start if there's a
-   * major version difference between our Solr version and other nodes in the cluster. Note: uses
+   * major or minor version difference between our Solr version and other nodes in the cluster. Note: uses
    * live nodes.
    */
   private void checkClusterVersionCompatibility() throws InterruptedException, KeeperException {
@@ -617,11 +617,25 @@ public class ZkController implements Closeable {
         log.warn(
             "Our Solr version {} is older than cluster version {}", ourVersion, clusterVersion);
 
+        // Check major version compatibility
         if (ourVersion.getMajorVersion() < clusterVersion.getMajorVersion()) {
           String message =
               String.format(
                   Locale.ROOT,
                   "Refusing to start Solr to avoid lowering the lowest major version of nodes in the cluster. "
+                      + "Our version: %s, lowest version in cluster: %s.",
+                  ourVersion,
+                  clusterVersion);
+          throw new SolrException(ErrorCode.INVALID_STATE, message);
+        }
+        
+        // Check minor version compatibility within the same major version
+        if (ourVersion.getMajorVersion() == clusterVersion.getMajorVersion() &&
+            ourVersion.getMinorVersion() < clusterVersion.getMinorVersion()) {
+          String message =
+              String.format(
+                  Locale.ROOT,
+                  "Refusing to start Solr to avoid lowering the lowest minor version of nodes in the cluster. "
                       + "Our version: %s, lowest version in cluster: %s.",
                   ourVersion,
                   clusterVersion);
