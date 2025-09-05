@@ -44,7 +44,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricTestUtils;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.UpdateHandler;

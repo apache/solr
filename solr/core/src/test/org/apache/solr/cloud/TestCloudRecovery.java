@@ -33,7 +33,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.metrics.SolrMetricTestUtils;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.TestInjection;

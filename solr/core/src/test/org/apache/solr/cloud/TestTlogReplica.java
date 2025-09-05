@@ -70,7 +70,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.metrics.SolrMetricTestUtils;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
