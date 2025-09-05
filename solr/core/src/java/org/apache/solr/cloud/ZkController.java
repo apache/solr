@@ -102,6 +102,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Compressor;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -306,10 +307,6 @@ public class ZkController implements Closeable {
 
     this.cloudConfig = cloudConfig;
 
-    // Use the configured way to do cluster state update (Overseer queue vs distributed)
-    distributedClusterStateUpdater =
-        new DistributedClusterStateUpdater(cloudConfig.getDistributedClusterStateUpdates());
-
     this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
 
     this.zkServerAddress = zkServerAddress;
@@ -373,11 +370,6 @@ public class ZkController implements Closeable {
     // Refuse to start if ZK has a non empty /clusterstate.json or a /solr.xml file
     checkNoOldClusterstate(zkClient);
 
-    this.distributedCommandRunner =
-        cloudConfig.getDistributedCollectionConfigSetExecution()
-            ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
-            : Optional.empty();
-
     this.overseerRunningMap = Overseer.getRunningMap(zkClient);
     this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
     this.overseerFailureMap = Overseer.getFailureMap(zkClient);
@@ -389,6 +381,25 @@ public class ZkController implements Closeable {
             () -> {
               if (cc != null) cc.securityNodeChanged();
             });
+
+    // Now that zkStateReader is available, read OVERSEER_ENABLED.
+    // When overseerEnabled is false, both distributed features should be enabled
+    Boolean overseerEnabled =
+        zkStateReader.getClusterProperty(ZkStateReader.OVERSEER_ENABLED, null);
+    if (overseerEnabled == null) {
+      overseerEnabled = EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
+    }
+    if (overseerEnabled) {
+      log.info("The Overseer is enabled.  It will process all cluster commands & state updates.");
+    } else {
+      log.info(
+          "The Overseer is disabled.  Cluster commands & state updates will happen on any/all nodes.");
+    }
+    this.distributedClusterStateUpdater = new DistributedClusterStateUpdater(!overseerEnabled);
+    this.distributedCommandRunner =
+        !overseerEnabled
+            ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
+            : Optional.empty();
 
     init();
 
