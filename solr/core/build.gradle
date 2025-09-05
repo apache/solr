@@ -168,6 +168,9 @@ dependencies {
     exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
   })
 
+  // JVM Runtime Telemetry metrics
+  implementation libs.opentelemetry.runtime.telemetry
+
   implementation libs.apache.commons.exec
 
   implementation libs.apache.log4j.api

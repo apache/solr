@@ -26,6 +26,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.metrics.BatchCallback;
 import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.DoubleCounterBuilder;
 import io.opentelemetry.api.metrics.DoubleGauge;
@@ -50,6 +51,7 @@ import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
+import io.opentelemetry.api.metrics.ObservableMeasurement;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
 import io.opentelemetry.sdk.metrics.internal.exemplar.ExemplarFilter;
@@ -261,15 +263,7 @@ public class SolrMetricManager {
   }
 
   public LongGauge longGauge(String registry, String gaugeName, String description, OtelUnit unit) {
-    LongGaugeBuilder builder =
-        meterProvider(registry)
-            .get(OTEL_SCOPE_NAME)
-            .gaugeBuilder(gaugeName)
-            .setDescription(description)
-            .ofLongs();
-    if (unit != null) builder.setUnit(unit.getSymbol());
-
-    return builder.build();
+    return longGaugeBuilder(registry, gaugeName, description, unit).build();
   }
 
   public ObservableLongCounter observableLongCounter(
@@ -311,15 +305,7 @@ public class SolrMetricManager {
       String description,
       Consumer<ObservableLongMeasurement> callback,
       OtelUnit unit) {
-    LongGaugeBuilder builder =
-        meterProvider(registry)
-            .get(OTEL_SCOPE_NAME)
-            .gaugeBuilder(gaugeName)
-            .setDescription(description)
-            .ofLongs();
-    if (unit != null) builder.setUnit(unit.getSymbol());
-
-    return builder.buildWithCallback(callback);
+    return longGaugeBuilder(registry, gaugeName, description, unit).buildWithCallback(callback);
   }
 
   public ObservableDoubleGauge observableDoubleGauge(
@@ -370,6 +356,34 @@ public class SolrMetricManager {
     if (unit != null) builder.setUnit(unit);
 
     return builder.buildWithCallback(callback);
+  }
+
+  ObservableLongMeasurement longMeasurement(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    return longGaugeBuilder(registry, gaugeName, description, unit).buildObserver();
+  }
+
+  BatchCallback batchCallback(
+      String registry,
+      Runnable callback,
+      ObservableMeasurement measurement,
+      ObservableMeasurement... additionalMeasurements) {
+    return meterProvider(registry)
+        .get(OTEL_SCOPE_NAME)
+        .batchCallback(callback, measurement, additionalMeasurements);
+  }
+
+  private LongGaugeBuilder longGaugeBuilder(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    LongGaugeBuilder builder =
+        meterProvider(registry)
+            .get(OTEL_SCOPE_NAME)
+            .gaugeBuilder(gaugeName)
+            .setDescription(description)
+            .ofLongs();
+    if (unit != null) builder.setUnit(unit.getSymbol());
+
+    return builder;
   }
 
   // for unit tests
@@ -1080,6 +1094,7 @@ public class SolrMetricManager {
         context, registry, new GaugeWrapper<>(gauge, tag), strategy, metricName, metricPath);
   }
 
+  // NOCOMMIT: No longer need
   public int unregisterGauges(String registryName, String tagSegment) {
     if (tagSegment == null) {
       return 0;
