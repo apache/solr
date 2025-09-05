@@ -102,6 +102,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Compressor;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -616,6 +617,10 @@ public class ZkController implements Closeable {
       if (ourVersion.lessThan(clusterVersion)) {
         log.warn(
             "Our Solr version {} is older than cluster version {}", ourVersion, clusterVersion);
+
+        if (EnvUtils.getPropertyAsBool("solr.cloud.downgrade.enabled", false)) {
+          return;
+        }
 
         // Check major version compatibility
         if (ourVersion.getMajorVersion() < clusterVersion.getMajorVersion()) {
