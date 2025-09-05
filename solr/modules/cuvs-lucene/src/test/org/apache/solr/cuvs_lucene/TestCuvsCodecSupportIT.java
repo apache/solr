@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.core;
+package org.apache.solr.cuvs_lucene;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -32,6 +32,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
@@ -73,7 +75,10 @@ public class TestCuvsCodecSupportIT extends SolrTestCaseJ4 {
     SolrCore solrCore = h.getCore();
     SolrConfig config = solrCore.getSolrConfig();
     String codecFactory = config.get("codecFactory").attr("class");
-    assertEquals("Unexpected solrconfig codec factory", "solr.CuvsCodecFactory", codecFactory);
+    assertEquals(
+        "Unexpected solrconfig codec factory",
+        "org.apache.solr.cuvs_lucene.CuvsCodecFactory",
+        codecFactory);
     assertEquals("Unexpected core codec", "Lucene101", solrCore.getCodec().getName());
 
     for (int i = 0; i < DATASET_SIZE; i++) {
@@ -100,12 +105,7 @@ public class TestCuvsCodecSupportIT extends SolrTestCaseJ4 {
       ScoreDoc scoreDoc = results.scoreDocs[i];
       Document doc = searcher.storedFields().document(scoreDoc.doc);
       if (log.isInfoEnabled()) {
-        log.info(
-            "Rank {}: doc {} (id={}), score: {}",
-            (i + 1),
-            scoreDoc.doc,
-            doc.get("id"),
-            scoreDoc.score);
+        log.info("Rank {}: doc {} (id={}), score: {}");
       }
       res.add(Integer.valueOf(doc.get("id")));
     }

@@ -14,11 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.core;
+package org.apache.solr.cuvs_lucene;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene101.Lucene101Codec;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CodecFactory;
+import org.apache.solr.core.SchemaCodecFactory;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 public class CuvsCodecFactory extends CodecFactory implements SolrCoreAware {

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.core;
+package org.apache.solr.cuvs_lucene;
 
 import com.nvidia.cuvs.lucene.Lucene99AcceleratedHNSWVectorsFormat;
 import java.lang.invoke.MethodHandles;
@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.lucene101.Lucene101Codec;
 import org.apache.lucene.codecs.perfield.PerFieldKnnVectorsFormat;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
