@@ -257,9 +257,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("unchecked")
-  // NOCOMMIT: This test is broken from OTEL migration and the /admin/plugins endpoint. Placing
-  // BadApple test but this must be fixed before this feature gets merged to a release branch
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testAddDocs() throws Exception {
     int numTlogReplicas = 1 + random().nextInt(3);
     DocCollection docCollection = createAndWaitForCollection(1, 0, numTlogReplicas, 0);
@@ -283,22 +280,29 @@ public class TestTlogReplica extends SolrCloudTestCase {
                 "Replica " + r.getName() + " not up to date after 10 seconds",
                 1,
                 tlogReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-            // Append replicas process all updates
-            SolrQuery req =
-                new SolrQuery(
-                    "qt", "/admin/plugins",
-                    "stats", "true");
-            QueryResponse statsResponse = tlogReplicaClient.query(req);
-            NamedList<Object> entries = (statsResponse.getResponse());
-            assertEquals(
-                "Append replicas should recive all updates. Replica: "
-                    + r
-                    + ", response: "
-                    + statsResponse,
-                1L,
-                ((Map<String, Object>)
-                        entries._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
-                    .get("UPDATE.updateHandler.cumulativeAdds.count"));
+            JettySolrRunner jetty =
+                cluster.getJettySolrRunners().stream()
+                    .filter(j -> j.getBaseUrl().toString().equals(r.getBaseUrl()))
+                    .findFirst()
+                    .orElse(null);
+            assertNotNull("Could not find jetty for replica " + r, jetty);
+
+            try (SolrCore core = jetty.getCoreContainer().getCore(r.getCoreName())) {
+              var cumulativeAddsDatapoint =
+                  SolrMetricTestUtils.getGaugeDatapoint(
+                      core,
+                      "solr_core_update_cumulative_ops",
+                      SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                          .label("category", "UPDATE")
+                          .label("ops", "adds")
+                          .build());
+              assertNotNull("Could not find cumulative adds metric", cumulativeAddsDatapoint);
+              assertEquals(
+                  "Append replicas should receive all updates. Replica: " + r,
+                  1.0,
+                  cumulativeAddsDatapoint.getValue(),
+                  0.0);
+            }
             break;
           } catch (AssertionError e) {
             if (t.hasTimedOut()) {

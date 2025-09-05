@@ -44,7 +44,6 @@ import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -58,6 +57,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
@@ -311,16 +311,24 @@ public class TestPullReplica extends SolrCloudTestCase {
       waitForNumDocsInAllReplicas(numDocs, pullReplicas);
 
       for (Replica r : pullReplicas) {
-        try (SolrClient pullReplicaClient = getHttpSolrClient(r)) {
-          SolrQuery req = new SolrQuery("qt", "/admin/plugins", "stats", "true");
-          QueryResponse statsResponse = pullReplicaClient.query(req);
+        JettySolrRunner jetty =
+            cluster.getJettySolrRunners().stream()
+                .filter(j -> j.getBaseUrl().toString().equals(r.getBaseUrl()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull("Could not find jetty for replica " + r, jetty);
+
+        try (SolrCore core = jetty.getCoreContainer().getCore(r.getCoreName())) {
+          var addOpsDatapoint =
+              SolrMetricTestUtils.getCounterDatapoint(
+                  core,
+                  "solr_core_update_committed_ops",
+                  SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                      .label("category", "UPDATE")
+                      .label("ops", "adds")
+                      .build());
           // The adds gauge metric should be null for pull replicas since they don't process adds
-          assertNull(
-              "Replicas shouldn't process the add document request: " + statsResponse,
-              ((Map<String, Object>)
-                      (statsResponse.getResponse())
-                          ._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
-                  .get("UPDATE.updateHandler.adds"));
+          assertNull(addOpsDatapoint);
         }
       }
 
