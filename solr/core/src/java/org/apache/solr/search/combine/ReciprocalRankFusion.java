@@ -149,7 +149,8 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
     }
     List<Map.Entry<Integer, Float>> sortedByScoreDescending =
         docIdToScore.entrySet().stream()
-            .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+            .sorted(Comparator.comparing(Map.Entry<Integer, Float>::getValue, Comparator.reverseOrder())
+                .thenComparing(Map.Entry::getKey))
             .toList();
 
     int combinedResultsLength = docIdToScore.size();

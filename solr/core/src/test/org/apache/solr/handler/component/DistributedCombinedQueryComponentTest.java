@@ -120,7 +120,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     prepareIndexDocs();
     QueryResponse rsp;
     rsp =
-        queryServer(
+        query(
             createParams(
                 CommonParams.JSON,
                 "{\"queries\":"
@@ -128,8 +128,6 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"limit\":5,"
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"]}}",
-                "shards",
-                getShardsString(),
                 CommonParams.QT,
                 "/search"));
     assertEquals(1, rsp.getResults().size());
@@ -158,7 +156,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     prepareIndexDocs();
     QueryResponse rsp;
     rsp =
-        queryServer(
+        query(
             createParams(
                 CommonParams.JSON,
                 "{\"queries\":"
@@ -167,8 +165,6 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"limit\":5,"
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
-                "shards",
-                getShardsString(),
                 CommonParams.QT,
                 "/search"));
     assertEquals(5, rsp.getResults().size());
@@ -185,7 +181,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     prepareIndexDocs();
     QueryResponse rsp;
     rsp =
-        queryServer(
+        query(
             createParams(
                 CommonParams.JSON,
                 "{\"queries\":"
@@ -194,8 +190,6 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"limit\":5,\"sort\":\"mod3_idv desc\""
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
-                "shards",
-                getShardsString(),
                 CommonParams.QT,
                 "/search"));
     assertEquals(5, rsp.getResults().size());
@@ -214,7 +208,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     // vector => 1,4,2,10,3,6
     QueryResponse rsp;
     rsp =
-        queryServer(
+        query(
             createParams(
                 CommonParams.JSON,
                 "{\"queries\":"
@@ -222,13 +216,11 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"]}}",
-                "shards",
-                getShardsString(),
                 CommonParams.QT,
                 "/search"));
     assertFieldValues(rsp.getResults(), id, "2", "3", "4", "1", "6", "10", "8", "7", "5");
     rsp =
-        queryServer(
+        query(
             createParams(
                 CommonParams.JSON,
                 "{\"queries\":"
@@ -237,8 +229,6 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"limit\":4,"
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"]}}",
-                "shards",
-                getShardsString(),
                 CommonParams.QT,
                 "/search"));
     assertFieldValues(rsp.getResults(), id, "2", "3", "4", "1");
@@ -252,8 +242,6 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"limit\":4,\"offset\":3,"
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"]}}",
-                "shards",
-                getShardsString(),
                 CommonParams.QT,
                 "/search"));
     assertEquals(4, rsp.getResults().size());
@@ -280,8 +268,6 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\","
                     + "\"combiner.query\":[\"vector\"]}}",
-                "shards",
-                getShardsString(),
                 CommonParams.QT,
                 "/search"));
     assertEquals(2, rsp.getResults().size());
@@ -309,8 +295,6 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\","
                     + "\"combiner.query\":[\"lexical1\",\"lexical2\"], \"hl\": true, \"hl.fl\": \"title\",\"hl.q\":\"test doc\"}}",
-                "shards",
-                getShardsString(),
                 CommonParams.QT,
                 "/search"));
     assertEquals(3, rsp.getResults().size());

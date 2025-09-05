@@ -165,7 +165,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     if (rb instanceof CombinedQueryResponseBuilder crb) {
       boolean partialResults = false;
       boolean segmentTerminatedEarly = false;
-      boolean setMaxHitsTerminatedEarly = false;
+      Boolean setMaxHitsTerminatedEarly = null;
       List<QueryResult> queryResults = new ArrayList<>();
       // TODO: to be parallelized
       for (ResponseBuilder thisRb : crb.responseBuilders) {
@@ -181,6 +181,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           segmentTerminatedEarly |= queryResult.getSegmentTerminatedEarly();
         }
         if (queryResult.getMaxHitsTerminatedEarly() != null) {
+          if (setMaxHitsTerminatedEarly == null) {
+            setMaxHitsTerminatedEarly = queryResult.getMaxHitsTerminatedEarly();
+          }
           setMaxHitsTerminatedEarly |= queryResult.getMaxHitsTerminatedEarly();
         }
       }
@@ -203,7 +206,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       List<QueryResult> queryResults,
       boolean partialResults,
       boolean segmentTerminatedEarly,
-      boolean setMaxHitsTerminatedEarly)
+      Boolean setMaxHitsTerminatedEarly)
       throws IOException {
     String algorithm =
         rb.req.getParams().get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER);
