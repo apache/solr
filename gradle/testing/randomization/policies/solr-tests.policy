@@ -130,11 +130,11 @@ grant {
   permission javax.management.MBeanServerPermission "findMBeanServer";
   permission javax.management.MBeanServerPermission "releaseMBeanServer";
   permission javax.management.MBeanTrustPermission "register";
-  
+
   // needed by crossdc
   permission javax.security.auth.AuthPermission "getLoginConfiguration";
   permission javax.security.auth.AuthPermission "setLoginConfiguration";
-  
+
   // needed by benchmark
   permission java.security.SecurityPermission "insertProvider";
 
@@ -147,6 +147,9 @@ grant {
   // needed by s3mock
   permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
   permission java.lang.RuntimePermission "accessSystemModules";
+  permission javax.security.auth.AuthPermission "doAsPrivileged";
+  permission java.security.SecurityPermission "getProperty.authconfigprovider.factory";
+
 
   // needed for kafka mockito
   permission java.lang.RuntimePermission "manageProcess";
@@ -206,7 +209,7 @@ grant {
 
 // additional permissions based on system properties set by /bin/solr
 // NOTE: if the property is not set, the permission entry is ignored.
-grant {  
+grant {
   permission java.io.FilePermission "${solr.jetty.keystore}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.jetty.keystore}${/}-", "read,write,delete,readlink";
 

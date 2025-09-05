@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 [versions]
-adobe-testing-s3mock = "3.12.0"
+adobe-testing-s3mock = "4.8.0"
 amazon-awssdk = "2.32.31"
 # @keep Antora version used in ref-guide
 antora = "3.1.12"
@@ -80,7 +80,7 @@ decompose = "3.3.0"
 diffplug-spotless = "7.2.1"
 dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.39.0"
-eclipse-jetty = "12.0.19"
+eclipse-jetty = "12.1.0"
 eclipse-jettytoolchain = "5.0.2"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "6.7.0.202309050840-r"
