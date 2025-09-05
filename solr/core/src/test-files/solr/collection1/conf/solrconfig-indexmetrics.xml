@@ -31,6 +31,8 @@
     <metrics>
       <bool name="merge">${solr.tests.metrics.merge:false}</bool>
       <bool name="mergeDetails">${solr.tests.metrics.mergeDetails:false}</bool>
+      <!-- majorMergeDocs default comes from the default of SolrIndexWriter.majorMergeDocs -->
+      <long name="majorMergeDocs">${solr.tests.metrics.majorMergeDocs:524288}</long>
     </metrics>
     <!-- intentionally set very low values here to trigger multiple flushes and merges.
          DO NOT USE THESE ABSURD VALUES IN PRODUCTION. -->
