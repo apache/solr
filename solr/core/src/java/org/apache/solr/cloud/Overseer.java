@@ -711,8 +711,7 @@ public class Overseer implements SolrCloseable {
     this.zkController = zkController;
     this.stats = new Stats();
     this.config = config;
-    this.distributedClusterStateUpdater =
-        new DistributedClusterStateUpdater(config.getDistributedClusterStateUpdates());
+    this.distributedClusterStateUpdater = zkController.getDistributedClusterStateUpdater();
 
     this.solrMetricsContext =
         new SolrMetricsContext(

@@ -138,6 +138,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String NRT_REPLICAS = "nrtReplicas";
   public static final String TLOG_REPLICAS = "tlogReplicas";
   public static final String READ_ONLY = "readOnly";
+  public static final String OVERSEER_ENABLED = "overseerEnabled";
 
   public static final String CONFIGS_ZKNODE = "/configs";
   public static final String CONFIGNAME_PROP = "configName";
@@ -381,7 +382,8 @@ public class ZkStateReader implements SolrCloseable {
           SOLR_ENVIRONMENT,
           CollectionAdminParams.DEFAULTS,
           CONTAINER_PLUGINS,
-          PLACEMENT_PLUGIN);
+          PLACEMENT_PLUGIN,
+          OVERSEER_ENABLED);
 
   private final SolrZkClient zkClient;
 
