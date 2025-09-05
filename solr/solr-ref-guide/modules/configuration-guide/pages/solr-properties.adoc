@@ -26,7 +26,7 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 |===
 |Property Name|Previous Property Name (if any)|Default Value|Description
 
-|solr.admin.handler.systeminfo.dns.prevent.reverse.lookup.enabled|solr.dns.prevent.reverse.lookup|false|Controls whether reverse DNS lookups are prevented in the system info handler.
+|solr.admin.handler.systeminfo.dns.reverse.lookup.enabled|!solr.dns.prevent.reverse.lookup|true|Controls whether reverse DNS lookups are enabled in the system info handler.
 
 |solr.api.config.edit.enabled|!disable.config.edit|true|Controls whether configuration editing via API is enabled. When set to `true`, configuration editing is enabled.
 
@@ -36,7 +36,7 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.auth.superuser|solr.authorization.superuser|solr|Specifies the superuser for authorization. This user has all permissions when using SASL authentication.
 
-|solr.circuitbreaker.errorcode|solr.circuitbreaker.errorcode|503|Defines the HTTP error code returned when a circuit breaker is triggered.
+|solr.circuitbreaker.errorcode||503|Defines the HTTP error code returned when a circuit breaker is triggered.
 
 |solr.cloud.prep.recovery.read.timeout.additional.ms|prepRecoveryReadTimeoutExtraWait|8000|Specifies additional milliseconds to wait during recovery read operations in SolrCloud mode.
 
@@ -48,8 +48,6 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.configset.bootstrap.config.name|collection.configName||Specifies the configuration name for the bootstrapped configset. Use with "solr.configset.bootstrap.confdir".
 
-|solr.configset.create.auth.checks.disabled|solr.disableConfigSetsCreateAuthChecks|false|Controls whether authentication checks are disabled when creating configsets.
-
 |solr.configset.default.confdir|solr.default.confdir|"_default"|Defines the default configuration directory for configsets.
 
 |solr.configset.forbidden.file.types|solrConfigSetForbiddenFileTypes|jar,jnilib,dll,so,dylib,exe|Specifies file types that are forbidden in configsets.
@@ -58,13 +56,15 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.filestore.filesize.max|max.file.store.size|100MB|Defines the maximum file size allowed in Solr's filestore.
 
-|solr.index.replication.fingerprint.disabled|solr.disableFingerprint|false|Controls whether index fingerprinting for replication is disabled.
+|solr.index.replication.fingerprint.enabled|!solr.disableFingerprint|true|Controls whether index fingerprinting for replication is disabled.
 
 |solr.index.updatelog.enabled|enable.update.log|true (in default solrconfig.xml)|Controls whether the UpdateLog is enabled. The UpdateLog is required for atomic updates, real-time get, and transaction log replay.
 
 |solr.logs.dir|solr.log.dir|server/logs|Specifies the directory where Solr logs are stored.
 
-|solr.metrics.fieldcache.entries.disabled|disableSolrFieldCacheMBeanEntryList|false|Controls whether Solr FieldCache MBean entry list is disabled for metrics reporting.
+|solr.metrics.fieldcache.entries.enabled|!disableSolrFieldCacheMBeanEntryList|true|Controls whether Solr FieldCache MBean entry list is disabled for metrics reporting.
+
+|solr.metrics.fieldcache.entries.jmx.enabled|!disableSolrFieldCacheMBeanEntryListJmx|true|Controls whether Solr FieldCache MBean JMX entry list is disabled for metrics reporting.
 
 |solr.packages.enabled|enable.packages|false|Controls whether the package management system is enabled.
 
@@ -90,8 +90,6 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.tracing.always.on.enabled|solr.alwaysOnTraceId|true|Controls whether trace IDs are always generated, even when no request contains a trace ID.
 
-|solr.tracing.requestid.disabled|solr.disableRequestId|false|Controls whether request ID generation is disabled.
-
 |solr.ui.enabled|!disableAdminUI|true|Controls whether the Solr Admin UI is enabled. When set to `true`, the Solr Admin UI is enabled.
 
 |solr.ui.experimental.enabled|!solr.admin.ui.experimental.disabled|true|Controls whether experimental features in the Solr Admin UI are enabled. When set to `true`, experimental features in the UI are enabled.
@@ -111,7 +109,9 @@ System properties can be set in several ways:
 2. In `solr.in.sh` (Unix) or `solr.in.cmd` (Windows) using environment variables
 3. Through environment variables (with appropriate naming conventions)
 
-Environment variables should be uppercase with dot notations, e.g. `SOLR_API_V2_ENABLED` for the property `solr.api.v2.enabled`.
+Environment variables can also be used to set these properties.  
+You may find this useful in environments such as Docker.  
+Environment variables should be uppercase with dot notations equivalents, e.g. `SOLR_API_V2_ENABLED` for the property `solr.api.v2.enabled`.
 
 == See Also
 
