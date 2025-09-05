@@ -221,6 +221,13 @@ Other Changes
 
 * SOLR-17874: Switch remaining usages of Apache HttpClient to use the internally managed Jetty HttpClient instance. (David Smiley)
 
+* SOLR-17877: The SolrCloud Overseer is disable-able, in lieu of a simpler distributed mode of
+  cluster command and collection state processing.  In Solr 9 this was possible with undocumented
+  / unsupported configuration in solr.xml (`distributedClusterStateUpdates` &
+  `distributedCollectionConfigSetExecution`).  Those are now removed.  In their place is a new
+  overseerEnabled cluster property and an env var SOLR_CLOUD_OVERSEER_ENABLED.  Read more in the
+  upgrade guide.  (David Smiley)
+
 ==================  9.10.0 ==================
 New Features
 ---------------------
