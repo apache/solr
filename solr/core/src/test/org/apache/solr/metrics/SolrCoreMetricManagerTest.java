@@ -33,6 +33,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
