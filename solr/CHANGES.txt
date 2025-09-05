@@ -23,6 +23,8 @@ New Features
 
 * SOLR-17023: Use Modern NLP Models from Apache OpenNLP with Solr (Jeff Zemerick, Eric Pugh)
 
+* SOLR-17814: Add support for PatienceKnnVectorQuery. (Ilaria Petreti via Alessandro Benedetti)
+
 Improvements
 ---------------------
 
