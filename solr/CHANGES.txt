@@ -13,6 +13,8 @@ Improvements
 ---------------------
 * SOLR-17860: DocBasedVersionConstraintsProcessorFactory now supports PULL replicas. (Houston Putman)
 
+* SOLR-17893: Speed up Remote Proxy for high QPS, utilizing ClusterState caching. (Houston Putman)
+
 Optimizations
 ---------------------
 (No changes)

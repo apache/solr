@@ -755,6 +755,7 @@ public class ZkStateReader implements SolrCloseable {
           Stat freshStats = null;
           try {
             freshStats = zkClient.exists(DocCollection.getCollectionPath(collName), null, true);
+            lastUpdateTime = System.nanoTime();
           } catch (Exception e) {
           }
           if (freshStats != null
