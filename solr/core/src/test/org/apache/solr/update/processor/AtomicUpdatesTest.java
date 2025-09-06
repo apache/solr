@@ -42,7 +42,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
     initCore("solrconfig.xml", "schema.xml");
   }
 

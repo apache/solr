@@ -104,7 +104,7 @@ public class SchemaTest extends RestTestBase {
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
     createJettyAndHarness(
         tmpSolrHome, "solrconfig-managed-schema.xml", "schema.xml", "/solr", true, extraServlets);

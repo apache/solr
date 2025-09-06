@@ -50,7 +50,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
     createJettyAndHarness(
         tmpSolrHome,
         "solrconfig-managed-schema.xml",
@@ -67,7 +67,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
       PathUtils.deleteDirectory(tmpSolrHome);
     }
     System.clearProperty("managed.schema.mutable");
-    System.clearProperty("enable.update.log");
+    System.clearProperty("solr.index.updatelog.enabled");
 
     if (restTestHarness != null) {
       restTestHarness.close();

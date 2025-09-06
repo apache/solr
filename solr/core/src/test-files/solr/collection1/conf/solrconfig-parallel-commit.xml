@@ -28,7 +28,7 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   
   <updateHandler class="solr.DirectUpdateHandler2">
-    <updateLog enable="${enable.update.log:true}">
+    <updateLog enable="${solr.index.updatelog.enabled:true}">
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
 

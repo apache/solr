@@ -69,7 +69,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     // when doing unsorted group collection
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
 
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
   }
 

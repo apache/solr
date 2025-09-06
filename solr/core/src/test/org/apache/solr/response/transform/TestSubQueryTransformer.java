@@ -46,7 +46,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
     initCore("solrconfig-basic.xml", "schema-docValuesJoin.xml");
     peopleMultiplier = atLeast(1);
     deptMultiplier = atLeast(1);

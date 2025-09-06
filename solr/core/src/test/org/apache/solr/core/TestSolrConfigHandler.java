@@ -122,7 +122,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
     createJettyAndHarness(
         tmpSolrHome,

@@ -68,7 +68,7 @@
     <autoCommit>
       <maxTime>${autoCommit.maxTime:60000}</maxTime>
     </autoCommit>
-    <updateLog class="${ulog:solr.UpdateLog}" enable="${enable.update.log:true}"/>
+    <updateLog class="${ulog:solr.UpdateLog}" enable="${solr.index.updatelog.enabled:true}"/>
   </updateHandler>
 
   <requestHandler name="/select" class="solr.SearchHandler">

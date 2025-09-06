@@ -45,7 +45,8 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.filterCache.async", "true");
     initCore("solrconfig.xml", "schema12.xml");
   }
