@@ -116,6 +116,14 @@ public class DebugComponent extends SearchComponent {
         info.add("facet-debug", fdebug.getFacetDebugInfo());
       }
 
+      CustomDebugInfoSources customDebugInfoSources =
+          (CustomDebugInfoSources) rb.req.getContext().get(CustomDebugInfoSources.KEY);
+      if (customDebugInfoSources != null) {
+        for (var customDebugInfoSource : customDebugInfoSources.list) {
+          info.add(customDebugInfoSource.name, customDebugInfoSource.values);
+        }
+      }
+
       if (rb.req.getJSON() != null) {
         info.add(JSON, rb.req.getJSON());
       }
@@ -137,6 +145,28 @@ public class DebugComponent extends SearchComponent {
         // Add this directly here?
         rb.rsp.add("debug", rb.getDebugInfo());
       }
+    }
+  }
+
+  public static class CustomDebugInfoSources {
+
+    public static final String KEY = "CustomDebugInfoSources";
+
+    private final List<CustomDebugInfoSource> list = new ArrayList<>();
+
+    public void add(CustomDebugInfoSource source) {
+      list.add(source);
+    }
+  }
+
+  public static class CustomDebugInfoSource {
+
+    private final String name;
+    private final SimpleOrderedMap<Object> values;
+
+    public CustomDebugInfoSource(String name, SimpleOrderedMap<Object> values) {
+      this.name = name;
+      this.values = values;
     }
   }
 
