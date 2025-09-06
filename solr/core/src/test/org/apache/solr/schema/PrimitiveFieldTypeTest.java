@@ -36,7 +36,7 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     // set some system properties for use by tests
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty("solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
 

@@ -49,7 +49,7 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
   @BeforeClass
   public static void initSysProperties() {
     System.setProperty("managed.schema.mutable", "false");
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
   }
 
   @Override
