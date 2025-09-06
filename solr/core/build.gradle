@@ -95,6 +95,8 @@ dependencies {
   implementation libs.apache.lucene.spatialextras
   implementation libs.apache.lucene.suggest
 
+  // CUVS Lucene integration for GPU-accelerated vector search
+  implementation libs.cuvs.lucene
 
   // Collections & lang utilities
   implementation libs.google.guava
