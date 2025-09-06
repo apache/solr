@@ -33,9 +33,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -854,12 +856,14 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     final var solrClient = ccc.getCoreContainer().getDefaultHttpSolrClient();
 
     final var solrParams = new ModifiableSolrParams();
-    solrParams.set(CommonParams.QT, "/stream");
     solrParams.set("action", action);
     solrParams.set(CommonParams.ID, daemonName);
     solrParams.set(CommonParams.DISTRIB, false);
 
-    final var req = new QueryRequest(solrParams);
+    final var req =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.POST, "/stream", SolrRequest.SolrRequestType.ADMIN, solrParams)
+            .setRequiresCollection(true);
     final var solrResponse =
         solrClient.requestWithBaseUrl(daemonReplica.getBaseUrl(), daemonReplica.getCoreName(), req);
     return solrResponse.getResponse();
