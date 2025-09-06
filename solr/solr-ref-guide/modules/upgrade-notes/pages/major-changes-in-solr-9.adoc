@@ -28,6 +28,14 @@ You should also consider all changes that have been made to Solr in any version 
 
 A thorough review of the list in xref:major-changes-in-earlier-8-x-versions[Major Changes in Earlier 8.x Versions] as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 9.
 
+There is a new limitation introduced in Solr 9.10, and that which is especially relevant to Solr 10
+and beyond.
+A Solr node will now fail to start if it's major.minor version (e.g. 9.10) is *lower* than that of any existing Solr node in a SolrCloud cluster (as reported by info in "live_node").
+What this
+means is that Solr supports rolling _upgrades_ but not rolling _downgrades_ spanning a major version.
+This compatibility safeguard can be toggled with "SOLR_CLOUD_DOWNGRADE_ENABLED".
+
+
 === Upgrade Prerequisites
 
 *Solr 9 requires Java 11 as minimum Java version and is also tested with Java 17.*
