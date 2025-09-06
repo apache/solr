@@ -274,7 +274,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     HttpGet httpPost = new HttpGet(url);
     HttpResponse r = cl.execute(httpPost);
     int statusCode = r.getStatusLine().getStatusCode();
-    Utils.consumeFully(r.getEntity());
+    HttpClientUtil.consumeFully(r.getEntity());
     return statusCode;
   }
 

@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.URLUtil;
@@ -42,9 +42,9 @@ public class SolrClientCache implements Closeable {
   private static final int MIN_TIMEOUT = 60000;
   private static final int minConnTimeout =
       Math.max(
-          Integer.getInteger(HttpClientUtil.PROP_CONNECTION_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
+          Integer.getInteger(SolrHttpConstants.PROP_CONNECTION_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
   private static final int minSocketTimeout =
-      Math.max(Integer.getInteger(HttpClientUtil.PROP_SO_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
+      Math.max(Integer.getInteger(SolrHttpConstants.PROP_SO_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
 
   private String basicAuthCredentials = null; // Only support with the http2SolrClient
 
