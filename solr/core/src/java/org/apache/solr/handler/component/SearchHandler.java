@@ -477,18 +477,7 @@ public class SearchHandler extends RequestHandlerBase
 
     if (!prepareComponents(req, rb, timer, components)) return;
 
-    { // Once all of our components have been prepared, check if this request involves a SortSpec.
-      // If it does, and if our request includes a cursorMark param, then parse & init the
-      // CursorMark state (This must happen after the prepare() of all components, because any
-      // component may have modified the SortSpec)
-      final SortSpec spec = rb.getSortSpec();
-      final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
-      if (null != spec && null != cursorStr) {
-        final CursorMark cursorMark = new CursorMark(rb.req.getSchema(), spec);
-        cursorMark.parseSerializedTotem(cursorStr);
-        rb.setCursorMark(cursorMark);
-      }
-    }
+    postPrepareComponents(rb);
 
     if (!rb.isDistrib) {
       // a normal non-distributed request
@@ -705,6 +694,25 @@ public class SearchHandler extends RequestHandlerBase
         rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
         rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
       }
+    }
+  }
+
+  /**
+   * Operations to be performed post prepare for all components.
+   *
+   * @param rb the ResponseBuilder containing the request and context, such as sort specifications.
+   */
+  protected void postPrepareComponents(ResponseBuilder rb) {
+    // Once all of our components have been prepared, check if this request involves a SortSpec.
+    // If it does, and if our request includes a cursorMark param, then parse & init the
+    // CursorMark state (This must happen after the prepare() of all components, because any
+    // component may have modified the SortSpec)
+    final SortSpec spec = rb.getSortSpec();
+    final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
+    if (null != spec && null != cursorStr) {
+      final CursorMark cursorMark = new CursorMark(rb.req.getSchema(), spec);
+      cursorMark.parseSerializedTotem(cursorStr);
+      rb.setCursorMark(cursorMark);
     }
   }
 
