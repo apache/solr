@@ -267,7 +267,7 @@ Note that in the above example, the `/` characters in the `\_nest_path_` were "d
 
 === Combining Block Join Query Parsers with Child Doc Transformer
 
-The combination of these two parsers with the `[child] transformer enables seamless creation of very powerful queries.
+The combination of these two parsers with the `[child]` transformer enables seamless creation of very powerful queries.
 
 Here for example is a query where:
 

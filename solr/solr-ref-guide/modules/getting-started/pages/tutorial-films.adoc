@@ -301,7 +301,7 @@ The `curl` command below will return facet counts for the `genre_str` field:
 
 [,console]
 ----
-$ curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=true&facet.field=genre_str"`
+$ curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=true&facet.field=genre_str"
 ----
 
 In your terminal, you'll see something like:
