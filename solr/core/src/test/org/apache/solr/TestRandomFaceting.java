@@ -53,7 +53,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
     }
 
-    System.setProperty("solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
   }
 

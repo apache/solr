@@ -46,7 +46,8 @@ public class TestInitQParser extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig-query-parser-init.xml", "schema12.xml");
     createIndex();
   }
