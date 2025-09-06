@@ -1109,20 +1109,6 @@ public class MiniSolrCloudCluster {
     }
 
     /**
-     * This method makes the MiniSolrCloudCluster use the "other" Collection API execution strategy
-     * than it normally would. When some test classes call this method (and some don't) we make sure
-     * that a run of multiple tests with a single seed will exercise both code lines (distributed
-     * and Overseer based Collection API) so regressions can be spotted faster.
-     *
-     * <p>The real need is for a few tests covering reasonable use cases to call this method. If
-     * you're adding a new test, you don't have to call it (but it's ok if you do).
-     */
-    public Builder flipOverseerEnablement() {
-      overseerEnabled = !overseerEnabled;
-      return this;
-    }
-
-    /**
      * Force the cluster Collection and config state API execution as well as the cluster state
      * update strategy to be either Overseer based or distributed. <b>This method can be useful when
      * debugging tests</b> failing in only one of the two modes to have all local runs exhibit the
@@ -1181,7 +1167,7 @@ public class MiniSolrCloudCluster {
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster build() throws Exception {
-      this.clusterProperties.put(ZkStateReader.OVERSEER_ENABLED, Boolean.toString(overseerEnabled));
+      System.setProperty("solr.cloud.overseer.enabled", Boolean.toString(overseerEnabled));
 
       // eager init to prevent OTEL init races caused by test setup
       if (!disableTraceIdGeneration && TracerConfigurator.TRACE_ID_GEN_ENABLED) {
@@ -1204,6 +1190,7 @@ public class MiniSolrCloudCluster {
         cluster.uploadConfigSet(config.path, config.name);
       }
 
+      // TODO process BEFORE nodes start up!  Some props are only read on node start.
       if (clusterProperties.size() > 0) {
         ClusterProperties props = new ClusterProperties(cluster.getZkClient());
         for (Map.Entry<String, Object> entry : clusterProperties.entrySet()) {

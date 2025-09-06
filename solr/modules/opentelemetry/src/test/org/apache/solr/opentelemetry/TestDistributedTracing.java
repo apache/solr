@@ -58,6 +58,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .withTraceIdGenerationDisabled()
+        .withOverseer(true) // some assertions assume overseer
         .configure();
 
     assertNotEquals(
