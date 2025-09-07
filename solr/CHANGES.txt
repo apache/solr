@@ -237,6 +237,8 @@ Improvements
 ---------------------
 * SOLR-17860: DocBasedVersionConstraintsProcessorFactory now supports PULL replicas. (Houston Putman)
 
+* SOLR-17893: Speed up Remote Proxy for high QPS, utilizing ClusterState caching. (Houston Putman)
+
 Optimizations
 ---------------------
 (No changes)
@@ -263,6 +265,9 @@ Dependency Upgrades
 Other Changes
 ---------------------
 * SOLR-17620: SolrCloud "live_node" now has metadata: version of Solr, roles (Yuntong Qu, David Smiley)
+
+* SOLR-17879: A Solr node will now fail to start if it's major.minor version (e.g. 9.10) is *lower* than that of any existing
+  Solr node in a SolrCloud cluster (as reported by info in "live_node").  (David Smiley)
 
 ==================  9.9.1 ==================
 Bug Fixes
