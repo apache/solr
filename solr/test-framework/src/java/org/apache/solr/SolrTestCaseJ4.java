@@ -266,7 +266,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     // non-null after calling setupTestCases()
     initAndGetDataDir();
 
-    System.setProperty("solr.zkclienttimeout", "90000");
+    System.setProperty("solr.zookeeper.client.timeout", "90000");
 
     System.setProperty("solr.httpclient.retries", "1");
     System.setProperty("solr.retries.on.forward", "1");

@@ -1071,7 +1071,7 @@ fi
 
 if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   : "${ZK_CLIENT_TIMEOUT:=30000}"
-  CLOUD_MODE_OPTS=("-DzkClientTimeout=$ZK_CLIENT_TIMEOUT")
+  CLOUD_MODE_OPTS=("-Dsolr.zookeeper.client.timeout=$ZK_CLIENT_TIMEOUT")
 
   if [ -n "${ZK_HOST:-}" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")

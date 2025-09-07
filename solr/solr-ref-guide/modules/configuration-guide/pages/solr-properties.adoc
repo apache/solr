@@ -94,6 +94,10 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.ui.experimental.enabled|!solr.admin.ui.experimental.disabled|true|Controls whether experimental features in the Solr Admin UI are enabled. When set to `true`, experimental features in the UI are enabled.
 
+|solr.zookeeper.client.connect.timeout|zkConnectTimeout|15 seconds.|How long before timing out opening connection to ZooKeeper.
+
+|solr.zookeeper.client.timeout|zkClientTimeout|30 seconds.|How long before timing out connection to ZooKeeper.
+
 |solr.zookeeper.chroot.create|createZkChroot|false|Controls whether a ZooKeeper chroot is created if it doesn't exist.
 |===
 
