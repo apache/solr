@@ -255,10 +255,10 @@ public class ZkController implements Closeable {
   private final Map<String, String> replicasInLeaderInitiatedRecovery = new HashMap<>();
 
   // This is an expert and unsupported development mode that does not create
-  // an Overseer or register a /live node. This let's you monitor the cluster
+  // an Overseer or register a /live node. This lets you monitor the cluster
   // and interact with zookeeper via the Solr admin UI on a node outside the cluster,
-  // and so one that will not be killed or stopped when testing. See developer cloud-scripts.
-  private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
+  // so that one will not be killed or stopped when testing. See developer cloud-scripts.
+  private boolean zkRunOnly = EnvUtils.getPropertyAsBool("solr.zookeeper.server.run.only", false); // expert
 
   // keeps track of a list of objects that need to know a new ZooKeeper session was created after
   // expiration occurred ref is held as a HashSet since we clone the set before notifying to avoid

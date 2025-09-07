@@ -64,7 +64,7 @@ public class ZkContainer {
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("coreZkRegister"));
 
   // see ZkController.zkRunOnly
-  private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
+  private boolean zkRunOnly = EnvUtils.getPropertyAsBool("solr.zookeeper.server.run.only", false); // expert
 
   private SolrMetricProducer metricProducer;
 
