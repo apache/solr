@@ -71,7 +71,8 @@ Due to changes in Lucene 9, that isn't possible any more.
 
 === SolrJ
 
-SolrJ users not using deprecated SolrClients can safely exclude Apache HttpClient dependencies.
+SolrJ users not using SolrClients that use Apache HttpClient can safely exclude those dependencies.
+SolrJ users not using SolrClients that use Jetty HttpClient can safely exclude those dependencies.
 
 == Solr 9.9
 
