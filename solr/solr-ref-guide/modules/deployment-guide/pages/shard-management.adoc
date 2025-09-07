@@ -277,7 +277,7 @@ If the status is anything other than "success", an error message will explain wh
 === Miscellaneous Configuration
 
 When splitting a shard, a free disk space check is performed on the local file system of the leader shard.
-This can be disabled through the `solr.shardSplit.checkDiskSpace.enabled` system property (i.e. `-Dsolr.shardSplit.checkDiskSpace.enabled=false`).
+This can be disabled through the `solr.index.shardsplit.checkdiskspace.enabled` system property (i.e. `-Dsolr.index.shardsplit.checkdiskspace.enabled=false`).
 
 [[createshard]]
 == CREATESHARD: Create a Shard

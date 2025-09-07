@@ -58,6 +58,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.index.replication.fingerprint.enabled|!solr.disableFingerprint|true|Controls whether index fingerprinting for replication is disabled.
 
+|solr.index.shardsplit.checkdiskspace.enabled|solr.shardSplit.checkDiskSpace.enabled|true|Controls whether to check for disk space before shard split
+
 |solr.index.updatelog.enabled|enable.update.log|true (in default solrconfig.xml)|Controls whether the UpdateLog is enabled. The UpdateLog is required for atomic updates, real-time get, and transaction log replay.
 
 |solr.logs.dir|solr.log.dir|server/logs|Specifies the directory where Solr logs are stored.
@@ -87,6 +89,9 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 |solr.solrj.cloud.max.stale.retries|cloudSolrClientMaxStaleRetries|5|Sets the maximum number of retries for stale connection attempts in SolrJ cloud client.
 
 |solr.streamingexpressions.facet.tiered.enabled|solr.facet.stream.tiered|true|Controls whether tiered faceting is enabled for streaming expressions.
+
+|solr.streamingexpressions.macros.enabled|StreamingExpressionMacros|false|Controls whether to expand URL parameters inside of the `expr` parameter.
+
 
 |solr.tracing.always.on.enabled|solr.alwaysOnTraceId|true|Controls whether trace IDs are always generated, even when no request contains a trace ID.
 
