@@ -96,6 +96,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.zookeeper.chroot.create|createZkChroot|false|Controls whether a ZooKeeper chroot is created if it doesn't exist.
 
+|solr.zookeeper.server.embedded.host|solr.zk.embedded.host|127.0.0.1|Sets the network interface the Embedded ZooKeeper binds to.
+
 |solr.zookeeper.server.enabled|zk.run|false|Controls whether embedded ZooKeeper is started. Set by the start script.
 
 |===

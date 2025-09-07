@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.AddressUtils;
 import org.apache.zookeeper.server.ServerConfig;
@@ -116,7 +117,8 @@ public class SolrZkServer {
       // This is the address that the embedded Zookeeper will bind to. Like Solr, it defaults to
       // "127.0.0.1".
       props.setProperty(
-          "clientPortAddress", System.getProperty("solr.zk.embedded.host", "127.0.0.1"));
+          "clientPortAddress",
+          EnvUtils.getProperty("solr.zookeeper.server.embedded.host", "127.0.0.1"));
       if (props.getProperty("clientPort") == null) {
         props.setProperty("clientPort", Integer.toString(solrPort + 1000));
       }

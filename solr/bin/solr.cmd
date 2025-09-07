@@ -878,10 +878,6 @@ IF DEFINED SOLR_JETTY_HOST (
   set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.jetty.host=%SOLR_JETTY_HOST%"
 )
 
-IF DEFINED SOLR_ZK_EMBEDDED_HOST (
-  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.zk.embedded.host=%SOLR_ZK_EMBEDDED_HOST%"
-)
-
 REM Make sure Solr is not running using netstat
 For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
   IF NOT "%%k"=="0" (
