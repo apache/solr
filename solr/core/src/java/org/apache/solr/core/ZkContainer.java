@@ -63,10 +63,6 @@ public class ZkContainer {
   private ExecutorService coreZkRegister =
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("coreZkRegister"));
 
-  // see ZkController.zkRunOnly
-  private boolean zkRunOnly =
-      EnvUtils.getPropertyAsBool("solr.zookeeper.server.run.only", false); // expert
-
   private SolrMetricProducer metricProducer;
 
   public ZkContainer() {}
@@ -126,7 +122,7 @@ public class ZkContainer {
         }
         boolean createRoot = EnvUtils.getPropertyAsBool("solr.zookeeper.chroot.create", false);
 
-        if (!ZkController.checkChrootPath(zookeeperHost, zkRunOnly || createRoot)) {
+        if (!ZkController.checkChrootPath(zookeeperHost, createRoot)) {
           throw new ZooKeeperException(
               SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
