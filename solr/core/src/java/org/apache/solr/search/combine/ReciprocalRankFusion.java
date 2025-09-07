@@ -18,7 +18,6 @@ package org.apache.solr.search.combine;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -75,25 +74,25 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
   }
 
   /**
-   * Merges per-shard ranked results using Reciprocal Rank Fusion (RRF).
+   * Merges per-query ranked results using Reciprocal Rank Fusion (RRF).
    *
-   * <p>Each shard list is assumed to be ordered by descending relevance. For a document at rank r
-   * in a shard, the contribution is {@code 1 / (k + r)} where {@code k} is read from {@link
+   * <p>Each query doc list is assumed to be ordered by descending relevance. For a document at rank
+   * r in the list, the contribution is {@code 1 / (k + r)} where {@code k} is read from {@link
    * CombinerParams#COMBINER_RRF_K} or falls back to {@code this.k}. Contributions for the same
-   * document ID across shards (if found) are summed, and documents are returned sorted by the fused
-   * score (descending).
+   * document ID across multiple queries (if found) are summed, and documents are returned sorted by
+   * the fused score (descending).
    *
-   * @param shardDocMap per-shard ranked results;
+   * @param queriesDocMap per-query ranked results;
    * @param solrParams parameters; optional {@link CombinerParams#COMBINER_RRF_K} overrides k.
    * @return one {@link ShardDoc} per unique document ID, ordered by fused score.
    */
   @Override
-  public List<ShardDoc> combine(Map<String, List<ShardDoc>> shardDocMap, SolrParams solrParams) {
+  public List<ShardDoc> combine(Map<String, List<ShardDoc>> queriesDocMap, SolrParams solrParams) {
     int kVal = solrParams.getInt(CombinerParams.COMBINER_RRF_K, this.k);
     HashMap<String, Float> docIdToScore = new HashMap<>();
     Map<String, ShardDoc> docIdToShardDoc = new HashMap<>();
     List<ShardDoc> finalShardDocList = new ArrayList<>();
-    for (Map.Entry<String, List<ShardDoc>> shardDocEntry : shardDocMap.entrySet()) {
+    for (Map.Entry<String, List<ShardDoc>> shardDocEntry : queriesDocMap.entrySet()) {
       List<ShardDoc> shardDocList = shardDocEntry.getValue();
       int ranking = 1;
       while (ranking <= shardDocList.size()) {
@@ -149,8 +148,9 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
     }
     List<Map.Entry<Integer, Float>> sortedByScoreDescending =
         docIdToScore.entrySet().stream()
-            .sorted(Comparator.comparing(Map.Entry<Integer, Float>::getValue, Comparator.reverseOrder())
-                .thenComparing(Map.Entry::getKey))
+            .sorted(
+                Comparator.comparing(Map.Entry<Integer, Float>::getValue, Comparator.reverseOrder())
+                    .thenComparing(Map.Entry::getKey))
             .toList();
 
     int combinedResultsLength = docIdToScore.size();
@@ -201,7 +201,7 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
   }
 
   @Override
-  public NamedList<Explanation> getExplanations(
+  public SimpleOrderedMap<Explanation> getExplanations(
       String[] queryKeys,
       List<Query> queries,
       List<QueryResult> queryResult,
@@ -210,7 +210,7 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
       SolrParams solrParams)
       throws IOException {
     int kVal = solrParams.getInt(CombinerParams.COMBINER_RRF_K, this.k);
-    NamedList<Explanation> docIdsExplanations = new SimpleOrderedMap<>();
+    SimpleOrderedMap<Explanation> docIdsExplanations = new SimpleOrderedMap<>();
     QueryResult combinedRankedList = new QueryResult();
     Map<Integer, Integer[]> docIdToRanks =
         combineResults(combinedRankedList, queryResult, true, kVal);

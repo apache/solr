@@ -304,7 +304,7 @@ public class SearchHandler extends RequestHandlerBase
     return result;
   }
 
-  private boolean isDistrib(SolrQueryRequest req) {
+  protected boolean isDistrib(SolrQueryRequest req) {
     boolean isZkAware = req.getCoreContainer().isZooKeeperAware();
     boolean isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
     if (!isDistrib) {

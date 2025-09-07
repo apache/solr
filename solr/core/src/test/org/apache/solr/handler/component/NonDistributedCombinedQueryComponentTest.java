@@ -16,13 +16,10 @@
  */
 package org.apache.solr.handler.component;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -32,10 +29,10 @@ import org.junit.Test;
 
 /**
  * The DistributedCombinedQueryComponentTest class is a JUnit test suite that evaluates the
- * functionality of the CombinedQueryComponent in a Solr distributed search environment. It focuses
- * on testing the integration of combiner queries using both methods - pre and post.
+ * functionality of the CombinedQueryComponent in a Solr non-distributed search environment. It
+ * focuses on testing the integration of combined query using both methods - pre and post.
  */
-public class DistributedCombinedQueryComponentTest extends BaseDistributedSearchTestCase {
+public class NonDistributedCombinedQueryComponentTest extends BaseDistributedSearchTestCase {
 
   private static final int NUM_DOCS = 10;
   private static final String vectorField = "vector";
@@ -63,7 +60,6 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    */
   private synchronized void prepareIndexDocs() throws Exception {
     List<SolrInputDocument> docs = new ArrayList<>();
-    fixShardCount(2);
     for (int i = 1; i <= NUM_DOCS; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", Integer.toString(i));
@@ -92,78 +88,46 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     docs.get(8).addField(vectorField, Arrays.asList(200f, 50f, 100f, 25f));
     // cosine distance vector1= 0.997
     docs.get(9).addField(vectorField, Arrays.asList(1.8f, 2.5f, 3.7f, 4.9f));
-    del("*:*");
-    clients.sort(
-        (client1, client2) -> {
-          try {
-            if (client2 instanceof HttpSolrClient httpClient2
-                && client1 instanceof HttpSolrClient httpClient1)
-              return new URI(httpClient1.getBaseURL()).getPort()
-                  - new URI(httpClient2.getBaseURL()).getPort();
-          } catch (URISyntaxException e) {
-            throw new RuntimeException("Unable to get URI from SolrClient", e);
-          }
-          return 0;
-        });
+    controlClient.deleteByQuery("*:*");
     for (SolrInputDocument doc : docs) {
-      indexDoc(doc);
+      controlClient.add(doc);
     }
-    commit();
+    controlClient.commit();
   }
 
   /**
-   * Tests a single lexical query against the Solr server using both combiner methods.
+   * Tests a single lexical query against a controlled non-distributed solr client.
    *
    * @throws Exception if any exception occurs during the test execution
    */
   @Test
   public void testSingleLexicalQuery() throws Exception {
     prepareIndexDocs();
+    String jsonQuery =
+        "{\"queries\":"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:2^=10\"}}},"
+            + "\"limit\":5,"
+            + "\"fields\":[\"id\",\"score\",\"title\"],"
+            + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"], \"combiner.method\": \"%s\"}}";
     QueryResponse rsp;
-    // Combiner Method: post
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                "{\"queries\":"
-                    + "{\"lexical1\":{\"lucene\":{\"query\":\"id:2^=10\"}}},"
-                    + "\"limit\":5,"
-                    + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"]}}",
-                CommonParams.QT,
-                "/search"));
-    assertEquals(1, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "2");
     // Combiner Method: pre
     rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                "{\"queries\":"
-                    + "{\"lexical1\":{\"lucene\":{\"query\":\"id:2^=10\"}}},"
-                    + "\"limit\":5,"
-                    + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"],\"combiner.method\":\"pre\"}}",
-                CommonParams.QT,
-                "/search"));
+        queryNonDistribControlClient(
+            createParams(
+                CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
     assertEquals(1, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2");
-  }
-
-  @Override
-  protected String getShardsString() {
-    if (deadServers == null) return shards;
-    Arrays.sort(shardsArr);
-    StringBuilder sb = new StringBuilder();
-    for (String shard : shardsArr) {
-      if (!sb.isEmpty()) sb.append(',');
-      sb.append(shard);
-    }
-    return sb.toString();
+    // Combiner Method: post
+    rsp =
+        queryNonDistribControlClient(
+            createParams(
+                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+    assertEquals(1, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "2");
   }
 
   /**
-   * Tests multiple lexical queries using the distributed solr client.
+   * Tests multiple lexical queries using a controlled non-distributed solr client.
    *
    * @throws Exception if any error occurs during the test execution
    */
@@ -176,22 +140,22 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
             + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
             + "\"limit\":5,"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
-            + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"],\"combiner.method\": \"%s\"}}";
+            + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"%s\"}}";
     QueryResponse rsp;
-    // Combiner Method: post
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
-    assertEquals(5, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "1", "2", "3", "4", "5");
     // Combiner Method: pre
     rsp =
-        queryServer(
-            createDistributedParams(
+        queryNonDistribControlClient(
+            createParams(
                 CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
     assertEquals(5, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "2", "1", "4", "5", "8");
+    assertFieldValues(rsp.getResults(), id, "1", "2", "4", "5", "7");
+    // Combiner Method: post
+    rsp =
+        queryNonDistribControlClient(
+            createParams(
+                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+    assertEquals(5, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "1", "2", "4", "3", "7");
   }
 
   /**
@@ -210,20 +174,20 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"%s\"}}";
     QueryResponse rsp;
-    // Combiner Method: post
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
-    assertEquals(5, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "8", "5", "2", "7", "4");
     // Combiner Method: pre
     rsp =
-        queryServer(
-            createDistributedParams(
+        queryNonDistribControlClient(
+            createParams(
                 CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
     assertEquals(5, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "2", "8", "5", "4", "1");
+    assertFieldValues(rsp.getResults(), id, "2", "5", "8", "1", "4");
+    // Combiner Method: post
+    rsp =
+        queryNonDistribControlClient(
+            createParams(
+                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+    assertEquals(5, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "8", "5", "2", "4", "1");
   }
 
   /**
@@ -240,8 +204,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     QueryResponse rsp;
     // Combiner Method: pre
     rsp =
-        queryServer(
-            createDistributedParams(
+        queryNonDistribControlClient(
+            createParams(
                 CommonParams.JSON,
                 "{\"queries\":"
                     + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
@@ -250,10 +214,10 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"pre\"}}",
                 CommonParams.QT,
                 "/search"));
-    assertFieldValues(rsp.getResults(), id, "2", "3", "4", "1", "10", "6", "8", "7", "5");
+    assertFieldValues(rsp.getResults(), id, "2", "3", "1", "4", "10");
     rsp =
-        queryServer(
-            createDistributedParams(
+        queryNonDistribControlClient(
+            createParams(
                 CommonParams.JSON,
                 "{\"queries\":"
                     + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
@@ -263,10 +227,10 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"pre\"}}",
                 CommonParams.QT,
                 "/search"));
-    assertFieldValues(rsp.getResults(), id, "2", "3", "4", "1");
+    assertFieldValues(rsp.getResults(), id, "2", "1", "3", "4");
     rsp =
-        queryServer(
-            createDistributedParams(
+        queryNonDistribControlClient(
+            createParams(
                 CommonParams.JSON,
                 "{\"queries\":"
                     + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
@@ -276,8 +240,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"pre\"}}",
                 CommonParams.QT,
                 "/search"));
-    assertEquals(4, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "1", "10", "6", "8");
+    assertEquals(2, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "4", "10");
   }
 
   /**
@@ -294,8 +258,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     QueryResponse rsp;
     // Combiner Method: post
     rsp =
-        queryServer(
-            createDistributedParams(
+        queryNonDistribControlClient(
+            createParams(
                 CommonParams.JSON,
                 "{\"queries\":"
                     + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
@@ -304,10 +268,10 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"post\"}}",
                 CommonParams.QT,
                 "/search"));
-    assertFieldValues(rsp.getResults(), id, "2", "3", "1", "4", "5", "6", "7", "8", "10");
+    assertFieldValues(rsp.getResults(), id, "2", "3", "1", "4", "10");
     rsp =
-        queryServer(
-            createDistributedParams(
+        queryNonDistribControlClient(
+            createParams(
                 CommonParams.JSON,
                 "{\"queries\":"
                     + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
@@ -317,10 +281,10 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"post\"}}",
                 CommonParams.QT,
                 "/search"));
-    assertFieldValues(rsp.getResults(), id, "2", "3", "1", "4");
+    assertFieldValues(rsp.getResults(), id, "2", "1", "3", "4");
     rsp =
-        queryServer(
-            createDistributedParams(
+        queryNonDistribControlClient(
+            createParams(
                 CommonParams.JSON,
                 "{\"queries\":"
                     + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
@@ -330,8 +294,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"post\"}}",
                 CommonParams.QT,
                 "/search"));
-    assertEquals(4, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "4", "5", "6", "7");
+    assertEquals(2, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "4", "10");
   }
 
   /**
@@ -351,22 +315,22 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
             + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\","
             + "\"combiner.query\":[\"vector\"], \"combiner.method\": \"%s\"}}";
     QueryResponse rsp;
-    // Combiner Method: post
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
-    assertEquals(2, rsp.getResults().size());
-    assertEquals(8, rsp.getResults().getNumFound());
-    assertEquals("[1 (4), 0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
     // Combiner Method: pre
     rsp =
-        queryServer(
-            createDistributedParams(
+        queryNonDistribControlClient(
+            createParams(
                 CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
     assertEquals(2, rsp.getResults().size());
-    assertEquals(8, rsp.getResults().getNumFound());
-    assertEquals("[1 (4), 0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
+    assertEquals(4, rsp.getResults().getNumFound());
+    assertEquals("[1 (3), 2 (1)]", rsp.getFacetFields().getFirst().getValues().toString());
+    // Combiner Method: post
+    rsp =
+        queryNonDistribControlClient(
+            createParams(
+                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+    assertEquals(2, rsp.getResults().size());
+    assertEquals(4, rsp.getResults().getNumFound());
+    assertEquals("[1 (3), 2 (1)]", rsp.getFacetFields().getFirst().getValues().toString());
   }
 
   /**
@@ -387,13 +351,13 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
             + "\"combiner.query\":[\"lexical1\",\"lexical2\"], \"hl\": true,"
             + " \"combiner.method\": \"%s\", \"hl.fl\": \"title\",\"hl.q\":\"test doc\"}}";
     QueryResponse rsp;
-    // Combiner Method: post
+    // Combiner Method: pre
     rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+        queryNonDistribControlClient(
+            createParams(
+                CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
     assertEquals(3, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "4", "2", "5");
+    assertFieldValues(rsp.getResults(), id, "2", "4", "3");
     assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
     assertEquals("[2 (2), 0 (1), 1 (1)]", rsp.getFacetFields().getFirst().getValues().toString());
     assertEquals(3, rsp.getHighlighting().size());
@@ -403,10 +367,10 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     assertEquals(
         "title <em>test</em> for <em>doc</em> 4",
         rsp.getHighlighting().get("4").get("title").getFirst());
-    // Combiner Method: pre
+    // Combiner Method: post
     rsp =
-        queryServer(
-            createDistributedParams(
+        queryNonDistribControlClient(
+            createParams(
                 CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
     assertEquals(3, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2", "4", "3");
@@ -421,9 +385,11 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         rsp.getHighlighting().get("4").get("title").getFirst());
   }
 
-  private ModifiableSolrParams createDistributedParams(Object... q) {
-    ModifiableSolrParams solrParams = createParams(q);
-    setDistributedParams(solrParams);
-    return solrParams;
+  private QueryResponse queryNonDistribControlClient(ModifiableSolrParams solrParams)
+      throws Exception {
+    solrParams.set("distrib", "false");
+    final QueryResponse controlRsp = controlClient.query(solrParams);
+    validateControlData(controlRsp);
+    return controlRsp;
   }
 }

@@ -27,9 +27,18 @@ public class CombinerParams {
   public static final String COMBINER = "combiner";
   public static final String COMBINER_ALGORITHM = COMBINER + ".algorithm";
   public static final String COMBINER_QUERY = COMBINER + ".query";
+  public static final String COMBINER_METHOD = COMBINER + ".method";
   public static final String RECIPROCAL_RANK_FUSION = "rrf";
   public static final String COMBINER_RRF_K = COMBINER + "." + RECIPROCAL_RANK_FUSION + ".k";
   public static final String DEFAULT_COMBINER = RECIPROCAL_RANK_FUSION;
   public static final int DEFAULT_COMBINER_RRF_K = 60;
   public static final int DEFAULT_MAX_COMBINER_QUERIES = 5;
+  public static final String COMBINER_METHOD_PRE = "pre";
+  public static final String COMBINER_METHOD_POST = "post";
+
+  public static boolean isPreCombinerMethod(SolrParams solrParams) {
+    return solrParams.get(CombinerParams.COMBINER_METHOD) != null
+        && CombinerParams.COMBINER_METHOD_PRE.equalsIgnoreCase(
+            solrParams.get(CombinerParams.COMBINER_METHOD));
+  }
 }

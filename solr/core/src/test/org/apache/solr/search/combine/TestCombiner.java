@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.combine;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +25,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
@@ -102,14 +102,13 @@ public class TestCombiner extends QueryAndResponseCombiner {
   }
 
   @Override
-  public NamedList<Explanation> getExplanations(
+  public SimpleOrderedMap<Explanation> getExplanations(
       String[] queryKeys,
       List<Query> queries,
       List<QueryResult> queryResults,
       SolrIndexSearcher searcher,
       IndexSchema schema,
-      SolrParams solrParams)
-      throws IOException {
+      SolrParams solrParams) {
     return null;
   }
 }

@@ -30,8 +30,8 @@ import org.junit.Test;
 
 /**
  * The CombinedQueryComponentTest class is an integration test suite for the CombinedQueryComponent
- * in Solr. It verifies the functionality of the component by performing various queries and
- * validating the responses.
+ * in Solr. It verifies the functionality of the component by performing few basic queries and
+ * validating the responses including limitations and combiner plugin.
  */
 public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
 
@@ -91,7 +91,7 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
                 + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 5\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"]}}",
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"], \"combiner.method\": \"pre\"}}",
             CommonParams.QT,
             "/search"),
         "//result[@numFound='10']",
@@ -108,7 +108,7 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
                 + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"debugQuery\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
+                + "\"params\":{\"combiner\":true,\"debugQuery\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"pre\"}}",
             CommonParams.QT,
             "/search"),
         "//result[@numFound='10']",
@@ -129,7 +129,7 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
                 + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"]}}",
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"pre\"}}",
             CommonParams.QT,
             "/search"),
         "//result[@numFound='5']",
@@ -149,7 +149,7 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
                 + "\"lexical2\":{\"lucene\":{\"query\":\"text:Solr powers the search\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"pre\"}}",
             CommonParams.QT,
             "/search"),
         "//result[@numFound='0']");
@@ -168,7 +168,7 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
                 + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"vector\", \"lexical2\"]}}",
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"vector\", \"lexical2\"], \"combiner.method\": \"pre\"}}",
             CommonParams.QT,
             "/search"),
         SolrException.ErrorCode.BAD_REQUEST);
@@ -188,7 +188,7 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
                 + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
+                + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"pre\"}}",
             CommonParams.QT,
             "/search"),
         "//result[@numFound='5']",
@@ -210,7 +210,7 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
             + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
             + "\"sort\":\"id asc\","
             + "\"fields\":[\"id\",\"score\",\"title\"],"
-            + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
+            + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"pre\"}}";
     RuntimeException exceptionThrown =
         expectThrows(
             RuntimeException.class,

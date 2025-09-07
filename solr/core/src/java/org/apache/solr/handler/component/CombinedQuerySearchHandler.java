@@ -16,12 +16,17 @@
  */
 package org.apache.solr.handler.component;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.params.CombinerParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.facet.FacetModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The CombinedQuerySearchHandler class extends the SearchHandler and provides custom behavior for
@@ -30,6 +35,8 @@ import org.apache.solr.search.facet.FacetModule;
  * configuration.
  */
 public class CombinedQuerySearchHandler extends SearchHandler {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Overrides the default response builder creation method. This method checks if the {@link
@@ -80,5 +87,34 @@ public class CombinedQuerySearchHandler extends SearchHandler {
     if (rb instanceof CombinedQueryResponseBuilder crb) {
       crb.propagate();
     }
+  }
+
+  /**
+   * rb.distrib {@link ResponseBuilder} must be set for the combined query to work in case of single
+   * core standalone mode. This method set the parameter explicitly with other required solr param
+   * i.e. shards
+   *
+   * @param req the SolrQueryRequest
+   * @return boolean denoting whether the request can be marked as distributed.
+   */
+  @Override
+  protected boolean isDistrib(SolrQueryRequest req) {
+    boolean isDistrib = super.isDistrib(req);
+    if (!isDistrib
+        && !req.getParams().getBool(ShardParams.IS_SHARD, false)
+        && req.getHttpSolrCall() != null) {
+      log.info("Configuring distributed mode to enable Combined Query.");
+      ModifiableSolrParams solrParams = new ModifiableSolrParams(req.getParams());
+      String scheme = req.getHttpSolrCall().getReq().getScheme();
+      String host = req.getHttpSolrCall().getReq().getServerName();
+      int port = req.getHttpSolrCall().getReq().getServerPort();
+      String context = req.getHttpSolrCall().getReq().getContextPath();
+      String core = req.getCore().getName();
+      String localShardUrl = String.format("%s://%s:%d%s/%s", scheme, host, port, context, core);
+      solrParams.set(ShardParams.SHARDS, localShardUrl);
+      req.setParams(solrParams);
+      return true;
+    }
+    return isDistrib;
   }
 }
