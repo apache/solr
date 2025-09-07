@@ -70,12 +70,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Utility class for creating/configuring httpclient instances.
+ * Utility class for creating/configuring Apache {@link HttpClient} instances.
  *
  * <p>This class can touch internal HttpClient details and is subject to change.
  *
  * @lucene.experimental
- * @deprecated Used to configure the Apache HTTP client. Please use the Http2 client
+ * @deprecated Used to configure the Apache HTTP client. Please use another client
  */
 @Deprecated(since = "9.0")
 public class HttpClientUtil implements SolrHttpConstants {
