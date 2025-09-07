@@ -239,6 +239,9 @@ Improvements
 
 * SOLR-17893: Speed up Remote Proxy for high QPS, utilizing ClusterState caching. (Houston Putman)
 
+* SOLR-17897: CloudSolrClient now recognizes UnknownHostException as a case to refetch the cluster
+  state and retry.  (David Smiley, Latch Singh)
+
 Optimizations
 ---------------------
 (No changes)
