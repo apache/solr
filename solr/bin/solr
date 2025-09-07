@@ -1081,10 +1081,10 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
       exit 1
     fi
     if $verbose ; then
-      echo "Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun"
+      echo "Configuring SolrCloud to launch an embedded Zookeeper using -Dsolr.zookeeper.server.enabled"
     fi
 
-    CLOUD_MODE_OPTS+=('-DzkRun')
+    CLOUD_MODE_OPTS+=('-Dsolr.zookeeper.server.enabled=true')
   fi
 
   if [ -n "${ZK_CREATE_CHROOT:-}" ]; then

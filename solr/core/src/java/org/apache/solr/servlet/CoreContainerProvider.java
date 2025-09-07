@@ -55,6 +55,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
@@ -315,7 +316,8 @@ public class CoreContainerProvider implements ServletContextListener {
   }
 
   /**
-   * We are in cloud mode if Java option zkRun exists OR zkHost exists and is non-empty
+   * We are in cloud mode if Java option solr.zookeeper.server.enabled exists OR zkHost exists and
+   * is non-empty
    *
    * @see SolrXmlConfig#wrapAndSetZkHostFromSysPropIfNeeded
    * @see #extraProperties
@@ -324,7 +326,7 @@ public class CoreContainerProvider implements ServletContextListener {
   private boolean isCloudMode() {
     assert null != extraProperties; // we should never be called w/o this being initialized
     return (null != extraProperties.getProperty(SolrXmlConfig.ZK_HOST))
-        || (null != System.getProperty("zkRun"));
+        || EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
   }
 
   /**

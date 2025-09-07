@@ -71,9 +71,9 @@ public class ZkContainer {
   public ZkContainer() {}
 
   public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
-    String zkRun = System.getProperty("zkRun");
+    boolean zkRun = EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
 
-    if (zkRun != null && config == null)
+    if (zkRun && config == null)
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Cannot start Solr in cloud mode - no cloud config provided");
@@ -88,13 +88,13 @@ public class ZkContainer {
     System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
     Path solrHome = cc.getSolrHome();
-    if (zkRun != null) {
+    if (zkRun) {
       String zkDataHome =
           System.getProperty("zkServerDataDir", solrHome.resolve("zoo_data").toString());
       String zkConfHome = System.getProperty("zkServerConfDir", solrHome.toString());
       zkServer =
           new SolrZkServer(
-              stripChroot(zkRun),
+              zkRun,
               stripChroot(config.getZkHost()),
               Path.of(zkDataHome),
               zkConfHome,
@@ -115,7 +115,7 @@ public class ZkContainer {
       // we are ZooKeeper enabled
       try {
         // If this is an ensemble, allow for a long connect time for other servers to come up
-        if (zkRun != null && zkServer.getServers().size() > 1) {
+        if (zkRun && zkServer.getServers().size() > 1) {
           zkClientConnectTimeout = 24 * 60 * 60 * 1000; // 1 day for embedded ensemble
           log.info("Zookeeper client={}  Waiting for a quorum.", zookeeperHost);
         } else {
@@ -132,7 +132,7 @@ public class ZkContainer {
         ZkController zkController =
             new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config);
 
-        if (zkRun != null) {
+        if (zkRun) {
           if (StrUtils.isNotNullOrEmpty(System.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient())
