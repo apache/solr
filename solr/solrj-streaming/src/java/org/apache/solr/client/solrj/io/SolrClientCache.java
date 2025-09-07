@@ -106,7 +106,7 @@ public class SolrClientCache implements Closeable {
     builder.canUseZkACLs(canUseACLs);
     // using internal builder to ensure the internal client gets closed
     builder =
-        builder.withInternalClientBuilder(
+        builder.withHttpClientBuilder(
             newHttp2SolrClientBuilder(null, http2SolrClient, basicAuthCredentials));
     var client = builder.build();
     try {
