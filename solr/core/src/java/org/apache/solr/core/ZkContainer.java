@@ -92,9 +92,9 @@ public class ZkContainer {
     if (zkRun) {
       String zkDataHome =
           EnvUtils.getProperty(
-              "solr.zookeeper.server.data.dir", solrHome.resolve("zoo_data").toString());
+              "solr.zookeeper.server.datadir", solrHome.resolve("zoo_data").toString());
       String zkConfHome =
-          EnvUtils.getProperty("solr.zookeeper.server.conf.dir", solrHome.toString());
+          EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString());
       zkServer =
           new SolrZkServer(
               zkRun,
