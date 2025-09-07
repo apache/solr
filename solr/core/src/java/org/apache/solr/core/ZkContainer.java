@@ -64,7 +64,8 @@ public class ZkContainer {
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("coreZkRegister"));
 
   // see ZkController.zkRunOnly
-  private boolean zkRunOnly = EnvUtils.getPropertyAsBool("solr.zookeeper.server.run.only", false); // expert
+  private boolean zkRunOnly =
+      EnvUtils.getPropertyAsBool("solr.zookeeper.server.run.only", false); // expert
 
   private SolrMetricProducer metricProducer;
 
@@ -90,8 +91,10 @@ public class ZkContainer {
     Path solrHome = cc.getSolrHome();
     if (zkRun) {
       String zkDataHome =
-          System.getProperty("zkServerDataDir", solrHome.resolve("zoo_data").toString());
-      String zkConfHome = System.getProperty("zkServerConfDir", solrHome.toString());
+          EnvUtils.getProperty(
+              "solr.zookeeper.server.data.dir", solrHome.resolve("zoo_data").toString());
+      String zkConfHome =
+          EnvUtils.getProperty("solr.zookeeper.server.conf.dir", solrHome.toString());
       zkServer =
           new SolrZkServer(
               zkRun,

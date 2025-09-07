@@ -258,7 +258,8 @@ public class ZkController implements Closeable {
   // an Overseer or register a /live node. This lets you monitor the cluster
   // and interact with zookeeper via the Solr admin UI on a node outside the cluster,
   // so that one will not be killed or stopped when testing. See developer cloud-scripts.
-  private boolean zkRunOnly = EnvUtils.getPropertyAsBool("solr.zookeeper.server.run.only", false); // expert
+  private boolean zkRunOnly =
+      EnvUtils.getPropertyAsBool("solr.zookeeper.server.run.only", false); // expert
 
   // keeps track of a list of objects that need to know a new ZooKeeper session was created after
   // expiration occurred ref is held as a HashSet since we clone the set before notifying to avoid
