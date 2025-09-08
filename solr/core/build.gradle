@@ -95,6 +95,7 @@ dependencies {
   implementation libs.apache.lucene.spatialextras
   implementation libs.apache.lucene.suggest
 
+
   // Collections & lang utilities
   implementation libs.google.guava
   implementation libs.apache.commons.lang3
