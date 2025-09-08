@@ -57,6 +57,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
@@ -326,7 +327,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     try {
       try {
-        super.search(query, collector);
+        search(query, collector);
       } finally {
         // The complete() method can use the collectors, so this needs to be surrounded by the same
         // catch logic that limit collecting
@@ -782,24 +783,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return qr;
   }
 
-  /*@Override
-  TBD . This is overridden to exit the query when limits are reached
-  protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
+  @Override
+  public void search(Query query, Collector collector)
       throws IOException {
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY, Boolean.FALSE)
-        || !queryLimits.isLimitsEnabled()) {
+    if (!queryLimits.isLimitsEnabled()) {
       // no timeout.  Pass through to super class
-      super.search(leaves, weight, collector);
+      super.search(query, collector);
     } else {
       // Timeout enabled!  This impl is maybe a hack.  Use Lucene's IndexSearcher timeout.
       // But only some queries have it so don't use on "this" (SolrIndexSearcher), not to mention
       //   that timedOut() might race with concurrent queries (dubious design).
       // So we need to make a new IndexSearcher instead of using "this".
-      new IndexSearcher(reader) { // cheap, actually!
+      // Make sure to reuse the existing executor.
+      new IndexSearcher(reader, core.getCoreContainer().getIndexSearcherExecutor()) { // cheap, actually!
         void searchWithTimeout() throws IOException {
           setTimeout(queryLimits); // Lucene's method name is less than ideal here...
-          super.search(leaves, weight, collector); // FYI protected access
+          super.search(query, collector); // FYI protected access
           if (timedOut()) {
             throw new QueryLimitsExceededException(
                 "Limits exceeded! (search): " + queryLimits.limitStatusMessage());
@@ -807,7 +807,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
       }.searchWithTimeout();
     }
-  }*/
+  }
 
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.
