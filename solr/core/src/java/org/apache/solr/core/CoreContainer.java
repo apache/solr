@@ -1109,8 +1109,10 @@ public class CoreContainer {
         "version");
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
-    // NOCOMMIT SOLR-17458: Otel migration
-    fieldCacheBean.initializeMetrics(solrMetricsContext, Attributes.empty(), "");
+    fieldCacheBean.initializeMetrics(
+        solrMetricsContext,
+        Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()),
+        "");
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
