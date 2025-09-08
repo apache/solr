@@ -17,6 +17,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
@@ -200,13 +202,13 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
   @Override
   public void shutdown() {
     delegate.shutdown();
-    closeObservables();
+    observableMetrics.stream().forEach(IOUtils::closeQuietly);
   }
 
   @Override
   public List<Runnable> shutdownNow() {
     List<Runnable> tasks = delegate.shutdownNow();
-    closeObservables();
+    observableMetrics.stream().forEach(IOUtils::closeQuietly);
     return tasks;
   }
 
@@ -231,20 +233,6 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
       instrumented.add(new InstrumentedCallable<>(task));
     }
     return instrumented;
-  }
-
-  private void closeObservables() {
-    for (AutoCloseable metric : observableMetrics) {
-      try {
-        metric.close();
-      } catch (Exception err) {
-        throw new RuntimeException(
-            String.format(
-                "Unable to close observable metric %s for %s",
-                metric.getClass().getSimpleName(), executorName),
-            err);
-      }
-    }
   }
 
   private class InstrumentedRunnable implements Runnable {
