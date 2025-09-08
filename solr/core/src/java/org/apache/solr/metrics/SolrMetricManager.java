@@ -52,7 +52,6 @@ import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
 import io.opentelemetry.sdk.metrics.internal.exemplar.ExemplarFilter;
@@ -86,6 +85,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -263,15 +263,7 @@ public class SolrMetricManager {
   }
 
   public LongGauge longGauge(String registry, String gaugeName, String description, OtelUnit unit) {
-    LongGaugeBuilder builder =
-        meterProvider(registry)
-            .get(OTEL_SCOPE_NAME)
-            .gaugeBuilder(gaugeName)
-            .setDescription(description)
-            .ofLongs();
-    if (unit != null) builder.setUnit(unit.getSymbol());
-
-    return builder.build();
+    return longGaugeBuilder(registry, gaugeName, description, unit).build();
   }
 
   public ObservableLongCounter observableLongCounter(
@@ -313,15 +305,7 @@ public class SolrMetricManager {
       String description,
       Consumer<ObservableLongMeasurement> callback,
       OtelUnit unit) {
-    LongGaugeBuilder builder =
-        meterProvider(registry)
-            .get(OTEL_SCOPE_NAME)
-            .gaugeBuilder(gaugeName)
-            .setDescription(description)
-            .ofLongs();
-    if (unit != null) builder.setUnit(unit.getSymbol());
-
-    return builder.buildWithCallback(callback);
+    return longGaugeBuilder(registry, gaugeName, description, unit).buildWithCallback(callback);
   }
 
   public ObservableDoubleGauge observableDoubleGauge(
@@ -786,7 +770,7 @@ public class SolrMetricManager {
         .computeIfAbsent(
             providerName,
             key -> {
-              var reader = new PrometheusMetricReader(true, null);
+              var reader = new FilterablePrometheusMetricReader(true, null);
               // NOCOMMIT: We need to add a Periodic Metric Reader here if we want to push with OTLP
               // with an exporter
               var provider = SdkMeterProvider.builder().registerMetricReader(reader);
@@ -1673,17 +1657,17 @@ public class SolrMetricManager {
     return metricsConfig;
   }
 
-  /** Get a shallow copied map of {@link PrometheusMetricReader}. */
-  public Map<String, PrometheusMetricReader> getPrometheusMetricReaders() {
+  /** Get a shallow copied map of {@link FilterablePrometheusMetricReader}. */
+  public Map<String, FilterablePrometheusMetricReader> getPrometheusMetricReaders() {
     return meterProviderAndReaders.entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().prometheusMetricReader()));
   }
 
-  public PrometheusMetricReader getPrometheusMetricReader(String providerName) {
+  public FilterablePrometheusMetricReader getPrometheusMetricReader(String providerName) {
     MeterProviderAndReaders mpr = meterProviderAndReaders.get(enforcePrefix(providerName));
     return (mpr != null) ? mpr.prometheusMetricReader() : null;
   }
 
   private record MeterProviderAndReaders(
-      SdkMeterProvider sdkMeterProvider, PrometheusMetricReader prometheusMetricReader) {}
+      SdkMeterProvider sdkMeterProvider, FilterablePrometheusMetricReader prometheusMetricReader) {}
 }

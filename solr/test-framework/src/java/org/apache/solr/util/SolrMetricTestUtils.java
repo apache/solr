@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics;
+package org.apache.solr.util;
 
 import com.codahale.metrics.Counter;
 import io.opentelemetry.api.common.AttributeKey;
@@ -35,6 +35,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 
 public final class SolrMetricTestUtils {
 
