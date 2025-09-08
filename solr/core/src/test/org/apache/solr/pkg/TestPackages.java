@@ -46,8 +46,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -874,7 +874,7 @@ public class TestPackages extends SolrCloudTestCase {
     try {
       req.process(client);
       fail("should have failed with message : " + expectErrorMsg);
-    } catch (BaseHttpSolrClient.RemoteExecutionException e) {
+    } catch (RemoteExecutionException e) {
       String msg = Objects.requireNonNullElse(e.getMetaData()._getStr(errPath), "");
       assertTrue(
           "should have failed with message: " + expectErrorMsg + "actual message : " + msg,

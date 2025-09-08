@@ -17,44 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-
-import java.util.Collections;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.common.util.NamedList;
 
-public abstract class BaseHttpSolrClient extends SolrClient {
-
-  /**
-   * This should be thrown when a server has an error in executing the request, and it sends a
-   * proper payload back to the client
-   */
-  public static class RemoteExecutionException extends RemoteSolrException {
-    private NamedList<?> meta;
-
-    public RemoteExecutionException(String remoteHost, int code, String msg, NamedList<?> meta) {
-      super(remoteHost, code, msg + (meta != null ? ": " + meta : ""), null);
-      this.meta = meta;
-    }
-
-    public static RemoteExecutionException create(String host, NamedList<?> errResponse) {
-      Object errObj = errResponse.get("error");
-      if (errObj != null) {
-        Number code = (Number) getObjectByPath(errObj, true, Collections.singletonList("code"));
-        String msg = (String) getObjectByPath(errObj, true, Collections.singletonList("msg"));
-        return new RemoteExecutionException(
-            host,
-            code == null ? ErrorCode.UNKNOWN.code : code.intValue(),
-            msg == null ? "Unknown Error" : msg,
-            errResponse);
-
-      } else {
-        throw new RuntimeException("No error");
-      }
-    }
-
-    public NamedList<?> getMetaData() {
-      return meta;
-    }
-  }
-}
+@Deprecated
+public abstract class BaseHttpSolrClient extends SolrClient {}
