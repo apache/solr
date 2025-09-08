@@ -16,8 +16,8 @@
  */
 package org.apache.solr.search;
 
-import org.apache.solr.common.util.EnvUtils;
 import io.opentelemetry.api.common.Attributes;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;

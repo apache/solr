@@ -41,6 +41,7 @@ import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

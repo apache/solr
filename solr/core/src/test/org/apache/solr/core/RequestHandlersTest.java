@@ -19,8 +19,8 @@ package org.apache.solr.core;
 import com.codahale.metrics.Gauge;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

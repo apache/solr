@@ -39,6 +39,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestHarness;
 import org.hamcrest.number.OrderingComparison;
 import org.junit.After;

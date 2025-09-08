@@ -19,11 +19,11 @@ package org.apache.solr.handler;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
-import java.io.IOException;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongHistogram;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
