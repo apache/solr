@@ -285,6 +285,15 @@ public class SolrMetricsContext {
     return metricManager.longMeasurement(registryName, metricName, description, unit);
   }
 
+  public ObservableDoubleMeasurement doubleMeasurement(String metricName, String description) {
+    return doubleMeasurement(metricName, description, null);
+  }
+
+  public ObservableDoubleMeasurement doubleMeasurement(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.doubleMeasurement(registryName, metricName, description, unit);
+  }
+
   public BatchCallback batchCallback(
       Runnable callback,
       ObservableMeasurement measurement,

@@ -358,11 +358,6 @@ public class SolrMetricManager {
     return builder.buildWithCallback(callback);
   }
 
-  ObservableLongMeasurement longMeasurement(
-      String registry, String gaugeName, String description, OtelUnit unit) {
-    return longGaugeBuilder(registry, gaugeName, description, unit).buildObserver();
-  }
-
   BatchCallback batchCallback(
       String registry,
       Runnable callback,
@@ -373,6 +368,16 @@ public class SolrMetricManager {
         .batchCallback(callback, measurement, additionalMeasurements);
   }
 
+  ObservableLongMeasurement longMeasurement(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    return longGaugeBuilder(registry, gaugeName, description, unit).buildObserver();
+  }
+
+  ObservableDoubleMeasurement doubleMeasurement(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    return doubleGaugeBuilder(registry, gaugeName, description, unit).buildObserver();
+  }
+
   private LongGaugeBuilder longGaugeBuilder(
       String registry, String gaugeName, String description, OtelUnit unit) {
     LongGaugeBuilder builder =
@@ -381,6 +386,18 @@ public class SolrMetricManager {
             .gaugeBuilder(gaugeName)
             .setDescription(description)
             .ofLongs();
+    if (unit != null) builder.setUnit(unit.getSymbol());
+
+    return builder;
+  }
+
+  private DoubleGaugeBuilder doubleGaugeBuilder(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    DoubleGaugeBuilder builder =
+        meterProvider(registry)
+            .get(OTEL_SCOPE_NAME)
+            .gaugeBuilder(gaugeName)
+            .setDescription(description);
     if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder;
