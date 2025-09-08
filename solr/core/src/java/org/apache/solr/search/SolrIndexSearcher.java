@@ -799,7 +799,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       new IndexSearcher(reader, core.getCoreContainer().getIndexSearcherExecutor()) { // cheap, actually!
         void searchWithTimeout() throws IOException {
           setTimeout(queryLimits); // Lucene's method name is less than ideal here...
-          super.search(query, collector); // FYI protected access
+          // XXX Deprecated in Lucene 10, we should probably use search(Query, CollectorManager) instead
+          super.search(query, collector);
           if (timedOut()) {
             throw new QueryLimitsExceededException(
                 "Limits exceeded! (search): " + queryLimits.limitStatusMessage());
