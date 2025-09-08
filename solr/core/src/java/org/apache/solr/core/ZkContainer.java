@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
@@ -120,7 +121,7 @@ public class ZkContainer {
         } else {
           log.info("Zookeeper client={}", zookeeperHost);
         }
-        boolean createRoot = Boolean.getBoolean("createZkChroot");
+        boolean createRoot = EnvUtils.getPropertyAsBool("solr.zookeeper.chroot.create", false);
 
         if (!ZkController.checkChrootPath(zookeeperHost, zkRunOnly || createRoot)) {
           throw new ZooKeeperException(

@@ -201,13 +201,13 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
       BooleanQuery bq = (BooleanQuery) out;
       List<BooleanClause> clauses = new ArrayList<>(bq.clauses());
       assertEquals(t + " wrong number of clauses", 2, clauses.size());
-      Query sub = clauses.get(0).getQuery();
+      Query sub = clauses.get(0).query();
       assertTrue(t + " first wasn't a DMQ:" + sub.getClass(), sub instanceof DisjunctionMaxQuery);
       assertEquals(
           t + " first had wrong number of clauses",
           4,
           countItems(((DisjunctionMaxQuery) sub).iterator()));
-      sub = clauses.get(1).getQuery();
+      sub = clauses.get(1).query();
       assertTrue(t + " second wasn't a DMQ:" + sub.getClass(), sub instanceof DisjunctionMaxQuery);
       assertEquals(
           t + " second had wrong number of clauses",
@@ -224,13 +224,13 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
       BooleanQuery bq = (BooleanQuery) out;
       List<BooleanClause> clauses = new ArrayList<>(bq.clauses());
       assertEquals(t + " wrong number of clauses", 2, clauses.size());
-      Query sub = clauses.get(0).getQuery();
+      Query sub = clauses.get(0).query();
       assertTrue(t + " first wasn't a DMQ:" + sub.getClass(), sub instanceof DisjunctionMaxQuery);
       assertEquals(
           t + " first had wrong number of clauses",
           4,
           countItems(((DisjunctionMaxQuery) sub).iterator()));
-      sub = clauses.get(1).getQuery();
+      sub = clauses.get(1).query();
       assertTrue(t + " second wasn't a DMQ:" + sub.getClass(), sub instanceof DisjunctionMaxQuery);
       assertEquals(
           t + " second had wrong number of clauses (stop words)",

@@ -564,18 +564,13 @@ public class SolrXmlConfig {
         case "pkiHandlerPublicKeyPath":
           builder.setPkiHandlerPublicKeyPath(value);
           break;
-        case "distributedClusterStateUpdates":
-          builder.setUseDistributedClusterStateUpdates(Boolean.parseBoolean(value));
-          break;
-        case "distributedCollectionConfigSetExecution":
-          builder.setUseDistributedCollectionConfigSetExecution(Boolean.parseBoolean(value));
-          break;
         case "minStateByteLenForCompression":
           builder.setMinStateByteLenForCompression(parseInt(name, value));
           break;
         case "stateCompressor":
           builder.setStateCompressorClass(value);
           break;
+
         default:
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,

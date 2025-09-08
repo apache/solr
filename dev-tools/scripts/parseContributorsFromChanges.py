@@ -51,7 +51,8 @@ for para in paras:
       contributor = contributor.strip()
       contributors[contributor] += 1
 
-del contributors['solrbot']
+if 'solrbot' in contributors:
+  del contributors['solrbot']
 
 sorted_contributors = sorted(contributors.items(), key=lambda item: item[1], reverse=True)
 

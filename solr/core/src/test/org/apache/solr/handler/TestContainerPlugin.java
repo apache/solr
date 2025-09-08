@@ -78,7 +78,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   /**
    * A package listener that will count how many times it has been triggered. Useful to wait for
-   * changes accross multiple cores.
+   * changes across multiple cores.
    *
    * <p>Use by calling {@link #reset()} before the API calls, and then {@link #waitFor(int)} to
    * block until <code>num</code> cores have been notified.
@@ -112,7 +112,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   @Before
   public void setup() throws Exception {
-    System.setProperty("enable.packages", "true");
+    System.setProperty("solr.packages.enabled", "true");
     phaser = new Phaser();
     forceV2 = random().nextBoolean();
 
@@ -143,7 +143,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   @After
   public void teardown() throws Exception {
     shutdownCluster();
-    System.clearProperty("enable.packages");
+    System.clearProperty("solr.packages.enabled");
   }
 
   @SuppressWarnings("unchecked")

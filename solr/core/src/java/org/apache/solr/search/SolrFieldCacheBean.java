@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -24,9 +25,10 @@ import org.apache.solr.uninverting.UninvertingReader;
 /** A SolrInfoBean that provides introspection of the Solr FieldCache */
 public class SolrFieldCacheBean implements SolrInfoBean {
 
-  private boolean disableEntryList = Boolean.getBoolean("disableSolrFieldCacheMBeanEntryList");
-  private boolean disableJmxEntryList =
-      Boolean.getBoolean("disableSolrFieldCacheMBeanEntryListJmx");
+  private boolean enableEntryList =
+      EnvUtils.getPropertyAsBool("solr.metrics.fieldcache.entries.enabled", true);
+  private boolean enableJmxEntryList =
+      EnvUtils.getPropertyAsBool("solr.metrics.fieldcache.entries.jmx.enabled", true);
 
   private SolrMetricsContext solrMetricsContext;
 
@@ -56,7 +58,7 @@ public class SolrFieldCacheBean implements SolrInfoBean {
     MetricsMap metricsMap =
         new MetricsMap(
             map -> {
-              if (!disableEntryList && !disableJmxEntryList) {
+              if (enableEntryList && enableJmxEntryList) {
                 UninvertingReader.FieldCacheStats fieldCacheStats =
                     UninvertingReader.getUninvertedStats();
                 String[] entries = fieldCacheStats.info;

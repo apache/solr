@@ -448,19 +448,35 @@ public class SolrMetricManager {
   }
 
   /**
-   * Get (or create if not present) a named registry
+   * Get (or create if not present) a named registry. This method always creates and persists a new
+   * registry in case it does not already exist.
    *
    * @param registry name of the registry
    * @return existing or newly created registry
    */
   public MetricRegistry registry(String registry) {
+    return registry(registry, true);
+  }
+
+  /**
+   * Get (or create if not present) a named registry.
+   *
+   * @param registry name of the registry.
+   * @param create When false and the registry does not exist, we return null instead of creating a
+   *     new one.
+   */
+  public MetricRegistry registry(String registry, boolean create) {
     registry = enforcePrefix(registry);
     if (isSharedRegistry(registry)) {
       return SharedMetricRegistries.getOrCreate(registry);
     } else {
       swapLock.lock();
       try {
-        return getOrCreateRegistry(registries, registry);
+        if (create) {
+          return getOrCreateRegistry(registries, registry);
+        } else {
+          return registries.get(registry);
+        }
       } finally {
         swapLock.unlock();
       }
@@ -830,7 +846,7 @@ public class SolrMetricManager {
     if (tagSegment == null) {
       return 0;
     }
-    MetricRegistry registry = registry(registryName);
+    MetricRegistry registry = registry(registryName, false);
     if (registry == null) return 0;
     AtomicInteger removed = new AtomicInteger();
     registry.removeMatching(

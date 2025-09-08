@@ -587,9 +587,9 @@ public class SolrPluginUtils {
     int maxDisjunctsSize = 0;
     int optionalDismaxClauses = 0;
     for (BooleanClause c : q.build().clauses()) {
-      if (c.getOccur() == Occur.SHOULD) {
-        if (mmAutoRelax && c.getQuery() instanceof DisjunctionMaxQuery) {
-          int numDisjuncts = ((DisjunctionMaxQuery) c.getQuery()).getDisjuncts().size();
+      if (c.occur() == Occur.SHOULD) {
+        if (mmAutoRelax && c.query() instanceof DisjunctionMaxQuery) {
+          int numDisjuncts = ((DisjunctionMaxQuery) c.query()).getDisjuncts().size();
           if (numDisjuncts > maxDisjunctsSize) {
             maxDisjunctsSize = numDisjuncts;
             optionalDismaxClauses = 1;
@@ -710,7 +710,7 @@ public class SolrPluginUtils {
 
     for (BooleanClause clause : from.clauses()) {
 
-      Query cq = clause.getQuery();
+      Query cq = clause.query();
       float boost = fromBoost;
       while (cq instanceof BoostQuery bq) {
         cq = bq.getQuery();

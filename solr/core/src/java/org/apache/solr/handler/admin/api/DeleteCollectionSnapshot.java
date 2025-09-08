@@ -65,8 +65,7 @@ public class DeleteCollectionSnapshot extends AdminAPIBase
         createRemoteMessage(collectionName, followAliases, snapshotName, asyncId);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
-            coreContainer.getDistributedCollectionCommandRunner(),
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.DELETESNAPSHOT,
             DEFAULT_COLLECTION_OP_TIMEOUT);

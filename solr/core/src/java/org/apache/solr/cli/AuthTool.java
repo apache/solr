@@ -343,7 +343,7 @@ public class AuthTool extends ToolBase {
           "\nAdd the following lines to the solr.in.cmd file so that the solr.cmd script can use subsequently.\n");
       CLIO.out(
           "set SOLR_AUTH_TYPE=basic\n"
-              + "set SOLR_AUTHENTICATION_OPTS=\"-Dbasicauth="
+              + "set SOLR_AUTHENTICATION_OPTS=\"-Dsolr.security.auth.basicauth.credentials="
               + username
               + ":"
               + password
@@ -353,7 +353,7 @@ public class AuthTool extends ToolBase {
           "\nAdd the following lines to the solr.in.sh file so that the ./solr script can use subsequently.\n");
       CLIO.out(
           "SOLR_AUTH_TYPE=\"basic\"\n"
-              + "SOLR_AUTHENTICATION_OPTS=\"-Dbasicauth="
+              + "SOLR_AUTHENTICATION_OPTS=\"-Dsolr.security.auth.basicauth.credentials="
               + username
               + ":"
               + password
