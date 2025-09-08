@@ -63,7 +63,7 @@ import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
-import org.apache.solr.util.stats.OtelInstrumentedExecutorService;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -442,10 +442,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
-    // TODO SOLR-17458: Add Otel
     httpListenerFactory.initializeMetrics(solrMetricsContext, Attributes.empty(), expandedScope);
     commExecutor =
-        new OtelInstrumentedExecutorService(
+        MetricUtils.instrumentedExecutorService(
             commExecutor, solrMetricsContext, SolrInfoBean.Category.QUERY, "httpShardExecutor");
   }
 }

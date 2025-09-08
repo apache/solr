@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -51,8 +52,10 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -813,6 +816,15 @@ public class MetricUtils {
         "com.sun.management.UnixOperatingSystemMXBean",
         "com.ibm.lang.management.OperatingSystemMXBean"
       };
+
+  /** Returns an instrumented wrapper over the given executor service. */
+  public static ExecutorService instrumentedExecutorService(
+      ExecutorService delegate,
+      SolrMetricsContext ctx,
+      SolrInfoBean.Category category,
+      String name) {
+    return new OtelInstrumentedExecutorService(delegate, ctx, category, name);
+  }
 
   /**
    * Creates a set of metrics (gauges) that correspond to available bean properties for the provided

@@ -80,7 +80,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.stats.OtelInstrumentedExecutorService;
+import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,20 +128,19 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
             + "it is a special Handler configured directly by the RequestDispatcher");
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     super.initializeMetrics(parentContext, attributes, scope);
     coreAdminAsyncTracker.standardExecutor =
-        new OtelInstrumentedExecutorService(
+        MetricUtils.instrumentedExecutorService(
             coreAdminAsyncTracker.standardExecutor,
             solrMetricsContext,
             getCategory(),
             "parallelCoreAdminExecutor");
 
     coreAdminAsyncTracker.expensiveExecutor =
-        new OtelInstrumentedExecutorService(
+        MetricUtils.instrumentedExecutorService(
             coreAdminAsyncTracker.expensiveExecutor,
             solrMetricsContext,
             getCategory(),

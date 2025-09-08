@@ -46,7 +46,7 @@ import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
 import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
-import org.apache.solr.util.stats.OtelInstrumentedExecutorService;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -202,21 +202,19 @@ public class UpdateShardHandler implements SolrInfoBean {
     return this.getClass().getName();
   }
 
-  // TODO SOLR-17458: Add Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    // TODO SOLR-17458: Add Otel
     trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty(), expandedScope);
     defaultConnectionManager.initializeMetrics(
         solrMetricsContext, Attributes.empty(), expandedScope);
     updateExecutor =
-        new OtelInstrumentedExecutorService(
+        MetricUtils.instrumentedExecutorService(
             updateExecutor, solrMetricsContext, getCategory(), "updateOnlyExecutor");
     recoveryExecutor =
-        new OtelInstrumentedExecutorService(
+        MetricUtils.instrumentedExecutorService(
             recoveryExecutor, solrMetricsContext, getCategory(), "recoveryExecutor");
   }
 
