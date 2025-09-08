@@ -16,6 +16,9 @@
  */
 package org.apache.solr.core;
 
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,8 +36,6 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SpellCheckComponent;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -340,7 +341,6 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testCoreInitDeadlockMetrics() throws Exception {
-    SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     CoreContainer coreContainer = h.getCoreContainer();
 
     String coreName = "tmpCore";
@@ -353,16 +353,24 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     executor.execute(
         () -> {
           while (!created.get()) {
-            var datapoint =
-                SolrMetricTestUtils.getGaugeDatapoint(
-                    h.getCore(),
-                    "solr_core_index_size_bytes",
-                    SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
-                        .label("category", "CORE")
-                        .build());
-
-            if (datapoint != null && datapoint.getValue() >= 0) {
-              atLeastOnePoll.set(true);
+            try {
+              PrometheusMetricReader reader =
+                  coreContainer
+                      .getMetricManager()
+                      .getPrometheusMetricReader("solr.core." + coreName);
+              if (reader != null) {
+                MetricSnapshots snapshots = reader.collect();
+                for (var snapshot : snapshots) {
+                  if (snapshot instanceof GaugeSnapshot gaugeSnapshot) {
+                    var dataPoints = gaugeSnapshot.getDataPoints();
+                    if (!dataPoints.isEmpty()) {
+                      atLeastOnePoll.compareAndSet(false, true);
+                    }
+                  }
+                }
+              }
+            } catch (Exception ignore) {
+              // Ignore in case the core may not be fully initialized
             }
 
             try {

@@ -19,6 +19,8 @@ package org.apache.solr.metrics;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,10 +33,13 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+// NOCOMMIT: Need to fix up these tests to use the new SolrMetricTestUtils once we move off of
+// Dropwizard
 public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 100;
 
@@ -167,6 +172,50 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
       assertNotNull(actualMetric);
       assertEquals(expectedMetric, actualMetric);
     }
+  }
+
+  @Test
+  public void testReregisterMetrics() {
+    Random random = random();
+
+    Map<String, Long> initialMetrics =
+        SolrMetricTestUtils.getRandomPrometheusMetricsWithReplacements(random, new HashMap<>());
+    var initialProducer = new SolrMetricTestUtils.TestSolrMetricProducer(coreName, initialMetrics);
+    coreMetricManager.registerMetricProducer(
+        SolrMetricTestUtils.getRandomScope(random, true), initialProducer);
+
+    var labels = SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore()).build();
+
+    String randomMetricName = initialMetrics.entrySet().iterator().next().getKey();
+
+    long actualValue =
+        (long)
+            SolrMetricTestUtils.getCounterDatapoint(h.getCore(), randomMetricName, labels)
+                .getValue();
+    long expectedValue = initialMetrics.get(randomMetricName);
+
+    assertEquals(expectedValue, actualValue);
+
+    // Change the metric value in OTEL
+    initialProducer
+        .getCounters()
+        .get(randomMetricName)
+        .add(10L, Attributes.of(AttributeKey.stringKey("core"), coreName));
+
+    long newActualValue =
+        (long)
+            SolrMetricTestUtils.getCounterDatapoint(h.getCore(), randomMetricName, labels)
+                .getValue();
+    assertEquals(expectedValue + 10L, newActualValue);
+
+    // Reregister the core metrics which should reset the metric value back to the initial value
+    coreMetricManager.reregisterCoreMetrics();
+
+    long reregisteredValue =
+        (long)
+            SolrMetricTestUtils.getCounterDatapoint(h.getCore(), randomMetricName, labels)
+                .getValue();
+    assertEquals(expectedValue, reregisteredValue);
   }
 
   @Test

@@ -19,9 +19,9 @@ package org.apache.solr.api;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN_OR_REMOTEQUERY;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN_OR_REMOTEPROXY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEPROXY;
 
 import io.opentelemetry.api.trace.Span;
 import jakarta.servlet.http.HttpServletRequest;
@@ -167,15 +167,15 @@ public class V2HttpCall extends HttpSolrCall {
           if (core == null) {
             // this collection exists , but this node does not have a replica for that collection
             extractRemotePath(collectionName);
-            if (action == REMOTEQUERY) {
-              action = ADMIN_OR_REMOTEQUERY;
+            if (action == REMOTEPROXY) {
+              action = ADMIN_OR_REMOTEPROXY;
               coreUrl = coreUrl.replace("/solr/", "/solr/____v2/c/");
               this.path = path = path.substring(prefix.length() + collectionName.length() + 2);
               return;
             }
           }
         }
-      } else if ("cores".equals(prefix)) {
+      } else if ("cores".equals(prefix) && pathSegments.size() > 1) {
         origCorename = pathSegments.get(1);
         core = cores.getCore(origCorename);
       }
@@ -350,7 +350,7 @@ public class V2HttpCall extends HttpSolrCall {
   }
 
   /**
-   * Differentiate between "admin" and "remotequery"-type requests; executing each as appropriate.
+   * Differentiate between "admin" and "remoteproxy"-type requests; executing each as appropriate.
    *
    * <p>The JAX-RS framework used by {@link V2HttpCall} doesn't provide any easy way to check in
    * advance whether a Jersey application can handle an incoming request. This, in turn, makes it
@@ -361,7 +361,7 @@ public class V2HttpCall extends HttpSolrCall {
    * <p>This method uses this strategy to differentiate between admin requests that don't require a
    * {@link SolrCore}, but whose path happen to contain a core/collection name (e.g.
    * ADDREPLICAPROP's path of
-   * /collections/collName/shards/shardName/replicas/replicaName/properties), and "REMOTEQUERY"
+   * /collections/collName/shards/shardName/replicas/replicaName/properties), and "REMOTEPROXY"
    * requests which do require a local SolrCore to process.
    */
   @Override
@@ -384,8 +384,8 @@ public class V2HttpCall extends HttpSolrCall {
     }
 
     // If no admin/container-level Jersey resource was found for this API, then this should be
-    // treated as a REMOTEQUERY
-    sendRemoteQuery();
+    // treated as a REMOTEPROXY
+    sendRemoteProxy();
   }
 
   @Override

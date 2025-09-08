@@ -16,20 +16,20 @@
  */
 package org.apache.solr.metrics;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Test {@link OperatingSystemMetricSet} and proper JVM metrics registration. */
 public class JvmMetricsTest extends SolrJettyTestBase {
   static final String[] STRING_OS_METRICS = {"arch", "name", "version"};
   static final String[] NUMERIC_OS_METRICS = {"availableProcessors", "systemLoadAverage"};
@@ -45,66 +45,8 @@ public class JvmMetricsTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
+    System.setProperty("solr.metrics.jvm.enabled", "true");
     createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
-
-  @Test
-  public void testOperatingSystemMetricSet() {
-    OperatingSystemMetricSet set = new OperatingSystemMetricSet();
-    Map<String, Metric> metrics = set.getMetrics();
-    assertTrue(metrics.size() > 0);
-    for (String metric : NUMERIC_OS_METRICS) {
-      Gauge<?> gauge = (Gauge<?>) metrics.get(metric);
-      assertNotNull(metric, gauge);
-      double value = ((Number) gauge.getValue()).doubleValue();
-      // SystemLoadAverage on Windows may be -1.0
-      assertTrue("unexpected value of " + metric + ": " + value, value >= 0 || value == -1.0);
-    }
-    for (String metric : STRING_OS_METRICS) {
-      Gauge<?> gauge = (Gauge<?>) metrics.get(metric);
-      assertNotNull(metric, gauge);
-      String value = (String) gauge.getValue();
-      assertNotNull(value);
-      assertFalse(value.isEmpty());
-    }
-  }
-
-  @Test
-  public void testAltBufferPoolMetricSet() {
-    AltBufferPoolMetricSet set = new AltBufferPoolMetricSet();
-    Map<String, Metric> metrics = set.getMetrics();
-    assertTrue(metrics.size() > 0);
-    for (String name : BUFFER_METRICS) {
-      assertNotNull(name, metrics.get(name));
-      Object g = metrics.get(name);
-      assertTrue(g instanceof Gauge);
-      Object v = ((Gauge<?>) g).getValue();
-      assertTrue(v instanceof Long);
-    }
-  }
-
-  @Test
-  public void testSystemProperties() {
-    if (System.getProperty("basicauth") == null) {
-      // make sure it's set
-      System.setProperty("basicauth", "foo:bar");
-    }
-    SolrMetricManager metricManager = getJetty().getCoreContainer().getMetricManager();
-    Map<String, Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
-    Metric metric = metrics.get("system.properties");
-    assertNotNull(metrics.toString(), metric);
-    MetricsMap map = (MetricsMap) ((SolrMetricManager.GaugeWrapper<?>) metric).getGauge();
-    assertNotNull(metrics.toString(), map);
-    Map<String, Object> values = map.getValue();
-    System.getProperties()
-        .forEach(
-            (k, v) -> {
-              if (NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.contains(k)) {
-                assertNull("hidden property " + k + " present!", values.get(k));
-              } else {
-                assertEquals(v, values.get(String.valueOf(k)));
-              }
-            });
   }
 
   @Test
@@ -125,29 +67,38 @@ public class JvmMetricsTest extends SolrJettyTestBase {
 
   @Test
   public void testSetupJvmMetrics() {
-    SolrMetricManager metricManager = getJetty().getCoreContainer().getMetricManager();
-    Map<String, Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
-    assertTrue(metrics.size() > 0);
+    PrometheusMetricReader reader =
+        getJetty().getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.jvm");
+    MetricSnapshots snapshots = reader.collect();
+    assertTrue("Should have metric snapshots", snapshots.size() > 0);
+
+    Set<String> metricNames =
+        snapshots.stream()
+            .map(metric -> metric.getMetadata().getPrometheusName())
+            .collect(Collectors.toSet());
+
     assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("buffers.")));
+        "Should have JVM memory metrics",
+        metricNames.stream().anyMatch(name -> name.startsWith("jvm_memory")));
+
     assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("classes.")));
+        "Should have JVM thread metrics",
+        metricNames.stream().anyMatch(name -> name.startsWith("jvm_thread")));
+
     assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("os.")));
+        "Should have JVM class metrics",
+        metricNames.stream().anyMatch(name -> name.startsWith("jvm_class")));
+
     assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("gc.")));
+        "Should have JVM CPU metrics",
+        metricNames.stream().anyMatch(name -> name.startsWith("jvm_cpu")));
+
     assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("memory.")));
+        "Should have JVM GC metrics",
+        metricNames.stream().anyMatch(name -> name.startsWith("jvm_gc")));
+
     assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("threads.")));
-    assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("system.")));
+        "Should have JVM buffer metrics",
+        metricNames.stream().anyMatch(name -> name.startsWith("jvm_buffer")));
   }
 }

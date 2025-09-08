@@ -331,7 +331,7 @@ public class RealTimeGetComponent extends SearchComponent {
           if (rb.getFilters() != null) {
             for (Query raw : rb.getFilters()) {
               raw = makeQueryable(raw);
-              Query q = raw.rewrite(searcherInfo.getSearcher().getIndexReader());
+              Query q = raw.rewrite(searcherInfo.getSearcher());
               Scorer scorer =
                   searcherInfo
                       .getSearcher()

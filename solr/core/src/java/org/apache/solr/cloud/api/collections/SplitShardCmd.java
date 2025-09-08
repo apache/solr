@@ -716,7 +716,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         // state switch as per SOLR-13945 so that sub shards don't come up empty, momentarily, after
         // being marked active)
         t = timings.sub("finalCommit");
-        CollectionHandlingUtils.commit(results, slice.get(), parentShardLeader);
+        CollectionHandlingUtils.commit(
+            ccc.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient(),
+            results,
+            slice.get(),
+            parentShardLeader);
         t.stop();
         // switch sub shard states to 'active'
         log.info("Replication factor is 1 so switching shard states");
@@ -796,7 +800,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       // when the sub-shard replicas come up
       if (repFactor > 1) {
         t = timings.sub("finalCommit");
-        CollectionHandlingUtils.commit(results, slice.get(), parentShardLeader);
+        CollectionHandlingUtils.commit(
+            ccc.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient(),
+            results,
+            slice.get(),
+            parentShardLeader);
         t.stop();
       }
 
@@ -862,14 +870,15 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
                 SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params)
             .process(cloudManager.getSolrClient());
 
-    Number size = (Number) rsp.getResponse().findRecursive("metrics", indexSizeMetricName);
+    Number size = (Number) rsp.getResponse()._get(List.of("metrics", indexSizeMetricName), null);
     if (size == null) {
       log.warn("cannot verify information for parent shard leader");
       return;
     }
     double indexSize = size.doubleValue();
 
-    Number freeSize = (Number) rsp.getResponse().findRecursive("metrics", freeDiskSpaceMetricName);
+    Number freeSize =
+        (Number) rsp.getResponse()._get(List.of("metrics", freeDiskSpaceMetricName), null);
     if (freeSize == null) {
       log.warn("missing node disk space information for parent shard leader");
       return;

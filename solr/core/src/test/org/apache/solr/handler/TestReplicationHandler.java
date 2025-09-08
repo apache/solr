@@ -1556,10 +1556,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     { // initial request w/o any committed docs
       final String backupName = "empty_backup1";
-      final GenericSolrRequest req =
+      final var req =
           new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
+                  SolrRequest.METHOD.POST,
                   "/replication",
+                  SolrRequest.SolrRequestType.ADMIN,
                   params("command", "backup", "location", backupDir.toString(), "name", backupName))
               .setRequiresCollection(true);
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
@@ -1579,10 +1580,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     { // second backup w/uncommitted doc
       final String backupName = "empty_backup2";
-      final GenericSolrRequest req =
+      final var req =
           new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
+                  SolrRequest.METHOD.POST,
                   "/replication",
+                  SolrRequest.SolrRequestType.ADMIN,
                   params("command", "backup", "location", backupDir.toString(), "name", backupName))
               .setRequiresCollection(true);
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);

@@ -212,7 +212,7 @@ public class MiniClusterState {
       System.setProperty("pkiHandlerPrivateKeyPath", "");
       System.setProperty("pkiHandlerPublicKeyPath", "");
 
-      System.setProperty("solr.default.confdir", "../server/solr/configsets/_default");
+      System.setProperty("solr.configset.default.confdir", "../server/solr/configsets/_default");
 
       this.random = new SplittableRandom(BaseBenchState.getRandomSeed());
 
