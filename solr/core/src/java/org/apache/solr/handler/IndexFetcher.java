@@ -103,6 +103,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.IOUtils;
@@ -341,18 +342,21 @@ public class IndexFetcher {
     return toReturn;
   }
 
+  private GenericSolrRequest createReplicationHandlerRequest(SolrParams solrParams) {
+    return new GenericSolrRequest(
+            SolrRequest.METHOD.GET,
+            ReplicationHandler.PATH,
+            SolrRequest.SolrRequestType.ADMIN,
+            solrParams)
+        .setRequiresCollection(true);
+  }
+
   /** Gets the latest commit version and generation from the leader */
   public NamedList<Object> getLatestVersion() throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
     params.set(CommonParams.WT, JAVABIN);
-    var req =
-        new GenericSolrRequest(
-                SolrRequest.METHOD.GET,
-                ReplicationHandler.PATH,
-                SolrRequest.SolrRequestType.ADMIN,
-                params)
-            .setRequiresCollection(true);
+    var req = createReplicationHandlerRequest(params);
     try {
       return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
     } catch (SolrServerException e) {
@@ -370,13 +374,7 @@ public class IndexFetcher {
     params.set(COMMAND, CMD_GET_FILE_LIST);
     params.set(GENERATION, String.valueOf(gen));
     params.set(CommonParams.WT, JAVABIN);
-    var req =
-        new GenericSolrRequest(
-                SolrRequest.METHOD.GET,
-                ReplicationHandler.PATH,
-                SolrRequest.SolrRequestType.ADMIN,
-                params)
-            .setRequiresCollection(true);
+    var req = createReplicationHandlerRequest(params);
     try {
       NamedList<?> response =
           solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
@@ -1907,13 +1905,7 @@ public class IndexFetcher {
       NamedList<?> response;
       InputStream is = null;
       try {
-        var req =
-            new GenericSolrRequest(
-                    SolrRequest.METHOD.GET,
-                    ReplicationHandler.PATH,
-                    SolrRequest.SolrRequestType.ADMIN,
-                    params)
-                .setRequiresCollection(true);
+        var req = createReplicationHandlerRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
         response = solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
@@ -2058,13 +2050,7 @@ public class IndexFetcher {
     params.set(COMMAND, CMD_DETAILS);
     params.set("follower", false);
 
-    var request =
-        new GenericSolrRequest(
-                SolrRequest.METHOD.GET,
-                ReplicationHandler.PATH,
-                SolrRequest.SolrRequestType.ADMIN,
-                params)
-            .setRequiresCollection(true);
+    var request = createReplicationHandlerRequest(params);
     return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, request).getResponse();
   }
 

@@ -48,6 +48,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -55,6 +56,7 @@ import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.ReplicationApi;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -217,19 +219,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return details;
   }
 
-  private NamedList<Object> getIndexVersion(SolrClient s) throws Exception {
+  private IndexVersionResponse getIndexVersion(SolrClient s, String coreName) throws Exception {
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("command", "indexversion");
-    params.set("_trace", "getIndexVersion");
-    var req =
-        new GenericSolrRequest(
-                SolrRequest.METHOD.GET, ReplicationHandler.PATH, SolrRequestType.ADMIN, params)
-            .setRequiresCollection(true);
-    NamedList<Object> res = s.request(req);
-    assertReplicationResponseSucceeded(res);
-
-    return res;
+    final var req = new ReplicationApi.FetchIndexVersion(coreName);
+    final var response = req.process(s);
+    assertReplicationResponseSucceeded(response);
+    return response;
   }
 
   private void reloadCore(JettySolrRunner jettySolrRunner, String core) throws Exception {
@@ -1282,11 +1277,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
     assertNull(cmp);
 
-    Object version = getIndexVersion(leaderClient).get("indexversion");
+    Long version = getIndexVersion(leaderClient, DEFAULT_TEST_CORENAME).indexVersion;
 
     reloadCore(leaderJetty, DEFAULT_TEST_COLLECTION_NAME);
 
-    assertEquals(version, getIndexVersion(leaderClient).get("indexversion"));
+    assertEquals(version, getIndexVersion(leaderClient, DEFAULT_TEST_CORENAME).indexVersion);
 
     index(leaderClient, "id", docs + 10, "name", "name = 1");
     index(leaderClient, "id", docs + 20, "name", "name = 2");
@@ -1837,5 +1832,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertNotNull("null response from server", response);
     assertNotNull("Expected replication response to have 'status' field", response.get("status"));
     assertEquals("OK", response.get("status"));
+  }
+
+  private void assertReplicationResponseSucceeded(IndexVersionResponse response) {
+    assertNotNull("null response from server", response);
+    assertNotNull("Expected replication response to have 'status' field", response.status);
+    assertEquals("OK", response.status);
   }
 }
