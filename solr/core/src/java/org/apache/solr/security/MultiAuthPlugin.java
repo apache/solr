@@ -27,9 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpRequest;
-import org.apache.http.protocol.HttpContext;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
@@ -43,6 +40,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.api.ModifyMultiPluginAuthConfigAPI;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.http.HttpHeader;
 
 /**
  * Authentication plugin that supports multiple Authorization schemes, such as Bearer and Basic. The
@@ -191,7 +189,7 @@ public class MultiAuthPlugin extends AuthenticationPlugin
 
   private void addWWWAuthenticateHeaders(HttpServletResponse response) {
     for (String wwwAuthHeader : WWWAuthenticateHeaders) {
-      response.addHeader(HttpHeaders.WWW_AUTHENTICATE, wwwAuthHeader);
+      response.addHeader(HttpHeader.WWW_AUTHENTICATE.asString(), wwwAuthHeader);
     }
   }
 
@@ -270,16 +268,6 @@ public class MultiAuthPlugin extends AuthenticationPlugin
       plugin.closeRequest();
       pluginInRequest.remove();
     }
-  }
-
-  @Override
-  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
-    for (AuthenticationPlugin plugin : pluginMap.values()) {
-      if (plugin.interceptInternodeRequest(httpRequest, httpContext)) {
-        return true; // first one to fire wins
-      }
-    }
-    return false;
   }
 
   @Override

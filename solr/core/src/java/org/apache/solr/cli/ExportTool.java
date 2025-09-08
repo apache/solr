@@ -264,8 +264,10 @@ public class ExportTool extends ToolBase {
               new GenericSolrRequest(
                       SolrRequest.METHOD.GET,
                       "/schema/uniquekey",
-                      SolrParams.of("collection", coll))
-                  .setRequiresCollection(true));
+                      SolrRequest.SolrRequestType.ADMIN,
+                      SolrParams.of())
+                  .setRequiresCollection(true),
+              coll);
       uniqueKey = (String) response.get("uniqueKey");
     }
 
