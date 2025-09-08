@@ -17,11 +17,10 @@
 package org.apache.solr.blockcache;
 
 import io.opentelemetry.api.common.Attributes;
-import java.math.BigDecimal;
-import java.util.Map;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.After;
@@ -32,27 +31,19 @@ public class BufferStoreTest extends SolrTestCase {
   private static final int blockSize = 1024;
 
   private Metrics metrics;
-  private MetricsMap metricsMap;
+  private SolrMetricManager metricManager;
+  private String registry;
 
   private Store store;
 
   @Before
   public void setup() {
     metrics = new Metrics();
-    SolrMetricManager metricManager = new SolrMetricManager();
-    String registry = TestUtil.randomSimpleString(random(), 2, 10);
+    metricManager = new SolrMetricManager();
+    registry = TestUtil.randomSimpleString(random(), 2, 10);
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
-    // TODO SOLR-17458: Fix test later
     metrics.initializeMetrics(solrMetricsContext, Attributes.empty(), scope);
-    metricsMap =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper)
-                    metricManager
-                        .registry(registry)
-                        .getMetrics()
-                        .get("CACHE." + scope + ".hdfsBlockCache"))
-                .getGauge();
     BufferStore.initNewBuffer(blockSize, blockSize, metrics);
     store = BufferStore.instance(blockSize);
   }
@@ -99,19 +90,35 @@ public class BufferStoreTest extends SolrTestCase {
    * @param lost whether buffers should have been lost since the last call
    */
   private void assertGaugeMetricsChanged(boolean allocated, boolean lost) {
-    Map<String, Object> stats = metricsMap.getValue();
+    var gauge =
+        metricManager.getPrometheusMetricReader(registry).collect().stream()
+            .filter(ms -> ms.getMetadata().getPrometheusName().equals("solr_buffer_cache_stats"))
+            .map(GaugeSnapshot.class::cast)
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Missing gauge metric solr_buffer_cache_stats"));
 
+    var actualAllocatedValue = getBufferCacheStatsValue(gauge, "allocations");
+    var actualLostValue = getBufferCacheStatsValue(gauge, "lost");
     assertEquals(
-        "Buffer allocation metric not updating correctly.",
-        allocated,
-        isMetricPositive(stats, "buffercache.allocations"));
-    assertEquals(
-        "Buffer lost metric not updating correctly.",
-        lost,
-        isMetricPositive(stats, "buffercache.lost"));
+        "Buffer allocation metric not updating correctly.", allocated, actualAllocatedValue > 0);
+    assertEquals("Buffer allocation metric not updating correctly.", lost, actualLostValue > 0);
   }
 
-  private boolean isMetricPositive(Map<String, Object> stats, String metric) {
-    return new BigDecimal(stats.get(metric).toString()).compareTo(BigDecimal.ZERO) > 0;
+  private Double getBufferCacheStatsValue(GaugeSnapshot gaugeSnapshot, String type) {
+    return gaugeSnapshot.getDataPoints().stream()
+        .filter(
+            (dp) ->
+                dp.getLabels()
+                    .equals(
+                        Labels.of(
+                            "category",
+                            "CACHE",
+                            "otel_scope_name",
+                            "org.apache.solr",
+                            "type",
+                            type)))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("Missing type=" + type + " label on metric"))
+        .getValue();
   }
 }

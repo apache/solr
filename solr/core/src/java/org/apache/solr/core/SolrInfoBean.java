@@ -39,6 +39,7 @@ public interface SolrInfoBean extends SolrMetricProducer {
     DIRECTORY,
     HTTP,
     SECURITY,
+    OVERSEER,
     OTHER
   }
 
