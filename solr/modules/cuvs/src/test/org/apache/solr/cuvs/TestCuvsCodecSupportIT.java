@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cuvs_lucene;
+package org.apache.solr.cuvs;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -51,8 +51,8 @@ public class TestCuvsCodecSupportIT extends SolrTestCaseJ4 {
   private static final int TOPK = 5;
   private static final String ID_FIELD = "id";
   private static final String VECTOR_FIELD = "article_vector";
-  private static final String SOLRCONFIG_XML = "solrconfig_CuvsCodec.xml";
-  private static final String SCHEMA_XML = "schema-CuvsCodec.xml";
+  private static final String SOLRCONFIG_XML = "solrconfig.xml";
+  private static final String SCHEMA_XML = "schema.xml";
   private static final String COLLECTION = "collection1";
   private static final String CONF_DIR = COLLECTION + "/conf";
 
@@ -77,7 +77,7 @@ public class TestCuvsCodecSupportIT extends SolrTestCaseJ4 {
     String codecFactory = config.get("codecFactory").attr("class");
     assertEquals(
         "Unexpected solrconfig codec factory",
-        "org.apache.solr.cuvs_lucene.CuvsCodecFactory",
+        "org.apache.solr.cuvs.CuvsCodecFactory",
         codecFactory);
     assertEquals("Unexpected core codec", "Lucene101", solrCore.getCodec().getName());
 
@@ -102,10 +102,11 @@ public class TestCuvsCodecSupportIT extends SolrTestCaseJ4 {
     List<Integer> res = new ArrayList<Integer>();
     int numResults = results.scoreDocs.length;
     for (int i = 0; i < numResults; i++) {
-      ScoreDoc scoreDoc = results.scoreDocs[i];
-      Document doc = searcher.storedFields().document(scoreDoc.doc);
+      ScoreDoc sd = results.scoreDocs[i];
+      Document doc = searcher.storedFields().document(sd.doc);
+      int r = i + 1;
       if (log.isInfoEnabled()) {
-        log.info("Rank {}: doc {} (id={}), score: {}");
+        log.info("Rank {}: doc {} (id={}), score: {}", r, sd.doc, doc.get("id"), sd.score);
       }
       res.add(Integer.valueOf(doc.get("id")));
     }

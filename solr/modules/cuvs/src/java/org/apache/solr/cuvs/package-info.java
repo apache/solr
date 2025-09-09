@@ -15,20 +15,5 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
-
-description = 'cuVS-Lucene plugin'
-
-dependencies {
-  implementation libs.cuvs.lucene
-  implementation project(':solr:core')
-  implementation project(':solr:solrj')
-  implementation libs.apache.lucene.core
-  implementation libs.slf4j.api
-
-  testImplementation project(':solr:test-framework')
-  testImplementation libs.apache.lucene.testframework
-  testImplementation libs.junit.junit
-  testImplementation libs.commonsio.commonsio
-}
-
+/** TODO: Add documentation here... */
+package org.apache.solr.cuvs;

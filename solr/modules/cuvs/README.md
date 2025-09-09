@@ -15,7 +15,7 @@
   limitations under the License.
 -->
 
-Welcome to Apache Solr cuVS-Lucene plugin!
+Welcome to Apache Solr cuVS plugin!
 ========
 
 # TODO: To add readme content here.
