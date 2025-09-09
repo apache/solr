@@ -61,7 +61,7 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
     }
 
     QueryResponse rsp =
-        queryServer(
+        queryRandomShard(
             params(
                 "q",
                 id_s1 + ":" + docid,
@@ -114,7 +114,7 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
 
     for (int group = 1; group <= numGroups; ++group) {
       QueryResponse rsp =
-          queryServer(
+          queryRandomShard(
               params(
                   "q",
                   group_ti1 + ":" + group + " AND " + id_s1 + ":[* TO *]",
