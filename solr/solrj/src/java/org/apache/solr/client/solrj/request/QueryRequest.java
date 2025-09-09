@@ -23,6 +23,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
+ * For use with Solr's {@code SearchHandler}, generally at "/select". For other handlers, try {@link
+ * GenericSolrRequest}.
+ *
  * @since solr 1.3
  */
 public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> {

@@ -81,14 +81,6 @@ public class DistributedClusterStateUpdater {
    */
   public DistributedClusterStateUpdater(boolean useDistributedStateUpdate) {
     this.useDistributedStateUpdate = useDistributedStateUpdate;
-    if (log.isInfoEnabled()) {
-      log.info(
-          "Creating DistributedClusterStateUpdater with useDistributedStateUpdate="
-              + useDistributedStateUpdate
-              + ". Solr will be using "
-              + (useDistributedStateUpdate ? "distributed" : "Overseer based")
-              + " cluster state updates."); // nowarn
-    }
   }
 
   /**

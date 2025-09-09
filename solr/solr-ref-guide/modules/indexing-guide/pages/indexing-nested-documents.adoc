@@ -243,7 +243,7 @@ Preferably, you will also define `\_nest_path_` which adds features and ease-of-
 [source,xml]
 ----
 <fieldType name="_nest_path_" class="solr.NestPathField" />
-<field name="_nest_path_" type="_nest_path_" />`
+<field name="_nest_path_" type="_nest_path_" />
 ----
 
 * Solr automatically populates this field for any child document but not root documents.
