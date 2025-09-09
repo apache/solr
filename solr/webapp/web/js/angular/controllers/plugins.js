@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('PluginsController',
-    function($scope, $rootScope, $routeParams, $location, Mbeans, Metrics, Constants) {
+    function($scope, $rootScope, $routeParams, $location, Metrics, Constants) {
         $scope.resetMenu("plugins", Constants.IS_CORE_PAGE);
 
         if ($routeParams.legacytype) {
@@ -66,16 +66,6 @@ solrAdminApp.controller('PluginsController',
             } else {
                 $location.search("entry", $scope.plugins.join(','));
             }
-        }
-
-        $scope.startRecording = function() {
-            $scope.isRecording = true;
-            $scope.refresh();
-        }
-
-        $scope.stopRecording = function() {
-            $scope.isRecording = false;
-            $scope.refresh();
         }
 
         $scope.refresh();
@@ -220,78 +210,11 @@ var getPluginTypesFromMetrics = function(metricsText, selected) {
     return keys;
 };
 
-var getPluginTypes = function(data, selected) {
-    var keys = [];
-    var mbeans = data["solr-mbeans"];
-    for (var i=0; i<mbeans.length; i+=2) {
-        var key = mbeans[i];
-        var lower = key.toLowerCase();
-        var plugins = getPlugins(mbeans[i+1]);
-        if (plugins.length == 0) continue;
-        keys.push({name: key,
-                   selected: lower == selected,
-                   changes: 0,
-                   lower: lower,
-                   plugins: plugins
-        });
-    }
-    return keys;
-};
-
-var getPlugins = function(data) {
-    var plugins = [];
-    for (var key in data) {
-        var pluginProperties = data[key];
-        var stats = pluginProperties.stats;
-        delete pluginProperties.stats;
-        for (var stat in stats) {
-            // add breaking space after a bracket or @ to handle wrap long lines:
-            stats[stat] = new String(stats[stat]).replace( /([\(@])/g, '$1&#8203;');
-        }
-        plugin = {name: key, changed: false, stats: stats, open:false};
-        plugin.properties = pluginProperties;
-        plugins.push(plugin);
-    }
-    plugins.sort(function(a,b) {return a.name > b.name});
-    return plugins;
-};
-
 var getSelectedType = function(types, selected) {
     if (selected) {
         for (var i in types) {
             if (types[i].lower == selected) {
                 return types[i];
-            }
-        }
-    }
-};
-
-var parseDelta = function(types, data) {
-
-    var getByName = function(list, name) {
-        for (var i in list) {
-            if (list[i].name == name) return list[i];
-        }
-    }
-
-    var mbeans = data["solr-mbeans"]
-    for (var i=0; i<mbeans.length; i+=2) {
-        var typeName = mbeans[i];
-        var type = getByName(types, typeName);
-        var plugins = mbeans[i+1];
-        for (var key in plugins) {
-            var changedPlugin = plugins[key];
-            if (changedPlugin._changed_) {
-                var plugin = getByName(type.plugins, key);
-                var stats = changedPlugin.stats;
-                delete changedPlugin.stats;
-                plugin.properties = changedPlugin;
-                for (var stat in stats) {
-                    // add breaking space after a bracket or @ to handle wrap long lines:
-                    plugin.stats[stat] = new String(stats[stat]).replace( /([\(@])/g, '$1&#8203;');
-                }
-                plugin.changed = true;
-                type.changes++;
             }
         }
     }

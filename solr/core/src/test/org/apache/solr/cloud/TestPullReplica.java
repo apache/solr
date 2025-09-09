@@ -54,10 +54,10 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
@@ -310,25 +310,26 @@ public class TestPullReplica extends SolrCloudTestCase {
               : s.getReplicas(EnumSet.of(Replica.Type.PULL));
       waitForNumDocsInAllReplicas(numDocs, pullReplicas);
 
-      for (Replica r : pullReplicas) {
-        JettySolrRunner jetty =
-            cluster.getJettySolrRunners().stream()
-                .filter(j -> j.getBaseUrl().toString().equals(r.getBaseUrl()))
-                .findFirst()
-                .orElse(null);
-        assertNotNull("Could not find jetty for replica " + r, jetty);
-
-        try (SolrCore core = jetty.getCoreContainer().getCore(r.getCoreName())) {
-          var addOpsDatapoint =
-              SolrMetricTestUtils.getCounterDatapoint(
-                  core,
-                  "solr_core_update_committed_ops",
-                  SolrMetricTestUtils.newCloudLabelsBuilder(core)
-                      .label("category", "UPDATE")
-                      .label("ops", "adds")
-                      .build());
-          // The adds gauge metric should be null for pull replicas since they don't process adds
-          assertNull(addOpsDatapoint);
+      for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+        CoreContainer cc = jetty.getCoreContainer();
+        for (String coreName : cc.getAllCoreNames()) {
+          try (SolrCore core = cc.getCore(coreName)) {
+            var addOpsDatapoint =
+                org.apache.solr.util.SolrMetricTestUtils.getCounterDatapoint(
+                    core,
+                    "solr_core_update_committed_ops",
+                    org.apache.solr.util.SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "UPDATE")
+                        .label("ops", "adds")
+                        .build());
+            // The adds gauge metric should be null for pull replicas since they don't process adds
+            if ((core.getCoreDescriptor().getCloudDescriptor().getReplicaType()
+                == Replica.Type.PULL)) {
+              assertNull(addOpsDatapoint);
+            } else {
+              assertNotNull(addOpsDatapoint);
+            }
+          }
         }
       }
 

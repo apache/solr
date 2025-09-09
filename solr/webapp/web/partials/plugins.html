@@ -53,20 +53,9 @@ limitations under the License.
                 <span ng-show="typeObj.changes">{{typeObj.changes}}</span>
             </a>
         </li>
-        <li class="PLUGINCHANGES"><a ng-click="startRecording()">Watch Changes</a></li>
         <li class="RELOAD"><a ng-click="refresh()">Refresh Values</a></li>
         <li class="NOTE"><p>NOTE: Metrics are displayed in Prometheus format. Full metrics can be accessed via /admin/metrics handler.</p></li>
     </ul>
-  </div>
-
-  <div id="recording" ng-show="isRecording">
-    <div class="wrapper clearfix">
-
-      <p class="loader">Watching for Changes</p>
-      <button class="primary" ng-click="stopRecording()">Stop &amp; Show Changes</button>
-
-    </div>
-    <div id="blockUI"></div>
   </div>
 
 </div>

@@ -39,10 +39,11 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.util.SecurityJson;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -102,36 +103,36 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       waitForNumDocsInAllReplicas(
           numDocs, pullReplicas, "*:*", SecurityJson.USER, SecurityJson.PASS);
 
-      for (Replica r : pullReplicas) {
-        JettySolrRunner jetty =
-            cluster.getJettySolrRunners().stream()
-                .filter(j -> j.getBaseUrl().toString().equals(r.getBaseUrl()))
-                .findFirst()
-                .orElse(null);
-        assertNotNull("Could not find jetty for replica " + r, jetty);
-
-        try (SolrCore core = jetty.getCoreContainer().getCore(r.getCoreName())) {
-          // Check that adds gauge metric is null/0 for pull replicas
-          var addOpsDatapoint =
-              SolrMetricTestUtils.getCounterDatapoint(
-                  core,
-                  "solr_core_update_committed_ops",
-                  SolrMetricTestUtils.newCloudLabelsBuilder(core)
-                      .label("category", "UPDATE")
-                      .label("ops", "adds")
-                      .build());
-          // the 'adds' metric is a gauge, which is null for PULL replicas
-          assertNull("Replicas shouldn't process the add document request", addOpsDatapoint);
-          var cumulativeAddsDatapoint =
-              SolrMetricTestUtils.getGaugeDatapoint(
-                  core,
-                  "solr_core_update_cumulative_ops",
-                  SolrMetricTestUtils.newCloudLabelsBuilder(core)
-                      .label("category", "UPDATE")
-                      .label("ops", "adds")
-                      .build());
-          assertNull(
-              "Replicas shouldn't process the add document request", cumulativeAddsDatapoint);
+      for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+        CoreContainer cc = jetty.getCoreContainer();
+        for (String coreName : cc.getAllCoreNames()) {
+          try (SolrCore core = cc.getCore(coreName)) {
+            var addOpsDatapoint =
+                org.apache.solr.util.SolrMetricTestUtils.getCounterDatapoint(
+                    core,
+                    "solr_core_update_committed_ops",
+                    org.apache.solr.util.SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "UPDATE")
+                        .label("ops", "adds")
+                        .build());
+            var cumulativeAddsDatapoint =
+                SolrMetricTestUtils.getGaugeDatapoint(
+                    core,
+                    "solr_core_update_cumulative_ops",
+                    SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "UPDATE")
+                        .label("ops", "adds")
+                        .build());
+            // The adds gauge metric should be null for pull replicas since they don't process adds
+            if ((core.getCoreDescriptor().getCloudDescriptor().getReplicaType()
+                == Replica.Type.PULL)) {
+              assertNull(addOpsDatapoint);
+              assertNull(cumulativeAddsDatapoint);
+            } else {
+              assertNotNull(addOpsDatapoint);
+              assertNotNull(cumulativeAddsDatapoint);
+            }
+          }
         }
       }
     }
