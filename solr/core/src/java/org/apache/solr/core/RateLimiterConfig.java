@@ -32,6 +32,14 @@ public class RateLimiterConfig {
   public final int allowedRequests;
   public final boolean isSlotBorrowingEnabled;
   public final int guaranteedSlotsThreshold;
+
+  /**
+   * AllowedRequests represents the total number of concurrent requests allowed. Background requests
+   * are only permitted when the number of active requests is below the
+   * backgroundRequestAdmitThreshold.
+   */
+  public final int backgroundRequestAdmitThreshold;
+
   public final boolean priorityBasedEnabled;
 
   /**
@@ -51,7 +59,8 @@ public class RateLimiterConfig {
       long waitForSlotAcquisition,
       int allowedRequests,
       boolean isSlotBorrowingEnabled,
-      boolean priorityBasedEnabled) {
+      boolean priorityBasedEnabled,
+      int allowedBackgroundRequests) {
     this(
         requestType,
         makePayload(
@@ -60,7 +69,8 @@ public class RateLimiterConfig {
             waitForSlotAcquisition,
             allowedRequests,
             isSlotBorrowingEnabled,
-            priorityBasedEnabled));
+            priorityBasedEnabled,
+            allowedBackgroundRequests));
   }
 
   private static RateLimiterPayload makePayload(
@@ -69,7 +79,8 @@ public class RateLimiterConfig {
       long waitForSlotAcquisition,
       int allowedRequests,
       boolean isSlotBorrowingEnabled,
-      boolean priorityBasedEnabled) {
+      boolean priorityBasedEnabled,
+      int allowedBackgroundRequests) {
     RateLimiterPayload ret = new RateLimiterPayload();
     ret.enabled = isEnabled;
     ret.allowedRequests = allowedRequests;
@@ -77,6 +88,7 @@ public class RateLimiterConfig {
     ret.slotBorrowingEnabled = isSlotBorrowingEnabled;
     ret.slotAcquisitionTimeoutInMS = Math.toIntExact(waitForSlotAcquisition);
     ret.priorityBasedEnabled = priorityBasedEnabled;
+    ret.backgroundRequestAdmitThreshold = allowedBackgroundRequests;
     return ret;
   }
 
@@ -106,6 +118,11 @@ public class RateLimiterConfig {
     priorityBasedEnabled =
         definition.priorityBasedEnabled == null ? false : definition.priorityBasedEnabled;
 
+    backgroundRequestAdmitThreshold =
+        definition.backgroundRequestAdmitThreshold == null
+            ? this.allowedRequests
+            : definition.backgroundRequestAdmitThreshold;
+
     this.definition = definition;
   }
 
@@ -134,6 +151,7 @@ public class RateLimiterConfig {
     sb.append(", borrowEnabled=").append(isSlotBorrowingEnabled);
     sb.append(", waitForSlotMillis=").append(waitForSlotAcquisition);
     sb.append(", priorityBasedEnabled=").append(priorityBasedEnabled);
+    sb.append(", backgroundRequestAdmitThreshold=").append(backgroundRequestAdmitThreshold);
     return sb.append('}').toString();
   }
 }
