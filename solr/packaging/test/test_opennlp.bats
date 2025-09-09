@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  
+
 }
 
 teardown_file() {
@@ -38,35 +38,35 @@ teardown() {
 
 # This BATS style test is really just to help explore the space of Modern NLP in
 # Apache Solr, versus a "true" integration test that I want to have run regularly.
-# On the other hand, since integrationg NLP requires a lot of steps, maybe having this
+# On the other hand, since integrating NLP requires a lot of steps, maybe having this
 # long test as an "integration" test is something we decide is okay?
 # I also have dreams of incorporating this as code snippets in a Tutorial via the ascii doc tags
 # like we use for the SolrJ code snippets.  That way we know the snippets continue to work!
 @test "Check lifecycle of sentiment classification" {
-  pip3 install transformers onnx onnxruntime torch "numpy<2"
-  python3 -m transformers.onnx --opset 14 -m nlptown/bert-base-multilingual-uncased-sentiment --feature sequence-classification ${SOLR_TIP}/models/sentiment
-  
-  curl --insecure --output ${SOLR_TIP}/models/sentiment/vocab.txt https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment/resolve/main/vocab.txt
-  
-  run ls -alh ${SOLR_TIP}/modules/analysis-extras/lib  
+
+  echo "Downloading onnx model and vocab..."
+  wget -O ${SOLR_TIP}/models/sentiment/model.onnx https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/resolve/main/onnx/model_quantized.onnx
+  wget -O ${SOLR_TIP}/models/sentiment/vocab.txt https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/raw/main/vocab.txt
+
+  run ls -alh ${SOLR_TIP}/modules/analysis-extras/lib
   refute_output --partial "onnxruntime_gpu"
-  
+
     # Can't figure out magic policy stuff to allow loading ONNX, so disable security manager.
   export SOLR_SECURITY_MANAGER_ENABLED=false
-  
+
   solr start -m 4g -Dsolr.modules=analysis-extras -Denable.packages=true
   solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
-  
+
   run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
-  
+
   curl -X POST -H 'Content-type:application/json' --data-binary '{
     "add-field":{
       "name":"name",
       "type":"string",
       "stored":true }
   }' "http://localhost:${SOLR_PORT}/solr/COLL_NAME/schema"
-  
+
   curl -X POST -H 'Content-type:application/json' --data-binary '{
     "add-field":{
       "name":"name_sentiment",
@@ -74,12 +74,12 @@ teardown() {
       "stored":true }
   }' "http://localhost:${SOLR_PORT}/solr/COLL_NAME/schema"
 
-  run curl --data-binary @${SOLR_TIP}/models/sentiment/vocab.txt -X PUT  "http://localhost:${SOLR_PORT}/api/cluster/filestore/files/models/sentiment/vocab.txt"
+  run curl --data-binary @${SOLR_TIP}/models/sentiment/vocab.txt -X PUT "http://localhost:${SOLR_PORT}/api/cluster/filestore/files/models/sentiment/vocab.txt"
   assert_output --partial '"status":0'
-  
-  run curl --data-binary @${SOLR_TIP}/models/sentiment/model.onnx -X PUT  "http://localhost:${SOLR_PORT}/api/cluster/filestore/files/models/sentiment/model.onnx"
+
+  run curl --data-binary @${SOLR_TIP}/models/sentiment/model.onnx -X PUT "http://localhost:${SOLR_PORT}/api/cluster/filestore/files/models/sentiment/model.onnx"
   assert_output --partial '"status":0'
-    
+
   run curl -X POST -H 'Content-type:application/json' -d '{
     "add-updateprocessor": {
       "name": "sentimentClassifier",
@@ -91,23 +91,23 @@ teardown() {
     }
   }' "http://localhost:${SOLR_PORT}/solr/COLL_NAME/config"
   assert_output --partial '"status":0'
-  
-  run curl -X POST -H 'Content-type:application/json'd  -d '[
+
+  run curl -X POST -H 'Content-type:application/json' -d '[
     {
       "id":"good",
-      "name" : "Jeff, i am so glad you came to this conference."
+      "name" : "that was an awesome movie!"
     },
     {
       "id":"bad",
-      "name" : "The name of this conference is really really terrible to say."
+      "name" : "that movie was bad and terrible"
     }
   ]' "http://localhost:${SOLR_PORT}/solr/COLL_NAME/update/json?processor=sentimentClassifier&commit=true"
-  
+
   assert_output --partial '"status":0'
-  
+
   run curl -X GET "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=id:good"
   assert_output --partial '"name_sentiment":"very good"'
-  
+
   run curl -X GET "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=id:bad"
   assert_output --partial '"name_sentiment":"very bad"'
 }
