@@ -32,6 +32,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.CacheKey;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.monitor.Visitors.QueryTermFilterVisitor;
 import org.apache.lucene.search.IndexSearcher;
@@ -62,8 +65,6 @@ public class DefaultSavedSearchCache extends SolrCacheBase
         SavedSearchCache,
         RemovalListener<String, VersionedQueryCacheEntry> {
 
-  private static final long START_HIGH_WATER_MARK = -1;
-
   private final AtomicReference<CurrentStats> currentStats =
       new AtomicReference<>(CurrentStats.init());
 
@@ -79,7 +80,8 @@ public class DefaultSavedSearchCache extends SolrCacheBase
 
   private long docVisits;
   // only needs to be an approximation
-  private long versionHighWaterMark = START_HIGH_WATER_MARK;
+  private Cache<IndexReader.CacheKey, Long> maxVersionMap =
+      Caffeine.newBuilder().weakKeys().build();
   private int initialSize;
   private int maxSize;
   private int maxRamMB;
@@ -199,7 +201,7 @@ public class DefaultSavedSearchCache extends SolrCacheBase
           old instanceof DefaultSavedSearchCache ? (DefaultSavedSearchCache) old : null;
       if (oldDefaultSavedSearchCache != null) {
         mqCache = oldDefaultSavedSearchCache.mqCache;
-        versionHighWaterMark = oldDefaultSavedSearchCache.versionHighWaterMark;
+        maxVersionMap = oldDefaultSavedSearchCache.maxVersionMap;
       }
       if (regenerator != null) {
         long nanoStart = System.nanoTime();
@@ -216,7 +218,7 @@ public class DefaultSavedSearchCache extends SolrCacheBase
         cumulativeDocVisits = oldDefaultSavedSearchCache.cumulativeDocVisits + docVisits;
       }
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "could not boostrap cache", e);
+      throw new SolrException(ErrorCode.INVALID_STATE, "could not boostrap cache", e);
     }
   }
 
@@ -274,7 +276,6 @@ public class DefaultSavedSearchCache extends SolrCacheBase
               map.put(
                   "cumulative_generation_overhead",
                   rate(cumulativeGenerationTimeMs, cumulativeHits));
-              map.put("version_high_water_mark", String.valueOf(versionHighWaterMark));
               map.put("cumulative_doc_visits", cumulativeDocVisits);
             });
     solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
@@ -374,19 +375,19 @@ public class DefaultSavedSearchCache extends SolrCacheBase
       int batchSize = Math.min(MAX_BATCH_SIZE, cache.getInitialSize());
       boolean isDone = false;
       int countBasedBatches = cache.getInitialSize() / batchSize;
-      long targetInitialRam = cache.initialRamMB * 1024L * 1024L;
+      long targetInitialRam = ((DefaultSavedSearchCache) newCache).initialRamMB * 1024L * 1024L;
       long estimatedWeight = 0;
       SolrCore core = searcher.getCore();
       SavedSearchDecoder decoder = new SavedSearchDecoder(core);
-      long maxEncounteredVersion = cache.versionHighWaterMark;
       for (LeafReaderContext ctx : reader.leaves()) {
-        var leafSearcher = new IndexSearcher(ctx.reader());
+        LeafReader leafReader = ctx.reader();
+        CacheKey cacheKey = leafReader.getCoreCacheHelper().getKey();
+        long maxLeafVersion = cache.maxVersionMap.get(cacheKey, __ -> -1L);
         var topDocs =
-            leafSearcher.search(
-                    versionRangeQuery(cache.versionHighWaterMark), batchSize, VERSION_SORT)
+            new IndexSearcher(leafReader)
+                .search(versionRangeQuery(maxLeafVersion), batchSize, VERSION_SORT)
                 .scoreDocs;
         Arrays.sort(topDocs, (a, b) -> Long.compare(b.doc, a.doc));
-        long maxLeafVersion = -1;
         while (topDocs.length > 0 && !isDone) {
           SavedSearchDataValues dataValues =
               new SavedSearchDataValues(ctx, core.getLatestSchema().getUniqueKeyField().getName());
@@ -396,13 +397,13 @@ public class DefaultSavedSearchCache extends SolrCacheBase
               estimatedWeight += RamUsageEstimator.sizeOf(cacheEntry.entry.getMatchQuery());
               estimatedWeight += RamUsageEstimator.sizeOf(cacheEntry.entry.getId());
               long version = dataValues.getVersion();
-              maxEncounteredVersion = Math.max(maxEncounteredVersion, version);
               maxLeafVersion = Math.max(maxLeafVersion, version);
               cache.docVisits++;
             }
           }
           topDocs =
-              leafSearcher.search(versionRangeQuery(maxLeafVersion + 1), batchSize, VERSION_SORT)
+              new IndexSearcher(leafReader)
+                  .search(versionRangeQuery(maxLeafVersion + 1), batchSize, VERSION_SORT)
                   .scoreDocs;
           Arrays.sort(topDocs, (a, b) -> Long.compare(b.doc, a.doc));
           if (targetInitialRam > 0L) {
@@ -411,8 +412,8 @@ public class DefaultSavedSearchCache extends SolrCacheBase
             isDone = --countBasedBatches <= 0;
           }
         }
+        cache.maxVersionMap.put(cacheKey, maxLeafVersion);
       }
-      cache.versionHighWaterMark = Math.max(cache.versionHighWaterMark, maxEncounteredVersion);
       return false;
     }
 
