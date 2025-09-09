@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.util.stats;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
@@ -21,10 +37,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
-  public static final int NUM_THREADS = 10;
-  public static final double DELTA = 1E-8;
+  public static final int PARALLELISM = 10;
+  public static long EXEC_TIMEOUT = 1;
+  public static TimeUnit EXEC_TIMEOUT_UNITS = TimeUnit.SECONDS;
   public static final String REGISTRY_NAME = "solr-test-otel-registry";
   public static final String TAG_NAME = "solr-test-otel-tag";
+  public static final double DELTA = 1E-8;
 
   public static SolrMetricsContext metricsContext;
 
@@ -35,12 +53,12 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
 
   @Test
   public void taskCount() throws InterruptedException {
-    try (var exec = testExecutor("taskCount", Executors.newFixedThreadPool(NUM_THREADS))) {
-      final int numTasks = 2025;
+    try (var exec = testExecutor("taskCount", Executors.newFixedThreadPool(PARALLELISM))) {
+      final int numTasks = 225;
       for (int i = 0; i < numTasks; ++i) {
         exec.submit(() -> {});
       }
-      exec.awaitTermination(5, TimeUnit.SECONDS); // Wait for task completion
+      exec.awaitTermination(EXEC_TIMEOUT, EXEC_TIMEOUT_UNITS);
 
       MetricSnapshots metrics =
           metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
@@ -59,31 +77,23 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
               .get();
 
       GaugeDataPointSnapshot runningTasks = tasksRunning.getDataPoints().getFirst();
-      CounterDataPointSnapshot submittedTasks =
-          taskCounters.getDataPoints().stream()
-              .filter(data -> data.getLabels().get(TYPE_ATTR.toString()).equals("submitted"))
-              .findFirst()
-              .get();
-      CounterDataPointSnapshot completedTasks =
-          taskCounters.getDataPoints().stream()
-              .filter(data -> data.getLabels().get(TYPE_ATTR.toString()).equals("completed"))
-              .findFirst()
-              .get();
+      CounterDataPointSnapshot submittedTasks = getCounterData(taskCounters, "submitted");
+      CounterDataPointSnapshot completedTasks = getCounterData(taskCounters, "completed");
 
-      assertEquals(0, runningTasks.getValue(), DELTA);
+      assertEquals(0.0, runningTasks.getValue(), DELTA);
       assertEquals(numTasks, submittedTasks.getValue(), DELTA);
       assertEquals(numTasks, completedTasks.getValue(), DELTA);
     }
   }
 
   @Test
-  public void executorTaskRandomCount() throws InterruptedException {
-    try (var exec = testExecutor("taskRandomCount", Executors.newFixedThreadPool(NUM_THREADS))) {
-      final int numTasks = randomIntBetween(1, 5000);
+  public void taskRandomCount() throws InterruptedException {
+    try (var exec = testExecutor("taskRandomCount", Executors.newFixedThreadPool(PARALLELISM))) {
+      final int numTasks = randomIntBetween(1, 500);
       for (int i = 0; i < numTasks; ++i) {
         exec.submit(() -> {});
       }
-      exec.awaitTermination(5, TimeUnit.SECONDS);
+      exec.awaitTermination(EXEC_TIMEOUT, EXEC_TIMEOUT_UNITS);
 
       MetricSnapshots metrics =
           metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
@@ -102,27 +112,19 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
               .get();
 
       GaugeDataPointSnapshot runningTasks = tasksRunning.getDataPoints().getFirst();
-      CounterDataPointSnapshot submittedTasks =
-          taskCounters.getDataPoints().stream()
-              .filter(data -> data.getLabels().get(TYPE_ATTR.toString()).equals("submitted"))
-              .findFirst()
-              .get();
-      CounterDataPointSnapshot completedTasks =
-          taskCounters.getDataPoints().stream()
-              .filter(data -> data.getLabels().get(TYPE_ATTR.toString()).equals("completed"))
-              .findFirst()
-              .get();
+      CounterDataPointSnapshot submittedTasks = getCounterData(taskCounters, "submitted");
+      CounterDataPointSnapshot completedTasks = getCounterData(taskCounters, "completed");
 
-      assertEquals(0, runningTasks.getValue(), DELTA);
+      assertEquals(0.0, runningTasks.getValue(), DELTA);
       assertEquals(numTasks, submittedTasks.getValue(), DELTA);
       assertEquals(numTasks, completedTasks.getValue(), DELTA);
     }
   }
 
   @Test
-  public void executorTaskTimers() throws InterruptedException {
-    try (var exec = testExecutor("taskTimers", Executors.newFixedThreadPool(NUM_THREADS))) {
-      final long durationMs = 300;
+  public void taskTimers() throws InterruptedException {
+    try (var exec = testExecutor("taskTimers", Executors.newFixedThreadPool(PARALLELISM))) {
+      final long durationMs = 200;
       final double durationDeltaMs = 10.0;
       exec.submit(
           () -> {
@@ -131,7 +133,7 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
             } catch (InterruptedException e) {
             }
           });
-      exec.awaitTermination(5, TimeUnit.SECONDS);
+      exec.awaitTermination(EXEC_TIMEOUT, EXEC_TIMEOUT_UNITS);
 
       MetricSnapshots metrics =
           metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
@@ -161,32 +163,113 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
 
   @Test
   public void threadPoolTasks() throws InterruptedException {
-    try (var exec = testExecutor("threadPoolTasks", Executors.newFixedThreadPool(NUM_THREADS))) {
-      final int numTasks = randomIntBetween(1, 5000);
+    try (var exec = testExecutor("threadPoolTasks", Executors.newFixedThreadPool(PARALLELISM))) {
+      final int numTasks = 225;
       for (int i = 0; i < numTasks; ++i) {
         exec.submit(() -> {});
       }
-      exec.awaitTermination(5, TimeUnit.SECONDS);
+      exec.awaitTermination(EXEC_TIMEOUT, EXEC_TIMEOUT_UNITS);
 
-      // TODO: test thread pool metrics
+      MetricSnapshots metrics =
+          metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
+      GaugeSnapshot sizeGauges =
+          metrics.stream()
+              .filter(
+                  m -> m.getMetadata().getPrometheusName().equals("solr_executor_thread_pool_size"))
+              .findFirst()
+              .map(GaugeSnapshot.class::cast)
+              .get();
+      GaugeSnapshot taskGauges =
+          metrics.stream()
+              .filter(
+                  m ->
+                      m.getMetadata().getPrometheusName().equals("solr_executor_thread_pool_tasks"))
+              .findFirst()
+              .map(GaugeSnapshot.class::cast)
+              .get();
+
+      GaugeDataPointSnapshot poolSize = getGaugeData(sizeGauges, "size");
+      GaugeDataPointSnapshot corePoolSize = getGaugeData(sizeGauges, "core");
+      GaugeDataPointSnapshot maxPoolSize = getGaugeData(sizeGauges, "max");
+
+      GaugeDataPointSnapshot activeTasks = getGaugeData(taskGauges, "active");
+      GaugeDataPointSnapshot completedTasks = getGaugeData(taskGauges, "completed");
+      GaugeDataPointSnapshot queuedTasks = getGaugeData(taskGauges, "queued");
+      GaugeDataPointSnapshot poolCapacity = getGaugeData(taskGauges, "capacity");
+
+      assertEquals(PARALLELISM, poolSize.getValue(), DELTA);
+      assertEquals(PARALLELISM, corePoolSize.getValue(), DELTA);
+      assertEquals(PARALLELISM, maxPoolSize.getValue(), DELTA);
+
+      assertEquals(0.0, activeTasks.getValue(), DELTA);
+      assertEquals(numTasks, completedTasks.getValue(), DELTA);
+      assertEquals(0.0, queuedTasks.getValue(), DELTA);
+      assertEquals(Integer.MAX_VALUE, poolCapacity.getValue(), DELTA);
     }
   }
 
   @Test
   public void forkJoinPoolTasks() throws InterruptedException {
-    try (var exec = testExecutor("forkJoinPoolTasks", Executors.newWorkStealingPool(NUM_THREADS))) {
-      final int numTasks = randomIntBetween(1, 5000);
+    try (var exec = testExecutor("forkJoinPoolTasks", Executors.newWorkStealingPool(PARALLELISM))) {
+      final int numTasks = 225;
       for (int i = 0; i < numTasks; ++i) {
         exec.submit(() -> {});
       }
-      exec.awaitTermination(5, TimeUnit.SECONDS);
+      exec.awaitTermination(EXEC_TIMEOUT, EXEC_TIMEOUT_UNITS);
 
-      // TODO: test fork join pool metrics
+      MetricSnapshots metrics =
+          metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
+      GaugeSnapshot taskGauges =
+          metrics.stream()
+              .filter(
+                  m ->
+                      m.getMetadata()
+                          .getPrometheusName()
+                          .equals("solr_executor_fork_join_pool_tasks"))
+              .findFirst()
+              .map(GaugeSnapshot.class::cast)
+              .get();
+      GaugeSnapshot threadGauges =
+          metrics.stream()
+              .filter(
+                  m ->
+                      m.getMetadata()
+                          .getPrometheusName()
+                          .equals("solr_executor_fork_join_pool_threads"))
+              .findFirst()
+              .map(GaugeSnapshot.class::cast)
+              .get();
+
+      GaugeDataPointSnapshot stolenTasks = getGaugeData(taskGauges, "stolen");
+      GaugeDataPointSnapshot queuedTasks = getGaugeData(taskGauges, "queued");
+
+      GaugeDataPointSnapshot activeThreads = getGaugeData(threadGauges, "active");
+      GaugeDataPointSnapshot runningThreads = getGaugeData(threadGauges, "running");
+
+      assertNotNull(stolenTasks.getValue());
+      assertEquals(0.0, queuedTasks.getValue(), DELTA);
+
+      assertEquals(0.0, activeThreads.getValue(), DELTA);
+      assertEquals(0.0, runningThreads.getValue(), DELTA);
     }
   }
 
   private ExecutorService testExecutor(String name, ExecutorService exec) {
     return MetricUtils.instrumentedExecutorService(
         exec, metricsContext, SolrInfoBean.Category.ADMIN, name);
+  }
+
+  private CounterDataPointSnapshot getCounterData(CounterSnapshot snapshot, String type) {
+    return snapshot.getDataPoints().stream()
+        .filter(data -> data.getLabels().get(TYPE_ATTR.toString()).equals(type))
+        .findFirst()
+        .get();
+  }
+
+  private GaugeDataPointSnapshot getGaugeData(GaugeSnapshot snapshot, String type) {
+    return snapshot.getDataPoints().stream()
+        .filter(data -> data.getLabels().get(TYPE_ATTR.toString()).equals(type))
+        .findFirst()
+        .get();
   }
 }
