@@ -95,33 +95,6 @@ public class SingleCoreSavedSearchTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void unsupportedFieldTest() {
-    String unsupportedField1 = "unsupported2_s";
-    String unsupportedField2 = "unsupported2_s";
-    var ex =
-        assertThrows(
-            SolrException.class,
-            () ->
-                addDoc(
-                    adoc(
-                        "id",
-                        "1",
-                        SavedSearchDataValues.MONITOR_QUERY,
-                        "content_s:test",
-                        unsupportedField1,
-                        "a",
-                        unsupportedField2,
-                        "b"),
-                    monitorChain));
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    String lowerCaseMessage = ex.getMessage().toLowerCase(Locale.ROOT);
-    assertTrue(lowerCaseMessage.contains("unsupported"));
-    assertTrue(lowerCaseMessage.contains("fields"));
-    assertTrue(lowerCaseMessage.contains(unsupportedField1));
-    assertTrue(lowerCaseMessage.contains(unsupportedField2));
-  }
-
-  @Test
   public void multiPassPresearcherTest() throws Exception {
     addDoc(
         adoc(

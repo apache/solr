@@ -124,18 +124,6 @@ public class SavedSearchUpdateProcessorFactory extends UpdateRequestProcessorFac
                 + getClass().getSimpleName()
                 + ".");
       }
-      var unsupportedFields =
-          solrInputDocument.getFieldNames().stream()
-              .filter(name -> !allowedFieldNames.contains(name))
-              .collect(Collectors.joining(", "));
-      if (!unsupportedFields.isEmpty()) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "Request contains fields not supported by "
-                + getClass().getSimpleName()
-                + ": "
-                + unsupportedFields);
-      }
       List<SolrInputDocument> children =
           Optional.of(queryFieldValue)
               .filter(String.class::isInstance)
