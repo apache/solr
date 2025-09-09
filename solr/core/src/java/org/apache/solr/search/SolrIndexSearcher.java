@@ -57,7 +57,6 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
@@ -784,8 +783,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   @Override
-  public void search(Query query, Collector collector)
-      throws IOException {
+  public void search(Query query, Collector collector) throws IOException {
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
     if (!queryLimits.isLimitsEnabled()) {
       // no timeout.  Pass through to super class
@@ -796,10 +794,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       //   that timedOut() might race with concurrent queries (dubious design).
       // So we need to make a new IndexSearcher instead of using "this".
       // Make sure to reuse the existing executor.
-      new IndexSearcher(reader, core.getCoreContainer().getIndexSearcherExecutor()) { // cheap, actually!
+      new IndexSearcher(
+          reader, core.getCoreContainer().getIndexSearcherExecutor()) { // cheap, actually!
         void searchWithTimeout() throws IOException {
           setTimeout(queryLimits); // Lucene's method name is less than ideal here...
-          // XXX Deprecated in Lucene 10, we should probably use search(Query, CollectorManager) instead
+          // XXX Deprecated in Lucene 10, we should probably use search(Query, CollectorManager)
+          // instead
           super.search(query, collector);
           if (timedOut()) {
             throw new QueryLimitsExceededException(
