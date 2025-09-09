@@ -1,20 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.apache.solr.llm.textvectorisation.update.processor;
 
 import org.apache.solr.common.SolrException;
@@ -32,52 +15,44 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 
-/**
- * Vectorises a textual field value and add the resulting vector to another field.
- *
- * <p>The parameters supported are:
- *
- * <pre class="prettyprint" >
- * &lt;processor class=&quot;solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory&quot;&gt;
- *   &lt;str name=&quot;inputField&quot;&gt;textualField&lt;/str&gt;
- *   &lt;str name=&quot;outputField&quot;&gt;vectorField&lt;/str&gt;
- *   &lt;str name=&quot;model&quot;&gt;textToVectorModel&lt;/str&gt;
- * &lt;/processor&gt;
- * </pre>
- *
- * *
- */
-public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFactory {
+
+public class LazyMultiFieldTextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   private static final String INPUT_FIELD_PARAM = "inputField";
+  private static final String ADDITIONAL_INPUT_FIELDS_PARAM = "additionalInputField";
   private static final String OUTPUT_FIELD_PARAM = "outputField";
   private static final String MODEL_NAME = "model";
 
   private String inputField;
   private String outputField;
   private String modelName;
-  private SolrParams params;
+  private String[] additionalInputFields;
 
   @Override
   public void init(final NamedList<?> args) {
-    params = args.toSolrParams();
+    SolrParams params = args.toSolrParams();
     RequiredSolrParams required = params.required();
     inputField = required.get(INPUT_FIELD_PARAM);
     outputField = required.get(OUTPUT_FIELD_PARAM);
     modelName = required.get(MODEL_NAME);
+    String inputFields = params.get(ADDITIONAL_INPUT_FIELDS_PARAM);
+    additionalInputFields = inputFields != null ? inputFields.split(",") : null;
   }
 
   @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     IndexSchema latestSchema = req.getCore().getLatestSchema();
-    if (!latestSchema.hasExplicitField(inputField)) {
+
+    if (!latestSchema.isDynamicField(inputField) && !latestSchema.hasExplicitField(inputField)) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + inputField + "\"");
     }
-    if (!latestSchema.hasExplicitField(outputField)) {
+
+    if (!latestSchema.isDynamicField(outputField) && !latestSchema.hasExplicitField(outputField)) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + outputField + "\"");
     }
+
     final SchemaField outputFieldSchema = latestSchema.getField(outputField);
     assertIsDenseVectorField(outputFieldSchema);
 
@@ -93,7 +68,8 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
               + ManagedTextToVectorModelStore.REST_END_POINT);
     }
 
-    return new TextToVectorUpdateProcessor(inputField, outputField, textToVector, req, next);
+    return new LazyMultiFieldTextToVectorUpdateProcessor(
+        inputField, additionalInputFields, outputField, textToVector, req, next);
   }
 
   protected void assertIsDenseVectorField(SchemaField schemaField) {
