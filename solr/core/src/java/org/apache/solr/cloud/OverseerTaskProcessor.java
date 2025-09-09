@@ -63,7 +63,8 @@ import org.slf4j.LoggerFactory;
 public class OverseerTaskProcessor implements Runnable, Closeable {
 
   /** Maximum number of overseer collection operations which can be executed concurrently */
-  public static final int MAX_PARALLEL_TASKS = 100;
+  public static final int MAX_PARALLEL_TASKS =
+      Integer.getInteger("solr.max.parallel.collection.tasks", 100);
 
   public static final int MAX_BLOCKED_TASKS = 1000;
 
