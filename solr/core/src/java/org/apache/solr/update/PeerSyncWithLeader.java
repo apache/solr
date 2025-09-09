@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.SolrCore;
@@ -75,7 +76,8 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     this.leaderUrl = leaderUrl;
     this.nUpdates = nUpdates;
 
-    this.doFingerprint = !"true".equals(System.getProperty("solr.disableFingerprint"));
+    this.doFingerprint =
+        EnvUtils.getPropertyAsBool("solr.index.replication.fingerprint.enabled", true);
     this.uhandler = core.getUpdateHandler();
     this.ulog = uhandler.getUpdateLog();
 

@@ -152,11 +152,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.httpClient = createHttpClient(builder);
       this.closeClient = true;
     }
+    // note: do not manipulate httpClient below this point; it could be a shared instance
+
     if (builder.listenerFactory != null) {
       this.listenerFactory.addAll(builder.listenerFactory);
     }
     updateDefaultMimeTypeForParser();
-    this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
     this.idleTimeoutMillis = builder.getIdleTimeoutMillis();
 
     try {
@@ -183,7 +184,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private void applyHttpClientBuilderFactory() {
     String factoryClassName =
-        System.getProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+        System.getProperty(SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
     if (factoryClassName != null) {
       log.debug("Using Http Builder Factory: {}", factoryClassName);
       HttpClientBuilderFactory factory;
@@ -291,7 +292,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     httpClient.setExecutor(this.executor);
     httpClient.setStrictEventOrdering(false);
     httpClient.setConnectBlocking(true);
-    httpClient.setFollowRedirects(false);
+    httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
     httpClient.setMaxRequestsQueuedPerDestination(
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
@@ -1134,7 +1135,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   /* package-private for testing */
   static SslContextFactory.Client getDefaultSslContextFactory() {
-    String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
+    String checkPeerNameStr = System.getProperty(SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME);
     boolean sslCheckPeerName = !"false".equalsIgnoreCase(checkPeerNameStr);
 
     SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(!sslCheckPeerName);
