@@ -38,6 +38,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.circuitbreaker.errorcode||503|Defines the HTTP error code returned when a circuit breaker is triggered.
 
+|solr.cloud.shardsplit.checkdiskspace.enabled|solr.shardSplit.checkDiskSpace.enabled|true|Controls whether to check for disk space before shard split
+
 |solr.cloud.prep.recovery.read.timeout.additional.ms|prepRecoveryReadTimeoutExtraWait|8000|Specifies additional milliseconds to wait during recovery read operations in SolrCloud mode.
 
 |solr.cloud.startup.delete.unknown.cores.enabled|solr.deleteUnknownCores|false|Controls whether unknown cores are deleted at startup in SolrCloud mode.
@@ -57,8 +59,6 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 |solr.filestore.filesize.max|max.file.store.size|100MB|Defines the maximum file size allowed in Solr's filestore.
 
 |solr.index.replication.fingerprint.enabled|!solr.disableFingerprint|true|Controls whether index fingerprinting for replication is disabled.
-
-|solr.index.shardsplit.checkdiskspace.enabled|solr.shardSplit.checkDiskSpace.enabled|true|Controls whether to check for disk space before shard split
 
 |solr.index.updatelog.enabled|enable.update.log|true (in default solrconfig.xml)|Controls whether the UpdateLog is enabled. The UpdateLog is required for atomic updates, real-time get, and transaction log replay.
 
