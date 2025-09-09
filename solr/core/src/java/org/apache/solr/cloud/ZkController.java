@@ -19,6 +19,9 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_NODE_NAME;
+import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_ROLES;
+import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.UNSUPPORTED_SOLR_XML;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
@@ -35,6 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,16 +56,17 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.curator.framework.api.ACLProvider;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
+import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -97,6 +102,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Compressor;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -113,7 +119,6 @@ import org.apache.solr.core.NodeRoles;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.component.HttpShardHandler;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
@@ -220,6 +225,8 @@ public class ZkController implements Closeable {
 
   private final DistributedClusterStateUpdater distributedClusterStateUpdater;
 
+  private final Optional<DistributedCollectionConfigSetCommandRunner> distributedCommandRunner;
+
   private LeaderElector overseerElector;
 
   private Map<String, ReplicateFromLeader> replicateFromLeaders = new ConcurrentHashMap<>();
@@ -300,10 +307,6 @@ public class ZkController implements Closeable {
 
     this.cloudConfig = cloudConfig;
 
-    // Use the configured way to do cluster state update (Overseer queue vs distributed)
-    distributedClusterStateUpdater =
-        new DistributedClusterStateUpdater(cloudConfig.getDistributedClusterStateUpdates());
-
     this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
 
     this.zkServerAddress = zkServerAddress;
@@ -379,6 +382,25 @@ public class ZkController implements Closeable {
               if (cc != null) cc.securityNodeChanged();
             });
 
+    // Now that zkStateReader is available, read OVERSEER_ENABLED.
+    // When overseerEnabled is false, both distributed features should be enabled
+    Boolean overseerEnabled =
+        zkStateReader.getClusterProperty(ZkStateReader.OVERSEER_ENABLED, null);
+    if (overseerEnabled == null) {
+      overseerEnabled = EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
+    }
+    if (overseerEnabled) {
+      log.info("The Overseer is enabled.  It will process all cluster commands & state updates.");
+    } else {
+      log.info(
+          "The Overseer is disabled.  Cluster commands & state updates will happen on any/all nodes.");
+    }
+    this.distributedClusterStateUpdater = new DistributedClusterStateUpdater(!overseerEnabled);
+    this.distributedCommandRunner =
+        !overseerEnabled
+            ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
+            : Optional.empty();
+
     init();
 
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
@@ -388,10 +410,7 @@ public class ZkController implements Closeable {
     }
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
-    final var client =
-        (Http2SolrClient)
-            ((HttpShardHandlerFactory) getCoreContainer().getShardHandlerFactory()).getClient();
-    this.sysPropsCacher = new NodesSysPropsCacher(client, zkStateReader);
+    this.sysPropsCacher = new NodesSysPropsCacher(cc.getDefaultHttpSolrClient(), zkStateReader);
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -594,6 +613,53 @@ public class ZkController implements Closeable {
     }
   }
 
+  /**
+   * Checks version compatibility with other nodes in the cluster. Refuses to start if there's a
+   * major.minor version difference between our Solr version and other nodes in the cluster. Note:
+   * uses live nodes.
+   */
+  private void checkClusterVersionCompatibility() throws InterruptedException, KeeperException {
+    Optional<SolrVersion> lowestVersion = zkStateReader.fetchLowestSolrVersion();
+    if (lowestVersion.isPresent()) {
+      SolrVersion ourVersion = SolrVersion.LATEST;
+      SolrVersion clusterVersion = lowestVersion.get();
+
+      if (ourVersion.lessThan(clusterVersion)) {
+        log.warn(
+            "Our Solr version {} is older than cluster version {}", ourVersion, clusterVersion);
+
+        if (EnvUtils.getPropertyAsBool("solr.cloud.downgrade.enabled", false)) {
+          return;
+        }
+
+        // Check major version compatibility
+        if (ourVersion.getMajorVersion() < clusterVersion.getMajorVersion()) {
+          String message =
+              String.format(
+                  Locale.ROOT,
+                  "Refusing to start Solr, since our version is lower than the lowest version currently running in the cluster. "
+                      + "Our version: %s, lowest version in cluster: %s.",
+                  ourVersion,
+                  clusterVersion);
+          throw new SolrException(ErrorCode.INVALID_STATE, message);
+        }
+
+        // Check minor version compatibility within the same major version
+        if (ourVersion.getMajorVersion() == clusterVersion.getMajorVersion()
+            && ourVersion.getMinorVersion() < clusterVersion.getMinorVersion()) {
+          String message =
+              String.format(
+                  Locale.ROOT,
+                  "Refusing to start Solr, since our version is lower than the lowest version currently running in the cluster. "
+                      + "Our version: %s, lowest version in cluster: %s.",
+                  ourVersion,
+                  clusterVersion);
+          throw new SolrException(ErrorCode.INVALID_STATE, message);
+        }
+      }
+    }
+  }
+
   public CloudSolrClient getSolrClient() {
     return getSolrCloudManager().getSolrClient();
   }
@@ -679,6 +745,22 @@ public class ZkController implements Closeable {
 
   public NodesSysPropsCacher getSysPropsCacher() {
     return sysPropsCacher;
+  }
+
+  /** Non-empty if the Collection API is executed in a distributed way (Overseer is disabled). */
+  public Optional<DistributedCollectionConfigSetCommandRunner> getDistributedCommandRunner() {
+    return this.distributedCommandRunner;
+  }
+
+  /** Waits for pending tasks to complete. Should be called before {@link #close()}. */
+  public void waitForPendingTasksToComplete() {
+    if (distributedCommandRunner.isPresent()) {
+      // Local (i.e. distributed) Collection API processing
+      distributedCommandRunner.get().stopAndWaitForPendingTasksToComplete();
+    } else {
+      // Overseer based processing
+      getOverseerCollectionQueue().allowOverseerPendingTasksToComplete();
+    }
   }
 
   private ContextKey closeExistingElectionContext(CoreDescriptor cd, boolean sessionExpired) {
@@ -779,6 +861,7 @@ public class ZkController implements Closeable {
     } finally {
 
       sysPropsCacher.close();
+
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudManager));
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudSolrClient));
 
@@ -997,8 +1080,11 @@ public class ZkController implements Closeable {
 
       checkForExistingEphemeralNode();
       registerLiveNodesListener();
+      checkClusterVersionCompatibility();
 
-      // start the overseer first as following code may need it's processing
+      // Start the overseer now since the following code may need it's processing.
+      // Note: even when using distributed processing, we still create an Overseer anyway since
+      //    cluster singleton processing is linked to the elected Overseer.
       if (!zkRunOnly) {
         overseerElector = new LeaderElector(zkClient);
         this.overseer =
@@ -1185,10 +1271,13 @@ public class ZkController implements Closeable {
 
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
-    log.info("Register node as live in ZooKeeper:{}", nodePath);
+    log.info("Register node as live in ZooKeeper: {}", nodePath);
     Map<NodeRoles.Role, String> roles = cc.nodeRoles.getRoles();
+
     List<SolrZkClient.CuratorOpBuilder> ops = new ArrayList<>(roles.size() + 1);
-    ops.add(op -> op.create().withMode(CreateMode.EPHEMERAL).forPath(nodePath));
+
+    ops.add(
+        op -> op.create().withMode(CreateMode.EPHEMERAL).forPath(nodePath, buildLiveNodeData()));
 
     // Create the roles node as well
     roles.forEach(
@@ -1200,6 +1289,17 @@ public class ZkController implements Closeable {
                         .forPath(NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName)));
 
     zkClient.multi(ops);
+  }
+
+  private byte[] buildLiveNodeData() {
+    Map<String, Object> props = new LinkedHashMap<>();
+    props.put(LIVE_NODE_SOLR_VERSION, SolrVersion.LATEST.toString());
+    props.put(LIVE_NODE_NODE_NAME, getNodeName());
+
+    Map<NodeRoles.Role, String> roles = cc.nodeRoles.getRoles();
+    props.put(LIVE_NODE_ROLES, roles);
+
+    return Utils.toJSON(props);
   }
 
   public void removeEphemeralLiveNode() throws KeeperException, InterruptedException {
@@ -1755,7 +1855,6 @@ public class ZkController implements Closeable {
 
       log.debug("publishing state={}", state);
       // System.out.println(Thread.currentThread().getStackTrace()[3]);
-      Integer numShards = cd.getCloudDescriptor().getNumShards();
 
       assert collection != null && collection.length() > 0;
 
@@ -1768,7 +1867,6 @@ public class ZkController implements Closeable {
             props.put(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower());
             props.put(ZkStateReader.STATE_PROP, state.toString());
             props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
-            props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
             props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
             props.put(
                 ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(getNodeName()));
@@ -1777,9 +1875,6 @@ public class ZkController implements Closeable {
             props.put(
                 ZkStateReader.REPLICA_TYPE, cd.getCloudDescriptor().getReplicaType().toString());
             props.put(ZkStateReader.FORCE_SET_STATE_PROP, "false");
-            if (numShards != null) {
-              props.put(ZkStateReader.NUM_SHARDS_PROP, numShards.toString());
-            }
             props.putIfNotNull(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
           };
 

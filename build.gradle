@@ -69,6 +69,12 @@ description = 'Grandparent project for Apache Solr'
 // Propagate version and derived properties across projects.
 allprojects {
   version = rootProject.version
+
+  gradle.projectsEvaluated {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xmaxerrs" << "1000"
+    }
+  }
 }
 
 ext {

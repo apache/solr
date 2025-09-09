@@ -36,6 +36,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
@@ -57,24 +58,18 @@ public class ConfigSetAPIBase extends JerseyResource {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final CoreContainer coreContainer;
-
+  protected final ConfigSetService configSetService;
   protected final SolrQueryRequest solrQueryRequest;
   protected final SolrQueryResponse solrQueryResponse;
-  protected final Optional<DistributedCollectionConfigSetCommandRunner>
-      distributedCollectionConfigSetCommandRunner;
-  protected final ConfigSetService configSetService;
 
   public ConfigSetAPIBase(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     this.coreContainer = coreContainer;
+    this.configSetService = coreContainer.getConfigSetService();
     this.solrQueryRequest = solrQueryRequest;
     this.solrQueryResponse = solrQueryResponse;
-
-    this.distributedCollectionConfigSetCommandRunner =
-        coreContainer.getDistributedCollectionCommandRunner();
-    this.configSetService = coreContainer.getConfigSetService();
   }
 
   protected void runConfigSetCommand(
@@ -86,8 +81,10 @@ public class ConfigSetAPIBase extends JerseyResource {
       log.info("Invoked ConfigSet Action :{} with params {} ", action.toLower(), messageToSend);
     }
 
-    if (distributedCollectionConfigSetCommandRunner.isPresent()) {
-      distributedCollectionConfigSetCommandRunner
+    Optional<DistributedCollectionConfigSetCommandRunner> distribCommandRunner =
+        coreContainer.getZkController().getDistributedCommandRunner();
+    if (distribCommandRunner.isPresent()) {
+      distribCommandRunner
           .get()
           .runConfigSetCommand(rsp, action, messageToSend, CONFIG_SET_TIMEOUT);
     } else {
@@ -96,10 +93,10 @@ public class ConfigSetAPIBase extends JerseyResource {
   }
 
   protected void ensureConfigSetUploadEnabled() {
-    if (!"true".equals(System.getProperty("configset.upload.enabled", "true"))) {
+    if (!EnvUtils.getPropertyAsBool("solr.configset.upload.enabled", true)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Configset upload feature is disabled. To enable this, start Solr with '-Dconfigset.upload.enabled=true'.");
+          "Configset upload feature is disabled. To enable this, start Solr with '-Dsolr.configset.upload.enabled=true'.");
     }
   }
 

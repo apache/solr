@@ -32,7 +32,6 @@ import java.util.concurrent.Semaphore;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
-import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -40,12 +39,14 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -460,7 +461,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         Explanation e = ltrScoringModel.getNormalizerExplanation(explanations[f.getIndex()], idx);
         featureExplanations.add(e);
       }
-      final ModelScorer bs = scorer(context);
+      final ModelScorer bs = modelScorer(context);
       bs.iterator().advance(doc);
 
       final float finalScore = bs.score();
@@ -480,12 +481,16 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
 
     @Override
-    public ModelScorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      return new SolrDefaultScorerSupplier(modelScorer(context));
+    }
+
+    public ModelScorer modelScorer(LeafReaderContext context) throws IOException {
 
       final List<Feature.FeatureWeight.FeatureScorer> featureScorers =
           new ArrayList<Feature.FeatureWeight.FeatureScorer>(extractedFeatureWeights.length);
       for (final Feature.FeatureWeight featureWeight : extractedFeatureWeights) {
-        final Feature.FeatureWeight.FeatureScorer scorer = featureWeight.scorer(context);
+        final Feature.FeatureWeight.FeatureScorer scorer = featureWeight.featureScorer(context);
         if (scorer != null) {
           featureScorers.add(scorer);
         }
@@ -513,7 +518,6 @@ public class LTRScoringQuery extends Query implements Accountable {
       }
 
       public ModelScorer(Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-        super(weight);
         docInfo = new DocInfo();
         for (final Feature.FeatureWeight.FeatureScorer subScorer : featureScorers) {
           subScorer.setDocInfo(docInfo);
@@ -553,24 +557,26 @@ public class LTRScoringQuery extends Query implements Accountable {
 
       private class SparseModelScorer extends Scorer {
         private final DisiPriorityQueue subScorers;
+        private final List<DisiWrapper> wrappers;
         private final ScoringQuerySparseIterator itr;
 
         private int targetDoc = -1;
         private int activeDoc = -1;
 
         private SparseModelScorer(
-            Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-          super(weight);
+            Weight unusedWeight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
           if (featureScorers.size() <= 1) {
             throw new IllegalArgumentException("There must be at least 2 subScorers");
           }
-          subScorers = new DisiPriorityQueue(featureScorers.size());
+          subScorers = DisiPriorityQueue.ofMaxSize(featureScorers.size());
+          wrappers = new ArrayList<>();
           for (final Scorer scorer : featureScorers) {
-            final DisiWrapper w = new DisiWrapper(scorer);
+            final DisiWrapper w = new DisiWrapper(scorer, false /* impacts */);
             subScorers.add(w);
+            wrappers.add(w);
           }
 
-          itr = new ScoringQuerySparseIterator(subScorers);
+          itr = new ScoringQuerySparseIterator(wrappers);
         }
 
         @Override
@@ -589,8 +595,9 @@ public class LTRScoringQuery extends Query implements Accountable {
           reset();
           if (activeDoc == targetDoc) {
             for (DisiWrapper w = topList; w != null; w = w.next) {
-              final Scorer subScorer = w.scorer;
-              Feature.FeatureWeight scFW = (Feature.FeatureWeight) subScorer.getWeight();
+              final Feature.FeatureWeight.FeatureScorer subScorer =
+                  (Feature.FeatureWeight.FeatureScorer) w.scorer;
+              Feature.FeatureWeight scFW = subScorer.getWeight();
               final int featureId = scFW.getIndex();
               featuresInfo[featureId].setValue(subScorer.score());
               if (featuresInfo[featureId].getValue() != scFW.getDefaultValue()) {
@@ -620,34 +627,97 @@ public class LTRScoringQuery extends Query implements Accountable {
           return children;
         }
 
-        private class ScoringQuerySparseIterator extends DisjunctionDISIApproximation {
+        private class ScoringQuerySparseIterator extends DocIdSetIterator {
 
-          public ScoringQuerySparseIterator(DisiPriorityQueue subIterators) {
-            super(subIterators);
+          public ScoringQuerySparseIterator(Collection<DisiWrapper> wrappers) {
+            // Initialize all wrappers to start at -1
+            for (DisiWrapper wrapper : wrappers) {
+              wrapper.doc = -1;
+            }
+          }
+
+          @Override
+          public int docID() {
+            // Return the target document ID (mimicking DisjunctionDISIApproximation behavior)
+            return targetDoc;
           }
 
           @Override
           public final int nextDoc() throws IOException {
+            // Mimic DisjunctionDISIApproximation behavior
+            if (targetDoc == -1) {
+              // First call - initialize all iterators
+              DisiWrapper top = subScorers.top();
+              if (top != null && top.doc == -1) {
+                // Need to advance all iterators to their first document
+                DisiWrapper current = subScorers.top();
+                while (current != null) {
+                  current.doc = current.iterator.nextDoc();
+                  current = subScorers.updateTop();
+                }
+                top = subScorers.top();
+                activeDoc = top == null ? NO_MORE_DOCS : top.doc;
+              }
+              targetDoc = activeDoc;
+              return targetDoc;
+            }
+
             if (activeDoc == targetDoc) {
-              activeDoc = super.nextDoc();
+              // Advance the underlying disjunction
+              DisiWrapper top = subScorers.top();
+              if (top == null) {
+                activeDoc = NO_MORE_DOCS;
+              } else {
+                // Advance the top iterator and rebalance the queue
+                top.doc = top.iterator.nextDoc();
+                top = subScorers.updateTop();
+                activeDoc = top == null ? NO_MORE_DOCS : top.doc;
+              }
             } else if (activeDoc < targetDoc) {
-              activeDoc = super.advance(targetDoc + 1);
+              // Need to catch up to targetDoc + 1
+              activeDoc = advanceInternal(targetDoc + 1);
             }
             return ++targetDoc;
           }
 
           @Override
           public final int advance(int target) throws IOException {
-            // If target doc we wanted to advance to match the actual doc
-            // the underlying features advanced to, perform the feature
-            // calculations,
-            // otherwise just continue with the model's scoring process with
-            // empty features.
+            // Mimic DisjunctionDISIApproximation behavior
             if (activeDoc < target) {
-              activeDoc = super.advance(target);
+              activeDoc = advanceInternal(target);
             }
             targetDoc = target;
             return targetDoc;
+          }
+
+          private int advanceInternal(int target) throws IOException {
+            // Advance the underlying disjunction to the target
+            DisiWrapper top;
+            do {
+              top = subScorers.top();
+              if (top == null) {
+                return NO_MORE_DOCS;
+              }
+              if (top.doc >= target) {
+                return top.doc;
+              }
+              top.doc = top.iterator.advance(target);
+              top = subScorers.updateTop();
+              if (top == null) {
+                return NO_MORE_DOCS;
+              }
+            } while (top.doc < target);
+            return top.doc;
+          }
+
+          @Override
+          public long cost() {
+            // Calculate cost from all wrappers
+            long cost = 0;
+            for (DisiWrapper wrapper : wrappers) {
+              cost += wrapper.iterator.cost();
+            }
+            return cost;
           }
         }
       }
@@ -659,8 +729,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
 
         private DenseModelScorer(
-            Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-          super(weight);
+            Weight unusedWeight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
           this.featureScorers = featureScorers;
         }
 
@@ -677,7 +746,9 @@ public class LTRScoringQuery extends Query implements Accountable {
             for (final Scorer scorer : featureScorers) {
               if (scorer.docID() == activeDoc) {
                 freq++;
-                Feature.FeatureWeight scFW = (Feature.FeatureWeight) scorer.getWeight();
+                Feature.FeatureWeight.FeatureScorer featureScorer =
+                    (Feature.FeatureWeight.FeatureScorer) scorer;
+                Feature.FeatureWeight scFW = featureScorer.getWeight();
                 final int featureId = scFW.getIndex();
                 featuresInfo[featureId].setValue(scorer.score());
                 if (featuresInfo[featureId].getValue() != scFW.getDefaultValue()) {

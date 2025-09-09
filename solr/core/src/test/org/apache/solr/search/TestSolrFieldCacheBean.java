@@ -44,22 +44,22 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
     assertEntryListIncluded(false);
 
     // Test again with entry list disabled
-    System.setProperty("disableSolrFieldCacheMBeanEntryList", "true");
+    System.setProperty("solr.metrics.fieldcache.entries.enabled", "false");
     try {
       assertEntryListNotIncluded(false);
     } finally {
-      System.clearProperty("disableSolrFieldCacheMBeanEntryList");
+      System.clearProperty("solr.metrics.fieldcache.entries.enabled");
     }
 
     // Test with entry list enabled for jmx
     assertEntryListIncluded(true);
 
     // Test with entry list disabled for jmx
-    System.setProperty("disableSolrFieldCacheMBeanEntryListJmx", "true");
+    System.setProperty("solr.metrics.fieldcache.entries.jmx.enabled", "false");
     try {
       assertEntryListNotIncluded(true);
     } finally {
-      System.clearProperty("disableSolrFieldCacheMBeanEntryListJmx");
+      System.clearProperty("solr.metrics.fieldcache.entries.jmx.enabled");
     }
   }
 
