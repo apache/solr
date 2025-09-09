@@ -83,9 +83,11 @@ public class DistributedClusterStateUpdater {
     this.useDistributedStateUpdate = useDistributedStateUpdate;
     if (log.isInfoEnabled()) {
       log.info(
-          "Creating DistributedClusterStateUpdater with useDistributedStateUpdate={}. Solr will be using {} cluster state updates.",
-          useDistributedStateUpdate,
-          useDistributedStateUpdate ? "distributed" : "Overseer based");
+          "Creating DistributedClusterStateUpdater with useDistributedStateUpdate="
+              + useDistributedStateUpdate
+              + ". Solr will be using "
+              + (useDistributedStateUpdate ? "distributed" : "Overseer based")
+              + " cluster state updates."); // nowarn
     }
   }
 
@@ -823,11 +825,14 @@ public class DistributedClusterStateUpdater {
         throws KeeperException, InterruptedException {
       if (log.isDebugEnabled()) {
         log.debug(
-            "Executing updates for collection {}, is creation={}, {} recorded mutations.",
-            collectionName,
-            isCollectionCreation,
-            mutations.size(),
-            new Exception("StackTraceOnly"));
+            "Executing updates for collection "
+                + collectionName
+                + ", is creation="
+                + isCollectionCreation
+                + ", "
+                + mutations.size()
+                + " recorded mutations.",
+            new Exception("StackTraceOnly")); // nowarn
       }
       if (mutations.isEmpty()) {
         final String err =
@@ -938,7 +943,10 @@ public class DistributedClusterStateUpdater {
       if (docCollection == null) {
         // This is possible but should be rare. Logging warn in case it is seen often and likely a
         // sign of another issue
-        log.warn("Processing DOWNNODE, collection {} disappeared during iteration", collectionName);
+        log.warn(
+            "Processing DOWNNODE, collection "
+                + collectionName
+                + " disappeared during iteration"); // nowarn
       }
 
       if (result.isPresent()) {
