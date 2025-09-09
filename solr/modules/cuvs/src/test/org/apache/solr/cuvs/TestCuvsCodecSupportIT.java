@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import org.apache.commons.io.file.PathUtils;
@@ -45,12 +46,14 @@ public class TestCuvsCodecSupportIT extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static Random random;
-  private static List<List<Float>> dataset;
+  private static List<List<Float>> dataset1;
+  private static List<List<Float>> dataset2;
   private static final int DATASET_SIZE = 1000;
   private static final int DATASET_DIMENSION = 8;
   private static final int TOPK = 5;
   private static final String ID_FIELD = "id";
-  private static final String VECTOR_FIELD = "article_vector";
+  private static final String VECTOR_FIELD1 = "vector_field1";
+  private static final String VECTOR_FIELD2 = "vector_field2";
   private static final String SOLRCONFIG_XML = "solrconfig.xml";
   private static final String SCHEMA_XML = "schema.xml";
   private static final String COLLECTION = "collection1";
@@ -67,7 +70,8 @@ public class TestCuvsCodecSupportIT extends SolrTestCaseJ4 {
 
     initCore(SOLRCONFIG_XML, SCHEMA_XML, tmpSolrHome);
     random = new Random(222);
-    dataset = generateRandomVectors(random, DATASET_SIZE, DATASET_DIMENSION);
+    dataset1 = generateRandomVectors(random, DATASET_SIZE, DATASET_DIMENSION);
+    dataset2 = generateRandomVectors(random, DATASET_SIZE, DATASET_DIMENSION);
   }
 
   @Test
@@ -81,25 +85,40 @@ public class TestCuvsCodecSupportIT extends SolrTestCaseJ4 {
         codecFactory);
     assertEquals("Unexpected core codec", "Lucene101", solrCore.getCodec().getName());
 
+    // Index documents
     for (int i = 0; i < DATASET_SIZE; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(ID_FIELD, String.valueOf(i));
-      doc.addField(VECTOR_FIELD, dataset.get(i));
+      doc.addField(VECTOR_FIELD1, dataset1.get(i));
+      doc.addField(VECTOR_FIELD2, dataset2.get(i));
       assertU(adoc(doc));
     }
     assertU(commit());
 
+    // Search documents
     final RefCounted<SolrIndexSearcher> refCountedSearcher = solrCore.getSearcher();
     IndexSearcher searcher = refCountedSearcher.get();
-    KnnFloatVectorQuery q =
-        new KnnFloatVectorQuery(VECTOR_FIELD, getQuery(random, DATASET_DIMENSION), TOPK);
-    TopDocs results = searcher.search(q, TOPK);
+
+    KnnFloatVectorQuery q1 =
+        new KnnFloatVectorQuery(VECTOR_FIELD1, getQuery(random, DATASET_DIMENSION), TOPK);
+    TopDocs results1 = searcher.search(q1, TOPK);
+    List<Integer> expected1 = Arrays.asList(390, 643, 127, 593, 627);
+    assertSearchResults(searcher, results1, expected1);
+
+    KnnFloatVectorQuery q2 =
+        new KnnFloatVectorQuery(VECTOR_FIELD2, getQuery(random, DATASET_DIMENSION), TOPK);
+    TopDocs results2 = searcher.search(q2, TOPK);
+    List<Integer> expected2 = Arrays.asList(29, 88, 103, 915, 261);
+    assertSearchResults(searcher, results2, expected2);
+
     refCountedSearcher.decref();
+  }
+
+  private static void assertSearchResults(
+      IndexSearcher searcher, TopDocs results, List<Integer> expected) throws IOException {
     if (log.isInfoEnabled()) {
       log.info("Search results has ({} total hits)", results.totalHits);
     }
-    int[] expected = {108, 314, 451, 640, 113};
-    List<Integer> res = new ArrayList<Integer>();
     int numResults = results.scoreDocs.length;
     for (int i = 0; i < numResults; i++) {
       ScoreDoc sd = results.scoreDocs[i];
@@ -108,13 +127,10 @@ public class TestCuvsCodecSupportIT extends SolrTestCaseJ4 {
       if (log.isInfoEnabled()) {
         log.info("Rank {}: doc {} (id={}), score: {}", r, sd.doc, doc.get("id"), sd.score);
       }
-      res.add(Integer.valueOf(doc.get("id")));
+      int idx = Integer.valueOf(doc.get("id"));
+      assertTrue("Expected doc id is missing:" + idx, expected.contains(idx));
     }
-
     assertTrue(numResults + " TopK results were returned instead of " + TOPK, numResults == TOPK);
-    for (int i : expected) {
-      assertTrue("Expected doc id is missing:" + i, res.contains(i));
-    }
   }
 
   private static List<List<Float>> generateRandomVectors(Random random, int size, int dimensions) {

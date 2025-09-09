@@ -59,10 +59,10 @@ public class CuvsCodec extends FilterCodec {
     String hl = args._getStr("hnswLayers");
     int hnswLayers = hl != null ? Integer.parseInt(hl) : DEFAULT_HNSW_LAYERS;
 
-    assert cuvsWriterThreads > 0;
-    assert intGraphDegree > 0;
-    assert graphDegree > 0;
-    assert hnswLayers > 0;
+    assert cuvsWriterThreads > 0 : "cuvsWriterThreads cannot be less then or equal to 0";
+    assert intGraphDegree > 0 : "intGraphDegree cannot be less then or equal to 0";
+    assert graphDegree > 0 : "graphDegree cannot be less then or equal to 0";
+    assert hnswLayers > 0 : "hnswLayers cannot be less then or equal to 0";
 
     cuvsHNSWVectorsFormat =
         new Lucene99AcceleratedHNSWVectorsFormat(
