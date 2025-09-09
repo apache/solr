@@ -203,28 +203,20 @@ public class UpdateShardHandler implements SolrInfoBean {
     return this.getClass().getName();
   }
 
-  // TODO SOLR-17458: Add Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    // TODO SOLR-17458: Add Otel
     trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty(), expandedScope);
     defaultConnectionManager.initializeMetrics(
         solrMetricsContext, Attributes.empty(), expandedScope);
     updateExecutor =
         MetricUtils.instrumentedExecutorService(
-            updateExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName("updateOnlyExecutor", expandedScope, "threadPool"));
+            updateExecutor, solrMetricsContext, getCategory(), "updateOnlyExecutor");
     recoveryExecutor =
         MetricUtils.instrumentedExecutorService(
-            recoveryExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName("recoveryExecutor", expandedScope, "threadPool"));
+            recoveryExecutor, solrMetricsContext, getCategory(), "recoveryExecutor");
   }
 
   @Override
