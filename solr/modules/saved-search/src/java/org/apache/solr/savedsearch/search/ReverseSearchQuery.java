@@ -21,6 +21,7 @@ package org.apache.solr.savedsearch.search;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -62,7 +63,7 @@ class ReverseSearchQuery extends Query {
   @Override
   public Query rewrite(IndexSearcher indexSearcher) throws IOException {
     Query rewritten = presearchQuery.rewrite(indexSearcher);
-    if (rewritten != presearchQuery) {
+    if (!Objects.equals(rewritten, presearchQuery)) {
       return new ReverseSearchQuery(reverseSearchContext, presearchQuery.rewrite(indexSearcher));
     }
     return super.rewrite(indexSearcher);
