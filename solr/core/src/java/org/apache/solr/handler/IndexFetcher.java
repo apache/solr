@@ -89,11 +89,12 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.client.api.model.FileMetaData;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -102,6 +103,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.IOUtils;
@@ -340,13 +342,21 @@ public class IndexFetcher {
     return toReturn;
   }
 
+  private GenericSolrRequest createReplicationHandlerRequest(SolrParams solrParams) {
+    return new GenericSolrRequest(
+            SolrRequest.METHOD.GET,
+            ReplicationHandler.PATH,
+            SolrRequest.SolrRequestType.ADMIN,
+            solrParams)
+        .setRequiresCollection(true);
+  }
+
   /** Gets the latest commit version and generation from the leader */
   public NamedList<Object> getLatestVersion() throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
     params.set(CommonParams.WT, JAVABIN);
-    params.set(CommonParams.QT, ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
+    var req = createReplicationHandlerRequest(params);
     try {
       return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
     } catch (SolrServerException e) {
@@ -364,8 +374,7 @@ public class IndexFetcher {
     params.set(COMMAND, CMD_GET_FILE_LIST);
     params.set(GENERATION, String.valueOf(gen));
     params.set(CommonParams.WT, JAVABIN);
-    params.set(CommonParams.QT, ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
+    var req = createReplicationHandlerRequest(params);
     try {
       NamedList<?> response =
           solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
@@ -1876,7 +1885,6 @@ public class IndexFetcher {
       // the method is command=filecontent
       params.set(COMMAND, CMD_GET_FILE);
       params.set(GENERATION, Long.toString(indexGen));
-      params.set(CommonParams.QT, ReplicationHandler.PATH);
       // add the version to download. This is used to reserve the download
       params.set(solrParamOutput, fileName);
       if (useInternalCompression) {
@@ -1896,9 +1904,8 @@ public class IndexFetcher {
 
       NamedList<?> response;
       InputStream is = null;
-      // TODO use shardhandler
       try {
-        QueryRequest req = new QueryRequest(params);
+        var req = createReplicationHandlerRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
         response = solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
@@ -2042,10 +2049,8 @@ public class IndexFetcher {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_DETAILS);
     params.set("follower", false);
-    params.set(CommonParams.QT, ReplicationHandler.PATH);
 
-    QueryRequest request = new QueryRequest(params);
-    // TODO use shardhandler
+    var request = createReplicationHandlerRequest(params);
     return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, request).getResponse();
   }
 

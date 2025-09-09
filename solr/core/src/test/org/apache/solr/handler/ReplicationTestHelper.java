@@ -34,9 +34,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -128,10 +130,12 @@ public final class ReplicationTestHelper {
 
     // check vs /replication?command=indexversion call
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", ReplicationHandler.PATH);
     params.set("_trace", "assertVersions");
     params.set("command", "indexversion");
-    QueryRequest req = new QueryRequest(params);
+    var req =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, ReplicationHandler.PATH, SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
     NamedList<Object> resp = client1.request(req);
     assertReplicationResponseSucceeded(resp);
     Long version = (Long) resp.get("indexversion");
@@ -205,8 +209,10 @@ public final class ReplicationTestHelper {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command", "details");
     params.set("_trace", "getDetails");
-    params.set("qt", ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
+    var req =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, ReplicationHandler.PATH, SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
 
     NamedList<Object> res = s.request(req);
     assertReplicationResponseSucceeded(res);
