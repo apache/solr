@@ -39,6 +39,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -227,7 +228,7 @@ public class BlobRepository {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "could not load : " + key, e);
       }
     } finally {
-      Utils.consumeFully(entity);
+      HttpClientUtil.consumeFully(entity);
     }
     return b;
   }

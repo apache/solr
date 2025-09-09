@@ -41,6 +41,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -304,7 +305,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       } catch (Exception e) {
         fail("Invalid json " + s);
       }
-      Utils.consumeFully(rsp.getEntity());
+      HttpClientUtil.consumeFully(rsp.getEntity());
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
       if (expected instanceof Predicate) {
         @SuppressWarnings({"rawtypes"})

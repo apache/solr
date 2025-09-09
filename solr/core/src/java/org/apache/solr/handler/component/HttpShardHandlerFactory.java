@@ -30,9 +30,9 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.AffinityReplicaListTransformerFactory;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
@@ -293,17 +293,18 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     int connectionTimeout =
         getParameter(
             args,
-            HttpClientUtil.PROP_CONNECTION_TIMEOUT,
-            HttpClientUtil.DEFAULT_CONNECT_TIMEOUT,
+            SolrHttpConstants.PROP_CONNECTION_TIMEOUT,
+            SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT,
             sb);
     int maxConnectionsPerHost =
         getParameter(
             args,
-            HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST,
-            HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
+            SolrHttpConstants.PROP_MAX_CONNECTIONS_PER_HOST,
+            SolrHttpConstants.DEFAULT_MAXCONNECTIONSPERHOST,
             sb);
     int soTimeout =
-        getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT, HttpClientUtil.DEFAULT_SO_TIMEOUT, sb);
+        getParameter(
+            args, SolrHttpConstants.PROP_SO_TIMEOUT, SolrHttpConstants.DEFAULT_SO_TIMEOUT, sb);
 
     this.defaultClient =
         new Http2SolrClient.Builder()

@@ -736,7 +736,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           "IOException occurred when talking to server at: " + getBaseURL(), e);
     } finally {
       if (shouldClose) {
-        Utils.consumeFully(entity);
+        HttpClientUtil.consumeFully(entity);
       }
     }
   }

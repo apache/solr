@@ -838,7 +838,7 @@ public class HttpSolrCall {
                   + forwardCount,
               e));
     } finally {
-      Utils.consumeFully(httpEntity);
+      HttpClientUtil.consumeFully(httpEntity);
     }
   }
 

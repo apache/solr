@@ -15,6 +15,9 @@ Improvements
 
 * SOLR-17893: Speed up Remote Proxy for high QPS, utilizing ClusterState caching. (Houston Putman)
 
+* SOLR-17884: SolrJ users not using deprecated SolrClients can safely exclude Apache HttpClient dependencies.
+  (David Smiley)
+
 Optimizations
 ---------------------
 (No changes)

@@ -79,9 +79,9 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
   @Override
   public void setup(Http2SolrClient client) {
     final String basicAuthUser =
-        CREDENTIAL_RESOLVER.defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
+        CREDENTIAL_RESOLVER.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_USER);
     final String basicAuthPass =
-        CREDENTIAL_RESOLVER.defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
+        CREDENTIAL_RESOLVER.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_PASS);
     this.setup(client, basicAuthUser, basicAuthPass);
   }
 
@@ -158,9 +158,9 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
         defaultParams =
             new MapSolrParams(
                 Map.of(
-                    HttpClientUtil.PROP_BASIC_AUTH_USER,
+                    SolrHttpConstants.PROP_BASIC_AUTH_USER,
                     ss.get(0),
-                    HttpClientUtil.PROP_BASIC_AUTH_PASS,
+                    SolrHttpConstants.PROP_BASIC_AUTH_PASS,
                     ss.get(1)));
       } else if (configFile != null) {
         Properties defaultProps = new Properties();
