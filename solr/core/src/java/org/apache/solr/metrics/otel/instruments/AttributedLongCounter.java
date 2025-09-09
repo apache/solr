@@ -30,7 +30,7 @@ public class AttributedLongCounter {
   }
 
   public void inc() {
-    add(1L);
+    baseCounter.add(1L, attributes);
   }
 
   public void add(Long value) {
