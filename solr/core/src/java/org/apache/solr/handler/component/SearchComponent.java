@@ -93,6 +93,10 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
   @Override
   public abstract String getDescription();
 
+  protected boolean isForceDistributed() {
+    return false;
+  }
+
   @Override
   public Category getCategory() {
     return Category.OTHER;

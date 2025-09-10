@@ -93,11 +93,9 @@
   <!-- requestHandler plugins
   -->
   <requestHandler name="/select" class="solr.SearchHandler">
-    <bool name="httpCaching">true</bool>
   </requestHandler>
 
     <requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
-        <bool name="httpCaching">true</bool>
     </requestHandler>
 
     <searchComponent class="solr.CombinedQueryComponent" name="combined_query">

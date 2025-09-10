@@ -119,6 +119,11 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         });
   }
 
+  @Override
+  protected boolean isForceDistributed() {
+    return true;
+  }
+
   /**
    * Overrides the prepare method to handle combined queries.
    *
@@ -170,11 +175,21 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       Boolean setMaxHitsTerminatedEarly = null;
       List<QueryResult> queryResults = new ArrayList<>();
       int rbIndex = 0;
+      boolean statsCacheRequest = false;
       // TODO: to be parallelized
       for (ResponseBuilder thisRb : crb.responseBuilders) {
         // Just a placeholder for future implementation for Cursors
         thisRb.setCursorMark(crb.getCursorMark());
         super.process(thisRb);
+        int purpose =
+            thisRb
+                .req
+                .getParams()
+                .getInt(ShardParams.SHARDS_PURPOSE, ShardRequest.PURPOSE_GET_TOP_IDS);
+        if ((purpose & ShardRequest.PURPOSE_GET_TERM_STATS) != 0) {
+          statsCacheRequest = true;
+          continue;
+        }
         DocListAndSet docListAndSet = thisRb.getResults();
         QueryResult queryResult = new QueryResult();
         queryResult.setDocListAndSet(docListAndSet);
@@ -202,6 +217,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           }
         }
         rbIndex++;
+      }
+      if (statsCacheRequest) {
+        return;
       }
       prepareCombinedResponseBuilder(
           crb, queryResults, partialResults, segmentTerminatedEarly, setMaxHitsTerminatedEarly);
@@ -343,10 +361,8 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         if (!Boolean.TRUE.equals(segmentTerminatedEarly)) {
           final Object ste =
               responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
-          if (Boolean.TRUE.equals(ste)) {
-            segmentTerminatedEarly = Boolean.TRUE;
-          } else if (Boolean.FALSE.equals(ste)) {
-            segmentTerminatedEarly = Boolean.FALSE;
+          if (ste instanceof Boolean steFlag) {
+            segmentTerminatedEarly = steFlag;
           }
         }
 
@@ -383,7 +399,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                 ? unmarshalSortValues(ss, sortFieldValues, schema)
                 : new NamedList<>();
         // go through every doc in this response, construct a ShardDoc, and
-        // put it in the priority queue so it can be ordered.
+        // put it in the uniqueDoc to dedup
         for (int i = 0; i < docs.size(); i++) {
           SolrDocument doc = docs.get(i);
           Object id = doc.getFieldValue(uniqueKeyField.getName());
@@ -405,7 +421,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           shardDoc.sortFieldValues = unmarshalledSortFieldValues;
           ShardDoc prevShard = uniqueDoc.put(id, shardDoc);
           if (prevShard != null) {
-            // duplicate detected
             numFound--;
           }
         } // end for-each-doc-in-response
@@ -456,16 +471,13 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
             .add(
                 SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
                 segmentTerminatedEarly);
-      } else if (!Boolean.TRUE.equals(existingSegmentTerminatedEarly)
-          && Boolean.TRUE.equals(segmentTerminatedEarly)) {
+      } else if (!Boolean.TRUE.equals(existingSegmentTerminatedEarly) && segmentTerminatedEarly) {
         rb.rsp
             .getResponseHeader()
             .remove(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
         rb.rsp
             .getResponseHeader()
-            .add(
-                SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
-                segmentTerminatedEarly);
+            .add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, true);
       }
     }
     if (maxHitsTerminatedEarly) {
@@ -544,6 +556,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         failedShardCount += 1;
         shard = "unknown_shard_" + queryKey + "_" + failedShardCount;
       }
+      nl.add("queryKey", queryKey);
       shardInfo.add(shard, nl);
     }
     return failedShardCount;

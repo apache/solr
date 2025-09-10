@@ -39,6 +39,10 @@ The query structure is similar to JSON Query DSL except for how multiple queries
    Any other algorithm can be configured using xref:json-combined-query-dsl.adoc#combiner-algorithm-plugin[plugin].
 `combiner.rrf.k` | Default: `60`::
    The k parameter in the RRF algorithm.
+`combiner.method` | Default: `post`::
+   There are two ways of combining the docs in case of sharded collection:
+  - pre - The queries are executed at the shard local and combined there itself using the algorithm defined, returning the combined list to coordinator which finally merges the results basis score.
+  - post - The queries are executed at the shard local and return the documents with original score to the coordinator to merge per query per shard responses basis the scores. Finally, each query results are combined using the algorithm defined.
 
 === Example
 
@@ -66,7 +70,8 @@ Below is a sample JSON query payload:
         "combiner": true,
         "combiner.query": ["lexical1", "vector"],
         "combiner.algorithm": "rrf",
-        "combiner.rrf.k": "15"
+        "combiner.rrf.k": "15",
+        "combined.method": "post"
     }
 }
 ```

@@ -26,10 +26,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.servlet.HttpSolrCall;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 /** The type Combined query search handler test. */
 public class CombinedQuerySearchHandlerTest extends SolrTestCaseJ4 {
@@ -76,37 +74,6 @@ public class CombinedQuerySearchHandlerTest extends SolrTestCaseJ4 {
       assertTrue(
           handler.newResponseBuilder(request, new SolrQueryResponse(), new ArrayList<>())
               instanceof CombinedQueryResponseBuilder);
-    } catch (IOException e) {
-      fail("Exception when closing CombinedQuerySearchHandler");
-    }
-  }
-
-  /** Test rb.isDistrib parameters for combinedQuery feature. */
-  @Test
-  public void testIsDistrib() {
-    SolrQueryRequest request = req("q", "testQuery");
-    try (CombinedQuerySearchHandler handler = new CombinedQuerySearchHandler()) {
-      assertFalse(handler.isDistrib(request));
-      request = req("q", "testQuery", "distrib", "true");
-      assertTrue(handler.isDistrib(request));
-      request = req("q", "testQuery", "shards", "localhost:8983/solr/");
-      assertTrue(handler.isDistrib(request));
-      // Testing other scenario using unit test
-      mockCoreContainer = Mockito.mock(CoreContainer.class);
-      SolrQueryRequest mockQueryRequest = Mockito.mock(SolrQueryRequest.class);
-      Mockito.when(mockQueryRequest.getCoreContainer()).thenReturn(mockCoreContainer);
-      Mockito.when(mockQueryRequest.getParams()).thenReturn(req("q", "testQuery").getParams());
-      // Test zkAware
-      Mockito.when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
-      assertTrue(handler.isDistrib(mockQueryRequest));
-      Mockito.when(mockCoreContainer.isZooKeeperAware()).thenReturn(false);
-      assertFalse(handler.isDistrib(mockQueryRequest));
-      // Test non-distributed single core standalone
-      httpServletRequest = Mockito.mock(HttpServletRequest.class);
-      HttpSolrCall httpSolrCall = new HttpSolrCall(null, null, httpServletRequest, null, false);
-      Mockito.when(mockQueryRequest.getHttpSolrCall()).thenReturn(httpSolrCall);
-      Mockito.when(mockQueryRequest.getCore()).thenReturn(h.getCore());
-      assertTrue(handler.isDistrib(mockQueryRequest));
     } catch (IOException e) {
       fail("Exception when closing CombinedQuerySearchHandler");
     }

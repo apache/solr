@@ -304,7 +304,7 @@ public class SearchHandler extends RequestHandlerBase
     return result;
   }
 
-  protected boolean isDistrib(SolrQueryRequest req) {
+  private boolean isDistrib(SolrQueryRequest req) {
     boolean isZkAware = req.getCoreContainer().isZooKeeperAware();
     boolean isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
     if (!isDistrib) {
@@ -472,10 +472,11 @@ public class SearchHandler extends RequestHandlerBase
       RTimerTree timer,
       List<SearchComponent> components)
       throws IOException {
-    // creates a ShardHandler object only if it's needed
-    final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb);
 
     if (!prepareComponents(req, rb, timer, components)) return;
+
+    // creates a ShardHandler object only if it's needed
+    final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb);
 
     postPrepareComponents(rb);
 
@@ -727,6 +728,7 @@ public class SearchHandler extends RequestHandlerBase
           return false;
         }
         component.prepare(rb);
+        updateForcedDistributed(req, rb, component);
       }
     } else {
       // debugging prepare phase
@@ -739,10 +741,21 @@ public class SearchHandler extends RequestHandlerBase
         rb.setTimer(subt.sub(c.getName()));
         c.prepare(rb);
         rb.getTimer().stop();
+        updateForcedDistributed(req, rb, c);
       }
       subt.stop();
     }
     return true;
+  }
+
+  private static void updateForcedDistributed(
+      SolrQueryRequest req, ResponseBuilder rb, SearchComponent component) {
+    if (!rb.isDistrib
+        && component.isForceDistributed()
+        && !req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      rb.isDistrib = true;
+      rb.setForcedDistrib(true);
+    }
   }
 
   protected String stageToString(int stage) {
