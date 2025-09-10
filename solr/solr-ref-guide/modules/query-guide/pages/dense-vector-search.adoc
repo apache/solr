@@ -394,7 +394,7 @@ The search results retrieved are the k=10 nearest documents to the vector in inp
 Early termination is an HNSW optimization. Solr relies on Lucene’s implementation of early termination for kNN queries, provided by
 https://lucene.apache.org/core/10_2_2/core/org/apache/lucene/search/PatienceKnnVectorQuery.html[org.apache.lucene.search.PatienceKnnVectorQuery].
 +
-When enabled (true), the search may exit early when the HNSW candidate queue remains saturated over a threshold (saturationThreshold) for more than a given number of iterations (patience).
+When enabled (true), the search may exit early when the HNSW candidate queue remains saturated over a threshold (saturationThreshold) for more than a given number of iterations (patience). Refer to the two parameters below for more details.
 +
 Enabling early termination typically reduces query latency and resource usage, with a potential small trade-off in recall.
 
@@ -402,12 +402,10 @@ Enabling early termination typically reduces query latency and resource usage, w
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `0.995d`
+|Optional |Default: `0.995`
 |===
 +
 (advanced) The early exit saturation threshold.
-+
-Accepted values: a double between 0.0 and 1.0 (exclusive).
 +
 Our recommendation is to rely on the default value and change this parameter only if you are confident about its impact. Using values that are too low can cause the search to terminate prematurely, leading to poor recall.
 +
@@ -420,9 +418,7 @@ This parameter must be used together with `patience`; either specify both to cus
 |Optional |Default: `max(7, topK * 0.3)`
 |===
 +
-(advanced) The number of consecutive iterations the search will continue after the candidate queue is considered saturated.
-+
-Accepted values: any integer values > 7. The default is not a fixed value but a formula based on the topK parameter.
+(advanced) The number of consecutive iterations the search will continue after the candidate queue is considered saturated. The default value is not a fixed value (integer) but a formula based on the topK parameter.
 +
 Our recommendation is to rely on the default value and change this parameter only if you are confident about its impact:
 +
@@ -467,54 +463,6 @@ Here's an example of a simple `knn_text_to_vector` search:
 ?q={!knn_text_to_vector model=a-model f=vector topK=10}hello world query
 
 The search results retrieved are the k=10 nearest documents to the vector encoded from the query `hello world query`, using the model `a-model`.
-
-`earlyTermination`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `false`
-|===
-+
-Early termination is an HNSW optimization. Solr relies on Lucene’s implementation of early termination for kNN queries, provided by
-https://lucene.apache.org/core/10_2_2/core/org/apache/lucene/search/PatienceKnnVectorQuery.html[org.apache.lucene.search.PatienceKnnVectorQuery].
-+
-When enabled (true), the search may exit early when the HNSW candidate queue remains saturated over a threshold (saturationThreshold) for more than a given number of iterations (patience).
-+
-Enabling early termination typically reduces query latency and resource usage, with a potential small trade-off in recall.
-
-`saturationThreshold`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `0.995d`
-|===
-+
-(advanced) The early exit saturation threshold.
-+
-Accepted values: a double between 0.0 and 1.0 (exclusive).
-+
-Our recommendation is to rely on the default value and change this parameter only if you are confident about its impact. Using values that are too low can cause the search to terminate prematurely, leading to poor recall.
-+
-This parameter must be used together with `patience`; either specify both to customize the behavior, or omit both to rely on the default values.
-
-`patience`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `max(7, topK * 0.3)`
-|===
-+
-(advanced) The number of consecutive iterations the search will continue after the candidate queue is considered saturated.
-+
-Accepted values: any integer values > 7. The default is not a fixed value but a formula based on the topK parameter.
-+
-Our recommendation is to rely on the default value and change this parameter only if you are confident about its impact:
-+
-* Using values that are too low can make the search stop too aggressively, reducing recall.
-* Using values that are too high reduces the benefit of early termination, since the search runs nearly as long as without it.
-
-+
-This parameter must be used together with `saturationThreshold`; either specify both to customize the behavior, or omit both to rely on the default values.
 
 For more details on how to work with vectorise text in Apache Solr, please refer to the dedicated page: xref:text-to-vector.adoc[Text to Vector]
 

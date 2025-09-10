@@ -1042,30 +1042,30 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
 
   @Test
   public void
-      testKnnFloatWithEarlyTerminationCustomParams_returnsPatienceKnnVectorQueryCustomParams() {
+      testKnnFloatWithEarlyTerminationExplicitParams_returnsPatienceKnnVectorQueryExplicitParams() {
     // It verifies that when early termination is explicitly set to true and both
     // saturationThreshold and patience
-    // parameters are provided, the PatienceKnnVectorQuery is executed using the specified custom
+    // parameters are provided, the PatienceKnnVectorQuery is executed using the specified input
     // values.
     String vectorToSearch = "[1.0, 2.0 ,3.0, 4.0]";
 
-    double customSaturationThreshold = 0.989;
-    int customPatience = 10;
+    double explicitSaturationThreshold = 0.989;
+    int explicitPatience = 10;
 
     String query =
         String.format(
             Locale.US,
             "{!knn f=vector topK=10 earlyTermination=true saturationThreshold=%.3f patience=%d}"
                 + vectorToSearch,
-            customSaturationThreshold,
-            customPatience);
+            explicitSaturationThreshold,
+            explicitPatience);
 
     String expectedParsedQuery =
         String.format(
             Locale.US,
             "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnFloatVectorQuery:vector[1.0,...][10]})",
-            customSaturationThreshold,
-            customPatience);
+            explicitSaturationThreshold,
+            explicitPatience);
 
     assertQ(
         req(CommonParams.Q, query, "fl", "id", "debugQuery", "true"),
@@ -1075,30 +1075,30 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
 
   @Test
   public void
-      testKnnByteWithEarlyTerminationCustomParams_returnsPatienceKnnVectorQueryCustomParams() {
+      testKnnByteWithEarlyTerminationExplicitParams_returnsPatienceKnnVectorQueryExplicitParams() {
     // It verifies that when early termination is explicitly set to true and both
     // saturationThreshold and patience
-    // parameters are provided, the PatienceKnnVectorQuery is executed using the specified custom
+    // parameters are provided, the PatienceKnnVectorQuery is executed using the specified input
     // values.
     String vectorToSearch = "[2, 2, 1, 3]";
 
-    double customSaturationThreshold = 0.989;
-    int customPatience = 10;
+    double explicitSaturationThreshold = 0.989;
+    int explicitPatience = 10;
 
     String query =
         String.format(
             Locale.US,
             "{!knn f=vector_byte_encoding topK=5 earlyTermination=true saturationThreshold=%.3f patience=%d}"
                 + vectorToSearch,
-            customSaturationThreshold,
-            customPatience);
+            explicitSaturationThreshold,
+            explicitPatience);
 
     String expectedParsedQuery =
         String.format(
             Locale.US,
             "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnByteVectorQuery:vector_byte_encoding[2,...][5]})",
-            customSaturationThreshold,
-            customPatience);
+            explicitSaturationThreshold,
+            explicitPatience);
 
     assertQ(
         req(CommonParams.Q, query, "fl", "id", "debugQuery", "true"),
@@ -1108,29 +1108,29 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
 
   @Test
   public void
-      testKnnFloatWithEarlyTerminationOnlyCustomParams_returnsPatienceKnnVectorQueryCustomParams() {
+      testKnnFloatWithEarlyTerminationOnlyExplicitParams_returnsPatienceKnnVectorQueryExplicitParams() {
     // It verifies that when early termination is NOT explicitly passed but both saturationThreshold
     // and patience
-    // parameters are provided, the PatienceKnnVectorQuery is executed using the specified custom
+    // parameters are provided, the PatienceKnnVectorQuery is executed using the specified input
     // values.
     String vectorToSearch = "[1.0, 2.0 ,3.0, 4.0]";
 
-    double customSaturationThreshold = 0.989;
-    int customPatience = 10;
+    double explicitSaturationThreshold = 0.989;
+    int explicitPatience = 10;
 
     String query =
         String.format(
             Locale.US,
             "{!knn f=vector topK=10 saturationThreshold=%.3f patience=%d}" + vectorToSearch,
-            customSaturationThreshold,
-            customPatience);
+            explicitSaturationThreshold,
+            explicitPatience);
 
     String expectedParsedQuery =
         String.format(
             Locale.US,
             "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnFloatVectorQuery:vector[1.0,...][10]})",
-            customSaturationThreshold,
-            customPatience);
+            explicitSaturationThreshold,
+            explicitPatience);
 
     assertQ(
         req(CommonParams.Q, query, "fl", "id", "debugQuery", "true"),
@@ -1138,97 +1138,50 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//str[@name='parsedquery'][.='" + expectedParsedQuery + "']");
   }
 
-  @Test
-  public void outOfRangeSaturationThresholdValue_shouldThrowException() {
-    // It verifies that when an invalid saturationThreshold value (<= 0.0 or >= 1.0)
-    // is provided in the query, Solr throws a BAD_REQUEST exception with the expected message.
-    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
-
-    double saturationThreshold = 2.0; // out of range
-    int patience = 10;
-
-    assertQEx(
-        "Invalid saturationThreshold value: must be a double between 0.0 and 1.0 (exclusive), got 2.0",
-        req(
-            CommonParams.Q,
-            String.format(
-                Locale.ROOT,
-                "{!knn f=vector topK=10 saturationThreshold=%.3f patience=%d}%s",
-                saturationThreshold,
-                patience,
-                vectorToSearch)),
-        SolrException.ErrorCode.BAD_REQUEST);
-  }
-
-  @Test
-  public void incorrectSaturationThresholdValue_shouldThrowException() {
+  @Test(expected = NumberFormatException.class)
+  public void incorrectSaturationThresholdValue_shouldThrowNumberFormatException()
+      throws Exception {
     // It verifies that when an invalid saturationThreshold value, e.g. 95%, is provided in the
-    // query, Solr throws a BAD_REQUEST exception with the expected message.
+    // query, Solr throws an exception.
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     String saturationThreshold = "95%";
     int patience = 10;
 
-    assertQEx(
-        "Invalid saturationThreshold value: not a valid double, got 95%",
-        req(
-            CommonParams.Q,
-            String.format(
-                Locale.ROOT,
-                "{!knn f=vector topK=10 saturationThreshold=%s patience=%d}%s",
-                saturationThreshold,
-                patience,
-                vectorToSearch)),
-        SolrException.ErrorCode.BAD_REQUEST);
+    String query =
+        String.format(
+            Locale.ROOT,
+            "{!knn f=vector topK=10 saturationThreshold=%s patience=%d}%s",
+            saturationThreshold,
+            patience,
+            vectorToSearch);
+
+    h.query(req(CommonParams.Q, query));
   }
 
-  @Test
-  public void outOfRangePatienceValue_shouldThrowException() {
-    // It verifies that when an invalid Patience value (< 7)
-    // is provided in the query, Solr throws a BAD_REQUEST exception with the expected message.
-    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
-
-    double saturationThreshold = 0.995;
-    int patience = 2; // out of range
-
-    assertQEx(
-        "Invalid patience value: must be an integer >= 7, got 2",
-        req(
-            CommonParams.Q,
-            String.format(
-                Locale.ROOT,
-                "{!knn f=vector topK=10 saturationThreshold=%.3f patience=%d}%s",
-                saturationThreshold,
-                patience,
-                vectorToSearch)),
-        SolrException.ErrorCode.BAD_REQUEST);
-  }
-
-  @Test
-  public void incorrectPatienceValue_shouldThrowException() {
+  @Test(expected = NumberFormatException.class)
+  public void incorrectPatienceValue_shouldThrowNumberFormatException() throws Exception {
     // It verifies that when an invalid Patience value
-    // is provided in the query, Solr throws a BAD_REQUEST exception with the expected message.
+    // is provided in the query, Solr throws an exception.
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     double saturationThreshold = 0.995;
     double patience = 7.9; // double instead of int
 
-    assertQEx(
-        "Invalid patience value: not a valid integer, got 7.9",
-        req(
-            CommonParams.Q,
-            String.format(
-                Locale.ROOT,
-                "{!knn f=vector topK=10 saturationThreshold=%.3f patience=%.3f}%s",
-                saturationThreshold,
-                patience,
-                vectorToSearch)),
-        SolrException.ErrorCode.BAD_REQUEST);
+    String query =
+        String.format(
+            Locale.ROOT,
+            "{!knn f=vector topK=10 saturationThreshold=%.3f patience=%.3f}%s",
+            saturationThreshold,
+            patience,
+            vectorToSearch);
+
+    h.query(req(CommonParams.Q, query));
   }
 
   @Test
-  public void onlyOneCustomValue_shouldThrowException() {
-    // It verifies that when only one custom param is provided in the query,
+  public void onlyOneInputParam_shouldThrowException() {
+    // It verifies that when only one input param is provided in the query,
     // Solr throws a BAD_REQUEST exception with the expected message.
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
