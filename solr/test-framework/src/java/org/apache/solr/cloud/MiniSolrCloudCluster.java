@@ -1031,7 +1031,7 @@ public class MiniSolrCloudCluster {
 
     private boolean trackJettyMetrics;
     private boolean overseerEnabled =
-        EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
+        EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", false);
     private boolean formatZkServer = true;
     private boolean disableTraceIdGeneration = false;
 
