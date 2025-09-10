@@ -42,6 +42,7 @@ public class CompoundResponseBuilder extends ResponseBuilder {
       return my_q_key;
     }
 
+    @Override
     protected int getDoneStage() {
       return STAGE_FUSION;
     }
@@ -59,7 +60,7 @@ public class CompoundResponseBuilder extends ResponseBuilder {
     }
 
     public boolean isThisFromMe(ShardRequest sreq) {
-      return sreq.params.get(RRF_Q_KEY) == my_q_key; // detect our request/response
+      return my_q_key.equals(sreq.params.get(RRF_Q_KEY)); // detect our request/response
     }
   }
   ;
