@@ -84,7 +84,16 @@ public class CertAuthPluginTest extends SolrTestCaseJ4 {
         (req, rsp) -> assertEquals(principal, ((HttpServletRequest) req).getUserPrincipal());
     assertTrue(plugin.doAuthenticate(request, null, chain));
 
-    long missingCredentialsCount = getLongMetricValue("solr_core_authentication_plugin_num_authenticated");
+    Labels labels =
+        Labels.of(
+            "otel_scope_name",
+            "org.apache.solr",
+            "category",
+            "SECURITY",
+            "plugin_name",
+            "CertAuthPlugin");
+    long missingCredentialsCount =
+        getLongMetricValue("solr_authentication_num_authenticated", labels);
     assertEquals(1L, missingCredentialsCount);
   }
 
@@ -98,17 +107,24 @@ public class CertAuthPluginTest extends SolrTestCaseJ4 {
     assertFalse(plugin.doAuthenticate(request, response, null));
     verify(response).sendError(eq(401), anyString());
 
-    long missingCredentialsCount = getLongMetricValue("solr_core_authentication_plugin_fail_missing_credentials");
+    Labels labels =
+        Labels.of(
+            "otel_scope_name",
+            "org.apache.solr",
+            "category",
+            "SECURITY",
+            "type",
+            "missing_credentials",
+            "plugin_name",
+            "CertAuthPlugin");
+    long missingCredentialsCount = getLongMetricValue("solr_authentication_failures", labels);
     assertEquals(1L, missingCredentialsCount);
   }
 
-  private long getLongMetricValue(String metricName) {
+  private long getLongMetricValue(String metricName, Labels labels) {
     SolrCore core = h.getCore();
     CounterSnapshot.CounterDataPointSnapshot metric =
-        SolrMetricTestUtils.getCounterDatapoint(
-            core,
-            metricName,
-            Labels.of("otel_scope_name", "org.apache.solr", "category", "SECURITY"));
+        SolrMetricTestUtils.getCounterDatapoint(core, metricName, labels);
     return (metric != null) ? (long) metric.getValue() : 0L;
   }
 }

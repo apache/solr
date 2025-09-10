@@ -44,8 +44,8 @@ public class RTimer {
   }
 
   private static class NanoTimeTimerImpl implements TimerImpl {
-    private long start;
     private final TimeUnit timeUnit;
+    private long start;
 
     public NanoTimeTimerImpl(TimeUnit timeUnit) {
       this.timeUnit = timeUnit;

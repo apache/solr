@@ -17,6 +17,7 @@
 package org.apache.solr.security;
 
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
@@ -30,6 +31,7 @@ import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.eclipse.jetty.client.Request;
@@ -49,7 +51,6 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
   protected AttributedLongCounter numErrors;
   protected AttributedLongCounter requests;
   protected AttributedLongTimer requestTimes;
-  protected AttributedLongCounter totalTime;
   protected AttributedLongCounter numAuthenticated;
   protected AttributedLongCounter numPassThrough;
   protected AttributedLongCounter numWrongCredentials;
@@ -94,8 +95,8 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
       numErrors.inc();
       throw e;
     } finally {
-      long elapsed = Double.valueOf(timer.stop()).longValue();
-      totalTime.add(elapsed);
+      // Record the timing metric
+      timer.stop();
     }
   }
 
@@ -168,53 +169,52 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     Attributes attrsWithCategory =
-        Attributes.builder().putAll(attributes).put("category", getCategory().toString()).build();
+        Attributes.builder()
+            .putAll(attributes)
+            .put("category", getCategory().toString())
+            .put("plugin_name", this.getClass().getSimpleName())
+            .build();
     // Metrics
     numErrors =
         new AttributedLongCounter(
             this.solrMetricsContext.longCounter(
-                "solr_core_authentication_plugin_errors", "Count of errors during authentication"),
+                "solr_authentication_errors", "Count of errors during authentication"),
             attrsWithCategory);
     requests =
         new AttributedLongCounter(
             this.solrMetricsContext.longCounter(
-                "solr_core_authentication_plugin_requests", "Count of requests for authentication"),
+                "solr_authentication_requests", "Count of requests for authentication"),
             attrsWithCategory);
     numAuthenticated =
         new AttributedLongCounter(
             this.solrMetricsContext.longCounter(
-                "solr_core_authentication_plugin_num_authenticated",
-                "Count of successful authentication requests"),
+                "solr_authentication_num_authenticated",
+                "Count of successful requests for authentication"),
             attrsWithCategory);
     numPassThrough =
         new AttributedLongCounter(
             this.solrMetricsContext.longCounter(
-                "solr_core_authentication_plugin_num_pass_through",
-                "Count of skipped authentication requests"),
+                "solr_authentication_num_pass_through",
+                "Count of requests allowed to pass through without authentication credentials (as enabled with configuration \"blockUnknown\": false)"),
             attrsWithCategory);
+    LongCounter solrAuthenticationPluginFail =
+        this.solrMetricsContext.longCounter(
+            "solr_authentication_failures",
+            "Count of authentication failures (unsuccessful, but processed correctly)");
     numWrongCredentials =
         new AttributedLongCounter(
-            this.solrMetricsContext.longCounter(
-                "solr_core_authentication_plugin_fail_wrong_credentials",
-                "Count of authentication failures due to incorrect credentials"),
-            attrsWithCategory);
+            solrAuthenticationPluginFail,
+            attrsWithCategory.toBuilder().put(TYPE_ATTR, "wrong_credentials").build());
     numMissingCredentials =
         new AttributedLongCounter(
-            this.solrMetricsContext.longCounter(
-                "solr_core_authentication_plugin_fail_missing_credentials",
-                "Count of authentication failures due to missing credentials"),
-            attrsWithCategory);
+            solrAuthenticationPluginFail,
+            attrsWithCategory.toBuilder().put(TYPE_ATTR, "missing_credentials").build());
     requestTimes =
         new AttributedLongTimer(
             this.solrMetricsContext.longHistogram(
-                "solr_core_authentication_plugin_request_times",
-                "Distribution of authentication request durations"),
-            attrsWithCategory);
-    totalTime =
-        new AttributedLongCounter(
-            this.solrMetricsContext.longCounter(
-                "solr_core_authentication_plugin_total_time",
-                "Overall time spent in authentication"),
+                "solr_authentication_request_times",
+                "Distribution of authentication request durations",
+                OtelUnit.NANOSECONDS),
             attrsWithCategory);
   }
 

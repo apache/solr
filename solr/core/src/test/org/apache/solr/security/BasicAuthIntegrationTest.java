@@ -398,6 +398,24 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     }
   }
 
+  private void assertAuthMetricsMinimums(
+      int requests,
+      int authenticated,
+      int passThrough,
+      int failWrongCredentials,
+      int failMissingCredentials,
+      int errors)
+      throws InterruptedException {
+    super.assertAuthMetricsMinimums(
+        BasicAuthPlugin.class,
+        requests,
+        authenticated,
+        passThrough,
+        failWrongCredentials,
+        failMissingCredentials,
+        errors);
+  }
+
   private QueryResponse executeQuery(ModifiableSolrParams params, String user, String pass)
       throws IOException, SolrServerException {
     QueryRequest req = new QueryRequest(params);
