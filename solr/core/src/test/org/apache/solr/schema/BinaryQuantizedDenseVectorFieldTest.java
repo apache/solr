@@ -19,18 +19,18 @@ package org.apache.solr.schema;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.junit.Test;
 
-public class BinaryBitQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBase {
+public class BinaryQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBase {
   @Test
   public void fieldDefinition_correctConfiguration_shouldLoadSchemaField() throws Exception {
     try {
-      initCore("solrconfig-basic.xml", "schema-densevector-bbq.xml");
+      initCore("solrconfig-basic.xml", "schema-densevector-bq.xml");
       IndexSchema schema = h.getCore().getLatestSchema();
 
       SchemaField vector = schema.getField("v_bbq");
       assertNotNull(vector);
 
-      BinaryBitQuantizedDenseVectorField type =
-          (BinaryBitQuantizedDenseVectorField) vector.getType();
+      BinaryQuantizedDenseVectorField type =
+          (BinaryQuantizedDenseVectorField) vector.getType();
       assertEquals(4, type.getDimension());
       assertTrue(vector.indexed());
       assertTrue(vector.stored());

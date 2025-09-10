@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.lucene102.Lucene102HnswBinaryQuantizedVectorsFormat;
 
-public class BinaryBitQuantizedDenseVectorField extends DenseVectorField {
+public class BinaryQuantizedDenseVectorField extends DenseVectorField {
 
   @Override
   public KnnVectorsFormat buildKnnVectorsFormat() {
