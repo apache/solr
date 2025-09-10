@@ -881,10 +881,6 @@ IF DEFINED SOLR_JETTY_HOST (
   set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.jetty.host=%SOLR_JETTY_HOST%"
 )
 
-IF DEFINED SOLR_ZK_EMBEDDED_HOST (
-  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.zk.embedded.host=%SOLR_ZK_EMBEDDED_HOST%"
-)
-
 REM Make sure Solr is not running using netstat
 For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
   IF NOT "%%k"=="0" (
@@ -927,8 +923,8 @@ IF "%SOLR_MODE%"=="solrcloud" (
       set "SCRIPT_ERROR=ZK_HOST is not set and Solr port is %SOLR_PORT%, which would result in an invalid embedded Zookeeper port!"
       goto err
     )
-    IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun
-    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkRun"
+    IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded Zookeeper using -Dsolr.zookeeper.server.enabled
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dsolr.zookeeper.server.enabled=true"
   )
 
   IF NOT "%ZK_CREATE_CHROOT%"=="" (

@@ -58,7 +58,7 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.index.replication.fingerprint.enabled|!solr.disableFingerprint|true|Controls whether index fingerprinting for replication is disabled.
 
-|solr.index.updatelog.enabled|enable.update.log|true (in default solrconfig.xml)|Controls whether the UpdateLog is enabled. The UpdateLog is required for atomic updates, real-time get, and transaction log replay.
+|solr.index.updatelog.enabled|enable.update.log|true (in default solrconfig.xml)|Controls whether the UpdateLog is enabled. The UpdateLog is required for atomic updates, real-time get, and transaction log replay. May be disabled in testing environments or with schemas that don't support versioning (older schemas) to improve performance at the cost of data durability.
 
 |solr.logs.dir|solr.log.dir|server/logs|Specifies the directory where Solr logs are stored.
 
@@ -95,6 +95,15 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 |solr.ui.experimental.enabled|!solr.admin.ui.experimental.disabled|true|Controls whether experimental features in the Solr Admin UI are enabled. When set to `true`, experimental features in the UI are enabled.
 
 |solr.zookeeper.chroot.create|createZkChroot|false|Controls whether a ZooKeeper chroot is created if it doesn't exist.
+
+|solr.zookeeper.embedded.host|solr.zk.embedded.host|127.0.0.1|Sets the network interface the Embedded ZooKeeper binds to.
+
+|solr.zookeeper.server.confdir|zkServerConfDir|Defaults to solr.home dir.|Where to store ZooKeeper configuration when running embedded ZooKeeper.
+
+|solr.zookeeper.server.datadir|zkServerDataDir|Defaults to solr.home/zoo_data dir.|Where to store ZooKeeper data when running embedded ZooKeeper.
+
+|solr.zookeeper.server.enabled|zk.run|false|Controls whether embedded ZooKeeper is started. Set by the start script.
+
 |===
 
 == Property Naming Conventions
