@@ -204,6 +204,7 @@ public class MultiAuthPlugin extends AuthenticationPlugin
       // TODO SOLR-17458: Add Otel
       plugin.initializeMetrics(parentContext, Attributes.empty(), scope);
     }
+    super.initializeMetrics(parentContext, attributes, scope);
   }
 
   private String getSchemeFromAuthHeader(final String authHeader) {

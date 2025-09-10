@@ -18,6 +18,7 @@ package org.apache.solr.metrics.otel.instruments;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongHistogram;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.util.RTimer;
 
 /**
@@ -32,16 +33,29 @@ public class AttributedLongTimer extends AttributedLongHistogram {
 
   /**
    * Return a {@link MetricTimer} and starts the timer. When the timer calls {@link
-   * MetricTimer#stop()}, the elapsed time is recorded
+   * MetricTimer#stop()}, the elapsed time is recorded, in milliseconds
    */
   public MetricTimer start() {
     return new MetricTimer(this);
+  }
+
+  /**
+   * Return a {@link MetricTimer} and starts the timer. When the timer calls {@link
+   * MetricTimer#stop()}, the elapsed time is recorded, in the specified TimeUnit
+   */
+  public MetricTimer start(TimeUnit unit) {
+    return new MetricTimer(this, unit);
   }
 
   public static class MetricTimer extends RTimer {
     private final AttributedLongTimer bound;
 
     private MetricTimer(AttributedLongTimer bound) {
+      this(bound, TimeUnit.MILLISECONDS);
+    }
+
+    private MetricTimer(AttributedLongTimer bound, TimeUnit unit) {
+      super(unit);
       this.bound = bound;
     }
 

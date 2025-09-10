@@ -24,6 +24,11 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
+import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -43,7 +48,10 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -59,32 +67,22 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final List<String> AUTH_METRICS_KEYS =
       Arrays.asList(
-          "errors",
-          "requests",
-          "authenticated",
-          "passThrough",
-          "failWrongCredentials",
-          "failMissingCredentials",
-          "requestTimes",
-          "totalTime");
-  private static final List<String> AUTH_METRICS_METER_KEYS = Arrays.asList("errors", "count");
+          "solr_authentication_errors",
+          "solr_authentication_requests",
+          "solr_authentication_num_authenticated",
+          "solr_authentication_num_pass_through",
+          "solr_authentication_failures/wrong_credentials",
+          "solr_authentication_failures/missing_credentials",
+          "solr_authentication_request_times_nanoseconds");
+  private static final List<String> AUTH_METRICS_METER_KEYS =
+      Arrays.asList("solr_authentication_errors", "count");
   private static final List<String> AUTH_METRICS_TIMER_KEYS =
-      Collections.singletonList("requestTimes");
-  private static final String METRICS_PREFIX_PKI = "SECURITY./authentication/pki.";
-  private static final String METRICS_PREFIX = "SECURITY./authentication.";
+      Collections.singletonList("solr_authentication_request_times_nanoseconds");
 
   @SuppressWarnings({"rawtypes"})
   public static final Predicate NOT_NULL_PREDICATE = o -> o != null;
 
   private static final List<String> AUDIT_METRICS_KEYS = Arrays.asList("count");
-  private static final List<String> AUTH_METRICS_TO_COMPARE =
-      Arrays.asList(
-          "requests",
-          "authenticated",
-          "passThrough",
-          "failWrongCredentials",
-          "failMissingCredentials",
-          "errors");
   private static final List<String> AUDIT_METRICS_TO_COMPARE = Arrays.asList("count");
 
   @BeforeClass
@@ -106,8 +104,22 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       int failMissingCredentials,
       int errors)
       throws InterruptedException {
-    assertAuthMetricsMinimums(
-        METRICS_PREFIX_PKI,
+    String handler = "/authentication/pki";
+    String registryName = "solr.node";
+    Labels labels =
+        Labels.of(
+            "otel_scope_name",
+            "org.apache.solr",
+            "category",
+            "SECURITY",
+            "handler",
+            handler,
+            "plugin_name",
+            org.apache.solr.security.PKIAuthenticationPlugin.class.getSimpleName());
+    assertAuthMetricsMinimumsPrometheus(
+        handler,
+        registryName,
+        labels,
         requests,
         authenticated,
         passThrough,
@@ -123,6 +135,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
    * desired params and timeout
    */
   protected void assertAuthMetricsMinimums(
+      Class<? extends AuthenticationPlugin> authPluginClass,
       int requests,
       int authenticated,
       int passThrough,
@@ -130,8 +143,22 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       int failMissingCredentials,
       int errors)
       throws InterruptedException {
-    assertAuthMetricsMinimums(
-        METRICS_PREFIX,
+    String handler = "/authentication";
+    String registryName = "solr.node";
+    Labels labels =
+        Labels.of(
+            "otel_scope_name",
+            "org.apache.solr",
+            "category",
+            "SECURITY",
+            "handler",
+            handler,
+            "plugin_name",
+            authPluginClass.getSimpleName());
+    assertAuthMetricsMinimumsPrometheus(
+        handler,
+        registryName,
+        labels,
         requests,
         authenticated,
         passThrough,
@@ -169,35 +196,35 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     return counts;
   }
 
-  /**
-   * Common test method to be able to check auth metrics from any authentication plugin
-   *
-   * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and
-   *     "SECURITY./authentication/pki." for PKI
-   */
-  private void assertAuthMetricsMinimums(
-      String prefix,
+  /** Common test method to be able to check auth metrics from any authentication plugin */
+  void assertAuthMetricsMinimumsPrometheus(
+      String handler,
+      String registryName,
+      Labels labels,
       int requests,
       int authenticated,
       int passThrough,
       int failWrongCredentials,
       int failMissingCredentials,
-      int errors)
-      throws InterruptedException {
+      int errors) {
     Map<String, Long> expectedCounts = new HashMap<>();
-    expectedCounts.put("requests", (long) requests);
-    expectedCounts.put("authenticated", (long) authenticated);
-    expectedCounts.put("passThrough", (long) passThrough);
-    expectedCounts.put("failWrongCredentials", (long) failWrongCredentials);
-    expectedCounts.put("failMissingCredentials", (long) failMissingCredentials);
-    expectedCounts.put("errors", (long) errors);
+    expectedCounts.put("solr_authentication_requests", (long) requests);
+    expectedCounts.put("solr_authentication_num_authenticated", (long) authenticated);
+    expectedCounts.put("solr_authentication_num_pass_through", (long) passThrough);
+    expectedCounts.put(
+        "solr_authentication_failures/wrong_credentials", (long) failWrongCredentials);
+    expectedCounts.put(
+        "solr_authentication_failures/missing_credentials", (long) failMissingCredentials);
+    expectedCounts.put("solr_authentication_errors", (long) errors);
 
-    final Map<String, Long> counts = countSecurityMetrics(cluster, prefix, AUTH_METRICS_KEYS);
-    final boolean success = isMetricsEqualOrLarger(AUTH_METRICS_TO_COMPARE, expectedCounts, counts);
+    final Map<String, Long> counts =
+        countSecurityMetricsPrometheus(cluster, AUTH_METRICS_KEYS, registryName, labels);
+    final boolean success =
+        expectedCounts.keySet().stream().allMatch(k -> counts.get(k) >= expectedCounts.get(k));
 
     assertTrue(
-        "Expected metric minimums for prefix "
-            + prefix
+        "Expected metric minimums for handler "
+            + handler
             + ": "
             + expectedCounts
             + ", but got: "
@@ -206,10 +233,107 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
             + "security.json; see SOLR-13464 for test work around)",
         success);
 
-    if (counts.get("requests") > 0) {
-      assertTrue("requestTimes count not > 1", counts.get("requestTimes") > 1);
-      assertTrue("totalTime not > 0", counts.get("totalTime") > 0);
+    if (counts.get("solr_authentication_requests") > 0) {
+      assertTrue(
+          "requestTimes count not > 0",
+          counts.get("solr_authentication_request_times_nanoseconds") > 0);
     }
+  }
+
+  /**
+   * Common test method to sum the prometheus metrics from any authentication plugin from all solr
+   * core containers
+   */
+  Map<String, Long> countSecurityMetricsPrometheus(
+      MiniSolrCloudCluster cluster, List<String> keys, String registryName, Labels labels) {
+    List<Map<String, DataPointSnapshot>> metrics = new ArrayList<>();
+    cluster
+        .getJettySolrRunners()
+        .forEach(
+            r -> {
+              metrics.add(getMetricValues(r.getCoreContainer(), keys, registryName, labels));
+            });
+
+    Map<String, Long> counts = new HashMap<>();
+    keys.forEach(
+        k -> {
+          counts.put(k, sumCountPrometheus(k, metrics));
+        });
+    return counts;
+  }
+
+  private long counterToLong(CounterSnapshot.CounterDataPointSnapshot metric) {
+    if (metric == null) {
+      return 0L;
+    }
+    return (long) metric.getValue();
+  }
+
+  private long histogramToLongCount(HistogramSnapshot.HistogramDataPointSnapshot metric) {
+    if (metric == null) {
+      return 0;
+    }
+    return metric.getCount();
+  }
+
+  // Have to sum the metrics from all three shards/nodes
+  private long sumCountPrometheus(String key, List<Map<String, DataPointSnapshot>> metricsPerNode) {
+    assertTrue("Metric " + key + " does not exist", metricsPerNode.get(0).containsKey(key));
+    if (AUTH_METRICS_METER_KEYS.contains(key)) {
+      return metricsPerNode.stream()
+          .mapToLong(
+              nodeMap -> counterToLong((CounterSnapshot.CounterDataPointSnapshot) nodeMap.get(key)))
+          .sum();
+    } else if (AUTH_METRICS_TIMER_KEYS.contains(key)) {
+      // Sum of the count of timer metrics (NOT the sum of their values)
+      return metricsPerNode.stream()
+          .mapToLong(
+              nodeMap ->
+                  histogramToLongCount(
+                      (HistogramSnapshot.HistogramDataPointSnapshot) nodeMap.get(key)))
+          .sum();
+    } else {
+      return metricsPerNode.stream()
+          .mapToLong(
+              nodeMap -> counterToLong((CounterSnapshot.CounterDataPointSnapshot) nodeMap.get(key)))
+          .sum();
+    }
+  }
+
+  private static Map<String, DataPointSnapshot> getMetricValues(
+      CoreContainer coreContainer, List<String> metricNames, String registryName, Labels labels) {
+    Map<String, DataPointSnapshot> metrics = new HashMap<>();
+    PrometheusMetricReader prometheusMetricReader =
+        SolrMetricTestUtils.getPrometheusMetricReader(coreContainer, registryName);
+    for (String metricName : metricNames) {
+      if ("solr_authentication_request_times_nanoseconds".equals(metricName)) {
+        HistogramSnapshot.HistogramDataPointSnapshot metric =
+            SolrMetricTestUtils.getHistogramDatapoint(prometheusMetricReader, metricName, labels);
+        metrics.put(metricName, metric);
+      } else if ("solr_authentication_failures/wrong_credentials".equals(metricName)) {
+        // Fake metric name, actual metric will be in solr_authentication_failures with label type:
+        // wrong_credentials
+        Labels wrongCredsLabels = Labels.of("type", "wrong_credentials").merge(labels);
+        CounterSnapshot.CounterDataPointSnapshot wrongCredsMetric =
+            SolrMetricTestUtils.getCounterDatapoint(
+                prometheusMetricReader, "solr_authentication_failures", wrongCredsLabels);
+
+        metrics.put("solr_authentication_failures/wrong_credentials", wrongCredsMetric);
+      } else if ("solr_authentication_failures/missing_credentials".equals(metricName)) {
+        // Fake metric name, actual metric will be in solr_authentication_failures with label type:
+        // missing_credentials
+        Labels missingCredsLabels = Labels.of("type", "missing_credentials").merge(labels);
+        CounterSnapshot.CounterDataPointSnapshot missingCredsMetric =
+            SolrMetricTestUtils.getCounterDatapoint(
+                prometheusMetricReader, "solr_authentication_failures", missingCredsLabels);
+        metrics.put("solr_authentication_failures/missing_credentials", missingCredsMetric);
+      } else {
+        CounterSnapshot.CounterDataPointSnapshot metric =
+            SolrMetricTestUtils.getCounterDatapoint(prometheusMetricReader, metricName, labels);
+        metrics.put(metricName, metric);
+      }
+    }
+    return metrics;
   }
 
   /**

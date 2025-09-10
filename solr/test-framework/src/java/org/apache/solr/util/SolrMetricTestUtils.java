@@ -25,6 +25,7 @@ import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -169,7 +170,8 @@ public final class SolrMetricTestUtils {
 
   public static DataPointSnapshot getDataPointSnapshot(
       PrometheusMetricReader reader, String metricName, Labels labels) {
-    return reader.collect().stream()
+    MetricSnapshots metricSnapshots = reader.collect();
+    return metricSnapshots.stream()
         .filter(ms -> ms.getMetadata().getPrometheusName().equals(metricName))
         .findFirst()
         .flatMap(
@@ -211,6 +213,11 @@ public final class SolrMetricTestUtils {
   private static <T> T getDatapoint(
       SolrCore core, String metricName, Labels labels, Class<T> snapshotType) {
     var reader = getPrometheusMetricReader(core);
+    return getDataPoint(reader, metricName, labels, snapshotType);
+  }
+
+  private static <T> T getDataPoint(
+      PrometheusMetricReader reader, String metricName, Labels labels, Class<T> snapshotType) {
     return snapshotType.cast(SolrMetricTestUtils.getDataPointSnapshot(reader, metricName, labels));
   }
 
@@ -222,6 +229,17 @@ public final class SolrMetricTestUtils {
   public static CounterSnapshot.CounterDataPointSnapshot getCounterDatapoint(
       SolrCore core, String metricName, Labels labels) {
     return getDatapoint(core, metricName, labels, CounterSnapshot.CounterDataPointSnapshot.class);
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot getCounterDatapoint(
+      PrometheusMetricReader reader, String metricName, Labels labels) {
+    return getDataPoint(reader, metricName, labels, CounterSnapshot.CounterDataPointSnapshot.class);
+  }
+
+  public static HistogramSnapshot.HistogramDataPointSnapshot getHistogramDatapoint(
+      PrometheusMetricReader reader, String metricName, Labels labels) {
+    return getDataPoint(
+        reader, metricName, labels, HistogramSnapshot.HistogramDataPointSnapshot.class);
   }
 
   public static HistogramSnapshot.HistogramDataPointSnapshot getHistogramDatapoint(
