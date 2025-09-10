@@ -23,9 +23,9 @@
   <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
 
   <!-- Binary Bit Quantized vectors -->
-  <fieldType name="knn_vector_binary_bit_quantized" class="solr.BinaryBitQuantizedDenseVectorField" vectorDimension="4"/>
+  <fieldType name="knn_vector_binary_quantized" class="solr.BinaryQuantizedDenseVectorField" vectorDimension="4"/>
 
-  <field name="v_bbq" type="knn_vector_binary_bit_quantized" indexed="true" stored="true" />
+  <field name="v_bq" type="knn_vector_binary_quantized" indexed="true" stored="true" />
 
   <field name="string_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
