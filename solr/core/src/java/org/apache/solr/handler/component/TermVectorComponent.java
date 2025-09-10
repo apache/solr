@@ -416,7 +416,7 @@ public class TermVectorComponent extends SearchComponent {
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
 
       NamedList<Object> termVectorsNL = new NamedList<>();
 

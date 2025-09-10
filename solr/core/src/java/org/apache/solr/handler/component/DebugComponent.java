@@ -200,10 +200,10 @@ public class DebugComponent extends SearchComponent {
       NamedList<Object> stageList =
           (NamedList<Object>)
               ((NamedList<Object>) rb.getDebugInfo().get("track"))
-                  .get(getDistributedStageName(rb.getStage()));
+                  .get(getDistributedStageName(rb.stage));
       if (stageList == null) {
         stageList = new SimpleOrderedMap<>();
-        rb.addDebug(stageList, "track", getDistributedStageName(rb.getStage()));
+        rb.addDebug(stageList, "track", getDistributedStageName(rb.stage));
       }
       for (ShardResponse response : sreq.responses) {
         stageList.add(response.getShard(), getTrackResponse(response));
@@ -216,7 +216,7 @@ public class DebugComponent extends SearchComponent {
   @Override
   @SuppressWarnings({"unchecked"})
   public void finishStage(ResponseBuilder rb) {
-    if (rb.isDebug() && rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.isDebug() && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
       NamedList<Object> info = rb.getDebugInfo();
       NamedList<Object> explain = new SimpleOrderedMap<>();
 

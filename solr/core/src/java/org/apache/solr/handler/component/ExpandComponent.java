@@ -454,7 +454,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
-    if (rb.doExpand && rb.getStage() < finishingStage) {
+    if (rb.doExpand && rb.stage < finishingStage) {
       return finishingStage;
     }
     return ResponseBuilder.STAGE_DONE;
@@ -507,7 +507,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       return;
     }
 
-    if (rb.getStage() != finishingStage) {
+    if (rb.stage != finishingStage) {
       return;
     }
 

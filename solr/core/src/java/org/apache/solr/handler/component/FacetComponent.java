@@ -361,7 +361,7 @@ public class FacetComponent extends SearchComponent {
       return ResponseBuilder.STAGE_DONE;
     }
 
-    if (rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
       return ResponseBuilder.STAGE_DONE;
     }
     // Overlap facet refinement requests (those shards that we need a count
@@ -846,7 +846,7 @@ public class FacetComponent extends SearchComponent {
   }
 
   private void removeQueryFacetsUnderLimits(ResponseBuilder rb) {
-    if (rb.getStage() != ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.stage != ResponseBuilder.STAGE_EXECUTE_QUERY) {
       return;
     }
     FacetInfo fi = rb._facetInfo;
@@ -876,7 +876,7 @@ public class FacetComponent extends SearchComponent {
   }
 
   private void removeRangeFacetsUnderLimits(ResponseBuilder rb) {
-    if (rb.getStage() != ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.stage != ResponseBuilder.STAGE_EXECUTE_QUERY) {
       return;
     }
 
@@ -895,7 +895,7 @@ public class FacetComponent extends SearchComponent {
   }
 
   private void removeFieldFacetsUnderLimits(ResponseBuilder rb) {
-    if (rb.getStage() != ResponseBuilder.STAGE_DONE) {
+    if (rb.stage != ResponseBuilder.STAGE_DONE) {
       return;
     }
 
@@ -1089,7 +1089,7 @@ public class FacetComponent extends SearchComponent {
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (!rb.doFacets || rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) return;
+    if (!rb.doFacets || rb.stage != ResponseBuilder.STAGE_GET_FIELDS) return;
     // wait until STAGE_GET_FIELDS
     // so that "result" is already stored in the response (for aesthetics)
 
