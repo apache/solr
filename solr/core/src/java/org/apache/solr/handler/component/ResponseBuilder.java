@@ -130,6 +130,10 @@ public class ResponseBuilder {
   public static final int STAGE_GET_FIELDS = 3000;
   public static final int STAGE_DONE = Integer.MAX_VALUE;
 
+  protected int getDoneStage() {
+    return STAGE_DONE;
+  }
+
   // public access is deprecated, please use getStage and setStage instead.
   @Deprecated public int stage; // What stage is this current request at?
 
