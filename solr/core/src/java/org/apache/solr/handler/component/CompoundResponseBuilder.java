@@ -23,10 +23,56 @@ import org.apache.solr.response.SolrQueryResponse;
 
 public class CompoundResponseBuilder extends ResponseBuilder {
 
-  public final List<ResponseBuilder> responseBuilders = new ArrayList<>();
+  public static final int STAGE_FUSION = STAGE_GET_FIELDS + 1;
+
+  public static final String RRF_Q_KEY = "rrf.q.key";
+
+  public static class Inner extends ResponseBuilder {
+    private final CompoundResponseBuilder owner;
+    private final String my_q_key;
+
+    public Inner(CompoundResponseBuilder owner, String my_q_key) {
+      super(owner.req, new SolrQueryResponse(), owner.components);
+      this.owner = owner;
+      this.my_q_key = my_q_key;
+    }
+
+    @Override
+    protected String getQParameterName() {
+      return my_q_key;
+    }
+
+    protected int getDoneStage() {
+      return STAGE_FUSION;
+    }
+
+    @Override
+    public int getStage() {
+      return owner.getStage();
+    }
+
+    @Override
+    public void addRequest(SearchComponent me, ShardRequest sreq) {
+      // send something that won't be used but that we can use to detect only our request/response
+      sreq.params.set(RRF_Q_KEY, my_q_key);
+      owner.addRequest(me, sreq);
+    }
+
+    public boolean isThisFromMe(ShardRequest sreq) {
+      return sreq.params.get(RRF_Q_KEY) == my_q_key; // detect our request/response
+    }
+  }
+  ;
+
+  public final List<Inner> responseBuilders = new ArrayList<>();
 
   public CompoundResponseBuilder(
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
     super(req, rsp, components);
+  }
+
+  @Override
+  protected String getQParameterName() {
+    return req.getParams().get(RRF_Q_KEY, super.getQParameterName());
   }
 }

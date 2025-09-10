@@ -17,63 +17,74 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.common.SolrDocumentList;
 
 public class CompoundQueryComponent extends QueryComponent {
+  public static final String COMPONENT_NAME = "compound_query";
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
-    if (rb instanceof CompoundResponseBuilder) {
-      CompoundResponseBuilder crb = (CompoundResponseBuilder) rb;
-
-      ResponseBuilder rb_1 = new ResponseBuilder(rb.req, new SolrQueryResponse(), rb.components);
-      rb_1.setQueryString(rb_1.req.getParams().get("rrf.q.1"));
-      crb.responseBuilders.add(rb_1);
-
-      ResponseBuilder rb_2 = new ResponseBuilder(rb.req, new SolrQueryResponse(), rb.components);
-      rb_2.setQueryString(rb_2.req.getParams().get("rrf.q.2"));
-      crb.responseBuilders.add(rb_2);
-
-      for (ResponseBuilder rb_i : crb.responseBuilders) {
-        super.prepare(rb_i);
+    if (rb instanceof CompoundResponseBuilder crb) {
+      if (rb.req.getParams().get(CompoundResponseBuilder.RRF_Q_KEY) == null) {
+        crb.responseBuilders.add(new CompoundResponseBuilder.Inner(crb, "rrf.q.1"));
+        crb.responseBuilders.add(new CompoundResponseBuilder.Inner(crb, "rrf.q.2"));
+        for (var rb_i : crb.responseBuilders) {
+          super.prepare(rb_i);
+        }
+      } else {
+        super.prepare(rb);
       }
-    }
-  }
-
-  @Override
-  public void process(ResponseBuilder rb) throws IOException {
-    if (rb instanceof CompoundResponseBuilder) {
-      CompoundResponseBuilder crb = (CompoundResponseBuilder) rb;
-
-      for (ResponseBuilder rb_i : crb.responseBuilders) {
-        super.process(rb_i);
-      }
-
-      // TODO: combine crb.responseBuilders into rb
     }
   }
 
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
-    // TODO
+    int nextStage = ResponseBuilder.STAGE_DONE;
+    if (rb instanceof CompoundResponseBuilder crb) {
+      if (rb.getStage() < CompoundResponseBuilder.STAGE_FUSION) {
+        for (var rb_i : crb.responseBuilders) {
+          nextStage = Math.min(nextStage, super.distributedProcess(rb_i));
+        }
+      } else if (rb.getStage() == CompoundResponseBuilder.STAGE_FUSION) {
+        nextStage = doFusion(crb);
+      }
+    }
+    return nextStage;
+  }
+
+  private int doFusion(CompoundResponseBuilder crb) {
+    final SolrDocumentList responseDocs = new SolrDocumentList();
+    int numFound = 0;
+    for (var rb_i : crb.responseBuilders) {
+      responseDocs.addAll(rb_i.getResponseDocs());
+      numFound += rb_i.getResponseDocs().getNumFound();
+    }
+    responseDocs.setNumFound(numFound);
+    responseDocs.setNumFoundExact(false);
+    crb.setResponseDocs(responseDocs);
     return ResponseBuilder.STAGE_DONE;
   }
 
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
-    // TODO
+    if (rb instanceof CompoundResponseBuilder crb) {
+      for (var rb_i : crb.responseBuilders) {
+        if (rb_i.isThisFromMe(sreq)) {
+          super.handleResponses(rb_i, sreq);
+        }
+      }
+    }
   }
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb instanceof CompoundResponseBuilder) {
-      CompoundResponseBuilder crb = (CompoundResponseBuilder) rb;
-
-      for (ResponseBuilder rb_i : crb.responseBuilders) {
+    if (rb instanceof CompoundResponseBuilder crb) {
+      for (var rb_i : crb.responseBuilders) {
         super.finishStage(rb_i);
       }
-
-      // TODO: combine crb.responseBuilders into rb
+      if (rb.getStage() == CompoundResponseBuilder.STAGE_FUSION) {
+        rb.rsp.addResponse(rb.getResponseDocs());
+      }
     }
   }
 
