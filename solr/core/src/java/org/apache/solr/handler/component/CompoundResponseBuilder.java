@@ -54,7 +54,7 @@ public class CompoundResponseBuilder extends ResponseBuilder {
 
     @Override
     public void addRequest(SearchComponent me, ShardRequest sreq) {
-      // send something that won't be used but that we can use to detect only our request/response
+      // send what CompoundQueryComponent uses to detect shard requests and also make it something that we can use to detect only our request/response
       sreq.params.set(RRF_Q_KEY, my_q_key);
       owner.addRequest(me, sreq);
     }
