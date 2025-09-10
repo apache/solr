@@ -300,7 +300,7 @@ public class ZkController implements Closeable {
       String zkServerAddress,
       int zkClientConnectTimeout,
       CloudConfig cloudConfig)
-      throws InterruptedException, TimeoutException, IOException {
+      throws InterruptedException, TimeoutException, IOException, KeeperException {
 
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     this.cc = cc;
@@ -375,6 +375,8 @@ public class ZkController implements Closeable {
     this.overseerFailureMap = Overseer.getFailureMap(zkClient);
     this.asyncIdsMap = Overseer.getAsyncIdsMap(zkClient);
 
+    createClusterZkNodes(zkClient);
+
     zkStateReader =
         new ZkStateReader(
             zkClient,
@@ -382,19 +384,29 @@ public class ZkController implements Closeable {
               if (cc != null) cc.securityNodeChanged();
             });
 
+    zkStateReader.createClusterStateWatchersAndUpdate(); // and reads cluster properties
+
+    // note: Can't read cluster properties until createClusterState ^ is called
+    final String urlSchemeFromClusterProp =
+        zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, ZkStateReader.HTTP);
+    // this must happen after zkStateReader has initialized the cluster props
+    this.baseURL = URLUtil.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
+
     // Now that zkStateReader is available, read OVERSEER_ENABLED.
-    // When overseerEnabled is false, both distributed features should be enabled
-    Boolean overseerEnabled =
-        zkStateReader.getClusterProperty(ZkStateReader.OVERSEER_ENABLED, null);
-    if (overseerEnabled == null) {
-      overseerEnabled = EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
-    }
+    final boolean overseerEnabled =
+        Boolean.parseBoolean(
+            String.valueOf(
+                zkStateReader.getClusterProperty(
+                    ZkStateReader.OVERSEER_ENABLED,
+                    EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true))));
+
     if (overseerEnabled) {
       log.info("The Overseer is enabled.  It will process all cluster commands & state updates.");
     } else {
       log.info(
           "The Overseer is disabled.  Cluster commands & state updates will happen on any/all nodes.");
     }
+    // These "distributed" things replace the Overseer when that's disabled
     this.distributedClusterStateUpdater = new DistributedClusterStateUpdater(!overseerEnabled);
     this.distributedCommandRunner =
         !overseerEnabled
@@ -1068,16 +1080,6 @@ public class ZkController implements Closeable {
 
   private void init() {
     try {
-      createClusterZkNodes(zkClient);
-      zkStateReader.createClusterStateWatchersAndUpdate();
-
-      // note: Can't read cluster properties until createClusterState ^ is called
-      final String urlSchemeFromClusterProp =
-          zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, ZkStateReader.HTTP);
-
-      // this must happen after zkStateReader has initialized the cluster props
-      this.baseURL = Utils.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
-
       checkForExistingEphemeralNode();
       registerLiveNodesListener();
       checkClusterVersionCompatibility();
@@ -1109,10 +1111,6 @@ public class ZkController implements Closeable {
 
       // Do this last to signal we're up.
       createEphemeralLiveNode();
-    } catch (IOException e) {
-      log.error("", e);
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Can't create ZooKeeperController", e);
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();

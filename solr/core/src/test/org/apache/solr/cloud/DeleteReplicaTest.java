@@ -62,12 +62,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     System.setProperty("distribUpdateSoTimeout", "15000");
 
     // these tests need to be isolated, so we don't share the minicluster
-    configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
-        .flipOverseerEnablement()
-        // Some tests (this one) use "the other" cluster Collection API execution strategy to
-        // increase coverage
-        .configure();
+    configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   @After
