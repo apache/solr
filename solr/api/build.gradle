@@ -61,8 +61,10 @@ resolve {
 
 dependencies {
     api platform(project(":platform"))
+    swaggerDeps platform(project(":platform"))
+
     runtimeOnly libs.slf4j.api
-    
+
     implementation libs.jakarta.ws.rsapi
     api libs.fasterxml.jackson.core.annotations
     api libs.swagger3.annotations.jakarta
