@@ -61,15 +61,13 @@ public class KnnQParser extends AbstractVectorQParserBase {
   protected Query wrapWithPatienceIfEarlyTerminationEnabled(Query knnQuery) {
     final Double saturationThreshold =
         Optional.ofNullable(localParams.get(SATURATION_THRESHOLD))
-            .map(KnnQParser::validateSaturationThreshold)
+            .map(Double::parseDouble)
             .orElse(null);
 
     final Integer patience =
-        Optional.ofNullable(localParams.get(PATIENCE))
-            .map(KnnQParser::validatePatience)
-            .orElse(null);
+        Optional.ofNullable(localParams.get(PATIENCE)).map(Integer::parseInt).orElse(null);
 
-    final boolean useCustomParams = (saturationThreshold != null && patience != null);
+    final boolean useExplicitParams = (saturationThreshold != null && patience != null);
     if ((saturationThreshold == null) != (patience == null)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -77,66 +75,19 @@ public class KnnQParser extends AbstractVectorQParserBase {
     }
 
     final boolean earlyTerminationEnabled =
-        localParams.getBool(EARLY_TERMINATION, DEFAULT_EARLY_TERMINATION) || useCustomParams;
+        localParams.getBool(EARLY_TERMINATION, DEFAULT_EARLY_TERMINATION) || useExplicitParams;
 
-    if (!earlyTerminationEnabled) {
-      return knnQuery;
-    }
-
-    return switch (knnQuery) {
-      case KnnFloatVectorQuery knnFloatQuery -> useCustomParams
-          ? PatienceKnnVectorQuery.fromFloatQuery(knnFloatQuery, saturationThreshold, patience)
-          : PatienceKnnVectorQuery.fromFloatQuery(knnFloatQuery);
-      case KnnByteVectorQuery knnByteQuery -> useCustomParams
-          ? PatienceKnnVectorQuery.fromByteQuery(knnByteQuery, saturationThreshold, patience)
-          : PatienceKnnVectorQuery.fromByteQuery(knnByteQuery);
-      default -> throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "earlyTermination enabled but this is not a Knn*VectorQuery: " + knnQuery.getClass());
-    };
-  }
-
-  private static Double validateSaturationThreshold(String value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      double parsedValue = Double.parseDouble(value);
-      if (Double.isNaN(parsedValue)
-          || Double.isInfinite(parsedValue)
-          || parsedValue <= 0.0
-          || parsedValue >= 1.0) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "Invalid saturationThreshold value: must be a double between 0.0 and 1.0 (exclusive), got "
-                + parsedValue);
+    if (earlyTerminationEnabled) {
+      if (knnQuery instanceof KnnFloatVectorQuery knnFloatQuery) {
+        return useExplicitParams
+            ? PatienceKnnVectorQuery.fromFloatQuery(knnFloatQuery, saturationThreshold, patience)
+            : PatienceKnnVectorQuery.fromFloatQuery(knnFloatQuery);
+      } else if (knnQuery instanceof KnnByteVectorQuery knnByteQuery) {
+        return useExplicitParams
+            ? PatienceKnnVectorQuery.fromByteQuery(knnByteQuery, saturationThreshold, patience)
+            : PatienceKnnVectorQuery.fromByteQuery(knnByteQuery);
       }
-      return parsedValue;
-    } catch (NumberFormatException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Invalid saturationThreshold value: not a valid double, got " + value,
-          e);
     }
-  }
-
-  private static Integer validatePatience(String value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      int parsedValue = Integer.parseInt(value);
-      if (parsedValue < 7) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "Invalid patience value: must be an integer >= 7, got " + parsedValue);
-      }
-      return parsedValue;
-    } catch (NumberFormatException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Invalid patience value: not a valid integer, got " + value,
-          e);
-    }
+    return knnQuery;
   }
 }
