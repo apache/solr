@@ -19,39 +19,33 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.embedded.JettyConfig;
 import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12386")
-public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
+public class ConcurrentCreateRoutedAliasTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private MiniSolrCloudCluster solrCluster;
 
   // to avoid having to delete stuff...
   volatile int num = 0;
 
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-    solrCluster = new MiniSolrCloudCluster(4, createTempDir(), JettyConfig.builder().build());
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    configureCluster(1).configure();
   }
 
   @Override
   @After
   public void tearDown() throws Exception {
-    solrCluster.shutdown();
+    cluster.deleteAllCollections();
     super.tearDown();
   }
 
@@ -95,7 +89,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
     int numStart = num;
     for (; num < threads.length + numStart; num++) {
       final String aliasName = "testAlias" + num;
-      final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+      final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
 
       int i = num - numStart;
@@ -119,7 +113,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
     System.out.println("NUM ==> " + num);
     for (; num < threads.length + numStart; num++) {
       final String aliasName = "testAliasCplx" + num;
-      final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+      final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
 
       int i = num - numStart;

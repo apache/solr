@@ -392,13 +392,19 @@ public class ZkController implements Closeable {
     // this must happen after zkStateReader has initialized the cluster props
     this.baseURL = URLUtil.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
 
-    // Now that zkStateReader is available, read OVERSEER_ENABLED.
+    checkForExistingEphemeralNode(); // removes our live node if present
+
+    // Now that zkStateReader is available, read OVERSEER_ENABLED & live nodes.
+    final Optional<SolrVersion> lowestNodeVersion = zkStateReader.fetchLowestSolrVersion();
+    boolean defaultOverseerEnabled =
+        lowestNodeVersion.orElse(SolrVersion.LATEST).lessThan(SolrVersion.forIntegers(10, 0, 0));
     final boolean overseerEnabled =
         Boolean.parseBoolean(
             String.valueOf(
                 zkStateReader.getClusterProperty(
                     ZkStateReader.OVERSEER_ENABLED,
-                    EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true))));
+                    EnvUtils.getPropertyAsBool(
+                        "solr.cloud.overseer.enabled", defaultOverseerEnabled))));
 
     if (overseerEnabled) {
       log.info("The Overseer is enabled.  It will process all cluster commands & state updates.");
@@ -413,7 +419,18 @@ public class ZkController implements Closeable {
             ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
             : Optional.empty();
 
-    init();
+    if (lowestNodeVersion.isPresent()) {
+      checkClusterVersionCompatibility(lowestNodeVersion.get());
+    }
+
+    registerLiveNodesListener();
+
+    startOverseer();
+
+    Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
+    if (stat != null && stat.getNumChildren() > 0) {
+      publishAndWaitForDownStates();
+    }
 
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
       this.overseerJobQueue = null;
@@ -423,6 +440,10 @@ public class ZkController implements Closeable {
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
     this.sysPropsCacher = new NodesSysPropsCacher(cc.getDefaultHttpSolrClient(), zkStateReader);
+
+    // Do this last to signal we're up.
+    createEphemeralLiveNode();
+
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -626,49 +647,47 @@ public class ZkController implements Closeable {
   }
 
   /**
-   * Checks version compatibility with other nodes in the cluster. Refuses to start if there's a
-   * major.minor version difference between our Solr version and other nodes in the cluster. Note:
-   * uses live nodes.
+   * Checks version compatibility with other nodes in the cluster. Refuses to start if we're too
+   * old.
+   *
+   * @param clusterVersion from {@link ZkStateReader#fetchLowestSolrVersion()}
    */
-  private void checkClusterVersionCompatibility() throws InterruptedException, KeeperException {
-    Optional<SolrVersion> lowestVersion = zkStateReader.fetchLowestSolrVersion();
-    if (lowestVersion.isPresent()) {
-      SolrVersion ourVersion = SolrVersion.LATEST;
-      SolrVersion clusterVersion = lowestVersion.get();
+  private void checkClusterVersionCompatibility(SolrVersion clusterVersion)
+      throws InterruptedException, KeeperException {
+    SolrVersion ourVersion = SolrVersion.LATEST;
 
-      if (ourVersion.lessThan(clusterVersion)) {
-        log.warn(
-            "Our Solr version {} is older than cluster version {}", ourVersion, clusterVersion);
+    if (!ourVersion.lessThan(clusterVersion)) {
+      return;
+    }
+    log.warn("Our Solr version {} is older than cluster version {}", ourVersion, clusterVersion);
 
-        if (EnvUtils.getPropertyAsBool("solr.cloud.downgrade.enabled", false)) {
-          return;
-        }
+    if (EnvUtils.getPropertyAsBool("solr.cloud.downgrade.enabled", false)) {
+      return;
+    }
 
-        // Check major version compatibility
-        if (ourVersion.getMajorVersion() < clusterVersion.getMajorVersion()) {
-          String message =
-              String.format(
-                  Locale.ROOT,
-                  "Refusing to start Solr, since our version is lower than the lowest version currently running in the cluster. "
-                      + "Our version: %s, lowest version in cluster: %s.",
-                  ourVersion,
-                  clusterVersion);
-          throw new SolrException(ErrorCode.INVALID_STATE, message);
-        }
+    // Check major version compatibility
+    if (ourVersion.getMajorVersion() < clusterVersion.getMajorVersion()) {
+      String message =
+          String.format(
+              Locale.ROOT,
+              "Refusing to start Solr, since our version is lower than the lowest version currently running in the cluster. "
+                  + "Our version: %s, lowest version in cluster: %s.",
+              ourVersion,
+              clusterVersion);
+      throw new SolrException(ErrorCode.INVALID_STATE, message);
+    }
 
-        // Check minor version compatibility within the same major version
-        if (ourVersion.getMajorVersion() == clusterVersion.getMajorVersion()
-            && ourVersion.getMinorVersion() < clusterVersion.getMinorVersion()) {
-          String message =
-              String.format(
-                  Locale.ROOT,
-                  "Refusing to start Solr, since our version is lower than the lowest version currently running in the cluster. "
-                      + "Our version: %s, lowest version in cluster: %s.",
-                  ourVersion,
-                  clusterVersion);
-          throw new SolrException(ErrorCode.INVALID_STATE, message);
-        }
-      }
+    // Check minor version compatibility within the same major version
+    if (ourVersion.getMajorVersion() == clusterVersion.getMajorVersion()
+        && ourVersion.getMinorVersion() < clusterVersion.getMinorVersion()) {
+      String message =
+          String.format(
+              Locale.ROOT,
+              "Refusing to start Solr, since our version is lower than the lowest version currently running in the cluster. "
+                  + "Our version: %s, lowest version in cluster: %s.",
+              ourVersion,
+              clusterVersion);
+      throw new SolrException(ErrorCode.INVALID_STATE, message);
     }
   }
 
@@ -1078,47 +1097,25 @@ public class ZkController implements Closeable {
     }
   }
 
-  private void init() {
-    try {
-      checkForExistingEphemeralNode();
-      registerLiveNodesListener();
-      checkClusterVersionCompatibility();
-
-      // Start the overseer now since the following code may need it's processing.
-      // Note: even when using distributed processing, we still create an Overseer anyway since
-      //    cluster singleton processing is linked to the elected Overseer.
-      if (!zkRunOnly) {
-        overseerElector = new LeaderElector(zkClient);
-        this.overseer =
-            new Overseer(
-                (HttpShardHandler) cc.getShardHandlerFactory().getShardHandler(),
-                cc.getUpdateShardHandler(),
-                CommonParams.CORES_HANDLER_PATH,
-                zkStateReader,
-                this,
-                cloudConfig);
-        ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
-        overseerElector.setup(context);
-        if (cc.nodeRoles.isOverseerAllowedOrPreferred()) {
-          overseerElector.joinElection(context, false);
-        }
-      }
-
-      Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
-      if (stat != null && stat.getNumChildren() > 0) {
-        publishAndWaitForDownStates();
-      }
-
-      // Do this last to signal we're up.
-      createEphemeralLiveNode();
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.error("", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-    } catch (KeeperException e) {
-      log.error("", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+  private void startOverseer() throws InterruptedException, KeeperException {
+    // Note: even when using distributed processing, we still create an Overseer anyway since
+    //    cluster singleton processing is linked to the elected Overseer.
+    if (zkRunOnly) {
+      return;
+    }
+    overseerElector = new LeaderElector(zkClient);
+    this.overseer =
+        new Overseer(
+            (HttpShardHandler) cc.getShardHandlerFactory().getShardHandler(),
+            cc.getUpdateShardHandler(),
+            CommonParams.CORES_HANDLER_PATH,
+            zkStateReader,
+            this,
+            cloudConfig);
+    ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
+    overseerElector.setup(context);
+    if (cc.nodeRoles.isOverseerAllowedOrPreferred()) {
+      overseerElector.joinElection(context, false);
     }
   }
 

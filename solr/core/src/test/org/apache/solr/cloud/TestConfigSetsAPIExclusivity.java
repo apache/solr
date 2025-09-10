@@ -20,14 +20,11 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
-import org.apache.solr.embedded.JettyConfig;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,29 +34,16 @@ import org.slf4j.LoggerFactory;
  * checks that the responses indicate the requests are handled sequentially for the same ConfigSet
  * and base ConfigSet.
  */
-public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
+public class TestConfigSetsAPIExclusivity extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private MiniSolrCloudCluster solrCluster;
   private static final String GRANDBASE_CONFIGSET_NAME = "grandBaseConfigSet1";
   private static final String BASE_CONFIGSET_NAME = "baseConfigSet1";
   private static final String CONFIGSET_NAME = "configSet1";
 
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    if (null != solrCluster) {
-      solrCluster.shutdown();
-      solrCluster = null;
-    }
-    super.tearDown();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    configureCluster(1).configure();
   }
 
   @Test
@@ -67,11 +51,11 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
     int trials = 20;
     setupBaseConfigSet(GRANDBASE_CONFIGSET_NAME);
     CreateThread createBaseThread =
-        new CreateThread(solrCluster, BASE_CONFIGSET_NAME, GRANDBASE_CONFIGSET_NAME, trials);
+        new CreateThread(cluster, BASE_CONFIGSET_NAME, GRANDBASE_CONFIGSET_NAME, trials);
     CreateThread createThread =
-        new CreateThread(solrCluster, CONFIGSET_NAME, BASE_CONFIGSET_NAME, trials);
-    DeleteThread deleteBaseThread = new DeleteThread(solrCluster, BASE_CONFIGSET_NAME, trials);
-    DeleteThread deleteThread = new DeleteThread(solrCluster, CONFIGSET_NAME, trials);
+        new CreateThread(cluster, CONFIGSET_NAME, BASE_CONFIGSET_NAME, trials);
+    DeleteThread deleteBaseThread = new DeleteThread(cluster, BASE_CONFIGSET_NAME, trials);
+    DeleteThread deleteThread = new DeleteThread(cluster, CONFIGSET_NAME, trials);
     List<ConfigSetsAPIThread> threads =
         Arrays.asList(createBaseThread, createThread, deleteBaseThread, deleteThread);
 
@@ -90,9 +74,9 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   }
 
   private void setupBaseConfigSet(String baseConfigSetName) throws Exception {
-    solrCluster.uploadConfigSet(configset("configset-2"), baseConfigSetName);
+    cluster.uploadConfigSet(configset("configset-2"), baseConfigSetName);
     // Make configset untrusted
-    solrCluster.getZkClient();
+    cluster.getZkClient();
   }
 
   private Exception getFirstExceptionOrNull(List<Exception> list) {

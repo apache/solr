@@ -21,43 +21,26 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.TimeOut;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Nightly
-public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
+public class ConcurrentDeleteAndCreateCollectionTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private MiniSolrCloudCluster solrCluster;
-
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    if (null != solrCluster) {
-      solrCluster.shutdown();
-      solrCluster = null;
-    }
-    super.tearDown();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    configureCluster(1).configure();
   }
 
   public void testConcurrentCreateAndDeleteDoesNotFail() throws IOException {
@@ -66,8 +49,8 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     final CreateDeleteCollectionThread[] threads = new CreateDeleteCollectionThread[10];
     for (int i = 0; i < threads.length; i++) {
       final String collectionName = "collection" + i;
-      solrCluster.uploadConfigSet(configset("configset-2"), collectionName);
-      final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+      cluster.uploadConfigSet(configset("configset-2"), collectionName);
+      final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
       threads[i] =
           new CreateDeleteSearchCollectionThread(
@@ -88,8 +71,8 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   public void testConcurrentCreateAndDeleteOverTheSameConfig() throws IOException {
     final String configName = "testconfig";
     // upload config once, to be used by all collections
-    solrCluster.uploadConfigSet(configset("configset-2"), configName);
-    final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    cluster.uploadConfigSet(configset("configset-2"), configName);
+    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final AtomicReference<Exception> failure = new AtomicReference<>();
     final int timeToRunSec = 30;
     final CreateDeleteCollectionThread[] threads = new CreateDeleteCollectionThread[2];
