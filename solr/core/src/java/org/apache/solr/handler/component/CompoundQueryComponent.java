@@ -54,7 +54,7 @@ public class CompoundQueryComponent extends QueryComponent {
 
   private int doFusion(CompoundResponseBuilder crb) {
     final SolrDocumentList responseDocs = new SolrDocumentList();
-    int numFound = 0;
+    long numFound = 0;
     for (var rb_i : crb.responseBuilders) {
       responseDocs.addAll(rb_i.getResponseDocs());
       numFound += rb_i.getResponseDocs().getNumFound();
