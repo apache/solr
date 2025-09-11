@@ -268,7 +268,7 @@ public final class CLIUtils {
   public static CloudHttp2SolrClient getCloudHttp2SolrClient(
       String zkHost, Http2SolrClient.Builder builder) {
     return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-        .withInternalClientBuilder(builder)
+        .withHttpClientBuilder(builder)
         .build();
   }
 
