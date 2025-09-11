@@ -139,6 +139,12 @@ public class RestoreCore implements Callable<Boolean> {
       }
       log.debug("Switching directories");
       core.modifyIndexProps(restoreIndexName);
+      indexDir =
+          core.getDirectoryFactory()
+              .get(
+                  core.getIndexDir(),
+                  DirectoryFactory.DirContext.DEFAULT,
+                  core.getSolrConfig().indexConfig.lockType);
 
       boolean success;
       try {
@@ -173,6 +179,7 @@ public class RestoreCore implements Callable<Boolean> {
             SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
       }
       if (success) {
+        core.getDirectoryFactory().doneWithDirectory(indexDir);
         core.getDirectoryFactory().doneWithDirectory(indexDir);
         // Cleanup all index files not associated with any *named* snapshot.
         core.deleteNonSnapshotIndexFiles(indexDirPath);
