@@ -875,7 +875,13 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
         "query_result_cache_store_local_eviction",
         "Cumulative evictions from the per core local query result cache store (vs backing shared cache store)",
         "cumulative_evictions",
-        PrometheusMetricType.COUNTER);
+        PrometheusMetricType.COUNTER),
+    CUMULATIVE_FCACHE_DOCS_HOT_LOCAL_EVICTION(
+            "CACHE.searcher.fcache-docs-hot",
+            "fcache_docs_hot_local_eviction",
+            "Cumulative evictions from the per core local fcache-docs-hot cache store (vs backing shared cache store)",
+            "cumulative_evictions",
+            PrometheusMetricType.COUNTER);
     final String key, metricName, desc, property;
     private final PrometheusMetricType metricType;
     private static final Map<String, CoreMetric> lookup = new HashMap<>();
