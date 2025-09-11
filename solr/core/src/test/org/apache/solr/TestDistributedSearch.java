@@ -538,7 +538,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             + ":[2008-01-01T00:00:00Z TO 2009-09-01T00:00:00Z]"); // Should be removed from response
 
     setDistributedParams(minParams);
-    QueryResponse minResp = queryServer(minParams);
+    QueryResponse minResp = queryRandomShard(minParams);
 
     // Check that exactly the right numbers of counts came through
     assertEquals(
@@ -584,7 +584,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         "facet.query",
         tdate_b + ":[2009-01-01T00:00:00Z TO 2010-01-01T00:00:00Z]"); // Should be removed
     setDistributedParams(minParams);
-    minResp = queryServer(minParams);
+    minResp = queryRandomShard(minParams);
 
     assertEquals(
         "Should only be 1 query facets returned after minCounts taken into account ",
@@ -1552,7 +1552,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     q.set("q", "*:*");
     q.set(ShardParams.SHARDS_INFO, true);
     setDistributedParams(q);
-    rsp = queryServer(q);
+    rsp = queryRandomShard(q);
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
     String shards = getShardsString();
     int cnt = shards.length() - shards.replace(",", "").length() + 1;

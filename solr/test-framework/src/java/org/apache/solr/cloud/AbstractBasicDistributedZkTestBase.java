@@ -759,7 +759,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     SolrQuery query = new SolrQuery("*:*");
     query.addFacetField(tsort);
     query.setFacetMissing(false);
-    QueryResponse resp = queryServer(query);
+    QueryResponse resp = queryRandomShard(query);
     List<FacetField> ffs = resp.getFacetFields();
     for (FacetField ff : ffs) {
       if (ff.getName().equals(tsort) == false) continue;
@@ -792,7 +792,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     query.addField("*");
     query.addField("eoe_sortable");
     query.addField(tsort);
-    QueryResponse resp = queryServer(query);
+    QueryResponse resp = queryRandomShard(query);
 
     SolrDocumentList docs = resp.getResults();
 
@@ -809,7 +809,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     SolrQuery query = new SolrQuery("*:*");
     query.add("group", "true");
     query.add("group.field", tsort);
-    QueryResponse resp = queryServer(query);
+    QueryResponse resp = queryRandomShard(query);
     GroupResponse groupResp = resp.getGroupResponse();
     List<GroupCommand> grpCmds = groupResp.getValues();
     for (GroupCommand grpCmd : grpCmds) {
@@ -1202,7 +1202,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     // query for each doc, and check both fields to ensure the value is correct
     for (int i = 1; i < numLoops; i++) {
       final String query = id + ":" + i;
-      QueryResponse qres = queryServer(new SolrQuery(query));
+      QueryResponse qres = queryRandomShard(new SolrQuery(query));
       assertEquals(chain + ": query failed: " + query, 0, qres.getStatus());
       assertEquals(
           chain + ": didn't find correct # docs with query: " + query,
@@ -1701,10 +1701,10 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   }
 
   @Override
-  protected QueryResponse queryServer(ModifiableSolrParams params)
+  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
       throws SolrServerException, IOException {
 
-    if (r.nextBoolean()) return super.queryServer(params);
+    if (r.nextBoolean()) return super.queryRandomShard(params);
 
     if (r.nextBoolean()) params.set("collection", DEFAULT_COLLECTION);
 

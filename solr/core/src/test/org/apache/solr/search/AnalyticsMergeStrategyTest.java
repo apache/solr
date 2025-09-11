@@ -72,7 +72,7 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     params.add("q", "*:*");
     params.add("fq", "{!count}");
     setDistributedParams(params);
-    QueryResponse rsp = queryServer(params);
+    QueryResponse rsp = query(params);
     assertCount(rsp, 11);
 
     // Test IterativeMergeStrategy
@@ -80,14 +80,14 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     params.add("q", "*:*");
     params.add("fq", "{!count iterate=true}");
     setDistributedParams(params);
-    rsp = queryServer(params);
+    rsp = query(params);
     assertCountOnly(rsp, 44);
 
     params = new ModifiableSolrParams();
     params.add("q", "id:(1 2 5 6)");
     params.add("fq", "{!count}");
     setDistributedParams(params);
-    rsp = queryServer(params);
+    rsp = query(params);
     assertCount(rsp, 4);
   }
 

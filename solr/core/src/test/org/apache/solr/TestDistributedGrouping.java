@@ -18,11 +18,9 @@ package org.apache.solr;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import java.io.IOException;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -1652,13 +1650,13 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "true");
   }
 
-  private void simpleQuery(Object... queryParams) throws SolrServerException, IOException {
+  private void simpleQuery(Object... queryParams) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int i = 0; i < queryParams.length; i += 2) {
       params.add(queryParams[i].toString(), queryParams[i + 1].toString());
     }
     params.set("shards", shards);
-    queryServer(params);
+    queryRandomShard(params);
   }
 
   /**

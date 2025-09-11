@@ -139,7 +139,7 @@ public class DistributedFacetPivotWhiteBoxTest extends BaseDistributedSearchTest
             "true",
             "distrib",
             "false");
-    QueryResponse rsp = queryServer(new ModifiableSolrParams(params));
+    QueryResponse rsp = queryRandomShard(new ModifiableSolrParams(params));
 
     assertNotNull(
         "initial shard request should include non-null top level stats", rsp.getFieldStatsInfo());
