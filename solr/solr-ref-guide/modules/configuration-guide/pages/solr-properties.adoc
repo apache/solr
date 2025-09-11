@@ -38,6 +38,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.circuitbreaker.errorcode||503|Defines the HTTP error code returned when a circuit breaker is triggered.
 
+|solr.cloud.shardsplit.checkdiskspace.enabled|solr.shardSplit.checkDiskSpace.enabled|true|Controls whether to check for disk space before shard split
+
 |solr.cloud.prep.recovery.read.timeout.additional.ms|prepRecoveryReadTimeoutExtraWait|8000|Specifies additional milliseconds to wait during recovery read operations in SolrCloud mode.
 
 |solr.cloud.startup.delete.unknown.cores.enabled|solr.deleteUnknownCores|false|Controls whether unknown cores are deleted at startup in SolrCloud mode.
@@ -88,11 +90,18 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.streamingexpressions.facet.tiered.enabled|solr.facet.stream.tiered|true|Controls whether tiered faceting is enabled for streaming expressions.
 
+|solr.streamingexpressions.macros.enabled|StreamingExpressionMacros|false|Controls whether to expand URL parameters inside of the `expr` parameter.
+
+
 |solr.tracing.always.on.enabled|solr.alwaysOnTraceId|true|Controls whether trace IDs are always generated, even when no request contains a trace ID.
 
 |solr.ui.enabled|!disableAdminUI|true|Controls whether the Solr Admin UI is enabled. When set to `true`, the Solr Admin UI is enabled.
 
 |solr.ui.experimental.enabled|!solr.admin.ui.experimental.disabled|true|Controls whether experimental features in the Solr Admin UI are enabled. When set to `true`, experimental features in the UI are enabled.
+
+|solr.zookeeper.client.connect.timeout|zkConnectTimeout|15 seconds.|How long before timing out opening connection to ZooKeeper.
+
+|solr.zookeeper.client.timeout|zkClientTimeout|30 seconds.|How long before timing out connection to ZooKeeper.
 
 |solr.zookeeper.chroot.create|createZkChroot|false|Controls whether a ZooKeeper chroot is created if it doesn't exist.
 

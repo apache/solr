@@ -914,7 +914,7 @@ IF "%SOLR_MODE%"=="" set SOLR_MODE=solrcloud
 IF "%SOLR_MODE%"=="solrcloud" (
   IF "%ZK_CLIENT_TIMEOUT%"=="" set "ZK_CLIENT_TIMEOUT=30000"
 
-  set "CLOUD_MODE_OPTS=-DzkClientTimeout=!ZK_CLIENT_TIMEOUT!"
+  set "CLOUD_MODE_OPTS=-Dsolr.zookeeper.client.timeout=!ZK_CLIENT_TIMEOUT!"
 
   IF NOT "%ZK_HOST%"=="" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
