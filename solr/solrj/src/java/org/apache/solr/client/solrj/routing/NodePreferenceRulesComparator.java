@@ -44,7 +44,8 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
   private final String nodeName;
   private final List<PreferenceRule> sortRules;
   private final List<PreferenceRule> preferenceRules;
-  private final String localHostAddress;
+  private final String baseUrl;
+  private final String hostName;
   private final ReplicaListTransformer baseReplicaListTransformer;
 
   public NodePreferenceRulesComparator(
@@ -52,21 +53,31 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       final SolrParams requestParams,
       final ReplicaListTransformerFactory defaultRltFactory,
       final ReplicaListTransformerFactory stableRltFactory) {
-    this(preferenceRules, requestParams, null, null, null, defaultRltFactory, stableRltFactory);
+    this(
+        preferenceRules,
+        requestParams,
+        null,
+        null,
+        null,
+        null,
+        defaultRltFactory,
+        stableRltFactory);
   }
 
   public NodePreferenceRulesComparator(
       final List<PreferenceRule> preferenceRules,
       final SolrParams requestParams,
       final String nodeName,
-      final String localHostAddress,
+      final String baseUrl,
+      final String hostName,
       final NodesSysProps sysProps,
       final ReplicaListTransformerFactory defaultRltFactory,
       final ReplicaListTransformerFactory stableRltFactory) {
     this.sysProps = sysProps;
     this.preferenceRules = preferenceRules;
     this.nodeName = nodeName;
-    this.localHostAddress = localHostAddress;
+    this.baseUrl = baseUrl;
+    this.hostName = hostName;
     final int maxIdx = preferenceRules.size() - 1;
     final PreferenceRule lastRule = preferenceRules.get(maxIdx);
     if (!ShardParams.SHARDS_PREFERENCE_REPLICA_BASE.equals(lastRule.name)) {
@@ -185,7 +196,9 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       return false;
     }
     if (prefix.equals(ShardParams.REPLICA_LOCAL)) {
-      return StrUtils.isNotNullOrEmpty(localHostAddress) && s.startsWith(localHostAddress);
+      return StrUtils.isNotNullOrEmpty(baseUrl) && s.startsWith(baseUrl);
+    } else if (prefix.equals(ShardParams.REPLICA_HOST)) {
+      return StrUtils.isNotNullOrEmpty(hostName) && s.startsWith(hostName);
     } else {
       return s.startsWith(prefix);
     }
