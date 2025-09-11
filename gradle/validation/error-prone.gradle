@@ -68,6 +68,7 @@ allprojects { prj ->
         options.errorprone.errorproneArgs = [
             '-XepDisableAllChecks', // only enable specific checks
             '-XepAllErrorsAsWarnings', // warnings still fail build by default, but allows usage of -Pjavac.failOnWarnings=false
+            '--should-stop=ifError=FLOW',
 
             // List of enabled/disabled checks
             // Please keep this synced with https://errorprone.info/bugpatterns when upgrading!
