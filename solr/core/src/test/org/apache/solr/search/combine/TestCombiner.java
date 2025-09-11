@@ -16,23 +16,17 @@
  */
 package org.apache.solr.search.combine;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TotalHits;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SortedIntDocSet;
 
 /**
  * The TestCombiner class is an extension of QueryAndResponseCombiner that implements custom logic
@@ -58,42 +52,7 @@ public class TestCombiner extends QueryAndResponseCombiner {
 
   @Override
   public QueryResult combine(List<QueryResult> rankedLists, SolrParams solrParams) {
-    HashMap<Integer, Float> docIdToScore = new HashMap<>();
-    QueryResult queryResult = new QueryResult();
-    for (QueryResult rankedList : rankedLists) {
-      DocIterator docs = rankedList.getDocList().iterator();
-      while (docs.hasNext()) {
-        int docId = docs.nextDoc();
-        docIdToScore.put(docId, docs.score());
-      }
-    }
-    List<Map.Entry<Integer, Float>> sortedByScoreDescending =
-        docIdToScore.entrySet().stream()
-            .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-            .toList();
-    int combinedResultsLength = docIdToScore.size();
-    int[] combinedResultsDocIds = new int[combinedResultsLength];
-    float[] combinedResultScores = new float[combinedResultsLength];
-
-    int i = 0;
-    for (Map.Entry<Integer, Float> scoredDoc : sortedByScoreDescending) {
-      combinedResultsDocIds[i] = scoredDoc.getKey();
-      combinedResultScores[i] = scoredDoc.getValue();
-      i++;
-    }
-    DocSlice combinedResultSlice =
-        new DocSlice(
-            0,
-            combinedResultsLength,
-            combinedResultsDocIds,
-            combinedResultScores,
-            combinedResultsLength,
-            combinedResultScores.length > 0 ? combinedResultScores[0] : 0,
-            TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO);
-    queryResult.setDocList(combinedResultSlice);
-    SortedIntDocSet docSet = new SortedIntDocSet(combinedResultsDocIds, combinedResultsLength);
-    queryResult.setDocSet(docSet);
-    return queryResult;
+    return simpleCombine(rankedLists);
   }
 
   @Override
@@ -109,6 +68,8 @@ public class TestCombiner extends QueryAndResponseCombiner {
       SolrIndexSearcher searcher,
       IndexSchema schema,
       SolrParams solrParams) {
-    return null;
+    SimpleOrderedMap<Explanation> docIdsExplanations = new SimpleOrderedMap<>();
+    docIdsExplanations.add("combinerDetails", Explanation.match(testInt, "this is test combiner"));
+    return docIdsExplanations;
   }
 }

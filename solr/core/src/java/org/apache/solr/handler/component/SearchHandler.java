@@ -472,11 +472,11 @@ public class SearchHandler extends RequestHandlerBase
       RTimerTree timer,
       List<SearchComponent> components)
       throws IOException {
-
-    if (!prepareComponents(req, rb, timer, components)) return;
-
+    updateForcedDistributed(req, rb, components);
     // creates a ShardHandler object only if it's needed
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb);
+
+    if (!prepareComponents(req, rb, timer, components)) return;
 
     postPrepareComponents(rb);
 
@@ -728,7 +728,6 @@ public class SearchHandler extends RequestHandlerBase
           return false;
         }
         component.prepare(rb);
-        updateForcedDistributed(req, rb, component);
       }
     } else {
       // debugging prepare phase
@@ -741,7 +740,6 @@ public class SearchHandler extends RequestHandlerBase
         rb.setTimer(subt.sub(c.getName()));
         c.prepare(rb);
         rb.getTimer().stop();
-        updateForcedDistributed(req, rb, c);
       }
       subt.stop();
     }
@@ -749,12 +747,15 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   private static void updateForcedDistributed(
-      SolrQueryRequest req, ResponseBuilder rb, SearchComponent component) {
-    if (!rb.isDistrib
-        && component.isForceDistributed()
-        && !req.getParams().getBool(ShardParams.IS_SHARD, false)) {
-      rb.isDistrib = true;
-      rb.setForcedDistrib(true);
+      SolrQueryRequest req, ResponseBuilder rb, List<SearchComponent> components) {
+    if (!rb.isDistrib && !req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      for (SearchComponent component : components) {
+        if (component.isForceDistributed()) {
+          rb.isDistrib = true;
+          rb.setForcedDistrib(true);
+          return;
+        }
+      }
     }
   }
 

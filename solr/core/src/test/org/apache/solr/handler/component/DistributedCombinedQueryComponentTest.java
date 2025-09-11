@@ -21,6 +21,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -182,14 +183,20 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     rsp =
         queryServer(
             createDistributedParams(
-                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "post"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "1", "2", "3", "4", "5");
     // Combiner Method: pre
     rsp =
         queryServer(
             createDistributedParams(
-                CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "pre"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2", "1", "4", "5", "8");
   }
@@ -214,14 +221,20 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     rsp =
         queryServer(
             createDistributedParams(
-                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "post"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "8", "5", "2", "7", "4");
     // Combiner Method: pre
     rsp =
         queryServer(
             createDistributedParams(
-                CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "pre"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2", "8", "5", "4", "1");
   }
@@ -355,7 +368,10 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     rsp =
         queryServer(
             createDistributedParams(
-                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "post"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(2, rsp.getResults().size());
     assertEquals(8, rsp.getResults().getNumFound());
     assertEquals("[1 (4), 0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
@@ -363,7 +379,10 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     rsp =
         queryServer(
             createDistributedParams(
-                CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "pre"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(2, rsp.getResults().size());
     assertEquals(8, rsp.getResults().getNumFound());
     assertEquals("[1 (4), 0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
@@ -391,7 +410,10 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     rsp =
         queryServer(
             createDistributedParams(
-                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "post"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(3, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "4", "2", "5");
     assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
@@ -407,7 +429,10 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     rsp =
         queryServer(
             createDistributedParams(
-                CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "pre"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(3, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2", "4", "3");
     assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());

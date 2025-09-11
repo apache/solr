@@ -175,7 +175,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       Boolean setMaxHitsTerminatedEarly = null;
       List<QueryResult> queryResults = new ArrayList<>();
       int rbIndex = 0;
-      boolean statsCacheRequest = false;
+      boolean shouldReturn = false;
       // TODO: to be parallelized
       for (ResponseBuilder thisRb : crb.responseBuilders) {
         // Just a placeholder for future implementation for Cursors
@@ -187,7 +187,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                 .getParams()
                 .getInt(ShardParams.SHARDS_PURPOSE, ShardRequest.PURPOSE_GET_TOP_IDS);
         if ((purpose & ShardRequest.PURPOSE_GET_TERM_STATS) != 0) {
-          statsCacheRequest = true;
+          shouldReturn = true;
           continue;
         }
         DocListAndSet docListAndSet = thisRb.getResults();
@@ -218,7 +218,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         }
         rbIndex++;
       }
-      if (statsCacheRequest) {
+      if (shouldReturn) {
         return;
       }
       prepareCombinedResponseBuilder(
@@ -323,6 +323,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     long approximateTotalHits = 0;
     Map<String, List<ShardDoc>> shardDocMap = new HashMap<>();
     String[] queriesToCombineKeys = rb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
+    // TODO: to be parallelized outer loop
     for (int queryIndex = 0; queryIndex < queriesToCombineKeys.length; queryIndex++) {
       int failedShardCount = 0;
       Map<Object, ShardDoc> uniqueDoc = new HashMap<>();

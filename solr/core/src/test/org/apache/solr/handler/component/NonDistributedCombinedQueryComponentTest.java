@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -114,14 +115,20 @@ public class NonDistributedCombinedQueryComponentTest extends BaseDistributedSea
     rsp =
         queryNonDistribControlClient(
             createParams(
-                CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "pre"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(1, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2");
     // Combiner Method: post
     rsp =
         queryNonDistribControlClient(
             createParams(
-                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "post"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(1, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2");
   }
@@ -146,14 +153,20 @@ public class NonDistributedCombinedQueryComponentTest extends BaseDistributedSea
     rsp =
         queryNonDistribControlClient(
             createParams(
-                CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "pre"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "1", "2", "4", "5", "7");
     // Combiner Method: post
     rsp =
         queryNonDistribControlClient(
             createParams(
-                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "post"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "1", "2", "4", "3", "7");
   }
@@ -178,14 +191,20 @@ public class NonDistributedCombinedQueryComponentTest extends BaseDistributedSea
     rsp =
         queryNonDistribControlClient(
             createParams(
-                CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "pre"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2", "5", "8", "1", "4");
     // Combiner Method: post
     rsp =
         queryNonDistribControlClient(
             createParams(
-                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "post"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "8", "5", "2", "4", "1");
   }
@@ -319,7 +338,10 @@ public class NonDistributedCombinedQueryComponentTest extends BaseDistributedSea
     rsp =
         queryNonDistribControlClient(
             createParams(
-                CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "pre"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(2, rsp.getResults().size());
     assertEquals(4, rsp.getResults().getNumFound());
     assertEquals("[1 (3), 2 (1)]", rsp.getFacetFields().getFirst().getValues().toString());
@@ -327,7 +349,10 @@ public class NonDistributedCombinedQueryComponentTest extends BaseDistributedSea
     rsp =
         queryNonDistribControlClient(
             createParams(
-                CommonParams.JSON, String.format(jsonQuery, "post"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "post"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(2, rsp.getResults().size());
     assertEquals(4, rsp.getResults().getNumFound());
     assertEquals("[1 (3), 2 (1)]", rsp.getFacetFields().getFirst().getValues().toString());
@@ -355,7 +380,10 @@ public class NonDistributedCombinedQueryComponentTest extends BaseDistributedSea
     rsp =
         queryNonDistribControlClient(
             createParams(
-                CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "pre"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(3, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2", "4", "3");
     assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
@@ -371,7 +399,10 @@ public class NonDistributedCombinedQueryComponentTest extends BaseDistributedSea
     rsp =
         queryNonDistribControlClient(
             createParams(
-                CommonParams.JSON, String.format(jsonQuery, "pre"), CommonParams.QT, "/search"));
+                CommonParams.JSON,
+                String.format(Locale.ROOT, jsonQuery, "pre"),
+                CommonParams.QT,
+                "/search"));
     assertEquals(3, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2", "4", "3");
     assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());

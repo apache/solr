@@ -21,39 +21,59 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * The CombinedQueryComponentTest class is an integration test suite for the CombinedQueryComponent
- * in Solr. It verifies the functionality of the component by performing few basic queries and
- * validating the responses including limitations and combiner plugin.
+ * in Solr. It verifies the functionality of the component by performing few basic queries in single
+ * sharded mode and validating the responses including limitations and combiner plugin.
  */
-public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
+public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
 
   private static final int NUM_DOCS = 10;
   private static final String vectorField = "vector";
 
+  public CombinedQueryComponentTest() {
+    super();
+    fixShardCount(1);
+  }
+
   /**
-   * Sets up the test class by initializing the core and adding test documents to the index. This
-   * method prepares the Solr index with a set of documents for subsequent test cases.
+   * Sets up the test class by initializing the core and setting system properties. This method is
+   * executed before all test methods in the class.
    *
-   * @throws Exception if any error occurs during setup, such as initialization failures or indexing
-   *     issues.
+   * @throws Exception if any exception occurs during initialization
    */
   @BeforeClass
   public static void setUpClass() throws Exception {
     initCore("solrconfig-combined-query.xml", "schema-vector-catchall.xml");
+    System.setProperty("validateAfterInactivity", "200");
+    System.setProperty("solr.httpclient.retries", "0");
+    System.setProperty("distribUpdateSoTimeout", "5000");
+  }
+
+  /**
+   * Prepares Solr input documents for indexing, including adding sample data and vector fields.
+   * This method populates the Solr index with test data, including text, title, and vector fields.
+   * The vector fields are used to calculate cosine distance for testing purposes.
+   *
+   * @throws Exception if any error occurs during the indexing process.
+   */
+  private synchronized void prepareIndexDocs() throws Exception {
     List<SolrInputDocument> docs = new ArrayList<>();
     for (int i = 1; i <= NUM_DOCS; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", Integer.toString(i));
       doc.addField("text", "test text for doc " + i);
       doc.addField("title", "title test for doc " + i);
+      doc.addField("mod3_idv", (i % 3));
       docs.add(doc);
     }
     // cosine distance vector1= 1.0
@@ -76,73 +96,54 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
     docs.get(8).addField(vectorField, Arrays.asList(200f, 50f, 100f, 25f));
     // cosine distance vector1= 0.997
     docs.get(9).addField(vectorField, Arrays.asList(1.8f, 2.5f, 3.7f, 4.9f));
+    del("*:*");
     for (SolrInputDocument doc : docs) {
-      assertU(adoc(doc));
+      indexDoc(doc);
     }
-    assertU(commit());
+    commit();
   }
 
   /** Performs a single lexical query using the provided JSON request and verifies the response. */
-  public void testSingleLexicalQuery() {
-    assertQ(
-        req(
+  public void testSingleLexicalQuery() throws Exception {
+    prepareIndexDocs();
+    QueryResponse rsp =
+        query(
             CommonParams.JSON,
             "{\"queries\":"
                 + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 5\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"], \"combiner.method\": \"pre\"}}",
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"]}}",
             CommonParams.QT,
-            "/search"),
-        "//result[@numFound='10']",
-        "//result/doc[1]/str[@name='id'][.='5']");
+            "/search");
+    assertEquals(5, rsp.getResults().size());
   }
 
   /** Performs multiple lexical queries and verifies the results. */
-  public void testMultipleLexicalQueryWithDebug() {
-    assertQ(
-        req(
+  public void testMultipleLexicalQueryWithDebug() throws Exception {
+    prepareIndexDocs();
+    QueryResponse rsp =
+        query(
             CommonParams.JSON,
             "{\"queries\":"
                 + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
                 + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"debugQuery\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"pre\"}}",
+                + "\"params\":{\"combiner\":true,\"debug\":[\"results\"],\"combiner.query\":[\"lexical1\",\"lexical2\"],"
+                + " \"combiner.method\": \"pre\", \"rid\": \"test-1\"}}",
             CommonParams.QT,
-            "/search"),
-        "//result[@numFound='10']",
-        "//result/doc[1]/str[@name='id'][.='1']",
-        "//result/doc[2]/str[@name='id'][.='2']",
-        "//lst[@name='debug']/lst[@name='combinerExplanations'][node()]");
-  }
-
-  /** Tests the functionality of a hybrid query that combines lexical and vector search. */
-  public void testHybridQuery() {
-    // lexical => 2,3
-    // vector => 1,4,2,10,3
-    assertQ(
-        req(
-            CommonParams.JSON,
-            "{\"queries\":"
-                + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
-                + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
-                + "\"limit\":5,"
-                + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"pre\"}}",
-            CommonParams.QT,
-            "/search"),
-        "//result[@numFound='5']",
-        "//result/doc[1]/str[@name='id'][.='2']",
-        "//result/doc[2]/str[@name='id'][.='3']",
-        "//result/doc[3]/str[@name='id'][.='1']");
+            "/search");
+    assertEquals(10, rsp.getResults().getNumFound());
+    assertTrue(rsp.getDebugMap().containsKey("combinerExplanations"));
   }
 
   /** Test no results in combined queries. */
   @Test
-  public void testNoResults() {
-    assertQ(
-        req(
+  public void testNoResults() throws Exception {
+    prepareIndexDocs();
+    QueryResponse rsp =
+        query(
             CommonParams.JSON,
             "{\"queries\":"
                 + "{\"lexical1\":{\"lucene\":{\"query\":\"title:Solr is the blazing-fast, open source search platform\"}},"
@@ -151,8 +152,8 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"pre\"}}",
             CommonParams.QT,
-            "/search"),
-        "//result[@numFound='0']");
+            "/search");
+    assertEquals(0, rsp.getResults().size());
   }
 
   /** Test max combiner queries limit set from solrconfig to 2. */
@@ -179,21 +180,25 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
    * when sent the command through SolrParams
    */
   @Test
-  public void testCombinerPlugin() {
-    assertQ(
-        req(
+  public void testCombinerPlugin() throws Exception {
+    prepareIndexDocs();
+    QueryResponse rsp =
+        query(
             CommonParams.JSON,
             "{\"queries\":"
                 + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
                 + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"pre\"}}",
+                + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\""
+                + ":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"pre\",\"debug\":[\"results\"]}}",
             CommonParams.QT,
-            "/search"),
-        "//result[@numFound='5']",
-        "//result/doc[1]/str[@name='id'][.='2']",
-        "//result/doc[2]/str[@name='id'][.='1']");
+            "/search");
+    assertEquals(10, rsp.getResults().getNumFound());
+    assertEquals(
+        "org.apache.lucene.search.Explanation:30 = this is test combiner\n",
+        ((SimpleOrderedMap<?>) rsp.getDebugMap().get("combinerExplanations"))
+            .get("combinerDetails"));
   }
 
   /**
@@ -203,7 +208,8 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
    * 'cursorMark' or 'group' parameters.
    */
   @Test
-  public void testNonEnabledFeature() {
+  public void testNonEnabledFeature() throws Exception {
+    prepareIndexDocs();
     String combinedQueryStr =
         "{\"queries\":"
             + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
@@ -211,39 +217,32 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
             + "\"sort\":\"id asc\","
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"pre\"}}";
+
     RuntimeException exceptionThrown =
         expectThrows(
-            RuntimeException.class,
+            SolrException.class,
             () ->
-                assertQ(
-                    req(
-                        CommonParams.JSON,
-                        combinedQueryStr,
-                        CommonParams.QT,
-                        "/search",
-                        "cursorMark",
-                        CURSOR_MARK_START)));
+                query(
+                    CommonParams.JSON,
+                    combinedQueryStr,
+                    CommonParams.QT,
+                    "/search",
+                    "cursorMark",
+                    CURSOR_MARK_START));
     assertTrue(
-        exceptionThrown
-            .getCause()
-            .getMessage()
-            .contains("Unsupported functionality for Combined Queries."));
+        exceptionThrown.getMessage().contains("Unsupported functionality for Combined Queries."));
     exceptionThrown =
         expectThrows(
-            RuntimeException.class,
+            SolrException.class,
             () ->
-                assertQ(
-                    req(
-                        CommonParams.JSON,
-                        combinedQueryStr,
-                        CommonParams.QT,
-                        "/search",
-                        "group",
-                        "true")));
+                query(
+                    CommonParams.JSON,
+                    combinedQueryStr,
+                    CommonParams.QT,
+                    "/search",
+                    "group",
+                    "true"));
     assertTrue(
-        exceptionThrown
-            .getCause()
-            .getMessage()
-            .contains("Unsupported functionality for Combined Queries."));
+        exceptionThrown.getMessage().contains("Unsupported functionality for Combined Queries."));
   }
 }

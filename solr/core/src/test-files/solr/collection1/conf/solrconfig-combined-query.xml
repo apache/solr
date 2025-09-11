@@ -103,7 +103,7 @@
         <lst name="combiners">
             <lst name="test">
                 <str name="class">org.apache.solr.search.combine.TestCombiner</str>
-                <int name="var1">60</int>
+                <int name="var1">30</int>
                 <str name="var2">test</str>
             </lst>
         </lst>
