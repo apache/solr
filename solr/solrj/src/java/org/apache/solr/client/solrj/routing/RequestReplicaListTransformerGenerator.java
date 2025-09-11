@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.routing;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -157,28 +158,27 @@ public class RequestReplicaListTransformerGenerator {
     public <T> void transform(List<T> choices) {
       if (choices.size() > 1) {
         if (log.isDebugEnabled()) {
-          log.debug(
-              "Applying the following sorting preferences to replicas: {}",
-              Arrays.toString(replicaComp.getPreferenceRules().toArray()));
+          log.debug("Applying the following sorting preferences to replicas: {}", replicaComp);
         }
 
+        Comparator<T> comparator = replicaComp.getComparator(choices.get(0));
         // First, sort according to comparator rules.
         try {
-          choices.sort(replicaComp);
+          choices.sort(comparator);
         } catch (IllegalArgumentException iae) {
           throw new SolrException(ErrorCode.BAD_REQUEST, iae.getMessage());
         }
 
         // Next determine all boundaries between replicas ranked as "equivalent" by the comparator
-        Iterator<?> iter = choices.iterator();
-        Object prev = iter.next();
-        Object current;
+        Iterator<T> iter = choices.iterator();
+        T prev = iter.next();
+        T current;
         int idx = 1;
         int boundaryCount = 0;
         int[] boundaries = new int[choices.size()];
         do {
           current = iter.next();
-          if (replicaComp.compare(prev, current) != 0) {
+          if (comparator.compare(prev, current) != 0) {
             boundaries[boundaryCount++] = idx;
           }
           prev = current;

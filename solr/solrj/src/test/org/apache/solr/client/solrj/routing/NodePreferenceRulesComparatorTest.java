@@ -38,7 +38,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
     List<PreferenceRule> rules =
         PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://node2:8983");
     NodePreferenceRulesComparator comparator = new NodePreferenceRulesComparator(rules, null);
-    replicas.sort(comparator);
+    replicas.sort(comparator.getReplicaComparator());
     assertEquals("node2", getHost(replicas.get(0).getNodeName()));
     assertEquals("node1", getHost(replicas.get(1).getNodeName()));
   }
@@ -54,7 +54,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
                 + ":TLOG");
     NodePreferenceRulesComparator comparator = new NodePreferenceRulesComparator(rules, null);
 
-    replicas.sort(comparator);
+    replicas.sort(comparator.getReplicaComparator());
     assertEquals("node1", getHost(replicas.get(0).getNodeName()));
     assertEquals("node2", getHost(replicas.get(1).getNodeName()));
 
@@ -67,7 +67,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
                 + ":NRT");
     comparator = new NodePreferenceRulesComparator(rules, null);
 
-    replicas.sort(comparator);
+    replicas.sort(comparator.getReplicaComparator());
     assertEquals("node2", getHost(replicas.get(0).getNodeName()));
     assertEquals("node1", getHost(replicas.get(1).getNodeName()));
   }
@@ -97,7 +97,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
                 + ":http://node4");
     NodePreferenceRulesComparator comparator = new NodePreferenceRulesComparator(rules, null);
 
-    replicas.sort(comparator);
+    replicas.sort(comparator.getReplicaComparator());
     assertEquals("node1", getHost(replicas.get(0).getNodeName()));
     assertEquals("node4", getHost(replicas.get(1).getNodeName()));
     assertEquals("node2", getHost(replicas.get(2).getNodeName()));
@@ -127,7 +127,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
     List<PreferenceRule> rules =
         PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER + ":false");
     NodePreferenceRulesComparator comparator = new NodePreferenceRulesComparator(rules, null);
-    replicas.sort(comparator);
+    replicas.sort(comparator.getReplicaComparator());
     assertEquals("node1:8983_solr", replicas.get(3).getNodeName());
 
     // Prefer NRT replica, followed by non-leader
@@ -138,7 +138,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
                 + ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER
                 + ":false");
     comparator = new NodePreferenceRulesComparator(rules, null);
-    replicas.sort(comparator);
+    replicas.sort(comparator.getReplicaComparator());
     assertEquals("node4", getHost(replicas.get(0).getNodeName()));
     assertEquals("node1", getHost(replicas.get(1).getNodeName()));
 
@@ -153,7 +153,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
                 + ":http://host2");
     comparator = new NodePreferenceRulesComparator(rules, null);
 
-    replicas.sort(comparator);
+    replicas.sort(comparator.getReplicaComparator());
     assertEquals("node3", getHost(replicas.get(0).getNodeName()));
     assertEquals("node4", getHost(replicas.get(1).getNodeName()));
     assertEquals("node2", getHost(replicas.get(2).getNodeName()));
@@ -174,7 +174,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
             "shard1"));
     rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER + ":false");
     comparator = new NodePreferenceRulesComparator(rules, null);
-    replicas.sort(comparator);
+    replicas.sort(comparator.getReplicaComparator());
     assertEquals("node1:8983_solr", onlyLeader.get(0).getNodeName());
   }
 
@@ -195,7 +195,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
     List<Replica> replicas = getBasicReplicaList();
     List<PreferenceRule> rules = PreferenceRule.from("badRule:test");
     try {
-      replicas.sort(new NodePreferenceRulesComparator(rules, null));
+      replicas.sort(new NodePreferenceRulesComparator(rules, null).getReplicaComparator());
     } catch (IllegalArgumentException e) {
       assertEquals("Invalid shards.preference type: badRule", e.getMessage());
       throw e;
