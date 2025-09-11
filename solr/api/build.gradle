@@ -62,6 +62,7 @@ resolve {
 dependencies {
     api platform(project(":platform"))
     swaggerDeps platform(project(":platform"))
+    api platform(libs.fasterxml.jackson.bom)
 
     runtimeOnly libs.slf4j.api
 
