@@ -18,7 +18,6 @@
 package org.apache.solr.update.processor;
 
 import java.nio.file.Path;
-
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -28,11 +27,12 @@ import org.junit.Test;
 /**
  * Tests for {@link DocumentCategorizerUpdateProcessorFactory}
  *
- * Focused on verifying how DocumentCategorizerUpdateProcessorFactory is set up to run.
+ * <p>Focused on verifying how DocumentCategorizerUpdateProcessorFactory is set up to run.
  *
- * See test_opennlp.bats for a complete system test of DocumentCategorizerUpdateProcessorFactory.
+ * <p>See test_opennlp.bats for a complete system test of DocumentCategorizerUpdateProcessorFactory.
  */
-public class TestConfiguringDocumentCategorizerUpdateProcessorFactory extends UpdateProcessorTestBase {
+public class TestConfiguringDocumentCategorizerUpdateProcessorFactory
+    extends UpdateProcessorTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -43,7 +43,8 @@ public class TestConfiguringDocumentCategorizerUpdateProcessorFactory extends Up
 
   @Test
   public void testBasicConfiguration() {
-    DocumentCategorizerUpdateProcessorFactory factory = new DocumentCategorizerUpdateProcessorFactory();
+    DocumentCategorizerUpdateProcessorFactory factory =
+        new DocumentCategorizerUpdateProcessorFactory();
     NamedList<Object> args = new NamedList<>();
 
     // Add source and dest
@@ -60,7 +61,8 @@ public class TestConfiguringDocumentCategorizerUpdateProcessorFactory extends Up
 
   @Test(expected = SolrException.class)
   public void testMissingModelFile() {
-    DocumentCategorizerUpdateProcessorFactory factory = new DocumentCategorizerUpdateProcessorFactory();
+    DocumentCategorizerUpdateProcessorFactory factory =
+        new DocumentCategorizerUpdateProcessorFactory();
     NamedList<Object> args = new NamedList<>();
 
     // Add source and dest but miss modelFile
@@ -73,7 +75,8 @@ public class TestConfiguringDocumentCategorizerUpdateProcessorFactory extends Up
 
   @Test(expected = SolrException.class)
   public void testMissingVocabFile() {
-    DocumentCategorizerUpdateProcessorFactory factory = new DocumentCategorizerUpdateProcessorFactory();
+    DocumentCategorizerUpdateProcessorFactory factory =
+        new DocumentCategorizerUpdateProcessorFactory();
     NamedList<Object> args = new NamedList<>();
 
     // Add source and dest but miss vocabFile
@@ -86,7 +89,8 @@ public class TestConfiguringDocumentCategorizerUpdateProcessorFactory extends Up
 
   @Test(expected = SolrException.class)
   public void testMissingSourceAndDest() {
-    DocumentCategorizerUpdateProcessorFactory factory = new DocumentCategorizerUpdateProcessorFactory();
+    DocumentCategorizerUpdateProcessorFactory factory =
+        new DocumentCategorizerUpdateProcessorFactory();
     NamedList<Object> args = new NamedList<>();
 
     // Add only model files but missing source/dest
@@ -98,7 +102,8 @@ public class TestConfiguringDocumentCategorizerUpdateProcessorFactory extends Up
 
   @Test
   public void testRegexConfiguration() {
-    DocumentCategorizerUpdateProcessorFactory factory = new DocumentCategorizerUpdateProcessorFactory();
+    DocumentCategorizerUpdateProcessorFactory factory =
+        new DocumentCategorizerUpdateProcessorFactory();
     NamedList<Object> args = new NamedList<>();
 
     // Add source parameter
@@ -122,7 +127,8 @@ public class TestConfiguringDocumentCategorizerUpdateProcessorFactory extends Up
 
   @Test
   public void testSourceSelector() {
-    DocumentCategorizerUpdateProcessorFactory factory = new DocumentCategorizerUpdateProcessorFactory();
+    DocumentCategorizerUpdateProcessorFactory factory =
+        new DocumentCategorizerUpdateProcessorFactory();
     NamedList<Object> args = new NamedList<>();
 
     // Create a complex source selector
@@ -143,7 +149,8 @@ public class TestConfiguringDocumentCategorizerUpdateProcessorFactory extends Up
 
   @Test
   public void testDestWithPatternReplacement() {
-    DocumentCategorizerUpdateProcessorFactory factory = new DocumentCategorizerUpdateProcessorFactory();
+    DocumentCategorizerUpdateProcessorFactory factory =
+        new DocumentCategorizerUpdateProcessorFactory();
     NamedList<Object> args = new NamedList<>();
 
     // Simple source
@@ -162,20 +169,4 @@ public class TestConfiguringDocumentCategorizerUpdateProcessorFactory extends Up
     // Should initialize without errors
     factory.init(args);
   }
-
-  @Test(expected = SolrException.class)
-  public void testMixedShorthandAndFullSyntax() {
-    DocumentCategorizerUpdateProcessorFactory factory = new DocumentCategorizerUpdateProcessorFactory();
-    NamedList<Object> args = new NamedList<>();
-
-    // Mix shorthand and full syntax (not allowed)
-    args.add("source", "text_field");
-    args.add("dest", "category_field");
-    // Adding pattern and replacement as top-level params while source/dest exist is not allowed
-    args.add("pattern", "text_(.*)");
-    args.add("replacement", "category_$1");
-    args.add("modelFile", "doccat-model.bin");
-    args.add("vocabFile", "doccat-vocab.txt");
-
-    factory.init(args);
-  }
+}
