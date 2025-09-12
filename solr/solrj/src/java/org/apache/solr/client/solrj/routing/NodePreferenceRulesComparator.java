@@ -194,9 +194,18 @@ public class NodePreferenceRulesComparator {
                 r -> r.getType().toString().equalsIgnoreCase(preferenceRule.value));
           case ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION:
             yield switch (preferenceRule.value) {
-              case ShardParams.REPLICA_LOCAL -> Comparator.comparing(
-                  r -> r.getBaseUrl().equals(baseUrl));
+              case ShardParams.REPLICA_LOCAL -> {
+                if (baseUrl == null) {
+                  // For SolrJ clients, which do not have a baseUrl, this preference won't be used
+                  yield null;
+                }
+                yield Comparator.comparing(r -> r.getBaseUrl().equals(baseUrl));
+              }
               case ShardParams.REPLICA_HOST -> {
+                if (hostName == null) {
+                  // For SolrJ clients, which do not have a hostName, this preference won't be used
+                  yield null;
+                }
                 final String hostNameWithColon = hostName + ":";
                 yield Comparator.comparing(r -> r.getNodeName().startsWith(hostNameWithColon));
               }
@@ -207,9 +216,8 @@ public class NodePreferenceRulesComparator {
             yield Comparator.comparing(r -> r.isLeader() == preferredIsLeader);
           case ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP:
             if (sysProps == null) {
-              throw new IllegalArgumentException(
-                  "Unable to get the NodesSysPropsCacher on sorting replicas by preference:"
-                      + preferenceRule.value);
+              // For SolrJ clients, which do not have Solr sysProps, this preference won't be used
+              yield null;
             }
             Collection<String> tags = Collections.singletonList(preferenceRule.value);
             Map<String, Object> currentNodeMetric = sysProps.getSysProps(nodeName, tags);
@@ -231,16 +239,25 @@ public class NodePreferenceRulesComparator {
   private Comparator<String> getPreferenceUrlComparator(PreferenceRule preferenceRule) {
     Comparator<String> comparator =
         switch (preferenceRule.name) {
-            // Not supported for URLs
+            // These preferences are not supported for URLs
           case ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE:
           case ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER:
           case ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP:
             yield null;
           case ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION:
             yield switch (preferenceRule.value) {
-              case ShardParams.REPLICA_LOCAL -> Comparator.comparing(
-                  url -> url.startsWith(baseUrl));
+              case ShardParams.REPLICA_LOCAL -> {
+                if (baseUrl == null) {
+                  // For SolrJ clients, which do not have a baseUrl, this preference won't be used
+                  yield null;
+                }
+                yield Comparator.comparing(url -> url.startsWith(baseUrl));
+              }
               case ShardParams.REPLICA_HOST -> {
+                if (hostName == null) {
+                  // For SolrJ clients, which do not have a hostName, this preference won't be used
+                  yield null;
+                }
                 String scheme = baseUrl.startsWith("https") ? "https" : "http";
                 final String baseUrlHostPrefix = scheme + "://" + hostName + ":";
                 yield Comparator.comparing(url -> url.startsWith(baseUrlHostPrefix));

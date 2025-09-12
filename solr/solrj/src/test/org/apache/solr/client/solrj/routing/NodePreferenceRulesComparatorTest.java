@@ -35,7 +35,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
   @Test
   public void replicaLocationTest() {
     List<Replica> replicas = getBasicReplicaList();
-    Collections.shuffle(replicas);
+    Collections.shuffle(replicas, random());
     List<String> urls = replicas.stream().map(Replica::getCoreUrl).collect(Collectors.toList());
 
     // replicaLocation rule
@@ -51,7 +51,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
   @Test
   public void replicaLocationLocalTest() {
     List<Replica> replicas = getMultiPortReplicaList();
-    Collections.shuffle(replicas);
+    Collections.shuffle(replicas, random());
     List<String> urls = replicas.stream().map(Replica::getCoreUrl).collect(Collectors.toList());
 
     // replicaLocation rule
@@ -68,9 +68,60 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void clientComparatorTest() {
+    NodePreferenceRulesComparator clientComparator;
+    clientComparator =
+        new NodePreferenceRulesComparator(
+            PreferenceRule.from(
+                ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":" + ShardParams.REPLICA_LOCAL),
+            null);
+    assertNull(clientComparator.getReplicaComparator());
+    assertNull(clientComparator.getUrlComparator());
+    clientComparator =
+        new NodePreferenceRulesComparator(
+            PreferenceRule.from(
+                ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":" + ShardParams.REPLICA_HOST),
+            null);
+    assertNull(clientComparator.getReplicaComparator());
+    assertNull(clientComparator.getUrlComparator());
+    clientComparator =
+        new NodePreferenceRulesComparator(
+            PreferenceRule.from(
+                ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP + ":solr.sysProp"),
+            null);
+    assertNull(clientComparator.getReplicaComparator());
+    assertNull(clientComparator.getUrlComparator());
+
+    clientComparator =
+        new NodePreferenceRulesComparator(
+            PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://node1"),
+            null);
+    assertNotNull(clientComparator.getReplicaComparator());
+    assertNotNull(clientComparator.getUrlComparator());
+
+    // Even if one preference is not supported, the others should be used
+    clientComparator =
+        new NodePreferenceRulesComparator(
+            PreferenceRule.from(
+                ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION
+                    + ":"
+                    + ShardParams.REPLICA_LOCAL
+                    + ","
+                    + ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION
+                    + ":http://node1"
+                    + ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION
+                    + ":"
+                    + ShardParams.REPLICA_HOST
+                    + ","),
+            null);
+    assertNotNull(clientComparator.getReplicaComparator());
+    assertNotNull(clientComparator.getUrlComparator());
+  }
+
+  @Test
   public void replicaLocationHostTest() {
     List<Replica> replicas = getMultiPortReplicaList();
-    Collections.shuffle(replicas);
+    Collections.shuffle(replicas, random());
     List<String> urls = replicas.stream().map(Replica::getCoreUrl).collect(Collectors.toList());
 
     // replicaLocation rule
@@ -95,7 +146,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
 
   public void replicaTypeTest() {
     List<Replica> replicas = getBasicReplicaList();
-    Collections.shuffle(replicas);
+    Collections.shuffle(replicas, random());
 
     List<PreferenceRule> rules =
         PreferenceRule.from(
@@ -138,7 +189,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
                 ZkStateReader.REPLICA_TYPE, "TLOG"),
             "collection1",
             "shard1"));
-    Collections.shuffle(replicas);
+    Collections.shuffle(replicas, random());
     List<String> urls = replicas.stream().map(Replica::getCoreUrl).collect(Collectors.toList());
 
     List<PreferenceRule> rules =
@@ -181,7 +232,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
                 "NRT"),
             "collection1",
             "shard1"));
-    Collections.shuffle(replicas);
+    Collections.shuffle(replicas, random());
 
     // Prefer non-leader only, therefore node1 has the lowest priority
     List<PreferenceRule> rules =
