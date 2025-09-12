@@ -331,7 +331,7 @@ public class NonDistributedCombinedQueryComponentTest extends BaseDistributedSea
             + "{\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 4, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
             + "\"limit\":2,\"offset\":1"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
-            + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\","
+            + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\",\"facet.mincount\":1,"
             + "\"combiner.query\":[\"vector\"], \"combiner.method\": \"%s\"}}";
     QueryResponse rsp;
     // Combiner Method: pre

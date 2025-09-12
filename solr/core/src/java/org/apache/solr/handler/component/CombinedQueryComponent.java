@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -208,7 +209,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           doFieldSortValues(thisRb, crb.req.getSearcher());
           NamedList<Object[]> sortValues =
               (NamedList<Object[]>) thisRb.rsp.getValues().get("sort_values");
-          crb.rsp.add(String.format("sort_values_%s", rbIndex), sortValues);
+          crb.rsp.add(String.format(Locale.ROOT, "sort_values_%s", rbIndex), sortValues);
           ResultContext ctx = new BasicResultContext(thisRb);
           if (crb.rsp.getValues().get(RESPONSE_PER_QUERY_KEY) == null) {
             crb.rsp.add(RESPONSE_PER_QUERY_KEY, new ArrayList<>(List.of(ctx)));
@@ -386,7 +387,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         NamedList<List<Object>> sortFieldValues =
             (NamedList<List<Object>>)
                 SolrResponseUtil.getSubsectionFromShardResponse(
-                    rb, srsp, String.format("sort_values_%s", queryIndex), true);
+                    rb, srsp, String.format(Locale.ROOT, "sort_values_%s", queryIndex), true);
         if (null == sortFieldValues) {
           sortFieldValues = new NamedList<>();
         }
