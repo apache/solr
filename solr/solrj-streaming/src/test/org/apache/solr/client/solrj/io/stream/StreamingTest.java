@@ -2821,7 +2821,7 @@ public class StreamingTest extends SolrCloudTestCase {
     streamContext.setSolrClientCache(new SolrClientCache());
     streamContext.setRequestReplicaListTransformerGenerator(
         new RequestReplicaListTransformerGenerator(
-            ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG", null, null, null));
+            ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG", null, null, null, null));
 
     streamContext.setRequestParams(
         params(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":nrt"));

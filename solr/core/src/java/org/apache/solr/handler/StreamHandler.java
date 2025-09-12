@@ -213,6 +213,7 @@ public class StreamHandler extends RequestHandlerBase
                   .toString(),
               zkController.getNodeName(),
               zkController.getBaseUrl(),
+              zkController.getHostName(),
               zkController.getSysPropsCacher());
     } else {
       requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator();
