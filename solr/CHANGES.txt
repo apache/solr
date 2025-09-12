@@ -231,7 +231,7 @@ Other Changes
 ==================  9.10.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-17915: shards.preference=replica.location now supports the "host" option for routing to replicas on the same host. (Houston Putman)
 
 Improvements
 ---------------------
