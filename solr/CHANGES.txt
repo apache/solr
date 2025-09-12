@@ -37,6 +37,8 @@ Bug Fixes
 
 * SOLR-17863: Fix race condition in SolrCore's fingerprint cache which caused leader election to hang. (Luke Kot-Zaniewski, Matthew Biscocho)
 
+* SOLR-17837: PULL replica nodes could be marked as "preferredLeader" by BALANCESHARDUNIQUE despite never being able to be elected leader (Kevin Liang via Houston Putman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
