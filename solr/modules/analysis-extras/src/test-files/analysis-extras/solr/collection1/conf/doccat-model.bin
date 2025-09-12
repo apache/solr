@@ -1,0 +1,4 @@
+MOCK_MODEL_FILE_FOR_DOCUMENT_CATEGORIZER_TESTS
+This is a placeholder file and not an actual model file.
+In a real test environment, this would be replaced with a proper model file
+or the tests would be modified to mock the file loading operations.

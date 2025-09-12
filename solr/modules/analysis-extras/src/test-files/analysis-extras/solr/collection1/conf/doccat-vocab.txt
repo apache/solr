@@ -1,0 +1,19 @@
+# Mock vocabulary file for DocumentCategorizer tests
+good
+bad
+excellent
+terrible
+fine
+average
+neutral
+very
+love
+product
+recommend
+quality
+service
+broke
+immediately
+special
+performance
+acceptable
