@@ -182,7 +182,7 @@ public class QueryComponent extends SearchComponent {
     String queryString = rb.getQueryString();
     if (queryString == null) {
       // this is the normal way it's set.
-      queryString = params.get(CommonParams.Q);
+      queryString = params.get(rb.getQParameterName());
       rb.setQueryString(queryString);
     }
 
@@ -602,29 +602,29 @@ public class QueryComponent extends SearchComponent {
   }
 
   protected int groupedDistributedProcess(ResponseBuilder rb) {
-    int nextStage = ResponseBuilder.STAGE_DONE;
+    int nextStage = rb.getDoneStage();
     ShardRequestFactory shardRequestFactory = null;
 
-    if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_PARSE_QUERY) {
       nextStage = ResponseBuilder.STAGE_PARSE_QUERY;
-    } else if (rb.stage == ResponseBuilder.STAGE_PARSE_QUERY) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_PARSE_QUERY) {
       createDistributedStats(rb);
       nextStage = ResponseBuilder.STAGE_TOP_GROUPS;
-    } else if (rb.stage < ResponseBuilder.STAGE_TOP_GROUPS) {
+    } else if (rb.getStage() < ResponseBuilder.STAGE_TOP_GROUPS) {
       nextStage = ResponseBuilder.STAGE_TOP_GROUPS;
-    } else if (rb.stage == ResponseBuilder.STAGE_TOP_GROUPS) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_TOP_GROUPS) {
       shardRequestFactory = new SearchGroupsRequestFactory();
       nextStage = ResponseBuilder.STAGE_EXECUTE_QUERY;
-    } else if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    } else if (rb.getStage() < ResponseBuilder.STAGE_EXECUTE_QUERY) {
       nextStage = ResponseBuilder.STAGE_EXECUTE_QUERY;
-    } else if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_EXECUTE_QUERY) {
       shardRequestFactory = new TopGroupsShardRequestFactory();
       nextStage = ResponseBuilder.STAGE_GET_FIELDS;
-    } else if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
+    } else if (rb.getStage() < ResponseBuilder.STAGE_GET_FIELDS) {
       nextStage = ResponseBuilder.STAGE_GET_FIELDS;
-    } else if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
       shardRequestFactory = new StoredFieldsShardRequestFactory();
-      nextStage = ResponseBuilder.STAGE_DONE;
+      nextStage = rb.getDoneStage();
     }
 
     if (shardRequestFactory != null) {
@@ -636,28 +636,28 @@ public class QueryComponent extends SearchComponent {
   }
 
   protected int regularDistributedProcess(ResponseBuilder rb) {
-    if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_PARSE_QUERY) {
       return ResponseBuilder.STAGE_PARSE_QUERY;
     }
-    if (rb.stage == ResponseBuilder.STAGE_PARSE_QUERY) {
+    if (rb.getStage() == ResponseBuilder.STAGE_PARSE_QUERY) {
       createDistributedStats(rb);
       return ResponseBuilder.STAGE_EXECUTE_QUERY;
     }
-    if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_EXECUTE_QUERY) {
       return ResponseBuilder.STAGE_EXECUTE_QUERY;
     }
-    if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() == ResponseBuilder.STAGE_EXECUTE_QUERY) {
       createMainQuery(rb);
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
-    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() < ResponseBuilder.STAGE_GET_FIELDS) {
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
-    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS && !rb.onePassDistributedQuery) {
+    if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS && !rb.onePassDistributedQuery) {
       createRetrieveDocs(rb);
-      return ResponseBuilder.STAGE_DONE;
+      return rb.getDoneStage();
     }
-    return ResponseBuilder.STAGE_DONE;
+    return rb.getDoneStage();
   }
 
   @Override
@@ -700,7 +700,7 @@ public class QueryComponent extends SearchComponent {
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) {
       return;
     }
 
