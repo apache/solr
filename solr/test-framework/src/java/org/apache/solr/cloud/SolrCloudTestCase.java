@@ -114,18 +114,14 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   protected static MiniSolrCloudCluster.Builder configureCluster(int nodeCount) {
     // By default the MiniSolrCloudCluster being built will randomly (seed based) decide which
-    // collection API strategy to use (distributed or Overseer based) and which cluster update
-    // strategy to use (distributed if collection API is distributed, but Overseer based or
-    // distributed randomly chosen if Collection API is Overseer based), and whether to use PRS
+    // collection API strategy to use (distributed or Overseer based) and whether to use PRS
 
     configurePrsDefault();
 
-    boolean useDistributedCollectionConfigSetExecution = LuceneTestCase.random().nextInt(2) == 0;
-    boolean useDistributedClusterStateUpdate =
-        useDistributedCollectionConfigSetExecution || LuceneTestCase.random().nextInt(2) == 0;
     return new MiniSolrCloudCluster.Builder(nodeCount, createTempDir())
-        .withDistributedClusterStateUpdates(
-            useDistributedCollectionConfigSetExecution, useDistributedClusterStateUpdate);
+        .withOverseer(
+            EnvUtils.getPropertyAsBool(
+                "solr.cloud.overseer.enabled", LuceneTestCase.random().nextBoolean()));
   }
 
   public static void configurePrsDefault() {

@@ -90,8 +90,7 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
     final ZkNodeProps remoteMessage = createRemoteMessage(collName, shardName, requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
-            coreContainer.getDistributedCollectionCommandRunner(),
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.INSTALLSHARDDATA,
             DEFAULT_COLLECTION_OP_TIMEOUT);

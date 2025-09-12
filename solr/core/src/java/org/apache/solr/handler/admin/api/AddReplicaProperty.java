@@ -80,8 +80,7 @@ public class AddReplicaProperty extends AdminAPIBase implements AddReplicaProper
         createRemoteMessage(collName, shardName, replicaName, propertyName, requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
-            coreContainer.getDistributedCollectionCommandRunner(),
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.ADDREPLICAPROP,
             DEFAULT_COLLECTION_OP_TIMEOUT);
