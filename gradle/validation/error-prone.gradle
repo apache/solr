@@ -276,7 +276,7 @@ allprojects { prj ->
             '-Xep:AssertEqualsArgumentOrderChecker:WARN',
             '-Xep:AssertThrowsMultipleStatements:WARN',
             '-Xep:AssertionFailureIgnored:WARN',
-            '-Xep:AssignmentExpression:WARN',
+            // '-Xep:AssignmentExpression:WARN', todo: Consider this but gives lots of errors
             '-Xep:AssistedInjectAndInjectOnSameConstructor:WARN',
             '-Xep:AttemptedNegativeZero:WARN',
             // '-Xep:AutoValueBoxedValues:WARN', // todo check if useful or comment why not
@@ -289,7 +289,7 @@ allprojects { prj ->
             '-Xep:BareDotMetacharacter:WARN',
             '-Xep:BigDecimalEquals:WARN',
             '-Xep:BigDecimalLiteralDouble:WARN',
-            '-Xep:BooleanLiteral:WARN', // true vs Boolean.TRUE
+            // '-Xep:BooleanLiteral:WARN', // todo: Consider this - true vs Boolean.TRUE
             '-Xep:BoxedPrimitiveConstructor:WARN',
             // '-Xep:BugPatternNaming:OFF', // we don't use this annotation
             '-Xep:ByteBufferBackingArray:WARN',
@@ -325,7 +325,7 @@ allprojects { prj ->
             // '-Xep:DoubleCheckedLocking:OFF', // todo check if useful or comment why not
             '-Xep:DuplicateBranches:WARN',
             '-Xep:DuplicateDateFormatField:WARN',
-            '-Xep:EffectivelyPrivate:WARN',
+            // '-Xep:EffectivelyPrivate:WARN', // todo, consider this new rule
             '-Xep:EmptyBlockTag:WARN',
             // '-Xep:EmptyCatch:OFF', // todo check if useful or comment why not - might be handled by ECJ?
             // '-Xep:EmptySetMultibindingContributions:OFF', // we don't use this annotation
@@ -477,7 +477,7 @@ allprojects { prj ->
             '-Xep:Overrides:WARN',
             // '-Xep:OverridesGuiceInjectableMethod:OFF', // we don't use guice
             '-Xep:ParameterName:WARN',
-            '-Xep:PatternMatchingInstanceof:WARN',
+            // '-Xep:PatternMatchingInstanceof:WARN', todo: Disable as it gives tons of warnings. v2.41 may have been stricter on this?
             '-Xep:PreconditionsCheckNotNullRepeated:WARN',
             '-Xep:PrimitiveAtomicReference:WARN',
             '-Xep:ProtectedMembersInFinalClass:WARN',
