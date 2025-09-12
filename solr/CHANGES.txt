@@ -57,6 +57,8 @@ Improvements
 
 * SOLR-17867: Export tool should properly output exported documents in json, json w/ lines, and javabin formats. (Eric Pugh)
 
+* Minor refactoring of the TextToVectorQParserPlugin (Ilaria Petreti via Alessandro Benedetti)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
