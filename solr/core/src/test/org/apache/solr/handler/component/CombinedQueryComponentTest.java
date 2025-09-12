@@ -158,21 +158,24 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
 
   /** Test max combiner queries limit set from solrconfig to 2. */
   @Test
-  public void testMaxQueriesLimit() {
-    assertQEx(
-        "Too many queries to combine: limit is 2",
-        req(
-            CommonParams.JSON,
-            "{\"queries\":"
-                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
-                + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
-                + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
-                + "\"limit\":5,"
-                + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"vector\", \"lexical2\"], \"combiner.method\": \"pre\"}}",
-            CommonParams.QT,
-            "/search"),
-        SolrException.ErrorCode.BAD_REQUEST);
+  public void testMaxQueriesLimit() throws Exception {
+    prepareIndexDocs();
+    RuntimeException exceptionThrown =
+        expectThrows(
+            SolrException.class,
+            () ->
+                query(
+                    CommonParams.JSON,
+                    "{\"queries\":"
+                        + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
+                        + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}},"
+                        + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
+                        + "\"limit\":5,"
+                        + "\"fields\":[\"id\",\"score\",\"title\"],"
+                        + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"vector\", \"lexical2\"], \"combiner.method\": \"pre\"}}",
+                    CommonParams.QT,
+                    "/search"));
+    assertTrue(exceptionThrown.getMessage().contains("Too many queries to combine: limit is 2"));
   }
 
   /**
