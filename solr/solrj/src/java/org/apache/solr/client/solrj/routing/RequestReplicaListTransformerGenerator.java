@@ -17,12 +17,12 @@
 package org.apache.solr.client.solrj.routing;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.NodesSysProps;
@@ -126,7 +126,7 @@ public class RequestReplicaListTransformerGenerator {
               stableRltFactory);
       ReplicaListTransformer baseReplicaListTransformer =
           replicaComp.getBaseReplicaListTransformer();
-      if (replicaComp.getSortRules() == null) {
+      if (replicaComp.getPreferenceRules() == null || replicaComp.getPreferenceRules().isEmpty()) {
         // only applying base transformation
         return baseReplicaListTransformer;
       } else {
@@ -158,10 +158,25 @@ public class RequestReplicaListTransformerGenerator {
     public <T> void transform(List<T> choices) {
       if (choices.size() > 1) {
         if (log.isDebugEnabled()) {
-          log.debug("Applying the following sorting preferences to replicas: {}", replicaComp);
+          log.debug(
+              "Applying the following sorting preferences to replicas: {}",
+              replicaComp.getPreferenceRules().stream()
+                  .map(PreferenceRule::toString)
+                  .collect(Collectors.joining(",", "[", "]")));
         }
 
-        Comparator<T> comparator = replicaComp.getComparator(choices.get(0));
+        Comparator<T> comparator;
+        try {
+          comparator = replicaComp.getComparator(choices.get(0));
+        } catch (IllegalArgumentException iae) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, iae.getMessage());
+        }
+        if (comparator == null) {
+          // A null comparator means that the choices cannot be sorted by the given rules.
+          // Just sort by the base transformer and return.
+          baseReplicaListTransformer.transform(choices);
+          return;
+        }
         // First, sort according to comparator rules.
         try {
           choices.sort(comparator);
@@ -201,7 +216,7 @@ public class RequestReplicaListTransformerGenerator {
         if (log.isDebugEnabled()) {
           log.debug(
               "Applied sorting preferences to replica list: {}",
-              Arrays.toString(choices.toArray()));
+              choices.stream().map(T::toString).collect(Collectors.joining(",", "[", "]")));
         }
       }
     }

@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.routing;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -121,8 +120,21 @@ public class NodePreferenceRulesComparator {
    * order.
    */
   NodePreferenceRulesComparator(
-      final List<PreferenceRule> sortRules, final SolrParams requestParams) {
-    this(sortRules, requestParams, NOOP_RLTF, null);
+      final List<PreferenceRule> preferenceRules, final SolrParams requestParams) {
+    this(preferenceRules, requestParams, NOOP_RLTF, null);
+  }
+
+  /**
+   * For compatibility with tests, which expect this constructor to have no effect on the *base*
+   * order.
+   */
+  NodePreferenceRulesComparator(
+      final List<PreferenceRule> preferenceRules,
+      final SolrParams requestParams,
+      final String nodeName,
+      final String baseUrl,
+      final String hostName) {
+    this(preferenceRules, requestParams, nodeName, baseUrl, hostName, null, NOOP_RLTF, null);
   }
 
   public ReplicaListTransformer getBaseReplicaListTransformer() {
@@ -184,8 +196,10 @@ public class NodePreferenceRulesComparator {
             yield switch (preferenceRule.value) {
               case ShardParams.REPLICA_LOCAL -> Comparator.comparing(
                   r -> r.getBaseUrl().equals(baseUrl));
-              case ShardParams.REPLICA_HOST -> Comparator.comparing(
-                  r -> r.getBaseUrl().contains(hostName));
+              case ShardParams.REPLICA_HOST -> {
+                final String hostNameWithColon = hostName + ":";
+                yield Comparator.comparing(r -> r.getNodeName().startsWith(hostNameWithColon));
+              }
               default -> Comparator.comparing(r -> r.getCoreUrl().startsWith(preferenceRule.value));
             };
           case ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER:
@@ -226,7 +240,11 @@ public class NodePreferenceRulesComparator {
             yield switch (preferenceRule.value) {
               case ShardParams.REPLICA_LOCAL -> Comparator.comparing(
                   url -> url.startsWith(baseUrl));
-              case ShardParams.REPLICA_HOST -> Comparator.comparing(url -> url.contains(hostName));
+              case ShardParams.REPLICA_HOST -> {
+                String scheme = baseUrl.startsWith("https") ? "https" : "http";
+                final String baseUrlHostPrefix = scheme + "://" + hostName + ":";
+                yield Comparator.comparing(url -> url.startsWith(baseUrlHostPrefix));
+              }
               default -> Comparator.comparing(url -> url.startsWith(preferenceRule.value));
             };
           case ShardParams.SHARDS_PREFERENCE_REPLICA_BASE:
@@ -242,15 +260,7 @@ public class NodePreferenceRulesComparator {
     return comparator != null ? comparator.reversed() : null;
   }
 
-  public List<PreferenceRule> getSortRules() {
-    return sortRules;
-  }
-
   public List<PreferenceRule> getPreferenceRules() {
     return preferenceRules;
-  }
-
-  public String toString() {
-    return Arrays.toString(sortRules.toArray());
   }
 }
