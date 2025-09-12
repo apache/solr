@@ -242,6 +242,8 @@ Improvements
 * SOLR-17884: SolrJ users not using deprecated SolrClients can safely exclude Apache HttpClient dependencies.
   (David Smiley)
 
+* SOLR-17641: Solr is now able to start on Java 24 and later, but with Security Manager disabled (Houston Putman, Jan Høydahl)
+
 Optimizations
 ---------------------
 (No changes)

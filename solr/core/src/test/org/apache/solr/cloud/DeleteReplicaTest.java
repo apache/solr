@@ -58,16 +58,11 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.zkclienttimeout", "45000");
+    System.setProperty("solr.zookeeper.client.timeout", "45000");
     System.setProperty("distribUpdateSoTimeout", "15000");
 
     // these tests need to be isolated, so we don't share the minicluster
-    configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
-        .flipOverseerEnablement()
-        // Some tests (this one) use "the other" cluster Collection API execution strategy to
-        // increase coverage
-        .configure();
+    configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   @After

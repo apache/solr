@@ -347,7 +347,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     assumeWorkingMockito();
 
-    System.setProperty("solr.zkclienttimeout", "30000");
+    System.setProperty("solr.zookeeper.client.timeout", "30000");
 
     Path zkDir = createTempDir("zkData");
 
@@ -373,7 +373,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       zkClient.printLayoutToStream(System.out);
     }
 
-    System.clearProperty("solr.zkclienttimeout");
+    System.clearProperty("solr.zookeeper.client.timeout");
 
     if (null != server) {
       server.shutdown();

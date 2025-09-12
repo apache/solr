@@ -51,7 +51,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   public void setUp() throws Exception {
     super.setUp();
     setupTestInit(solrconfig, schema, true);
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
 
     int numberOfShards = random().nextInt(4) + 1;
     int numberOfReplicas = random().nextInt(2) + 1;
