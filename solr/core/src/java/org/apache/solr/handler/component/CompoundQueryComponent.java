@@ -17,7 +17,11 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TotalHits;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
 
 public class CompoundQueryComponent extends QueryComponent {
   public static final String COMPONENT_NAME = "compound_query";
@@ -54,14 +58,42 @@ public class CompoundQueryComponent extends QueryComponent {
 
   private int doFusion(CompoundResponseBuilder crb) {
     final SolrDocumentList responseDocs = new SolrDocumentList();
-    long numFound = 0;
-    for (var rb_i : crb.responseBuilders) {
-      responseDocs.addAll(rb_i.getResponseDocs());
-      numFound += rb_i.getResponseDocs().getNumFound();
+    final TopDocs[] hits = new TopDocs[crb.responseBuilders.size()];
+    for (int crb_idx = 0; crb_idx < crb.responseBuilders.size(); ++crb_idx) {
+
+      final SolrDocumentList sdl = crb.responseBuilders.get(crb_idx).getResponseDocs();
+
+      final ScoreDoc[] scoreDocs = new ScoreDoc[sdl.size()];
+      for (int idx = 0; idx < sdl.size(); ++idx) {
+        scoreDocs[idx] = new ScoreDoc(idx /* doc */, 0f /* score */, crb_idx /* shardIndex */);
+      }
+
+      final TotalHits totalHits =
+          new TotalHits(
+              sdl.getNumFound(),
+              sdl.getNumFoundExact()
+                  ? TotalHits.Relation.EQUAL_TO
+                  : TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO);
+
+      hits[crb_idx] = new TopDocs(totalHits, scoreDocs);
     }
-    responseDocs.setNumFound(numFound);
-    responseDocs.setNumFoundExact(false);
+
+    final var params = crb.req.getParams();
+    final int topN = params.getInt(CommonParams.ROWS, CommonParams.ROWS_DEFAULT);
+    final int k = params.getInt("rrf.k", 1);
+
+    final TopDocs fusion = TopDocs.rrf(topN, k, hits);
+
+    for (ScoreDoc scoreDoc : fusion.scoreDocs) {
+      responseDocs.add(
+          crb.responseBuilders.get(scoreDoc.shardIndex).getResponseDocs().get(scoreDoc.doc));
+    }
+    final TotalHits totalHits = fusion.totalHits;
+    responseDocs.setNumFound(totalHits.value());
+    responseDocs.setNumFoundExact(TotalHits.Relation.EQUAL_TO.equals(totalHits.relation()));
+
     crb.setResponseDocs(responseDocs);
+
     return ResponseBuilder.STAGE_DONE;
   }
 

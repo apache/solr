@@ -100,25 +100,55 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
     // add some documents
     final String id = "id";
     final String t1 = "a_t";
-    final String t2 = "b_t";
     {
       new UpdateRequest()
-          .add(sdoc(id, "0", t1, "bumble bee", t2, "bumble bee"))
-          .add(sdoc(id, "1", t1, "honey bee", t2, "honey bee"))
-          .add(sdoc(id, "2", t1, "solitary bee", t2, "solitary bee"))
+          .add(sdoc(id, "a", t1, "alfalfa"))
+          .add(sdoc(id, "b", t1, "borage"))
+          .add(sdoc(id, "c", t1, "clover"))
+          .add(sdoc(id, "1", t1, "solitary bee"))
+          .add(sdoc(id, "10", t1, "bumble bee"))
+          .add(sdoc(id, "1000", t1, "honey bee"))
           .commit(cluster.getSolrClient(), COLLECTION);
     }
 
-    // search for the documents
-    for (boolean one_two : new boolean[] {false, true}) {
-      final String id1 = (one_two ? "1" : "2");
-      final String id2 = (one_two ? "2" : "1");
+    final String q_bee_yes = "+" + t1 + ":bee";
+    final String q_bee_no = "-" + t1 + ":bee";
+
+    // search for the documents in a single query
+    for (String q : new String[] {null, q_bee_yes, q_bee_no}) {
+      // compose the query
+      final SolrQuery solrQuery = new SolrQuery(q == null ? "*:*" : q);
+      solrQuery.set("sort", "id asc");
+
+      // make the query
+      final QueryResponse queryResponse =
+          new QueryRequest(solrQuery).process(cluster.getSolrClient(), COLLECTION);
+
+      // analyse the response
+      SolrDocumentList documentList = queryResponse.getResults();
+      assertTrue(documentList.getNumFoundExact());
+      assertEquals(documentList.getNumFound(), documentList.size());
+      if (q == null) {
+        assertEquals(6, documentList.size());
+        assertEquals("1", documentList.get(0).getFieldValue("id"));
+        assertEquals("10", documentList.get(1).getFieldValue("id"));
+        assertEquals("1000", documentList.get(2).getFieldValue("id"));
+        assertEquals("a", documentList.get(3).getFieldValue("id"));
+        assertEquals("b", documentList.get(4).getFieldValue("id"));
+        assertEquals("c", documentList.get(5).getFieldValue("id"));
+      } else {
+        assertEquals(3, documentList.size());
+      }
+    }
+
+    // search for the documents via two fused queries
+    {
       // compose the query
       final SolrQuery solrQuery = new SolrQuery("id:0");
-      solrQuery.set("fl", "id,a_t,b_t");
+      solrQuery.set("sort", "id asc");
       solrQuery.set("rrf", true);
-      solrQuery.set("rrf.q.1", "id:" + id1);
-      solrQuery.set("rrf.q.2", "id:" + id2);
+      solrQuery.set("rrf.q.1", q_bee_yes);
+      solrQuery.set("rrf.q.2", q_bee_no);
       solrQuery.setRequestHandler(compoundSearchHandlerName);
 
       // make the query
@@ -128,10 +158,14 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
       // analyse the response
       SolrDocumentList documentList = queryResponse.getResults();
       assertFalse(documentList.getNumFoundExact());
-      assertEquals(2, documentList.getNumFound());
-      assertEquals(2, documentList.size());
-      assertEquals(id1, documentList.get(0).getFieldValue("id"));
-      assertEquals(id2, documentList.get(1).getFieldValue("id"));
+      assertEquals(3, documentList.getNumFound());
+      assertEquals(6, documentList.size());
+      assertEquals("1", documentList.get(0).getFieldValue("id"));
+      assertEquals("a", documentList.get(1).getFieldValue("id"));
+      assertEquals("10", documentList.get(2).getFieldValue("id"));
+      assertEquals("b", documentList.get(3).getFieldValue("id"));
+      assertEquals("1000", documentList.get(4).getFieldValue("id"));
+      assertEquals("c", documentList.get(5).getFieldValue("id"));
     }
   }
 }
