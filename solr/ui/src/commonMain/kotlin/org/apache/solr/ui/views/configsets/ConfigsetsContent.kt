@@ -16,7 +16,6 @@
  */
 package org.apache.solr.ui.views.configsets
 
-import ConfigsetsNavBar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,12 +27,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
+import org.apache.solr.ui.generated.resources.Res
+import org.apache.solr.ui.generated.resources.configsets_index_query
+import org.apache.solr.ui.generated.resources.configsets_request_handlers
+import org.apache.solr.ui.generated.resources.configsets_search_components
+import org.apache.solr.ui.generated.resources.configsets_update_configuration
+import org.apache.solr.ui.generated.resources.files
+import org.apache.solr.ui.generated.resources.overview
+import org.apache.solr.ui.generated.resources.schema
+import org.apache.solr.ui.views.navigation.NavigationTabs
 import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -47,25 +54,14 @@ fun ConfigsetsContent(
     verticalArrangement = Arrangement.spacedBy(16.dp),
 ) {
     val model by component.model.collectAsState()
-
-    // Decompose child to access OverviewComponent
-    val stack by component.childStack.subscribeAsState()
-    val currentChild = stack.active.instance
-
-    val renderTab: @Composable (ConfigsetsTab, String) -> Unit = { tab, _ ->
-        when (tab) {
-            ConfigsetsTab.Overview -> when (val child = currentChild) {
-                is Child.Overview -> ConfigsetsOverviewContent(component = child.component)
-                else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Overview unavailable") }
-            }
-            else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(tab.name) }
-        }
-    }
+    val slot by component.tabSlot.subscribeAsState()
+    val currentChild = slot.child
 
     Column(Modifier.fillMaxSize()) {
-        ConfigsetsNavBar(
-            selectedTab = model.selectedTab,
-            selectTab = { tab: ConfigsetsTab -> component.onSelectTab(tab) },
+        NavigationTabs(
+            component = component,
+            entries = ConfigsetsTab.entries,
+            mapper = ::tabLabelRes,
         )
         ConfigsetsDropdown(
             selectedConfigSet = model.selectedConfigset,
@@ -80,7 +76,23 @@ fun ConfigsetsContent(
                 .fillMaxSize()
                 .padding(16.dp),
         ) {
-            renderTab(model.selectedTab, model.selectedConfigset ?: "")
+            println(currentChild)
+            currentChild?.let {
+                when (val child = it.instance) {
+                    is Child.Overview -> ConfigsetsOverviewContent(component = child.component)
+                    is Child.Placeholder -> Text(text = child.tabName)
+                }
+            }
         }
     }
+}
+
+private fun tabLabelRes(item: ConfigsetsTab) = when (item) {
+    ConfigsetsTab.Overview -> Res.string.overview
+    ConfigsetsTab.Files -> Res.string.files
+    ConfigsetsTab.Schema -> Res.string.schema
+    ConfigsetsTab.UpdateConfig -> Res.string.configsets_update_configuration
+    ConfigsetsTab.IndexQuery -> Res.string.configsets_index_query
+    ConfigsetsTab.Handlers -> Res.string.configsets_request_handlers
+    ConfigsetsTab.SearchComponents -> Res.string.configsets_search_components
 }

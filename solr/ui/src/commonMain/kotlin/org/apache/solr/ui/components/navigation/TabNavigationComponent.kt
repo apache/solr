@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.configsets.integration
+package org.apache.solr.ui.components.navigation
 
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent
-import org.apache.solr.ui.components.configsets.data.Configset
-import org.apache.solr.ui.components.configsets.store.ConfigsetsStore
+import com.arkivanov.decompose.router.slot.ChildSlot
+import com.arkivanov.decompose.value.Value
+import kotlinx.serialization.Serializable
 
-internal val configsetsStateToModel: (ConfigsetsStore.State) -> ConfigsetsComponent.Model = {
-    ConfigsetsComponent.Model(
-        configsets = it.configSets.configSets.map { s -> Configset(s) },
-        selectedConfigset = it.selectedConfigset,
-        expanded = it.expanded,
-    )
+interface TabNavigationComponent<T : Enum<T>, C : Any> {
+
+    val tabSlot: Value<ChildSlot<Configuration<T>, C>>
+
+    fun onNavigate(tab: T)
+
+    @Serializable
+    data class Configuration<T : Enum<T>>(val tab: T)
 }
