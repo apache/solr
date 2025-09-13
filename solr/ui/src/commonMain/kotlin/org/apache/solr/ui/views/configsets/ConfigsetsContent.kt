@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
@@ -64,6 +65,7 @@ fun ConfigsetsContent(
             mapper = ::tabLabelRes,
         )
         ConfigsetsDropdown(
+            modifier = Modifier.testTag("configsets_dropdown"),
             selectedConfigSet = model.selectedConfigset,
             selectConfigset = { s: String -> component.onSelectConfigset(s) },
             availableConfigsets = model.configsets,

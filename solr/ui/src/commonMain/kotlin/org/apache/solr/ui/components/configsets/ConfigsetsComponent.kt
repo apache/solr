@@ -37,10 +37,15 @@ interface ConfigsetsComponent : TabNavigationComponent<ConfigsetsTab, Child> {
 
     /**
      * Model that holds the data of the [ConfigsetsComponent].
+     *
+     * @property configsets The configsets names available.
+     * @property selectedConfigset The current configset name to display. Leave empty if no
+     * selection is made.
+     * @property expanded Whether the configsets dropdown menu is expanded.
      */
     data class Model(
         val configsets: List<Configset> = emptyList(),
-        val selectedConfigset: String? = null,
+        val selectedConfigset: String = "",
         val expanded: Boolean = false,
     )
 

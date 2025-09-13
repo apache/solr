@@ -30,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.configsets.data.Configset
 import org.apache.solr.ui.generated.resources.Res
@@ -40,7 +41,7 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfigsetsDropdown(
-    selectedConfigSet: String?,
+    selectedConfigSet: String,
     selectConfigset: (String) -> Unit,
     availableConfigsets: List<Configset>,
     expanded: Boolean,
@@ -59,13 +60,16 @@ fun ConfigsetsDropdown(
             modifier = Modifier.widthIn(min = 256.dp).weight(1f),
         ) {
             OutlinedTextField(
-                value = selectedConfigSet ?: "",
+                value = selectedConfigSet,
                 onValueChange = {},
                 readOnly = true,
                 label = { Text(stringResource(Res.string.nav_configsets)) },
                 placeholder = {
                     if (availableConfigsets.isEmpty()) {
-                        Text(stringResource(Res.string.no_configsets))
+                        Text(
+                            modifier = Modifier.testTag("no_configsets_placeholder"),
+                            text = stringResource(Res.string.no_configsets),
+                        )
                     }
                 },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
@@ -79,6 +83,7 @@ fun ConfigsetsDropdown(
             ExposedDropdownMenu(expanded = expanded, onDismissRequest = { setMenuExpanded(false) }) {
                 availableConfigsets.forEach { configset ->
                     DropdownMenuItem(
+                        modifier = Modifier.testTag(tag = configset.name),
                         text = { Text(configset.name) },
                         onClick = {
                             selectConfigset(configset.name)
