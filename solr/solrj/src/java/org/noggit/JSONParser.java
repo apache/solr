@@ -282,7 +282,7 @@ public class JSONParser {
       if (((WS_MASK >> ch) & 0x01) == 0) {
         return ch;
       } else //noinspection StatementWithEmptyBody
-        if (ch <= ' ') {
+      if (ch <= ' ') {
         // this will only be true if one of the whitespace bits was set
       } else if (ch == '/') {
         getSlashComment();
