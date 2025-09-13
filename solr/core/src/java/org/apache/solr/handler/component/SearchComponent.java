@@ -93,6 +93,16 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
   @Override
   public abstract String getDescription();
 
+  /**
+   * A component can force solr to run in distributed mode to prevent extra development cost of an
+   * optimized single-shard algorithm.
+   *
+   * @return the boolean
+   */
+  protected boolean isForceDistributed() {
+    return false;
+  }
+
   @Override
   public Category getCategory() {
     return Category.OTHER;
