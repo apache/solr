@@ -23,7 +23,9 @@ import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.logging.LoggingComponent
 import org.apache.solr.ui.components.navigation.NavigationComponent
+import org.apache.solr.ui.components.navigation.TabNavigationComponent
 import org.apache.solr.ui.views.navigation.MainMenu
+import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 /**
  * Main component of the application that is used as base for users with access.

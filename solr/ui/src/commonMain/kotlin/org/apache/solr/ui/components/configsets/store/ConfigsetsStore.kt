@@ -25,11 +25,6 @@ import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 internal interface ConfigsetsStore : Store<Intent, State, Nothing> {
     sealed interface Intent {
         /**
-         * Intent for selecting tab.
-         */
-        data class SelectTab(val tab: ConfigsetsTab) : Intent
-
-        /**
          * Intent for selecting configset.
          */
         data class SelectConfigSet(val configSetName: String) : Intent
@@ -40,7 +35,6 @@ internal interface ConfigsetsStore : Store<Intent, State, Nothing> {
         data class SetMenuExpanded(val expanded: Boolean) : Intent
     }
     data class State(
-        val selectedTab: ConfigsetsTab = ConfigsetsTab.Overview,
         val selectedConfigset: String? = null,
         val configSets: ListConfigsets = ListConfigsets(),
         val expanded: Boolean = false,

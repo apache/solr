@@ -17,27 +17,22 @@
 
 package org.apache.solr.ui.components.configsets
 
-import com.arkivanov.decompose.router.stack.ChildStack
-import com.arkivanov.decompose.value.Value
 import kotlinx.coroutines.flow.StateFlow
+import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
 import org.apache.solr.ui.components.configsets.data.Configset
-import org.apache.solr.ui.components.configsets.data.ListConfigsets
 import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
+import org.apache.solr.ui.components.navigation.TabNavigationComponent
 import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 /** Component contract for Configsets: manages tab state, available configsets, and current selection. */
-interface ConfigsetsComponent {
-
-    /**
-     * Child stack that holds the navigation state.
-     */
-    val childStack: Value<ChildStack<*, Child>>
+interface ConfigsetsComponent : TabNavigationComponent<ConfigsetsTab, Child> {
 
     /**
      * All possible navigation targets (children) within the Configsets feature.
      */
     sealed interface Child {
         data class Overview(val component: ConfigsetsOverviewComponent) : Child
+        data class Placeholder(val tabName: String) : Child
     }
 
     /**
@@ -45,17 +40,12 @@ interface ConfigsetsComponent {
      */
     data class Model(
         val configsets: List<Configset> = emptyList(),
-        val selectedTab: ConfigsetsTab = ConfigsetsTab.Overview,
         val selectedConfigset: String? = null,
         val expanded: Boolean = false,
-
     )
 
     /** Hot, observable stream of [Model] for Compose/UI. */
     val model: StateFlow<Model>
-
-    /** Select the active tab by index. */
-    fun onSelectTab(tab: ConfigsetsTab)
 
     /** Select the active configset by name. */
     fun onSelectConfigset(name: String)

@@ -17,23 +17,22 @@
 
 package org.apache.solr.ui.components.configsets.integration
 
-import com.arkivanov.decompose.router.stack.ChildStack
-import com.arkivanov.decompose.router.stack.StackNavigation
-import com.arkivanov.decompose.router.stack.childStack
-import com.arkivanov.decompose.value.Value
+import com.arkivanov.decompose.childContext
 import com.arkivanov.mvikotlin.core.instancekeeper.getStore
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.serialization.Serializable
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
-import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
+import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child.Overview
+import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child.Placeholder
 import org.apache.solr.ui.components.configsets.overview.integration.DefaultConfigsetsOverviewComponent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStoreProvider
+import org.apache.solr.ui.components.navigation.TabNavigationComponent
+import org.apache.solr.ui.components.navigation.integration.DefaultTabNavigationComponent
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.coroutineScope
 import org.apache.solr.ui.utils.map
@@ -44,23 +43,13 @@ import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
  */
 class DefaultConfigsetsConponent internal constructor(
     componentContext: AppComponentContext,
+    tabNavigation: TabNavigationComponent<ConfigsetsTab, Child>,
     storeFactory: StoreFactory,
     httpClient: HttpClient,
-    destination: ConfigsetsTab? = null,
-    private val overviewComponent: (AppComponentContext) -> ConfigsetsOverviewComponent,
 ) : ConfigsetsComponent,
-    AppComponentContext by componentContext {
+    AppComponentContext by componentContext,
+    TabNavigationComponent<ConfigsetsTab, Child> by tabNavigation {
 
-    private val navigation = StackNavigation<Configuration>()
-    private val stack = childStack(
-        source = navigation,
-        serializer = Configuration.serializer(),
-        initialStack = { calculateInitialStack(destination) },
-        handleBackButton = true,
-        childFactory = ::createChild,
-    )
-
-    override val childStack: Value<ChildStack<*, Child>> = stack
     constructor(
         componentContext: AppComponentContext,
         storeFactory: StoreFactory,
@@ -69,37 +58,23 @@ class DefaultConfigsetsConponent internal constructor(
         componentContext = componentContext,
         storeFactory = storeFactory,
         httpClient = httpClient,
-        destination = null,
-        overviewComponent = { childContext ->
-            DefaultConfigsetsOverviewComponent(
-                componentContext = childContext,
-                storeFactory = storeFactory,
-                httpClient = httpClient,
-            )
-        },
-    )
-
-    @Serializable
-    private sealed interface Configuration {
-        @Serializable
-        data object Overview : Configuration
-    }
-
-    private fun createChild(
-        configuration: Configuration,
-        componentContext: AppComponentContext,
-    ): Child = when (configuration) {
-        Configuration.Overview -> Child.Overview(overviewComponent(componentContext))
-    }
-
-    /**
-     * Calculates the initial stack based on the destination provided.
-     */
-    private fun calculateInitialStack(destination: ConfigsetsTab?): List<Configuration> = listOf(
-        when (destination) {
-            ConfigsetsTab.Overview -> Configuration.Overview
-            else -> Configuration.Overview
-        },
+        tabNavigation = DefaultTabNavigationComponent<ConfigsetsTab, Child>(
+            componentContext = componentContext.childContext("ConfigsetsTabs"),
+            initialTab = ConfigsetsTab.Overview,
+            tabSerializer = ConfigsetsTab.serializer(),
+            childFactory = { configuration, childContext ->
+                when (configuration.tab) {
+                    ConfigsetsTab.Overview -> Overview(
+                        DefaultConfigsetsOverviewComponent(
+                            componentContext = childContext,
+                            storeFactory = storeFactory,
+                            httpClient = httpClient,
+                        ),
+                    )
+                    else -> Placeholder(tabName = configuration.tab.name)
+                }
+            },
+        ),
     )
 
     private val mainScope = coroutineScope(SupervisorJob() + mainContext)
@@ -116,10 +91,6 @@ class DefaultConfigsetsConponent internal constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override val model = store.stateFlow.map(mainScope, configsetsStateToModel)
-
-    override fun onSelectTab(tab: ConfigsetsTab) {
-        store.accept(Intent.SelectTab(tab))
-    }
 
     override fun onSelectConfigset(name: String) {
         store.accept(Intent.SelectConfigSet(name))
