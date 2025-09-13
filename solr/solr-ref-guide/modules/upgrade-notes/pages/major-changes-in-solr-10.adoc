@@ -168,6 +168,10 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 === Upgrade to Jetty 12.x
 Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-life support. Jetty 12.x requires Java 17 or newer and is fully compatible with Solr's new minimum requirement of Java 21. This upgrade brings support for modern HTTP protocols and adopts the Jakarta EE 10 namespace. For more details, see https://webtide.com/jetty-12-has-arrived/.
 
+=== Docker
+
+The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 24 (noble) from Ubuntu 22 (jammy).
+
 === Analysis and Tokenizers
 
 ==== PathHierarchyTokenizer Behavior Change
