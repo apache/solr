@@ -253,7 +253,7 @@ For example, `why_score` is the display name below:
 
 [source,text]
 ----
-fl=id,sales_price:price,secret_sauce:prod(price,popularity),why_score:[explain style=nl]
+fl=id,sales_price:price,secret_sauce:product(price,popularity),why_score:[explain style=nl]
 ----
 
 [source,json]
