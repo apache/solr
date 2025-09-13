@@ -85,7 +85,7 @@ eclipse-jettytoolchain = "5.0.2"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.3.0.202506031305-r"
 essenty = "2.5.0"
-fasterxml = "2.18.2"
+fasterxml = "2.20.0"
 fasterxml-woodstox = "7.0.0"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
@@ -353,11 +353,11 @@ eclipse-jetty-xml = { module = "org.eclipse.jetty:jetty-xml", version.ref = "ecl
 eclipse-jgit-jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "eclipse-jgit" }
 essenty-lifecycle = { module = "com.arkivanov.essenty:lifecycle", version.ref = "essenty" }
 fasterxml-jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "fasterxml" }
-fasterxml-jackson-core-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "fasterxml" }
-fasterxml-jackson-core-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "fasterxml" }
-fasterxml-jackson-core-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "fasterxml" }
-fasterxml-jackson-dataformat-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref = "fasterxml" }
-fasterxml-jackson-dataformat-smile = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-smile", version.ref = "fasterxml" }
+fasterxml-jackson-core-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
+fasterxml-jackson-core-core = { module = "com.fasterxml.jackson.core:jackson-core" }
+fasterxml-jackson-core-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
+fasterxml-jackson-dataformat-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor" }
+fasterxml-jackson-dataformat-smile = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-smile" }
 fasterxml-woodstox-core = { module = "com.fasterxml.woodstox:woodstox-core", version.ref = "fasterxml-woodstox" }
 flexmark-extensions-abbreviation = { module = "com.vladsch.flexmark:flexmark-ext-abbreviation", version.ref = "flexmark" }
 flexmark-extensions-attributes = { module = "com.vladsch.flexmark:flexmark-ext-attributes", version.ref = "flexmark" }

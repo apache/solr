@@ -40,7 +40,7 @@ public abstract class AbstractVectorQParserBase extends QParser {
   static final String INCLUDE_TAGS = "includeTags";
 
   private final String denseVectorFieldName;
-  private final String vectorToSearch;
+  protected String vectorToSearch;
 
   public AbstractVectorQParserBase(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
