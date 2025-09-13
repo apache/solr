@@ -25,6 +25,8 @@ import com.arkivanov.decompose.value.Value
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
+import org.apache.solr.ui.components.cluster.ClusterComponent
+import org.apache.solr.ui.components.cluster.integration.DefaultClusterComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.integration.DefaultConfigsetsConponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
@@ -41,6 +43,7 @@ class DefaultMainComponent internal constructor(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     destination: String? = null,
+    private val clusterComponent: (AppComponentContext) -> ClusterComponent,
     private val configsetsComponent: (AppComponentContext) -> ConfigsetsComponent,
     private val environmentComponent: (AppComponentContext) -> EnvironmentComponent,
     private val loggingComponent: (AppComponentContext) -> LoggingComponent,
@@ -69,6 +72,11 @@ class DefaultMainComponent internal constructor(
         storeFactory = storeFactory,
         destination = destination,
         output = output,
+        clusterComponent = { childContext ->
+            DefaultClusterComponent(
+                componentContext = childContext,
+            )
+        },
         configsetsComponent = { childContext ->
             DefaultConfigsetsConponent(
                 componentContext = childContext,
@@ -104,6 +112,8 @@ class DefaultMainComponent internal constructor(
      */
     private fun calculateInitialStack(destination: String?): List<Configuration> = listOf(
         when (destination) {
+            "cluster" -> Configuration.Cluster
+            "configsets" -> Configuration.Configsets
             "environment" -> Configuration.Environment
             "logging" -> Configuration.Logging
             else -> Configuration.Environment
@@ -122,9 +132,7 @@ class DefaultMainComponent internal constructor(
         // Configuration.Metrics ->
         //     NavigationComponent.Child.Metrics(metricsComponent(componentContext))
 
-        // TODO Uncomment once Cluster available
-        // Configuration.Cluster ->
-        //     NavigationComponent.Child.Cluster(clusterComponent(componentContext))
+        Configuration.Cluster -> Child.Cluster(clusterComponent(componentContext))
 
         // TODO Uncomment once Security available
         // Configuration.Security ->

@@ -32,6 +32,7 @@ import com.arkivanov.decompose.extensions.compose.stack.Children
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import org.apache.solr.ui.components.main.MainComponent
 import org.apache.solr.ui.components.main.integration.asMainMenu
+import org.apache.solr.ui.views.cluster.ClusterContent
 import org.apache.solr.ui.views.configsets.ConfigsetsContent
 import org.apache.solr.ui.views.environment.EnvironmentContent
 import org.apache.solr.ui.views.logging.LoggingContent
@@ -64,6 +65,12 @@ fun MainContent(
             modifier = Modifier.weight(1f),
         ) {
             when (val child = it.instance) {
+                is MainComponent.Child.Cluster -> ClusterContent(
+                    component = child.component,
+                    modifier = Modifier.fillMaxWidth()
+                        .verticalScroll(scrollState)
+                        .padding(16.dp),
+                )
                 is MainComponent.Child.Configsets -> ConfigsetsContent(
                     component = child.component,
                     modifier = Modifier.fillMaxWidth()

@@ -67,16 +67,19 @@
   <!-- General Text -->
   <string name="authenticating">Authenticating...</string>
   <string name="community">Community</string>
+  <string name="cores">Cores</string>
   <string name="documentation">Documentation</string>
+  <string name="files">Files</string>
   <string name="irc">IRC</string>
   <string name="issue_tracker">Issue Tracker</string>
+  <string name="nodes">Nodes</string>
   <string name="slack">Slack</string>
   <string name="solr_query_syntax">Solr Query Syntax</string>
   <string name="support">Support</string>
   <string name="connecting">Connecting...</string>
   <string name="overview">Overview</string>
-  <string name="files">Files</string>
   <string name="schema">Schema</string>
+  <string name="zookeeper">Zookeeper</string>
 
   <!-- Input Labels -->
   <string name="label_username">Username</string>
