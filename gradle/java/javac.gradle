@@ -59,7 +59,8 @@ allprojects {
         "-Xlint:synchronization",
         "-Xlint:text-blocks",
         "-proc:none",  // proc:none was added because of LOG4J2-1925 / JDK-8186647
-        "-Xlint:removal"
+        "-Xlint:removal",
+        "--should-stop=ifError=FLOW" // error-prone 2.41
       ]
 
       if (propertyOrDefault("javac.failOnWarnings", true).toBoolean()) {
