@@ -38,7 +38,7 @@ apache-httpcomponents-httpmime = "4.5.14"
 apache-kafka = "3.9.0"
 apache-log4j = "2.21.0"
 apache-lucene = "10.2.1"
-apache-opennlp = "2.5.3"
+apache-opennlp = "2.5.4"
 apache-poi = "5.2.2"
 apache-rat = "0.15"
 apache-tika = "1.28.5"
@@ -171,6 +171,7 @@ nlopez-compose = "0.4.27"
 nodegradle-node = "7.1.0"
 # @keep Node JS version used in node.gradle (LTS)
 nodejs = "22.18.0"
+onnx = "1.20.0"
 openapi = "7.14.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.53.0"
@@ -285,6 +286,7 @@ apache-lucene-sandbox = { module = "org.apache.lucene:lucene-sandbox", version.r
 apache-lucene-spatialextras = { module = "org.apache.lucene:lucene-spatial-extras", version.ref = "apache-lucene" }
 apache-lucene-suggest = { module = "org.apache.lucene:lucene-suggest", version.ref = "apache-lucene" }
 apache-lucene-testframework = { module = "org.apache.lucene:lucene-test-framework", version.ref = "apache-lucene" }
+apache-opennlp-dl = { module = "org.apache.opennlp:opennlp-dl", version.ref = "apache-opennlp" }
 apache-opennlp-tools = { module = "org.apache.opennlp:opennlp-tools", version.ref = "apache-opennlp" }
 apache-poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "apache-poi" }
 apache-poi-poi = { module = "org.apache.poi:poi", version.ref = "apache-poi" }
@@ -473,6 +475,7 @@ netty-transport-classes-epoll = { module = "io.netty:netty-transport-classes-epo
 netty-transport-native-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
 nimbusds-josejwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusds-josejwt" }
 nlopez-compose-ktlintrules = { module = "io.nlopez.compose.rules:ktlint", version.ref = "nlopez-compose" }
+onnxruntime = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = "onnx" }
 openjdk-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "openjdk-jmh" }
 openjdk-jmh-generatorannprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "openjdk-jmh" }
 opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
