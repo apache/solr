@@ -411,8 +411,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       expression.addParameter(
           new StreamExpressionNamedParameter("maxDocFreq", Integer.toString(maxDocFreq)));
     }
-    if (tupleStream instanceof NodeStream) {
-      NodeStream nodeStream = (NodeStream) tupleStream;
+    if (tupleStream instanceof NodeStream nodeStream) {
       expression.addParameter(
           new StreamExpressionNamedParameter("walk", nodeStream.toString() + "->" + traverseTo));
 

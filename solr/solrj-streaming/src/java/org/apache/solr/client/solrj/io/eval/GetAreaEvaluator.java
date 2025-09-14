@@ -32,7 +32,7 @@ public class GetAreaEvaluator extends RecursiveObjectEvaluator implements OneVal
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if (!(value instanceof ConvexHull2D)) {
+    if (!(value instanceof ConvexHull2D convexHull2D)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -40,7 +40,6 @@ public class GetAreaEvaluator extends RecursiveObjectEvaluator implements OneVal
               toExpression(constructingFactory),
               value.getClass().getSimpleName()));
     } else {
-      ConvexHull2D convexHull2D = (ConvexHull2D) value;
       return convexHull2D.createRegion().getSize();
     }
   }

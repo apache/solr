@@ -86,7 +86,7 @@ import org.apache.solr.schema.SimilarityFactory;
  * <p>Optional settings:
  *
  * <ul>
- *   <li>discountOverlaps (bool): Sets {@link DFRSimilarity#setDiscountOverlaps(boolean)}
+ *   <li>discountOverlaps (bool): Sets {@link Similarity#getDiscountOverlaps()}
  * </ul>
  *
  * @lucene.experimental
@@ -160,8 +160,6 @@ public class DFRSimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    DFRSimilarity sim = new DFRSimilarity(basicModel, afterEffect, normalization);
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    return new DFRSimilarity(basicModel, afterEffect, normalization, discountOverlaps);
   }
 }

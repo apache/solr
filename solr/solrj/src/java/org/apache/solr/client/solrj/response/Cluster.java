@@ -36,7 +36,7 @@ public class Cluster {
   }
 
   /**
-   * @param labels the list of human readable labels associated to the cluster
+   * @param labels the list of human-readable labels associated to the cluster
    * @param score the score produced by the clustering algorithm for the current cluster
    * @param docIds the list of document Ids belonging to the cluster
    */

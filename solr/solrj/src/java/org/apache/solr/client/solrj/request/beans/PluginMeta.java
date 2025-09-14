@@ -60,8 +60,7 @@ public class PluginMeta implements ReflectMapWriter {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof PluginMeta) {
-      PluginMeta that = (PluginMeta) obj;
+    if (obj instanceof PluginMeta that) {
       return Objects.equals(this.name, that.name)
           && Objects.equals(this.klass, that.klass)
           && Objects.equals(this.version, that.version)

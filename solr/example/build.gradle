@@ -23,11 +23,6 @@ description = 'Solr examples'
 
 configurations {
   packaging
-  postJar
-}
-
-dependencies {
-  postJar project(path: ":solr:core", configuration: "postJar")
 }
 
 ext {
@@ -40,11 +35,6 @@ task assemblePackaging(type: Sync) {
     include "files/**"
     include "films/**"
     include "README.md"
-    exclude "**/*.jar"
-  })
-
-  from(configurations.postJar, {
-    into "exampledocs/"
   })
 
   into packagingDir

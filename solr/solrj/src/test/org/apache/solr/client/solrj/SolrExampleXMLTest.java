@@ -18,8 +18,8 @@ package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.junit.BeforeClass;
 
 /**
@@ -38,7 +38,7 @@ public class SolrExampleXMLTest extends SolrExampleTests {
     return new HttpSolrClient.Builder(getBaseUrl())
         .withDefaultCollection(DEFAULT_TEST_CORENAME)
         .allowMultiPartPost(random().nextBoolean())
-        .withRequestWriter(new RequestWriter())
+        .withRequestWriter(new XMLRequestWriter())
         .withResponseParser(new XMLResponseParser())
         .build();
   }

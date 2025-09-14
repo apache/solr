@@ -27,7 +27,7 @@ teardown() {
   save_home_on_failure
 
   delete_all_collections
-  SOLR_STOP_WAIT=1 solr stop -all >/dev/null 2>&1
+  SOLR_STOP_WAIT=1 solr stop --all >/dev/null 2>&1
 }
 
 @test "using curl to extract a single pdf file" {
@@ -35,7 +35,7 @@ teardown() {
   # Disable security manager to allow extraction
   # This appears to be a bug.
   export SOLR_SECURITY_MANAGER_ENABLED=false
-  solr start -c -Dsolr.modules=extraction
+  solr start -Dsolr.modules=extraction
   
   
   solr create -c gettingstarted -d _default
@@ -60,7 +60,7 @@ teardown() {
   # Disable security manager to allow extraction
   # This appears to be a bug.
   export SOLR_SECURITY_MANAGER_ENABLED=false
-  solr start -c -Dsolr.modules=extraction
+  solr start -Dsolr.modules=extraction
   
   solr create -c content_extraction -d _default
   
@@ -73,7 +73,7 @@ teardown() {
   }' "http://localhost:${SOLR_PORT}/solr/content_extraction/config"
   
   # We filter to pdf to invoke the Extract handler.
-  run solr post -filetypes pdf -url http://localhost:${SOLR_PORT}/solr/content_extraction/update ${SOLR_TIP}/example/exampledocs
+  run solr post --filetypes pdf --solr-url http://localhost:${SOLR_PORT} --name content_extraction ${SOLR_TIP}/example/exampledocs
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -87,7 +87,7 @@ teardown() {
   # Disable security manager to allow extraction
   # This appears to be a bug.
   export SOLR_SECURITY_MANAGER_ENABLED=false
-  solr start -c -Dsolr.modules=extraction
+  solr start -Dsolr.modules=extraction
   
   solr create -c website_extraction -d _default
   
@@ -99,8 +99,8 @@ teardown() {
     }
   }' "http://localhost:${SOLR_PORT}/solr/website_extraction/config"
   
-  # Change to -recursive 1 to crawl multiple pages, but may be too slow.
-  run solr post -mode web -url http://localhost:${SOLR_PORT}/solr/website_extraction/update -recursive 0 -delay 1 https://solr.apache.org/
+  # Change to --recursive 1 to crawl multiple pages, but may be too slow.
+  run solr post --mode web --solr-url http://localhost:${SOLR_PORT} -c website_extraction --recursive 0 --delay 1 https://solr.apache.org/
 
   assert_output --partial 'POSTed web resource https://solr.apache.org (depth: 0)'
   refute_output --partial 'ERROR'

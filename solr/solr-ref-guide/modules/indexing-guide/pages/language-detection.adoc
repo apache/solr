@@ -95,7 +95,7 @@ s|Required |Default: none
 +
 An OpenNLP language detection model.
 +
-The OpenNLP project provides a pre-trained 103 language model on the http://opennlp.apache.org/models.html[OpenNLP site's model dowload page].
+The OpenNLP project provides a pre-trained 103 language model on the http://opennlp.apache.org/models.html[OpenNLP site's model download page].
 Model training instructions are provided on the http://opennlp.apache.org/docs/{dep-version-opennlp}/manual/opennlp.html#tools.langdetect[OpenNLP website].
 +
 See xref:configuration-guide:resource-loading.adoc[] for information on where to put the model.

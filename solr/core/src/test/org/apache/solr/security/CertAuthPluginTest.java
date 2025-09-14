@@ -23,11 +23,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.security.cert.X509Certificate;
+import java.util.Collections;
 import javax.security.auth.x500.X500Principal;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -46,6 +47,7 @@ public class CertAuthPluginTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     plugin = new CertAuthPlugin();
+    plugin.init(Collections.emptyMap());
   }
 
   @Test

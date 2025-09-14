@@ -16,15 +16,18 @@
  */
 package org.apache.solr.response;
 
+import static org.apache.solr.request.SolrQueryRequest.disallowPartialResults;
+
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrReturnFields;
 
@@ -61,10 +64,22 @@ import org.apache.solr.search.SolrReturnFields;
  */
 public class SolrQueryResponse {
   public static final String NAME = "response";
-  public static final String RESPONSE_HEADER_PARTIAL_RESULTS_KEY = CommonParams.PARTIAL_RESULTS;
+  public static final String RESPONSE_HEADER_PARTIAL_RESULTS_KEY = "partialResults";
   public static final String RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY = "partialResultsDetails";
   public static final String RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY =
       "segmentTerminatedEarly";
+
+  /**
+   * Header to indicate that the search was terminated early because of hits exceeding the query
+   * configured limit (<code>maxHitsAllowed</code>). Presence of this flag also indicates the
+   * partialResults, however in the absence of <i>maxHitsTerminatedEarly</i>, <i>partialResults</i>
+   * would be due to other limits like time/cpu.
+   */
+  public static final String RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY =
+      "maxHitsTerminatedEarly";
+
+  public static final String RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY = "approximateTotalHits";
+
   public static final String RESPONSE_HEADER_KEY = "responseHeader";
   private static final String RESPONSE_KEY = "response";
 
@@ -139,28 +154,61 @@ public class SolrQueryResponse {
 
   /**
    * If {@link #getResponseHeader()} is available, set {@link #RESPONSE_HEADER_PARTIAL_RESULTS_KEY}
-   * flag to true.
+   * attribute to true or "omitted" as required.
    */
-  public void setPartialResults() {
+  public void setPartialResults(SolrQueryRequest req) {
     NamedList<Object> header = getResponseHeader();
-    if (header != null
-        && header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
-      header.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+    if (header != null) {
+      if (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
+        Object value = partialResultsStatus(disallowPartialResults(req.getParams()));
+        header.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, value);
+      }
     }
+  }
+
+  public static Object partialResultsStatus(boolean discarding) {
+    return discarding ? "omitted" : Boolean.TRUE;
   }
 
   /**
    * If {@link #getResponseHeader()} is available, return the value of {@link
    * #RESPONSE_HEADER_PARTIAL_RESULTS_KEY} or false.
+   *
+   * @param header the response header
+   * @return true if there are results, but they do not represent the full results, false if the
+   *     results are complete, or intentionally omitted
    */
-  public boolean isPartialResults() {
-    NamedList<Object> header = getResponseHeader();
+  public static boolean isPartialResults(NamedList<?> header) {
     if (header != null) {
-      return Boolean.TRUE.equals(
-          header.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+      // actual value may be true/false/omitted
+      return "true"
+          .equalsIgnoreCase(String.valueOf(header.get(RESPONSE_HEADER_PARTIAL_RESULTS_KEY)));
     } else {
       return false;
     }
+  }
+
+  /**
+   * Test if the entire results have been returned, or if some form of limit/cancel/tolerant logic
+   * has returned incomplete (or possibly empty) results.
+   *
+   * @param header the response header
+   * @return true if full results are returning normally false otherwise.
+   */
+  public static boolean haveCompleteResults(NamedList<?> header) {
+    if (header == null) {
+      // partial/omitted results will have placed something in the header, so it should exist.
+      return true;
+    }
+    // "true" and "omitted" should both respond with false
+    Object o = header.get(RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
+    // putting this check here so that if anything new is added we don't forget to consider the
+    // effect on code that calls this function. Could contain either Boolean.TRUE or "omitted"
+    if (o != null && !(Boolean.TRUE.equals(o) || "omitted".equals(o))) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Unrecognized value for partialResults:" + o);
+    }
+    return o == null;
   }
 
   /**
@@ -171,7 +219,10 @@ public class SolrQueryResponse {
    */
   public void addPartialResponseDetail(Object detail) {
     NamedList<Object> header = getResponseHeader();
-    if (header != null && detail != null) {
+    // never overwrite the original detail message. The first limit violation is the important one.
+    if (header != null
+        && detail != null
+        && header.get(RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY) == null) {
       header.add(RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY, detail);
     }
   }
@@ -259,12 +310,12 @@ public class SolrQueryResponse {
   /** Returns a string of the form "prefix name1=value1 name2=value2 ..." */
   public String getToLogAsString(String prefix) {
     StringBuilder sb = new StringBuilder(prefix);
-    for (int i = 0; i < toLog.size(); i++) {
-      if (sb.length() > 0) {
+    for (Map.Entry<String, Object> entry : toLog) {
+      if (!sb.isEmpty()) {
         sb.append(' ');
       }
-      String name = toLog.getName(i);
-      Object val = toLog.getVal(i);
+      String name = entry.getKey();
+      Object val = entry.getValue();
       if (name != null) {
         sb.append(name).append('=');
       }

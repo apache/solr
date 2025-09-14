@@ -23,13 +23,17 @@ import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import org.apache.solr.common.PushWriter;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.request.SolrQueryRequest;
 
 /** A JSON ResponseWriter that uses jackson. */
-public class JacksonJsonWriter extends BinaryResponseWriter {
+public class JacksonJsonWriter implements TextQueryResponseWriter {
 
   protected final JsonFactory jsonfactory;
   protected static final DefaultPrettyPrinter pretty =
@@ -43,17 +47,42 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
     jsonfactory = new JsonFactory();
   }
 
+  // let's also implement the binary version since Jackson supports that (probably faster)
   @Override
-  public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
+  public void write(
+      OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException {
-    WriterImpl sw = new WriterImpl(jsonfactory, out, request, response);
+    out = new NonFlushingStream(out);
+    // resolve the encoding
+    final String charSet = ContentStreamBase.getCharsetFromContentType(contentType);
+    JsonEncoding jsonEncoding;
+    if (charSet != null) {
+      assert JsonEncoding.values().length < 10; // fast to iterate
+      jsonEncoding =
+          Arrays.stream(JsonEncoding.values())
+              .filter(e -> e.getJavaName().equalsIgnoreCase(charSet))
+              .findAny()
+              .orElseThrow(() -> new UnsupportedEncodingException(charSet));
+    } else {
+      jsonEncoding = JsonEncoding.UTF8;
+    }
+
+    var sw = new WriterImpl(request, response, jsonfactory.createGenerator(out, jsonEncoding));
+    sw.writeResponse();
+    sw.close();
+  }
+
+  @Override
+  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
+      throws IOException {
+    var sw = new WriterImpl(request, response, jsonfactory.createGenerator(writer));
     sw.writeResponse();
     sw.close();
   }
 
   public PushWriter getWriter(
-      OutputStream out, SolrQueryRequest request, SolrQueryResponse response) {
-    return new WriterImpl(jsonfactory, out, request, response);
+      OutputStream out, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
+    return new WriterImpl(request, response, jsonfactory.createGenerator(out, JsonEncoding.UTF8));
   }
 
   @Override
@@ -67,16 +96,11 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
 
     protected JsonGenerator gen;
 
-    public WriterImpl(
-        JsonFactory j, OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp) {
+    public WriterImpl(SolrQueryRequest req, SolrQueryResponse rsp, JsonGenerator generator) {
       super(null, req, rsp);
-      try {
-        gen = j.createGenerator(out, JsonEncoding.UTF8);
-        if (doIndent) {
-          gen.setPrettyPrinter(pretty.createInstance());
-        }
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+      gen = generator;
+      if (doIndent) {
+        gen.setPrettyPrinter(pretty.createInstance());
       }
     }
 

@@ -178,7 +178,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
 
     assertQEx(
         "Incorrect vector field type should throw Exception",
-        "only DenseVectorField is compatible with Knn Query Parser",
+        "only DenseVectorField is compatible with Vector Query Parsers",
         req(CommonParams.Q, "{!knn f=id topK=10}" + vectorToSearch, "fl", "id"),
         SolrException.ErrorCode.BAD_REQUEST);
   }

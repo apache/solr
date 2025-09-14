@@ -4909,6 +4909,35 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
+  public void testMultivalueEnumTypes() throws Exception {
+    final Client client = Client.localClient();
+
+    final SolrParams p = params("rows", "0");
+
+    client.deleteByQuery("*:*", null);
+
+    List<SolrInputDocument> docsToAdd = new ArrayList<>(6);
+    docsToAdd.add(sdoc("id", "1", "severity_mv", "Not Available", "severity_mv", "Low"));
+    docsToAdd.add(sdoc("id", "2", "severity_mv", "Low", "severity_mv", "Medium"));
+    docsToAdd.add(sdoc("id", "3", "severity_mv", "Medium", "severity_mv", "High"));
+    docsToAdd.add(sdoc("id", "4", "severity_mv", "High", "severity_mv", "Not Available"));
+    docsToAdd.add(sdoc("id", "5", "severity_mv", "Not Available", "severity_mv", "Low"));
+    docsToAdd.add(sdoc("id", "6", "severity_mv", "Low", "severity_mv", "Medium"));
+
+    Collections.shuffle(docsToAdd, random());
+    for (SolrInputDocument doc : docsToAdd) {
+      client.add(doc, null);
+    }
+    client.commit();
+
+    client.testJQ(
+        params(p, "q", "*:*", "json.facet", "{f:{type:terms, method:enum, field:severity_mv}}"),
+        "facets=={ count:6,"
+            + "f:{ buckets:[{val:Low,count:4},{val:'Not Available',count:3},{val:Medium,count:3},{val:High,count:2}] }"
+            + "}");
+  }
+
+  @Test
   public void testFacetValueTypes() throws Exception {
     doFacetValueTypeValidation(Client.localClient());
   }

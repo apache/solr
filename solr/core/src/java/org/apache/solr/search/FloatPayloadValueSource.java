@@ -221,9 +221,8 @@ public class FloatPayloadValueSource extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof FloatPayloadValueSource)) return false;
+    if (!(o instanceof FloatPayloadValueSource that)) return false;
 
-    FloatPayloadValueSource that = (FloatPayloadValueSource) o;
     return Objects.equals(indexedField, that.indexedField)
         && Objects.equals(indexedBytes, that.indexedBytes)
         && Objects.equals(decoder, that.decoder)

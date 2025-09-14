@@ -16,7 +16,7 @@
  */
 package org.apache.solr;
 
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.SortedMap;
@@ -27,7 +27,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrJettyTestRule;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.ClassRule;
 
 @Deprecated // just use SolrJettyTestRule
@@ -35,7 +35,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   protected static JettySolrRunner createAndStartJetty(
-      String solrHome,
+      Path solrHome,
       String configFile,
       String schemaFile,
       String context,
@@ -52,31 +52,30 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     Properties nodeProps = new Properties();
     if (configFile != null) nodeProps.setProperty("solrconfig", configFile);
     if (schemaFile != null) nodeProps.setProperty("schema", schemaFile);
-    if (System.getProperty("solr.data.dir") == null
-        && System.getProperty("solr.hdfs.home") == null) {
-      nodeProps.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
+    if (System.getProperty("solr.data.dir") == null) {
+      nodeProps.setProperty("solr.data.dir", createTempDir().toRealPath().toString());
     }
 
     return createAndStartJetty(solrHome, nodeProps, jettyConfig);
   }
 
   protected static JettySolrRunner createAndStartJetty(
-      String solrHome, String configFile, String context) throws Exception {
+      Path solrHome, String configFile, String context) throws Exception {
     return createAndStartJetty(solrHome, configFile, null, context, true, null);
   }
 
-  protected static JettySolrRunner createAndStartJetty(String solrHome, JettyConfig jettyConfig)
+  protected static JettySolrRunner createAndStartJetty(Path solrHome, JettyConfig jettyConfig)
       throws Exception {
 
     return createAndStartJetty(solrHome, new Properties(), jettyConfig);
   }
 
-  protected static JettySolrRunner createAndStartJetty(String solrHome) throws Exception {
+  protected static JettySolrRunner createAndStartJetty(Path solrHome) throws Exception {
     return createAndStartJetty(solrHome, new Properties(), JettyConfig.builder().build());
   }
 
   protected static JettySolrRunner createAndStartJetty(
-      String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
+      Path solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
 
     Path coresDir = createTempDir().resolve("cores");
 
@@ -90,9 +89,9 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
 
     Properties nodeProps = new Properties(nodeProperties);
     nodeProps.setProperty("coreRootDirectory", coresDir.toString());
-    nodeProps.setProperty("configSetBaseDir", solrHome);
+    nodeProps.setProperty("configSetBaseDir", solrHome.toString());
 
-    solrClientTestRule.startSolr(Path.of(solrHome), nodeProps, jettyConfig);
+    solrClientTestRule.startSolr(solrHome, nodeProps, jettyConfig);
     return getJetty();
   }
 
@@ -134,16 +133,16 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   // from the test file directory are used, but some also require that the solr.xml file be
   // explicitly there as of SOLR-4817
   @Deprecated // Instead use a basic config + whatever is needed or default config
-  protected static void setupJettyTestHome(File solrHome, String collection) throws Exception {
+  protected static void setupJettyTestHome(Path solrHome, String collection) throws Exception {
     // TODO remove these sys props!
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     copySolrHomeToTemp(solrHome, collection);
   }
 
-  protected static void cleanUpJettyHome(File solrHome) throws Exception {
-    if (solrHome.exists()) {
-      PathUtils.deleteDirectory(solrHome.toPath());
+  protected static void cleanUpJettyHome(Path solrHome) throws Exception {
+    if (Files.exists(solrHome)) {
+      PathUtils.deleteDirectory(solrHome);
     }
   }
 }

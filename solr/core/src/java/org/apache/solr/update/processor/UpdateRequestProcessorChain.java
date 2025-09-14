@@ -348,8 +348,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized 
 
     @Override
     public boolean equals(Object obj) {
-      if (!(obj instanceof ProcessorInfo)) return false;
-      ProcessorInfo that = (ProcessorInfo) obj;
+      if (!(obj instanceof ProcessorInfo that)) return false;
 
       return Objects.equals(this.processor, that.processor)
           && Objects.equals(this.postProcessor, that.postProcessor);

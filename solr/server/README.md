@@ -54,11 +54,6 @@ server/resources
 
   Contains configuration files, such as the Log4j configuration (log4j2.xml) for configuring Solr loggers.
 
-server/scripts/cloud-scripts
-
-  Command-line utility for working with ZooKeeper when running in SolrCloud mode, see zkcli.sh / .cmd for
-  usage information.
-
 server/solr
 
   Default solr.solr.home directory where Solr will create core directories; must contain solr.xml
@@ -111,4 +106,3 @@ log just to a file. To configure logging, edit the log4j2.xml file in
 "resources".
  
 It is also possible to setup log4j or other popular logging frameworks.
-

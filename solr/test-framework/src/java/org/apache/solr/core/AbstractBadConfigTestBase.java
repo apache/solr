@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.solr.SolrTestCaseJ4;
@@ -51,7 +52,7 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
       if (null == solrHome) {
         initCore(solrconfigFile, schemaFile);
       } else {
-        initCore(solrconfigFile, schemaFile, solrHome);
+        initCore(solrconfigFile, schemaFile, Path.of(solrHome));
       }
 
       CoreContainer cc = h.getCoreContainer();

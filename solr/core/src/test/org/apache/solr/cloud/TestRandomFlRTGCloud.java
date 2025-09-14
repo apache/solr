@@ -423,14 +423,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
   }
 
-  private static final ResponseParser RAW_XML_RESPONSE_PARSER = new NoOpResponseParser();
-  private static final ResponseParser RAW_JSON_RESPONSE_PARSER =
-      new NoOpResponseParser() {
-        @Override
-        public String getWriterType() {
-          return "json";
-        }
-      };
+  private static final ResponseParser RAW_XML_RESPONSE_PARSER = new NoOpResponseParser("xml");
+  private static final ResponseParser RAW_JSON_RESPONSE_PARSER = new NoOpResponseParser("json");
 
   /** Helper to convert from wt string parameter to actual SolrClient. */
   private static SolrClient getSolrClient(final String jettyBaseUrl, final String wt) {
@@ -630,7 +624,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     return getDocsFromRTGResponse(
         expectList,
         new QueryResponse(
-            new RawCapableXMLResponseParser().processResponse(new StringReader(rsp)), null));
+            new RawCapableXMLResponseParser().processResponse(new StringReader(rsp))));
   }
 
   /**

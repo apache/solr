@@ -23,7 +23,7 @@ if [[ "${VERBOSE:-}" == "yes" ]]; then
 fi
 
 echo "Running solr in the background. Logs are in /var/solr/logs"
-SOLR_OPTS="-Djetty.host=${SOLR_LOCAL_HOST:-localhost}" solr start
+SOLR_OPTS="-Djetty.host=${SOLR_LOCAL_HOST:-localhost}" solr start --user-managed
 max_try=${MAX_TRY:-12}
 wait_seconds=${WAIT_SECONDS:-5}
 if ! wait-for-solr.sh --max-attempts "$max_try" --wait-seconds "$wait_seconds"; then

@@ -42,7 +42,7 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     //    configset("cloud-minimal");
     configureCluster(1)
-        .addConfig("conf", getFile("solrj/solr/configsets/streaming/conf").toPath())
+        .addConfig("conf", getFile("solrj/solr/configsets/streaming/conf"))
         .configure();
 
     CollectionAdminRequest.Create create =
@@ -99,7 +99,7 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
       // at the mercy of org.apache.solr.servlet.HttpSolrCall.randomlyGetSolrCore, and if this
       // randomly selected replica is not the one the doc id lives in, the request is forwarded
       // from there.
-      // The decision whether or not the request is forwarded is made at
+      // The decision whether the request is forwarded is made at
       // org.apache.solr.handler.component.HttpShardHandler.canShortCircuit()
 
       boolean forwardedWithoutRoute =

@@ -19,13 +19,13 @@ package org.apache.solr.handler.admin;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import com.codahale.metrics.Gauge;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
+import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
@@ -40,6 +40,7 @@ import org.apache.lucene.util.Version;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
@@ -76,8 +77,8 @@ public class SystemInfoHandler extends RequestHandlerBase {
    *
    * @see #initHostname
    */
-  private static final String PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP =
-      "solr.dns.prevent.reverse.lookup";
+  private static final String REVERSE_DNS_OF_LOCALHOST_SYSPROP =
+      "solr.admin.handler.systeminfo.dns.reverse.lookup.enabled";
 
   // on some platforms, resolving canonical hostname can cause the thread
   // to block for several seconds if nameservices aren't available
@@ -98,10 +99,10 @@ public class SystemInfoHandler extends RequestHandlerBase {
   }
 
   private void initHostname() {
-    if (null != System.getProperty(PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP, null)) {
+    if (!EnvUtils.getPropertyAsBool(REVERSE_DNS_OF_LOCALHOST_SYSPROP, true)) {
       log.info(
           "Resolving canonical hostname for local host prevented due to '{}' sysprop",
-          PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP);
+          REVERSE_DNS_OF_LOCALHOST_SYSPROP);
       hostname = null;
       return;
     }
@@ -112,9 +113,8 @@ public class SystemInfoHandler extends RequestHandlerBase {
       hostname = addr.getCanonicalHostName();
     } catch (Exception e) {
       log.warn(
-          "Unable to resolve canonical hostname for local host, possible DNS misconfiguration. SET THE '{}' {}",
-          PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP,
-          " sysprop to true on startup to prevent future lookups if DNS can not be fixed.",
+          "Unable to resolve canonical hostname for local host, possible DNS misconfiguration. Set the '{}' sysprop to false on startup to prevent future lookups if DNS can not be fixed.",
+          REVERSE_DNS_OF_LOCALHOST_SYSPROP,
           e);
       hostname = null;
       return;
@@ -124,10 +124,9 @@ public class SystemInfoHandler extends RequestHandlerBase {
     if (15000D < timer.getTime()) {
       String readableTime = String.format(Locale.ROOT, "%.3f", (timer.getTime() / 1000));
       log.warn(
-          "Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. Set the '{}' {}",
+          "Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. Set the '{}' sysprop to false on startup to prevent future lookups if DNS can not be fixed.",
           readableTime,
-          PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP,
-          " sysprop to true on startup to prevent future lookups if DNS can not be fixed.");
+          REVERSE_DNS_OF_LOCALHOST_SYSPROP);
     }
   }
 
@@ -146,7 +145,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
     }
     if (cc != null) {
       rsp.add("solr_home", cc.getSolrHome());
-      rsp.add("core_root", cc.getCoreRootDirectory().toString());
+      rsp.add("core_root", cc.getCoreRootDirectory());
     }
 
     rsp.add("lucene", getLuceneInfo());
@@ -193,7 +192,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
     // Solr Home
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
-    dirs.add("cwd", new File(System.getProperty("user.dir")).getAbsolutePath());
+    dirs.add("cwd", Path.of(System.getProperty("user.dir")).toAbsolutePath().toString());
     dirs.add("instance", core.getInstancePath().toString());
     try {
       dirs.add("data", core.getDirectoryFactory().normalize(core.getDataDir()));
@@ -336,8 +335,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
       // Mapped roles for this principal
       @SuppressWarnings("resource")
       AuthorizationPlugin auth = cc == null ? null : cc.getAuthorizationPlugin();
-      if (auth instanceof RuleBasedAuthorizationPluginBase) {
-        RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
+      if (auth instanceof RuleBasedAuthorizationPluginBase rbap) {
         Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
         info.add("roles", roles);
         if (roles == null) {

@@ -448,7 +448,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
         // Nightly: 101 threads with 4 executors is 26 waves, approximately 1300ms delay
         CountDownLatch atLeastOnceCompleted = new CountDownLatch(TEST_NIGHTLY ? 30 : 1);
         for (int i = 0; i < NUM_QUERIES; i++) {
-          queryService.submit(
+          queryService.execute(
               () -> {
                 try (SolrQueryRequest req = req(params)) {
                   core.execute(defaultHandler, req, new SolrQueryResponse());

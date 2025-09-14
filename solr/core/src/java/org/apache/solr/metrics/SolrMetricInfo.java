@@ -94,9 +94,8 @@ public final class SolrMetricInfo {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof SolrMetricInfo)) return false;
+    if (!(o instanceof SolrMetricInfo that)) return false;
 
-    SolrMetricInfo that = (SolrMetricInfo) o;
     return Objects.equals(name, that.name)
         && Objects.equals(scope, that.scope)
         && category == that.category;

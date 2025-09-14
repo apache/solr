@@ -37,7 +37,7 @@ public class ProjectToBorderEvaluator extends RecursiveObjectEvaluator implement
 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
-    if (!(value1 instanceof ConvexHull2D)) {
+    if (!(value1 instanceof ConvexHull2D convexHull2D)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -46,7 +46,7 @@ public class ProjectToBorderEvaluator extends RecursiveObjectEvaluator implement
               value1.getClass().getSimpleName()));
     }
 
-    if (!(value2 instanceof Matrix)) {
+    if (!(value2 instanceof Matrix matrix)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -55,8 +55,6 @@ public class ProjectToBorderEvaluator extends RecursiveObjectEvaluator implement
               value2.getClass().getSimpleName()));
     }
 
-    ConvexHull2D convexHull2D = (ConvexHull2D) value1;
-    Matrix matrix = (Matrix) value2;
     double[][] data = matrix.getData();
     Region<Euclidean2D> region = convexHull2D.createRegion();
     double[][] borderPoints = new double[data.length][2];

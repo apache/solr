@@ -105,7 +105,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @Test
   public void testIgnoredFields() {
-    lrf.args.put(CommonParams.VERSION, "2.2");
     assertU("adding doc with ignored field", adoc("id", "42", "foo_ignored", "blah blah"));
     assertU("commit", commit());
 
@@ -137,7 +136,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     Gauge<Number> g = (Gauge<Number>) metrics.get("CORE.refCount");
     assertTrue(g.getValue().intValue() > 0);
 
-    lrf.args.put(CommonParams.VERSION, "2.2");
     assertQ(
         "test query on empty index",
         req("qlkciyopsbgzyvkylsjhchghjrdf"),
@@ -644,7 +642,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   @Test
   public void testDefaultFieldValues() {
     clearIndex();
-    lrf.args.put(CommonParams.VERSION, "2.2");
     assertU(
         adoc(
             "id", "4055",
@@ -763,7 +760,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
     DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
-    Document d = req.getSearcher().doc(dl.iterator().nextDoc());
+    Document d = req.getSearcher().getDocFetcher().doc(dl.iterator().nextDoc());
     // ensure field in fl is not lazy
     assertNotEquals("LazyField", ((Field) d.getField("test_hlt")).getClass().getSimpleName());
     assertNotEquals("LazyField", ((Field) d.getField("title")).getClass().getSimpleName());
@@ -791,7 +788,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
     DocIterator di = dl.iterator();
-    Document d1 = req.getSearcher().doc(di.nextDoc());
+    Document d1 = req.getSearcher().getDocFetcher().doc(di.nextDoc());
     IndexableField[] values1 = null;
 
     // ensure fl field is non lazy, and non-fl field is lazy
@@ -813,7 +810,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     dl = ((ResultContext) rsp.getResponse()).getDocList();
     di = dl.iterator();
-    Document d2 = req.getSearcher().doc(di.nextDoc());
+    Document d2 = req.getSearcher().getDocFetcher().doc(di.nextDoc());
     // ensure same doc, same lazy field now
     assertSame("Doc was not cached", d1, d2);
     IndexableField[] values2 = d2.getFields("test_hlt");

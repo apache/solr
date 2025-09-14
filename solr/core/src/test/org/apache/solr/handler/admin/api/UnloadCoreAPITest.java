@@ -56,7 +56,6 @@ public class UnloadCoreAPITest extends SolrTestCaseJ4 {
   public void testValidUnloadCoreAPIResponse() throws Exception {
     SolrJerseyResponse response = unloadCoreAPI.unloadCore(coreName, getUnloadCoreRequestBodyObj());
     assertEquals(0, response.responseHeader.status);
-    assertNotNull(response.responseHeader.qTime);
   }
 
   @Test

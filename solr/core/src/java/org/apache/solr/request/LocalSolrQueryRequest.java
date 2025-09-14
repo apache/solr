@@ -30,7 +30,7 @@ import org.apache.solr.core.SolrCore;
 // With the addition of SolrParams, this class isn't needed for much anymore... it's currently
 // retained more for backward compatibility.
 
-/** */
+@Deprecated // use SolrQueryRequestBase
 public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   public String userPrincipalName = null;
 

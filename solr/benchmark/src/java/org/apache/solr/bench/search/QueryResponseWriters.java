@@ -59,17 +59,7 @@ public class QueryResponseWriters {
   public static class BenchState {
 
     /** See {@link SolrCore#DEFAULT_RESPONSE_WRITERS} */
-    @Param({
-      CommonParams.JAVABIN,
-      CommonParams.JSON,
-      "cbor",
-      "smile",
-      "xml",
-      "python",
-      "phps",
-      "ruby",
-      "raw"
-    })
+    @Param({CommonParams.JAVABIN, CommonParams.JSON, "cbor", "smile", "xml", "raw"})
     String wt;
 
     private int docs = 100;
@@ -98,7 +88,6 @@ public class QueryResponseWriters {
       q = new QueryRequest(params);
       q.setResponseParser(new NoOpResponseParser(wt));
       String base = miniClusterState.nodes.get(0);
-      q.setBasePath(base);
     }
   }
 

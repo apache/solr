@@ -2258,11 +2258,16 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             "{!percentiles='" + percentiles + "'}stat_f")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
       NamedList<Double> pout = extractPercentiles(rsp, "stat_f");
-      for (int i = 0; i < percentilesList.size(); i++) {
-        // ensure exact order, but all values should be null (empty result set)
-        assertEquals(percentilesList.get(i), pout.getName(i));
-        assertNull(pout.getVal(i));
-      }
+
+      assertEquals(percentilesList.size(), pout.size());
+      Iterator<String> percentileIter = percentilesList.iterator();
+      pout.forEach(
+          (pKey, pVal) -> {
+            String p = percentileIter.next();
+            // ensure exact order, but all values should be null (empty result set)
+            assertEquals(p, pKey);
+            assertNull(pVal);
+          });
     }
 
     int id = 0;
@@ -2286,11 +2291,15 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             "{!percentiles='" + percentiles + "'}stat_f")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
       NamedList<Double> pout = extractPercentiles(rsp, "stat_f");
-      for (int i = 0; i < percentilesList.size(); i++) {
-        String p = percentilesList.get(i);
-        assertEquals(p, pout.getName(i));
-        assertEquals(Double.parseDouble(p), pout.getVal(i), 1.0D);
-      }
+
+      assertEquals(percentilesList.size(), pout.size());
+      Iterator<String> percentileIter = percentilesList.iterator();
+      pout.forEach(
+          (pKey, pVal) -> {
+            String p = percentileIter.next();
+            assertEquals(p, pKey);
+            assertEquals(Double.parseDouble(p), pVal, 1.0D);
+          });
     }
 
     // test request for no percentiles

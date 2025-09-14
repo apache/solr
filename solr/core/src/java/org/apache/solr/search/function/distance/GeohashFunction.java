@@ -70,9 +70,7 @@ public class GeohashFunction extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof GeohashFunction)) return false;
-
-    GeohashFunction that = (GeohashFunction) o;
+    if (!(o instanceof GeohashFunction that)) return false;
 
     if (!lat.equals(that.lat)) return false;
     if (!lon.equals(that.lon)) return false;

@@ -45,11 +45,9 @@ public class CorrelationSignificanceEvaluator extends RecursiveObjectEvaluator
   public Object doWork(Object value) throws IOException {
     if (null == value) {
       return null;
-    } else if (value instanceof Matrix) {
-      Matrix matrix = (Matrix) value;
+    } else if (value instanceof Matrix matrix) {
       Object corr = matrix.getAttribute("corr");
-      if (corr instanceof PearsonsCorrelation) {
-        PearsonsCorrelation pcorr = (PearsonsCorrelation) corr;
+      if (corr instanceof PearsonsCorrelation pcorr) {
         RealMatrix realMatrix = pcorr.getCorrelationPValues();
         return new Matrix(realMatrix.getData());
       } else {

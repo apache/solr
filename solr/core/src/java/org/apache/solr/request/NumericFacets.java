@@ -342,9 +342,8 @@ final class NumericFacets {
           final FunctionValues values = vs.getValues(Collections.emptyMap(), leaves.get(readerIdx));
           alreadySeen.add(values.strVal(entry.docID - leaves.get(readerIdx).docBase));
         }
-        for (int i = 0; i < result.size(); ++i) {
-          alreadySeen.add(result.getName(i));
-        }
+        result.forEach((name, __) -> alreadySeen.add(name));
+
         final Terms terms = searcher.getSlowAtomicReader().terms(fieldName);
         if (terms != null) {
           final String prefixStr = TrieField.getMainValuePrefix(ft);

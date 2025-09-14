@@ -32,7 +32,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.update.SolrCmdDistributor.SolrError;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

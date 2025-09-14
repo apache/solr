@@ -21,6 +21,8 @@ A Solr cluster is a group of servers (_nodes_) that each run Solr.
 There are two general modes of operating a cluster of Solr nodes.
 One mode provides central coordination of the Solr nodes (<<SolrCloud Mode>>), while the other allows you to operate a cluster without this central coordination (<<User-Managed Mode>>).
 
+TIP: "User Managed" and "Single Node" are sometimes referred to as "Standalone", especially in source code.
+
 Both modes share general concepts, but ultimately differ in how those concepts are reflected in functionality and features.
 
 First let's cover a few general concepts and then outline the differences between the two modes.
@@ -88,7 +90,7 @@ As long as one replica of each relevant shard is available, a user query or inde
 
 == User-Managed Mode
 
-Solr's user-managed mode requires that cluster coordination activities that SolrCloud normally uses ZooKeeper for are performed manually or with local scripts.
+Solr's user-managed mode requires that cluster coordination activities that SolrCloud normally uses ZooKeeper for to be performed manually or with local scripts.
 
 If the corpus of documents is too large for a single-sharded index, the logic to create shards is entirely left to the user.
 There are no automated or programmatic ways for Solr to create shards during indexing.

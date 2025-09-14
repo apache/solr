@@ -115,10 +115,9 @@ public abstract class MetricImpl<T> implements Metric<T> {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof MetricImpl)) {
+    if (!(o instanceof MetricImpl<?> that)) {
       return false;
     }
-    MetricImpl<?> that = (MetricImpl<?>) o;
     return name.equals(that.getName())
         && internalName.equals(that.getInternalName())
         && converter.equals(that.converter);

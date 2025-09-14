@@ -183,8 +183,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
       try {
         SolrResourceLoader loader =
             new ZkSolrResourceLoader(loaderPath, configsetName, null, zkController);
-        SolrConfig solrConfig =
-            SolrConfig.readFromResourceLoader(loader, "solrconfig.xml", true, null);
+        SolrConfig solrConfig = SolrConfig.readFromResourceLoader(loader, "solrconfig.xml", null);
 
         ManagedIndexSchemaFactory factory = new ManagedIndexSchemaFactory();
         factory.init(new NamedList<>());

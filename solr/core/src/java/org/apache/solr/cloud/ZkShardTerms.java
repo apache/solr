@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -398,32 +397,38 @@ public class ZkShardTerms implements AutoCloseable {
         return;
       } catch (KeeperException e) {
         log.warn("Failed watching shard term for collection: {}, retrying!", collection, e);
-        try {
-          zkClient.getConnectionManager().waitForConnected(zkClient.getZkClientTimeout());
-        } catch (TimeoutException te) {
-          if (Thread.interrupted()) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Error watching shard term for collection: " + collection,
-                te);
-          }
-        }
       }
     }
   }
 
-  /** Register a watcher to the correspond ZK term node */
+  /** Register a watcher to the corresponding ZK term node */
   private void registerWatcher() throws KeeperException {
     Watcher watcher =
         event -> {
+          // Don't do anything if we are closed
+          if (isClosed.get() || !event.getState().equals(Watcher.Event.KeeperState.SyncConnected)) {
+            return;
+          }
           // session events are not change events, and do not remove the watcher
           if (Watcher.Event.EventType.None == event.getType()) {
             return;
           }
-          retryRegisterWatcher();
-          // Some events may be missed during register a watcher, so it is safer to refresh terms
+          // Some events may be missed during registering a watcher, so it is safer to refresh terms
           // after registering watcher
-          refreshTerms();
+          retryRegisterWatcher();
+          // Only refresh the data if the node was created or its data changed.
+          if (Watcher.Event.EventType.NodeCreated == event.getType()
+              || Watcher.Event.EventType.NodeDataChanged == event.getType()) {
+            try {
+              refreshTerms();
+            } catch (SolrException e) {
+              log.warn(
+                  "Error refreshing shard terms for collection: {}, shard: {}",
+                  collection,
+                  shard,
+                  e);
+            }
+          }
         };
     try {
       // exists operation is faster than getData operation

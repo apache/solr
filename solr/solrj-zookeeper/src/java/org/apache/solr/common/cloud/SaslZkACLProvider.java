@@ -17,22 +17,21 @@
 package org.apache.solr.common.cloud;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 
 /**
  * ZkACLProvider that gives all permissions for the user specified in System property
- * "solr.authorization.superuser" (default: "solr") when using sasl, and gives read permissions for
- * anyone else. Designed for a setup where configurations have already been set up and will not be
+ * "solr.auth.superuser" (default: "solr") when using sasl, and gives read permissions for anyone
+ * else. Designed for a setup where configurations have already been set up and will not be
  * modified, or where configuration changes are controlled via Solr APIs.
  */
 public class SaslZkACLProvider extends SecurityAwareZkACLProvider {
 
-  private static final String superUser =
-      System.getProperty("solr.authorization.superuser", "solr");
+  private static final String superUser = EnvUtils.getProperty("solr.auth.superuser", "solr");
 
   @Override
   protected List<ACL> createNonSecurityACLsToAdd() {
@@ -43,6 +42,7 @@ public class SaslZkACLProvider extends SecurityAwareZkACLProvider {
 
   @Override
   protected List<ACL> createSecurityACLsToAdd() {
-    return Collections.singletonList(new ACL(ZooDefs.Perms.ALL, new Id("sasl", superUser)));
+    // Must be Arrays.asList(), Zookeeper does not allow for immutable list types for ACLs
+    return Arrays.asList(new ACL(ZooDefs.Perms.ALL, new Id("sasl", superUser)));
   }
 }

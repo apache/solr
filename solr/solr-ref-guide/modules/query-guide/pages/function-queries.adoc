@@ -86,6 +86,8 @@ Only functions with fast random access are recommended.
 
 The table below summarizes the functions available for function queries.
 
+Additionally, you can write a custom one using a tiny bit of JavaScript with the xref:expression-value-source-parser.adoc[Expression Value Source Parser].
+
 === abs Function
 Returns the absolute value of the specified value or function.
 

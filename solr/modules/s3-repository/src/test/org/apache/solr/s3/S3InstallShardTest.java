@@ -54,12 +54,9 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
       AbstractInstallShardTest.defaultSolrXmlTextWithBackupRepository(BACKUP_REPOSITORY_XML);
 
   @ClassRule
+  @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder()
-          .silent()
-          .withInitialBuckets(BUCKET_NAME)
-          .withSecureConnection(false)
-          .build();
+      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
 
   @BeforeClass
   public static void setupClass() throws Exception {
@@ -69,7 +66,7 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
     AbstractS3ClientTest.setS3ConfFile();
 
     configureCluster(1) // nodes
-        .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
+        .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())
         .withSolrXml(
             SOLR_XML
                 .replace("BUCKET", BUCKET_NAME)

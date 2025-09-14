@@ -76,6 +76,13 @@ class ChangesToHtmlTask extends DefaultTask {
 
   def toHtml(File versionsFile) {
     def output = new ByteArrayOutputStream()
+    
+    // Check if the perl executable exists
+    if (!perlExists()) {
+        logger.warn("WARNING: Perl is not installed, skipping creating Changes.html")
+        return
+    }
+
     def result = project.exec {
       executable project.externalTool("perl")
       standardInput changesFile.newInputStream()
@@ -112,6 +119,16 @@ class ChangesToHtmlTask extends DefaultTask {
       versionsFile.delete()
     } else {
       throw new GradleException("Changes file ${changesFile} or Doap file ${changesDoapFile} not found.")
+    }
+  }
+  
+  def perlExists() {
+    try {
+        def process = "perl -v".execute()
+        process.waitFor()
+        return process.exitValue() == 0
+    } catch (Exception e) {
+        return false
     }
   }
 }

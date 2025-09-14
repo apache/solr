@@ -16,9 +16,9 @@
  */
 package org.apache.solr.servlet;
 
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
 import java.io.IOException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**

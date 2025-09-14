@@ -89,7 +89,7 @@ public class BucketBasedJsonFacet {
    *
    * <p>This value can only be computed on "terms" facets where the user has specifically requested
    * it with the {@code numBuckets} option. {@link #UNSET_FLAG} is returned if this is a "range"
-   * facet or {@code numBuckets} computation was not requested in the intiial request.
+   * facet or {@code numBuckets} computation was not requested in the initial request.
    */
   public long getNumBuckets() {
     return numBuckets;

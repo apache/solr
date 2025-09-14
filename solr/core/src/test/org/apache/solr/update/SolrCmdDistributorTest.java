@@ -17,7 +17,6 @@
 package org.apache.solr.update;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
 import java.nio.file.Path;
@@ -108,14 +107,13 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   @Override
   protected void createServers(int numShards) throws Exception {
 
-    System.setProperty("configSetBaseDir", TEST_HOME());
+    System.setProperty("configSetBaseDir", TEST_HOME().toString());
 
-    File controlHome = testDir.toPath().resolve("control").toFile();
+    Path controlHome = testDir.resolve("control");
 
     seedSolrHome(controlHome);
     writeCoreProperties(
-        controlHome.toPath().resolve("cores").resolve(DEFAULT_TEST_CORENAME),
-        DEFAULT_TEST_CORENAME);
+        controlHome.resolve("cores").resolve(DEFAULT_TEST_CORENAME), DEFAULT_TEST_CORENAME);
     controlJetty =
         createJetty(
             controlHome, testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
@@ -127,13 +125,13 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
       String shardname = "shard" + i;
-      Path shardHome = testDir.toPath().resolve(shardname);
-      seedSolrHome(shardHome.toFile());
+      Path shardHome = testDir.resolve(shardname);
+      seedSolrHome(shardHome);
       Path coresPath = shardHome.resolve("cores");
       writeCoreProperties(coresPath.resolve(DEFAULT_TEST_CORENAME), DEFAULT_TEST_CORENAME);
       JettySolrRunner j =
           createJetty(
-              shardHome.toFile(),
+              shardHome,
               testDir + "/shard" + i + "/data",
               null,
               getSolrConfigFile(),

@@ -122,16 +122,14 @@ public class ApiBag {
 
       // If 'o' and 'node.obj' aren't both AnnotatedApi's then we can't aggregate the commands, so
       // fallback to the default behavior
-      if ((!(o instanceof AnnotatedApi)) || (!(node.getObject() instanceof AnnotatedApi))) {
+      if ((!(o instanceof AnnotatedApi beingRegistered))
+          || (!(node.getObject() instanceof AnnotatedApi alreadyRegistered))) {
         super.attachValueToNode(node, o);
         return;
       }
 
-      final AnnotatedApi beingRegistered = (AnnotatedApi) o;
-      final AnnotatedApi alreadyRegistered = (AnnotatedApi) node.getObject();
-      if (alreadyRegistered instanceof CommandAggregatingAnnotatedApi) {
-        final CommandAggregatingAnnotatedApi alreadyRegisteredAsCollapsing =
-            (CommandAggregatingAnnotatedApi) alreadyRegistered;
+      if (alreadyRegistered
+          instanceof CommandAggregatingAnnotatedApi alreadyRegisteredAsCollapsing) {
         alreadyRegisteredAsCollapsing.combineWith(beingRegistered);
       } else {
         final CommandAggregatingAnnotatedApi wrapperApi =
@@ -404,11 +402,10 @@ public class ApiBag {
 
   public static SpecProvider constructSpec(PluginInfo info) {
     Object specObj = info == null ? null : info.attributes.get("spec");
-    if (specObj != null && specObj instanceof Map) {
+    if (specObj != null && specObj instanceof Map<?, ?> map) {
       // Value from Map<String,String> can be a Map because in PluginInfo(String, Map) we assign a
       // Map<String, Object>
       // assert false : "got a map when this should only be Strings";
-      Map<?, ?> map = (Map<?, ?>) specObj;
       return () -> ValidatingJsonMap.getDeepCopy(map, 4, false);
     } else {
       return HANDLER_NAME_SPEC_PROVIDER;

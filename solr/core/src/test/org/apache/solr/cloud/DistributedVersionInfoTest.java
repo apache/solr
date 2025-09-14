@@ -47,7 +47,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -378,10 +377,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
   }
 
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
-    ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
-    String coreName = coreProps.getCoreName();
+    String coreName = replica.getCoreName();
     boolean reloadedOk = false;
-    try (SolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (SolrClient client = getHttpSolrClient(replica.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

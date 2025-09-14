@@ -48,7 +48,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -69,11 +69,13 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.SnapShooter;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,17 +127,29 @@ public class SolrIndexSplitter {
       numPieces = cmd.ranges.size();
       rangesArr = cmd.ranges.toArray(new DocRouter.Range[0]);
     }
+
     if (cmd.routeFieldName == null) {
-      field = searcher.getSchema().getUniqueKeyField();
+      // To support routing child documents, use the root field if it exists (which would be
+      // populated with unique field), otherwise use the unique key field
+      if (searcher.getSchema().isUsableForChildDocs()) {
+        field = searcher.getSchema().getField(IndexSchema.ROOT_FIELD_NAME);
+      } else {
+        field = searcher.getSchema().getUniqueKeyField();
+      }
     } else {
+      // Custom routing
+      // If child docs are used, users must ensure that the whole nested document tree has a
+      // consistent routeField value
       field = searcher.getSchema().getField(cmd.routeFieldName);
     }
+
     if (cmd.splitKey == null) {
       splitKey = null;
     } else {
       checkRouterSupportsSplitKey(hashRouter, cmd.splitKey);
       splitKey = ((CompositeIdRouter) hashRouter).getRouteKeyNoSuffix(cmd.splitKey);
     }
+
     if (cmd.cores == null) {
       this.splitMethod = SplitMethod.REWRITE;
     } else {
@@ -538,7 +552,7 @@ public class SolrIndexSplitter {
       return new ConstantScoreWeight(this, boost) {
 
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           RTimerTree t = timings.sub("findDocsToDelete");
           t.resume();
           FixedBitSet set = findDocsToDelete(context);
@@ -563,8 +577,8 @@ public class SolrIndexSplitter {
               log.error("### INVALID DELS {}", dels.cardinality());
             }
           }
-          return new ConstantScoreScorer(
-              this, score(), scoreMode, new BitSetIterator(set, set.length()));
+          return new SolrDefaultScorerSupplier(
+              new ConstantScoreScorer(score(), scoreMode, new BitSetIterator(set, set.length())));
         }
 
         @Override
@@ -620,10 +634,9 @@ public class SolrIndexSplitter {
       if (this == obj) {
         return true;
       }
-      if (!(obj instanceof SplittingQuery)) {
+      if (!(obj instanceof SplittingQuery q)) {
         return false;
       }
-      SplittingQuery q = (SplittingQuery) obj;
       return partition == q.partition;
     }
 

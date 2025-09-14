@@ -61,7 +61,7 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
     args.remove(PERMISSIVE_MODE_PARAM);
 
     if (args.size() > 0) {
-      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): '" + args.getName(0) + "'");
+      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): " + args);
     }
   }
 

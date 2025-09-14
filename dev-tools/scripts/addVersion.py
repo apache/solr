@@ -23,7 +23,7 @@ from scriptutil import *
 import argparse
 import re
 from configparser import ConfigParser, ExtendedInterpolation
-from textwrap import dedent
+
 
 def update_changes(filename, new_version, init_changes, headers):
   print('  adding new section to %s...' % filename, end='', flush=True)
@@ -115,7 +115,7 @@ def check_lucene_match_version_tests():
 def read_config(current_version, current_lucene_version):
   parser = argparse.ArgumentParser(description='Add a new version to CHANGES, to Version.java, build.gradle and solrconfig.xml files')
   parser.add_argument('version', type=Version.parse, help='New Solr version')
-  parser.add_argument('-l', dest='lucene_version', type=Version.parse, help='Optional lucene version. By default will read versions.props')
+  parser.add_argument('-l', dest='lucene_version', type=Version.parse, help='Optional lucene version. By default will read gradle/libs.versions.toml')
   newconf = parser.parse_args()
   if not newconf.lucene_version:
     newconf.lucene_version = current_lucene_version

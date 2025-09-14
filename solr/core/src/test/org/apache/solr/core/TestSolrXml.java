@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -164,15 +163,16 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.
   public void testPropertySub() throws IOException {
+    Path testSrcRoot = TEST_PATH();
 
     System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
-    System.setProperty("coreRootDirectory", "myCoreRoot" + File.separator);
+    System.setProperty(
+        "coreRootDirectory", "myCoreRoot" + testSrcRoot.getFileSystem().getSeparator());
     System.setProperty("hostPort", "8888");
     System.setProperty("shareSchema", "false");
     System.setProperty("socketTimeout", "220");
     System.setProperty("connTimeout", "200");
 
-    Path testSrcRoot = TEST_PATH();
     Files.copy(testSrcRoot.resolve("solr-50-all.xml"), solrHome.resolve("solr.xml"));
 
     NodeConfig cfg = SolrXmlConfig.fromSolrHome(solrHome, new Properties());

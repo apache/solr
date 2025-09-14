@@ -39,7 +39,7 @@ import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -253,12 +253,11 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   @Test
   public void illegalAdminPathError() throws Exception {
     setupCluster(false, null, false);
-    String baseUrl = testHarness.get().cluster.getJettySolrRunner(0).getBaseUrl().toString();
+    String baseUrl = testHarness.get().cluster.getJettySolrRunner(0).getBaseURLV2().toString();
     expectThrows(
         FileNotFoundException.class,
         () -> {
-          try (InputStream is =
-              new URL(baseUrl.replace("/solr", "") + "/api/node/foo").openStream()) {
+          try (InputStream is = URI.create(baseUrl + "/node/foo").toURL().openStream()) {
             new String(is.readAllBytes(), StandardCharsets.UTF_8);
           }
         });

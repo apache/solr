@@ -49,15 +49,8 @@ REM set GC_TUNE=-XX:+ExplicitGCInvokesConcurrent
 REM set GC_TUNE=-XX:SurvivorRatio=4
 REM set GC_TUNE=%GC_TUNE% -XX:TargetSurvivorRatio=90
 REM set GC_TUNE=%GC_TUNE% -XX:MaxTenuringThreshold=8
-REM set GC_TUNE=%GC_TUNE% -XX:+UseConcMarkSweepGC
-REM set GC_TUNE=%GC_TUNE% -XX:ConcGCThreads=4
 REM set GC_TUNE=%GC_TUNE% -XX:ParallelGCThreads=4
-REM set GC_TUNE=%GC_TUNE% -XX:+CMSScavengeBeforeRemark
 REM set GC_TUNE=%GC_TUNE% -XX:PretenureSizeThreshold=64m
-REM set GC_TUNE=%GC_TUNE% -XX:+UseCMSInitiatingOccupancyOnly
-REM set GC_TUNE=%GC_TUNE% -XX:CMSInitiatingOccupancyFraction=50
-REM set GC_TUNE=%GC_TUNE% -XX:CMSMaxAbortablePrecleanTime=6000
-REM set GC_TUNE=%GC_TUNE% -XX:+CMSParallelRemarkEnabled
 REM set GC_TUNE=%GC_TUNE% -XX:+ParallelRefProcEnabled      etc.
 
 REM Set the ZooKeeper connection string if using an external ZooKeeper ensemble
@@ -76,7 +69,7 @@ REM for production SolrCloud environments to control the hostname exposed to clu
 REM set SOLR_HOST=192.168.1.1
 
 REM By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
-REM set SOLR_WAIT_FOR_ZK=30
+REM set SOLR_CLOUD_WAIT_FOR_ZK_SECONDS=30
 
 REM By default Solr will log a warning for cores that are not registered in Zookeeper at startup
 REM but otherwise ignore them. This protects against misconfiguration (e.g. connecting to the
@@ -97,7 +90,7 @@ REM set RMI_PORT=18983
 
 REM Anything you add to the SOLR_OPTS variable will be included in the java
 REM start command line as-is, in ADDITION to other options. If you specify the
-REM -a option on start script, those options will be appended as well. Examples:
+REM --jvm-opts option on start script, those options will be appended as well. Examples:
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoSoftCommit.maxTime=3000
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoCommit.maxTime=60000
 
@@ -134,7 +127,7 @@ REM environments where security is not a concern, 0.0.0.0 can be used to allow
 REM Solr to accept connections on all network interfaces.
 REM set SOLR_JETTY_HOST=127.0.0.1
 REM Sets the network interface the Embedded ZK binds to.
-REM set SOLR_ZK_EMBEDDED_HOST=127.0.0.1
+REM set SOLR_ZOOKEEPER_EMBEDDED_HOST=127.0.0.1
 
 REM Restrict access to solr by IP address.
 REM Specify a comma-separated list of addresses or networks, for example:
@@ -178,23 +171,11 @@ REM set SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
 REM set SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 REM set SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
-REM Sets path of Hadoop credential provider (hadoop.security.credential.provider.path property) and
-REM enables usage of credential store.
-REM Credential provider should store the following keys:
-REM * solr.jetty.keystore.password
-REM * solr.jetty.truststore.password
-REM Set the two below if you want to set specific store passwords for HTTP client
-REM * javax.net.ssl.keyStorePassword
-REM * javax.net.ssl.trustStorePassword
-REM More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
-REM set SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
-REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.ssl.credential.provider.chain=hadoop
-
 REM Settings for authentication
 REM Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
 REM set SOLR_AUTHENTICATION_CLIENT_BUILDER=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory
 REM set SOLR_AUTH_TYPE=basic
-REM set SOLR_AUTHENTICATION_OPTS=-Dbasicauth=solr:SolrRocks
+REM set SOLR_AUTHENTICATION_OPTS=-Dsolr.security.auth.basicauth.credentials=solr:SolrRocks
 
 REM Settings for ZK ACL
 REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider ^
@@ -237,12 +218,18 @@ REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.sharedLib=/path/to/lib
 REM Runs solr in a java security manager sandbox. This can protect against some attacks.
 REM Runtime properties are passed to the security policy file (server\etc\security.policy)
 REM You can also tweak via standard JDK files such as ~\.java.policy, see https://s.apache.org/java8policy
-REM This is experimental! It may not work at all with Hadoop/HDFS features.
+REM This is experimental!
 REM set SOLR_SECURITY_MANAGER_ENABLED=true
+
 REM This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
-REM change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
+REM change the value to false. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 REM scripts.
-REM set SOLR_ADMIN_UI_DISABLED=false
+REM set SOLR_UI_ENABLED=true
+
+REM This variable provides you with the option to disable the new experimental Admin UI. If you uncomment the variable
+REM below and change the value to false, Jetty will not load the new-ui module which update the CSP directive for the
+REM new UI endpoints. This property is ignored if SOLR_UI_ENABLED is false.
+REM set SOLR_UI_EXPERIMENTAL_ENABLED=false
 
 REM Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 REM Sometimes it may be necessary to place a core or a backup on a different location or a different disk

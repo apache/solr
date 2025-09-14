@@ -580,8 +580,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
         if (filter.matches(name, gauge)) {
           final ObjectName objectName = createName("gauges", name);
           if (gauge instanceof SolrMetricManager.GaugeWrapper
-              && ((SolrMetricManager.GaugeWrapper<?>) gauge).getGauge() instanceof MetricsMap) {
-            MetricsMap mm = (MetricsMap) ((SolrMetricManager.GaugeWrapper<?>) gauge).getGauge();
+              && ((SolrMetricManager.GaugeWrapper<?>) gauge).getGauge() instanceof MetricsMap mm) {
             mm.setAttribute(new Attribute(INSTANCE_TAG, tag));
             // don't wrap it in a JmxGauge, it already supports all necessary JMX attributes
             registerMBean(mm, objectName);

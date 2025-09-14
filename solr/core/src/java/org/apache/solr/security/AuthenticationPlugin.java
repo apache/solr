@@ -19,26 +19,24 @@ package org.apache.solr.security;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
 import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.http.HttpRequest;
-import org.apache.http.protocol.HttpContext;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 
 /**
  * @lucene.experimental
  */
 public abstract class AuthenticationPlugin implements SolrInfoBean {
 
-  public static final String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
+  public static final String AUTHENTICATION_PLUGIN_PROP = "solr.security.auth.plugin";
   public static final String HTTP_HEADER_X_SOLR_AUTHDATA = "X-Solr-AuthData";
 
   // Metrics
@@ -115,25 +113,6 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
         return username;
       }
     };
-  }
-
-  /**
-   * Override this method to intercept internode requests. This allows your authentication plugin to
-   * decide on per-request basis whether it should handle inter-node requests or delegate to {@link
-   * PKIAuthenticationPlugin}. Return true to indicate that your plugin did handle the request, or
-   * false to signal that PKI plugin should handle it. This method will be called by {@link
-   * PKIAuthenticationPlugin}'s interceptor.
-   *
-   * <p>If not overridden, this method will return true for plugins implementing {@link
-   * HttpClientBuilderPlugin}. This method can be overridden by subclasses e.g. to set HTTP headers,
-   * even if you don't use a clientBuilder.
-   *
-   * @param httpRequest the httpRequest that is about to be sent to another internal Solr node
-   * @param httpContext the context of that request.
-   * @return true if this plugin handled authentication for the request, else false
-   */
-  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
-    return this instanceof HttpClientBuilderPlugin;
   }
 
   /**

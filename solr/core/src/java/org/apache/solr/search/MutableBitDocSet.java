@@ -50,8 +50,7 @@ class MutableBitDocSet extends BitDocSet {
    * @return Unwrapped DocSet that is not mutable
    */
   public static DocSet unwrapIfMutable(DocSet docSet) {
-    if (docSet instanceof MutableBitDocSet) {
-      MutableBitDocSet mutableBitDocSet = (MutableBitDocSet) docSet;
+    if (docSet instanceof MutableBitDocSet mutableBitDocSet) {
       // don't call size() since we just want to pass through the size
       // instead of computing it if it was already computed
       return new BitDocSet(mutableBitDocSet.getBits(), mutableBitDocSet.size);

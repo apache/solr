@@ -88,13 +88,12 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof NodeMetricImpl)) {
+    if (!(o instanceof NodeMetricImpl<?> that)) {
       return false;
     }
     if (!super.equals(o)) {
       return false;
     }
-    NodeMetricImpl<?> that = (NodeMetricImpl<?>) o;
     return registry == that.registry;
   }
 

@@ -16,11 +16,15 @@
  */
 package org.apache.solr.cloud;
 
+import static org.hamcrest.Matchers.containsString;
+
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -40,8 +44,13 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestCloudDeleteByQuery extends SolrCloudTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int NUM_SHARDS = 2;
   private static final int REPLICATION_FACTOR = 2;
@@ -253,6 +262,36 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
 
   public void testMalformedDBQViaNoCollectionClient() {
     testMalformedDBQ(NO_COLLECTION_CLIENT);
+  }
+
+  // See SOLR-17677 for context
+  @Test
+  public void testDBQWithUnsupportedQueryReturns400() throws Exception {
+    final var unsupportedQueryExamples =
+        new String[] {
+          "{!join from=expected_shard_s to=expected_shard_s v=\"expected_shard_s:5\"}",
+          "{!graph from=expected_shard_s to=expected_shard_s v=\"expected_shard_s:5\"}"
+        };
+
+    update(params()).add(doc(f("id", UUID.randomUUID().toString()))).process(COLLECTION_CLIENT);
+    for (String queryStr : unsupportedQueryExamples) {
+      log.info("Testing unsupported DBQ query: {}", queryStr);
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                update(params()).deleteByQuery(queryStr).process(COLLECTION_CLIENT);
+              });
+      assertEquals("Unexpected status code for DBQ with query " + queryStr, 400, e.code());
+      final var expectedStr =
+          "Query [" + queryStr + "] is not supported in delete-by-query operations";
+      assertThat(e.getMessage(), containsString(expectedStr));
+    }
+
+    final var acceptableJoin =
+        "{!join method=dvWithScore score=None from=expected_shard_s to=expected_shard_s v=\"expected_shard_s:5\"}";
+    final var response = update(params()).deleteByQuery(acceptableJoin).process(COLLECTION_CLIENT);
+    assertEquals(0, response.getStatus());
   }
 
   public static UpdateRequest update(SolrParams params, SolrInputDocument... docs) {

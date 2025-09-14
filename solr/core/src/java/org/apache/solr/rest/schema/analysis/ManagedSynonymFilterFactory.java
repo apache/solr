@@ -221,8 +221,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
         Set<String> output = cpsm.mappings.get(origTerm);
 
         Object val = jsonMap.get(origTerm); // IMPORTANT: use the original
-        if (val instanceof String) {
-          String strVal = (String) val;
+        if (val instanceof String strVal) {
 
           if (output == null) {
             output = new TreeSet<>();

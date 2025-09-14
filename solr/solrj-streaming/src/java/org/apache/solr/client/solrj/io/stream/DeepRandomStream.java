@@ -102,14 +102,14 @@ public class DeepRandomStream extends TupleStream implements Expressible {
               expression));
     }
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't
+    // Validate there are no unknown parameters - zkHost and alias are namedParameter, so we don't
     // need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
+    // Named parameters - passed directly to solr as SolrParams
     if (0 == namedParams.size()) {
       throw new IOException(
           String.format(

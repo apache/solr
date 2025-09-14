@@ -32,7 +32,7 @@ The below command would start SolrCloud with the default collection name (`getti
 
 [source,bash]
 ----
-bin/solr start -e cloud -noprompt
+bin/solr start -e cloud --no-prompt
 ----
 
 You can also explicitly upload a configuration directory when creating a collection using the `bin/solr` script with the `-d` option, such as:
@@ -94,4 +94,4 @@ If you for example would like to enable authentication, you can push your `secur
 bin/solr zk cp file:local/file/path/to/security.json zk:/security.json -z localhost:2181
 ----
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files,Updating Solr Include Files>>) you can omit `-z <zk host string>` from the above command.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files[Updating Solr Include Files]) you can omit `-z <zk host string>` from the above command.

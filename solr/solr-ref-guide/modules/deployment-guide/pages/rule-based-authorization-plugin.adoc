@@ -43,7 +43,7 @@ The users that RBAP sees come from whatever authentication plugin has been confi
 RBAP is compatible with all of the authentication plugins that Solr ships with out of the box.
 It is also compatible with any custom authentication plugins users might write, provided that the plugin sets a user principal on the HttpServletRequest it receives.
 
-The user value seen by RBAP in each case depends on the authentication plugin being used: the Kerberos principal if the xref:kerberos-authentication-plugin.adoc[] is being used, the "sub" JWT claim if the xref:jwt-authentication-plugin.adoc[] is being used, etc.
+The user value seen by RBAP in each case depends on the authentication plugin being used: the "sub" JWT claim if the xref:jwt-authentication-plugin.adoc[] is being used, etc.
 
 === Roles
 
@@ -139,18 +139,6 @@ For example:
   }
 }
 ----
-
-`useShortName`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `false`
-|===
-+
-Determines if user-role mappings will resolve using the full principal or a shortened name provided by the authentication plugin.
-For example, the `KerberosAuthPlugin` may provide a full principal as `user@EXAMPLE.COM`, while the corresponding short name would be `user`.
-+
-For some plugins the principal name and short name may be the same.
 
 === Example for RuleBasedAuthorizationPlugin and BasicAuth
 
@@ -401,7 +389,6 @@ If edit permissions should only be applied to specific collections, a custom per
 Note that this allows schema read permissions for _all_ collections.
 If read permissions should only be applied to specific collections, a custom permission would need to be created.
 * *config-edit*: this permission is allowed to edit a collection's configuration using the xref:configuration-guide:config-api.adoc[], the xref:configuration-guide:request-parameters-api.adoc[], and other APIs which modify `configoverlay.json`.
-Because configs xref:configuration-guide:libs.adoc#lib-directives-in-solrconfig[can add libraries/custom code] from various locations, loading any new code via a trusted SolrConfig is explicitly allowed for users with this permission.
 Note that this allows configuration edit permissions for _all_ collections.
 If edit permissions should only be applied to specific collections, a custom permission would need to be created.
 * *config-read*: this permission is allowed to read a collection's configuration using the xref:configuration-guide:config-api.adoc[], the xref:configuration-guide:request-parameters-api.adoc[], xref:configuration-guide:configsets-api.adoc#configsets-list[Configsets API], the Admin UI's xref:configuration-guide:configuration-files.adoc#files-screen[Files Screen], and other APIs accessing configuration.

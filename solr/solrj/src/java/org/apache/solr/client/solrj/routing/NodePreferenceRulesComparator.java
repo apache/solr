@@ -31,7 +31,7 @@ import org.apache.solr.common.util.StrUtils;
 /**
  * This comparator makes sure that the given replicas are sorted according to the given list of
  * preferences. E.g. If all nodes prefer local cores then a bad/heavily-loaded node will receive
- * less requests from healthy nodes. This will help prevent a distributed deadlock or timeouts in
+ * fewer requests from healthy nodes. This will help prevent a distributed deadlock or timeouts in
  * all the healthy nodes due to one bad node.
  *
  * <p>Optional final preferenceRule is *not* used for pairwise sorting, but instead defines how

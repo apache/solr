@@ -63,8 +63,7 @@ public class FieldValueEvaluator extends SourceEvaluator {
     // if we have an iterable that is not a list then convert to ArrayList
     // lists are good to go
     if (null != value) {
-      if (value instanceof Object[]) {
-        Object[] array = (Object[]) value;
+      if (value instanceof Object[] array) {
         List<Object> list = new ArrayList<>(array.length);
         for (Object obj : array) {
           list.add(obj);
@@ -74,8 +73,7 @@ public class FieldValueEvaluator extends SourceEvaluator {
         return value;
       } else if (value instanceof VectorFunction) {
         return value;
-      } else if (value instanceof Iterable && !(value instanceof List<?>)) {
-        Iterable<?> iter = (Iterable<?>) value;
+      } else if (value instanceof Iterable<?> iter && !(value instanceof List<?>)) {
         List<Object> list = new ArrayList<>();
         for (Object obj : iter) {
           list.add(obj);

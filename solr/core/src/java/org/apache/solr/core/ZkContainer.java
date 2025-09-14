@@ -19,29 +19,24 @@ package org.apache.solr.core;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
@@ -72,20 +67,19 @@ public class ZkContainer {
   private ExecutorService coreZkRegister =
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("coreZkRegister"));
 
-  // see ZkController.zkRunOnly
-  private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
-
   private SolrMetricProducer metricProducer;
 
   public ZkContainer() {}
 
   public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
-    String zkRun = System.getProperty("zkRun");
+    final var zkRun =
+        EnvUtils.getPropertyAsBool(
+            "solr.zookeeper.server.enabled", false); // "zkRun" pre-merge-conflict
     // TODO NOCOMMIT - understand when zkRun is set
     String zkQuorumRun = System.getProperty("zkQuorumRun");
     final boolean runAsQuorum = config.getZkHost() != null && zkQuorumRun != null;
 
-    if (zkRun != null && config == null)
+    if (zkRun && config == null)
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Cannot start Solr in cloud mode - no cloud config provided");
@@ -99,46 +93,77 @@ public class ZkContainer {
     // TODO: remove after updating to an slf4j based zookeeper
     System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
-    // TODO NOCOMMIT - should this code go in SolrZkServer to augment or replace its current capabilities?  Doing so would definitely keep ZkContainer cleaner
-    String solrHome = cc.getSolrHome();
-    if (runAsQuorum) {
+    final var solrHome = cc.getSolrHome();
+
+    if (zkRun && !runAsQuorum) {
+      String zkDataHome =
+          EnvUtils.getProperty(
+              "solr.zookeeper.server.datadir", solrHome.resolve("zoo_data").toString());
+      String zkConfHome =
+          EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString());
+      zkServer =
+          new SolrZkServer(
+              zkRun,
+              stripChroot(config.getZkHost()),
+              Path.of(zkDataHome),
+              zkConfHome,
+              config.getSolrHostPort());
+      zkServer.parseConfig();
+      zkServer.start();
+
+      // set client from server config if not already set
+      if (zookeeperHost == null) {
+        zookeeperHost = zkServer.getClientString();
+      }
+      // TODO NOCOMMIT - should this code go in SolrZkServer to augment or replace its current
+      // capabilities?  Doing so
+      //  would definitely keep ZkContainer cleaner...
+    } else if (zkRun != null && runAsQuorum) {
       // Figure out where to put zoo-data
-      final var zkHomeDir = Paths.get(solrHome).resolve("zoo_home");
+      final var zkHomeDir = solrHome.resolve("zoo_home");
       final var zkDataDir = zkHomeDir.resolve("data");
 
       // Populate a zoo.cfg
-      final String zooCfgTemplate = "" +
-              "tickTime=2000\n" +
-              "initLimit=10\n" +
-              "syncLimit=5\n" +
-              "dataDir=@@DATA_DIR@@\n" +
-              "4lw.commands.whitelist=mntr,conf,ruok\n" +
-              "admin.enableServer=false\n" +
-              "clientPort=@@ZK_CLIENT_PORT@@\n";
+      final String zooCfgTemplate =
+          ""
+              + "tickTime=2000\n"
+              + "initLimit=10\n"
+              + "syncLimit=5\n"
+              + "dataDir=@@DATA_DIR@@\n"
+              + "4lw.commands.whitelist=mntr,conf,ruok\n"
+              + "admin.enableServer=false\n"
+              + "clientPort=@@ZK_CLIENT_PORT@@\n";
 
       final int zkPort = config.getSolrHostPort() + 1000;
-      String zooCfgContents = zooCfgTemplate.replace("@@DATA_DIR@@", zkDataDir.toString())
+      String zooCfgContents =
+          zooCfgTemplate
+              .replace("@@DATA_DIR@@", zkDataDir.toString())
               .replace("@@ZK_CLIENT_PORT@@", String.valueOf(zkPort));
       final String[] zkHosts = config.getZkHost().split(",");
       int myId = -1;
       final String targetConnStringSection = config.getHost() + ":" + zkPort;
-      log.info("Trying to match {} against zkHostString {} to determine myid", targetConnStringSection, config.getZkHost());
-      for (int i = 0 ; i < zkHosts.length ; i++) {
+      log.info(
+          "Trying to match {} against zkHostString {} to determine myid",
+          targetConnStringSection,
+          config.getZkHost());
+      for (int i = 0; i < zkHosts.length; i++) {
         final String host = zkHosts[i];
         if (targetConnStringSection.equals(zkHosts[i])) {
-          myId = (i+1);
+          myId = (i + 1);
         }
         final var hostComponents = host.split(":");
         final var zkServer = hostComponents[0];
         final var zkClientPort = Integer.valueOf(hostComponents[1]);
         final var zkQuorumPort = zkClientPort - 4000;
         final var zkLeaderPort = zkClientPort - 3000;
-        final var configEntry = "server." + (i+1) + "=" + zkServer + ":" + zkQuorumPort + ":" + zkLeaderPort + "\n";
+        final var configEntry =
+            "server." + (i + 1) + "=" + zkServer + ":" + zkQuorumPort + ":" + zkLeaderPort + "\n";
         zooCfgContents = zooCfgContents + configEntry;
       }
 
       if (myId == -1) {
-        throw new IllegalStateException("Unable to determine ZK 'myid' for target " + targetConnStringSection);
+        throw new IllegalStateException(
+            "Unable to determine ZK 'myid' for target " + targetConnStringSection);
       }
 
       try {
@@ -149,26 +174,10 @@ public class ZkContainer {
         // Run ZKSE
         startZKSE(zkPort, zkHomeDir.toString());
       } catch (Exception e) {
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "IOException bootstrapping zk quorum instance", e);
-      }
-
-    } else if (zkRun != null) {
-      String zkDataHome =
-          System.getProperty("zkServerDataDir", Paths.get(solrHome).resolve("zoo_data").toString());
-      String zkConfHome = System.getProperty("zkServerConfDir", solrHome);
-      zkServer =
-          new SolrZkServer(
-              stripChroot(zkRun),
-              stripChroot(config.getZkHost()),
-              new File(zkDataHome),
-              zkConfHome,
-              config.getSolrHostPort());
-      zkServer.parseConfig();
-      zkServer.start();
-
-      // set client from server config if not already set
-      if (zookeeperHost == null) {
-        zookeeperHost = zkServer.getClientString();
+        throw new ZooKeeperException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "IOException bootstrapping zk quorum instance",
+            e);
       }
     }
 
@@ -179,31 +188,24 @@ public class ZkContainer {
       // we are ZooKeeper enabled
       try {
         // If this is an ensemble, allow for a long connect time for other servers to come up
-        if (zkRun != null && zkServer.getServers().size() > 1) {
+        if (zkRun && zkServer.getServers().size() > 1) {
           zkClientConnectTimeout = 24 * 60 * 60 * 1000; // 1 day for embedded ensemble
           log.info("Zookeeper client={}  Waiting for a quorum.", zookeeperHost);
         } else {
           log.info("Zookeeper client={}", zookeeperHost);
         }
-        boolean createRoot = Boolean.getBoolean("createZkChroot");
+        boolean createRoot = EnvUtils.getPropertyAsBool("solr.zookeeper.chroot.create", false);
 
-        if (!ZkController.checkChrootPath(zookeeperHost, zkRunOnly || createRoot)) {
+        if (!ZkController.checkChrootPath(zookeeperHost, createRoot)) {
           throw new ZooKeeperException(
               SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
 
-        Supplier<List<CoreDescriptor>> descriptorsSupplier =
-            () ->
-                cc.getCores().stream()
-                    .map(SolrCore::getCoreDescriptor)
-                    .collect(Collectors.toList());
-
         ZkController zkController =
-            new ZkController(
-                cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
+            new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config);
 
-        if (zkRun != null) {
+        if (zkRun) {
           if (StrUtils.isNotNullOrEmpty(System.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient())
@@ -249,16 +251,13 @@ public class ZkContainer {
     p.load(new FileInputStream(zkHomeDir + "/zoo.cfg"));
     p.setProperty("clientPort", String.valueOf(port));
 
-    // TODO NOCOMMIT - hang onto the created ZooKeeperServerEmbedded to be able to close it gracefully the way we do today with zkServer
-    ZooKeeperServerEmbedded.builder()
-            .baseDir(Path.of(zkHomeDir))
-            .configuration(p)
-            .build()
-            .start();
+    // TODO NOCOMMIT - hang onto the created ZooKeeperServerEmbedded to be able to close it
+    // gracefully the way we do today with zkServer
+    ZooKeeperServerEmbedded.builder().baseDir(Path.of(zkHomeDir)).configuration(p).build().start();
   }
 
   private String stripChroot(String zkRun) {
-    if (zkRun == null || zkRun.trim().length() == 0 || zkRun.lastIndexOf('/') < 0) return zkRun;
+    if (zkRun == null || zkRun.trim().isEmpty() || zkRun.lastIndexOf('/') < 0) return zkRun;
     return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 
@@ -290,7 +289,7 @@ public class ZkContainer {
               log.error("Interrupted", e);
             } catch (KeeperException e) {
               log.error("KeeperException registering core {}", core.getName(), e);
-            } catch (AlreadyClosedException ignore) {
+            } catch (IllegalStateException ignore) {
 
             } catch (Exception e) {
               log.error("Exception registering core {}", core.getName(), e);
@@ -322,16 +321,16 @@ public class ZkContainer {
   public void close() {
 
     try {
-      if (zkController != null) {
-        zkController.close();
-      }
+      ExecutorUtil.shutdownAndAwaitTermination(coreZkRegister);
     } finally {
       try {
+        if (zkController != null) {
+          zkController.close();
+        }
+      } finally {
         if (zkServer != null) {
           zkServer.stop();
         }
-      } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(coreZkRegister);
       }
     }
   }

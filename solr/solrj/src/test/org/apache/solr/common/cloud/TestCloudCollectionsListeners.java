@@ -53,7 +53,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
   @Before
   public void prepareCluster() throws Exception {
     configureCluster(CLUSTER_SIZE)
-        .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+        .addConfig("config", getFile("solrj/solr/collection1/conf"))
         .configure();
 
     int missingServers = CLUSTER_SIZE - cluster.getJettySolrRunners().size();

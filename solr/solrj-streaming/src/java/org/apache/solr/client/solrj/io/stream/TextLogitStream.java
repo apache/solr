@@ -52,7 +52,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 
@@ -127,7 +126,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
         factory.getExpressionOperandsRepresentingTypes(
             expression, Expressible.class, TupleStream.class);
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't
+    // Validate there are no unknown parameters - zkHost and alias are namedParameter, so we don't
     // need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size() + streamExpressions.size()) {
       throw new IOException(
@@ -143,7 +142,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
               expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
+    // Named parameters - passed directly to solr as SolrParams
     if (0 == namedParams.size()) {
       throw new IOException(
           String.format(
@@ -392,8 +391,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
         Collections.shuffle(shuffler, new Random());
         Replica rep = shuffler.get(0);
-        ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
+        String url = rep.getCoreUrl();
         baseUrls.add(url);
       }
 

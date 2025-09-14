@@ -308,7 +308,7 @@ public class TestCaffeineCache extends SolrTestCase {
 
     cache.put(0, "test");
     long nonEmptySize = cache.ramBytesUsed();
-    cache.put(0, "test");
+    cache.put(0, random().nextBoolean() ? "test" : "rest");
     assertEquals(nonEmptySize, cache.ramBytesUsed());
 
     cache.remove(0);
@@ -341,7 +341,7 @@ public class TestCaffeineCache extends SolrTestCase {
 
     cache.put(0, "test");
     long nonEmptySize = cache.ramBytesUsed();
-    cache.put(0, "test");
+    cache.put(0, random().nextBoolean() ? "test" : "rest");
     assertEquals(nonEmptySize, cache.ramBytesUsed());
 
     cache.remove(0);

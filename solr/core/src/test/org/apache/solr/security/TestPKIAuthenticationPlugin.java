@@ -23,16 +23,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.PublicKey;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.auth.BasicUserPrincipal;
@@ -133,7 +133,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     String username = "solr user"; // with spaces
     principal.set(new BasicUserPrincipal(username));
     mock.solrRequestInfo = new SolrRequestInfo(localSolrQueryRequest, new SolrQueryResponse());
-    mock.setHeader(request);
+    mockSetHeaderOnRequest();
     header.set(request.getFirstHeader(headerKey));
     assertNotNull(header.get());
     assertTrue(header.get().getValue().startsWith(nodeName));
@@ -143,6 +143,10 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertNotNull(((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal());
     assertEquals(
         username, ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
+  }
+
+  private void mockSetHeaderOnRequest() {
+    mock.setHeader((k, v) -> request.setHeader(k, v));
   }
 
   public void testSuperUser() throws Exception {
@@ -164,7 +168,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
     // Setup regular superuser request
     mock.solrRequestInfo = null;
-    mock.setHeader(request);
+    mockSetHeaderOnRequest();
     header.set(request.getFirstHeader(headerKey));
     assertNotNull(header.get());
     assertTrue(header.get().getValue().startsWith(nodeName));
@@ -190,7 +194,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
     principal.set(new BasicUserPrincipal("solr"));
     mock.solrRequestInfo = new SolrRequestInfo(localSolrQueryRequest, new SolrQueryResponse());
-    mock.setHeader(request);
+    mockSetHeaderOnRequest();
 
     HttpServletResponse response = mock(HttpServletResponse.class);
     // This will fail in the same way that a missing header would fail

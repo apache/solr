@@ -40,7 +40,7 @@ import org.apache.solr.common.util.Hash;
  * app/2!user/4!uniqueid
  * </pre>
  *
- * Lets say you had a set of records you want to index together such as a contact in a database,
+ * Let's say you had a set of records you want to index together such as a contact in a database,
  * using a prefix of contact!contactid would allow all contact ids to be bucketed together.
  *
  * <pre>
@@ -99,7 +99,7 @@ public class CompositeIdRouter extends HashBasedRouter {
 
   /**
    * Parse out the route key from {@code id} up to and including the {@link #SEPARATOR}, returning
-   * it's length. If no route key is detected then 0 is returned.
+   * its length. If no route key is detected then 0 is returned.
    */
   public int getRouteKeyWithSeparator(byte[] id, int idOffset, int idLength) {
     final byte SEPARATOR_BYTE = (byte) CompositeIdRouter.SEPARATOR;
@@ -323,7 +323,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     return ranges;
   }
 
-  /** Helper class to calculate parts, masks etc for an id. */
+  /** Helper class to calculate parts, masks etc. for an id. */
   protected static class KeyParser {
     String key;
     int[] numBits;
@@ -347,7 +347,7 @@ public class CompositeIdRouter extends HashBasedRouter {
           if (-1 == secondSeparatorPos) {
             partsList.add(key.substring(firstSeparatorPos + 1));
           } else if (secondSeparatorPos == lastPos) {
-            // Don't make any more parts if the key has exactly two separators and
+            // Don't make any more parts if the key has exactly two separators, and
             // they're the last two chars - back-compatibility with the behavior of
             // String.split() - see SOLR-6257.
             if (firstSeparatorPos < secondSeparatorPos - 1) {
@@ -406,7 +406,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       //  0xF0000000 0xFfffffff
 
       if ((masks[0] == 0 && !triLevel) || (masks[0] == 0 && masks[1] == 0 && triLevel)) {
-        // no bits used from first part of key.. the code above will produce 0x000000000->0xffffffff
+        // no bits used from first part of key, the code above will produce 0x000000000->0xffffffff
         // which only works on unsigned space, but we're using signed space.
         lowerBound = Integer.MIN_VALUE;
         upperBound = Integer.MAX_VALUE;

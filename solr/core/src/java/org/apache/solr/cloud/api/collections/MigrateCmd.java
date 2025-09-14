@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
@@ -52,7 +53,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
-import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,11 +101,11 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
           SolrException.ErrorCode.BAD_REQUEST,
           "Unknown target collection: " + sourceCollectionName);
     }
-    if (!(sourceCollection.getRouter() instanceof CompositeIdRouter)) {
+    if (!(sourceCollection.getRouter() instanceof CompositeIdRouter sourceRouter)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Source collection must use a compositeId router");
     }
-    if (!(targetCollection.getRouter() instanceof CompositeIdRouter)) {
+    if (!(targetCollection.getRouter() instanceof CompositeIdRouter targetRouter)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Target collection must use a compositeId router");
     }
@@ -115,8 +115,6 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
           SolrException.ErrorCode.BAD_REQUEST, "The split.key cannot be null or empty");
     }
 
-    CompositeIdRouter sourceRouter = (CompositeIdRouter) sourceCollection.getRouter();
-    CompositeIdRouter targetRouter = (CompositeIdRouter) targetCollection.getRouter();
     Collection<Slice> sourceSlices =
         sourceRouter.getSearchSlicesSingle(splitKey, null, sourceCollection);
     if (sourceSlices.isEmpty()) {
@@ -272,27 +270,26 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
 
     // wait for a while until we see the new rule
     log.info("Waiting to see routing rule updated in clusterstate");
-    TimeOut waitUntil =
-        new TimeOut(60, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
-    boolean added = false;
-    while (!waitUntil.hasTimedOut()) {
-      waitUntil.sleep(100);
-      sourceCollection = zkStateReader.getClusterState().getCollection(sourceCollection.getName());
-      sourceSlice = sourceCollection.getSlice(sourceSlice.getName());
-      Map<String, RoutingRule> rules = sourceSlice.getRoutingRules();
-      if (rules != null) {
-        RoutingRule rule = rules.get(sourceRouter.getRouteKeyNoSuffix(splitKey) + "!");
-        if (rule != null && rule.getRouteRanges().contains(splitRange)) {
-          added = true;
-          break;
-        }
-      }
-    }
-    if (!added) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Could not add routing rule: " + m);
-    }
 
+    try {
+      sourceCollection =
+          zkStateReader.waitForState(
+              sourceCollection.getName(),
+              60,
+              TimeUnit.SECONDS,
+              c -> {
+                Slice s = c.getSlice(sourceSlice.getName());
+                Map<String, RoutingRule> rules = s.getRoutingRules();
+                if (rules != null) {
+                  RoutingRule rule = rules.get(sourceRouter.getRouteKeyNoSuffix(splitKey) + "!");
+                  return rule != null && rule.getRouteRanges().contains(splitRange);
+                }
+                return false;
+              });
+    } catch (TimeoutException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Could not add routing rule: " + m, e);
+    }
     log.info("Routing rule added successfully");
 
     // Create temp core on source shard

@@ -171,7 +171,7 @@ The SQL query interface supports and pushes down most common SQL operators, spec
 |>= |Greater than or equals |`fielda >= 10` |`fielda:[10 TO *]`
 |< |Less than |`fielda < 10` |`fielda:[* TO 10}`
 |\<= |Less than or equals |`fielda \<= 10` |`fielda:[* TO 10]`
-|IN |Specify multiple values (shorthand for multiple OR clasues) |`fielda IN (10,20,30)` |`(fielda:10 OR fielda:20 OR fielda:30)`
+|IN |Specify multiple values (shorthand for multiple OR clauses) |`fielda IN (10,20,30)` |`(fielda:10 OR fielda:20 OR fielda:30)`
 |LIKE |Wildcard match on string or text fields |`fielda LIKE 'day%'` |`{!complexphrase}fielda:"day*"`
 |BETWEEN |Range match |`fielda BETWEEN 2 AND 4` |`fielda: [2 TO 4]`
 |IS NULL |Match columns with null value |`fielda IS NULL` |+++(*:* -field:*)+++

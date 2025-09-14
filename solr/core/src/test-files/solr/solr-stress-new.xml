@@ -21,6 +21,7 @@
 
 -->
 <solr>
+  <int name="indexSearcherExecutorThreads">4</int>
   <solrcloud>
     <str name="host">127.0.0.1</str>
     <int name="hostPort">8983</int>

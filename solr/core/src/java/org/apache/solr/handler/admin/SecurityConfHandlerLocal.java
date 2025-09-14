@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommandOperation;
@@ -40,7 +39,7 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
 
   public SecurityConfHandlerLocal(CoreContainer coreContainer) {
     super(coreContainer);
-    securityJsonPath = Paths.get(coreContainer.getSolrHome()).resolve("security.json");
+    securityJsonPath = coreContainer.getSolrHome().resolve("security.json");
   }
 
   /**

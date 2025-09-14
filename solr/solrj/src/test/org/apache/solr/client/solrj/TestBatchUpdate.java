@@ -21,9 +21,9 @@ import java.util.Iterator;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.beans.Field;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
@@ -49,7 +49,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
     try (SolrClient client =
         new HttpSolrClient.Builder(getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new RequestWriter())
+            .withRequestWriter(new XMLRequestWriter())
             .build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
@@ -61,7 +61,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
     try (SolrClient client =
         new HttpSolrClient.Builder(getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new BinaryRequestWriter())
+            .withRequestWriter(new JavaBinRequestWriter())
             .build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
@@ -73,7 +73,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
     try (SolrClient client =
         new HttpSolrClient.Builder(getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new BinaryRequestWriter())
+            .withRequestWriter(new JavaBinRequestWriter())
             .build()) {
       client.deleteByQuery("*:*"); // delete everything!
       final int[] counter = new int[1];

@@ -232,7 +232,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
       // We reserved the slot, so we do the work
       V value = mappingFunction.apply(key);
       future.complete(value); // This will update the weight and expiration
-      recordRamBytes(key, null, value);
+      recordRamBytes(key, value);
       inserts.increment();
       return value;
     } catch (Error | RuntimeException | IOException e) {
@@ -262,7 +262,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
             if (value == null) {
               return null;
             }
-            recordRamBytes(key, null, value);
+            recordRamBytes(key, value);
             inserts.increment();
             return value;
           });
@@ -275,30 +275,34 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   public V put(K key, V val) {
     inserts.increment();
     V old = cache.asMap().put(key, val);
-    recordRamBytes(key, old, val);
+    // ramBytes decrement for `old` happens via #onRemoval
+    if (val != old) {
+      // NOTE: this is conditional on `val != old` in order to work around a
+      //  behavior in the Caffeine library: where there is reference equality
+      //  between `val` and `old`, caffeine does _not_ invoke RemovalListener,
+      //  so the entry is not decremented for the replaced value (hence we
+      //  don't need to increment ram bytes for the entry either).
+      recordRamBytes(key, val);
+    }
     return old;
   }
 
   /**
-   * Update the estimate of used memory
+   * Update the estimate of used memory.
+   *
+   * <p>NOTE: old value (in the event of replacement) adjusts {@link #ramBytes} via {@link
+   * #onRemoval(Object, Object, RemovalCause)}
    *
    * @param key the cache key
-   * @param oldValue the old cached value to decrement estimate (can be null)
    * @param newValue the new cached value to increment estimate
    */
-  private void recordRamBytes(K key, V oldValue, V newValue) {
+  private void recordRamBytes(K key, V newValue) {
     ramBytes.add(
         RamUsageEstimator.sizeOfObject(newValue, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
-    if (oldValue == null) {
-      ramBytes.add(
-          RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
-      ramBytes.add(RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);
-      if (async) ramBytes.add(RAM_BYTES_PER_FUTURE);
-    } else {
-      ramBytes.add(
-          -RamUsageEstimator.sizeOfObject(
-              oldValue, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
-    }
+    ramBytes.add(
+        RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
+    ramBytes.add(RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);
+    if (async) ramBytes.add(RAM_BYTES_PER_FUTURE);
   }
 
   @Override

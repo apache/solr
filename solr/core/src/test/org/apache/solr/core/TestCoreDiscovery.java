@@ -22,24 +22,26 @@ import static org.apache.solr.core.CoreContainer.LOAD_COMPLETE;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.StringContains.containsString;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.RetryUtil;
 import org.junit.After;
+import org.junit.AssumptionViolatedException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -88,23 +90,25 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     return props;
   }
 
-  private void addCoreWithProps(Properties stockProps, File propFile) throws Exception {
-    if (!propFile.getParentFile().exists()) {
-      propFile.getParentFile().mkdirs();
+  private void addCoreWithProps(Properties stockProps, Path propFile) throws Exception {
+    if (!Files.exists(propFile.getParent())) {
+      Files.createDirectories(propFile.getParent());
     }
-    try (Writer out = Files.newBufferedWriter(propFile.toPath(), StandardCharsets.UTF_8)) {
+    try (Writer out = Files.newBufferedWriter(propFile, StandardCharsets.UTF_8)) {
       stockProps.store(out, null);
     }
-    addConfFiles(propFile.toPath().getParent().resolve("conf"));
+    addConfFiles(propFile.getParent().resolve("conf"));
   }
 
   private void addCoreWithProps(String name, Properties stockProps) throws Exception {
-
-    File propFile =
-        new File(
-            new File(solrHomeDirectory.toFile(), name), CorePropertiesLocator.PROPERTIES_FILENAME);
-    File parent = propFile.getParentFile();
-    assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
+    Path propFile =
+        solrHomeDirectory.resolve(name).resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
+    Path parent = propFile.getParent();
+    try {
+      Files.createDirectories(parent);
+    } catch (Exception e) {
+      throw new IOException("Failed to mkdirs for " + parent.toAbsolutePath());
+    }
     addCoreWithProps(stockProps, propFile);
   }
 
@@ -189,13 +193,11 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         Properties persistable = cd1.getPersistableUserProperties();
         persistable.setProperty("bogusprop", "bogusval");
         cc.getCoresLocator().persist(cc, cd1);
-        File propFile =
-            new File(
-                new File(solrHomeDirectory.toFile(), "core1"),
-                CorePropertiesLocator.PROPERTIES_FILENAME);
+        Path propFile =
+            solrHomeDirectory.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
         Properties newProps = new Properties();
         try (InputStreamReader is =
-            new InputStreamReader(new FileInputStream(propFile), StandardCharsets.UTF_8)) {
+            new InputStreamReader(Files.newInputStream(propFile), StandardCharsets.UTF_8)) {
           newProps.load(is);
         }
         // is it there?
@@ -237,7 +239,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     // Sanity check that a core did get loaded
     addCoreWithProps("corep2", makeCoreProperties("corep2", false, true));
 
-    Path coreP1PropFile = Paths.get(solrHomeDirectory.toString(), "corep1", "core.properties");
+    Path coreP1PropFile = solrHomeDirectory.resolve("corep1").resolve("core.properties");
     assertTrue(
         "Core.properties file should exist for before core load failure core corep1",
         Files.exists(coreP1PropFile));
@@ -254,13 +256,13 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
           "Core.properties file should still exist for core corep1", Files.exists(coreP1PropFile));
 
       // Creating a core successfully should create a core.properties file
-      Path corePropFile = Paths.get(solrHomeDirectory.toString(), "corep3", "core.properties");
+      Path corePropFile = solrHomeDirectory.resolve("corep3").resolve("core.properties");
       assertFalse("Should not be a properties file yet", Files.exists(corePropFile));
       cc.create("corep3", Map.of("configSet", "minimal"));
       assertTrue("Should be a properties file for newly created core", Files.exists(corePropFile));
 
       // Failing to create a core should _not_ leave a core.properties file hanging around.
-      corePropFile = Paths.get(solrHomeDirectory.toString(), "corep4", "core.properties");
+      corePropFile = solrHomeDirectory.resolve("corep4").resolve("core.properties");
       assertFalse("Should not be a properties file yet for corep4", Files.exists(corePropFile));
 
       thrown =
@@ -283,7 +285,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
       // Finally, let's determine that this create path operation also leaves a prop file.
 
-      corePropFile = Paths.get(solrHomeDirectory.toString(), "corep5", "core.properties");
+      corePropFile = solrHomeDirectory.resolve("corep5").resolve("core.properties");
       assertFalse("Should not be a properties file yet for corep5", Files.exists(corePropFile));
 
       cc.create("corep5", Map.of("configSet", "minimal"));
@@ -394,25 +396,29 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         "Wrong exception thrown on duplicate core names",
         message.contains("Found multiple cores with the name [core1]"));
     assertTrue(
-        File.separator + "core1 should have been mentioned in the message: " + message,
-        message.contains(File.separator + "core1"));
+        FileSystems.getDefault().getSeparator()
+            + "core1 should have been mentioned in the message: "
+            + message,
+        message.contains(FileSystems.getDefault().getSeparator() + "core1"));
     assertTrue(
-        File.separator + "core2 should have been mentioned in the message:" + message,
-        message.contains(File.separator + "core2"));
+        FileSystems.getDefault().getSeparator()
+            + "core2 should have been mentioned in the message:"
+            + message,
+        message.contains(FileSystems.getDefault().getSeparator() + "core2"));
   }
 
   @Test
   public void testAlternateCoreDir() throws Exception {
 
-    File alt = createTempDir().toFile();
+    Path alt = createTempDir();
 
-    setMeUp(alt.getAbsolutePath());
+    setMeUp(alt.toAbsolutePath().toString());
     addCoreWithProps(
         makeCoreProperties("core1", false, true, "dataDir=core1"),
-        new File(alt, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
+        alt.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
     addCoreWithProps(
         makeCoreProperties("core2", false, false, "dataDir=core2"),
-        new File(alt, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
+        alt.resolve("core2").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
         SolrCore core2 = cc.getCore("core2")) {
@@ -435,22 +441,17 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         solrHomeDirectory
             .resolve(relative)
             .resolve("core1")
-            .resolve(CorePropertiesLocator.PROPERTIES_FILENAME)
-            .toFile());
+            .resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
     addCoreWithProps(
         makeCoreProperties("core2", false, false, "dataDir=core2"),
         solrHomeDirectory
             .resolve(relative)
             .resolve("core2")
-            .resolve(CorePropertiesLocator.PROPERTIES_FILENAME)
-            .toFile());
+            .resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
     // one core *not* under the relative directory
     addCoreWithProps(
         makeCoreProperties("core0", false, true, "datadir=core0"),
-        solrHomeDirectory
-            .resolve("core0")
-            .resolve(CorePropertiesLocator.PROPERTIES_FILENAME)
-            .toFile());
+        solrHomeDirectory.resolve("core0").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
@@ -470,14 +471,14 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testNoCoreDir() throws Exception {
-    File noCoreDir = createTempDir().toFile();
-    setMeUp(noCoreDir.getAbsolutePath());
+    Path noCoreDir = createTempDir();
+    setMeUp(noCoreDir.toAbsolutePath().toString());
     addCoreWithProps(
         makeCoreProperties("core1", false, true),
-        new File(noCoreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
+        noCoreDir.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
     addCoreWithProps(
         makeCoreProperties("core2", false, false),
-        new File(noCoreDir, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
+        noCoreDir.resolve("core2").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
         SolrCore core2 = cc.getCore("core2")) {
@@ -490,21 +491,29 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testCoreDirCantRead() throws Exception {
-    File coreDir = solrHomeDirectory.toFile();
-    setMeUp(coreDir.getAbsolutePath());
+    Path coreDir = solrHomeDirectory;
+    setMeUp(coreDir.toAbsolutePath().toString());
     addCoreWithProps(
         makeCoreProperties("core1", false, true),
-        new File(coreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
+        coreDir.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
     // Ensure that another core is opened successfully
     addCoreWithProps(
         makeCoreProperties("core2", false, false, "dataDir=core2"),
-        new File(coreDir, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
+        coreDir.resolve("core2").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
-    File toSet = new File(coreDir, "core1");
-    assumeTrue(
-        "Cannot make " + toSet + " non-readable. Test aborted.", toSet.setReadable(false, false));
-    assumeFalse("Appears we are a super user, skip test", toSet.canRead());
+    Path toSet = coreDir.resolve("core1");
+    try {
+      Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
+      perms.remove(PosixFilePermission.OWNER_READ);
+      perms.remove(PosixFilePermission.GROUP_READ);
+      perms.remove(PosixFilePermission.OTHERS_READ);
+      Files.setAttribute(toSet, "posix:permissions", perms);
+    } catch (UnsupportedOperationException e) {
+      throw new AssumptionViolatedException(
+          "Cannot make " + toSet + " non-readable. Test aborted.", e);
+    }
+    assumeFalse("Appears we are a super user, skip test", Files.isReadable(toSet));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
         SolrCore core2 = cc.getCore("core2")) {
@@ -514,28 +523,43 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc.shutdown();
     }
     // So things can be cleaned up by the framework!
-    toSet.setReadable(true, false);
+    Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
+    perms.add(PosixFilePermission.OWNER_READ);
+    perms.add(PosixFilePermission.GROUP_READ);
+    perms.add(PosixFilePermission.OTHERS_READ);
+    Files.setAttribute(toSet, "posix:permissions", perms);
   }
 
   @Test
   public void testNonCoreDirCantRead() throws Exception {
-    File coreDir = solrHomeDirectory.toFile();
-    setMeUp(coreDir.getAbsolutePath());
+    Path coreDir = solrHomeDirectory;
+    setMeUp(coreDir.toAbsolutePath().toString());
     addCoreWithProps(
         makeCoreProperties("core1", false, true),
-        new File(coreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
+        coreDir.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
     addCoreWithProps(
         makeCoreProperties("core2", false, false, "dataDir=core2"),
-        new File(coreDir, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
+        coreDir.resolve("core2").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
-    File toSet = new File(solrHomeDirectory.toFile(), "cantReadDir");
-    assertTrue(
-        "Should have been able to make directory '" + toSet.getAbsolutePath() + "' ",
-        toSet.mkdirs());
-    assumeTrue(
-        "Cannot make " + toSet + " non-readable. Test aborted.", toSet.setReadable(false, false));
-    assumeFalse("Appears we are a super user, skip test", toSet.canRead());
+    Path toSet = solrHomeDirectory.resolve("cantReadDir");
+    try {
+      Files.createDirectories(toSet);
+    } catch (IOException e) {
+      throw new RuntimeException(
+          "Should have been able to make directory '" + toSet.toAbsolutePath() + "' ", e);
+    }
+    try {
+      Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
+      perms.remove(PosixFilePermission.OWNER_READ);
+      perms.remove(PosixFilePermission.GROUP_READ);
+      perms.remove(PosixFilePermission.OTHERS_READ);
+      Files.setAttribute(toSet, "posix:permissions", perms);
+    } catch (UnsupportedOperationException e) {
+      throw new AssumptionViolatedException(
+          "Cannot make " + toSet + " non-readable. Test aborted.", e);
+    }
+    assumeFalse("Appears we are a super user, skip test", Files.isReadable(toSet));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
         SolrCore core2 = cc.getCore("core2")) {
@@ -546,23 +570,41 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc.shutdown();
     }
     // So things can be cleaned up by the framework!
-    toSet.setReadable(true, false);
+    Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
+    perms.add(PosixFilePermission.OWNER_READ);
+    perms.add(PosixFilePermission.GROUP_READ);
+    perms.add(PosixFilePermission.OTHERS_READ);
+    Files.setAttribute(toSet, "posix:permissions", perms);
   }
 
   @Test
   public void testFileCantRead() throws Exception {
-    File coreDir = solrHomeDirectory.toFile();
-    setMeUp(coreDir.getAbsolutePath());
+    Path coreDir = solrHomeDirectory;
+    setMeUp(coreDir.toAbsolutePath().toString());
     addCoreWithProps(
         makeCoreProperties("core1", false, true),
-        new File(coreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
+        coreDir.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
-    File toSet = new File(solrHomeDirectory.toFile(), "cantReadFile");
-    assertTrue(
-        "Should have been able to make file '" + toSet.getAbsolutePath() + "' ",
-        toSet.createNewFile());
-    assumeTrue(
-        "Cannot make " + toSet + " non-readable. Test aborted.", toSet.setReadable(false, false));
+    Path toSet = solrHomeDirectory.resolve("cantReadFile");
+
+    try {
+      Files.createFile(toSet);
+    } catch (IOException e) {
+      throw new RuntimeException(
+          "Should have been able to make file '" + toSet.toAbsolutePath() + "' ", e);
+    }
+
+    try {
+      Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
+      perms.remove(PosixFilePermission.OWNER_READ);
+      perms.remove(PosixFilePermission.GROUP_READ);
+      perms.remove(PosixFilePermission.OTHERS_READ);
+      Files.setAttribute(toSet, "posix:permissions", perms);
+    } catch (UnsupportedOperationException e) {
+      throw new AssumptionViolatedException(
+          "Cannot make " + toSet + " non-readable. Test aborted.", e);
+    }
+
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1")) {
       assertNotNull(core1); // Should still be able to create core despite r/o file.
@@ -570,13 +612,17 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc.shutdown();
     }
     // So things can be cleaned up by the framework!
-    toSet.setReadable(true, false);
+    Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
+    perms.add(PosixFilePermission.OWNER_READ);
+    perms.add(PosixFilePermission.GROUP_READ);
+    perms.add(PosixFilePermission.OTHERS_READ);
+    Files.setAttribute(toSet, "posix:permissions", perms);
   }
 
   @Test
   public void testSolrHomeDoesntExist() throws Exception {
-    File homeDir = solrHomeDirectory.toFile();
-    IOUtils.rm(homeDir.toPath());
+    Path homeDir = solrHomeDirectory;
+    IOUtils.rm(homeDir);
     CoreContainer cc = null;
     try {
       cc = init();
@@ -593,16 +639,24 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testSolrHomeNotReadable() throws Exception {
-    File homeDir = solrHomeDirectory.toFile();
-    setMeUp(homeDir.getAbsolutePath());
+    Path homeDir = solrHomeDirectory;
+    setMeUp(homeDir.toAbsolutePath().toString());
     addCoreWithProps(
         makeCoreProperties("core1", false, true),
-        new File(homeDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
+        homeDir.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
-    assumeTrue(
-        "Cannot make " + homeDir + " non-readable. Test aborted.",
-        homeDir.setReadable(false, false));
-    assumeFalse("Appears we are a super user, skip test", homeDir.canRead());
+    try {
+      Set<PosixFilePermission> perms = Files.getPosixFilePermissions(homeDir);
+      perms.remove(PosixFilePermission.OWNER_READ);
+      perms.remove(PosixFilePermission.GROUP_READ);
+      perms.remove(PosixFilePermission.OTHERS_READ);
+      Files.setAttribute(homeDir, "posix:permissions", perms);
+    } catch (UnsupportedOperationException e) {
+      throw new AssumptionViolatedException(
+          "Cannot make " + homeDir + " non-readable. Test aborted.", e);
+    }
+
+    assumeFalse("Appears we are a super user, skip test", Files.isReadable(homeDir));
     Exception thrown =
         expectThrows(
             Exception.class,
@@ -616,7 +670,11 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
             });
     assertThat(thrown.getMessage(), containsString("Error reading core root directory"));
     // So things can be cleaned up by the framework!
-    homeDir.setReadable(true, false);
+    Set<PosixFilePermission> perms = Files.getPosixFilePermissions(homeDir);
+    perms.add(PosixFilePermission.OWNER_READ);
+    perms.add(PosixFilePermission.GROUP_READ);
+    perms.add(PosixFilePermission.OTHERS_READ);
+    Files.setAttribute(homeDir, "posix:permissions", perms);
   }
 
   // For testing whether finding a solr.xml overrides looking at solr.properties
@@ -624,7 +682,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       "<solr> "
           + "<int name=\"transientCacheSize\">2</int> "
           + "<str name=\"configSetBaseDir\">"
-          + Paths.get(TEST_HOME()).resolve("configsets")
+          + TEST_HOME().resolve("configsets")
           + "</str>"
           + "<solrcloud> "
           + "<int name=\"zkClientTimeout\">20</int> "

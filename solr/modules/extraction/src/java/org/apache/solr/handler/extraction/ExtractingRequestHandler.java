@@ -16,8 +16,8 @@
  */
 package org.apache.solr.handler.extraction;
 
-import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Path;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrCore;
@@ -60,7 +60,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
           config = new TikaConfig(is);
         }
       } else {
-        File configFile = new File(tikaConfigLoc);
+        Path configFile = Path.of(tikaConfigLoc);
         if (configFile.isAbsolute()) {
           config = new TikaConfig(configFile);
         } else { // in conf/

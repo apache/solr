@@ -70,7 +70,7 @@ public class MemsetEvaluator extends RecursiveEvaluator {
     }
 
     if (null == colsExpression
-        || !(colsExpression.getParameter() instanceof StreamExpressionValue)) {
+        || !(colsExpression.getParameter() instanceof StreamExpressionValue colsExpressionValue)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -79,7 +79,7 @@ public class MemsetEvaluator extends RecursiveEvaluator {
     }
 
     if (null == varsExpression
-        || !(varsExpression.getParameter() instanceof StreamExpressionValue)) {
+        || !(varsExpression.getParameter() instanceof StreamExpressionValue varsExpressionValue)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -96,10 +96,6 @@ public class MemsetEvaluator extends RecursiveEvaluator {
 
     in = factory.constructStream(streamExpressions.get(0));
 
-    StreamExpressionValue colsExpressionValue =
-        (StreamExpressionValue) colsExpression.getParameter();
-    StreamExpressionValue varsExpressionValue =
-        (StreamExpressionValue) varsExpression.getParameter();
     String colsString = colsExpressionValue.getValue();
     String varsString = varsExpressionValue.getValue();
 

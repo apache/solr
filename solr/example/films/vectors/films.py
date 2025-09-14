@@ -15,13 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import json
 import csv
 from lxml import etree
 from sentence_transformers import SentenceTransformer
 
+FILMS_MODEL_NEW_DIMENSION = int(os.getenv("FILMS_MODEL_NEW_DIMENSION", "10"))
+
 PATH_FILMS_DATASET      = "../films.json"
-PATH_FILMS_MODEL        = "./models/films-model-size_10"
+PATH_FILMS_MODEL        = f"./models/films-model-size_{FILMS_MODEL_NEW_DIMENSION}"
 PATH_FILMS_VECTORS_JSON = "./data/films-vectors.json"
 PATH_FILMS_VECTORS_XML  = "./data/films-vectors.xml"
 PATH_FILMS_VECTORS_CSV  = "./data/films-vectors.csv"

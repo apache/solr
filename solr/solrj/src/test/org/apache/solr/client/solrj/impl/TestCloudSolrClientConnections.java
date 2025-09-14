@@ -60,7 +60,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
   @Test
   public void testCloudClientUploads() throws Exception {
 
-    Path configPath = getFile("solrj").toPath().resolve("solr/configsets/configset-2/conf");
+    Path configPath = getFile("solrj").resolve("solr/configsets/configset-2/conf");
 
     MiniSolrCloudCluster cluster =
         new MiniSolrCloudCluster(0, createTempDir(), JettyConfig.builder().build());

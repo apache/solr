@@ -146,7 +146,7 @@ The `per` metric calculates a percentile
 for a numeric column and can be specified multiple times in the same facet function.
 * `tiered`: (Default true) Flag governing whether the `facet` stream should parallelize JSON Facet requests to multiple Solr collections using a `plist` expression; this option only applies if the `collection` is an alias backed by multiple collections.
 If `tiered` is enabled, then a `rollup` expression is used internally to aggregate the metrics from multiple `facet` expressions into a single result; only `count`, `min`, `max`, `sum`, and `avg` metrics are supported.
-Client applications can disable this globally by setting the `solr.facet.stream.tiered=false` system property.
+Client applications can disable this globally by setting the `solr.streamingexpressions.facet.tiered.enabled=false` system property.
 
 === facet Syntax
 
@@ -225,7 +225,7 @@ This can be used to retrieve the features if they are stored in a SolrCloud coll
 * `field`: (Mandatory) The text field to extract the features from.
 * `outcome`: (Mandatory) The field that defines the class, positive or negative
 * `numTerms`: (Mandatory) How many feature terms to extract.
-* `positiveLabel`: (defaults to 1) The value in the outcome field that defines a postive outcome.
+* `positiveLabel`: (defaults to 1) The value in the outcome field that defines a positive outcome.
 
 === features Syntax
 

@@ -41,6 +41,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -285,7 +286,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     verifySecurityStatus(cl, url, objPath, expected, count, makeBasicAuthHeader(user, pwd));
   }
 
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected static void verifySecurityStatus(
       HttpClient cl, String url, String objPath, Object expected, int count, String authHeader)
       throws IOException, InterruptedException {
@@ -297,18 +298,15 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       if (authHeader != null) setAuthorizationHeader(get, authHeader);
       HttpResponse rsp = cl.execute(get);
       s = EntityUtils.toString(rsp.getEntity());
-      @SuppressWarnings({"rawtypes"})
       Map m = null;
       try {
         m = (Map) Utils.fromJSONString(s);
       } catch (Exception e) {
         fail("Invalid json " + s);
       }
-      Utils.consumeFully(rsp.getEntity());
+      HttpClientUtil.consumeFully(rsp.getEntity());
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
-      if (expected instanceof Predicate) {
-        @SuppressWarnings({"rawtypes"})
-        Predicate predicate = (Predicate) expected;
+      if (expected instanceof Predicate predicate) {
         if (predicate.test(actual)) {
           success = true;
           break;

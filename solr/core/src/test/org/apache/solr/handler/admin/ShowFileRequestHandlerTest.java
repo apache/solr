@@ -18,17 +18,19 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -50,10 +52,15 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
+  private GenericSolrRequest createShowFileRequest(SolrParams params) {
+    return new GenericSolrRequest(
+            SolrRequest.METHOD.GET, "/admin/file", SolrRequestType.ADMIN, params)
+        .setRequiresCollection(true);
+  }
+
   public void test404ViaHttp() {
     SolrClient client = getSolrClient();
-    QueryRequest request = new QueryRequest(params("file", "does-not-exist-404.txt"));
-    request.setPath("/admin/file");
+    var request = createShowFileRequest(params("file", "does-not-exist-404.txt"));
     SolrException e = expectThrows(SolrException.class, () -> request.process(client));
     assertEquals(404, e.code());
   }
@@ -78,10 +85,8 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     SolrClient client = getSolrClient();
     // assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends
     // SolrTestCaseJ4
-    QueryRequest request = new QueryRequest();
-    request.setPath("/admin/file");
-    QueryResponse resp = request.process(client);
-    assertEquals(0, resp.getStatus());
+    var request = createShowFileRequest(new ModifiableSolrParams());
+    var resp = request.process(client);
     assertTrue(((NamedList) resp.getResponse().get("files")).size() > 0); // some files
   }
 
@@ -89,8 +94,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     SolrClient client = getSolrClient();
     // assertQ(req("qt", "/admin/file"));
     // TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
-    QueryRequest request = new QueryRequest(params("file", "managed-schema.xml"));
-    request.setPath("/admin/file");
+    var request = createShowFileRequest(params("file", "managed-schema.xml"));
     final AtomicBoolean readFile = new AtomicBoolean();
     request.setResponseParser(
         new ResponseParser() {
@@ -101,18 +105,15 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
           }
 
           @Override
-          public NamedList<Object> processResponse(InputStream body, String encoding) {
-            try {
-              if (body.read() >= 0) readFile.set(true);
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
+          public NamedList<Object> processResponse(InputStream body, String encoding)
+              throws IOException {
+            if (body.read() >= 0) readFile.set(true);
             return null;
           }
 
           @Override
-          public NamedList<Object> processResponse(Reader reader) {
-            throw new UnsupportedOperationException("TODO unimplemented"); // TODO
+          public Set<String> getContentTypes() {
+            return Set.of(); // don't enforce
           }
         });
 
@@ -146,44 +147,41 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
   public void testIllegalContentType() {
     SolrClient client = getSolrClient();
-    QueryRequest request =
-        new QueryRequest(params("file", "managed-schema", "contentType", "not/known"));
-    request.setPath("/admin/file");
-    request.setResponseParser(new NoOpResponseParser());
+    var request =
+        createShowFileRequest(params("file", "managed-schema", "contentType", "not/known"));
+    request.setResponseParser(new NoOpResponseParser("xml"));
     expectThrows(SolrException.class, () -> client.request(request));
   }
 
   public void testAbsoluteFilename() {
     SolrClient client = getSolrClient();
-    final QueryRequest request =
-        new QueryRequest(params("file", "/etc/passwd", "contentType", "text/plain; charset=utf-8"));
-    request.setPath("/admin/file"); // absolute path not allowed
-    request.setResponseParser(new NoOpResponseParser());
+    final var request =
+        createShowFileRequest(
+            params("file", "/etc/passwd", "contentType", "text/plain; charset=utf-8"));
+    request.setResponseParser(new NoOpResponseParser("xml"));
     expectThrows(SolrException.class, () -> client.request(request));
   }
 
   public void testEscapeConfDir() {
     SolrClient client = getSolrClient();
-    final QueryRequest request =
-        new QueryRequest(
+    final var request =
+        createShowFileRequest(
             params("file", "../../solr.xml", "contentType", "application/xml; charset=utf-8"));
-    request.setPath("/admin/file");
-    request.setResponseParser(new NoOpResponseParser());
+    request.setResponseParser(new NoOpResponseParser("xml"));
     var ex = expectThrows(SolrException.class, () -> client.request(request));
-    assertTrue(ex instanceof BaseHttpSolrClient.RemoteSolrException);
+    assertTrue(ex instanceof SolrClient.RemoteSolrException);
   }
 
   public void testPathTraversalFilename() {
     SolrClient client = getSolrClient();
-    final QueryRequest request =
-        new QueryRequest(
+    final var request =
+        createShowFileRequest(
             params(
                 "file",
                 "../../../../../../etc/passwd",
                 "contentType",
                 "text/plain; charset=utf-8"));
-    request.setPath("/admin/file");
-    request.setResponseParser(new NoOpResponseParser());
+    request.setResponseParser(new NoOpResponseParser("xml"));
     expectThrows(SolrException.class, () -> client.request(request));
   }
 

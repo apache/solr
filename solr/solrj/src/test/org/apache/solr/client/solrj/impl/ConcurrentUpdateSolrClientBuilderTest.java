@@ -71,7 +71,7 @@ public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
       if (!(e.getCause() instanceof SocketTimeoutException)) {
         throw e;
       }
-      // else test passses
+      // else test passes
     }
   }
 

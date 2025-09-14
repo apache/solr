@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -79,9 +80,9 @@ public class JWTIssuerConfig {
   private Collection<X509Certificate> trustedCerts;
 
   public static boolean ALLOW_OUTBOUND_HTTP =
-      Boolean.parseBoolean(EnvUtils.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
+      EnvUtils.getPropertyAsBool("solr.auth.jwt.outbound.http.enabled", false);
   public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG =
-      "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.";
+      "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.outbound.http.enabled=true to allow HTTP for test purposes.";
   private static final String DEFAULT_AUTHORIZATION_FLOW =
       "implicit"; // 'implicit' to be deprecated
   private static final Set<String> VALID_AUTHORIZATION_FLOWS =
@@ -118,7 +119,7 @@ public class JWTIssuerConfig {
     }
     if (wellKnownUrl != null) {
       try {
-        wellKnownDiscoveryConfig = fetchWellKnown(new URL(wellKnownUrl));
+        wellKnownDiscoveryConfig = fetchWellKnown(URI.create(wellKnownUrl).toURL());
       } catch (MalformedURLException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -469,7 +470,7 @@ public class JWTIssuerConfig {
     private HttpsJwks create(String url) {
       final URL jwksUrl;
       try {
-        jwksUrl = new URL(url);
+        jwksUrl = URI.create(url).toURL();
         checkAllowOutboundHttpConnections(PARAM_JWKS_URL, jwksUrl);
       } catch (MalformedURLException e) {
         throw new SolrException(
@@ -506,7 +507,7 @@ public class JWTIssuerConfig {
     }
 
     public static WellKnownDiscoveryConfig parse(String urlString) throws MalformedURLException {
-      return parse(new URL(urlString), null);
+      return parse(URI.create(urlString).toURL(), null);
     }
 
     /**

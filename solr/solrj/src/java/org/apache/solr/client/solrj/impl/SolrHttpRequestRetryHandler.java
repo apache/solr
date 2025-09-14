@@ -51,7 +51,7 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
   /** the number of times a method will be retried */
   private final int retryCount;
 
-  private final Set<Class<? extends IOException>> nonRetriableClasses;
+  private final Set<Class<? extends IOException>> nonRetryableClasses;
 
   /**
    * Create the request retry handler using the specified IOException classes
@@ -64,14 +64,14 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
       final int retryCount, final Collection<Class<? extends IOException>> clazzes) {
     super();
     this.retryCount = retryCount;
-    this.nonRetriableClasses = new HashSet<>();
+    this.nonRetryableClasses = new HashSet<>();
     for (final Class<? extends IOException> clazz : clazzes) {
-      this.nonRetriableClasses.add(clazz);
+      this.nonRetryableClasses.add(clazz);
     }
   }
 
   /**
-   * Create the request retry handler using the following list of non-retriable IOException classes:
+   * Create the request retry handler using the following list of non-retryable IOException classes:
    * <br>
    *
    * <ul>
@@ -96,7 +96,7 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
 
   /**
    * Create the request retry handler with a retry count of 3, requestSentRetryEnabled false and
-   * using the following list of non-retriable IOException classes: <br>
+   * using the following list of non-retryable IOException classes: <br>
    *
    * <ul>
    *   <li>InterruptedIOException
@@ -118,9 +118,9 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
       return false;
     }
 
-    if (!isRetriable(exception)) {
+    if (!isRetryable(exception)) {
       if (log.isDebugEnabled()) {
-        log.debug("Do not retry, non retriable class {}", exception.getClass().getName());
+        log.debug("Do not retry, non retryable class {}", exception.getClass().getName());
       }
       return false;
     }
@@ -142,7 +142,7 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
     return false;
   }
 
-  private boolean isRetriable(IOException exception) {
+  private boolean isRetryable(IOException exception) {
     // Workaround for "recv failed" issue on hard-aborted sockets on Windows
     // (and other operating systems, possibly).
     // https://issues.apache.org/jira/browse/SOLR-13778
@@ -152,8 +152,8 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
     }
 
     // Fast check for exact class followed by slow-check with instanceof.
-    if (nonRetriableClasses.contains(exception.getClass())
-        || nonRetriableClasses.stream()
+    if (nonRetryableClasses.contains(exception.getClass())
+        || nonRetryableClasses.stream()
             .anyMatch(rejectException -> rejectException.isInstance(exception))) {
       return false;
     }
@@ -167,7 +167,7 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
 
   protected boolean handleAsIdempotent(final HttpClientContext context) {
     String method = context.getRequest().getRequestLine().getMethod();
-    // do not retry admin requests, even if they are GET as they are not idempotent
+    // do not retry admin requests, even if they are GET requests as they are not idempotent
     if (context.getRequest().getRequestLine().getUri().startsWith("/admin/")) {
       log.debug("Do not retry, this is an admin request");
       return false;

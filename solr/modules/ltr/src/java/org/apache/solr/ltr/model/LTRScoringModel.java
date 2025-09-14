@@ -215,8 +215,7 @@ public abstract class LTRScoringModel implements Accountable {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (!(obj instanceof LTRScoringModel)) return false;
-    final LTRScoringModel other = (LTRScoringModel) obj;
+    if (!(obj instanceof LTRScoringModel other)) return false;
     return Objects.equals(features, other.features)
         && Objects.equals(norms, other.norms)
         && Objects.equals(name, other.name)

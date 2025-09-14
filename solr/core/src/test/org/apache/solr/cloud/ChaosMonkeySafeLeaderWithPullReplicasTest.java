@@ -255,7 +255,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     List<Integer> numShardsNumReplicas = new ArrayList<>(2);
     numShardsNumReplicas.add(1);
     numShardsNumReplicas.add(1 + getPullReplicaCount());
-    checkForCollection("testcollection", numShardsNumReplicas, null);
+    checkForCollection("testcollection", numShardsNumReplicas);
   }
 
   private void tryDelete() throws Exception {

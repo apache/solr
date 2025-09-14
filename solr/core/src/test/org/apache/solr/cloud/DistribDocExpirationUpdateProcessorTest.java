@@ -16,9 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static java.util.Collections.singletonList;
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
@@ -43,11 +40,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.security.BasicAuthPlugin;
-import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.apache.solr.update.processor.DocExpirationUpdateProcessorFactory;
+import org.apache.solr.util.SecurityJson;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Test;
@@ -91,43 +86,21 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
     COLLECTION = "expiring";
     if (security) {
-      USER = "solr";
-      PASS = "SolrRocksAgain";
+      USER = SecurityJson.USER;
+      PASS = SecurityJson.PASS;
       COLLECTION += "_secure";
 
-      final String SECURITY_JSON =
-          Utils.toJSONString(
-              Map.of(
-                  "authorization",
-                  Map.of(
-                      "class",
-                      RuleBasedAuthorizationPlugin.class.getName(),
-                      "user-role",
-                      Map.of(USER, "admin"),
-                      "permissions",
-                      singletonList(Map.of("name", "all", "role", "admin"))),
-                  "authentication",
-                  Map.of(
-                      "class",
-                      BasicAuthPlugin.class.getName(),
-                      "blockUnknown",
-                      true,
-                      "credentials",
-                      Map.of(USER, getSaltedHashedValue(PASS)))));
-      b.withSecurityJson(SECURITY_JSON);
+      b.withSecurityJson(SecurityJson.SIMPLE);
     }
     b.configure();
 
     setAuthIfNeeded(CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2))
         .process(cluster.getSolrClient());
 
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            COLLECTION,
-            DEFAULT_TIMEOUT,
-            TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    waitForState(
+        "Waiting for collection creation",
+        COLLECTION,
+        (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
   }
 
   @Test
@@ -408,8 +381,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
     @Override
     public boolean equals(Object other) {
-      if (other instanceof ReplicaData) {
-        ReplicaData that = (ReplicaData) other;
+      if (other instanceof ReplicaData that) {
         return this.shardName.equals(that.shardName)
             && this.coreName.equals(that.coreName)
             && (this.indexVersion == that.indexVersion)

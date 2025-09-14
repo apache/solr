@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<resources>
+  <!-- Actions (action) -->
+  <string name="action_connect">Connect</string>
+  <string name="action_go_back">Go Back</string>
+  <string name="action_logout">Logout</string>
+  <string name="action_sign_in_with_credentials">Sign In with Credentials</string>
+
+  <!-- Content Descriptions (cd) -->
+  <string name="cd_back_navigation">Back Navigation</string>
+  <string name="cd_solr_logo">Solr Logo</string>
+
+  <!-- Descriptions (desc) -->
+  <string name="desc_to_get_started">To get started, please provide a Solr host URL:</string>
+  <string name="desc_solr_instance_with_auth">The Solr instance %1$s has enabled authentication.</string>
+  <string name="desc_sign_in_with_credentials_to_realm">To authenticate you may use your credentials for the realm %1$s.</string>
+
+  <!-- Errors (error) -->
+  <string name="error_invalid_url">The provided URL is invalid.</string>
+  <string name="error_solr_host_not_found">Solr host could not be found.</string>
+  <string name="error_unknown">An unknown error occurred.</string>
+  <string name="error_invalid_credentials">Invalid credentials. Please try again.</string>
+
+  <!-- Navigation (nav) -->
+  <string name="nav_cluster">Cluster</string>
+  <string name="nav_collections">Collections</string>
+  <string name="nav_configsets">Configsets</string>
+  <string name="nav_dashboard">Dashboard</string>
+  <string name="nav_environment">Environment</string>
+  <string name="nav_logging">Logging</string>
+  <string name="nav_metrics">Metrics</string>
+  <string name="nav_queries_and_operations">Queries &amp; Operations</string>
+  <string name="nav_security">Security</string>
+  <string name="nav_thread_dump">Thread Dump</string>
+
+  <!-- Placeholders (ph) -->
+  <string name="ph_solr_url">http://127.0.0.1:8983/</string>
+
+  <!-- Titles (title) -->
+  <string name="title_welcome_to_solr">Welcome to Solr Admin UI</string>
+  <string name="title_sign_in_to_solr">Sign In to Solr</string>
+
+  <!-- General Text -->
+  <string name="authenticating">Authenticating...</string>
+  <string name="community">Community</string>
+  <string name="documentation">Documentation</string>
+  <string name="irc">IRC</string>
+  <string name="issue_tracker">Issue Tracker</string>
+  <string name="slack">Slack</string>
+  <string name="solr_query_syntax">Solr Query Syntax</string>
+  <string name="support">Support</string>
+  <string name="connecting">Connecting...</string>
+
+  <!-- Input Labels -->
+  <string name="label_username">Username</string>
+  <string name="label_password">Password</string>
+
+  <!-- Uncategorized -->
+</resources>

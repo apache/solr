@@ -30,7 +30,7 @@ public class SolrException extends RuntimeException {
   private final Map<String, String> mdcContext;
 
   /**
-   * This list of valid HTTP Status error codes that Solr may return in the case of a "Server Side"
+   * This list of valid HTTP Status error codes that Solr may return when there is a "Server Side"
    * error.
    *
    * @since solr 1.2
@@ -95,7 +95,7 @@ public class SolrException extends RuntimeException {
 
   /**
    * The HTTP Status code associated with this Exception. For SolrExceptions thrown by Solr "Server
-   * Side", this should valid {@link ErrorCode}, however client side exceptions may contain an
+   * Side", this should be a valid {@link ErrorCode}, however client side exceptions may contain an
    * arbitrary error code based on the behavior of the Servlet Container hosting Solr, or any HTTP
    * Proxies that may exist between the client and the server.
    *
@@ -157,8 +157,7 @@ public class SolrException extends RuntimeException {
    *     no-op.
    */
   public static SolrException wrapLuceneTragicExceptionIfNecessary(Exception e) {
-    if (e instanceof SolrException) {
-      final SolrException solrException = (SolrException) e;
+    if (e instanceof SolrException solrException) {
       assert solrException.code() >= 500 && solrException.code() < 600;
       return solrException;
     }

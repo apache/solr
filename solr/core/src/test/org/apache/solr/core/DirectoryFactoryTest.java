@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCase;
@@ -128,9 +127,8 @@ public class DirectoryFactoryTest extends SolrTestCase {
       throws IOException {
     String dataHome =
         df.getDataHome(
-            new CoreDescriptor(
-                "core_name", Paths.get(instanceDir).toAbsolutePath(), cc, properties));
-    assertEquals(Paths.get(expected).toAbsolutePath(), Paths.get(dataHome).toAbsolutePath());
+            new CoreDescriptor("core_name", Path.of(instanceDir).toAbsolutePath(), cc, properties));
+    assertEquals(Path.of(expected).toAbsolutePath(), Path.of(dataHome).toAbsolutePath());
   }
 
   private NodeConfig loadNodeConfig(String config) {

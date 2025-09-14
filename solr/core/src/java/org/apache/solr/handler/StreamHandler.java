@@ -240,8 +240,7 @@ public class StreamHandler extends RequestHandlerBase
       rsp.add("explanation", tupleStream.toExplanation(this.streamFactory));
     }
 
-    if (tupleStream instanceof DaemonStream) {
-      DaemonStream daemonStream = (DaemonStream) tupleStream;
+    if (tupleStream instanceof DaemonStream daemonStream) {
       if (daemons.containsKey(daemonStream.getId())) {
         daemons.remove(daemonStream.getId()).close();
       }

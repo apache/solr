@@ -27,6 +27,7 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesSkipIndexType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -228,7 +229,7 @@ public class UninvertingReader extends FilterLeafReader {
     ArrayList<FieldInfo> newFieldInfos = new ArrayList<>(in.getFieldInfos().size());
     for (FieldInfo fi : in.getFieldInfos()) {
       DocValuesType type = fi.getDocValuesType();
-      // fields which currently don't have docValues, but are uninvertable (indexed or points data
+      // fields which currently don't have docValues, but are uninvertible (indexed or points data
       // present)
       if (type == DocValuesType.NONE
           && (fi.getIndexOptions() != IndexOptions.NONE
@@ -285,11 +286,12 @@ public class UninvertingReader extends FilterLeafReader {
             new FieldInfo(
                 fi.name,
                 fi.number,
-                fi.hasVectors(),
+                fi.hasTermVectors(),
                 fi.omitsNorms(),
                 fi.hasPayloads(),
                 fi.getIndexOptions(),
                 type,
+                DocValuesSkipIndexType.NONE,
                 fi.getDocValuesGen(),
                 fi.attributes(),
                 fi.getPointDimensionCount(),

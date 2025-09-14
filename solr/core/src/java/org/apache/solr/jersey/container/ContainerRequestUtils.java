@@ -17,14 +17,14 @@
 
 package org.apache.solr.jersey.container;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.core.Configuration;
 import jakarta.ws.rs.core.SecurityContext;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Principal;
 import java.util.Enumeration;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.internal.ContainerUtils;

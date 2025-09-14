@@ -278,7 +278,7 @@ When upgrading to Solr 7.7.x, users should be aware of the following major chang
 
 * The Admin UI now presents a login screen for any users with authentication enabled on their cluster.
 Clusters with xref:deployment-guide:basic-authentication-plugin.adoc[Basic Authentication] will prompt users to enter a username and password.
-On clusters configured to use xref:deployment-guide:kerberos-authentication-plugin.adoc[Kerberos Authentication], authentication is handled transparently by the browser as before, but if authentication fails, users will be directed to configure their browser to provide an appropriate Kerberos ticket.
+On clusters configured to use Kerberos Authentication, authentication is handled transparently by the browser as before, but if authentication fails, users will be directed to configure their browser to provide an appropriate Kerberos ticket.
 +
 The login screen's purpose is cosmetic only - Admin UI-triggered Solr requests were subject to authentication prior to 7.7 and still are today.  The login screen changes only the user experience of providing this authentication.
 

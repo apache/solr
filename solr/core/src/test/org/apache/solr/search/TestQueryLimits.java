@@ -16,11 +16,11 @@
  */
 package org.apache.solr.search;
 
+import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
@@ -39,8 +39,7 @@ public class TestQueryLimits extends SolrCloudTestCase {
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 2);
     create.process(solrClient);
-    CloudUtil.waitForState(
-        cluster.getOpenOverseer().getSolrCloudManager(), "active", COLLECTION, clusterShape(3, 6));
+    waitForState("active", COLLECTION, clusterShape(3, 6));
     for (int j = 0; j < 100; j++) {
       solrClient.add(
           COLLECTION,
@@ -68,7 +67,8 @@ public class TestQueryLimits extends SolrCloudTestCase {
           "SearchHandler.handleRequestBody",
           "QueryComponent",
           "QueryComponent.process",
-          "FacetComponent.process"
+          "TimeLimitingBulkScorer.score",
+          "FacetComponent.process:2"
         };
     for (String matchingExpr : matchingExprTests) {
       CallerSpecificQueryLimit limit = new CallerSpecificQueryLimit(matchingExpr);
@@ -76,17 +76,26 @@ public class TestQueryLimits extends SolrCloudTestCase {
       rsp =
           solrClient.query(
               COLLECTION,
-              params("q", "id:*", "sort", "id asc", "facet", "true", "facet.field", "val_i"));
+              params(
+                  "q",
+                  "id:*",
+                  "sort",
+                  "id asc",
+                  "facet",
+                  "true",
+                  "facet.field",
+                  "val_i",
+                  "multiThreaded",
+                  "false"));
       assertNotNull(
           "should have partial results for expr " + matchingExpr,
           rsp.getHeader().get("partialResults"));
-      if (matchingExpr.contains(".")) {
-        assertEquals(matchingExpr, limit.trippedBy);
-      } else {
-        assertTrue(
-            "expected result to start with " + matchingExpr + " but was " + limit.trippedBy,
-            limit.trippedBy.startsWith(matchingExpr));
-      }
+      assertFalse("should have trippedBy info", limit.getTrippedBy().isEmpty());
+      assertTrue(
+          "expected result to start with " + matchingExpr + " but was " + limit.getTrippedBy(),
+          limit.getTrippedBy().iterator().next().startsWith(matchingExpr));
+      Map<String, Integer> callCounts = limit.getCallCounts();
+      assertTrue("call count should be > 0", callCounts.get(matchingExpr) > 0);
     }
   }
 }

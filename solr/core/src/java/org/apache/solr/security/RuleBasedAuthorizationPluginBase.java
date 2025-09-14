@@ -216,7 +216,7 @@ public abstract class RuleBasedAuthorizationPluginBase
     if (predefinedPermission.wellknownName == PermissionNameProvider.Name.ALL) {
       log.trace("'ALL' perm applies to all requests; perm applies.");
       return true; // 'ALL' applies to everything!
-    } else if (!(context.getHandler() instanceof PermissionNameProvider)) {
+    } else if (!(context.getHandler() instanceof PermissionNameProvider handler)) {
       // TODO: Is this code path needed anymore, now that all handlers implement the interface?
       // context.getHandler returns Object and is not documented
       if (log.isTraceEnabled()) {
@@ -227,7 +227,6 @@ public abstract class RuleBasedAuthorizationPluginBase
       // We're not 'ALL', and the handler isn't associated with any other predefined permissions
       return false;
     } else {
-      PermissionNameProvider handler = (PermissionNameProvider) context.getHandler();
       PermissionNameProvider.Name permissionName = handler.getPermissionName(context);
 
       boolean applies =

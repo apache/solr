@@ -23,7 +23,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -33,14 +32,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.util.AsyncListener;
-import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -50,23 +50,21 @@ import org.apache.solr.common.util.Utils;
 
 public abstract class HttpSolrClientBase extends SolrClient {
 
-  protected static final String DEFAULT_PATH = "/select";
+  protected static final String DEFAULT_PATH = ClientUtils.DEFAULT_PATH;
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
   /** The URL of the Solr server. */
   protected final String serverBaseUrl;
 
-  protected final long idleTimeoutMillis;
-
   protected final long requestTimeoutMillis;
 
   protected final Set<String> urlParamNames;
 
-  protected RequestWriter requestWriter = new BinaryRequestWriter();
+  protected RequestWriter requestWriter = new JavaBinRequestWriter();
 
   // updating parser instance needs to go via the setter to ensure update of defaultParserMimeTypes
-  protected ResponseParser parser = new BinaryResponseParser();
+  protected ResponseParser parser = new JavaBinResponseParser();
 
   protected Set<String> defaultParserMimeTypes;
 
@@ -85,7 +83,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
     } else {
       this.serverBaseUrl = null;
     }
-    this.idleTimeoutMillis = builder.idleTimeoutMillis;
+    this.requestTimeoutMillis = builder.getRequestTimeoutMillis();
     this.basicAuthAuthorizationStr = builder.basicAuthAuthorizationStr;
     if (builder.requestWriter != null) {
       this.requestWriter = builder.requestWriter;
@@ -94,11 +92,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
       this.parser = builder.responseParser;
     }
     this.defaultCollection = builder.defaultCollection;
-    if (builder.requestTimeoutMillis != null) {
-      this.requestTimeoutMillis = builder.requestTimeoutMillis;
-    } else {
-      this.requestTimeoutMillis = -1;
-    }
     if (builder.urlParamNames != null) {
       this.urlParamNames = builder.urlParamNames;
     } else {
@@ -106,30 +99,9 @@ public abstract class HttpSolrClientBase extends SolrClient {
     }
   }
 
-  protected String getRequestPath(SolrRequest<?> solrRequest, String collection)
+  protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
-    String basePath = solrRequest.getBasePath() == null ? serverBaseUrl : solrRequest.getBasePath();
-    if (collection != null) basePath += "/" + collection;
-
-    if (solrRequest instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = changeV2RequestEndpoint(basePath);
-      } else {
-        basePath = serverBaseUrl + "/____v2";
-      }
-    }
-    String path = requestWriter.getPath(solrRequest);
-    if (path == null || !path.startsWith("/")) {
-      path = DEFAULT_PATH;
-    }
-
-    return basePath + path;
-  }
-
-  protected String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
-    URL oldURL = new URL(basePath);
-    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
-    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
+    return ClientUtils.buildRequestUrl(solrRequest, serverBaseUrl, collection);
   }
 
   protected ResponseParser responseParser(SolrRequest<?> solrRequest) {
@@ -137,13 +109,22 @@ public abstract class HttpSolrClientBase extends SolrClient {
     return solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
   }
 
+  protected RequestWriter getRequestWriter() {
+    return requestWriter;
+  }
+
+  // TODO: Remove this for 10.0, there is a typo in the method name
+  @Deprecated(since = "9.8", forRemoval = true)
   protected ModifiableSolrParams initalizeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    // The parser 'wt=' and 'version=' params are used instead of the original
-    // params
+    return initializeSolrParams(solrRequest, parserToUse);
+  }
+
+  protected ModifiableSolrParams initializeSolrParams(
+      SolrRequest<?> solrRequest, ResponseParser parserToUse) {
+    // The parser 'wt=' param is used instead of the original params
     ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
     wparams.set(CommonParams.WT, parserToUse.getWriterType());
-    wparams.set(CommonParams.VERSION, parserToUse.getVersion());
     return wparams;
   }
 
@@ -214,7 +195,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
           break;
         default:
           if (processor == null || mimeType == null) {
-            throw new BaseHttpSolrClient.RemoteSolrException(
+            throw new SolrClient.RemoteSolrException(
                 urlExceptionMessage,
                 httpStatus,
                 "non ok status: " + httpStatus + ", message:" + responseReason,
@@ -223,13 +204,10 @@ public abstract class HttpSolrClientBase extends SolrClient {
       }
 
       if (wantStream(processor)) {
-        // no processor specified, return raw stream
-        NamedList<Object> rsp = new NamedList<>();
-        rsp.add("stream", is);
-        rsp.add("responseStatus", httpStatus);
         // Only case where stream should not be closed
         shouldClose = false;
-        return rsp;
+        // no processor specified, return raw stream
+        return InputStreamResponseParser.createInputStreamNamedList(httpStatus, is);
       }
 
       checkContentType(processor, is, mimeType, encoding, httpStatus, urlExceptionMessage);
@@ -238,7 +216,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
       try {
         rsp = processor.processResponse(is, encoding);
       } catch (Exception e) {
-        throw new BaseHttpSolrClient.RemoteSolrException(
+        throw new SolrClient.RemoteSolrException(
             urlExceptionMessage, httpStatus, e.getMessage(), e);
       }
 
@@ -287,9 +265,8 @@ public abstract class HttpSolrClientBase extends SolrClient {
           }
           reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
         }
-        BaseHttpSolrClient.RemoteSolrException rss =
-            new BaseHttpSolrClient.RemoteSolrException(
-                urlExceptionMessage, httpStatus, reason, null);
+        SolrClient.RemoteSolrException rss =
+            new SolrClient.RemoteSolrException(urlExceptionMessage, httpStatus, reason, null);
         if (metadata != null) rss.setMetadata(metadata);
         throw rss;
       }
@@ -299,7 +276,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
         try {
           is.close();
         } catch (IOException e) {
-          // quitely
+          // quietly
         }
       }
     }
@@ -332,7 +309,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
       return;
     }
     final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
-    if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
+    if (!processorSupportedContentTypes.isEmpty()) {
       boolean processorAcceptsMimeType =
           processorAcceptsMimeType(processorSupportedContentTypes, mimeType);
       if (!processorAcceptsMimeType) {
@@ -345,10 +322,10 @@ public abstract class HttpSolrClientBase extends SolrClient {
         try {
           ByteArrayOutputStream body = new ByteArrayOutputStream();
           is.transferTo(body);
-          throw new BaseHttpSolrClient.RemoteSolrException(
+          throw new SolrClient.RemoteSolrException(
               urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
         } catch (IOException e) {
-          throw new BaseHttpSolrClient.RemoteSolrException(
+          throw new SolrClient.RemoteSolrException(
               urlExceptionMessage,
               httpStatus,
               "Could not parse response with encoding " + exceptionEncoding,
@@ -371,21 +348,33 @@ public abstract class HttpSolrClientBase extends SolrClient {
   protected abstract void updateDefaultMimeTypeForParser();
 
   /**
-   * Execute an asynchronous request to a Solr collection
+   * Execute an asynchronous request against a Solr server for a given collection.
    *
-   * @param solrRequest the request to perform
-   * @param collection if null the default collection is used
-   * @param asyncListener callers should provide an implementation to handle events: start, success,
-   *     exception
-   * @return Cancellable allowing the caller to attempt cancellation
+   * @param request the request to execute
+   * @param collection the collection to execute the request against
+   * @return a {@link CompletableFuture} that tracks the progress of the async request. Supports
+   *     cancelling requests via {@link CompletableFuture#cancel(boolean)}, adding callbacks/error
+   *     handling using {@link CompletableFuture#whenComplete(BiConsumer)} and {@link
+   *     CompletableFuture#exceptionally(Function)} methods, and other CompletableFuture
+   *     functionality. Will complete exceptionally in case of either an {@link IOException} or
+   *     {@link SolrServerException} during the request. Once completed, the CompletableFuture will
+   *     contain a {@link NamedList} with the response from the server.
    */
-  public abstract Cancellable asyncRequest(
-      SolrRequest<?> solrRequest,
-      String collection,
-      AsyncListener<NamedList<Object>> asyncListener);
+  public abstract CompletableFuture<NamedList<Object>> requestAsync(
+      final SolrRequest<?> request, String collection);
+
+  /**
+   * Execute an asynchronous request against a Solr server using the default collection.
+   *
+   * @param request the request to execute
+   * @return a {@link CompletableFuture} see {@link #requestAsync(SolrRequest, String)}.
+   */
+  public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> request) {
+    return requestAsync(request, null);
+  }
 
   public boolean isV2ApiRequest(final SolrRequest<?> request) {
-    return request instanceof V2Request || request.getPath().contains("/____v2");
+    return request.getApiVersion() == SolrRequest.ApiVersion.V2;
   }
 
   public String getBaseURL() {
@@ -394,10 +383,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   public ResponseParser getParser() {
     return parser;
-  }
-
-  public long getIdleTimeout() {
-    return idleTimeoutMillis;
   }
 
   public Set<String> getUrlParamNames() {

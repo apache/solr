@@ -16,6 +16,8 @@
  */
 package org.apache.solr.common.params;
 
+import static org.apache.solr.SolrTestCaseJ4.params;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,12 +26,63 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.search.QueryParsing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** */
 public class SolrParamTest extends SolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public void testLocalParamRoundTripParsing() throws Exception {
+    final ModifiableSolrParams in =
+        params(
+            "simple", "xxx",
+            "blank", "",
+            "space", "x y z",
+            "lead_space", " x",
+            "curly", "x}y",
+            "quote", "x'y",
+            "quoted", "'x y'",
+            "d_quote", "x\"y",
+            "d_quoted", "\"x y\"",
+            "dollar", "x$y",
+            "multi", "x",
+            "multi", "y y",
+            "v", ""); // we'll replace this in a moment
+    SolrParams out = QueryParsing.getLocalParams(in.toLocalParamsString(), null);
+    assertEquals(in, out);
+
+    // test resolve dollar in 'v'
+    in.set("v", "$ref");
+    assertNotEquals(in, out);
+    final String toStr = in.toLocalParamsString();
+    out = QueryParsing.getLocalParams(toStr, params("ref", "ref value"));
+    assertEquals("ref value", out.get("v"));
+
+    // first one should win...
+    assertEquals("x", out.get("multi"));
+
+    assertIterSize(toStr, 12, out);
+  }
+
+  public void testTrivialEquals() {
+    assertEquals(params(), params());
+    assertFalse(params().equals(null));
+
+    var pFoo = params("foo", "val");
+    assertNotEquals(params(), pFoo);
+    assertNotEquals(pFoo, params()); // reflexive
+
+    assertNotEquals(pFoo, params("foo", "something-else")); // diff vals
+
+    // order
+    var pAB = params("a", "1", "b", "2");
+    var pBA = params("b", "2", "a", "1");
+    assertEquals("order", pAB, pBA);
+    assertEquals("order", pBA, pAB); // reflexive
+
+    // some other tests also test equality
+  }
 
   public void testParamIterators() {
 
@@ -230,7 +283,7 @@ public class SolrParamTest extends SolrTestCase {
     assertEquals(400, getReturnCode(() -> params.getBool("f.bad.bool")));
     assertEquals(400, getReturnCode(() -> params.getFloat("f.bad.float")));
 
-    // Ask for params that arent there
+    // Ask for params that aren't there
     assertNull(params.get("asagdsaga"));
     assertNull(params.getBool("asagdsaga"));
     assertNull(params.getInt("asagdsaga"));

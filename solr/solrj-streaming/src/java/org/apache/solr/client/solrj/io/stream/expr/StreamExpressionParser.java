@@ -171,7 +171,7 @@ public class StreamExpressionParser {
       return false;
     }
 
-    // Must end with )
+    // Must end with ')' character
     return clause.endsWith(")");
   }
 

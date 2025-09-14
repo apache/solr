@@ -26,7 +26,7 @@ configure(rootProject) {
   dependencyCheck {
     failBuildOnCVSS = propertyOrDefault("validation.owasp.threshold", 7) as Integer
     formats = ['ALL']
-    skipProjects = [':solr:solr-ref-guide', ':solr-missing-doclet']
+    skipProjects = [':solr:solr-ref-guide', ':missing-doclet']
     skipConfigurations = ['unifiedClasspath', 'permitUnusedDeclared']
     suppressionFile = file("${resources}/exclusions.xml")
     analyzers {

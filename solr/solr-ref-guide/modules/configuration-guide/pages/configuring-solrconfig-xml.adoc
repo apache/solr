@@ -49,7 +49,6 @@ The `solrconfig.xml` file is located in the `conf/` directory for each collectio
 Several well-commented example files can be found in the `server/solr/configsets/` directories demonstrating best practices for many different types of installations.
 
 Some `solrconfig.xml` aspects are documented in other sections.
-See xref:libs.adoc#lib-directives-in-solrconfig[lib directives in SolrConfig], which can be used for both Plugins and Resources.
 
 ****
 // This tags the below list so it can be used in the parent page section list

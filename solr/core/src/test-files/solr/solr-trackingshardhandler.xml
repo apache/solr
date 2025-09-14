@@ -24,11 +24,12 @@
   <str name="shareSchema">${shareSchema:false}</str>
   <str name="configSetBaseDir">${configSetBaseDir:configsets}</str>
   <str name="coreRootDirectory">${coreRootDirectory:.}</str>
+  <int name="indexSearcherExecutorThreads">4</int>
 
   <solrcloud>
     <str name="host">127.0.0.1</str>
     <int name="hostPort">${hostPort:8983}</int>
-    <int name="zkClientTimeout">${solr.zkclienttimeout:30000}</int>
+    <int name="zkClientTimeout">${solr.zookeeper.client.timeout:30000}</int>
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:45000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:340000}</int>

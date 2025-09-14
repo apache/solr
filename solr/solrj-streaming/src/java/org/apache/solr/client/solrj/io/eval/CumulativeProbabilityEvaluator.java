@@ -65,8 +65,7 @@ public class CumulativeProbabilityEvaluator extends RecursiveObjectEvaluator
               first.getClass().getSimpleName()));
     }
 
-    if (first instanceof RealDistribution) {
-      RealDistribution rd = (RealDistribution) first;
+    if (first instanceof RealDistribution rd) {
       Number predictOver = (Number) second;
       return rd.cumulativeProbability(predictOver.doubleValue());
     } else {

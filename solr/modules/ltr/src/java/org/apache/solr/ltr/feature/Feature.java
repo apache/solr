@@ -26,6 +26,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -33,6 +34,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.macro.MacroExpander;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
@@ -267,8 +269,12 @@ public abstract class Feature extends Query implements Accountable {
       return Feature.this.getDefaultValue();
     }
 
+    public abstract FeatureScorer featureScorer(LeafReaderContext context) throws IOException;
+
     @Override
-    public abstract FeatureScorer scorer(LeafReaderContext context) throws IOException;
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      return new SolrDefaultScorerSupplier(featureScorer(context));
+    }
 
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
@@ -277,7 +283,7 @@ public abstract class Feature extends Query implements Accountable {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      final FeatureScorer r = scorer(context);
+      final FeatureScorer r = featureScorer(context);
       float score = getDefaultValue();
       if (r != null) {
         r.iterator().advance(doc);
@@ -302,14 +308,15 @@ public abstract class Feature extends Query implements Accountable {
     }
 
     /** A 'recipe' for computing a feature */
-    public abstract class FeatureScorer extends Scorer {
+    public abstract static class FeatureScorer extends Scorer {
 
       protected final String name;
       private DocInfo docInfo;
+      private final Feature.FeatureWeight weight;
       protected final DocIdSetIterator itr;
 
       public FeatureScorer(Feature.FeatureWeight weight, DocIdSetIterator itr) {
-        super(weight);
+        this.weight = weight;
         this.itr = itr;
         name = weight.getName();
         docInfo = null;
@@ -332,6 +339,10 @@ public abstract class Feature extends Query implements Accountable {
         return itr.docID();
       }
 
+      public Feature.FeatureWeight getWeight() {
+        return weight;
+      }
+
       @Override
       public DocIdSetIterator iterator() {
         return itr;
@@ -342,7 +353,7 @@ public abstract class Feature extends Query implements Accountable {
      * A <code>FeatureScorer</code> that contains a <code>Scorer</code>, which it delegates to where
      * appropriate.
      */
-    public abstract class FilterFeatureScorer extends FeatureScorer {
+    public abstract static class FilterFeatureScorer extends FeatureScorer {
 
       protected final Scorer in;
 
@@ -380,7 +391,7 @@ public abstract class Feature extends Query implements Accountable {
      * Default FeatureScorer class that returns the score passed in. Can be used as a simple
      * ValueFeature, or to return a default scorer in case an underlying feature's scorer is null.
      */
-    public class ValueFeatureScorer extends FeatureScorer {
+    public static class ValueFeatureScorer extends FeatureScorer {
       float constScore;
 
       public ValueFeatureScorer(FeatureWeight weight, float constScore, DocIdSetIterator itr) {

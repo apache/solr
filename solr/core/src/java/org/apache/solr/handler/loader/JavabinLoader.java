@@ -164,9 +164,8 @@ public class JavabinLoader extends ContentStreamLoader {
                 params = ((NamedList) o).toSolrParams();
               } else {
                 try {
-                  if (o instanceof byte[]) {
+                  if (o instanceof byte[] buf) {
                     if (params != null) req.setParams(params);
-                    byte[] buf = (byte[]) o;
                     contentStreamLoader.load(
                         req, rsp, new ContentStreamBase.ByteArrayStream(buf, null), processor);
                   } else {

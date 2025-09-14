@@ -47,7 +47,7 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
     sysProps.forEach(System::setProperty);
     configureCluster(1)
         .formatZkServer(true)
-        .addConfig("config", getFile("solrj/solr/configsets/streaming/conf").toPath())
+        .addConfig("config", getFile("solrj/solr/configsets/streaming/conf"))
         .configure();
   }
 

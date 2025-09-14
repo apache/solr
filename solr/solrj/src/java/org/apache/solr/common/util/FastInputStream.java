@@ -27,7 +27,7 @@ public class FastInputStream extends DataInputInputStream {
   protected final byte[] buf;
   protected int pos;
   protected int end;
-  protected long readFromStream; // number of bytes read from the underlying inputstream
+  protected long readFromStream; // number of bytes read from the underlying input stream
 
   public FastInputStream(InputStream in) {
     // use default BUFSIZE of BufferedOutputStream so if we wrap that

@@ -46,8 +46,7 @@ public class DistanceEvaluator extends RecursiveObjectEvaluator implements ManyV
   public Object doWork(Object... values) throws IOException {
 
     if (values.length == 1) {
-      if (values[0] instanceof Matrix) {
-        Matrix matrix = (Matrix) values[0];
+      if (values[0] instanceof Matrix matrix) {
         EuclideanDistance euclideanDistance = new EuclideanDistance();
         return distance(euclideanDistance, matrix);
       } else {
@@ -74,8 +73,7 @@ public class DistanceEvaluator extends RecursiveObjectEvaluator implements ManyV
                 toExpression(constructingFactory)));
       }
 
-      if (first instanceof Matrix) {
-        Matrix matrix = (Matrix) first;
+      if (first instanceof Matrix matrix) {
         DistanceMeasure distanceMeasure = (DistanceMeasure) second;
         return distance(distanceMeasure, matrix);
       } else {

@@ -26,6 +26,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -33,14 +34,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.http.NoHttpResponseException;
-import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -121,7 +121,8 @@ public class PeerSync implements SolrMetricProducer {
     this.nUpdates = nUpdates;
     this.cantReachIsSuccess = cantReachIsSuccess;
     this.doFingerprint =
-        doFingerprint && !("true".equals(System.getProperty("solr.disableFingerprint")));
+        doFingerprint
+            && EnvUtils.getPropertyAsBool("solr.index.replication.fingerprint.enabled", true);
     this.onlyIfActive = onlyIfActive;
 
     uhandler = core.getUpdateHandler();
@@ -365,9 +366,7 @@ public class PeerSync implements SolrMetricProducer {
         boolean connectTimeoutExceptionInChain =
             connectTimeoutExceptionInChain(srsp.getException());
         if (connectTimeoutExceptionInChain
-            || solrException instanceof ConnectTimeoutException
             || solrException instanceof SocketTimeoutException
-            || solrException instanceof NoHttpResponseException
             || solrException instanceof SocketException) {
 
           log.warn(
@@ -427,7 +426,7 @@ public class PeerSync implements SolrMetricProducer {
   private boolean connectTimeoutExceptionInChain(Throwable exception) {
     Throwable t = exception;
     while (true) {
-      if (t instanceof ConnectTimeoutException) {
+      if (t instanceof ConnectException) { // note: Apache HttpClient used "ConnectTimeoutException"
         return true;
       }
       Throwable cause = t.getCause();
@@ -603,11 +602,8 @@ public class PeerSync implements SolrMetricProducer {
     // comparator that sorts update records by absolute value of version, putting lowest first
     private static final Comparator<Object> updateRecordComparator =
         (o1, o2) -> {
-          if (!(o1 instanceof List)) return 1;
-          if (!(o2 instanceof List)) return -1;
-
-          List<?> lst1 = (List<?>) o1;
-          List<?> lst2 = (List<?>) o2;
+          if (!(o1 instanceof List<?> lst1)) return 1;
+          if (!(o2 instanceof List<?> lst2)) return -1;
 
           long l1 = Math.abs((Long) lst1.get(1));
           long l2 = Math.abs((Long) lst2.get(1));

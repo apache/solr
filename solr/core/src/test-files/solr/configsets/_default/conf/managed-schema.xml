@@ -16,13 +16,13 @@
  limitations under the License.
 -->
 
-<schema name="default-config" version="1.6">
+<schema name="default-config" version="1.7">
     <uniqueKey>id</uniqueKey>
     <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true" docValues="true" />
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
 
     <field name="_version_" type="plong" indexed="false" stored="false"/>
-    <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+    <fieldType name="plong" class="solr.LongPointField"/>
 
     <fieldType name="booleans" class="solr.BoolField" sortMissingLast="true" multiValued="true"/>
     <dynamicField name="*_bs" type="booleans" indexed="true" stored="true"/>

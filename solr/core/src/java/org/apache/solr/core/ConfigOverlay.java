@@ -193,8 +193,7 @@ public class ConfigOverlay implements MapSerializable {
       if (hierarchy != null) hierarchy.add(part);
       if (obj == null) return null;
       if (i == parts.size() - 1) {
-        if (obj instanceof Map<?, ?>) {
-          Map<?, ?> map = (Map<?, ?>) obj;
+        if (obj instanceof Map<?, ?> map) {
           Object o = map.get(part);
           return checkType(o, isXpath, isAttr);
         }
@@ -209,8 +208,7 @@ public class ConfigOverlay implements MapSerializable {
       new Class<?>[] {String.class, Boolean.class, Integer.class, Float.class};
 
   private static Class<?> checkType(Object o, boolean isXpath, boolean isAttr) {
-    if (o instanceof Long) {
-      Long aLong = (Long) o;
+    if (o instanceof Long aLong) {
       int ten = aLong.intValue() / 10;
       int one = aLong.intValue() % 10;
       if (isXpath && isAttr && one != 0) return null;

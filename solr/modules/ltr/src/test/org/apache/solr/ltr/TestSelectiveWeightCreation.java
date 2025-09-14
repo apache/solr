@@ -137,12 +137,15 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     final IndexSearcher searcher = getSearcher(r);
     // first run the standard query
     final TopDocs hits = searcher.search(bqBuilder.build(), 10);
-    assertEquals(2, hits.totalHits.value);
-    assertEquals("10", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("11", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+    assertEquals(2, hits.totalHits.value());
+    assertEquals("10", searcher.storedFields().document(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("11", searcher.storedFields().document(hits.scoreDocs[1].doc).get("id"));
 
     List<Feature> features = makeFeatures(new int[] {0, 1, 2});
+    List<Feature> expectedNonDefaultFeatures = makeFeatures(new int[] {1, 2});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+    List<Feature> expectedNonDefaultAllFeatures =
+        makeFeatures(new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
     final List<Normalizer> norms = new ArrayList<>();
     for (int k = 0; k < features.size(); ++k) {
       norms.add(IdentityNormalizer.INSTANCE);
@@ -167,13 +170,13 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     LTRScoringQuery.FeatureInfo[] featuresInfo = modelWeight.getFeaturesInfo();
 
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);
-    int validFeatures = 0;
+    int nonDefaultFeatures = 0;
     for (int i = 0; i < featuresInfo.length; ++i) {
-      if (featuresInfo[i] != null && featuresInfo[i].isUsed()) {
-        validFeatures += 1;
+      if (featuresInfo[i] != null && !featuresInfo[i].isDefaultValue()) {
+        nonDefaultFeatures += 1;
       }
     }
-    assertEquals(validFeatures, features.size());
+    assertEquals(expectedNonDefaultFeatures.size(), nonDefaultFeatures);
 
     // when features are requested in the response, weights should be created for all features
     final LTRScoringModel ltrScoringModel2 =
@@ -194,13 +197,13 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);
     assertEquals(allFeatures.size(), modelWeight.getExtractedFeatureWeights().length);
 
-    validFeatures = 0;
+    nonDefaultFeatures = 0;
     for (int i = 0; i < featuresInfo.length; ++i) {
-      if (featuresInfo[i] != null && featuresInfo[i].isUsed()) {
-        validFeatures += 1;
+      if (featuresInfo[i] != null && !featuresInfo[i].isDefaultValue()) {
+        nonDefaultFeatures += 1;
       }
     }
-    assertEquals(validFeatures, allFeatures.size());
+    assertEquals(expectedNonDefaultAllFeatures.size(), nonDefaultFeatures);
 
     assertU(delI("10"));
     assertU(delI("11"));

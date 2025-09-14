@@ -41,8 +41,7 @@ public class GetValueEvaluator extends RecursiveObjectEvaluator implements TwoVa
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
 
-    if (value1 instanceof Tuple) {
-      Tuple tuple = (Tuple) value1;
+    if (value1 instanceof Tuple tuple) {
       String key = (String) value2;
       key = key.replace("\"", "");
       return tuple.get(key);

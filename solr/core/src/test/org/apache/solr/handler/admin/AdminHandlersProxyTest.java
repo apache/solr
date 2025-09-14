@@ -57,7 +57,11 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   public void proxySystemInfoHandlerAllNodes() throws IOException, SolrServerException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
     GenericSolrRequest req =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/system", params);
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET,
+            "/admin/info/system",
+            SolrRequest.SolrRequestType.ADMIN,
+            params);
     SimpleSolrResponse rsp = req.process(solrClient, null);
     NamedList<Object> nl = rsp.getResponse();
     assertEquals(3, nl.size());
@@ -71,7 +75,8 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   public void proxyMetricsHandlerAllNodes() throws IOException, SolrServerException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
     GenericSolrRequest req =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params);
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params);
     SimpleSolrResponse rsp = req.process(solrClient, null);
     NamedList<Object> nl = rsp.getResponse();
     assertEquals(3, nl.size());
@@ -85,7 +90,11 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
     MapSolrParams params =
         new MapSolrParams(Collections.singletonMap("nodes", "example.com:1234_solr"));
     GenericSolrRequest req =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/system", params);
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET,
+            "/admin/info/system",
+            SolrRequest.SolrRequestType.ADMIN,
+            params);
     SimpleSolrResponse rsp = req.process(solrClient, null);
   }
 
@@ -97,7 +106,11 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
         node -> {
           MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", node));
           GenericSolrRequest req =
-              new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/system", params);
+              new GenericSolrRequest(
+                  SolrRequest.METHOD.GET,
+                  "/admin/info/system",
+                  SolrRequest.SolrRequestType.ADMIN,
+                  params);
           SimpleSolrResponse rsp = null;
           try {
             rsp = req.process(solrClient, null);

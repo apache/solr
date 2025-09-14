@@ -130,7 +130,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testXMLDiffWithExternalEntity() {
-    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String file = getFile("mailing_lists.pdf").toUri().toASCIIString();
     String xml =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
             + "<!DOCTYPE foo [<!ENTITY bar SYSTEM \""

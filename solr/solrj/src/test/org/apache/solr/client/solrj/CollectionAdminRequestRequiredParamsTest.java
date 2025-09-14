@@ -208,7 +208,7 @@ public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
 
   public void testMigrate() {
     final CollectionAdminRequest.Migrate request =
-        CollectionAdminRequest.migrateData("collection", "targer", "splitKey");
+        CollectionAdminRequest.migrateData("collection", "target", "splitKey");
     assertContainsParams(request.getParams(), ACTION, COLLECTION, "target.collection", "split.key");
   }
 

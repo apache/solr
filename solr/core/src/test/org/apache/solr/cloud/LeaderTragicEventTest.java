@@ -24,9 +24,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -88,7 +88,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     waitForState(
         "Now waiting for new replica to become leader",
         collection,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Slice slice = collectionState.getSlice("shard1");
 
           if (slice.getReplicas().size() != 2) return false;
@@ -176,7 +176,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       waitForState(
           "Timeout waiting for replica get down",
           collection,
-          (liveNodes, collectionState) ->
+          collectionState ->
               getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);
     }
 

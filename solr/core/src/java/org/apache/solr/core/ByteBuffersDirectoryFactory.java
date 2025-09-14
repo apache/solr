@@ -41,8 +41,7 @@ public class ByteBuffersDirectoryFactory extends EphemeralDirectoryFactory {
   }
 
   @Override
-  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
-      throws IOException {
+  protected Directory create(String path, LockFactory lockFactory) throws IOException {
     return new ByteBuffersDirectory(lockFactory);
   }
 }
