@@ -1,4 +1,4 @@
-= Thinking About Deployment Strategy
+= Deployment Topology Overview
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -19,13 +19,15 @@
 ////
 This page has a number of graphs to help you visualize different Solr deployment strategies.
 
+The graphs are developed using Mermaid syntax.
+
 The site https://magjac.com/graphviz-visual-editor/ allows you to play with those graphs in real time.
 ////
 
 This section embodies the Solr community's thoughts on best practices for deploying Solr depending on your needs.
 
-NOTE: Soemthing about the various directions you can sacle...  David Smiley had some good words.  
-Query load.  Index Load.  Number of Collections.   Densitiy of Data (Vectors).
+NOTE: Something about the various directions you can scale...  David Smiley had some good words.  
+Query load.  Index Load.  Number of Collections.   Density of Data (Vectors).
 
 
 == Overview
@@ -153,16 +155,16 @@ Use these approaches when:
 
 Some con's to this approach are:
 
-* This is pull based, so the segments are pulled by the bottom node from each node above them, which introduces latency and potential for slightly differnet views of the data in the Leader and the various Followers.
+* This is pull based, so the segments are pulled by the bottom node from each node above them, which introduces latency and potential for slightly different views of the data in the Leader and the various Followers.
 * You need to set up via various API calls all the interactions between the various nodes. 
 
 ==== Embedded ZooKeeper Ensemble Setup
 
 NOTE: This needs Jason's https://github.com/apache/solr/pull/2391 to get to done done!
 
-The second approach you can take is to use a simple ZooKeeper xref:getting-started:solr-glossary.adoc#ensemble[Ensemble] setup.   You can start a pair of Solr's and have their embedded ZooKeeper join each other to form an Ensemble.   And yes, I hear you when you say "this isn't a odd number and ZK quorums should be an odd number to avoid split brain etc".   
+The second approach you can take is to use a simple ZooKeeper xref:getting-started:solr-glossary.adoc#ensemble[Ensemble] setup.   You can start a pair of Solrs and have their embedded ZooKeeper join each other to form an Ensemble.   And yes, I hear you when you say "this isn't an odd number and ZK quorums should be an odd number to avoid split brain etc."   
 
-NOTE: What is the difference between fail over and high availablity?  
+NOTE: What is the difference between failover and high availability?  
 
 [graphviz]
 ....
@@ -181,7 +183,7 @@ graph simple_embedded_zk_ensemble {
 Use this approach when:
 
 * You have only two Solr nodes and they are close to each other in network terms.
-* This approach is for when you want fail over, but you aren't worried about high availablity.  You have a load balancer in front of the two Solr nodes and it notices one goes away and balances traffic to the other one for querying. 
+* This approach is for when you want failover, but you aren't worried about high availability.  You have a load balancer in front of the two Solr nodes and it notices one goes away and balances traffic to the other one for querying. 
 * You will deal with the fall out to indexing if one of the nodes goes away.
 
 You can then scale this up to multiple Solr's:
@@ -213,14 +215,14 @@ Use these approaches when:
 
 Some con's to this approach are:
 
-* Having five ZK's all updating each other is fine, but it starts to break down if you went to 9 or 11 ZooKeeper forming the Quorum.
+* Having five ZKs all updating each other is fine, but it starts to break down if you went to 9 or 11 ZooKeeper forming the Quorum.
 * We currently don't have any flexible resizing of the quorum.   You kind of just have to pick it.
 
 === Moving Beyond the Basic Cluster
 
 NOTE: This isn't yet fleshed out as to how it works!
 
-Solr has a concept of node xref:deployment-guide:node-roles.adoc#roles[Roles] that could be leveraged to establish a set of Solr nodes that run embedded ZooKeeper, and then a larger set of Solr nodes that connect to those ZooKeepers.  We currently have the concept of "data" nodes that hosts shards and replicas, we can introduce a "zookeeper" node that also runs the embedded ZooKeeper process.   
+Solr has a concept of node xref:deployment-guide:node-roles.adoc#roles[Roles] that could be leveraged to establish a set of Solr nodes that run embedded ZooKeeper, and then a larger set of Solr nodes that connect to those ZooKeepers.  We currently have the concept of "data" nodes that host shards and replicas, we can introduce a "zookeeper" node that also runs the embedded ZooKeeper process.   
 
 This will work well as you grow from six to 12 nodes in your cluster.
 
@@ -384,14 +386,14 @@ These days, running embedded ZooKeeper is just fine, and that eliminates the mai
 
 == What about Embedding Solr in my Java Application?
 
-Yes, there is embedded Solr.  YMMV.
+Embedded Solr is used extensively in Solr's own unit testing strategy.  
+It's also been used to build dedicated index create processes using Spark.  
+YMMV.  
 
-== What about Massive Multi-Tenant Use Cases?
+== What about [YOUR SPECIFIC NEED]
 
-NOTE: Paging David Smiley...?
+There are Solr use cases that require extreme scaling on certain specific axis, wehter that is a massive multi-tenant use case, extreme query load, or extreme ingestion performance.
 
-Running thousands of collections, each representing it's own tenant?
-Yeah, there are some things you need to do:
+Each of these requirements will bring it's own specific best practices that you will need to embrace, and have their own impact on how you deploy Solr.
 
-* Item 1
-* Item 2
+Learn more on xref:optimize-extreme-use-cases.adoc[Optimizing for Extreme Use Cases] page.

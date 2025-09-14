@@ -18,11 +18,12 @@
 .Deployment Guide
 
 * xref:solr-control-script-reference.adoc[]
-* xref:thinking-about-deployment-strategy.adoc[]
+* xref:deployment-topology-overview.adoc[]
 * Installation & Deployment
 ** xref:system-requirements.adoc[]
 ** xref:installing-solr.adoc[]
 ** xref:taking-solr-to-production.adoc[]
+** xref:optimize-extreme-use-cases.adoc[]
 ** xref:jvm-settings.adoc[]
 ** xref:upgrading-a-solr-cluster.adoc[]
 ** xref:backup-restore.adoc[]
