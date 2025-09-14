@@ -509,11 +509,6 @@ The final ranked list of results will have the first pass score(main query `q`) 
 Details about using the ReRank Query Parser can be found in the xref:query-guide:query-re-ranking.adoc[Query Re-Ranking] section.
 ====
 
-== Additional Resources
-
-* Blog: https://sease.io/2022/01/apache-solr-neural-search.html
-* Blog: https://sease.io/2022/01/apache-solr-neural-search-knn-benchmark.html
-
 == GPU Acceleration
 
 [NOTE]
@@ -782,3 +777,8 @@ Should return the following
   }
 }
 ----
+
+== Additional Resources
+
+* Blog: https://sease.io/2022/01/apache-solr-neural-search.html
+* Blog: https://sease.io/2022/01/apache-solr-neural-search-knn-benchmark.html
