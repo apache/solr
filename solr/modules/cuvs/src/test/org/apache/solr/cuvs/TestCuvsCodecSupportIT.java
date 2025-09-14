@@ -42,6 +42,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Integration test to verify the indexing and searching using {@link
+ * org.apache.solr.cuvs.CuvsCodec}
+ *
+ * @since 10.0.0
+ */
 public class TestCuvsCodecSupportIT extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -15,5 +15,7 @@
  * limitations under the License.
  */
 
-/** TODO: Add documentation here... */
+/**
+ * Contains the {@link org.apache.solr.cuvs.CuvsCodec} to enable GPU-based accelerated vector search
+ */
 package org.apache.solr.cuvs;

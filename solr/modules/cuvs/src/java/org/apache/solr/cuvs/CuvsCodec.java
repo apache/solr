@@ -31,6 +31,12 @@ import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This codec utilizes the Lucene99AcceleratedHNSWVectorsFormat from the lucene-cuvs library to
+ * enable GPU-based accelerated vector search.
+ *
+ * @since 10.0.0
+ */
 public class CuvsCodec extends FilterCodec {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
