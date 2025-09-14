@@ -49,7 +49,7 @@ allprojects { prj ->
           logger.debug("Signature file omitted (does not exist): ${sig}")
         }
       }
-      
+
       // commons-io is special: forbiddenapis has a versioned bundledSignature.
       bundledSignatures += resolvedMods
         .findAll { id -> id.group == 'commons-io' && id.name == 'commons-io' }
