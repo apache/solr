@@ -55,6 +55,7 @@
 ** User-Managed Clusters
 *** xref:user-managed-index-replication.adoc[]
 *** xref:user-managed-distributed-search.adoc[]
+** xref:optimize-extreme-use-cases.adoc[]
 
 * Monitoring Solr
 ** xref:configuring-logging.adoc[]

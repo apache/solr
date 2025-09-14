@@ -26,34 +26,28 @@ The site https://magjac.com/graphviz-visual-editor/ allows you to play with thos
 
 This section embodies the Solr community's thoughts on best practices for deploying Solr depending on your needs.
 
-NOTE: Something about the various directions you can scale...  David Smiley had some good words.  
-Query load.  Index Load.  Number of Collections.   Density of Data (Vectors).
-
-
 == Overview
-There is a logical progression to scaling Solr.  
+There is a logical progression of toplogies for scaling Solr based on the number of nodes you anticipate needing.  
 
 [graphviz]
 ....
-digraph {
-  node [style=rounded]
+graph {
+  node [style=rounded, shape=circle, fixedsize=true, width=2, height=2]
   //layout=circo
   overlap=false
-  //rankdir=LR;  // Set the direction to left to right
+  rankdir=LR;  // Set the direction to left to right
   node1 [label="1. Single \nNode"]
-  node2 [label="2. Nodes \nw/ Replication"]
-  node3 [label="2. Nodes \nw/ Embedded ZK"]
-  node5 [label="4. roles=data,zookeeper"]
-  node6 [label="5. External \nZK Ensemble"]
-  node7 [label="6. Solr Operator\n + Kubernetes"]
+  node2 [label="2. Two Nodes"]
+  node3 [label="3. Three or Five Nodes"]
+  node4 [label="4. Six to Twelve\nNodes"]
+  node5 [label="5. Twelve to \nTwenty Five\nNodes"]
+  node6 [label="6. Twenty Six \nand Beyond"]
 
-  node1 -> node2
-  node2 -> node5
-  node1 -> node3
-  node3 -> node5
-  node5 -> node6
-  node6 -> node7
-  
+  node1 -- node2
+  node2 -- node3
+  node3 -- node4
+  node4 -- node5
+  node5 -- node6  
 }
 ....
 
@@ -79,8 +73,6 @@ digraph single_node {
 
 Use this approach when:
 
-* You have minimal load
-* You can restart Solr and reindex your data quickly
 * You are just playing around
 * You aren't worried about HA or Failover
 * You want the simplest deployment approach.
@@ -90,81 +82,9 @@ Use this approach when:
 
 The next most common setup after a single node is having two seperate nodes running on seperate machines, with one as the xref:cluster-types.adoc#leaders[Leader] and the other as the Follower.  
 
-There are two approaches that you can take, one that uses loosely coupled Solr nodes with embedded ZooKeepers, and one with a shared ZooKeeper.  Both of these work just fine if you only need a single xref:cluster-types.adoc#shards[Shard] to store your data.  If you need multiple Shards for your data volume, skip down below.
+NOTE: This needs Jason's https://github.com/apache/solr/pull/2391 to get to done done and be able to recommend this!  Or, you start one solr with zk and the other connects.  that is today.
 
-==== Loosely coupled Solr Nodes
-
-The first is using replication to copy complete Lucene segments over from the Leader to the Followers.
-This allows you to run two completely independent Solr nodes and copy the data over.
-See the xref:user-managed-index-replication.adoc[User Managed Index Replication] page to learn more about setting this up.
-
-NOTE: Need to update user-managed-index-replication.adoc to talk about doing this when embedded zk is set up.  
-
-NOTE: Reference https://github.com/apache/solr/pull/1875
-
-[graphviz]
-....
-digraph leader_follower_replication {
-  node [style=rounded]
-  leader [shape=box]
-  follower [fillcolor=yellow, style="rounded,filled"]
-  
-  leader -> follower
-}
-....
-
-You can get even fancier with this, by introducing the concept of Repeater nodes.
-
-[graphviz]
-....
-digraph leader_repeater_follower_replication {
-  node [style=rounded]
-  leader [shape=box]
-  repeater [fillcolor=yellow, style="rounded,filled"]
-  follower [shape=box]
-  
-  leader -> repeater -> follower
-}
-....
-
-And even multiple followers:
-
-[graphviz]
-....
-digraph leader_repeater_followers_replication {
-  node [style=rounded]
-  leader [shape=box]
-  repeater [shape=box]
-  follower1 [fillcolor=yellow, style="rounded,filled"]
-  follower2 [fillcolor=yellow, style="rounded,filled"]
-  follower3 [fillcolor=yellow, style="rounded,filled"]
-  
-  leader -> repeater
-  repeater -> follower1
-  repeater -> follower2
-  repeater -> follower3
-}
-....
-
-Use these approaches when:
-
-* You want each Solr node to be completely independent in state.  No shared ZooKeeper for managing interactions.
-* You don't need any kind of realtime/near real time updates.
-* You potentially have a slow network boundary between your nodes, and want something robust between them.
-* All your updates can go to the leader node.
-
-Some con's to this approach are:
-
-* This is pull based, so the segments are pulled by the bottom node from each node above them, which introduces latency and potential for slightly different views of the data in the Leader and the various Followers.
-* You need to set up via various API calls all the interactions between the various nodes. 
-
-==== Embedded ZooKeeper Ensemble Setup
-
-NOTE: This needs Jason's https://github.com/apache/solr/pull/2391 to get to done done!
-
-The second approach you can take is to use a simple ZooKeeper xref:getting-started:solr-glossary.adoc#ensemble[Ensemble] setup.   You can start a pair of Solrs and have their embedded ZooKeeper join each other to form an Ensemble.   And yes, I hear you when you say "this isn't an odd number and ZK quorums should be an odd number to avoid split brain etc."   
-
-NOTE: What is the difference between failover and high availability?  
+This leverages a simplistic ZooKeeper xref:getting-started:solr-glossary.adoc#ensemble[Ensemble] setup.   You can start a pair of Solrs and have their embedded ZooKeeper join each other to form an Ensemble.   And yes, I hear you when you say "this isn't an odd number and ZK quorums should be an odd number to avoid split brain etc."
 
 [graphviz]
 ....
@@ -186,7 +106,13 @@ Use this approach when:
 * This approach is for when you want failover, but you aren't worried about high availability.  You have a load balancer in front of the two Solr nodes and it notices one goes away and balances traffic to the other one for querying. 
 * You will deal with the fall out to indexing if one of the nodes goes away.
 
-You can then scale this up to multiple Solr's:
+=== Moving to High Availability
+
+NOTE: What is the difference between failover and high availability?  Fail over, in this two node situation, means that you can still issue queries and keep your application running, but you no longer can index data because ZooKeeper can't form a quorum.  Often known as Split Brain.  High Availability means that your service continues un interruped in the event of any node going down.
+
+You can then scale beyond two nodes by running either three or five Solr's:
+
+NOTE: We specify three or five Solr nodes because ZooKeeper is running on each node, and requires a odd number of nodes to prevent Split Brain issues.
 
 [graphviz]
 ....
@@ -229,9 +155,13 @@ This will work well as you grow from six to 12 nodes in your cluster.
 [graphviz]
 ....
 graph simple_embedded_zk_ensemble {
+
+  //size="5,5"
   node [style=rounded]
   layout=circo
   overlap=false
+  nodesep=0.3
+  ratio=fill;
   node1 [shape=box, label="data, zookeeper", fillcolor=yellow, style="rounded,filled"]
   node2 [shape=box, label="data, zookeeper", fillcolor=yellow, style="rounded,filled"]
   node3 [shape=box, label="data, zookeeper", fillcolor=yellow, style="rounded,filled"]
@@ -256,7 +186,7 @@ graph simple_embedded_zk_ensemble {
 }
 ....
 
-=== A dedicated ZooKeeper ensemble
+=== Seperating out ZooKeeper workload
 
 As your load in the cluster goes up, sharing ZooKeeper workloads with Solr workloads may become a bottleneck.
 
@@ -305,8 +235,6 @@ Some con's to this approach are:
 
 === Going massive means going Kubernetes
 
-NOTE: What would a diagram look like?  How to show the operator?
-
 Beyond 25 nodes, you really need to think about more advanced tooling for managing all your nodes. 
 
 [graphviz]
@@ -318,7 +246,7 @@ graph kubernetes_setup {
   layout=fdp
   pack=1
   
-  Operator [fillcolor=aqua, style="filled"]
+  "Solr Operator" [fillcolor=aqua, style="filled"]
   
   zk1 [shape=box, label=" zookeeper", fillcolor=yellow, style="rounded,filled"]
   zk2 [shape=box, label=" zookeeper", fillcolor=yellow, style="rounded,filled"]
@@ -326,7 +254,7 @@ graph kubernetes_setup {
   
   subgraph clusterKubernetes {
       
-    Operator;
+    "Solr Operator";
     subgraph clusterSolr {
       node1
       node2
@@ -373,11 +301,13 @@ graph kubernetes_setup {
 
 Use this approaches when:
 
-* You go beyond 24 Solr nodes.
+* You go beyond 25 Solr nodes.
+* You have the maturity to manage massive data sets.
+* You may adopt this earlier if you are already a Kubernetes savvy organization.
 
 Some con's to this approach are:
 
-* Kubernetes is much like Oregon Trail, take a friend.
+* Kubernetes is much like traveling on the Oregon Trail, take a friend.
 
 == What about User Managed Solr?
 
@@ -386,8 +316,8 @@ These days, running embedded ZooKeeper is just fine, and that eliminates the mai
 
 == What about Embedding Solr in my Java Application?
 
-Embedded Solr is used extensively in Solr's own unit testing strategy.  
-It's also been used to build dedicated index create processes using Spark.  
+{solr-javadocs}/core/org/apache/solr/client/solrj/embedded/EmbeddedSolrServer.html[Embedded Solr] is used extensively in Solr's own unit testing strategy.  
+It's also frequently used to build dedicated indexes in distributed systems like Spark.  
 YMMV.  
 
 == What about [YOUR SPECIFIC NEED]
