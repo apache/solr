@@ -562,11 +562,95 @@ Where:
 
 Following is a complete example of setting up a collection with cuVS.
 
-. Install CUDA 13.0 and cuVS native library
+. Install CUDA 13.0
++
+[tabs#cuda-install]
+======
+Ubuntu 22.04 LTS::
++
+====
+[source,sh]
+----
+# Install CUDA 13.0 from NVIDIA's repository
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt-get update
+sudo apt-get install -y cuda-toolkit-13
+
+# Set up environment variables
+echo 'export PATH=/usr/local/cuda-13/bin:$PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda-13/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# Verify installation
+nvcc --version
+----
+====
+
+Ubuntu 24.04 LTS::
++
+====
+[source,sh]
+----
+# Install CUDA 13.0 from NVIDIA's repository
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt-get update
+sudo apt-get install -y cuda-toolkit-13
+
+# Set up environment variables
+echo 'export PATH=/usr/local/cuda-13/bin:$PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda-13/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# Verify installation
+nvcc --version
+----
+====
+
+Fedora 39+::
++
+====
+[source,sh]
+----
+# Install CUDA 13.0 from NVIDIA's repository
+# For Fedora 39, 40, and newer versions:
+sudo dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/fedora39/x86_64/cuda-fedora39.repo
+sudo dnf clean all
+sudo dnf -y install cuda-toolkit-13
+
+# Set up environment variables
+echo 'export PATH=/usr/local/cuda-13/bin:$PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda-13/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# Verify installation
+nvcc --version
+----
+====
+======
+
+. Fetch libcuvs native libraries
 +
 [source,sh]
 ----
-#TODO: Add the script.
+# Create virtual environment and install libcuvs-cu13 from NVIDIA's RAPIDS repositories
+python3 -m venv libcuvs-env
+source libcuvs-env/bin/activate
+
+# Install libcuvs-cu13 from NVIDIA's RAPIDS wheels (fetches latest 25.10.x artifact)
+pip install libcuvs-cu13<25.11.0 --pre --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple/
+
+# Set LD_LIBRARY_PATH to include libcuvs libraries
+SITE_PACKAGES_PATH=$(find libcuvs-env -name site-packages)
+export VENV_LIB=$SITE_PACKAGES_PATH/libcuvs/lib64:$SITE_PACKAGES_PATH/librmm/lib64:$SITE_PACKAGES_PATH/rapids_logger/lib64
+export LD_LIBRARY_PATH=$VENV_LIB:$LD_LIBRARY_PATH
+
+# Verify libcuvs_c.so is available
+find $LD_LIBRARY_PATH -name "libcuvs_c.so" | head -1
+
+# Deactivate virtual environment (optional - libraries are now accessible via LD_LIBRARY_PATH)
+deactivate
 ----
 
 . Copy the `cuvs` module jar files (before starting Solr).
