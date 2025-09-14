@@ -70,6 +70,7 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -92,7 +93,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final int DEFAULT_NUM_SUB_SHARDS = 2;
 
   public static final String SHARDSPLIT_CHECKDISKSPACE_ENABLED =
-      "solr.shardSplit.checkDiskSpace.enabled";
+      "solr.cloud.shardsplit.checkdiskspace.enabled";
 
   private final CollectionCommandContext ccc;
 
@@ -193,8 +194,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
     RTimerTree t;
     if (ccc.getCoreContainer().getNodeConfig().getMetricsConfig().isEnabled()) {
-      // check disk space for shard split
-      if (Boolean.parseBoolean(System.getProperty(SHARDSPLIT_CHECKDISKSPACE_ENABLED, "true"))) {
+      // check disk space before shard split
+      if (EnvUtils.getPropertyAsBool(SHARDSPLIT_CHECKDISKSPACE_ENABLED, true)) {
         // 1. verify that there is enough space on disk to create sub-shards
         log.debug(
             "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
@@ -716,7 +717,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         // state switch as per SOLR-13945 so that sub shards don't come up empty, momentarily, after
         // being marked active)
         t = timings.sub("finalCommit");
-        CollectionHandlingUtils.commit(results, slice.get(), parentShardLeader);
+        CollectionHandlingUtils.commit(
+            ccc.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient(),
+            results,
+            slice.get(),
+            parentShardLeader);
         t.stop();
         // switch sub shard states to 'active'
         log.info("Replication factor is 1 so switching shard states");
@@ -796,7 +801,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       // when the sub-shard replicas come up
       if (repFactor > 1) {
         t = timings.sub("finalCommit");
-        CollectionHandlingUtils.commit(results, slice.get(), parentShardLeader);
+        CollectionHandlingUtils.commit(
+            ccc.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient(),
+            results,
+            slice.get(),
+            parentShardLeader);
         t.stop();
       }
 

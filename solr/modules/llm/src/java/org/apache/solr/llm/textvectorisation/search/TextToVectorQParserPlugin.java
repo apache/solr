@@ -17,8 +17,8 @@
 package org.apache.solr.llm.textvectorisation.search;
 
 import java.io.IOException;
+import java.util.Arrays;
 import org.apache.lucene.index.VectorEncoding;
-import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
@@ -31,8 +31,6 @@ import org.apache.solr.llm.textvectorisation.store.rest.ManagedTextToVectorModel
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
-import org.apache.solr.schema.DenseVectorField;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
@@ -78,6 +76,18 @@ public class TextToVectorQParserPlugin extends QParserPlugin
       super(queryString, localParams, params, req);
     }
 
+    private void checkVectorEncoding() {
+      final VectorEncoding vectorEncoding =
+          getCheckedFieldType(req.getCore().getLatestSchema().getField(getFieldName()))
+              .getVectorEncoding();
+
+      if (vectorEncoding != VectorEncoding.FLOAT32) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Vector Encoding not supported : " + vectorEncoding);
+      }
+    }
+
     @Override
     public Query parse() throws SyntaxError {
       checkParam(qstr, "Query string is empty, nothing to vectorise");
@@ -86,25 +96,9 @@ public class TextToVectorQParserPlugin extends QParserPlugin
       SolrTextToVectorModel textToVector = modelStore.getModel(embeddingModelName);
 
       if (textToVector != null) {
-        final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
-        final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
-        int fieldDimensions = denseVectorType.getDimension();
-        VectorEncoding vectorEncoding = denseVectorType.getVectorEncoding();
-        final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
-
-        switch (vectorEncoding) {
-          case FLOAT32:
-            {
-              float[] vectorToSearch = textToVector.vectorise(qstr);
-              checkVectorDimension(vectorToSearch.length, fieldDimensions);
-              return new KnnFloatVectorQuery(
-                  schemaField.getName(), vectorToSearch, topK, getFilterQuery());
-            }
-          default:
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Vector Encoding not supported : " + vectorEncoding);
-        }
+        checkVectorEncoding();
+        super.vectorToSearch = Arrays.toString(textToVector.vectorise(qstr));
+        return super.parse();
       } else {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -113,18 +107,6 @@ public class TextToVectorQParserPlugin extends QParserPlugin
                 + "' can't be found in the store: "
                 + ManagedTextToVectorModelStore.REST_END_POINT);
       }
-    }
-  }
-
-  private void checkVectorDimension(int inputVectorDimension, int fieldVectorDimension) {
-    if (inputVectorDimension != fieldVectorDimension) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "incorrect vector dimension."
-              + " The vector value has size "
-              + inputVectorDimension
-              + " while it is expected a vector with size "
-              + fieldVectorDimension);
     }
   }
 
