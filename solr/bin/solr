@@ -176,7 +176,7 @@ if [[ $? -ne 0 ]] ; then
   exit 1
 else
   JAVA_VER_NUM=$(echo "$JAVA_VER" | grep -v '_OPTIONS' | head -1 | awk -F '"' '/version/ {print $2}' | sed -e's/^1\.//' | sed -e's/[._-].*$//')
-  if [[ "$JAVA_VER_NUM" -lt "$JAVA_VER_REQ" ]] ; then
+  if (( JAVA_VER_NUM < JAVA_VER_REQ )) ; then
     echo >&2 "Your current version of Java is too old to run this version of Solr."
     echo >&2 "We found major version $JAVA_VER_NUM, using command '${JAVA} -version', with response:"
     echo >&2 "${JAVA_VER}"
@@ -960,10 +960,6 @@ if [ -n "${SOLR_JETTY_HOST:-}" ]; then
   SCRIPT_SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
 fi
 
-if [ -n "${SOLR_ZK_EMBEDDED_HOST:-}" ]; then
-  SCRIPT_SOLR_OPTS+=("-Dsolr.zk.embedded.host=$SOLR_ZK_EMBEDDED_HOST")
-fi
-
 : "${STOP_PORT:=$((SOLR_PORT - 1000))}"
 
 if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] ; then
@@ -1071,7 +1067,7 @@ fi
 
 if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   : "${ZK_CLIENT_TIMEOUT:=30000}"
-  CLOUD_MODE_OPTS=("-DzkClientTimeout=$ZK_CLIENT_TIMEOUT")
+  CLOUD_MODE_OPTS=("-Dsolr.zookeeper.client.timeout=$ZK_CLIENT_TIMEOUT")
 
   if [ -n "${ZK_HOST:-}" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
@@ -1081,19 +1077,14 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
       exit 1
     fi
     if $verbose ; then
-      echo "Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun"
+      echo "Configuring SolrCloud to launch an embedded Zookeeper using -Dsolr.zookeeper.server.enabled"
     fi
 
-    CLOUD_MODE_OPTS+=('-DzkRun')
+    CLOUD_MODE_OPTS+=('-Dsolr.zookeeper.server.enabled=true')
   fi
 
   if [ -n "${ZK_CREATE_CHROOT:-}" ]; then
     CLOUD_MODE_OPTS+=("-DcreateZkChroot=$ZK_CREATE_CHROOT")
-  fi
-
-  # and if collection1 needs to be bootstrapped
-  if [ -e "$SOLR_HOME/collection1/core.properties" ]; then
-    CLOUD_MODE_OPTS+=('-Dbootstrap_confdir=./solr/collection1/conf' '-Dcollection.configName=myconf' '-DnumShards=1')
   fi
 
   if [ "${SOLR_SOLRXML_REQUIRED:-false}" == "true" ]; then
@@ -1140,6 +1131,11 @@ if [ "${ENABLE_REMOTE_JMX_OPTS:-false}" == "true" ]; then
   fi
 else
   REMOTE_JMX_OPTS=()
+fi
+
+# Do not use the java security manager when running Java 24+
+if (( JAVA_VER_NUM >= 24 )) ; then
+    export SOLR_SECURITY_MANAGER_ENABLED="false"
 fi
 
 # Enable java security manager (allowing filesystem access and other things)

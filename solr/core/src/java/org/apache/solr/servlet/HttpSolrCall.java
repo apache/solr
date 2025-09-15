@@ -327,7 +327,7 @@ public class HttpSolrCall {
     }
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     Supplier<DocCollection> logic =
-        () -> zkStateReader.getClusterState().getCollectionOrNull(collectionName);
+        () -> zkStateReader.getClusterState().getCollectionOrNull(collectionName, true);
 
     DocCollection docCollection = logic.get();
     if (docCollection != null) {
@@ -889,15 +889,17 @@ public class HttpSolrCall {
       return null;
     }
     Set<String> liveNodes = clusterState.getLiveNodes();
+    List<Replica> replicas = collection.getReplicasOnNode(cores.getZkController().getNodeName());
 
     if (isPreferLeader) {
-      List<Replica> leaderReplicas =
-          collection.getLeaderReplicas(cores.getZkController().getNodeName());
-      SolrCore core = randomlyGetSolrCore(liveNodes, leaderReplicas);
-      if (core != null) return core;
+      SolrCore core = null;
+      if (replicas != null && !replicas.isEmpty()) {
+        List<Replica> leaderReplicas = replicas.stream().filter(Replica::isLeader).toList();
+        core = randomlyGetSolrCore(liveNodes, leaderReplicas);
+        if (core != null) return core;
+      }
     }
 
-    List<Replica> replicas = collection.getReplicasOnNode(cores.getZkController().getNodeName());
     return randomlyGetSolrCore(liveNodes, replicas);
   }
 
@@ -928,7 +930,7 @@ public class HttpSolrCall {
 
   protected String getRemoteCoreUrl(String collectionName) throws SolrException {
     ClusterState clusterState = cores.getZkController().getClusterState();
-    final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName, true);
     if (docCollection == null) {
       return null;
     }

@@ -51,8 +51,6 @@ import org.slf4j.LoggerFactory;
 /** A {@link org.apache.solr.request.SolrRequestHandler} for ConfigSets API requests. */
 public class ConfigSetsHandler extends RequestHandlerBase implements PermissionNameProvider {
   // TODO refactor into o.a.s.handler.configsets package to live alongside actual API logic
-  public static final Boolean DISABLE_CREATE_AUTH_CHECKS =
-      Boolean.getBoolean("solr.disableConfigSetsCreateAuthChecks"); // this is for back compat only
   public static final String DEFAULT_CONFIGSET_NAME = "_default";
   public static final String AUTOCREATED_CONFIGSET_SUFFIX = ".AUTOCREATED";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

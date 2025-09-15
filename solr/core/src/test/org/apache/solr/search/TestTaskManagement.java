@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -219,8 +220,10 @@ public class TestTaskManagement extends SolrCloudTestCase {
           ModifiableSolrParams params = new ModifiableSolrParams();
 
           params.set("queryUUID", queryID);
-          SolrRequest<?> request = new QueryRequest(params);
-          request.setPath("/tasks/cancel");
+          var request =
+              new GenericSolrRequest(
+                      SolrRequest.METHOD.POST, "/tasks/cancel", SolrRequestType.ADMIN, params)
+                  .setRequiresCollection(true);
 
           try {
             NamedList<Object> queryResponse;

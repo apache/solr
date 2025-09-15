@@ -21,11 +21,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -53,10 +53,10 @@ public class CallerSpecificQueryLimit implements QueryLimit {
   // className -> set of method names
   private final Map<String, Set<String>> interestingCallers = new HashMap<>();
   // expr -> initial count
-  private final Map<String, Integer> maxCounts = new HashMap<>();
+  private final Map<String, Integer> maxCounts = new ConcurrentHashMap<>();
   // expr -> current count
-  private final Map<String, AtomicInteger> callCounts = new HashMap<>();
-  private Set<String> trippedBy = new LinkedHashSet<>();
+  private final Map<String, AtomicInteger> callCounts = new ConcurrentHashMap<>();
+  private Set<String> trippedBy = ConcurrentHashMap.newKeySet();
 
   /**
    * Signal a timeout in places that match the calling classes (and methods).

@@ -26,6 +26,13 @@ Before starting an upgrade to this version of Solr, please take the time to revi
 
 // TODO add similar text that previous releases have at this spot.
 
+There is a new limitation introduced in Solr 9.10, and that which is especially relevant to Solr 10
+and beyond.
+A Solr node will now fail to start if it's major.minor version (e.g. 9.10) is *lower* than that of any existing Solr node in a SolrCloud cluster (as reported by info in "live_node").
+What this
+means is that Solr supports rolling _upgrades_ but not rolling _downgrades_ spanning a major version.
+This compatibility safeguard can be toggled with "SOLR_CLOUD_DOWNGRADE_ENABLED".
+
 == System Requirements
 
 Minimum Java version for Solr 10.x is Java 21.
@@ -47,6 +54,11 @@ To learn about the updated options in each CLI tool, use the `--help` option or 
 Additionally, the `bin/solr delete` command no longer deletes a configset when you delete a collection.  Previously if you deleted a collection, it would also delete it's associated configset if it was the only user of it.
 Now you have to explicitly provide a  `--delete-config` option to delete the configsets.  This decouples the lifecycle of a configset from that of a collection.
 
+The `bin/solr start --bootstrap_conf` flag is a legacy feature for converting from Solr to SolrCloud mode and has been removed.
+
+The system property "bootstrap_confdir" (recently renamed to "solr.configset.bootstrap.confdir") used in `bin/solr start` allwowed a collection creation command to default to the examination of system properties in the absence of proper creation parameters by the same name (like "collection.configName").
+That no longer happens in Solr 10.  It is only used to load a configuration as a ConfigSet.
+
 === SolrJ
 
 * Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.
@@ -60,6 +72,33 @@ Users who previously relied on collection-specific URLs to avoid including the c
 
 * Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to JavaBinRequestWriter, JavaBinResponseParser, StreamingJavaBinResponseParser.
 This makes it clear that they pertain specifically to “JavaBin” rather than binary in general.
+
+* The system property `solr.httpclient.builder.factory` now only configures SolrClients using a Jetty based HttpClient, not an Apache one.
+
+=== SolrCloud Overseer
+
+SolrCloud now supports disabling the "Overseer", which is an elected node responsible for processing all cluster administration requests and collection state updates.
+When disabled, _any_ node that either receives such a request or wishes to do it internally will execute the command.
+It was possible to disable the Overseer since Solr 9 using undocumented configuration in solr.xml (`distributedClusterStateUpdates` & `distributedCollectionConfigSetExecution`) that have since been removed.
+Now this mode is toggled either with a boolean xref:deployment-guide:cluster-node-management.adoc#clusterprop[cluster property] `overseerEnabled`, or an env var `SOLR_CLOUD_OVERSEER_ENABLED`.
+In Solr 11, the Overseer might cease to exist, in an effort to simplify SolrCloud and maintenance.
+
+Upgrades: This choice cannot be changed with a rolling upgrade; doing so is highly risky.
+All nodes in the cluster must always have a consistent understanding of the overseer's enablement.
+If using the cluster property toggle, use the xref:deployment-guide:zookeeper-utilities.adoc#set-a-cluster-property[bin/solr cluster] CLI utility to set it while the cluster is offline.
+If using the env var; ensure each Solr node is configured to start with the setting set consistently.
+
+When the Overseer is disabled, it is nonetheless still elected, which can be influenced by node roles.
+If you are using any xref:configuration-guide:cluster-singleton-plugins.adoc[cluster singleton plugins], they execute on the node elected to be the Overseer.
+
+In general, most users won't notice a difference.
+Commands should execute faster without the Overseer.
+Debugging some SolrCloud problems with the Overseer is more challenging than without since the Overseer is complex (a principal reason for it's disablement).
+But the Overseer centralized some processing that results in efficiencies for large clusters in some scenarios.
+If you have a collection that has many replicas (hundreds), and many are co-located on the same node, then node stops and starts will internally interact with ZooKeeper more.
+Using xref:configuration-guide:configuring-solr-xml.adoc[minStateByteLenForCompression] will help.
+Creating a replica (either via collection creation or other circumstances) can take more time without the Overseer if these creation commands are delivered to many nodes around the cluster.
+That can be avoided simply by sending admin requests to a consistent node.
 
 === Service installer
 
@@ -119,7 +158,7 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * The ConcurrentMergeScheduler's autoIOThrottle default changed to `false` but `true` may be configured to retain prior behaviour. (SOLR-17631).
 
-* BlobHandler and the `.system` collection have been removed in favour of FileStore API.  (SOLR-17851). 
+* BlobHandler and the `.system` collection have been removed in favour of FileStore API.  (SOLR-17851).
 
 
 === Security
@@ -128,6 +167,10 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 === Upgrade to Jetty 12.x
 Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-life support. Jetty 12.x requires Java 17 or newer and is fully compatible with Solr's new minimum requirement of Java 21. This upgrade brings support for modern HTTP protocols and adopts the Jakarta EE 10 namespace. For more details, see https://webtide.com/jetty-12-has-arrived/.
+
+=== Docker
+
+The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 24 (noble) from Ubuntu 22 (jammy).
 
 === Analysis and Tokenizers
 

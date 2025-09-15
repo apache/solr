@@ -28,11 +28,11 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
 
   public void testUpdateLogButNoVersionField() throws Exception {
 
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
     try {
       assertConfigs("solrconfig.xml", "schema12.xml", "_version_");
     } finally {
-      System.clearProperty("enable.update.log");
+      System.clearProperty("solr.index.updatelog.enabled");
     }
   }
 
