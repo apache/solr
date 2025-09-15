@@ -25,21 +25,21 @@ public class CompoundResponseBuilder extends ResponseBuilder {
 
   public static final int STAGE_FUSION = STAGE_GET_FIELDS + 1;
 
-  public static final String RRF_Q_KEY = "rrf.q.key";
+  public static final String RRF_PREFIX = "rrf.prefix";
 
   public static class Inner extends ResponseBuilder {
     private final CompoundResponseBuilder owner;
-    private final String my_q_key;
+    private final String my_prefix;
 
-    public Inner(CompoundResponseBuilder owner, String my_q_key) {
+    public Inner(CompoundResponseBuilder owner, String my_prefix) {
       super(owner.req, new SolrQueryResponse(), owner.components);
       this.owner = owner;
-      this.my_q_key = my_q_key;
+      this.my_prefix = my_prefix;
     }
 
     @Override
-    protected String getQParameterName() {
-      return my_q_key;
+    protected String getParameterPrefix() {
+      return my_prefix;
     }
 
     @Override
@@ -56,12 +56,12 @@ public class CompoundResponseBuilder extends ResponseBuilder {
     public void addRequest(SearchComponent me, ShardRequest sreq) {
       // send what CompoundQueryComponent uses to detect shard requests and also make it
       // something that we can use to detect only our request/response
-      sreq.params.set(RRF_Q_KEY, my_q_key);
+      sreq.params.set(RRF_PREFIX, my_prefix);
       owner.addRequest(me, sreq);
     }
 
     public boolean isThisFromMe(ShardRequest sreq) {
-      return my_q_key.equals(sreq.params.get(RRF_Q_KEY)); // detect our request/response
+      return my_prefix.equals(sreq.params.get(RRF_PREFIX)); // detect our request/response
     }
   }
   ;
@@ -74,7 +74,7 @@ public class CompoundResponseBuilder extends ResponseBuilder {
   }
 
   @Override
-  protected String getQParameterName() {
-    return req.getParams().get(RRF_Q_KEY, super.getQParameterName());
+  protected String getParameterPrefix() {
+    return req.getParams().get(RRF_PREFIX, super.getParameterPrefix());
   }
 }

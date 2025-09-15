@@ -182,7 +182,7 @@ public class QueryComponent extends SearchComponent {
     String queryString = rb.getQueryString();
     if (queryString == null) {
       // this is the normal way it's set.
-      queryString = params.get(rb.getQParameterName());
+      queryString = params.get(rb.getParameterPrefix() + CommonParams.Q);
       rb.setQueryString(queryString);
     }
 

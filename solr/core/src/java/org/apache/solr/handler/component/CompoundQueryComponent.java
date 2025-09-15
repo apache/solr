@@ -29,9 +29,9 @@ public class CompoundQueryComponent extends QueryComponent {
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     if (rb instanceof CompoundResponseBuilder crb) {
-      if (rb.req.getParams().get(CompoundResponseBuilder.RRF_Q_KEY) == null) {
-        crb.responseBuilders.add(new CompoundResponseBuilder.Inner(crb, "rrf.1.q"));
-        crb.responseBuilders.add(new CompoundResponseBuilder.Inner(crb, "rrf.2.q"));
+      if (rb.req.getParams().get(CompoundResponseBuilder.RRF_PREFIX) == null) {
+        crb.responseBuilders.add(new CompoundResponseBuilder.Inner(crb, "rrf.1."));
+        crb.responseBuilders.add(new CompoundResponseBuilder.Inner(crb, "rrf.2."));
         for (var rb_i : crb.responseBuilders) {
           super.prepare(rb_i);
         }
