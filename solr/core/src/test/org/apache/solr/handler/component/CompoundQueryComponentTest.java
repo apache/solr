@@ -102,20 +102,20 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
     final String t1 = "a_t";
     {
       new UpdateRequest()
-          .add(sdoc(id, "a", t1, "alfalfa"))
-          .add(sdoc(id, "b", t1, "borage"))
-          .add(sdoc(id, "c", t1, "clover"))
+          .add(sdoc(id, "a", t1, "alfalfa forage"))
+          .add(sdoc(id, "b", t1, "borage forage"))
+          .add(sdoc(id, "c", t1, "clover forage"))
           .add(sdoc(id, "1", t1, "solitary bee"))
           .add(sdoc(id, "10", t1, "bumble bee"))
           .add(sdoc(id, "1000", t1, "honey bee"))
           .commit(cluster.getSolrClient(), COLLECTION);
     }
 
-    final String q_bee_yes = "+" + t1 + ":bee";
-    final String q_bee_no = "-" + t1 + ":bee";
+    final String q_bee = t1 + ":bee";
+    final String q_forage = t1 + ":forage";
 
     // search for the documents in a single query
-    for (String q : new String[] {null, q_bee_yes, q_bee_no}) {
+    for (String q : new String[] {null, q_bee, q_forage}) {
       // compose the query
       final SolrQuery solrQuery = new SolrQuery(q == null ? "*:*" : q);
       solrQuery.set("sort", "id asc");
@@ -146,8 +146,8 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
       // compose the query
       final SolrQuery solrQuery = new SolrQuery("id:0");
       solrQuery.set("rrf.prefix.list", "rrf.1.,rrf.2.");
-      solrQuery.set("rrf.1.q", "{!sort='id desc'}" + q_bee_yes);
-      solrQuery.set("rrf.2.q", "{!sort='id asc'}" + q_bee_no);
+      solrQuery.set("rrf.1.q", "{!sort='id desc'}" + q_bee);
+      solrQuery.set("rrf.2.q", "{!sort='id asc'}" + q_forage);
       solrQuery.setRequestHandler(compoundSearchHandlerName);
 
       // make the query
@@ -160,11 +160,17 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
       assertEquals(3, documentList.getNumFound());
       assertEquals(6, documentList.size());
       assertEquals("1000", documentList.get(0).getFieldValue("id"));
+      assertEquals("honey bee", documentList.get(0).getFieldValue("a_t"));
       assertEquals("a", documentList.get(1).getFieldValue("id"));
+      assertEquals("alfalfa forage", documentList.get(1).getFieldValue("a_t"));
       assertEquals("10", documentList.get(2).getFieldValue("id"));
+      assertEquals("bumble bee", documentList.get(2).getFieldValue("a_t"));
       assertEquals("b", documentList.get(3).getFieldValue("id"));
+      assertEquals("borage forage", documentList.get(3).getFieldValue("a_t"));
       assertEquals("1", documentList.get(4).getFieldValue("id"));
+      assertEquals("solitary bee", documentList.get(4).getFieldValue("a_t"));
       assertEquals("c", documentList.get(5).getFieldValue("id"));
+      assertEquals("clover forage", documentList.get(5).getFieldValue("a_t"));
     }
   }
 }
