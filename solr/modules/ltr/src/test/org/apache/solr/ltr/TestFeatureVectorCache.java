@@ -30,7 +30,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
 
   @Before
   public void before() throws Exception {
-    setupFeatureVectorCachetest(false);
+    setupFeatureVectorCacheTest(false);
 
     assertU(adoc("id", "1", "title", "w2", "description", "w2", "popularity", "2"));
     assertU(adoc("id", "2", "title", "w1", "description", "w1", "popularity", "0"));
@@ -92,7 +92,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     query.add("rows", "3");
     query.add("fl", "[fv efi.efi_feature=3]");
 
-    // No caching, we want to see lookups, an insertions and no hits
+    // No caching, we want to see lookups, insertions and no hits
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
@@ -127,7 +127,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     query.add("rows", "3");
     query.add("fl", "[fv store=store1 efi.efi_feature=3]");
 
-    // No caching, we want to see lookups, an insertions and no hits
+    // No caching, we want to see lookups, insertions and no hits
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
@@ -172,7 +172,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     query.add("fl", "id,score,fv:[fv efi.efi_feature=3]");
     query.add("rq", "{!ltr reRankDocs=3 model=featurevectorcache_linear_model efi.efi_feature=4}");
 
-    // No caching, we want to see lookups, an insertions and no hits since the efi are different
+    // No caching, we want to see lookups, insertions and no hits since the efi are different
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={"
@@ -258,7 +258,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
   }
 
   @Test
-  public void testFeatureVectorCache_loggingAllStoreReranking() throws Exception {
+  public void testFeatureVectorCache_loggingAllFeatureStoreAndReranking() throws Exception {
     final String docs0fv_dense_csv =
         FeatureLoggerTestUtils.toFeatureVector(
             "value_feature_1",
@@ -291,7 +291,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     query.add("fl", "id,score,fv:[fv logAll=true efi.efi_feature=3]");
     query.add("rq", "{!ltr reRankDocs=3 model=featurevectorcache_linear_model efi.efi_feature=4}");
 
-    // No caching, we want to see lookups, an insertions and no hits since the efi are different
+    // No caching, we want to see lookups, insertions and no hits since the efi are different
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={"
@@ -337,7 +337,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     query.add("fl", "id,score,fv:[fv store=store1 efi.efi_feature=3]");
     query.add("rq", "{!ltr reRankDocs=3 model=featurevectorcache_linear_model efi.efi_feature=4}");
 
-    // No caching, we want to see lookups, an insertions and no hits since the efi are different
+    // No caching, we want to see lookups, insertions and no hits since the efi are different
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={"

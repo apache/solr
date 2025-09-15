@@ -49,8 +49,8 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.apache.solr.search.SolrCache;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -497,7 +497,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       // score on the model for every document, since 0 features matching could
       // return a
       // non 0 score for a given model.
-      ModelScorer mscorer = new ModelScorer(this, featureScorers);
+      ModelScorer mscorer = new ModelScorer(featureScorers);
       return mscorer;
     }
 
@@ -515,8 +515,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         return docInfo;
       }
 
-      public ModelScorer(
-          List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+      public ModelScorer(List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
         isLogging = false;
         docInfo = new DocInfo();
         for (final Feature.FeatureWeight.FeatureScorer subScorer : featureScorers) {
@@ -674,8 +673,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         private final List<DisiWrapper> wrappers;
         private final MultiFeaturesIterator multiFeaturesIteratorIterator;
 
-        private MultiFeaturesScorer(
-            List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+        private MultiFeaturesScorer(List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
           if (featureScorers.size() <= 1) {
             throw new IllegalArgumentException("There must be at least 2 subScorers");
           }
@@ -838,10 +836,11 @@ public class LTRScoringQuery extends Query implements Accountable {
         protected float[] extractSingleFeatureVector(
             List<Feature.FeatureWeight.FeatureScorer> featureScorers) throws IOException {
           float[] featureVector = initFeatureVector(allFeaturesInStore);
-          for (int i = 0; i < featureScorers.size(); i++) {
-            Scorer scorer = featureScorers.get(i);
+          for (final Scorer scorer : featureScorers) {
             if (scorer.docID() == traversalScorer.activeDoc) {
-              Feature.FeatureWeight scFW = (Feature.FeatureWeight) scorer.getWeight();
+              Feature.FeatureWeight.FeatureScorer featureScorer =
+                  (Feature.FeatureWeight.FeatureScorer) scorer;
+              Feature.FeatureWeight scFW = featureScorer.getWeight();
               final int featureId = scFW.getIndex();
               float featureValue = scorer.score();
               featureVector[featureId] = featureValue;
@@ -855,8 +854,9 @@ public class LTRScoringQuery extends Query implements Accountable {
           final DisiWrapper topList = subScorers.topList();
           float[] featureVector = initFeatureVector(allFeaturesInStore);
           for (DisiWrapper w = topList; w != null; w = w.next) {
-            final Scorer subScorer = w.scorer;
-            Feature.FeatureWeight feature = (Feature.FeatureWeight) subScorer.getWeight();
+            final Feature.FeatureWeight.FeatureScorer subScorer =
+                (Feature.FeatureWeight.FeatureScorer) w.scorer;
+            Feature.FeatureWeight feature = subScorer.getWeight();
             final int featureId = feature.getIndex();
             float featureValue = subScorer.score();
             featureVector[featureId] = featureValue;

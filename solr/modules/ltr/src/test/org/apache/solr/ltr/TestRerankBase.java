@@ -120,7 +120,7 @@ public class TestRerankBase extends RestTestBase {
     if (bulkIndex) bulkIndex();
   }
 
-  protected static void setupFeatureVectorCachetest(boolean bulkIndex) throws Exception {
+  protected static void setupFeatureVectorCacheTest(boolean bulkIndex) throws Exception {
     chooseDefaultFeatureFormat();
     setuptest("solrconfig-ltr-featurevectorcache.xml", "schema.xml");
     if (bulkIndex) bulkIndex();
