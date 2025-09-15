@@ -179,7 +179,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     query.add("fl", "id,score,fv:[fv efi.efi_feature=3]");
     query.add("rq", "{!ltr reRankDocs=3 model=featurevectorcache_linear_model efi.efi_feature=4}");
 
-    // No caching, we want to see lookups, insertions and no hits since the efi are different
+    // No caching, we want to see lookups, insertions and no hits since the efis are different
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={"
@@ -194,7 +194,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     assertEquals(0, (long) filterCacheMetrics.get("hits"));
 
     query.add("sort", "popularity desc");
-    // Caching, we want to see hits and same score
+    // Caching, we want to see hits and same scores as before
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={"
@@ -249,7 +249,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     assertEquals(docs.size(), (long) filterCacheMetrics.get("hits"));
 
     query.add("sort", "popularity desc");
-    // Caching, we want to see hits and same score
+    // Caching, we want to see hits and same scores
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={"
@@ -298,7 +298,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     query.add("fl", "id,score,fv:[fv logAll=true efi.efi_feature=3]");
     query.add("rq", "{!ltr reRankDocs=3 model=featurevectorcache_linear_model efi.efi_feature=4}");
 
-    // No caching, we want to see lookups, insertions and no hits since the efi are different
+    // No caching, we want to see lookups, insertions and no hits since the efis are different
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={"
@@ -313,7 +313,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     assertEquals(0, (long) filterCacheMetrics.get("hits"));
 
     query.add("sort", "popularity desc");
-    // Caching, we want to see hits and same score
+    // Caching, we want to see hits and same scores
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={"
@@ -344,7 +344,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     query.add("fl", "id,score,fv:[fv store=store1 efi.efi_feature=3]");
     query.add("rq", "{!ltr reRankDocs=3 model=featurevectorcache_linear_model efi.efi_feature=4}");
 
-    // No caching, we want to see lookups, insertions and no hits since the efi are different
+    // No caching, we want to see lookups, insertions and no hits since the efis are different
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={"
@@ -359,7 +359,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     assertEquals(0, (long) filterCacheMetrics.get("hits"));
 
     query.add("sort", "popularity desc");
-    // Caching, we want to see hits and same score
+    // Caching, we want to see hits and same scores
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={"
