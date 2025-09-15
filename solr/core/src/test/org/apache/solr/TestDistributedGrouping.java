@@ -30,6 +30,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.response.SolrQueryResponse;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -40,6 +42,11 @@ import org.junit.Test;
  */
 @SuppressPointFields(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10844")
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-delaying-component.xml", "schema.xml");
+  }
 
   public TestDistributedGrouping() {
     // SOLR-10844: Even with points suppressed, this test breaks if we (randomize) docvalues="true"
@@ -1253,9 +1260,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
       for (String rows : new String[] {"10", "0"}) {
         simpleQuery(
             "q", "*:*", "group", "true", "group.field", i1, "group.ngroups", ngroups, "rows", rows);
-        simpleQuery(
+        QueryResponse rsp = simpleQuery(
             "q",
-            "*:*",
+            t1 + ":eggs",
             "group",
             "true",
             "group.field",
@@ -1264,8 +1271,31 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
             ngroups,
             "rows",
             rows,
+            "cache",
+            "false",
             "timeAllowed",
-            "123456");
+            "200",
+            "sleep",
+            "300");
+        assertTrue("header: " + rsp.getHeader(), SolrQueryResponse.isPartialResults(rsp.getHeader()));
+        rsp = simpleQuery(
+            "q",
+            t1 + ":eggs",
+            "group",
+            "true",
+            "group.field",
+            i1,
+            "group.ngroups",
+            ngroups,
+            "rows",
+            rows,
+            "cache",
+            "false",
+            "timeAllowed",
+            "200",
+            "sleep",
+            "10");
+        assertFalse("header: " + rsp.getHeader(), SolrQueryResponse.isPartialResults(rsp.getHeader()));
       }
     }
 
@@ -1652,13 +1682,13 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "true");
   }
 
-  private void simpleQuery(Object... queryParams) throws SolrServerException, IOException {
+  private QueryResponse simpleQuery(Object... queryParams) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int i = 0; i < queryParams.length; i += 2) {
       params.add(queryParams[i].toString(), queryParams[i + 1].toString());
     }
     params.set("shards", shards);
-    queryServer(params);
+    return queryServer(params);
   }
 
   /**
