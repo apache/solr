@@ -145,10 +145,9 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
     {
       // compose the query
       final SolrQuery solrQuery = new SolrQuery("id:0");
-      solrQuery.set("sort", "id asc");
       solrQuery.set("rrf", true);
-      solrQuery.set("rrf.q.1", q_bee_yes);
-      solrQuery.set("rrf.q.2", q_bee_no);
+      solrQuery.set("rrf.q.1", "{!sort='id desc'}" + q_bee_yes);
+      solrQuery.set("rrf.q.2", "{!sort='id asc'}" + q_bee_no);
       solrQuery.setRequestHandler(compoundSearchHandlerName);
 
       // make the query
@@ -160,11 +159,11 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
       assertFalse(documentList.getNumFoundExact());
       assertEquals(3, documentList.getNumFound());
       assertEquals(6, documentList.size());
-      assertEquals("1", documentList.get(0).getFieldValue("id"));
+      assertEquals("1000", documentList.get(0).getFieldValue("id"));
       assertEquals("a", documentList.get(1).getFieldValue("id"));
       assertEquals("10", documentList.get(2).getFieldValue("id"));
       assertEquals("b", documentList.get(3).getFieldValue("id"));
-      assertEquals("1000", documentList.get(4).getFieldValue("id"));
+      assertEquals("1", documentList.get(4).getFieldValue("id"));
       assertEquals("c", documentList.get(5).getFieldValue("id"));
     }
   }
