@@ -30,8 +30,8 @@ public class CompoundQueryComponent extends QueryComponent {
   public void prepare(ResponseBuilder rb) throws IOException {
     if (rb instanceof CompoundResponseBuilder crb) {
       if (rb.req.getParams().get(CompoundResponseBuilder.RRF_Q_KEY) == null) {
-        crb.responseBuilders.add(new CompoundResponseBuilder.Inner(crb, "rrf.q.1"));
-        crb.responseBuilders.add(new CompoundResponseBuilder.Inner(crb, "rrf.q.2"));
+        crb.responseBuilders.add(new CompoundResponseBuilder.Inner(crb, "rrf.1.q"));
+        crb.responseBuilders.add(new CompoundResponseBuilder.Inner(crb, "rrf.2.q"));
         for (var rb_i : crb.responseBuilders) {
           super.prepare(rb_i);
         }
