@@ -155,7 +155,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
   }
 
   @Test
-  public void testFeatureVectorCache_loggingModelStoreRerankingDifferentEfi() throws Exception {
+  public void testFeatureVectorCache_loggingModelStoreAndRerankingWithDifferentEfi() throws Exception {
     final String docs0fv_dense_csv =
         FeatureLoggerTestUtils.toFeatureVector(
             "value_feature_1",
@@ -210,7 +210,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
   }
 
   @Test
-  public void testFeatureVectorCache_loggingModelStoreRerankingSameEfi() throws Exception {
+  public void testFeatureVectorCache_loggingModelStoreAndRerankingWithSameEfi() throws Exception {
     final String docs0fv_dense_csv =
         FeatureLoggerTestUtils.toFeatureVector(
             "value_feature_1",
@@ -329,7 +329,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
   }
 
   @Test
-  public void testFeatureVectorCache_loggingExplicitStoreReranking() throws Exception {
+  public void testFeatureVectorCache_loggingExplicitStoreAndReranking() throws Exception {
     final String docs0fv_dense_csv =
         FeatureLoggerTestUtils.toFeatureVector("match_w1_title", "0.0", "value_feature_2", "2.0");
     final String docs0fv_sparse_csv =
