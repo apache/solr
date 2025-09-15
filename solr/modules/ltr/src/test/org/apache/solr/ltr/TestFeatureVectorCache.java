@@ -16,6 +16,8 @@
  */
 package org.apache.solr.ltr;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.core.SolrCore;
@@ -27,13 +29,21 @@ import org.junit.Test;
 
 public class TestFeatureVectorCache extends TestRerankBase {
   SolrCore core = null;
+  List<String> docs;
 
   @Before
   public void before() throws Exception {
     setupFeatureVectorCacheTest(false);
 
-    assertU(adoc("id", "1", "title", "w2", "description", "w2", "popularity", "2"));
-    assertU(adoc("id", "2", "title", "w1", "description", "w1", "popularity", "0"));
+    this.docs = new ArrayList<>();
+
+    // Add strings to the list
+    docs.add(adoc("id", "1", "title", "w2", "description", "w2", "popularity", "2"));
+    docs.add(adoc("id", "2", "title", "w1", "description", "w1", "popularity", "0"));
+
+    for (String doc : docs) {
+      assertU(doc);
+    }
     assertU(commit());
 
     loadFeatures("featurevectorcache_features.json");
@@ -97,8 +107,8 @@ public class TestFeatureVectorCache extends TestRerankBase {
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
     Map<String, Object> filterCacheMetrics = lookupFilterCacheMetrics(core);
-    assertEquals(2, (long) filterCacheMetrics.get("inserts"));
-    assertEquals(2, (long) filterCacheMetrics.get("lookups"));
+    assertEquals(docs.size(), (long) filterCacheMetrics.get("inserts"));
+    assertEquals(docs.size(), (long) filterCacheMetrics.get("lookups"));
     assertEquals(0, (long) filterCacheMetrics.get("hits"));
 
     query.add("sort", "popularity desc");
@@ -107,9 +117,9 @@ public class TestFeatureVectorCache extends TestRerankBase {
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
     filterCacheMetrics = lookupFilterCacheMetrics(core);
-    assertEquals(2, (long) filterCacheMetrics.get("inserts"));
-    assertEquals(4, (long) filterCacheMetrics.get("lookups"));
-    assertEquals(2, (long) filterCacheMetrics.get("hits"));
+    assertEquals(docs.size(), (long) filterCacheMetrics.get("inserts"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("lookups"));
+    assertEquals(docs.size(), (long) filterCacheMetrics.get("hits"));
   }
 
   @Test
@@ -132,8 +142,8 @@ public class TestFeatureVectorCache extends TestRerankBase {
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
     Map<String, Object> filterCacheMetrics = lookupFilterCacheMetrics(core);
-    assertEquals(2, (long) filterCacheMetrics.get("inserts"));
-    assertEquals(2, (long) filterCacheMetrics.get("lookups"));
+    assertEquals(docs.size(), (long) filterCacheMetrics.get("inserts"));
+    assertEquals(docs.size(), (long) filterCacheMetrics.get("lookups"));
     assertEquals(0, (long) filterCacheMetrics.get("hits"));
 
     query.add("sort", "popularity desc");
@@ -142,9 +152,9 @@ public class TestFeatureVectorCache extends TestRerankBase {
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
     filterCacheMetrics = lookupFilterCacheMetrics(core);
-    assertEquals(2, (long) filterCacheMetrics.get("inserts"));
-    assertEquals(4, (long) filterCacheMetrics.get("lookups"));
-    assertEquals(2, (long) filterCacheMetrics.get("hits"));
+    assertEquals(docs.size(), (long) filterCacheMetrics.get("inserts"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("lookups"));
+    assertEquals(docs.size(), (long) filterCacheMetrics.get("hits"));
   }
 
   @Test
@@ -182,8 +192,8 @@ public class TestFeatureVectorCache extends TestRerankBase {
             + docs0fv_default_csv
             + "'}");
     Map<String, Object> filterCacheMetrics = lookupFilterCacheMetrics(core);
-    assertEquals(4, (long) filterCacheMetrics.get("inserts"));
-    assertEquals(4, (long) filterCacheMetrics.get("lookups"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("inserts"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("lookups"));
     assertEquals(0, (long) filterCacheMetrics.get("hits"));
 
     query.add("sort", "popularity desc");
@@ -197,9 +207,9 @@ public class TestFeatureVectorCache extends TestRerankBase {
             + docs0fv_default_csv
             + "'}");
     filterCacheMetrics = lookupFilterCacheMetrics(core);
-    assertEquals(4, (long) filterCacheMetrics.get("inserts"));
-    assertEquals(8, (long) filterCacheMetrics.get("lookups"));
-    assertEquals(4, (long) filterCacheMetrics.get("hits"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("inserts"));
+    assertEquals(docs.size() * 4, (long) filterCacheMetrics.get("lookups"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("hits"));
   }
 
   @Test
@@ -237,9 +247,9 @@ public class TestFeatureVectorCache extends TestRerankBase {
             + docs0fv_default_csv
             + "'}");
     Map<String, Object> filterCacheMetrics = lookupFilterCacheMetrics(core);
-    assertEquals(2, (long) filterCacheMetrics.get("inserts"));
-    assertEquals(4, (long) filterCacheMetrics.get("lookups"));
-    assertEquals(2, (long) filterCacheMetrics.get("hits"));
+    assertEquals(docs.size(), (long) filterCacheMetrics.get("inserts"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("lookups"));
+    assertEquals(docs.size(), (long) filterCacheMetrics.get("hits"));
 
     query.add("sort", "popularity desc");
     // Caching, we want to see hits and same score
@@ -252,9 +262,9 @@ public class TestFeatureVectorCache extends TestRerankBase {
             + docs0fv_default_csv
             + "'}");
     filterCacheMetrics = lookupFilterCacheMetrics(core);
-    assertEquals(2, (long) filterCacheMetrics.get("inserts"));
-    assertEquals(8, (long) filterCacheMetrics.get("lookups"));
-    assertEquals(6, (long) filterCacheMetrics.get("hits"));
+    assertEquals(docs.size(), (long) filterCacheMetrics.get("inserts"));
+    assertEquals(docs.size() * 4, (long) filterCacheMetrics.get("lookups"));
+    assertEquals(docs.size() * 3, (long) filterCacheMetrics.get("hits"));
   }
 
   @Test
@@ -301,8 +311,8 @@ public class TestFeatureVectorCache extends TestRerankBase {
             + docs0fv_default_csv
             + "'}");
     Map<String, Object> filterCacheMetrics = lookupFilterCacheMetrics(core);
-    assertEquals(4, (long) filterCacheMetrics.get("inserts"));
-    assertEquals(4, (long) filterCacheMetrics.get("lookups"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("inserts"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("lookups"));
     assertEquals(0, (long) filterCacheMetrics.get("hits"));
 
     query.add("sort", "popularity desc");
@@ -316,9 +326,9 @@ public class TestFeatureVectorCache extends TestRerankBase {
             + docs0fv_default_csv
             + "'}");
     filterCacheMetrics = lookupFilterCacheMetrics(core);
-    assertEquals(4, (long) filterCacheMetrics.get("inserts"));
-    assertEquals(8, (long) filterCacheMetrics.get("lookups"));
-    assertEquals(4, (long) filterCacheMetrics.get("hits"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("inserts"));
+    assertEquals(docs.size() * 4, (long) filterCacheMetrics.get("lookups"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("hits"));
   }
 
   @Test
@@ -347,8 +357,8 @@ public class TestFeatureVectorCache extends TestRerankBase {
             + docs0fv_default_csv
             + "'}");
     Map<String, Object> filterCacheMetrics = lookupFilterCacheMetrics(core);
-    assertEquals(4, (long) filterCacheMetrics.get("inserts"));
-    assertEquals(4, (long) filterCacheMetrics.get("lookups"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("inserts"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("lookups"));
     assertEquals(0, (long) filterCacheMetrics.get("hits"));
 
     query.add("sort", "popularity desc");
@@ -362,8 +372,8 @@ public class TestFeatureVectorCache extends TestRerankBase {
             + docs0fv_default_csv
             + "'}");
     filterCacheMetrics = lookupFilterCacheMetrics(core);
-    assertEquals(4, (long) filterCacheMetrics.get("inserts"));
-    assertEquals(8, (long) filterCacheMetrics.get("lookups"));
-    assertEquals(4, (long) filterCacheMetrics.get("hits"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("inserts"));
+    assertEquals(docs.size() * 4, (long) filterCacheMetrics.get("lookups"));
+    assertEquals(docs.size() * 2, (long) filterCacheMetrics.get("hits"));
   }
 }
