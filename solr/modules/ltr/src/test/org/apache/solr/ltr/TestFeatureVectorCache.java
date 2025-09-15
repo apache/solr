@@ -36,11 +36,8 @@ public class TestFeatureVectorCache extends TestRerankBase {
     setupFeatureVectorCacheTest(false);
 
     this.docs = new ArrayList<>();
-
-    // Add strings to the list
     docs.add(adoc("id", "1", "title", "w2", "description", "w2", "popularity", "2"));
     docs.add(adoc("id", "2", "title", "w1", "description", "w1", "popularity", "0"));
-
     for (String doc : docs) {
       assertU(doc);
     }
