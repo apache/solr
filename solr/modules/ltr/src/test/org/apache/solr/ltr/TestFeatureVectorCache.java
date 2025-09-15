@@ -155,7 +155,8 @@ public class TestFeatureVectorCache extends TestRerankBase {
   }
 
   @Test
-  public void testFeatureVectorCache_loggingModelStoreAndRerankingWithDifferentEfi() throws Exception {
+  public void testFeatureVectorCache_loggingModelStoreAndRerankingWithDifferentEfi()
+      throws Exception {
     final String docs0fv_dense_csv =
         FeatureLoggerTestUtils.toFeatureVector(
             "value_feature_1",
