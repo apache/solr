@@ -145,7 +145,6 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
     {
       // compose the query
       final SolrQuery solrQuery = new SolrQuery("id:0");
-      solrQuery.set("rrf", true);
       solrQuery.set("rrf.q.1", "{!sort='id desc'}" + q_bee_yes);
       solrQuery.set("rrf.q.2", "{!sort='id asc'}" + q_bee_no);
       solrQuery.setRequestHandler(compoundSearchHandlerName);

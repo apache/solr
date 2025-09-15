@@ -25,9 +25,6 @@ public class CompoundSearchHandler extends SearchHandler {
   @Override
   protected ResponseBuilder newResponseBuilder(
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
-    if (req.getParams().getBool("rrf", false)) {
-      return new CompoundResponseBuilder(req, rsp, components);
-    }
-    return super.newResponseBuilder(req, rsp, components);
+    return new CompoundResponseBuilder(req, rsp, components);
   }
 }
