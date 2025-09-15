@@ -568,10 +568,6 @@ public class LTRScoringQuery extends Query implements Accountable {
         protected int activeDoc = -1;
         protected FeatureExtractor featureExtractor;
 
-        protected FeatureTraversalScorer() {
-          this.featureExtractor = new FeatureExtractor(this);
-        }
-
         void fillFeaturesInfo() throws IOException {
           // Initialize features to their default values and set isDefaultValue to true.
           reset();
@@ -598,10 +594,7 @@ public class LTRScoringQuery extends Query implements Accountable {
 
         private SingleFeatureScorer(List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
           this.featureScorers = featureScorers;
-        }
-
-        private List<Feature.FeatureWeight.FeatureScorer> getFeatureScorers() {
-          return this.featureScorers;
+          this.featureExtractor = new SingleFeatureExtractor(this, featureScorers);
         }
 
         @Override
@@ -686,10 +679,7 @@ public class LTRScoringQuery extends Query implements Accountable {
           }
 
           multiFeaturesIteratorIterator = new MultiFeaturesIterator(wrappers);
-        }
-
-        private DisiPriorityQueue getSubScorers() {
-          return this.subScorers;
+          this.featureExtractor = new MultiFeaturesExtractor(this, subScorers);
         }
 
         @Override
@@ -806,8 +796,8 @@ public class LTRScoringQuery extends Query implements Accountable {
         }
       }
 
-      private class FeatureExtractor {
-        private final FeatureTraversalScorer traversalScorer;
+      private abstract class FeatureExtractor {
+        protected final FeatureTraversalScorer traversalScorer;
 
         private FeatureExtractor(FeatureTraversalScorer traversalScorer) {
           this.traversalScorer = traversalScorer;
@@ -823,46 +813,7 @@ public class LTRScoringQuery extends Query implements Accountable {
           return featureVector;
         }
 
-        private float[] extractFeatureVector() throws IOException {
-          if (traversalScorer instanceof MultiFeaturesScorer) {
-            MultiFeaturesScorer multiFeaturesScorer = (MultiFeaturesScorer) traversalScorer;
-            return extractMultiFeaturesVector(multiFeaturesScorer.getSubScorers());
-          } else {
-            SingleFeatureScorer singleFeatureScorer = (SingleFeatureScorer) traversalScorer;
-            return extractSingleFeatureVector(singleFeatureScorer.getFeatureScorers());
-          }
-        }
-
-        protected float[] extractSingleFeatureVector(
-            List<Feature.FeatureWeight.FeatureScorer> featureScorers) throws IOException {
-          float[] featureVector = initFeatureVector(allFeaturesInStore);
-          for (final Scorer scorer : featureScorers) {
-            if (scorer.docID() == traversalScorer.activeDoc) {
-              Feature.FeatureWeight.FeatureScorer featureScorer =
-                  (Feature.FeatureWeight.FeatureScorer) scorer;
-              Feature.FeatureWeight scFW = featureScorer.getWeight();
-              final int featureId = scFW.getIndex();
-              float featureValue = scorer.score();
-              featureVector[featureId] = featureValue;
-            }
-          }
-          return featureVector;
-        }
-
-        protected float[] extractMultiFeaturesVector(DisiPriorityQueue subScorers)
-            throws IOException {
-          final DisiWrapper topList = subScorers.topList();
-          float[] featureVector = initFeatureVector(allFeaturesInStore);
-          for (DisiWrapper w = topList; w != null; w = w.next) {
-            final Feature.FeatureWeight.FeatureScorer subScorer =
-                (Feature.FeatureWeight.FeatureScorer) w.scorer;
-            Feature.FeatureWeight feature = subScorer.getWeight();
-            final int featureId = feature.getIndex();
-            float featureValue = subScorer.score();
-            featureVector[featureId] = featureValue;
-          }
-          return featureVector;
-        }
+        protected abstract float[] extractFeatureVector() throws IOException;
 
         private void fillFeaturesInfo() throws IOException {
           if (traversalScorer.activeDoc == traversalScorer.targetDoc) {
@@ -921,6 +872,58 @@ public class LTRScoringQuery extends Query implements Accountable {
             }
           }
           return result;
+        }
+      }
+
+      private class SingleFeatureExtractor extends FeatureExtractor {
+        List<Feature.FeatureWeight.FeatureScorer> featureScorers;
+
+        private SingleFeatureExtractor(
+            FeatureTraversalScorer singleFeatureScorer,
+            List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+          super(singleFeatureScorer);
+          this.featureScorers = featureScorers;
+        }
+
+        @Override
+        protected float[] extractFeatureVector() throws IOException {
+          float[] featureVector = initFeatureVector(allFeaturesInStore);
+          for (final Scorer scorer : featureScorers) {
+            if (scorer.docID() == traversalScorer.activeDoc) {
+              Feature.FeatureWeight.FeatureScorer featureScorer =
+                  (Feature.FeatureWeight.FeatureScorer) scorer;
+              Feature.FeatureWeight scFW = featureScorer.getWeight();
+              final int featureId = scFW.getIndex();
+              float featureValue = scorer.score();
+              featureVector[featureId] = featureValue;
+            }
+          }
+          return featureVector;
+        }
+      }
+
+      private class MultiFeaturesExtractor extends FeatureExtractor {
+        DisiPriorityQueue subScorers;
+
+        private MultiFeaturesExtractor(
+            FeatureTraversalScorer multiFeaturesScorer, DisiPriorityQueue subScorers) {
+          super(multiFeaturesScorer);
+          this.subScorers = subScorers;
+        }
+
+        @Override
+        protected float[] extractFeatureVector() throws IOException {
+          final DisiWrapper topList = subScorers.topList();
+          float[] featureVector = initFeatureVector(allFeaturesInStore);
+          for (DisiWrapper w = topList; w != null; w = w.next) {
+            final Feature.FeatureWeight.FeatureScorer subScorer =
+                (Feature.FeatureWeight.FeatureScorer) w.scorer;
+            Feature.FeatureWeight feature = subScorer.getWeight();
+            final int featureId = feature.getIndex();
+            float featureValue = subScorer.score();
+            featureVector[featureId] = featureValue;
+          }
+          return featureVector;
         }
       }
     }
