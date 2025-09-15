@@ -57,6 +57,8 @@ Improvements
 
 * SOLR-17867: Export tool should properly output exported documents in json, json w/ lines, and javabin formats. (Eric Pugh)
 
+* Minor refactoring of the TextToVectorQParserPlugin (Ilaria Petreti via Alessandro Benedetti)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -162,6 +164,8 @@ Dependency Upgrades
 
 * SOLR-17631: Upgrade to Lucene 10.2.1 (Ishan Chattopadhyaya, noble, Jason Gerlowski, Eric Pugh, janhoy, Christine Poerschke)
 
+* SOLR-17445: The base docker image has been upgraded from Ubuntu 22 (Jammy) to Ubuntu 24 (Noble). (Jan Høydahl)
+
 Other Changes
 ---------------------
 
@@ -242,6 +246,8 @@ Improvements
 * SOLR-17884: SolrJ users not using deprecated SolrClients can safely exclude Apache HttpClient dependencies.
   (David Smiley)
 
+* SOLR-17641: Solr is now able to start on Java 24 and later, but with Security Manager disabled (Houston Putman, Jan Høydahl)
+
 Optimizations
 ---------------------
 (No changes)
@@ -260,6 +266,8 @@ Bug Fixes
   (Timo Crabbé)
 
 * SOLR-17863: Fix race condition in SolrCore's fingerprint cache which caused leader election to hang. (Luke Kot-Zaniewski, Matthew Biscocho)
+
+* SOLR-17837: PULL replica nodes could be marked as "preferredLeader" by BALANCESHARDUNIQUE despite never being able to be elected leader (Kevin Liang via Houston Putman)
 
 Dependency Upgrades
 ---------------------

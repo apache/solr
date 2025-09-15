@@ -20,21 +20,11 @@ package org.apache.solr.cloud;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.cloud.overseer.ZkStateWriter.NO_OP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -56,7 +46,6 @@ import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
@@ -158,7 +147,7 @@ public class DistributedClusterStateUpdater {
    * CollectionNodeDownChangeCalculator#executeNodeDownStateUpdate}.
    */
   public enum MutatingCommand {
-    BalanceShardsUnique(BALANCESHARDUNIQUE, ZkStateReader.COLLECTION_PROP) {
+    BalanceShardsUnique(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
@@ -171,7 +160,7 @@ public class DistributedClusterStateUpdater {
         }
       }
     },
-    ClusterCreateCollection(CREATE, CommonParams.NAME) {
+    ClusterCreateCollection(CommonParams.NAME) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
@@ -183,91 +172,91 @@ public class DistributedClusterStateUpdater {
         return true;
       }
     },
-    ClusterDeleteCollection(DELETE, CommonParams.NAME) {
+    ClusterDeleteCollection(CommonParams.NAME) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new ClusterStateMutator(scm).deleteCollection(cs, message);
       }
     },
-    CollectionDeleteShard(DELETESHARD, ZkStateReader.COLLECTION_PROP) {
+    CollectionDeleteShard(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new CollectionMutator(scm).deleteShard(cs, message);
       }
     },
-    CollectionModifyCollection(MODIFYCOLLECTION, ZkStateReader.COLLECTION_PROP) {
+    CollectionModifyCollection(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new CollectionMutator(scm).modifyCollection(cs, message);
       }
     },
-    CollectionCreateShard(CREATESHARD, ZkStateReader.COLLECTION_PROP) {
+    CollectionCreateShard(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new CollectionMutator(scm).createShard(cs, message);
       }
     },
-    ReplicaAddReplicaProperty(ADDREPLICAPROP, ZkStateReader.COLLECTION_PROP) {
+    ReplicaAddReplicaProperty(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new ReplicaMutator(scm).addReplicaProperty(cs, message);
       }
     },
-    ReplicaDeleteReplicaProperty(DELETEREPLICAPROP, ZkStateReader.COLLECTION_PROP) {
+    ReplicaDeleteReplicaProperty(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new ReplicaMutator(scm).deleteReplicaProperty(cs, message);
       }
     },
-    ReplicaSetState(null, ZkStateReader.COLLECTION_PROP) {
+    ReplicaSetState(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new ReplicaMutator(scm).setState(cs, message);
       }
     },
-    SliceAddReplica(ADDREPLICA, ZkStateReader.COLLECTION_PROP) {
+    SliceAddReplica(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new SliceMutator(scm).addReplica(cs, message);
       }
     },
-    SliceAddRoutingRule(null, ZkStateReader.COLLECTION_PROP) {
+    SliceAddRoutingRule(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new SliceMutator(scm).addRoutingRule(cs, message);
       }
     },
-    SliceRemoveReplica(null, ZkStateReader.COLLECTION_PROP) {
+    SliceRemoveReplica(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new SliceMutator(scm).removeReplica(cs, message);
       }
     },
-    SliceRemoveRoutingRule(null, ZkStateReader.COLLECTION_PROP) {
+    SliceRemoveRoutingRule(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new SliceMutator(scm).removeRoutingRule(cs, message);
       }
     },
-    SliceSetShardLeader(null, ZkStateReader.COLLECTION_PROP) {
+    SliceSetShardLeader(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new SliceMutator(scm).setShardLeader(cs, message);
       }
     },
-    SliceUpdateShardState(null, ZkStateReader.COLLECTION_PROP) {
+    SliceUpdateShardState(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
@@ -275,24 +264,9 @@ public class DistributedClusterStateUpdater {
       }
     };
 
-    private static final EnumMap<CollectionParams.CollectionAction, MutatingCommand>
-        actionsToCommands;
-
-    static {
-      actionsToCommands = new EnumMap<>(CollectionParams.CollectionAction.class);
-      for (MutatingCommand mc : MutatingCommand.values()) {
-        if (mc.collectionAction != null) {
-          actionsToCommands.put(mc.collectionAction, mc);
-        }
-      }
-    }
-
-    private final CollectionParams.CollectionAction collectionAction;
     private final String collectionNameParamName;
 
-    MutatingCommand(
-        CollectionParams.CollectionAction collectionAction, String collectionNameParamName) {
-      this.collectionAction = collectionAction;
+    MutatingCommand(String collectionNameParamName) {
       this.collectionNameParamName = collectionNameParamName;
     }
 
@@ -302,18 +276,6 @@ public class DistributedClusterStateUpdater {
 
     public String getCollectionName(ZkNodeProps message) {
       return message.getStr(collectionNameParamName);
-    }
-
-    /**
-     * @return the {@link MutatingCommand} corresponding to the passed {@link
-     *     org.apache.solr.common.params.CollectionParams.CollectionAction} or {@code null} if no
-     *     cluster state update command is defined for that action (given that {@link
-     *     org.apache.solr.common.params.CollectionParams.CollectionAction} are used for the
-     *     Collection API and only some are used for the cluster state updates, this is expected).
-     */
-    public static MutatingCommand getCommandFor(
-        CollectionParams.CollectionAction collectionAction) {
-      return actionsToCommands.get(collectionAction);
     }
 
     /**

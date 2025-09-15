@@ -67,6 +67,7 @@ public class TestQueryLimits extends SolrCloudTestCase {
           "SearchHandler.handleRequestBody",
           "QueryComponent",
           "QueryComponent.process",
+          "TimeLimitingBulkScorer.score",
           "FacetComponent.process:2"
         };
     for (String matchingExpr : matchingExprTests) {
