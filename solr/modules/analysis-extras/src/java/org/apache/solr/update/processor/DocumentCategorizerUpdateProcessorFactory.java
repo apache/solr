@@ -55,10 +55,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Classifies text in fields using a model via OpenNLP <code>modelFile</code> from the values found in any
- * matching <code>source</code> field into a configured <code>dest</code> field.
+ * Classifies text in fields using a model via OpenNLP <code>modelFile</code> from the values found
+ * in any matching <code>source</code> field into a configured <code>dest</code> field.
  *
- * <p>See the <a href="https://solr.apache.org/guide/solr/latest/getting-started/tutorial-opennlp.html">Tutorial</a> for the step by step guide.
+ * <p>See the <a
+ * href="https://solr.apache.org/guide/solr/latest/getting-started/tutorial-opennlp.html">Tutorial</a>
+ * for the step by step guide.
  *
  * <p>The <code>source</code> field(s) can be configured as either:
  *
