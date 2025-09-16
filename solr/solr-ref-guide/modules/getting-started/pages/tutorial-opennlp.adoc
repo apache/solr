@@ -19,35 +19,31 @@
 // under the License.
 
 [[exercise-opennlp]]
-== Exercise: Using OpenNLP for Sentiment Analysis in Solr
+== Exercise: Using OpenNLP and ONNX Models for Sentiment Analysis in Solr
 
-This exercise will introduce you to integrating Natural Language Processing (NLP) capabilities in Solr using Apache OpenNLP. Specifically, you'll learn how to perform sentiment analysis by automatically classifying documents based on the sentiment expressed in text fields.
+This tutorial demonstrates how to enhance Solr with advanced Natural Language Processing (NLP) capabilities through Apache OpenNLP and ONNX. 
+You'll learn how to set up a sentiment analysis pipeline that automatically classifies documents during indexing.
 
-=== Introduction to NLP in Solr
+We are going to use the https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment model in the tutorial, however there are many others you can use.
 
-Natural Language Processing (NLP) enables computers to understand, interpret, and generate human language. Solr's integration with Apache OpenNLP and ONNX (Open Neural Network Exchange) models allows you to add sophisticated text analysis capabilities to your search applications.
+----
+is a bert-base-multilingual-uncased model finetuned for sentiment analysis on product reviews in 
+six languages: English, Dutch, German, French, Spanish, and Italian. 
+It predicts the sentiment of the review as a number of stars (between 1 and 5).
+----
 
-In this tutorial, we'll focus on sentiment analysis - determining whether a piece of text expresses positive, negative, or neutral sentiment. This is particularly useful for:
+=== Prerequisites
 
-* Analyzing product reviews
-* Monitoring social media sentiment
-* Processing customer feedback
-* Content recommendation and filtering
-* Automated content moderation
+Before starting this tutorial, you'll need:
 
-=== Getting Started
+* Apache Solr (version 10 or later)
+* The `analysis-extras` module enabled
+* Packages enabled in Solr (to allow you to upload the model files to the cluster)
+* At least 4GB of memory allocated to Solr
 
-==== Prerequisites
+=== Step 1: Start Solr with Required Modules
 
-For this tutorial, you'll need:
-
-* A running Solr instance
-* Internet access to download model files
-* At least 4GB of memory available for Solr
-
-==== Start Solr with Required Modules
-
-We need to start Solr with the `analysis-extras` module enabled and package loading enabled:
+To enable NLP processing in Solr, start Solr with the `analysis-extras` module and package support:
 
 [,console]
 ----
@@ -57,67 +53,49 @@ $ bin/solr start -m 4g -Dsolr.modules=analysis-extras -Denable.packages=true
 
 [NOTE]
 ====
-The security manager is temporarily disabled to allow loading of the ONNX model. In a production environment, you would configure appropriate security policies instead.
+We temporarily disable the security manager to allow loading of the ONNX runtime. In production environments, you would configure appropriate security policies instead.
 ====
 
-=== Understanding the Document Categorizer
+=== Step 2: Download the Required Model Files
 
-The heart of our sentiment analysis implementation is the `DocumentCategorizerUpdateProcessorFactory`. This factory creates an update processor that:
+For sentiment analysis, we need two essential files:
 
-1. Takes input text from specified fields in your documents
-2. Processes that text through a machine learning model 
-3. Assigns category labels (sentiment classifications) to destination fields
+1. An ONNX model file that contains the neural network
+2. A vocabulary file that maps tokens to IDs for the model
 
-The processor uses Apache OpenNLP's deep learning integration with ONNX models to perform the classification.
-
-==== Technical Components
-
-* `DocumentCategorizerUpdateProcessorFactory`: Creates processors that classify documents
-* `DocumentCategorizerDL`: The OpenNLP component that performs the actual classification
-* ONNX Runtime: Executes the machine learning model efficiently
-
-=== Setting Up Your Environment
-
-==== Download the ONNX Model and Vocabulary
-
-First, create a directory to store the model files:
+Let's create a directory for our models and download them:
 
 [,console]
 ----
 $ mkdir -p models/sentiment/
+$ wget -O models/sentiment/model.onnx https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/resolve/main/onnx/model_quantized.onnx
+$ wget -O models/sentiment/vocab.txt https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/raw/main/vocab.txt
 ----
 
-Next, download the pre-trained ONNX model and vocabulary files:
-
-[,console]
-----
-$ wget -O models/sentiment/model.onnx https://nightlies.apache.org/solr/opennlp-dl-integration/model_quantized.onnx
-$ wget -O models/sentiment/vocab.txt https://nightlies.apache.org/solr/opennlp-dl-integration/vocab.txt
-----
-
-[TIP]
-====
-The model we're using is a multilingual BERT model fine-tuned for sentiment analysis and quantized for better performance. It classifies text on a 5-point scale from "very bad" to "very good".
-====
-
-.What is ONNX?
+.About ONNX Models
 [sidebar]
 ****
-ONNX (Open Neural Network Exchange) is an open format for representing machine learning models. It allows models trained in different frameworks (like PyTorch, TensorFlow, or Hugging Face) to be exported to a standard format that can be used by various runtime environments, including Solr's NLP processors.
+ONNX (Open Neural Network Exchange) is an open format for representing machine learning models. It allows models trained in different frameworks (like PyTorch, TensorFlow, or Hugging Face) to be exported to a standard format that can be used by various runtime environments.
+
+Learn more about ONNX at https://onnx.ai[onnx.ai^, role="external", window="_blank"].
+
+The model we're using is a multilingual BERT model fine-tuned for sentiment classification and quantized for better performance. It produces classifications on a 5-point scale from "very bad" to "very good".
+
+Learn more about ONNX at https://onnx.ai[onnx.ai^, role="external", window="_blank"].
 ****
 
-=== Create a Collection for Sentiment Analysis
+=== Step 3: Create a Collection for Sentiment Analysis
 
-Let's create a new collection where we'll apply sentiment analysis:
+Create a new collection for our sentiment analysis experiments:
 
 [,console]
 ----
 $ bin/solr create -c sentiment
 ----
 
-=== Configure the Schema
+=== Step 4: Configure the Schema
 
-We need to add fields to our schema to store the input text and the sentiment classification results:
+We need to add fields to our schema to store both the input text and the sentiment classification results:
 
 [,console]
 ----
@@ -139,9 +117,9 @@ $ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' "http://localhost:8983/solr/sentiment/schema"
 ----
 
-=== Upload Model Files to Solr's File Store
+=== Step 5: Upload the Model Files to Solr's FileStore
 
-To make the model files available to all nodes in a Solr cluster, we'll upload them to Solr's distributed file store:
+Solr's FileStore provides a distributed file storage mechanism for SolrCloud. Upload our model files there:
 
 [,console]
 ----
@@ -153,15 +131,17 @@ $ curl --data-binary @models/sentiment/vocab.txt -X PUT "http://localhost:8983/a
 $ curl --data-binary @models/sentiment/model.onnx -X PUT "http://localhost:8983/api/cluster/filestore/files/models/sentiment/model.onnx"
 ----
 
-.Understanding Solr's File Store
+.Understanding Solr's FileStore
 [sidebar]
 ****
-Solr's cluster file store provides a distributed file system for storing and sharing resources across all nodes in a SolrCloud cluster. Files uploaded to the file store are automatically replicated to all nodes, ensuring that resources like ML models are consistently available throughout the cluster.
+Solr's FileStore is a distributed file storage system that replicates files across the SolrCloud cluster. Files uploaded to the FileStore are accessible by all Solr nodes, making it ideal for storing resources like models and vocabularies.
+
+When you reference these files in configuration, you use paths relative to the FileStore root.
 ****
 
-=== Configure the Sentiment Analysis Processor
+=== Step 6: Configure the Document Categorizer Update Processor
 
-Now we'll configure an update processor that will automatically analyze the sentiment of text and add the result to a specified field:
+Now we'll configure the update processor that will analyze sentiment during document indexing:
 
 [,console]
 ----
@@ -177,54 +157,33 @@ $ curl -X POST -H 'Content-type:application/json' -d '{
 }' "http://localhost:8983/solr/sentiment/config"
 ----
 
-This configuration tells Solr to:
+This configuration creates an update processor that:
 
-1. Create an update processor named `sentimentClassifier`
-2. Use the `DocumentCategorizerUpdateProcessorFactory` class
-3. Use our uploaded ONNX model and vocabulary files
-4. Take input from the `name` field
-5. Store the sentiment classification in the `name_sentiment` field
+* Takes text from the `name` field
+* Processes it through the sentiment model
+* Stores the sentiment classification in the `name_sentiment` field
 
-.Configuration Parameters
-[cols="1,3"]
+.Required Parameters for DocumentCategorizerUpdateProcessorFactory
+[cols="1,4"]
 |===
 |Parameter |Description
 
-|`name`
-|The name of the update processor, used when indexing documents
-
-|`class`
-|The Java class that implements the processor (using the shorthand notation)
-
 |`modelFile`
-|Path to the ONNX model file in the file store
+|Path to the ONNX model file in the FileStore (required)
 
 |`vocabFile`
-|Path to the vocabulary file in the file store
+|Path to the vocabulary file in the FileStore (required)
 
 |`source`
-|The field(s) containing text to analyze (can be a single field name, an array, or a selector configuration)
+|Field(s) containing text to analyze (required)
 
 |`dest`
-|The field where sentiment results will be stored (can be a literal field name or a pattern/replacement configuration)
+|Field where sentiment results will be stored (required)
 |===
 
-.Advanced Configuration Options
-[sidebar]
-****
-The `DocumentCategorizerUpdateProcessorFactory` supports advanced configurations:
+=== Step 7: Index Documents with Sentiment Analysis
 
-* Multiple source fields using an array or selector patterns
-* Dynamic destination field names using regex patterns and replacements
-* Custom scoring strategies for multi-token inputs
-* Field value pattern matching to filter which values to process
-
-See the JavaDocs for complete configuration options.
-****
-
-=== Index Documents with Sentiment Analysis
-
-Now let's index some sample documents to see our sentiment analysis in action:
+Let's index some sample documents to see the sentiment analysis in action:
 
 [,console]
 ----
@@ -240,18 +199,18 @@ $ curl -X POST -H 'Content-type:application/json' -d '[
 ]' "http://localhost:8983/solr/sentiment/update/json?processor=sentimentClassifier&commit=true"
 ----
 
-Notice that we're specifying our custom processor with the `processor=sentimentClassifier` parameter in the URL.
+Notice that we specify the processor name with `processor=sentimentClassifier` in the URL.
 
-=== Querying Documents to View Sentiment Results
+=== Step 8: Query and Verify the Results
 
-Let's query our documents to see the sentiment classifications:
+Query the documents to see the sentiment classifications:
 
 [,console]
 ----
 $ curl -X GET "http://localhost:8983/solr/sentiment/select?q=id:good"
 ----
 
-You should see that the positive review has been classified as "very good" in the `name_sentiment` field:
+You should see the positive review classified as "very good":
 
 [,json]
 ----
@@ -266,14 +225,14 @@ You should see that the positive review has been classified as "very good" in th
 }
 ----
 
-Now let's check the negative review:
+Check the negative review:
 
 [,console]
 ----
 $ curl -X GET "http://localhost:8983/solr/sentiment/select?q=id:bad"
 ----
 
-You should see that it has been classified as "very bad":
+The result should show "very bad" sentiment:
 
 [,json]
 ----
@@ -288,27 +247,108 @@ You should see that it has been classified as "very bad":
 }
 ----
 
-=== How the Processor Works
+=== Advanced Configuration Options
 
-When a document is indexed with our custom processor:
+The `DocumentCategorizerUpdateProcessorFactory` supports several advanced configuration options. Here are some examples from real-world use cases:
 
-1. The processor extracts the text from the source field(s)
-2. The text is tokenized and converted to embeddings using the BERT model
-3. The model performs classification, determining the sentiment category
-4. The classification result is added to the destination field
-5. The enriched document continues through the update chain and is indexed
+==== Processing Multiple Source Fields
 
-This all happens at index time, meaning your documents are automatically enriched with sentiment information without any additional processing at query time.
-
-=== Advanced Usage Examples
-
-==== Configuring the Processor in solrconfig.xml
-
-For a permanent configuration, you can add the update processor to your `solrconfig.xml`:
+You can specify multiple source fields either as separate `source` parameters or as an array:
 
 [,xml]
 ----
-<updateRequestProcessorChain name="sentimentClassifier">
+<processor class="solr.processor.DocumentCategorizerUpdateProcessorFactory">
+  <str name="modelFile">models/sentiment/model.onnx</str>
+  <str name="vocabFile">models/sentiment/vocab.txt</str>
+  <str name="source">title</str>
+  <str name="source">content</str>
+  <str name="dest">document_sentiment</str>
+</processor>
+----
+
+Or using JSON configuration:
+
+[,json]
+----
+{
+  "add-updateprocessor": {
+    "name": "multiFieldSentiment",
+    "class": "solr.processor.DocumentCategorizerUpdateProcessorFactory",
+    "modelFile": "models/sentiment/model.onnx",
+    "vocabFile": "models/sentiment/vocab.txt",
+    "source": ["title", "content", "comments"],
+    "dest": "document_sentiment"
+  }
+}
+----
+
+==== Using Field Pattern Matching (Regex)
+
+You can use regular expressions to select fields to process:
+
+[,xml]
+----
+<processor class="solr.processor.DocumentCategorizerUpdateProcessorFactory">
+  <str name="modelFile">models/sentiment/model.onnx</str>
+  <str name="vocabFile">models/sentiment/vocab.txt</str>
+  <lst name="source">
+    <str name="fieldRegex">.*_text$|comments_.*</str>
+  </lst>
+  <str name="dest">sentiment</str>
+</processor>
+----
+
+This will process any field ending with `\_text` or starting with `comments_`.
+
+==== Dynamic Destination Field Names
+
+You can dynamically generate destination field names based on source field patterns:
+
+[,xml]
+----
+<processor class="solr.processor.DocumentCategorizerUpdateProcessorFactory">
+  <str name="modelFile">models/sentiment/model.onnx</str>
+  <str name="vocabFile">models/sentiment/vocab.txt</str>
+  <lst name="source">
+    <str name="fieldRegex">review_\d+_text</str>
+  </lst>
+  <lst name="dest">
+    <str name="pattern">review_(\d+)_text</str>
+    <str name="replacement">review_$1_sentiment</str>
+  </lst>
+</processor>
+----
+
+This would process fields like `review_1_text` and store results in corresponding fields like `review_1_sentiment`.
+
+==== Field Selection with Exclusions
+
+You can include certain fields and exclude others:
+
+[,xml]
+----
+<processor class="solr.processor.DocumentCategorizerUpdateProcessorFactory">
+  <str name="modelFile">models/sentiment/model.onnx</str>
+  <str name="vocabFile">models/sentiment/vocab.txt</str>
+  <lst name="source">
+    <str name="fieldRegex">text.*</str>
+    <lst name="exclude">
+      <str name="fieldRegex">text\_private\_.*</str>
+    </lst>
+  </lst>
+  <str name="dest">sentiment</str>
+</processor>
+----
+
+This selects all fields starting with `text` except those starting with `text_private_`.
+
+==== Creating a Custom Update Processor Chain
+
+For a permanent configuration, define an update processor chain in `solrconfig.xml`:
+
+[,xml]
+----
+<updateRequestProcessorChain name="sentiment-analysis-chain">
   <processor class="solr.processor.DocumentCategorizerUpdateProcessorFactory">
     <str name="modelFile">models/sentiment/model.onnx</str>
     <str name="vocabFile">models/sentiment/vocab.txt</str>
@@ -320,121 +360,111 @@ For a permanent configuration, you can add the update processor to your `solrcon
 </updateRequestProcessorChain>
 ----
 
-==== Processing Multiple Fields
+You can then use this chain by default or explicitly reference it when indexing:
 
-To analyze sentiment in multiple fields:
-
-[,xml]
+[,console]
 ----
-<processor class="solr.processor.DocumentCategorizerUpdateProcessorFactory">
-  <arr name="source">
-    <str>title</str>
-    <str>content</str>
-    <str>comments</str>
-  </arr>
-  <str name="dest">document_sentiment</str>
-  <str name="modelFile">models/sentiment/model.onnx</str>
-  <str name="vocabFile">models/sentiment/vocab.txt</str>
-</processor>
+$ curl "http://localhost:8983/solr/sentiment/update/json?update.chain=sentiment-analysis-chain" -d '...'
 ----
 
-==== Dynamic Destination Field Names
-
-To create field-specific sentiment fields:
-
-[,xml]
-----
-<processor class="solr.processor.DocumentCategorizerUpdateProcessorFactory">
-  <lst name="source">
-    <str name="fieldRegex">.*_text$</str>
-  </lst>
-  <lst name="dest">
-    <str name="pattern">(.*?)_text$</str>
-    <str name="replacement">$1_sentiment</str>
-  </lst>
-  <str name="modelFile">models/sentiment/model.onnx</str>
-  <str name="vocabFile">models/sentiment/vocab.txt</str>
-</processor>
-----
-
-This configuration would process any field ending with `_text` and store the sentiment in a corresponding field ending with `_sentiment`. For example, `review_text` would have its sentiment stored in `review_sentiment`.
-
-=== Practical Applications
+=== Practical Applications of Sentiment Analysis in Solr
 
 ==== Faceting by Sentiment
 
-One powerful application is to facet by sentiment to understand the distribution of opinions:
+Create facets based on sentiment to understand opinion distribution:
 
 [,console]
 ----
 $ curl "http://localhost:8983/solr/sentiment/select?q=*:*&facet=true&facet.field=name_sentiment"
 ----
 
-Response:
-[,json]
-----
-{
-  "facet_counts":{
-    "facet_fields":{
-      "name_sentiment":[
-        "very good",1,
-        "very bad",1
-      }
-    }
-  }
-}
-----
-
 ==== Filtering by Sentiment
 
-You can filter search results to show only documents with a specific sentiment:
+Filter search results to show only documents with specific sentiment:
 
 [,console]
 ----
-$ curl "http://localhost:8983/solr/sentiment/select?q=*:*&fq=name_sentiment:very%20good"
+$ curl "http://localhost:8983/solr/sentiment/select?q=product_type:electronics&fq=name_sentiment:very%20good"
 ----
 
 ==== Boosting by Sentiment
 
-In a query parser or request handler, you could boost documents based on sentiment:
+Boost documents with positive sentiment in search results:
 
 [,console]
 ----
-$ curl "http://localhost:8983/solr/sentiment/select?q=*:*&bq=name_sentiment:very%20good^5.0"
+$ curl "http://localhost:8983/solr/sentiment/select?q=*:*&defType=edismax&bq=name_sentiment:very%20good^5.0"
 ----
 
-=== Integrating with Other NLP Capabilities
+==== Time-Based Sentiment Analysis
 
-The approach demonstrated in this tutorial can be extended to other NLP tasks:
+Analyze sentiment trends over time using time-based queries and facets:
 
-* Named Entity Recognition (NER) using `OpenNLPExtractNamedEntitiesUpdateProcessorFactory`
-* Language Detection using `OpenNLPLangDetectUpdateProcessorFactory`
-* Custom text classification for topics, categories, or intent detection
+[,console]
+----
+$ curl "http://localhost:8983/solr/sentiment/select?q=*:*&facet=true&facet.range=timestamp&facet.range.start=NOW/DAY-30DAY&facet.range.end=NOW&facet.range.gap=%2B1DAY&facet.pivot=timestamp,name_sentiment"
+----
+
+=== Performance Considerations
+
+When using ONNX models in Solr, consider these performance aspects:
+
+* **Memory Usage**: ONNX models can be memory-intensive. Ensure sufficient heap space.
+* **Batch Processing**: For large document sets, consider batching updates.
+* **Model Size**: Quantized models (like the one in our example) offer better performance.
+* **CPU Utilization**: NLP processing is CPU-intensive. Consider CPU resources when planning deployments.  We anticipate in the future leveraging ONNX on the GPU.
+* **Response Time Impact**: The additional processing increases indexing time but not query time.
+
+A pattern that has been demonstrated is to index each document twice.
+The first time you index the document without any sentiment analysis so you get the basic data into the index quickly and made available to users.
+The second time you enable the `update.chain` and that performs the sentiment analysis.
+
+=== Going Beyond Sentiment Analysis
+
+The same approach can be extended to other NLP tasks using different models:
+
+* **Named Entity Recognition**: Use `OpenNLPExtractNamedEntitiesUpdateProcessorFactory` to identify entities
+* **Language Detection**: Use `OpenNLPLangDetectUpdateProcessorFactory` for automatic language identification
+* **Document Classification**: Use custom models for topic or category classification
+* **Summarization**: Extract key sentences or generate summaries during indexing
+
+=== Troubleshooting
+
+==== Common Issues and Solutions
+
+1. **Model Loading Errors**:
+   * Ensure paths to model files are correct
+   * Verify models are properly uploaded to the FileStore
+   * Check that the security manager is configured to allow ONNX
+
+2. **Out of Memory Errors**:
+   * Increase JVM heap space with `-m` parameter
+   * Use quantized models to reduce memory usage
+   * Process documents in smaller batches
+
+3. **Unexpected Classifications**:
+   * Check that text preprocessing matches model expectations
+   * Ensure vocabulary file corresponds to the model
+   * Consider text normalization in your schema definition
 
 === Conclusion
 
-In this tutorial, you've learned how to:
+In this tutorial, you learned how to:
 
-1. Set up Solr with OpenNLP integration
-2. Work with ONNX models for machine learning
-3. Configure the Document Categorizer update processor
-4. Automatically enrich documents with sentiment analysis at index time
-5. Query and facet based on sentiment classifications
+1. Configure Solr with OpenNLP and ONNX runtime
+2. Load and use a pre-trained sentiment analysis model
+3. Set up a document categorizer update processor
+4. Process documents with automatic sentiment classification
+5. Use advanced configuration options for complex scenarios
+6. Apply sentiment analysis in practical search applications
 
-This integration demonstrates how Solr can incorporate advanced NLP capabilities, enriching your documents at index time and enabling more sophisticated search and analysis use cases without additional external processing.
+This integration demonstrates how Solr can leverage modern NLP capabilities to enhance search and analytics functionality. By automatically enriching documents with sentiment information during indexing, you can provide more nuanced search experiences and gain deeper insights into your text data.
 
 === Cleaning Up
 
-When you're done with this tutorial, you can stop Solr with:
+When you're done with this tutorial, stop Solr:
 
 [,console]
 ----
-$ bin/solr stop -all
-----
-
-Remember to re-enable the security manager for production use:
-
-[,console]
-----
-$ export SOLR_SECURITY_MANAGER_ENABLED=true
+$ bin/solr stop --all
 ----
