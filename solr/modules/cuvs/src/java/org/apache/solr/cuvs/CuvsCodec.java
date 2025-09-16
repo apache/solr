@@ -95,8 +95,7 @@ public class CuvsCodec extends FilterCodec {
         public KnnVectorsFormat getKnnVectorsFormatForField(String field) {
           final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
           FieldType fieldType = (schemaField == null ? null : schemaField.getType());
-          if (fieldType instanceof DenseVectorField) {
-            DenseVectorField vectorType = (DenseVectorField) fieldType;
+          if (fieldType instanceof DenseVectorField vectorType) {
             String knnAlgorithm = vectorType.getKnnAlgorithm();
             if (CAGRA_HNSW.equals(knnAlgorithm)) {
               return cuvsHNSWVectorsFormat;
