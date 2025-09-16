@@ -422,7 +422,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     h.getCore()
         .withSearcher(
             searcher -> {
-              QueryCommand cmd = createBasicQueryCommand(NUM_DOCS, 1, "field4_t", "0");
+              QueryCommand cmd = createBasicQueryCommand(1, 1, "field4_t", "0");
               // Use ScoreMode.COMPLETE for the PostFilter
               MockPostFilter filterQuery =
                   new MockPostFilter(NUM_DOCS * 10, 101, ScoreMode.COMPLETE);
