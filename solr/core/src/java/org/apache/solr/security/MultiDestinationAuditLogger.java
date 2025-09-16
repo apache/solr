@@ -133,8 +133,7 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     super.initializeMetrics(parentContext, attributes, scope);
-    // TODO SOLR-17458: Add Otel
-    plugins.forEach(p -> p.initializeMetrics(solrMetricsContext, Attributes.empty(), scope));
+    plugins.forEach(p -> p.initializeMetrics(parentContext, Attributes.empty(), scope));
   }
 
   @Override

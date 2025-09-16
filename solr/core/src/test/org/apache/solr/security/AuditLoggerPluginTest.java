@@ -24,8 +24,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import io.opentelemetry.api.common.Attributes;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -133,6 +135,8 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
     config = new HashMap<>();
     config.put("async", false);
     plugin.init(config);
+    SolrMetricsContext mockSolrMetricsContext = MockSolrMetricsContextFactory.create();
+    plugin.initializeMetrics(mockSolrMetricsContext, Attributes.empty(), "solr.test");
   }
 
   @Override

@@ -28,7 +28,6 @@ import static org.apache.solr.security.AuditEvent.RequestType.SEARCH;
 import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
@@ -50,6 +49,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -61,9 +65,11 @@ import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuditEvent.RequestType;
 import org.apache.solr.security.AuditLoggerPlugin.JSONAuditEventFormatter;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -80,6 +86,8 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   protected static final int NUM_SERVERS = 1;
   // Use a harness per thread to be able to beast this test
   private ThreadLocal<AuditTestHarness> testHarness = new ThreadLocal<>();
+
+  private PrometheusMetricReader metricsReader;
 
   @Override
   @Before
@@ -102,9 +110,19 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   public void testSynchronous() throws Exception {
     setupCluster(false, null, false);
     runThreeTestAdminCommands();
+
+    Thread.sleep(100);
+
     assertThreeTestAdminEvents();
-    assertAuditMetricsMinimums(
-        testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
+    assertAuditMetricsMinimums(3, 0);
+    Labels labels = getDefaultAuditLoggerMetricsLabelsBuilder().build();
+
+    assertGaugeMetricValue("solr_auditlogger_async_enabled", labels, 0);
+
+    HistogramSnapshot.HistogramDataPointSnapshot snapshot = SolrMetricTestUtils.getHistogramDatapoint(
+        metricsReader, "solr_auditlogger_request_times_nanoseconds", labels);
+    assertNotNull(snapshot);
+    assertTrue("Expected at least 3 measurements", snapshot.getCount() >= 3);
   }
 
   @Test
@@ -112,8 +130,31 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     setupCluster(true, null, false);
     runThreeTestAdminCommands();
     assertThreeTestAdminEvents();
-    assertAuditMetricsMinimums(
-        testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
+
+    Thread.sleep(100);
+
+    assertAuditMetricsMinimums(3, 0);
+    Labels labels = getDefaultAuditLoggerMetricsLabelsBuilder().build();
+
+    assertGaugeMetricValue("solr_auditlogger_async_enabled", labels, 1);
+
+    // Verify queue capacity matches default size
+    Labels capacityLabels = getDefaultAuditLoggerMetricsLabelsBuilder()
+        .label("type", "capacity")
+        .build();
+    assertGaugeMetricValue("solr_auditlogger_queue", capacityLabels, 4096);
+
+    // Verify queue is empty after processing events
+    Labels sizeLabels = getDefaultAuditLoggerMetricsLabelsBuilder()
+        .label("type", "size")
+        .build();
+    assertGaugeMetricValue("solr_auditlogger_queue", sizeLabels, 0);
+
+    HistogramSnapshot.HistogramDataPointSnapshot snapshot = SolrMetricTestUtils.getHistogramDatapoint(
+        metricsReader, "solr_auditlogger_request_times_nanoseconds", labels);
+    assertNotNull(snapshot);
+    assertTrue("Expected at least 3 measurements", snapshot.getCount() >= 3);
+    assertTrue("Expected a positive sum for request times", snapshot.getSum() >= 0);
   }
 
   @Test
@@ -133,20 +174,20 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     gate.release(3);
 
     assertThreeTestAdminEvents();
-    assertAuditMetricsMinimums(
-        testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
-    ArrayList<MetricRegistry> registries = getMetricsRegistries(testHarness.get().cluster);
-    Timer timer =
-        ((Timer)
-            registries
-                .get(0)
-                .getMetrics()
-                .get("SECURITY./auditlogging.CallbackAuditLoggerPlugin.queuedTime"));
-    double meanTimeOnQueue = timer.getSnapshot().getMean();
-    double meanTimeExpected = (start - end) / 3.0D;
+    assertAuditMetricsMinimums(3, 0);
+
+    Labels labels = getDefaultAuditLoggerMetricsLabelsBuilder().build();
+    HistogramSnapshot.HistogramDataPointSnapshot snapshot = SolrMetricTestUtils.getHistogramDatapoint(
+        metricsReader, "solr_auditlogger_queued_time_nanoseconds", labels);
+    assertNotNull(snapshot);
+    assertTrue("Expected at least 3 measurements", snapshot.getCount() >= 3);
+
+    // Calculate mean from sum and count
+    double mean = snapshot.getSum() / snapshot.getCount();
+    double minExpectedTimeNanos = (end - start) / 3.0;
     assertTrue(
-        "Expecting mean time on queue > " + meanTimeExpected + ", got " + meanTimeOnQueue,
-        meanTimeOnQueue > meanTimeExpected);
+        "Expecting mean time on queue > " + minExpectedTimeNanos + " ns, got " + mean + " ns",
+        mean > minExpectedTimeNanos);
   }
 
   @Test
@@ -542,6 +583,60 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
     myCluster.waitForAllNodes(10);
     testHarness.get().setCluster(myCluster);
+
+    CoreContainer coreContainer = myCluster.getJettySolrRunner(0).getCoreContainer();
+    assertNotNull(coreContainer);
+    metricsReader = SolrMetricTestUtils.getPrometheusMetricReader(coreContainer, "solr.node");
+  }
+
+  private Labels.Builder getDefaultAuditLoggerMetricsLabelsBuilder() {
+    return Labels.builder()
+        .label("category", "SECURITY")
+        .label("plugin_name", "CallbackAuditLoggerPlugin")
+        .label("handler", "/auditlogging")
+        .label("otel_scope_name", "org.apache.solr");
+  }
+
+  private Labels getDefaultAuditLoggerMetricsLabels() {
+    return getDefaultAuditLoggerMetricsLabelsBuilder().build();
+  }
+
+  private void assertGaugeMetricValue(String metricName, Labels labels, long expectedValue) {
+    GaugeSnapshot.GaugeDataPointSnapshot dataPointSnapshot = (GaugeSnapshot.GaugeDataPointSnapshot)
+        SolrMetricTestUtils.getDataPointSnapshot(metricsReader, metricName, labels);
+    assertNotNull(dataPointSnapshot);
+    assertEquals(expectedValue, dataPointSnapshot.getValue(), 0.0);
+  }
+
+  private void assertAuditMetricsMinimums(int count, int errors) {
+    Labels labels = getDefaultAuditLoggerMetricsLabels();
+    assertCounterMinimumWithRetry("solr_auditlogger_count", labels, count);
+
+    if (errors > 0) {
+      assertCounterMinimumWithRetry("solr_auditlogger_errors", labels, errors);
+    }
+  }
+
+  private void assertCounterMinimumWithRetry(String metricName, Labels labels, int expectedMinimum) {
+    boolean success = checkCounterMinimum(metricName, labels, expectedMinimum);
+
+    if (!success && expectedMinimum > 0) {
+      log.info("First {} metric check failed, pausing 2s before re-attempt", metricName);
+      try {
+        Thread.sleep(2000);
+        success = checkCounterMinimum(metricName, labels, expectedMinimum);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+
+    assertTrue("Counter metric " + metricName + " did not meet minimum " + expectedMinimum + " after retry", success);
+  }
+
+  private boolean checkCounterMinimum(String metricName, Labels labels, int expectedMinimum) {
+    CounterSnapshot.CounterDataPointSnapshot snapshot =
+        SolrMetricTestUtils.getCounterDatapoint(metricsReader, metricName, labels);
+    return snapshot != null && snapshot.getValue() >= expectedMinimum;
   }
 
   /**
