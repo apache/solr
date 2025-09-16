@@ -77,8 +77,6 @@ $ wget -O models/sentiment/vocab.txt https://huggingface.co/onnx-community/bert-
 ****
 ONNX (Open Neural Network Exchange) is an open format for representing machine learning models. It allows models trained in different frameworks (like PyTorch, TensorFlow, or Hugging Face) to be exported to a standard format that can be used by various runtime environments.
 
-Learn more about ONNX at https://onnx.ai[onnx.ai^, role="external", window="_blank"].
-
 The model we're using is a multilingual BERT model fine-tuned for sentiment classification and quantized for better performance. It produces classifications on a 5-point scale from "very bad" to "very good".
 
 Learn more about ONNX at https://onnx.ai[onnx.ai^, role="external", window="_blank"].
