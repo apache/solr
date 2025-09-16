@@ -70,9 +70,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -259,7 +259,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   // NOCOMMIT: This test is broken from OTEL migration and the /admin/plugins endpoint. Placing
   // BadApple test but this must be fixed before this feature gets merged to a release branch
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testAddDocs() throws Exception {
     int numTlogReplicas = 1 + random().nextInt(3);
     DocCollection docCollection = createAndWaitForCollection(1, 0, numTlogReplicas, 0);
@@ -289,6 +289,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
                     "qt", "/admin/plugins",
                     "stats", "true");
             QueryResponse statsResponse = tlogReplicaClient.query(req);
+            NamedList<Object> entries = (statsResponse.getResponse());
             assertEquals(
                 "Append replicas should recive all updates. Replica: "
                     + r
@@ -296,8 +297,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
                     + statsResponse,
                 1L,
                 ((Map<String, Object>)
-                        (statsResponse.getResponse())
-                            .findRecursive("plugins", "UPDATE", "updateHandler", "stats"))
+                        entries._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
                     .get("UPDATE.updateHandler.cumulativeAdds.count"));
             break;
           } catch (AssertionError e) {

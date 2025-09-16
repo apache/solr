@@ -548,6 +548,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#NRT}
    *     this collection was created with
    */
+  @Deprecated
   public Integer getNumNrtReplicas() {
     return getNumReplicas(Replica.Type.NRT);
   }
@@ -556,6 +557,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#TLOG}
    *     this collection was created with
    */
+  @Deprecated
   public Integer getNumTlogReplicas() {
     return getNumReplicas(Replica.Type.TLOG);
   }
@@ -564,6 +566,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PULL}
    *     this collection was created with
    */
+  @Deprecated
   public Integer getNumPullReplicas() {
     return getNumReplicas(Replica.Type.PULL);
   }
@@ -571,7 +574,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   /**
    * @return the number of replicas of a given type this collection was created with
    */
-  public Integer getNumReplicas(Replica.Type type) {
+  public int getNumReplicas(Replica.Type type) {
     return numReplicas.get(type);
   }
 

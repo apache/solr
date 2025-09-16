@@ -264,6 +264,11 @@ public final class LogListener implements Closeable, AutoCloseable {
     return this;
   }
 
+  /** Clear the queue of any recorded events */
+  public void clearQueue() {
+    loggerAppender.getQueue().clear();
+  }
+
   /**
    * Modifies this listener to filter the log events that are recorded to events that match the
    * specified substring.

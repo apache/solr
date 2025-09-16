@@ -27,9 +27,11 @@ import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
 import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -49,6 +51,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -59,8 +62,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -78,13 +79,16 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.filestore.ClusterFileStore;
+import org.apache.solr.filestore.DistribFileStore;
+import org.apache.solr.filestore.FileStore;
+import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.FieldType;
@@ -126,9 +130,14 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     solrParams.set("analysis.showmatch", true);
     solrParams.set("analysis.fieldname", fieldName);
     solrParams.set("analysis.fieldvalue", "POST");
-    var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/analysis/field", solrParams);
+    var request =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.POST,
+                "/analysis/field",
+                SolrRequest.SolrRequestType.ADMIN,
+                solrParams)
+            .setRequiresCollection(true);
     request.withContent(fieldText.getBytes(StandardCharsets.UTF_8), "text/plain");
-    request.setRequiresCollection(true);
     request.setResponseParser(new JsonMapResponseParser());
     try {
       var resp = request.process(cloudClient(), mutableId).getResponse();
@@ -446,7 +455,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   protected void validateMultiValuedChange(String configSet, SchemaField field, Boolean multiValued)
       throws IOException {
-    List<SolrInputDocument> docs = getStoredSampleDocs(configSet);
+    List<SolrInputDocument> docs = retrieveSampleDocs(configSet);
     if (!docs.isEmpty()) {
       boolean isMV = schemaSuggester.isMultiValued(field.getName(), docs);
       if (isMV && !multiValued) {
@@ -466,62 +475,64 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           SolrException.ErrorCode.BAD_REQUEST,
           "Cannot change type of the _version_ field; it must be a plong.");
     }
-    List<SolrInputDocument> docs = getStoredSampleDocs(configSet);
+    List<SolrInputDocument> docs = retrieveSampleDocs(configSet);
     if (!docs.isEmpty()) {
       schemaSuggester.validateTypeChange(field, toType, docs);
     }
   }
 
+  String getSampleDocsPathFromConfigSet(String configSet) {
+    return "schemadesigner" + "/" + configSet + "_sampledocs.javabin";
+  }
+
   void deleteStoredSampleDocs(String configSet) {
-    try {
-      cloudClient().deleteByQuery(BLOB_STORE_ID, "id:" + configSet + "_sample/*", 10);
-    } catch (IOException | SolrServerException | SolrException exc) {
-      final String excStr = exc.toString();
-      log.warn("Failed to delete sample docs from blob store for {} due to: {}", configSet, excStr);
-    }
+    String path = getSampleDocsPathFromConfigSet(configSet);
+    // why do I have to do this in two stages?
+    DistribFileStore.deleteZKFileEntry(cc.getZkController().getZkClient(), path);
+    cc.getFileStore().delete(path);
   }
 
   @SuppressWarnings("unchecked")
-  List<SolrInputDocument> getStoredSampleDocs(final String configSet) throws IOException {
-    var request = new GenericSolrRequest(SolrRequest.METHOD.GET, "/blob/" + configSet + "_sample");
-    request.setRequiresCollection(true);
-    request.setResponseParser(new InputStreamResponseParser("filestream"));
-    InputStream inputStream = null;
+  List<SolrInputDocument> retrieveSampleDocs(final String configSet) throws IOException {
+    AtomicReference<List<SolrInputDocument>> docs = new AtomicReference<>(List.of());
+    String path = getSampleDocsPathFromConfigSet(configSet);
+
     try {
-      var resp = request.process(cloudClient(), BLOB_STORE_ID).getResponse();
-      inputStream = (InputStream) resp.get("stream");
-      var bytes = inputStream.readAllBytes();
-      if (bytes.length > 0) {
-        return (List<SolrInputDocument>) Utils.fromJavabin(bytes);
-      } else return Collections.emptyList();
-    } catch (SolrServerException e) {
-      throw new IOException("Failed to lookup stored docs for " + configSet + " due to: " + e);
-    } finally {
-      IOUtils.closeQuietly(inputStream);
+      cc.getFileStore()
+          .get(
+              path,
+              entry -> {
+                try (InputStream is = entry.getInputStream()) {
+                  docs.set((List<SolrInputDocument>) Utils.fromJavabin(is));
+                } catch (IOException e) {
+                  log.error("Error reading file content at path {}", path, e);
+                }
+              },
+              true);
+    } catch (FileNotFoundException e) {
+      log.info("File at path {} not found.", path);
     }
+
+    return docs.get();
   }
 
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
     docs.forEach(d -> d.removeField(VERSION_FIELD)); // remove _version_ field before storing ...
-    postDataToBlobStore(cloudClient(), configSet + "_sample", readAllBytes(() -> toJavabin(docs)));
+    storeSampleDocs(configSet, readAllBytes(() -> toJavabin(docs)));
+  }
+
+  protected void storeSampleDocs(String configSet, byte[] bytes) throws IOException {
+    String path = getSampleDocsPathFromConfigSet(configSet);
+
+    FileStoreAPI.MetaData meta = ClusterFileStore._createJsonMetaData(bytes, null);
+
+    cc.getFileStore().put(new FileStore.FileEntry(ByteBuffer.wrap(bytes), meta, path));
   }
 
   /** Gets the stream, reads all the bytes, closes the stream. */
   static byte[] readAllBytes(IOSupplier<InputStream> hasStream) throws IOException {
     try (InputStream in = hasStream.get()) {
       return in.readAllBytes();
-    }
-  }
-
-  protected void postDataToBlobStore(CloudSolrClient cloudClient, String blobName, byte[] bytes)
-      throws IOException {
-    var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/blob/" + blobName);
-    request.withContent(bytes, JavaBinResponseParser.JAVABIN_CONTENT_TYPE);
-    request.setRequiresCollection(true);
-    try {
-      request.process(cloudClient, BLOB_STORE_ID);
-    } catch (SolrServerException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
 

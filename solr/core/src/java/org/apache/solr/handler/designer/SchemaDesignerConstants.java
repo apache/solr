@@ -40,7 +40,6 @@ public interface SchemaDesignerConstants {
   String DESIGNER_KEY = "_designer.";
   String LANGUAGES_PARAM = "languages";
   String CONFIGOVERLAY_JSON = "configoverlay.json";
-  String BLOB_STORE_ID = ".system";
   String UPDATE_ERROR = "updateError";
   String ANALYSIS_ERROR = "analysisError";
   String ERROR_DETAILS = "errorDetails";

@@ -268,6 +268,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected AttributedLongCounter applyingBufferedOpsCounter;
   protected AttributedLongCounter replayOpsCounter;
   protected AttributedLongCounter copyOverOldUpdatesCounter;
+  protected List<AutoCloseable> toClose;
   protected SolrMetricsContext solrMetricsContext;
 
   public static class LogPtr {
@@ -630,6 +631,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
+    final List<AutoCloseable> observables = new ArrayList<>();
     solrMetricsContext = parentContext.getChildContext(this);
 
     // NOCOMMIT: We do not need a scope attribute
@@ -640,26 +642,31 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             .put(CATEGORY_ATTR, SolrInfoBean.Category.TLOG.toString())
             .build();
 
-    solrMetricsContext.observableLongGauge(
-        "solr_core_update_log_buffered_ops",
-        "The current number of buffered operations",
-        (observableLongMeasurement ->
-            observableLongMeasurement.record(computeBufferedOps(), baseAttributes)));
+    observables.add(
+        solrMetricsContext.observableLongGauge(
+            "solr_core_update_log_buffered_ops",
+            "The current number of buffered operations",
+            (observableLongMeasurement ->
+                observableLongMeasurement.record(computeBufferedOps(), baseAttributes))));
 
-    solrMetricsContext.observableLongGauge(
-        "solr_core_update_log_replay_logs_remaining",
-        "The current number of tlogs remaining to be replayed",
-        (observableLongMeasurement -> {
-          observableLongMeasurement.record(logs.size(), baseAttributes);
-        }));
+    observables.add(
+        solrMetricsContext.observableLongGauge(
+            "solr_core_update_log_replay_logs_remaining",
+            "The current number of tlogs remaining to be replayed",
+            (observableLongMeasurement -> {
+              observableLongMeasurement.record(logs.size(), baseAttributes);
+            })));
 
-    solrMetricsContext.observableLongGauge(
-        "solr_core_update_log_size_remaining",
-        "The total size in bytes of all tlogs remaining to be replayed",
-        (observableLongMeasurement -> {
-          observableLongMeasurement.record(getTotalLogsSize(), baseAttributes);
-        }),
-        OtelUnit.BYTES);
+    observables.add(
+        solrMetricsContext.observableLongGauge(
+            "solr_core_update_log_size_remaining",
+            "The total size in bytes of all tlogs remaining to be replayed",
+            (observableLongMeasurement -> {
+              observableLongMeasurement.record(getTotalLogsSize(), baseAttributes);
+            }),
+            OtelUnit.BYTES));
+
+    toClose = Collections.unmodifiableList(observables);
 
     // NOCOMMIT: Do we want to keep this? Metric was just state with the numeric enum value.
     // Without context this doesn't mean anything and can be very confusing. Maybe keep the numeric
@@ -792,7 +799,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   public long getLastLogId() {
-    if (id != -1) return id;
+    return id == -1 ? scanLastLogId(tlogFiles) : id;
+  }
+
+  static long scanLastLogId(String[] tlogFiles) {
     if (tlogFiles.length == 0) return -1;
     String last = tlogFiles[tlogFiles.length - 1];
     return Long.parseLong(last.substring(TLOG_NAME.length() + 1));
@@ -1638,10 +1648,45 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
+  /**
+   * Ensures a transaction log is ready. It is either the current one, or a new one. This method
+   * must be called with the synchronization monitor on this {@link UpdateLog}.
+   */
   protected void ensureLog() {
     if (tlog == null) {
-      String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
-      tlog = newTransactionLog(tlogDir.resolve(newLogName), globalStrings, false);
+      Path newLogPath;
+      int numAttempts = 0;
+      while (true) {
+        String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
+        newLogPath = tlogDir.resolve(newLogName);
+        // We expect that the log file does not exist since id is designed to give the index of the
+        // next transaction log to create. But in very rare cases, the log files listed in the
+        // init() method may be stale here (file system delay?), and id may point to an existing
+        // file.
+        if (!Files.exists(newLogPath)) {
+          break;
+        }
+        // If the "new" log file already exists, refresh the log list and recompute id.
+        // Ideally we would want to include the missing log in the old logs tracking (see init()),
+        // but the init() method is not designed to be executed twice. Given that in the rare cases
+        // we have seen this missing log, the log was always empty (file size 0), then we simply
+        // refresh log list and update the id.
+        try {
+          log.error(
+              "New transaction log already exists {} size={}, skipping it",
+              newLogPath,
+              Files.size(newLogPath));
+        } catch (IOException e) {
+          log.error("New transaction log already exists {} size unknown, skipping it", newLogPath);
+        }
+        if (++numAttempts >= 2) {
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR, "Cannot recover from already existing logs");
+        }
+        tlogFiles = getLogList(tlogDir);
+        id = scanLastLogId(tlogFiles) + 1; // add 1 since we create a new log
+      }
+      tlog = newTransactionLog(newLogPath, globalStrings, false);
     }
   }
 
@@ -1703,6 +1748,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     } catch (IOException e) {
       log.warn("exception releasing tlog dir", e);
+    } finally {
+      IOUtils.closeQuietly(toClose);
     }
   }
 
