@@ -54,6 +54,53 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Classifies text in fields using a model via OpenNLP <code>modelFile</code> from the values found in any
+ * matching <code>source</code> field into a configured <code>dest</code> field.
+ *
+ * <p>See the <a href="https://solr.apache.org/guide/solr/latest/getting-started/tutorial-opennlp.html">Tutorial</a> for the step by step guide.
+ *
+ * <p>The <code>source</code> field(s) can be configured as either:
+ *
+ * <ul>
+ *   <li>One or more <code>&lt;str&gt;</code>
+ *   <li>An <code>&lt;arr&gt;</code> of <code>&lt;str&gt;</code>
+ *   <li>A <code>&lt;lst&gt;</code> containing {@link FieldMutatingUpdateProcessor
+ *       FieldMutatingUpdateProcessorFactory style selector arguments}
+ * </ul>
+ *
+ * <p>The <code>dest</code> field can be a single <code>&lt;str&gt;</code> containing the literal
+ * name of a destination field, or it may be a <code>&lt;lst&gt;</code> specifying a regex <code>
+ * pattern</code> and a <code>replacement</code> string. If the pattern + replacement option is used
+ * the pattern will be matched against all fields matched by the source selector, and the
+ * replacement string (including any capture groups specified from the pattern) will be evaluated a
+ * using {@link Matcher#replaceAll(String)} to generate the literal name of the destination field.
+ *
+ * <p>If the resolved <code>dest</code> field already exists in the document, then the named
+ * entities extracted from the <code>source</code> fields will be added to it.
+ *
+ * <p>In the example below:
+ *
+ * <ul>
+ *   <li>Classification will be performed on the <code>text</code> field and added to the <code>
+ *       text_sentiment</code> field
+ * </ul>
+ *
+ * <pre class="prettyprint">
+ * &lt;updateRequestProcessorChain name="sentimentClassifier"&gt;
+ *   &lt;processor class="solr.processor.DocumentCategorizerUpdateProcessorFactory"&gt;
+ *     &lt;str name="modelFile"&gt;models/sentiment/model.onnx&lt;/str&gt;
+ *     &lt;str name="vocabFile"&gt;models/sentiment/vocab.txt&lt;/str&gt;
+ *     &lt;str name="source"&gt;text&lt;/str&gt;
+ *     &lt;str name="dest"&gt;text_sentiment&lt;/str&gt;
+ *   &lt;/processor&gt;
+ *   &lt;processor class="solr.LogUpdateProcessorFactory" /&gt;
+ *   &lt;processor class="solr.RunUpdateProcessorFactory" /&gt;
+ * &lt;/updateRequestProcessorChain&gt;
+ * </pre>
+ *
+ * @since 10.0.0
+ */
 public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware {
 
@@ -69,16 +116,15 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
   private Path solrHome;
 
   private SelectorParams srcInclusions = new SelectorParams();
-  private Collection<SelectorParams> srcExclusions = new ArrayList<>();
+  private final Collection<SelectorParams> srcExclusions = new ArrayList<>();
 
   private FieldNameSelector srcSelector = null;
 
   private String model = null;
   private String vocab = null;
-  private String analyzerFieldType = null;
 
   /**
-   * If pattern is null, this this is a literal field name. If pattern is non-null then this is a
+   * If pattern is null, then this is a literal field name. If pattern is non-null then this is a
    * replacement string that may contain meta-characters (ie: capture group identifiers)
    *
    * @see #pattern
@@ -277,11 +323,10 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
             throw new SolrException(
                 SERVER_ERROR, "Init param '" + SOURCE_PARAM + "' child 'exclude' can not be null");
           }
-          if (!(excObj instanceof NamedList)) {
+          if (!(excObj instanceof NamedList<?> exc)) {
             throw new SolrException(
                 SERVER_ERROR, "Init param '" + SOURCE_PARAM + "' child 'exclude' must be <lst/>");
           }
-          NamedList<?> exc = (NamedList<?>) excObj;
           srcExclusions.add(parseSelectorParams(exc));
           if (0 < exc.size()) {
             throw new SolrException(
@@ -328,8 +373,7 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
               + "for OpenNLPExtractNamedEntitiesUpdateProcessor for further details.");
     }
 
-    if (d instanceof NamedList) {
-      NamedList<?> destList = (NamedList<?>) d;
+    if (d instanceof NamedList<?> destList) {
 
       Object patt = destList.remove(PATTERN_PARAM);
       Object replacement = destList.remove(REPLACEMENT_PARAM);
@@ -450,9 +494,7 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
                   getCategories(),
                   new AverageClassificationScoringStrategy(),
                   new InferenceOptions());
-        } catch (IOException e) {
-          log.warn("Attempted to initialize documentCategorizerDL", e);
-        } catch (OrtException e) {
+        } catch (IOException | OrtException e) {
           log.warn("Attempted to initialize documentCategorizerDL", e);
         }
       }
@@ -490,16 +532,15 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
 
           for (Object val : srcFieldValues) {
             for (Pair<String, String> entity : classify(val)) {
-              SolrInputField destField = null;
+              SolrInputField destField;
               // String classification = entity.first();
               String classificationValue = entity.second();
-              final String resolved = resolvedDest;
-              if (doc.containsKey(resolved)) {
-                destField = doc.getField(resolved);
+              if (doc.containsKey(resolvedDest)) {
+                destField = doc.getField(resolvedDest);
               } else {
-                SolrInputField targetField = destMap.get(resolved);
+                SolrInputField targetField = destMap.get(resolvedDest);
                 if (targetField == null) {
-                  destField = new SolrInputField(resolved);
+                  destField = new SolrInputField(resolvedDest);
                 } else {
                   destField = targetField;
                 }
@@ -507,14 +548,12 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
               destField.addValue(classificationValue);
 
               // put it in map to avoid concurrent modification...
-              destMap.put(resolved, destField);
+              destMap.put(resolvedDest, destField);
             }
           }
         }
 
-        for (Map.Entry<String, SolrInputField> entry : destMap.entrySet()) {
-          doc.put(entry.getKey(), entry.getValue());
-        }
+        doc.putAll(destMap);
         super.processAdd(cmd);
       }
 
