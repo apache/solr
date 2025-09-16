@@ -28,43 +28,43 @@ public class ReplicateFromLeaderTest {
   public void determinePollIntervalString() {
     SolrConfig.UpdateHandlerInfo updateHandlerInfo =
         new SolrConfig.UpdateHandlerInfo(
-            "solr.DirectUpdateHandler2", -1, 15000, -1, true, -1, 60000, false);
+            "solr.DirectUpdateHandler2", -1, 15000, -1, true, -1, 60000, false, false);
     String pollInterval = ReplicateFromLeader.determinePollInterval(updateHandlerInfo);
     assertEquals("0:0:7", pollInterval);
 
     updateHandlerInfo =
         new SolrConfig.UpdateHandlerInfo(
-            "solr.DirectUpdateHandler2", -1, 60000, -1, true, -1, 15000, false);
+            "solr.DirectUpdateHandler2", -1, 60000, -1, true, -1, 15000, false, false);
     pollInterval = ReplicateFromLeader.determinePollInterval(updateHandlerInfo);
     assertEquals("0:0:30", pollInterval);
 
     updateHandlerInfo =
         new SolrConfig.UpdateHandlerInfo(
-            "solr.DirectUpdateHandler2", -1, 15000, -1, false, -1, 60000, false);
+            "solr.DirectUpdateHandler2", -1, 15000, -1, false, -1, 60000, false, false);
     pollInterval = ReplicateFromLeader.determinePollInterval(updateHandlerInfo);
     assertEquals("0:0:30", pollInterval);
 
     updateHandlerInfo =
         new SolrConfig.UpdateHandlerInfo(
-            "solr.DirectUpdateHandler2", -1, 60000, -1, false, -1, 15000, false);
+            "solr.DirectUpdateHandler2", -1, 60000, -1, false, -1, 15000, false, false);
     pollInterval = ReplicateFromLeader.determinePollInterval(updateHandlerInfo);
     assertEquals("0:0:30", pollInterval);
 
     updateHandlerInfo =
         new SolrConfig.UpdateHandlerInfo(
-            "solr.DirectUpdateHandler2", -1, -1, -1, false, -1, 60000, false);
+            "solr.DirectUpdateHandler2", -1, -1, -1, false, -1, 60000, false, false);
     pollInterval = ReplicateFromLeader.determinePollInterval(updateHandlerInfo);
     assertEquals("0:0:30", pollInterval);
 
     updateHandlerInfo =
         new SolrConfig.UpdateHandlerInfo(
-            "solr.DirectUpdateHandler2", -1, 15000, -1, false, -1, -1, false);
+            "solr.DirectUpdateHandler2", -1, 15000, -1, false, -1, -1, false, false);
     pollInterval = ReplicateFromLeader.determinePollInterval(updateHandlerInfo);
     assertEquals("0:0:7", pollInterval);
 
     updateHandlerInfo =
         new SolrConfig.UpdateHandlerInfo(
-            "solr.DirectUpdateHandler2", -1, 60000, -1, true, -1, -1, false);
+            "solr.DirectUpdateHandler2", -1, 60000, -1, true, -1, -1, false, false);
     pollInterval = ReplicateFromLeader.determinePollInterval(updateHandlerInfo);
     assertEquals("0:0:30", pollInterval);
   }

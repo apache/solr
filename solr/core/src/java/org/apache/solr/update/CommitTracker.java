@@ -17,6 +17,7 @@
 package org.apache.solr.update;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -52,6 +53,7 @@ public final class CommitTracker implements Runnable {
   public static final int DOC_COMMIT_DELAY_MS = 1;
   // scheduler delay for maxSize-triggered autocommits
   public static final int SIZE_COMMIT_DELAY_MS = 1;
+  private final boolean alignCommitTime;
 
   // settings, not final so we can change them in testing
   private int docsUpperBound;
@@ -83,7 +85,8 @@ public final class CommitTracker implements Runnable {
       int timeUpperBound,
       long tLogFileSizeUpperBound,
       boolean openSearcher,
-      boolean softCommit) {
+      boolean softCommit,
+      boolean alignCommitTime) {
     this.core = core;
     this.name = name;
     pending = null;
@@ -94,6 +97,7 @@ public final class CommitTracker implements Runnable {
 
     this.softCommit = softCommit;
     this.openSearcher = openSearcher;
+    this.alignCommitTime = alignCommitTime;
 
     log.info("{} AutoCommit: {}", name, this);
   }
@@ -112,7 +116,7 @@ public final class CommitTracker implements Runnable {
 
   /** schedule individual commits */
   public void scheduleCommitWithin(long commitMaxTime) {
-    _scheduleCommitWithin(commitMaxTime);
+    _scheduleCommitWithin(commitMaxTime, true);
   }
 
   public void cancelPendingCommit() {
@@ -130,13 +134,30 @@ public final class CommitTracker implements Runnable {
     long ctime = (commitWithin > 0) ? commitWithin : timeUpperBound;
 
     if (ctime > 0) {
-      _scheduleCommitWithin(ctime);
+      _scheduleCommitWithin(ctime, true);
     }
   }
 
-  private void _scheduleCommitWithin(long commitMaxTime) {
+  private boolean shouldAlignCommitTime() {
+    if (!openSearcher) { // only align commit time for cache/searcher refresh
+      return false;
+    }
+    Boolean override = CommitTrackerManager.getAlignCommitTimeOverride();
+    if (override != null) {
+      return override;
+    }
+    return alignCommitTime;
+  }
+
+  private void _scheduleCommitWithin(long commitMaxTime, boolean allowAlign) {
     if (commitMaxTime <= 0) return;
     synchronized (this) {
+      if (allowAlign && shouldAlignCommitTime()) {
+        commitMaxTime =
+            alignCommitMaxTime(
+                core.getCoreDescriptor().getCollectionName(), commitMaxTime, new Date().getTime());
+      }
+
       if (pending != null && pending.getDelay(TimeUnit.MILLISECONDS) <= commitMaxTime) {
         // There is already a pending commit that will happen first, so
         // nothing else to do here.
@@ -165,6 +186,41 @@ public final class CommitTracker implements Runnable {
       // schedule our new commit
       pending = scheduler.schedule(this, commitMaxTime, TimeUnit.MILLISECONDS);
     }
+  }
+
+  /**
+   * Aligns the commit time per collection with 2 policies:
+   *
+   * <ol>
+   *   <li>Adjust the commit time by aligning to absolute commit point based on commitMaxTime. For
+   *       example if commitMaxTime is 60000 (60sec), then absolute commit point will be at the
+   *       start of every minute
+   *   <li>Jitter the time per collection up to commitMaxTime
+   * </ol>
+   *
+   * @return the adjusted commit max time to be used for scheduling aligned commits
+   */
+  static long alignCommitMaxTime(String collection, long commitMaxTime, long currentTimeMillis) {
+    int collectionHash = collection.hashCode() & 0x7FFFFFFF;
+    long jitter =
+        collectionHash % commitMaxTime; // a positive jitter to spread out commits per collection
+
+    /*
+     * An adjustment to be used to re-align the commit time to the absolute commit time frame
+     * (without jitter) then apply the jitter.
+     *
+     * For example, if commitMaxTime is 60000, currentTimeMillis % commitMaxTime will align the time
+     * back to the beginning of a minute, then we add the jitter and % commitMaxTime the whole
+     * adjustment to ensure such adjustment is within the range of 0 to commitMaxTime.
+     */
+    long adjustment = (currentTimeMillis + jitter) % commitMaxTime;
+
+    /*
+     * The adjustment is then subtracted from commitMaxTime * 3 / 2 to ensure the returned
+     * commitMaxTime is always within 0.5 * commitMaxTime to 1.5 * commitMaxTime, so commits are
+     * batched together as far as they are within half the commitMaxTime.
+     */
+    return commitMaxTime * 3 / 2 - adjustment;
   }
 
   /**
@@ -205,7 +261,7 @@ public final class CommitTracker implements Runnable {
       if (docs == docsUpperBound + 1) {
         // reset the count here instead of run() so we don't miss other documents being added
         docsSinceCommit.set(0);
-        _scheduleCommitWithin(DOC_COMMIT_DELAY_MS);
+        _scheduleCommitWithin(DOC_COMMIT_DELAY_MS, false);
       }
     }
   }
@@ -234,7 +290,7 @@ public final class CommitTracker implements Runnable {
   private void _scheduleMaxSizeTriggeredCommitIfNeeded(LongSupplier currentTlogSize) {
     if (tLogFileSizeUpperBound > 0 && currentTlogSize.getAsLong() > tLogFileSizeUpperBound) {
       docsSinceCommit.set(0);
-      _scheduleCommitWithin(SIZE_COMMIT_DELAY_MS);
+      _scheduleCommitWithin(SIZE_COMMIT_DELAY_MS, false);
     }
   }
 

@@ -136,7 +136,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
             timeUpperBound,
             fileSizeUpperBound,
             updateHandlerInfo.openSearcher,
-            false);
+            false,
+            updateHandlerInfo.alignCommitTime);
 
     int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs;
     int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime;
@@ -148,7 +149,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
             softCommitTimeUpperBound,
             NO_FILE_SIZE_UPPER_BOUND_PLACEHOLDER,
             true,
-            true);
+            true,
+            updateHandlerInfo.alignCommitTime);
 
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
 
@@ -179,7 +181,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
             timeUpperBound,
             fileSizeUpperBound,
             updateHandlerInfo.openSearcher,
-            false);
+            false,
+            updateHandlerInfo.alignCommitTime);
 
     int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs;
     int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime;
@@ -191,7 +194,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
             softCommitTimeUpperBound,
             NO_FILE_SIZE_UPPER_BOUND_PLACEHOLDER,
             updateHandlerInfo.openSearcher,
-            true);
+            true,
+            updateHandlerInfo.alignCommitTime);
 
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
 

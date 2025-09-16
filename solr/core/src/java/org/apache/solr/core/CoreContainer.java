@@ -154,6 +154,7 @@ import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.security.SolrNodeKeyPair;
+import org.apache.solr.update.CommitTrackerManager;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
@@ -1045,6 +1046,7 @@ public class CoreContainer {
 
     if (getZkController() != null) {
       cacheOverridesManager = new CacheOverridesManager(getZkController().getZkStateReader());
+      CommitTrackerManager.init(getZkController().getZkStateReader());
     }
 
     // setup executor to load cores in parallel
