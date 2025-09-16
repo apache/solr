@@ -22,6 +22,7 @@ description = 'Prometheus exporter for exposing metrics from Solr using Metrics 
 
 dependencies {
   implementation platform(project(':platform'))
+  implementation platform(libs.fasterxml.jackson.bom)
   implementation project(':solr:solrj')
   runtimeOnly project(':solr:solrj-zookeeper')
   // ideally remove ZK dep

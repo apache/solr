@@ -163,7 +163,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
 
       success = true;
     } finally {
-      System.clearProperty("solr.disableFingerprint");
+      System.clearProperty("solr.index.replication.fingerprint.enabled");
     }
   }
 
