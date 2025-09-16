@@ -158,6 +158,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * The ConcurrentMergeScheduler's autoIOThrottle default changed to `false` but `true` may be configured to retain prior behaviour. (SOLR-17631).
 
+* The TieredMergePolicy's segmentsPerTier default changed to `8` but `10` may be configured to retain prior behaviour. (SOLR-17917).
+
 * BlobHandler and the `.system` collection have been removed in favour of FileStore API.  (SOLR-17851).
 
 
