@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cuvs;
 
-import static org.junit.Assume.assumeTrue;
-
 import com.nvidia.cuvs.lucene.Lucene99AcceleratedHNSWVectorsFormat;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
