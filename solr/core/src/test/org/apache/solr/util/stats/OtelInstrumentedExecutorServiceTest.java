@@ -33,6 +33,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -63,18 +64,11 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
       MetricSnapshots metrics =
           metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
       GaugeSnapshot tasksRunning =
-          metrics.stream()
-              .filter(
-                  m -> m.getMetadata().getPrometheusName().equals("solr_executor_tasks_running"))
-              .findFirst()
-              .map(GaugeSnapshot.class::cast)
-              .get();
+          SolrMetricTestUtils.getMetricSnapshot(
+              GaugeSnapshot.class, metrics, "solr_executor_tasks_running");
       CounterSnapshot taskCounters =
-          metrics.stream()
-              .filter(m -> m.getMetadata().getPrometheusName().equals("solr_executor_tasks"))
-              .findFirst()
-              .map(CounterSnapshot.class::cast)
-              .get();
+          SolrMetricTestUtils.getMetricSnapshot(
+              CounterSnapshot.class, metrics, "solr_executor_tasks");
 
       GaugeDataPointSnapshot runningTasks = tasksRunning.getDataPoints().getFirst();
       CounterDataPointSnapshot submittedTasks = getCounterData(taskCounters, "submitted");
@@ -98,18 +92,11 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
       MetricSnapshots metrics =
           metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
       GaugeSnapshot tasksRunning =
-          metrics.stream()
-              .filter(
-                  m -> m.getMetadata().getPrometheusName().equals("solr_executor_tasks_running"))
-              .findFirst()
-              .map(GaugeSnapshot.class::cast)
-              .get();
+          SolrMetricTestUtils.getMetricSnapshot(
+              GaugeSnapshot.class, metrics, "solr_executor_tasks_running");
       CounterSnapshot taskCounters =
-          metrics.stream()
-              .filter(m -> m.getMetadata().getPrometheusName().equals("solr_executor_tasks"))
-              .findFirst()
-              .map(CounterSnapshot.class::cast)
-              .get();
+          SolrMetricTestUtils.getMetricSnapshot(
+              CounterSnapshot.class, metrics, "solr_executor_tasks");
 
       GaugeDataPointSnapshot runningTasks = tasksRunning.getDataPoints().getFirst();
       CounterDataPointSnapshot submittedTasks = getCounterData(taskCounters, "submitted");
@@ -173,20 +160,11 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
       MetricSnapshots metrics =
           metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
       GaugeSnapshot sizeGauges =
-          metrics.stream()
-              .filter(
-                  m -> m.getMetadata().getPrometheusName().equals("solr_executor_thread_pool_size"))
-              .findFirst()
-              .map(GaugeSnapshot.class::cast)
-              .get();
+          SolrMetricTestUtils.getMetricSnapshot(
+              GaugeSnapshot.class, metrics, "solr_executor_thread_pool_size");
       GaugeSnapshot taskGauges =
-          metrics.stream()
-              .filter(
-                  m ->
-                      m.getMetadata().getPrometheusName().equals("solr_executor_thread_pool_tasks"))
-              .findFirst()
-              .map(GaugeSnapshot.class::cast)
-              .get();
+          SolrMetricTestUtils.getMetricSnapshot(
+              GaugeSnapshot.class, metrics, "solr_executor_thread_pool_tasks");
 
       GaugeDataPointSnapshot poolSize = getGaugeData(sizeGauges, "size");
       GaugeDataPointSnapshot corePoolSize = getGaugeData(sizeGauges, "core");
@@ -220,26 +198,11 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
       MetricSnapshots metrics =
           metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
       GaugeSnapshot taskGauges =
-          metrics.stream()
-              .filter(
-                  m ->
-                      m.getMetadata()
-                          .getPrometheusName()
-                          .equals("solr_executor_fork_join_pool_tasks"))
-              .findFirst()
-              .map(GaugeSnapshot.class::cast)
-              .get();
+          SolrMetricTestUtils.getMetricSnapshot(
+              GaugeSnapshot.class, metrics, "solr_executor_fork_join_pool_tasks");
       GaugeSnapshot threadGauges =
-          metrics.stream()
-              .filter(
-                  m ->
-                      m.getMetadata()
-                          .getPrometheusName()
-                          .equals("solr_executor_fork_join_pool_threads"))
-              .findFirst()
-              .map(GaugeSnapshot.class::cast)
-              .get();
-
+          SolrMetricTestUtils.getMetricSnapshot(
+              GaugeSnapshot.class, metrics, "solr_executor_fork_join_pool_threads");
       GaugeDataPointSnapshot stolenTasks = getGaugeData(taskGauges, "stolen");
       GaugeDataPointSnapshot queuedTasks = getGaugeData(taskGauges, "queued");
 
@@ -254,19 +217,19 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
     }
   }
 
-  private ExecutorService testExecutor(String name, ExecutorService exec) {
+  private static ExecutorService testExecutor(String name, ExecutorService exec) {
     return MetricUtils.instrumentedExecutorService(
         exec, metricsContext, SolrInfoBean.Category.ADMIN, name);
   }
 
-  private CounterDataPointSnapshot getCounterData(CounterSnapshot snapshot, String type) {
+  private static CounterDataPointSnapshot getCounterData(CounterSnapshot snapshot, String type) {
     return snapshot.getDataPoints().stream()
         .filter(data -> data.getLabels().get(TYPE_ATTR.toString()).equals(type))
         .findFirst()
         .get();
   }
 
-  private GaugeDataPointSnapshot getGaugeData(GaugeSnapshot snapshot, String type) {
+  private static GaugeDataPointSnapshot getGaugeData(GaugeSnapshot snapshot, String type) {
     return snapshot.getDataPoints().stream()
         .filter(data -> data.getLabels().get(TYPE_ATTR.toString()).equals(type))
         .findFirst()

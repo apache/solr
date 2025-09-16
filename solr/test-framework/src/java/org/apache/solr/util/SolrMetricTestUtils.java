@@ -25,6 +25,8 @@ import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
+import io.prometheus.metrics.model.snapshots.MetricSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -206,6 +208,15 @@ public final class SolrMetricTestUtils {
   public static PrometheusMetricReader getPrometheusMetricReader(
       CoreContainer container, String registryName) {
     return container.getMetricManager().getPrometheusMetricReader(registryName);
+  }
+
+  public static <S extends MetricSnapshot> S getMetricSnapshot(
+      Class<S> snapshotClass, MetricSnapshots metrics, String name) {
+    return metrics.stream()
+        .filter(m -> m.getMetadata().getPrometheusName().equals(name))
+        .map(snapshotClass::cast)
+        .findFirst()
+        .get();
   }
 
   private static <T> T getDatapoint(
