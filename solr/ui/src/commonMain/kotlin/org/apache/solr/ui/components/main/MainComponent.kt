@@ -19,6 +19,7 @@ package org.apache.solr.ui.components.main
 
 import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.value.Value
+import org.apache.solr.ui.components.collections.CollectionsComponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.logging.LoggingComponent
 import org.apache.solr.ui.components.navigation.NavigationComponent
@@ -70,7 +71,7 @@ interface MainComponent : NavigationComponent {
         // data class Configsets(val component: ConfigsetsComponent): Child
 
         // TODO Uncomment once MetricsComponent available
-        // data class Collections(val component: CollectionsComponent): Child
+        data class Collections(val component: CollectionsComponent) : Child
 
         // TODO Uncomment once QueriesAndOperationsComponent available
         // data class QueriesAndOperations(val component: QueriesAndOperationsComponent): Child

@@ -190,6 +190,7 @@ private fun getMenuIcon(item: MainMenu) = when (item) {
  * TODO Remove once all sections are added
  */
 private fun isSectionAvailable(item: MainMenu): Boolean = when (item) {
+    MainMenu.Collections -> true
     MainMenu.Environment -> true
     MainMenu.Logging -> true
     else -> false

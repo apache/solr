@@ -25,6 +25,8 @@ import com.arkivanov.decompose.value.Value
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
+import org.apache.solr.ui.components.collections.CollectionsComponent
+import org.apache.solr.ui.components.collections.integration.DefaultCollectionsComponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.environment.integration.DefaultEnvironmentComponent
 import org.apache.solr.ui.components.logging.LoggingComponent
@@ -39,6 +41,7 @@ class DefaultMainComponent internal constructor(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     destination: String? = null,
+    private val collectionsComponent: (AppComponentContext) -> CollectionsComponent,
     private val environmentComponent: (AppComponentContext) -> EnvironmentComponent,
     private val loggingComponent: (AppComponentContext) -> LoggingComponent,
     private val output: (Output) -> Unit,
@@ -66,6 +69,13 @@ class DefaultMainComponent internal constructor(
         storeFactory = storeFactory,
         destination = destination,
         output = output,
+        collectionsComponent = { childContext ->
+            DefaultCollectionsComponent(
+                componentContext = childContext,
+                storeFactory = storeFactory,
+                httpClient = httpClient,
+            )
+        },
         environmentComponent = { childContext ->
             DefaultEnvironmentComponent(
                 componentContext = childContext,
@@ -125,8 +135,7 @@ class DefaultMainComponent internal constructor(
         //     NavigationComponent.Child.Configsets(configsetsComponent(componentContext))
 
         // TODO Uncomment once Collections available
-        // Configuration.Collections ->
-        //     NavigationComponent.Child.Collections(collectionsComponent(componentContext))
+        Configuration.Collections -> Child.Collections(collectionsComponent(componentContext))
 
         // TODO Uncomment once QueriesAndOperations available
         // Configuration.QueriesAndOperations ->

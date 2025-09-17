@@ -23,6 +23,7 @@ import org.apache.solr.ui.views.navigation.MainMenu
 val MainComponent.Child.asMainMenu: MainMenu
     get() = when (this) {
         // TODO Add additional mappings once more children are supported
+        is MainComponent.Child.Collections -> MainMenu.Collections
         is MainComponent.Child.Environment -> MainMenu.Environment
         is MainComponent.Child.Logging -> MainMenu.Logging
     }
