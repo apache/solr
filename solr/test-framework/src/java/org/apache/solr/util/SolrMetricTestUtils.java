@@ -169,15 +169,6 @@ public final class SolrMetricTestUtils {
     };
   }
 
-  public static <S extends MetricSnapshot> S getMetricSnapshot(
-      Class<S> snapshotClass, MetricSnapshots metrics, String name) {
-    return metrics.stream()
-        .filter(m -> m.getMetadata().getPrometheusName().equals(name))
-        .map(snapshotClass::cast)
-        .findFirst()
-        .get();
-  }
-
   public static DataPointSnapshot getDataPointSnapshot(
       PrometheusMetricReader reader, String metricName, Labels labels) {
     MetricSnapshots metricSnapshots = reader.collect();
