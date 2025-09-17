@@ -608,7 +608,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     assertEquals(expectedValue, dataPointSnapshot.getValue(), 0.0);
   }
 
-  private void assertAuditMetricsMinimums(int count, int errors) {
+  private void assertAuditMetricsMinimums(int count, int errors) throws InterruptedException {
     Labels labels = getDefaultAuditLoggerMetricsLabels();
     assertCounterMinimumWithRetry("solr_auditlogger_count", labels, count);
 
@@ -617,20 +617,19 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     }
   }
 
-  private void assertCounterMinimumWithRetry(String metricName, Labels labels, int expectedMinimum) {
+  private void assertCounterMinimumWithRetry(String metricName, Labels labels, int expectedMinimum)
+      throws InterruptedException {
     boolean success = checkCounterMinimum(metricName, labels, expectedMinimum);
 
     if (!success && expectedMinimum > 0) {
       log.info("First {} metric check failed, pausing 2s before re-attempt", metricName);
-      try {
-        Thread.sleep(2000);
-        success = checkCounterMinimum(metricName, labels, expectedMinimum);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+      Thread.sleep(2000);
+      success = checkCounterMinimum(metricName, labels, expectedMinimum);
     }
 
-    assertTrue("Counter metric " + metricName + " did not meet minimum " + expectedMinimum + " after retry", success);
+    assertTrue(
+        String.format("Counter metric '%s' did not meet minimum %d after retry", metricName, expectedMinimum),
+        success);
   }
 
   private boolean checkCounterMinimum(String metricName, Labels labels, int expectedMinimum) {
