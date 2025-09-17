@@ -22,6 +22,12 @@ import org.apache.solr.ui.components.cluster.ClusterComponent.Child
 import org.apache.solr.ui.components.cluster.ClusterComponent.ClusterTab
 import org.apache.solr.ui.components.navigation.TabNavigationComponent
 
+/**
+ * Cluster component that represents our current Cluster section.
+ *
+ * The cluster section's goal is to provide a "physical" representation of the connected Solr
+ * instance.
+ */
 interface ClusterComponent : TabNavigationComponent<ClusterTab, Child> {
 
     sealed interface Child {

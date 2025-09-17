@@ -35,6 +35,15 @@ import org.apache.solr.ui.components.navigation.TabNavigationComponent
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
+/**
+ * Navigation tabs that can be used for adding basic navigation elements to a section.
+ *
+ * @param component The tab navigation component that manages the tab navigation.
+ * @param entries The entries to display in the navigation.
+ * @param mapper Mapper function that maps the entries to string resources, used to render the tab
+ * labels.
+ * @param modifier Modifier to apply to the root element.
+ */
 @Composable
 fun <T : Enum<T>, C : Any> NavigationTabs(
     component: TabNavigationComponent<T, C>,

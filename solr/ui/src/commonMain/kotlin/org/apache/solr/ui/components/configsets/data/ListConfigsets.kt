@@ -16,11 +16,10 @@
  */
 package org.apache.solr.ui.components.configsets.data
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * List of config sets.
+ * Configsets API model that holds a list of configsets.
  */
 @Serializable
 data class ListConfigsets(

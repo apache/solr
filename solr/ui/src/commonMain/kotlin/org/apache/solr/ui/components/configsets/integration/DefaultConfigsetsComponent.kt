@@ -41,7 +41,7 @@ import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 /**
  * Default implementation of the [ConfigsetsComponent].
  */
-class DefaultConfigsetsConponent internal constructor(
+class DefaultConfigsetsComponent internal constructor(
     componentContext: AppComponentContext,
     tabNavigation: TabNavigationComponent<ConfigsetsTab, Child>,
     storeFactory: StoreFactory,
@@ -93,7 +93,7 @@ class DefaultConfigsetsConponent internal constructor(
     override val model = store.stateFlow.map(mainScope, configsetsStateToModel)
 
     override fun onSelectConfigset(name: String) {
-        store.accept(Intent.SelectConfigSet(name))
+        store.accept(Intent.SelectConfigSet(configSetName = name))
     }
 
     override fun setMenuExpanded(expanded: Boolean) {

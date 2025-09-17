@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -67,7 +68,7 @@ fun ConfigsetsContent(
         ConfigsetsDropdown(
             modifier = Modifier.testTag("configsets_dropdown"),
             selectedConfigSet = model.selectedConfigset,
-            selectConfigset = { s: String -> component.onSelectConfigset(s) },
+            selectConfigset = component::onSelectConfigset,
             availableConfigsets = model.configsets,
             expanded = model.expanded,
             setMenuExpanded = component::setMenuExpanded,
@@ -78,7 +79,6 @@ fun ConfigsetsContent(
                 .fillMaxSize()
                 .padding(16.dp),
         ) {
-            println(currentChild)
             currentChild?.let {
                 when (val child = it.instance) {
                     is Child.Overview -> ConfigsetsOverviewContent(component = child.component)
