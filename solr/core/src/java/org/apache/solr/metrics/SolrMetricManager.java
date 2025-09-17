@@ -52,7 +52,11 @@ import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
+import io.opentelemetry.sdk.metrics.Aggregation;
+import io.opentelemetry.sdk.metrics.InstrumentSelector;
+import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.View;
 import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
 import io.opentelemetry.sdk.metrics.internal.exemplar.ExemplarFilter;
 import java.io.IOException;
@@ -156,6 +160,23 @@ public class SolrMetricManager {
 
   private final ConcurrentMap<String, MeterProviderAndReaders> meterProviderAndReaders =
       new ConcurrentHashMap<>();
+
+  private static final List<Double> SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES = Arrays.asList(
+      0.0,
+      5_000.0,
+      10_000.0,
+      25_000.0,
+      50_000.0,
+      100_000.0,
+      250_000.0,
+      500_000.0,
+      1_000_000.0,
+      2_500_000.0,
+      5_000_000.0,
+      25_000_000.0,
+      100_000_000.0,
+      1_000_000_000.0
+  );
 
   public SolrMetricManager() {
     metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
@@ -773,7 +794,15 @@ public class SolrMetricManager {
               var reader = new FilterablePrometheusMetricReader(true, null);
               // NOCOMMIT: We need to add a Periodic Metric Reader here if we want to push with OTLP
               // with an exporter
-              var provider = SdkMeterProvider.builder().registerMetricReader(reader);
+              var provider = SdkMeterProvider.builder()
+                  .registerMetricReader(reader)
+                  .registerView(
+                      InstrumentSelector.builder()
+                        .setType(InstrumentType.HISTOGRAM)
+                        .setUnit(OtelUnit.NANOSECONDS.getSymbol()).build(),
+                      View.builder()
+                          .setAggregation(Aggregation.explicitBucketHistogram(SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES))
+                  .build());
               SdkMeterProviderUtil.setExemplarFilter(provider, ExemplarFilter.traceBased());
               return new MeterProviderAndReaders(provider.build(), reader);
             })
