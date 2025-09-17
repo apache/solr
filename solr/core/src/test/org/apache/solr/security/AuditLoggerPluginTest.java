@@ -17,6 +17,7 @@
 
 package org.apache.solr.security;
 
+import io.opentelemetry.api.common.Attributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,7 +25,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import io.opentelemetry.api.common.Attributes;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.SolrMetricsContext;

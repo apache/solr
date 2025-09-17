@@ -16,13 +16,13 @@
  */
 package org.apache.solr.security;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import io.opentelemetry.api.common.Attributes;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.metrics.SolrMetricsContext;

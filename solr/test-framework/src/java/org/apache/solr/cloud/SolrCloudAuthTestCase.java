@@ -346,9 +346,9 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       return (long)
           ((long) 1000
               * metrics.stream()
-              .mapToDouble(l -> ((Timer) l.get(prefix + key)).getMeanRate())
-              .average()
-              .orElse(0.0d));
+                  .mapToDouble(l -> ((Timer) l.get(prefix + key)).getMeanRate())
+                  .average()
+                  .orElse(0.0d));
     else return metrics.stream().mapToLong(l -> ((Counter) l.get(prefix + key)).getCount()).sum();
   }
 

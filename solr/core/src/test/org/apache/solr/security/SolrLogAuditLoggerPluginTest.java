@@ -20,8 +20,8 @@ package org.apache.solr.security;
 import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_ANONYMOUS;
 import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_AUTHENTICATED;
 
-import java.util.HashMap;
 import io.opentelemetry.api.common.Attributes;
+import java.util.HashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.SolrMetricsContext;

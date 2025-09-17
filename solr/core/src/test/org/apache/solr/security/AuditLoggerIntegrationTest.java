@@ -30,6 +30,11 @@ import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHas
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -49,11 +54,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
-import io.prometheus.metrics.model.snapshots.CounterSnapshot;
-import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
-import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
-import io.prometheus.metrics.model.snapshots.Labels;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -119,8 +119,9 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
     assertGaugeMetricValue("solr_auditlogger_async_enabled", labels, 0);
 
-    HistogramSnapshot.HistogramDataPointSnapshot snapshot = SolrMetricTestUtils.getHistogramDatapoint(
-        metricsReader, "solr_auditlogger_request_times_nanoseconds", labels);
+    HistogramSnapshot.HistogramDataPointSnapshot snapshot =
+        SolrMetricTestUtils.getHistogramDatapoint(
+            metricsReader, "solr_auditlogger_request_times_nanoseconds", labels);
     assertNotNull(snapshot);
     assertTrue("Expected at least 3 measurements", snapshot.getCount() >= 3);
   }
@@ -139,19 +140,17 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     assertGaugeMetricValue("solr_auditlogger_async_enabled", labels, 1);
 
     // Verify queue capacity matches default size
-    Labels capacityLabels = getDefaultAuditLoggerMetricsLabelsBuilder()
-        .label("type", "capacity")
-        .build();
+    Labels capacityLabels =
+        getDefaultAuditLoggerMetricsLabelsBuilder().label("type", "capacity").build();
     assertGaugeMetricValue("solr_auditlogger_queue", capacityLabels, 4096);
 
     // Verify queue is empty after processing events
-    Labels sizeLabels = getDefaultAuditLoggerMetricsLabelsBuilder()
-        .label("type", "size")
-        .build();
+    Labels sizeLabels = getDefaultAuditLoggerMetricsLabelsBuilder().label("type", "size").build();
     assertGaugeMetricValue("solr_auditlogger_queue", sizeLabels, 0);
 
-    HistogramSnapshot.HistogramDataPointSnapshot snapshot = SolrMetricTestUtils.getHistogramDatapoint(
-        metricsReader, "solr_auditlogger_request_times_nanoseconds", labels);
+    HistogramSnapshot.HistogramDataPointSnapshot snapshot =
+        SolrMetricTestUtils.getHistogramDatapoint(
+            metricsReader, "solr_auditlogger_request_times_nanoseconds", labels);
     assertNotNull(snapshot);
     assertTrue("Expected at least 3 measurements", snapshot.getCount() >= 3);
     assertTrue("Expected a positive sum for request times", snapshot.getSum() >= 0);
@@ -177,8 +176,9 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     assertAuditMetricsMinimums(3, 0);
 
     Labels labels = getDefaultAuditLoggerMetricsLabelsBuilder().build();
-    HistogramSnapshot.HistogramDataPointSnapshot snapshot = SolrMetricTestUtils.getHistogramDatapoint(
-        metricsReader, "solr_auditlogger_queued_time_nanoseconds", labels);
+    HistogramSnapshot.HistogramDataPointSnapshot snapshot =
+        SolrMetricTestUtils.getHistogramDatapoint(
+            metricsReader, "solr_auditlogger_queued_time_nanoseconds", labels);
     assertNotNull(snapshot);
     assertTrue("Expected at least 3 measurements", snapshot.getCount() >= 3);
 
@@ -602,8 +602,9 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private void assertGaugeMetricValue(String metricName, Labels labels, long expectedValue) {
-    GaugeSnapshot.GaugeDataPointSnapshot dataPointSnapshot = (GaugeSnapshot.GaugeDataPointSnapshot)
-        SolrMetricTestUtils.getDataPointSnapshot(metricsReader, metricName, labels);
+    GaugeSnapshot.GaugeDataPointSnapshot dataPointSnapshot =
+        (GaugeSnapshot.GaugeDataPointSnapshot)
+            SolrMetricTestUtils.getDataPointSnapshot(metricsReader, metricName, labels);
     assertNotNull(dataPointSnapshot);
     assertEquals(expectedValue, dataPointSnapshot.getValue(), 0.0);
   }
@@ -628,7 +629,8 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     }
 
     assertTrue(
-        String.format("Counter metric '%s' did not meet minimum %d after retry", metricName, expectedMinimum),
+        String.format(
+            "Counter metric '%s' did not meet minimum %d after retry", metricName, expectedMinimum),
         success);
   }
 

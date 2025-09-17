@@ -1,9 +1,9 @@
 package org.apache.solr.security;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -26,13 +26,16 @@ public final class MockSolrMetricsContextFactory {
     Timer mockTimer = mock(Timer.class);
     Timer.Context mockTimerContext = mock(Timer.Context.class);
     when(mockTimer.time()).thenReturn(mockTimerContext);
-    when(mockChildContext.timer(anyString(), anyString(), anyString(), anyString())).thenReturn(mockTimer);
+    when(mockChildContext.timer(anyString(), anyString(), anyString(), anyString()))
+        .thenReturn(mockTimer);
 
     Counter mockCounter = mock(Counter.class);
-    when(mockChildContext.counter(anyString(), anyString(), anyString(), anyString())).thenReturn(mockCounter);
+    when(mockChildContext.counter(anyString(), anyString(), anyString(), anyString()))
+        .thenReturn(mockCounter);
 
     LongHistogram mockLongHistogram = mock(LongHistogram.class);
-    when(mockChildContext.longHistogram(anyString(), anyString(), any(OtelUnit.class))).thenReturn(mockLongHistogram);
+    when(mockChildContext.longHistogram(anyString(), anyString(), any(OtelUnit.class)))
+        .thenReturn(mockLongHistogram);
 
     when(mockChildContext.observableLongGauge(anyString(), anyString(), any())).thenReturn(null);
     when(mockChildContext.observableLongCounter(anyString(), anyString(), any())).thenReturn(null);
