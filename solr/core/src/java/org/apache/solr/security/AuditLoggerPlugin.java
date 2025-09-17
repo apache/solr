@@ -288,7 +288,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
         new AttributedLongTimer(
             this.solrMetricsContext.longHistogram(
                 "solr_auditlogger_request_times",
-                "Distribution of authentication request durations",
+                "Distribution of audit event request durations",
                 OtelUnit.NANOSECONDS),
             attrsWithCategory);
 
