@@ -202,6 +202,8 @@ Matching is done for the given string as a prefix, so it's possible to e.g., lea
 IMPORTANT: The `local` and `host` options should only be used if you are load balancing requests across all nodes that host replicas for the collection you are querying, as Solr's `CloudSolrClient` will do.
 If not load-balancing, this feature can introduce a hotspot in the cluster since queries won't be evenly distributed across the cluster.
 
+NOTE: The `local` and `host` options are equivalent when only 1 Solr node is running on each host. This is also true in a setup like Kubernetes where each Solr node has a unique hostname.
+
 `replica.base`::
 Applied after sorting by inherent replica attributes, this property defines a fallback ordering among sets of preference-equivalent replicas; if specified, only one value may be specified for this property, and it must be specified last.
 +
