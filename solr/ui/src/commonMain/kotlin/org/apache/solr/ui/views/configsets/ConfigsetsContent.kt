@@ -78,7 +78,6 @@ fun ConfigsetsContent(
                 .fillMaxSize()
                 .padding(16.dp),
         ) {
-            println(currentChild)
             currentChild?.let {
                 when (val child = it.instance) {
                     is Child.Overview -> ConfigsetsOverviewContent(component = child.component)

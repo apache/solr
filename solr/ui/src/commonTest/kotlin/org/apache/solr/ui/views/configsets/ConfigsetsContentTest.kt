@@ -32,9 +32,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Model
-import org.apache.solr.ui.components.configsets.data.Configset
 import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
 import org.apache.solr.ui.components.navigation.TabNavigationComponent.Configuration
+import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 @OptIn(ExperimentalTestApi::class)

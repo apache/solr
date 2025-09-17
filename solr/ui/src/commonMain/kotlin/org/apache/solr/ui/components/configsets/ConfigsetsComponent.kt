@@ -19,19 +19,25 @@ package org.apache.solr.ui.components.configsets
 
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
-import org.apache.solr.ui.components.configsets.data.Configset
 import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
 import org.apache.solr.ui.components.navigation.TabNavigationComponent
+import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
-/** Component contract for Configsets: manages tab state, available configsets, and current selection. */
+/**
+ * The configsets component provides the main entry point for managing Solr's configets.
+ */
 interface ConfigsetsComponent : TabNavigationComponent<ConfigsetsTab, Child> {
 
     /**
-     * All possible navigation targets (children) within the Configsets feature.
+     * All possible navigation targets (children) within the Configsets section.
      */
     sealed interface Child {
         data class Overview(val component: ConfigsetsOverviewComponent) : Child
+
+        /**
+         * TODO Remove once other sections are added
+         */
         data class Placeholder(val tabName: String) : Child
     }
 

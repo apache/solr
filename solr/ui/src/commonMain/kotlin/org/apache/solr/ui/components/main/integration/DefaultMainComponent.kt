@@ -28,7 +28,7 @@ import kotlinx.serialization.Serializable
 import org.apache.solr.ui.components.cluster.ClusterComponent
 import org.apache.solr.ui.components.cluster.integration.DefaultClusterComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
-import org.apache.solr.ui.components.configsets.integration.DefaultConfigsetsConponent
+import org.apache.solr.ui.components.configsets.integration.DefaultConfigsetsComponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.environment.integration.DefaultEnvironmentComponent
 import org.apache.solr.ui.components.logging.LoggingComponent
@@ -78,7 +78,7 @@ class DefaultMainComponent internal constructor(
             )
         },
         configsetsComponent = { childContext ->
-            DefaultConfigsetsConponent(
+            DefaultConfigsetsComponent(
                 componentContext = childContext,
                 storeFactory = storeFactory,
                 httpClient = httpClient,

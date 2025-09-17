@@ -18,8 +18,8 @@
 package org.apache.solr.ui.components.configsets.integration
 
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
-import org.apache.solr.ui.components.configsets.data.Configset
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore
+import org.apache.solr.ui.domain.Configset
 
 internal val configsetsStateToModel: (ConfigsetsStore.State) -> ConfigsetsComponent.Model = {
     ConfigsetsComponent.Model(

@@ -32,7 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import org.apache.solr.ui.components.configsets.data.Configset
+import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.nav_configsets
 import org.apache.solr.ui.generated.resources.no_configsets
