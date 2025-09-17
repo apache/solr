@@ -1187,10 +1187,9 @@ public class CoreContainer {
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
                 new SolrNamedThreadFactory("coreLoadExecutor")),
-            null,
-            metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
-            SolrMetricManager.mkName(
-                "coreLoadExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
+            solrMetricsContext,
+            SolrInfoBean.Category.CONTAINER,
+            "coreLoadExecutor");
 
     coreSorter =
         loader.newInstance(

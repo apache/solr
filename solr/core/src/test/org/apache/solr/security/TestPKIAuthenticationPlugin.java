@@ -23,6 +23,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongHistogram;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,6 +42,7 @@ import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.message.BasicHttpRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -118,7 +122,18 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
     mockReq = createMockRequest(header);
     mock = new MockPKIAuthenticationPlugin(nodeName);
+    mockMetrics(mock);
     request = new BasicHttpRequest("GET", "http://localhost:56565");
+  }
+
+  private static void mockMetrics(MockPKIAuthenticationPlugin mock) {
+    SolrMetricsContext smcMock = mock(SolrMetricsContext.class);
+    when(smcMock.getChildContext(any())).thenReturn(smcMock);
+    LongCounter longCounterMock = mock(LongCounter.class);
+    LongHistogram longHistogramMock = mock(LongHistogram.class);
+    when(smcMock.longCounter(any(), any())).thenReturn(longCounterMock);
+    when(smcMock.longHistogram(any(), any(), any())).thenReturn(longHistogramMock);
+    mock.initializeMetrics(smcMock, Attributes.empty(), "");
   }
 
   @Override
@@ -161,6 +176,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
             }
           }
         };
+    mockMetrics(mock1);
 
     // Setup regular superuser request
     mock.solrRequestInfo = null;
@@ -187,6 +203,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     System.setProperty(PKIAuthenticationPlugin.SEND_VERSION, "v1");
     System.setProperty(PKIAuthenticationPlugin.ACCEPT_VERSIONS, "v2");
     mock = new MockPKIAuthenticationPlugin(nodeName);
+    mockMetrics(mock);
 
     principal.set(new BasicUserPrincipal("solr"));
     mock.solrRequestInfo = new SolrRequestInfo(localSolrQueryRequest, new SolrQueryResponse());

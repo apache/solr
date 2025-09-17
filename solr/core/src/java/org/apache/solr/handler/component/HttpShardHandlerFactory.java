@@ -442,13 +442,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
-    // TODO SOLR-17458: Add Otel
     httpListenerFactory.initializeMetrics(solrMetricsContext, Attributes.empty(), expandedScope);
     commExecutor =
         MetricUtils.instrumentedExecutorService(
-            commExecutor,
-            null,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
+            commExecutor, solrMetricsContext, SolrInfoBean.Category.QUERY, "httpShardExecutor");
   }
 }
