@@ -131,7 +131,7 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"debug\":[\"results\"],\"combiner.query\":[\"lexical1\",\"lexical2\"],"
-                + " \"combiner.method\": \"pre\", \"rid\": \"test-1\"}}",
+                + "\"rid\": \"test-1\"}}",
             CommonParams.QT,
             "/search");
     assertEquals(10, rsp.getResults().getNumFound());
@@ -150,7 +150,7 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
                 + "\"lexical2\":{\"lucene\":{\"query\":\"text:Solr powers the search\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"pre\"}}",
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
             CommonParams.QT,
             "/search");
     assertEquals(0, rsp.getResults().size());
@@ -172,7 +172,7 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
                         + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
                         + "\"limit\":5,"
                         + "\"fields\":[\"id\",\"score\",\"title\"],"
-                        + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"vector\", \"lexical2\"], \"combiner.method\": \"pre\"}}",
+                        + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"vector\", \"lexical2\"]}}",
                     CommonParams.QT,
                     "/search"));
     assertTrue(exceptionThrown.getMessage().contains("Too many queries to combine: limit is 2"));
@@ -194,7 +194,7 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\""
-                + ":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"pre\",\"debug\":[\"results\"]}}",
+                + ":[\"lexical1\",\"lexical2\"],\"debug\":[\"results\"]}}",
             CommonParams.QT,
             "/search");
     assertEquals(10, rsp.getResults().getNumFound());
@@ -219,7 +219,7 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
             + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
             + "\"sort\":\"id asc\","
             + "\"fields\":[\"id\",\"score\",\"title\"],"
-            + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"pre\"}}";
+            + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
 
     RuntimeException exceptionThrown =
         expectThrows(

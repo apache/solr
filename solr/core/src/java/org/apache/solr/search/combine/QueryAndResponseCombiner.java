@@ -16,23 +16,19 @@
  */
 package org.apache.solr.search.combine;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ShardDoc;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryResult;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -41,16 +37,6 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * ranked lists and shard documents.
  */
 public abstract class QueryAndResponseCombiner implements NamedListInitializedPlugin {
-  /**
-   * Combines multiple ranked lists into a single QueryResult.
-   *
-   * @param rankedLists a list of ranked lists to be combined
-   * @param solrParams params to be used when provided at query time
-   * @return a new QueryResult containing the combined results
-   * @throws IllegalArgumentException if the input list is empty
-   */
-  public abstract QueryResult combine(List<QueryResult> rankedLists, SolrParams solrParams);
-
   /**
    * Combines shard documents corresponding to multiple queries based on the provided map.
    *
@@ -113,22 +99,17 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
    * Retrieves a list of explanations for the given queries and results.
    *
    * @param queryKeys the keys associated with the queries
-   * @param queries the list of queries for which explanations are requested
-   * @param queryResult the list of QueryResult corresponding to each query
-   * @param searcher the SolrIndexSearcher used to perform the search
-   * @param schema the IndexSchema used to interpret the search results
+   * @param queriesDocMap a map where keys represent combiner query keys and values are lists of
+   *     ShardDocs for corresponding to each key
+   * @param combinedQueriesDocs a list of ShardDocs after combiner operation
    * @param solrParams params to be used when provided at query time
    * @return a SimpleOrderedMap of explanations for the given queries and results
-   * @throws IOException if an I/O error occurs during the explanation retrieval process
    */
   public abstract SimpleOrderedMap<Explanation> getExplanations(
       String[] queryKeys,
-      List<Query> queries,
-      List<QueryResult> queryResult,
-      SolrIndexSearcher searcher,
-      IndexSchema schema,
-      SolrParams solrParams)
-      throws IOException;
+      Map<String, List<ShardDoc>> queriesDocMap,
+      List<ShardDoc> combinedQueriesDocs,
+      SolrParams solrParams);
 
   /**
    * Retrieves an implementation of the QueryAndResponseCombiner based on the specified algorithm.

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.combine;
 
-import static org.apache.solr.common.params.CombinerParams.COMBINER_RRF_K;
 import static org.apache.solr.common.params.CombinerParams.RECIPROCAL_RANK_FUSION;
 
 import java.util.ArrayList;
@@ -52,13 +51,11 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
     reciprocalRankFusion.init(args);
   }
 
-  /** Tests the functionality of combining using RRF across local search indices. */
+  /** Tests the functionality of combining the QueryResults across local search indices. */
   @Test
-  public void testSearcherCombine() {
+  public void testSimpleCombine() {
     List<QueryResult> rankedList = QueryAndResponseCombinerTest.getQueryResults();
-    SolrParams solrParams = params(COMBINER_RRF_K, "10");
-    QueryResult result = reciprocalRankFusion.combine(rankedList, solrParams);
-    assertEquals(20, reciprocalRankFusion.getK());
+    QueryResult result = QueryAndResponseCombiner.simpleCombine(rankedList);
     assertEquals(3, result.getDocList().size());
     assertEquals(4, result.getDocSet().size());
   }
@@ -86,6 +83,7 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
     shardDoc.orderInShard = 1;
     queriesDocMap.put(shardDoc.shard, List.of(shardDoc));
     SolrParams solrParams = params();
+    assertEquals(20, reciprocalRankFusion.getK());
     List<ShardDoc> shardDocs = reciprocalRankFusion.combine(queriesDocMap, solrParams);
     assertEquals(2, shardDocs.size());
     assertEquals("id2", shardDocs.getFirst().id);

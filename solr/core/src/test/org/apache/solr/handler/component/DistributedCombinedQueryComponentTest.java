@@ -21,20 +21,18 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * The DistributedCombinedQueryComponentTest class is a JUnit test suite that evaluates the
  * functionality of the CombinedQueryComponent in a Solr distributed search environment. It focuses
- * on testing the integration of combiner queries using both methods - pre and post.
+ * on testing the integration of combiner queries with different configurations.
  */
 public class DistributedCombinedQueryComponentTest extends BaseDistributedSearchTestCase {
 
@@ -120,33 +118,16 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
   @Test
   public void testSingleLexicalQuery() throws Exception {
     prepareIndexDocs();
-    QueryResponse rsp;
-    // Combiner Method: post
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                "{\"queries\":"
-                    + "{\"lexical1\":{\"lucene\":{\"query\":\"id:2^=10\"}}},"
-                    + "\"limit\":5,"
-                    + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"]}}",
-                CommonParams.QT,
-                "/search"));
-    assertEquals(1, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "2");
-    // Combiner Method: pre
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                "{\"queries\":"
-                    + "{\"lexical1\":{\"lucene\":{\"query\":\"id:2^=10\"}}},"
-                    + "\"limit\":5,"
-                    + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"],\"combiner.method\":\"pre\"}}",
-                CommonParams.QT,
-                "/search"));
+    QueryResponse rsp =
+        query(
+            CommonParams.JSON,
+            "{\"queries\":"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:2^10\"}}},"
+                + "\"limit\":5,"
+                + "\"fields\":[\"id\",\"score\",\"title\"],"
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"]}}",
+            CommonParams.QT,
+            "/search");
     assertEquals(1, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2");
   }
@@ -173,32 +154,14 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
-            + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^2 OR 5^1 OR 7^3 OR 10^2)\"}}},"
             + "\"limit\":5,"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
-            + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"],\"combiner.method\": \"%s\"}}";
-    QueryResponse rsp;
-    // Combiner Method: post
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                String.format(Locale.ROOT, jsonQuery, "post"),
-                CommonParams.QT,
-                "/search"));
+            + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
+    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
     assertEquals(5, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "1", "2", "3", "4", "5");
-    // Combiner Method: pre
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                String.format(Locale.ROOT, jsonQuery, "pre"),
-                CommonParams.QT,
-                "/search"));
-    assertEquals(5, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "2", "1", "4", "5", "8");
+    assertFieldValues(rsp.getResults(), id, "5", "4", "2", "3", "7");
   }
 
   /**
@@ -211,37 +174,18 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
-            + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^2 OR 5^1 OR 7^3 OR 10^2)\"}}},"
             + "\"limit\":5,\"sort\":\"mod3_idv desc\""
             + "\"fields\":[\"id\",\"score\",\"title\"],"
-            + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"], \"combiner.method\": \"%s\"}}";
-    QueryResponse rsp;
-    // Combiner Method: post
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                String.format(Locale.ROOT, jsonQuery, "post"),
-                CommonParams.QT,
-                "/search"));
+            + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
+    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
     assertEquals(5, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "8", "5", "2", "7", "4");
-    // Combiner Method: pre
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                String.format(Locale.ROOT, jsonQuery, "pre"),
-                CommonParams.QT,
-                "/search"));
-    assertEquals(5, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "2", "8", "5", "4", "1");
+    assertFieldValues(rsp.getResults(), id, "5", "2", "7", "4", "10");
   }
 
   /**
-   * Tests the hybrid query functionality of the system with various setting of pagination using
-   * combiner.method: pre.
+   * Tests the hybrid query functionality of the system with various setting of pagination.
    *
    * @throws Exception if any unexpected error occurs during the test execution.
    */
@@ -250,106 +194,46 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     prepareIndexDocs();
     // lexical => 2,3
     // vector => 1,4,2,10,3,6
-    QueryResponse rsp;
-    // Combiner Method: pre
+    QueryResponse rsp =
+        query(
+            CommonParams.JSON,
+            "{\"queries\":"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^2 OR 5^1 OR 7^3 OR 10^2)\"}}},"
+                + "\"fields\":[\"id\",\"score\",\"title\"],"
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
+            CommonParams.QT,
+            "/search");
+    assertFieldValues(rsp.getResults(), id, "5", "4", "2", "3", "7", "6", "10");
     rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                "{\"queries\":"
-                    + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
-                    + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
-                    + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"pre\"}}",
-                CommonParams.QT,
-                "/search"));
-    assertFieldValues(rsp.getResults(), id, "2", "3", "4", "1", "10", "6", "8", "7", "5");
+        query(
+            CommonParams.JSON,
+            "{\"queries\":"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^2 OR 5^1 OR 7^3 OR 10^2)\"}}},"
+                + "\"limit\":4,"
+                + "\"fields\":[\"id\",\"score\",\"title\"],"
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
+            CommonParams.QT,
+            "/search");
+    assertFieldValues(rsp.getResults(), id, "5", "4", "2", "3");
     rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                "{\"queries\":"
-                    + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
-                    + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
-                    + "\"limit\":4,"
-                    + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"pre\"}}",
-                CommonParams.QT,
-                "/search"));
-    assertFieldValues(rsp.getResults(), id, "2", "3", "4", "1");
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                "{\"queries\":"
-                    + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
-                    + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
-                    + "\"limit\":4,\"offset\":3,"
-                    + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"pre\"}}",
-                CommonParams.QT,
-                "/search"));
+        query(
+            CommonParams.JSON,
+            "{\"queries\":"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^2 OR 5^1 OR 7^3 OR 10^2)\"}}},"
+                + "\"limit\":4,\"offset\":3,"
+                + "\"fields\":[\"id\",\"score\",\"title\"],"
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
+            CommonParams.QT,
+            "/search");
     assertEquals(4, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "1", "10", "6", "8");
+    assertFieldValues(rsp.getResults(), id, "3", "7", "6", "10");
   }
 
   /**
-   * Tests the hybrid query functionality of the system with various setting of pagination using
-   * combiner.method: post.
-   *
-   * @throws Exception if any unexpected error occurs during the test execution.
-   */
-  @Test
-  public void testHybridQueryWithPaginationPost() throws Exception {
-    prepareIndexDocs();
-    // lexical => 2,3
-    // vector => 1,4,2,10,3,6
-    QueryResponse rsp;
-    // Combiner Method: post
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                "{\"queries\":"
-                    + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
-                    + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
-                    + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"post\"}}",
-                CommonParams.QT,
-                "/search"));
-    assertFieldValues(rsp.getResults(), id, "2", "3", "1", "4", "5", "6", "7", "8", "10");
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                "{\"queries\":"
-                    + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
-                    + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
-                    + "\"limit\":4,"
-                    + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"post\"}}",
-                CommonParams.QT,
-                "/search"));
-    assertFieldValues(rsp.getResults(), id, "2", "3", "1", "4");
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                "{\"queries\":"
-                    + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
-                    + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
-                    + "\"limit\":4,\"offset\":3,"
-                    + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"], \"combiner.method\": \"post\"}}",
-                CommonParams.QT,
-                "/search"));
-    assertEquals(4, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "4", "5", "6", "7");
-  }
-
-  /**
-   * Tests the vector query functionality with faceting by setting the k value asserting if top-K
-   * influences the facets.
+   * Tests the single query functionality with faceting only.
    *
    * @throws Exception if any unexpected error occurs during the test execution.
    */
@@ -358,34 +242,15 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
-            + "{\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 4, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
-            + "\"limit\":2,\"offset\":1"
+            + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}}},"
+            + "\"limit\":3,\"offset\":1"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\","
-            + "\"combiner.query\":[\"vector\"], \"combiner.method\": \"%s\"}}";
-    QueryResponse rsp;
-    // Combiner Method: post
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                String.format(Locale.ROOT, jsonQuery, "post"),
-                CommonParams.QT,
-                "/search"));
-    assertEquals(2, rsp.getResults().size());
-    assertEquals(8, rsp.getResults().getNumFound());
-    assertEquals("[1 (4), 0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
-    // Combiner Method: pre
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                String.format(Locale.ROOT, jsonQuery, "pre"),
-                CommonParams.QT,
-                "/search"));
-    assertEquals(2, rsp.getResults().size());
-    assertEquals(8, rsp.getResults().getNumFound());
-    assertEquals("[1 (4), 0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
+            + "\"combiner.query\":[\"lexical\"]}}";
+    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+    assertEquals(3, rsp.getResults().size());
+    assertEquals(4, rsp.getResults().getNumFound());
+    assertEquals("[0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
   }
 
   /**
@@ -398,57 +263,24 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
-            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^=2 OR 5^=1)\"}}},"
-            + "\"limit\":3,"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^2 OR 5^1 OR 7^3 OR 10^2)\"}}},"
+            + "\"limit\":4,"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\","
             + "\"combiner.query\":[\"lexical1\",\"lexical2\"], \"hl\": true,"
-            + " \"combiner.method\": \"%s\", \"hl.fl\": \"title\",\"hl.q\":\"test doc\"}}";
-    QueryResponse rsp;
-    // Combiner Method: post
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                String.format(Locale.ROOT, jsonQuery, "post"),
-                CommonParams.QT,
-                "/search"));
-    assertEquals(3, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "4", "2", "5");
+            + "\"hl.fl\": \"title\",\"hl.q\":\"test doc\"}}";
+    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+    assertEquals(4, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "5", "4", "2", "3");
     assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
-    assertEquals("[2 (2), 0 (1), 1 (1)]", rsp.getFacetFields().getFirst().getValues().toString());
-    assertEquals(3, rsp.getHighlighting().size());
+    assertEquals("[1 (3), 0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
+    assertEquals(4, rsp.getHighlighting().size());
     assertEquals(
         "title <em>test</em> for <em>doc</em> 2",
         rsp.getHighlighting().get("2").get("title").getFirst());
     assertEquals(
-        "title <em>test</em> for <em>doc</em> 4",
-        rsp.getHighlighting().get("4").get("title").getFirst());
-    // Combiner Method: pre
-    rsp =
-        queryServer(
-            createDistributedParams(
-                CommonParams.JSON,
-                String.format(Locale.ROOT, jsonQuery, "pre"),
-                CommonParams.QT,
-                "/search"));
-    assertEquals(3, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "2", "4", "3");
-    assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
-    assertEquals("[2 (2), 0 (1), 1 (1)]", rsp.getFacetFields().getFirst().getValues().toString());
-    assertEquals(3, rsp.getHighlighting().size());
-    assertEquals(
-        "title <em>test</em> for <em>doc</em> 2",
-        rsp.getHighlighting().get("2").get("title").getFirst());
-    assertEquals(
-        "title <em>test</em> for <em>doc</em> 4",
-        rsp.getHighlighting().get("4").get("title").getFirst());
-  }
-
-  private ModifiableSolrParams createDistributedParams(Object... q) {
-    ModifiableSolrParams solrParams = createParams(q);
-    setDistributedParams(solrParams);
-    return solrParams;
+        "title <em>test</em> for <em>doc</em> 5",
+        rsp.getHighlighting().get("5").get("title").getFirst());
   }
 }

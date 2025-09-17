@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import static java.lang.Math.max;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -30,7 +32,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -205,17 +206,15 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           }
           setMaxHitsTerminatedEarly |= queryResult.getMaxHitsTerminatedEarly();
         }
-        if (!CombinerParams.isPreCombinerMethod(crb.req.getParams())) {
-          doFieldSortValues(thisRb, crb.req.getSearcher());
-          NamedList<Object[]> sortValues =
-              (NamedList<Object[]>) thisRb.rsp.getValues().get("sort_values");
-          crb.rsp.add(String.format(Locale.ROOT, "sort_values_%s", rbIndex), sortValues);
-          ResultContext ctx = new BasicResultContext(thisRb);
-          if (crb.rsp.getValues().get(RESPONSE_PER_QUERY_KEY) == null) {
-            crb.rsp.add(RESPONSE_PER_QUERY_KEY, new ArrayList<>(List.of(ctx)));
-          } else {
-            ((List<ResultContext>) crb.rsp.getValues().get(RESPONSE_PER_QUERY_KEY)).add(ctx);
-          }
+        doFieldSortValues(thisRb, crb.req.getSearcher());
+        NamedList<Object[]> sortValues =
+            (NamedList<Object[]>) thisRb.rsp.getValues().get("sort_values");
+        crb.rsp.add(String.format(Locale.ROOT, "sort_values_%s", rbIndex), sortValues);
+        ResultContext ctx = new BasicResultContext(thisRb);
+        if (crb.rsp.getValues().get(RESPONSE_PER_QUERY_KEY) == null) {
+          crb.rsp.add(RESPONSE_PER_QUERY_KEY, new ArrayList<>(List.of(ctx)));
+        } else {
+          ((List<ResultContext>) crb.rsp.getValues().get(RESPONSE_PER_QUERY_KEY)).add(ctx);
         }
         rbIndex++;
       }
@@ -240,33 +239,8 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       List<QueryResult> queryResults,
       boolean partialResults,
       boolean segmentTerminatedEarly,
-      Boolean setMaxHitsTerminatedEarly)
-      throws IOException {
-    QueryResult combinedQueryResult;
-    if (CombinerParams.isPreCombinerMethod(crb.req.getParams())) {
-      String algorithm =
-          crb.req
-              .getParams()
-              .get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER);
-      QueryAndResponseCombiner combinerStrategy =
-          QueryAndResponseCombiner.getImplementation(algorithm, combiners);
-      combinedQueryResult = combinerStrategy.combine(queryResults, crb.req.getParams());
-      if (crb.isDebugResults()) {
-        String[] queryKeys = crb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
-        List<Query> queries = crb.responseBuilders.stream().map(ResponseBuilder::getQuery).toList();
-        NamedList<Explanation> explanations =
-            combinerStrategy.getExplanations(
-                queryKeys,
-                queries,
-                queryResults,
-                crb.req.getSearcher(),
-                crb.req.getSchema(),
-                crb.req.getParams());
-        crb.addDebugInfo("combinerExplanations", explanations);
-      }
-    } else {
-      combinedQueryResult = QueryAndResponseCombiner.simpleCombine(queryResults);
-    }
+      Boolean setMaxHitsTerminatedEarly) {
+    QueryResult combinedQueryResult = QueryAndResponseCombiner.simpleCombine(queryResults);
     combinedQueryResult.setPartialResults(partialResults);
     combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
     combinedQueryResult.setMaxHitsTerminatedEarly(setMaxHitsTerminatedEarly);
@@ -290,11 +264,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
 
   @Override
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
-    if (CombinerParams.isPreCombinerMethod(rb.req.getParams())) {
-      super.mergeIds(rb, sreq);
-      return;
-    }
-
     SortSpec ss = rb.getSortSpec();
 
     Set<String> scoreDependentFields;
@@ -327,6 +296,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     // TODO: to be parallelized outer loop
     for (int queryIndex = 0; queryIndex < queriesToCombineKeys.length; queryIndex++) {
       int failedShardCount = 0;
+      long queryNumFound = 0;
       Map<Object, ShardDoc> uniqueDoc = new HashMap<>();
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
@@ -336,7 +306,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                 instanceof List<?> docList
             && docList.get(queryIndex) instanceof SolrDocumentList solrDocumentList) {
           docs = Objects.requireNonNull(solrDocumentList);
-          numFound += docs.getNumFound();
+          queryNumFound += docs.getNumFound();
           hitCountIsExact = hitCountIsExact && Boolean.FALSE.equals(docs.getNumFoundExact());
         }
         failedShardCount +=
@@ -378,7 +348,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         Object ath =
             responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
         if (ath == null) {
-          approximateTotalHits += numFound;
+          approximateTotalHits += queryNumFound;
         } else {
           approximateTotalHits += ((Number) ath).longValue();
         }
@@ -423,11 +393,12 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           shardDoc.sortFieldValues = unmarshalledSortFieldValues;
           ShardDoc prevShard = uniqueDoc.put(id, shardDoc);
           if (prevShard != null) {
-            numFound--;
+            queryNumFound--;
           }
         } // end for-each-doc-in-response
       } // end for-each-response
       shardDocMap.put(queriesToCombineKeys[queryIndex], uniqueDoc.values().stream().toList());
+      numFound = max(numFound, queryNumFound);
     }
 
     SolrDocumentList responseDocs = new SolrDocumentList();
@@ -584,6 +555,13 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     QueryAndResponseCombiner combinerStrategy =
         QueryAndResponseCombiner.getImplementation(algorithm, combiners);
     List<ShardDoc> combinedShardDocs = combinerStrategy.combine(shardDocMap, rb.req.getParams());
+    if (rb.isDebugResults()) {
+      String[] queryKeys = rb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
+      NamedList<Explanation> explanations =
+          combinerStrategy.getExplanations(
+              queryKeys, shardDocMap, combinedShardDocs, rb.req.getParams());
+      rb.addDebugInfo("combinerExplanations", explanations);
+    }
     Map<String, ShardDoc> shardDocIdMap = new HashMap<>();
     shardDocMap.forEach(
         (shardKey, shardDocs) ->
@@ -620,11 +598,11 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         };
     combinedShardDocs.forEach(queue::insertWithOverflow);
     int resultSize = queue.size() - rb.getSortSpec().getOffset();
-    resultSize = Math.max(0, resultSize);
+    resultSize = max(0, resultSize);
     for (int i = resultSize - 1; i >= 0; i--) {
       ShardDoc shardDoc = queue.pop();
       shardDoc.positionInResponse = i;
-      maxScore = Math.max(maxScore, shardDoc.score);
+      maxScore = max(maxScore, shardDoc.score);
       if (Float.isNaN(shardDocIdMap.get(shardDoc.id.toString()).score)) {
         shardDoc.score = Float.NaN;
       }

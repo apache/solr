@@ -19,14 +19,10 @@ package org.apache.solr.search.combine;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ShardDoc;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.QueryResult;
-import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * The TestCombiner class is an extension of QueryAndResponseCombiner that implements custom logic
@@ -51,11 +47,6 @@ public class TestCombiner extends QueryAndResponseCombiner {
   }
 
   @Override
-  public QueryResult combine(List<QueryResult> rankedLists, SolrParams solrParams) {
-    return simpleCombine(rankedLists);
-  }
-
-  @Override
   public List<ShardDoc> combine(Map<String, List<ShardDoc>> shardDocMap, SolrParams solrParams) {
     return List.of();
   }
@@ -63,10 +54,8 @@ public class TestCombiner extends QueryAndResponseCombiner {
   @Override
   public SimpleOrderedMap<Explanation> getExplanations(
       String[] queryKeys,
-      List<Query> queries,
-      List<QueryResult> queryResults,
-      SolrIndexSearcher searcher,
-      IndexSchema schema,
+      Map<String, List<ShardDoc>> queriesDocMap,
+      List<ShardDoc> combinedQueriesDocs,
       SolrParams solrParams) {
     SimpleOrderedMap<Explanation> docIdsExplanations = new SimpleOrderedMap<>();
     docIdsExplanations.add("combinerDetails", Explanation.match(testInt, "this is test combiner"));
