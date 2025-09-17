@@ -74,7 +74,6 @@ import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCores;
 import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -128,7 +127,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
             + "it is a special Handler configured directly by the RequestDispatcher");
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
@@ -136,18 +134,16 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     coreAdminAsyncTracker.standardExecutor =
         MetricUtils.instrumentedExecutorService(
             coreAdminAsyncTracker.standardExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName(
-                "parallelCoreAdminExecutor", getCategory().name(), scope, "threadPool"));
+            solrMetricsContext,
+            getCategory(),
+            "parallelCoreAdminExecutor");
 
     coreAdminAsyncTracker.expensiveExecutor =
         MetricUtils.instrumentedExecutorService(
             coreAdminAsyncTracker.expensiveExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName(
-                "parallelCoreExpensiveAdminExecutor", getCategory().name(), scope, "threadPool"));
+            solrMetricsContext,
+            getCategory(),
+            "parallelCoreExpensiveAdminExecutor");
   }
 
   @Override
