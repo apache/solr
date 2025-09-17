@@ -30,6 +30,35 @@ import re
 line_re = re.compile(r"(.*?) (\(branch_\d+x\) )?\(#(\d+)\)$")
 
 
+class ChangeEntry:
+    """
+    Represents one dependency change entry.
+    Fields:
+      - pr_num: string PR number (e.g., '3605')
+      - message: cleaned commit message text to be shown in CHANGES (noise removed)
+      - author: Git author (e.g., 'solrbot')
+    """
+
+    def __init__(self, pr_num: str, message: str, author: str):
+        self.pr_num = pr_num
+        self.message = message
+        self.author = author
+
+    def dep_key(self) -> str:
+        """
+        Extract a dependency key from the message after 'Update ' and before ' to', '(' or end.
+        This is used for de-duplication and sorting. Case-insensitive.
+        """
+        m = re.search(r"(?i)update\s+(.+?)(?:\s+to\b|\s*\(|$)", self.message)
+        if m:
+            return m.group(1).strip()
+        return self.message.strip()
+
+    def __str__(self) -> str:
+        # Keep trailing newline to preserve existing blank-line formatting by update_changes
+        return f"* PR#{self.pr_num}: {self.message} ({self.author})\n"
+
+
 def get_prev_release_tag(ver):
     """
     Based on a given version, compute the git tag for the "previous" version to calculate changes since.
@@ -57,8 +86,42 @@ def read_config():
     return newconf
 
 
+def get_gitlog_lines(user: str, prev_tag: str):
+    """
+    Run git log and return a list of raw subject lines (%s), newest first.
+    """
+    output = run('git log --author=' + user + ' --oneline --no-merges --pretty=format:"%s" ' + prev_tag + '..')
+    return list(filter(None, output.split("\n")))
+
+
+def parse_gitlog_lines(lines, author: str):
+    """
+    Parse raw git log subject lines into ChangeEntry objects.
+    - Extract pr_num and message
+    - Strip '(branch_Nx)' noise
+    - Remove optional leading 'chore(deps): '
+    - Normalize 'update dependency X' to 'Update X' (case-insensitive)
+    """
+    entries = []
+    for line in lines:
+        match = line_re.search(line)
+        if not match:
+            print("Skipped un-parsable line: %s" % line)
+            continue
+        text = match.group(1)
+        pr_num = match.group(3)
+        # Clean message noise
+        msg = text
+        msg = re.sub(r"^chore\(deps\):\s*", "", msg, flags=re.IGNORECASE)
+        # Normalize 'update dependency' to 'Update '
+        msg = re.sub(r"(?i)^update\s+dependenc(y|ies)\s+", "Update ", msg)
+        entries.append(ChangeEntry(pr_num=pr_num, message=msg, author=author))
+    return entries
+
+
 def gitlog_to_changes(line, user="solrbot"):
     """
+    DEPRECATED: Use parse_gitlog_lines + ChangeEntry.__str__ instead.
     Converts a git log formatted line ending in (#<pr-num) into a CHANGES style line.
     Strips any '(branch_Nx)' text from the commit message, as that is not needed in CHANGES.txt
     """
@@ -124,58 +187,24 @@ def update_changes(filename, version, changes_lines):
         exit(1)
 
 
-def dedupe(changes_lines):
+def dedupe_entries(entries):
     """
-    De-duplicate dependency update lines.
-    Strategy: keep only the latest (newest) update for a given dependency key.
-    The input list is assumed to be in reverse chronological order (newest first),
-    as produced by `git log` without `--reverse`.
-
-    We extract a dependency key from the message part between "Update " and
-    either " to", " (" or end-of-string. If that can't be found, we fall back
-    to using the whole message to avoid accidental merges.
+    De-duplicate dependency update entries (newest first input) by dep_key.
+    Keeps the first occurrence for each dependency key.
     """
     seen = set()
-    deduped = []
-
-    # Regex to capture the message portion inside the CHANGES line
-    # Example line: "* PR#1600: Update io.netty:* to v4.3 (solrbot)"
-    msg_re = re.compile(r"^\* PR#\d+: (.*) \([^)]+\)\s*$")
-    # From the message, extract the dependency part after "Update "
-    dep_re = re.compile(r"[Uu]pdate( dependency)?\s+(.+?)(?:\s+to\b|\s*\(|$)")
-
-    for line in changes_lines:
-        msg_match = msg_re.match(line.strip())
-        message = msg_match.group(1) if msg_match else line.strip()
-        # Normalize: drop optional leading 'chore(deps): ' prefix which may or may not be present
-        normalized = re.sub(r"^chore\(deps\):\s*", "", message)
-
-        dep_match = dep_re.search(normalized)
-        if dep_match:
-            key = dep_match.group(2).strip()
-        else:
-            # Fallback: use entire message (normalized) as the key to avoid collapsing unrelated lines
-            key = normalized
-
+    result = []
+    for e in entries:
+        key = e.dep_key().lower()
         if key not in seen:
             seen.add(key)
-            deduped.append(line)
-        # else: skip older updates for the same dependency key
+            result.append(e)
+    return result
 
-    # Finally, sort lines alphabetically by the dependency name (case-insensitive),
-    # ignoring the leading '* PR#1234:' part (via msg_re) and an optional leading
-    # 'chore(deps): ' prefix in the message. Also normalize both
-    # 'Update foo' and 'Update dependency foo' to just 'foo' when sorting.
-    def _sort_key(l):
-        m = msg_re.match(l.strip())
-        msg = m.group(1) if m else l.strip()
-        normalized_msg = re.sub(r"^chore\(deps\):\s*", "", msg)
-        dep_match_sort = dep_re.search(normalized_msg)
-        if dep_match_sort:
-            return dep_match_sort.group(2).strip().lower()
-        return normalized_msg.lower()
-    deduped.sort(key=_sort_key)
-    return deduped
+
+def sort_entries(entries):
+    """Return a new list sorted alphabetically by dependency key (case-insensitive)."""
+    return sorted(entries, key=lambda e: e.dep_key().lower())
 
 
 def main():
@@ -185,12 +214,12 @@ def main():
     prev_tag = get_prev_release_tag(newconf.version)
     print("Adding dependency updates since git tag %s" % prev_tag)
     try:
-        gitlog_lines = run(
-            'git log --author=' + newconf.user + ' --oneline --no-merges --pretty=format:"%s" ' + prev_tag + '..').split(
-            "\n")
-        changes_lines = list(map(lambda l: gitlog_to_changes(l, newconf.user), list(filter(None, gitlog_lines))))
-        if changes_lines and len(changes_lines) > 0:
-            update_changes('solr/CHANGES.txt', newconf.version, dedupe(changes_lines))
+        gitlog_lines = get_gitlog_lines(newconf.user, prev_tag)
+        entries = parse_gitlog_lines(gitlog_lines, author=newconf.user)
+        if entries:
+            deduped = dedupe_entries(entries)
+            change_lines = [str(e) for e in deduped]
+            update_changes('solr/CHANGES.txt', newconf.version, change_lines)
         else:
             print("No changes found for version %s" % newconf.version.dot)
         print("Done")
