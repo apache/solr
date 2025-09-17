@@ -95,8 +95,4 @@ class DefaultConfigsetsComponent internal constructor(
     override fun onSelectConfigset(name: String) {
         store.accept(Intent.SelectConfigSet(configSetName = name))
     }
-
-    override fun setMenuExpanded(expanded: Boolean) {
-        store.accept(Intent.SetMenuExpanded(expanded))
-    }
 }

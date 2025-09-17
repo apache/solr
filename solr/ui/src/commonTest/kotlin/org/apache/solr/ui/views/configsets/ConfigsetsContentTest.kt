@@ -27,7 +27,6 @@ import com.arkivanov.decompose.value.Value
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
@@ -39,17 +38,6 @@ import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 @OptIn(ExperimentalTestApi::class)
 class ConfigsetsContentTest {
-
-    @Test
-    fun `GIVEN no configsets WHEN dropdown clicked THEN not expanded`() = runComposeUiTest {
-        val component = TestConfigsetsComponent()
-
-        setContent { ConfigsetsContent(component = component) }
-
-        // Field click shouldn’t open the menu (anchor is disabled in our impl)
-        onNodeWithTag(testTag = "configsets_dropdown").performClick()
-        assertFalse(actual = component.expanded)
-    }
 
     @Test
     @Ignore // See why the placeholder text is not shown
@@ -71,13 +59,13 @@ class ConfigsetsContentTest {
                 configsets = listOf(selectedConfigset, expectedConfigsetSelection)
                     .map { Configset(it) },
                 selectedConfigset = selectedConfigset,
-                expanded = true,
             ),
         )
 
         setContent { ConfigsetsContent(component = component) }
 
-        // Select expected configset
+        // Expand menu and select expected configset
+        onNodeWithTag(testTag = "configsets_dropdown").performClick()
         onNodeWithTag(testTag = expectedConfigsetSelection).performClick()
 
         waitForIdle()
@@ -93,7 +81,6 @@ class TestConfigsetsComponent(
 ) : ConfigsetsComponent {
 
     var onSelectConfigset: String? = model.selectedConfigset
-    var expanded: Boolean = model.expanded
     override val model: StateFlow<Model> = MutableStateFlow(model)
 
     private val overviewChild =
@@ -114,9 +101,5 @@ class TestConfigsetsComponent(
 
     override fun onSelectConfigset(name: String) {
         onSelectConfigset = name
-    }
-
-    override fun setMenuExpanded(expanded: Boolean) {
-        this.expanded = expanded
     }
 }

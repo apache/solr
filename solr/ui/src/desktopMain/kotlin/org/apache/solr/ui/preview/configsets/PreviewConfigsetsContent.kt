@@ -49,22 +49,6 @@ private fun PreviewConfigsetsContentWithConfigsetSelected() = PreviewContainer {
             model = Model(
                 configsets = listOf(configset, "getting_started").map { Configset(name = it) },
                 selectedConfigset = configset,
-                expanded = false,
-            ),
-        ),
-    )
-}
-
-@Preview
-@Composable
-private fun PreviewConfigsetsContentWithMenuExpanded() = PreviewContainer {
-    val configset = "techproducts"
-    ConfigsetsContent(
-        component = SimplePreviewConfigsetsComponent(
-            model = Model(
-                configsets = listOf(configset, "getting_started").map { Configset(name = it) },
-                selectedConfigset = configset,
-                expanded = true,
             ),
         ),
     )
@@ -74,8 +58,6 @@ private class SimplePreviewConfigsetsComponent(model: Model = Model()) : Configs
     override val model: StateFlow<Model> = MutableStateFlow(model)
 
     override fun onSelectConfigset(name: String) = Unit
-
-    override fun setMenuExpanded(expanded: Boolean) = Unit
 
     override val tabSlot: Value<ChildSlot<Configuration<ConfigsetsTab>, ConfigsetsComponent.Child>>
         get() = MutableValue(
