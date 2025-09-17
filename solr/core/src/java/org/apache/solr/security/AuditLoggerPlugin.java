@@ -271,7 +271,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
         Attributes.builder()
             .putAll(attributes)
             .put(CATEGORY_ATTR, Category.SECURITY.toString())
-            .put("plugin_name", this.getClass().getSimpleName())
+            .put(PLUGIN_NAME_ATTR, this.getClass().getSimpleName())
             .build();
 
     numLogged =
