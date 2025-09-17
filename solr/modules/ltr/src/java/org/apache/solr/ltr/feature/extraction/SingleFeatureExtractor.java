@@ -1,8 +1,10 @@
-package org.apache.solr.ltr.feature;
+package org.apache.solr.ltr.feature.extraction;
 
 import org.apache.lucene.search.Scorer;
 import org.apache.solr.ltr.LTRScoringQuery;
+import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
+import org.apache.solr.ltr.scoring.FeatureTraversalScorer;
 import org.apache.solr.request.SolrQueryRequest;
 import java.io.IOException;
 import java.util.List;
@@ -12,7 +14,7 @@ public class SingleFeatureExtractor extends FeatureExtractor {
   List<Feature.FeatureWeight.FeatureScorer> featureScorers;
 
   public SingleFeatureExtractor(
-      LTRScoringQuery.ModelWeight.ModelScorer.FeatureTraversalScorer singleFeatureScorer,
+      FeatureTraversalScorer singleFeatureScorer,
       SolrQueryRequest request,
       Feature.FeatureWeight[] extractedFeatureWeights,
       LTRScoringQuery.FeatureInfo[] allFeaturesInStore,

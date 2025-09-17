@@ -24,8 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -46,10 +44,14 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.ltr.feature.Feature;
+import org.apache.solr.ltr.feature.extraction.FeatureExtractor;
+import org.apache.solr.ltr.feature.extraction.MultiFeaturesExtractor;
+import org.apache.solr.ltr.feature.extraction.SingleFeatureExtractor;
 import org.apache.solr.ltr.model.LTRScoringModel;
-import org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory;
+import org.apache.solr.ltr.scoring.FeatureTraversalScorer;
+import org.apache.solr.ltr.scoring.MultiFeaturesScorer;
+import org.apache.solr.ltr.scoring.SingleFeatureScorer;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.SolrCache;
 import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -375,7 +377,6 @@ public class LTRScoringQuery extends Query implements Accountable {
     // features used for logging.
     private final Feature.FeatureWeight[] modelFeatureWeights;
     private final float[] modelFeatureValuesNormalized;
-    private final Feature.FeatureWeight[] extractedFeatureWeights;
 
     // Array of all the features in the feature store of reference
     private final FeatureInfo[] allFeaturesInStore;
@@ -395,14 +396,13 @@ public class LTRScoringQuery extends Query implements Accountable {
         Feature.FeatureWeight[] extractedFeatureWeights,
         int allFeaturesSize) {
       super(LTRScoringQuery.this);
-      this.extractedFeatureWeights = extractedFeatureWeights;
       this.modelFeatureWeights = modelFeatureWeights;
       this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
       this.allFeaturesInStore = new FeatureInfo[allFeaturesSize];
-      setFeaturesInfo();
+      setFeaturesInfo(extractedFeatureWeights);
     }
 
-    private void setFeaturesInfo() {
+    private void setFeaturesInfo(Feature.FeatureWeight[] extractedFeatureWeights) {
       for (int i = 0; i < extractedFeatureWeights.length; ++i) {
         String featName = extractedFeatureWeights[i].getName();
         int featId = extractedFeatureWeights[i].getIndex();
@@ -421,20 +421,15 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
 
     // for test use
-    float[] getModelFeatureValuesNormalized() {
+    public float[] getModelFeatureValuesNormalized() {
       return modelFeatureValuesNormalized;
-    }
-
-    // for test use
-    Feature.FeatureWeight[] getExtractedFeatureWeights() {
-      return extractedFeatureWeights;
     }
 
     /**
      * Goes through all the stored feature values, and calculates the normalized values for all the
      * features that will be used for scoring. Then calculate and return the model's score.
      */
-    private void normalizeFeatures() {
+    public void normalizeFeatures() {
       int pos = 0;
       for (final Feature.FeatureWeight feature : modelFeatureWeights) {
         final int featureId = feature.getIndex();
@@ -464,17 +459,6 @@ public class LTRScoringQuery extends Query implements Accountable {
       final float finalScore = bs.score();
 
       return ltrScoringModel.explain(context, doc, finalScore, featureExplanations);
-    }
-
-    protected void reset() {
-      for (int i = 0; i < extractedFeatureWeights.length; ++i) {
-        int featId = extractedFeatureWeights[i].getIndex();
-        float value = extractedFeatureWeights[i].getDefaultValue();
-        // need to set default value everytime as the default value is used in 'dense'
-        // mode even if used=false
-        allFeaturesInStore[featId].setValue(value);
-        allFeaturesInStore[featId].setIsDefaultValue(true);
-      }
     }
 
     @Override
@@ -509,23 +493,21 @@ public class LTRScoringQuery extends Query implements Accountable {
     public class ModelScorer extends Scorer {
       private final DocInfo docInfo;
       private final FeatureTraversalScorer featureTraversalScorer;
-      protected boolean isLogging;
 
       public DocInfo getDocInfo() {
         return docInfo;
       }
 
       public ModelScorer(List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-        isLogging = false;
         docInfo = new DocInfo();
         for (final Feature.FeatureWeight.FeatureScorer subScorer : featureScorers) {
           subScorer.setDocInfo(docInfo);
         }
         if (featureScorers.size() <= 1) {
           // future enhancement: allow the use of dense features in other cases
-          featureTraversalScorer = new SingleFeatureScorer(featureScorers);
+          featureTraversalScorer = new SingleFeatureScorer(this, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi, featureScorers);
         } else {
-          featureTraversalScorer = new MultiFeaturesScorer(featureScorers);
+          featureTraversalScorer = new MultiFeaturesScorer(this, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi, featureScorers);
         }
       }
 
@@ -554,377 +536,8 @@ public class LTRScoringQuery extends Query implements Accountable {
         return featureTraversalScorer.iterator();
       }
 
-      public void setIsLogging(boolean isLogging) {
-        this.isLogging = isLogging;
-      }
-
       public void fillFeaturesInfo() throws IOException {
         featureTraversalScorer.fillFeaturesInfo();
-      }
-
-      /** This class is responsible for extracting features and using them to score the document. */
-      private abstract class FeatureTraversalScorer extends Scorer {
-        protected int targetDoc = -1;
-        protected int activeDoc = -1;
-        protected FeatureExtractor featureExtractor;
-
-        void fillFeaturesInfo() throws IOException {
-          // Initialize features to their default values and set isDefaultValue to true.
-          reset();
-          featureExtractor.fillFeaturesInfo();
-        }
-
-        @Override
-        public float score() throws IOException {
-          // Initialize features to their default values and set isDefaultValue to true.
-          reset();
-          featureExtractor.fillFeaturesInfo();
-          normalizeFeatures();
-          return ltrScoringModel.score(modelFeatureValuesNormalized);
-        }
-
-        @Override
-        public float getMaxScore(int upTo) {
-          return Float.POSITIVE_INFINITY;
-        }
-      }
-
-      private class SingleFeatureScorer extends FeatureTraversalScorer {
-        private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
-
-        private SingleFeatureScorer(List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-          this.featureScorers = featureScorers;
-          this.featureExtractor = new SingleFeatureExtractor(this, featureScorers);
-        }
-
-        @Override
-        public int docID() {
-          return targetDoc;
-        }
-
-        @Override
-        public final Collection<ChildScorable> getChildren() {
-          final ArrayList<ChildScorable> children = new ArrayList<>();
-          for (final Scorer scorer : featureScorers) {
-            children.add(new ChildScorable(scorer, "SHOULD"));
-          }
-          return children;
-        }
-
-        @Override
-        public DocIdSetIterator iterator() {
-          return new SingleFeatureIterator();
-        }
-
-        private class SingleFeatureIterator extends DocIdSetIterator {
-
-          @Override
-          public int docID() {
-            return targetDoc;
-          }
-
-          @Override
-          public int nextDoc() throws IOException {
-            if (activeDoc <= targetDoc) {
-              activeDoc = NO_MORE_DOCS;
-              for (final Scorer scorer : featureScorers) {
-                if (scorer.docID() != NO_MORE_DOCS) {
-                  activeDoc = Math.min(activeDoc, scorer.iterator().nextDoc());
-                }
-              }
-            }
-            return ++targetDoc;
-          }
-
-          @Override
-          public int advance(int target) throws IOException {
-            if (activeDoc < target) {
-              activeDoc = NO_MORE_DOCS;
-              for (final Scorer scorer : featureScorers) {
-                if (scorer.docID() != NO_MORE_DOCS) {
-                  activeDoc = Math.min(activeDoc, scorer.iterator().advance(target));
-                }
-              }
-            }
-            targetDoc = target;
-            return target;
-          }
-
-          @Override
-          public long cost() {
-            long sum = 0;
-            for (int i = 0; i < featureScorers.size(); i++) {
-              sum += featureScorers.get(i).iterator().cost();
-            }
-            return sum;
-          }
-        }
-      }
-
-      private class MultiFeaturesScorer extends FeatureTraversalScorer {
-        private final DisiPriorityQueue subScorers;
-        private final List<DisiWrapper> wrappers;
-        private final MultiFeaturesIterator multiFeaturesIteratorIterator;
-
-        private MultiFeaturesScorer(List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-          if (featureScorers.size() <= 1) {
-            throw new IllegalArgumentException("There must be at least 2 subScorers");
-          }
-          subScorers = DisiPriorityQueue.ofMaxSize(featureScorers.size());
-          wrappers = new ArrayList<>();
-          for (final Scorer scorer : featureScorers) {
-            final DisiWrapper w = new DisiWrapper(scorer, false /* impacts */);
-            subScorers.add(w);
-            wrappers.add(w);
-          }
-
-          multiFeaturesIteratorIterator = new MultiFeaturesIterator(wrappers);
-          this.featureExtractor = new MultiFeaturesExtractor(this, subScorers);
-        }
-
-        @Override
-        public int docID() {
-          return multiFeaturesIteratorIterator.docID();
-        }
-
-        @Override
-        public DocIdSetIterator iterator() {
-          return multiFeaturesIteratorIterator;
-        }
-
-        @Override
-        public final Collection<ChildScorable> getChildren() {
-          final ArrayList<ChildScorable> children = new ArrayList<>();
-          for (final DisiWrapper scorer : subScorers) {
-            children.add(new ChildScorable(scorer.scorer, "SHOULD"));
-          }
-          return children;
-        }
-
-        private class MultiFeaturesIterator extends DocIdSetIterator {
-
-          public MultiFeaturesIterator(Collection<DisiWrapper> wrappers) {
-            // Initialize all wrappers to start at -1
-            for (DisiWrapper wrapper : wrappers) {
-              wrapper.doc = -1;
-            }
-          }
-
-          @Override
-          public int docID() {
-            // Return the target document ID (mimicking DisjunctionDISIApproximation behavior)
-            return targetDoc;
-          }
-
-          @Override
-          public final int nextDoc() throws IOException {
-            // Mimic DisjunctionDISIApproximation behavior
-            if (targetDoc == -1) {
-              // First call - initialize all iterators
-              DisiWrapper top = subScorers.top();
-              if (top != null && top.doc == -1) {
-                // Need to advance all iterators to their first document
-                DisiWrapper current = subScorers.top();
-                while (current != null) {
-                  current.doc = current.iterator.nextDoc();
-                  current = subScorers.updateTop();
-                }
-                top = subScorers.top();
-                activeDoc = top == null ? NO_MORE_DOCS : top.doc;
-              }
-              targetDoc = activeDoc;
-              return targetDoc;
-            }
-
-            if (activeDoc == targetDoc) {
-              // Advance the underlying disjunction
-              DisiWrapper top = subScorers.top();
-              if (top == null) {
-                activeDoc = NO_MORE_DOCS;
-              } else {
-                // Advance the top iterator and rebalance the queue
-                top.doc = top.iterator.nextDoc();
-                top = subScorers.updateTop();
-                activeDoc = top == null ? NO_MORE_DOCS : top.doc;
-              }
-            } else if (activeDoc < targetDoc) {
-              // Need to catch up to targetDoc + 1
-              activeDoc = advanceInternal(targetDoc + 1);
-            }
-            return ++targetDoc;
-          }
-
-          @Override
-          public final int advance(int target) throws IOException {
-            // Mimic DisjunctionDISIApproximation behavior
-            if (activeDoc < target) {
-              activeDoc = advanceInternal(target);
-            }
-            targetDoc = target;
-            return targetDoc;
-          }
-
-          private int advanceInternal(int target) throws IOException {
-            // Advance the underlying disjunction to the target
-            DisiWrapper top;
-            do {
-              top = subScorers.top();
-              if (top == null) {
-                return NO_MORE_DOCS;
-              }
-              if (top.doc >= target) {
-                return top.doc;
-              }
-              top.doc = top.iterator.advance(target);
-              top = subScorers.updateTop();
-              if (top == null) {
-                return NO_MORE_DOCS;
-              }
-            } while (top.doc < target);
-            return top.doc;
-          }
-
-          @Override
-          public long cost() {
-            // Calculate cost from all wrappers
-            long cost = 0;
-            for (DisiWrapper wrapper : wrappers) {
-              cost += wrapper.iterator.cost();
-            }
-            return cost;
-          }
-        }
-      }
-
-      private abstract class FeatureExtractor {
-        protected final FeatureTraversalScorer traversalScorer;
-
-        private FeatureExtractor(FeatureTraversalScorer traversalScorer) {
-          this.traversalScorer = traversalScorer;
-        }
-
-        protected float[] initFeatureVector(FeatureInfo[] featuresInfos) {
-          float[] featureVector = new float[allFeaturesInStore.length];
-          for (int i = 0; i < featuresInfos.length; i++) {
-            if (featuresInfos[i] != null) {
-              featureVector[i] = featuresInfos[i].getValue();
-            }
-          }
-          return featureVector;
-        }
-
-        protected abstract float[] extractFeatureVector() throws IOException;
-
-        private void fillFeaturesInfo() throws IOException {
-          if (traversalScorer.activeDoc == traversalScorer.targetDoc) {
-            SolrCache<Integer, float[]> featureVectorCache = null;
-            float[] featureVector;
-
-            if (request != null) {
-              featureVectorCache = request.getSearcher().getFeatureVectorCache();
-            }
-            if (featureVectorCache != null) {
-              int fvCacheKey = computeFeatureVectorCacheKey(traversalScorer.docID());
-              featureVector = featureVectorCache.get(fvCacheKey);
-              if (featureVector == null) {
-                featureVector = extractFeatureVector();
-                featureVectorCache.put(fvCacheKey, featureVector);
-              }
-            } else {
-              featureVector = extractFeatureVector();
-            }
-
-            for (int i = 0; i < extractedFeatureWeights.length; i++) {
-              int featureId = extractedFeatureWeights[i].getIndex();
-              float featureValue = featureVector[featureId];
-              if (!Float.isNaN(featureValue)
-                  && featureValue != extractedFeatureWeights[i].getDefaultValue()) {
-                allFeaturesInStore[featureId].setValue(featureValue);
-                allFeaturesInStore[featureId].setIsDefaultValue(false);
-              }
-            }
-          }
-        }
-
-        private int computeFeatureVectorCacheKey(int docId) {
-          int prime = 31;
-          int result = docId;
-          if (Objects.equals(
-                  ltrScoringModel.getName(),
-                  LTRFeatureLoggerTransformerFactory.DEFAULT_LOGGING_MODEL_NAME)
-              || (isLogging && logger.isLoggingAll())) {
-            result = (prime * result) + ltrScoringModel.getFeatureStoreName().hashCode();
-          } else {
-            result = (prime * result) + ltrScoringModel.getName().hashCode();
-          }
-          result = (prime * result) + addEfisHash(result, prime);
-          return result;
-        }
-
-        private int addEfisHash(int result, int prime) {
-          if (efi != null) {
-            TreeMap<String, String[]> sorted = new TreeMap<>(efi);
-            for (final Map.Entry<String, String[]> entry : sorted.entrySet()) {
-              final String key = entry.getKey();
-              final String[] values = entry.getValue();
-              result = (prime * result) + key.hashCode();
-              result = (prime * result) + Arrays.hashCode(values);
-            }
-          }
-          return result;
-        }
-      }
-
-      private class SingleFeatureExtractor extends FeatureExtractor {
-        List<Feature.FeatureWeight.FeatureScorer> featureScorers;
-
-        private SingleFeatureExtractor(
-            FeatureTraversalScorer singleFeatureScorer,
-            List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-          super(singleFeatureScorer);
-          this.featureScorers = featureScorers;
-        }
-
-        @Override
-        protected float[] extractFeatureVector() throws IOException {
-          float[] featureVector = initFeatureVector(allFeaturesInStore);
-          for (final Scorer scorer : featureScorers) {
-            if (scorer.docID() == traversalScorer.activeDoc) {
-              Feature.FeatureWeight.FeatureScorer featureScorer =
-                  (Feature.FeatureWeight.FeatureScorer) scorer;
-              Feature.FeatureWeight scFW = featureScorer.getWeight();
-              final int featureId = scFW.getIndex();
-              float featureValue = scorer.score();
-              featureVector[featureId] = featureValue;
-            }
-          }
-          return featureVector;
-        }
-      }
-
-      private class MultiFeaturesExtractor extends FeatureExtractor {
-        DisiPriorityQueue subScorers;
-
-        private MultiFeaturesExtractor(
-            FeatureTraversalScorer multiFeaturesScorer, DisiPriorityQueue subScorers) {
-          super(multiFeaturesScorer);
-          this.subScorers = subScorers;
-        }
-
-        @Override
-        protected float[] extractFeatureVector() throws IOException {
-          final DisiWrapper topList = subScorers.topList();
-          float[] featureVector = initFeatureVector(allFeaturesInStore);
-          for (DisiWrapper w = topList; w != null; w = w.next) {
-            final Feature.FeatureWeight.FeatureScorer subScorer =
-                (Feature.FeatureWeight.FeatureScorer) w.scorer;
-            Feature.FeatureWeight feature = subScorer.getWeight();
-            final int featureId = feature.getIndex();
-            float featureValue = subScorer.score();
-            featureVector[featureId] = featureValue;
-          }
-          return featureVector;
-        }
       }
     }
   }

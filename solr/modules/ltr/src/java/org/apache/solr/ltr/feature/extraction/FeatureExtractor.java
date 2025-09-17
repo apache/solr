@@ -1,9 +1,11 @@
-package org.apache.solr.ltr.feature;
+package org.apache.solr.ltr.feature.extraction;
 
 import org.apache.solr.ltr.FeatureLogger;
 import org.apache.solr.ltr.LTRScoringQuery;
+import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory;
+import org.apache.solr.ltr.scoring.FeatureTraversalScorer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrCache;
 import java.io.IOException;
@@ -13,7 +15,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 
 public abstract class FeatureExtractor {
-  protected final LTRScoringQuery.ModelWeight.ModelScorer.FeatureTraversalScorer traversalScorer;
+  protected final FeatureTraversalScorer traversalScorer;
   SolrQueryRequest request;
   Feature.FeatureWeight[] extractedFeatureWeights;
   LTRScoringQuery.FeatureInfo[] allFeaturesInStore;
@@ -22,7 +24,7 @@ public abstract class FeatureExtractor {
   Map<String, String[]> efi;
 
   FeatureExtractor(
-      LTRScoringQuery.ModelWeight.ModelScorer.FeatureTraversalScorer traversalScorer,
+      FeatureTraversalScorer traversalScorer,
       SolrQueryRequest request,
       Feature.FeatureWeight[] extractedFeatureWeights,
       LTRScoringQuery.FeatureInfo[] allFeaturesInStore,

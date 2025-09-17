@@ -29,9 +29,12 @@ public abstract class FeatureLogger {
 
   protected Boolean logAll;
 
+  protected boolean logFeatures;
+
   protected FeatureLogger(FeatureFormat f, Boolean logAll) {
     this.featureFormat = f;
     this.logAll = logAll;
+    this.logFeatures = false;
   }
 
   public abstract String printFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo);
@@ -42,5 +45,13 @@ public abstract class FeatureLogger {
 
   public void setLogAll(Boolean logAll) {
     this.logAll = logAll;
+  }
+
+  public void setLogFeatures(boolean logFeatures) {
+    this.logFeatures = logFeatures;
+  }
+
+  public boolean isLogFeatures() {
+    return logFeatures;
   }
 }

@@ -408,6 +408,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     }
 
     private static LTRScoringQuery.FeatureInfo[] extractFeatures(
+        FeatureLogger logger,
         LTRScoringQuery.ModelWeight modelWeight,
         int docid,
         Float originalDocScore,
@@ -426,7 +427,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           r.getDocInfo().setOriginalDocScore(originalDocScore);
         }
         r.fillFeaturesInfo();
-        r.setIsLogging(true);
+        logger.setLogFeatures(true);
         return modelWeight.getAllFeaturesInStore();
       }
     }
@@ -444,13 +445,15 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         }
       }
       if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) || hasExplicitFeatureStore) {
+        LTRScoringQuery.FeatureInfo[] featuresInfo = extractFeatures(
+            featureLogger,
+            rerankingModelWeight,
+            docid,
+            (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,
+            leafContexts);
         String featureVector =
             featureLogger.printFeatureVector(
-                extractFeatures(
-                    rerankingModelWeight,
-                    docid,
-                    (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,
-                    leafContexts));
+                featuresInfo);
         doc.addField(name, featureVector);
       }
     }
