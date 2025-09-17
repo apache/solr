@@ -27,7 +27,7 @@ from scriptutil import *
 import argparse
 import re
 
-line_re = re.compile(r"(.*?) \(#(\d+)\)$")
+line_re = re.compile(r"(.*?) (\(branch_\d+x\) )?\(#(\d+)\)$")
 
 
 def get_prev_release_tag(ver):
@@ -59,13 +59,14 @@ def read_config():
 
 def gitlog_to_changes(line, user="solrbot"):
     """
-    Converts a git log formatted line ending in (#<pr-num) into a CHANGES style line
+    Converts a git log formatted line ending in (#<pr-num) into a CHANGES style line.
+    Strips any '(branch_Nx)' text from the commit message, as that is not needed in CHANGES.txt
     """
     match = line_re.search(line)
 
     if match:
         text = match.group(1)
-        pr_num = match.group(2)
+        pr_num = match.group(3)
         return "* PR#%s: %s (%s)\n" % (pr_num, text, user)
     else:
         print("Skipped un-parsable line: %s" % line)
