@@ -28,6 +28,10 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -44,10 +48,11 @@ fun ConfigsetsDropdown(
     selectedConfigSet: String,
     selectConfigset: (String) -> Unit,
     availableConfigsets: List<Configset>,
-    expanded: Boolean,
-    setMenuExpanded: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var expanded by remember { mutableStateOf(false) }
+    val enabled = availableConfigsets.isNotEmpty()
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -56,13 +61,14 @@ fun ConfigsetsDropdown(
     ) {
         ExposedDropdownMenuBox(
             expanded = expanded,
-            onExpandedChange = { setMenuExpanded(!expanded) },
+            onExpandedChange = { expanded = it },
             modifier = Modifier.widthIn(min = 256.dp).weight(1f),
         ) {
             OutlinedTextField(
                 value = selectedConfigSet,
                 onValueChange = {},
                 readOnly = true,
+                enabled = enabled,
                 label = { Text(stringResource(Res.string.nav_configsets)) },
                 placeholder = {
                     if (availableConfigsets.isEmpty()) {
@@ -75,19 +81,24 @@ fun ConfigsetsDropdown(
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
                 modifier = Modifier
                     .menuAnchor(
-                        MenuAnchorType.PrimaryNotEditable,
-                        availableConfigsets.isNotEmpty(),
+                        type = MenuAnchorType.PrimaryNotEditable,
+                        enabled = enabled,
                     )
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .testTag("configsets_dropdown"),
             )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { setMenuExpanded(false) }) {
+            ExposedDropdownMenu(
+                modifier = Modifier.testTag("configsets_exposed_dropdown_menu"),
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
                 availableConfigsets.forEach { configset ->
                     DropdownMenuItem(
                         modifier = Modifier.testTag(tag = configset.name),
                         text = { Text(configset.name) },
                         onClick = {
                             selectConfigset(configset.name)
-                            setMenuExpanded(false)
+                            expanded = false
                         },
                     )
                 }

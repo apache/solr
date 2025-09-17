@@ -47,12 +47,10 @@ interface ConfigsetsComponent : TabNavigationComponent<ConfigsetsTab, Child> {
      * @property configsets The configsets names available.
      * @property selectedConfigset The current configset name to display. Leave empty if no
      * selection is made.
-     * @property expanded Whether the configsets dropdown menu is expanded.
      */
     data class Model(
         val configsets: List<Configset> = emptyList(),
         val selectedConfigset: String = "",
-        val expanded: Boolean = false,
     )
 
     /** Hot, observable stream of [Model] for Compose/UI. */
@@ -60,7 +58,4 @@ interface ConfigsetsComponent : TabNavigationComponent<ConfigsetsTab, Child> {
 
     /** Select the active configset by name. */
     fun onSelectConfigset(name: String)
-
-    /** Toggle the expanded state of the dropdown menu. */
-    fun setMenuExpanded(expanded: Boolean)
 }
