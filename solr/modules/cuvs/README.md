@@ -46,6 +46,8 @@ Define the `codecFactory` in `solrconfig-xml`
     <str name="intGraphDegree">128</str>
     <str name="graphDegree">64</str>
     <str name="hnswLayers">1</str>
+    <str name="maxConn">16</str>
+    <str name="beamWidth">100</str>
 </codecFactory>
 ```
 
@@ -58,6 +60,10 @@ Where:
 * `graphDegree` - Graph degree for building the CAGRA index
 
 * `hnswLayers` - Number of HNSW graph layers to construct while building the HNSW index
+
+* `maxConn` - Max connections parameter passed to the fallback `Lucene99HnswVectorsWriter`
+
+* `beamWidth` - Beam width parameter passed to the fallback `Lucene99HnswVectorsWriter`
 
 # Example
 
@@ -177,6 +183,8 @@ Following is a complete example of setting up a collection with cuVS.
             <str name="intGraphDegree">128</str>
             <str name="graphDegree">64</str>
             <str name="hnswLayers">1</str>
+            <str name="maxConn">16</str>
+            <str name="beamWidth">100</str>
         </codecFactory>
 
         <requestHandler name="/select" class="solr.SearchHandler">

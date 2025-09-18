@@ -33,6 +33,8 @@
       <str name="intGraphDegree">128</str>
       <str name="graphDegree">64</str>
       <str name="hnswLayers">1</str>
+      <str name="maxConn">16</str>
+      <str name="beamWidth">100</str>
     </codecFactory>
 
     <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
