@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.search.StrParser;
 import org.apache.solr.search.SyntaxError;
 
@@ -96,7 +97,7 @@ public class MacroExpander {
   }
 
   private Boolean isExpandingExpr() {
-    return Boolean.valueOf(System.getProperty("StreamingExpressionMacros", "false"));
+    return EnvUtils.getPropertyAsBool("solr.streamingexpressions.macros.enabled", false);
   }
 
   public String expand(String val) {

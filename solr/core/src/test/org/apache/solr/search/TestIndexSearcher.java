@@ -259,8 +259,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       addDummyDoc(newCore);
 
       // Open a new searcher, this should call the newSearcherListeners
-      @SuppressWarnings("unchecked")
-      Future<Void>[] future = (Future<Void>[]) Array.newInstance(Future.class, 1);
+      Future<?>[] future = (Future<?>[]) Array.newInstance(Future.class, 1);
       newCore.getSearcher(true, false, future);
       future[0].get();
 

@@ -960,10 +960,6 @@ if [ -n "${SOLR_JETTY_HOST:-}" ]; then
   SCRIPT_SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
 fi
 
-if [ -n "${SOLR_ZK_EMBEDDED_HOST:-}" ]; then
-  SCRIPT_SOLR_OPTS+=("-Dsolr.zk.embedded.host=$SOLR_ZK_EMBEDDED_HOST")
-fi
-
 : "${STOP_PORT:=$((SOLR_PORT - 1000))}"
 
 if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] ; then
@@ -1071,7 +1067,7 @@ fi
 
 if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   : "${ZK_CLIENT_TIMEOUT:=30000}"
-  CLOUD_MODE_OPTS=("-DzkClientTimeout=$ZK_CLIENT_TIMEOUT")
+  CLOUD_MODE_OPTS=("-Dsolr.zookeeper.client.timeout=$ZK_CLIENT_TIMEOUT")
 
   if [ -n "${ZK_HOST:-}" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
@@ -1081,10 +1077,10 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
       exit 1
     fi
     if $verbose ; then
-      echo "Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun"
+      echo "Configuring SolrCloud to launch an embedded Zookeeper using -Dsolr.zookeeper.server.enabled"
     fi
 
-    CLOUD_MODE_OPTS+=('-DzkRun')
+    CLOUD_MODE_OPTS+=('-Dsolr.zookeeper.server.enabled=true')
   fi
 
   if [ -n "${ZK_CREATE_CHROOT:-}" ]; then
