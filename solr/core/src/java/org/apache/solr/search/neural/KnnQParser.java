@@ -28,6 +28,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
   // retrieve the top K results based on the distance similarity function
   protected static final String TOP_K = "topK";
   protected static final int DEFAULT_TOP_K = 10;
+  protected static final String FILTERED_SEARCH_THRESHOLD = "filteredSearchThreshold";
 
   public KnnQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
@@ -39,8 +40,9 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
     final String vectorToSearch = getVectorToSearch();
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
+    final Integer filteredSearchThreshold = localParams.getInt(FILTERED_SEARCH_THRESHOLD);
 
     return denseVectorType.getKnnVectorQuery(
-        schemaField.getName(), vectorToSearch, topK, getFilterQuery());
+        schemaField.getName(), vectorToSearch, topK, getFilterQuery(), filteredSearchThreshold);
   }
 }
