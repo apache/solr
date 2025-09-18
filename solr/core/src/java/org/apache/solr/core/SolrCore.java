@@ -2068,8 +2068,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private int onDeckSearchers; // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not
   // vice-versa.
-  private Object searcherLock = new Object(); // the sync object for the searcher
-  private ReentrantLock openSearcherLock =
+  private final Object searcherLock = new Object(); // the sync object for the searcher
+  private final ReentrantLock openSearcherLock =
       new ReentrantLock(true); // used to serialize opens/reopens for absolute ordering
   private final int maxWarmingSearchers; // max number of on-deck searchers allowed
   private final int slowQueryThresholdMillis; // threshold above which a query is considered slow
@@ -2269,7 +2269,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public RefCounted<SolrIndexSearcher> getSearcher(
-      boolean forceNew, boolean returnSearcher, final Future<Void>[] waitSearcher) {
+      boolean forceNew, boolean returnSearcher, final Future<?>[] waitSearcher) {
     return getSearcher(forceNew, returnSearcher, waitSearcher, false);
   }
 
@@ -2506,7 +2506,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   public RefCounted<SolrIndexSearcher> getSearcher(
       boolean forceNew,
       boolean returnSearcher,
-      final Future<Void>[] waitSearcher,
+      final Future<?>[] waitSearcher,
       boolean updateHandlerReopens) {
     // it may take some time to open an index.... we may need to make
     // sure that two threads aren't trying to open one at the same time
@@ -2574,7 +2574,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     // a signal to decrement onDeckSearchers if something goes wrong.
-    final boolean[] decrementOnDeckCount = new boolean[] {true};
     RefCounted<SolrIndexSearcher> currSearcherHolder = null; // searcher we are autowarming from
     RefCounted<SolrIndexSearcher> searchHolder = null;
     boolean success = false;
@@ -2599,7 +2598,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
           // want to register this one before warming is complete instead of waiting.
           if (solrConfig.useColdSearcher) {
             registerSearcher(newSearchHolder);
-            decrementOnDeckCount[0] = false;
             alreadyRegistered = true;
           }
         } else {
@@ -2612,7 +2610,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       final SolrIndexSearcher currSearcher =
           currSearcherHolder == null ? null : currSearcherHolder.get();
 
-      Future<Void> future = null;
+      Future<?> future = null;
 
       // if the underlying searcher has not changed, no warming is needed
       if (newSearcher != currSearcher) {
