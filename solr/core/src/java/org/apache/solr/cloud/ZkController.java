@@ -74,6 +74,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
 import org.apache.solr.common.cloud.DefaultZkCredentialsInjector;
@@ -385,27 +386,23 @@ public class ZkController implements Closeable {
             });
 
     zkStateReader.createClusterStateWatchersAndUpdate(); // and reads cluster properties
+    // HENCEFORTH can read cluster props...
 
-    // note: Can't read cluster properties until createClusterState ^ is called
-    final String urlSchemeFromClusterProp =
-        zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, ZkStateReader.HTTP);
-    // this must happen after zkStateReader has initialized the cluster props
-    this.baseURL = URLUtil.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
+    this.baseURL =
+        URLUtil.getBaseUrlForNodeName(
+            this.nodeName,
+            zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, ZkStateReader.HTTP));
 
     checkForExistingEphemeralNode(); // removes our live node if present
 
-    // Now that zkStateReader is available, read OVERSEER_ENABLED & live nodes.
+    // note: reads live nodes
     final Optional<SolrVersion> lowestNodeVersion = zkStateReader.fetchLowestSolrVersion();
-    boolean defaultOverseerEnabled =
-        lowestNodeVersion.orElse(SolrVersion.LATEST).lessThan(SolrVersion.forIntegers(10, 0, 0));
-    final boolean overseerEnabled =
-        Boolean.parseBoolean(
-            String.valueOf(
-                zkStateReader.getClusterProperty(
-                    ZkStateReader.OVERSEER_ENABLED,
-                    EnvUtils.getPropertyAsBool(
-                        "solr.cloud.overseer.enabled", defaultOverseerEnabled))));
 
+    if (lowestNodeVersion.isPresent()) {
+      checkClusterVersionCompatibility(lowestNodeVersion.get());
+    }
+
+    final boolean overseerEnabled = isOverseerEnabled(lowestNodeVersion);
     if (overseerEnabled) {
       log.info("The Overseer is enabled.  It will process all cluster commands & state updates.");
     } else {
@@ -418,10 +415,6 @@ public class ZkController implements Closeable {
         !overseerEnabled
             ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
             : Optional.empty();
-
-    if (lowestNodeVersion.isPresent()) {
-      checkClusterVersionCompatibility(lowestNodeVersion.get());
-    }
 
     registerLiveNodesListener();
 
@@ -439,12 +432,39 @@ public class ZkController implements Closeable {
     }
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
+
     this.sysPropsCacher = new NodesSysPropsCacher(cc.getDefaultHttpSolrClient(), zkStateReader);
 
     // Do this last to signal we're up.
     createEphemeralLiveNode();
 
     assert ObjectReleaseTracker.track(this);
+  }
+
+  private boolean isOverseerEnabled(Optional<SolrVersion> lowestNodeVersion) throws IOException {
+    Optional<Boolean> overseerEnabledClusterProp =
+        Optional.ofNullable(zkStateReader.getClusterProperty(ZkStateReader.OVERSEER_ENABLED, null))
+            .map(Object::toString)
+            .map(Boolean::parseBoolean);
+    if (overseerEnabledClusterProp.isPresent()) {
+      return overseerEnabledClusterProp.get();
+    }
+
+    // as of v10, it's disabled by default
+    boolean defaultOverseerEnabled =
+        lowestNodeVersion.orElse(SolrVersion.LATEST).lessThan(SolrVersion.forIntegers(10, 0, 0));
+    boolean overseerEnabled =
+        EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", defaultOverseerEnabled);
+
+    // set the cluster property explicitly if we appear to be upgrading
+    final boolean rollingUpgrade =
+        lowestNodeVersion.map(lowest -> lowest.lessThan(SolrVersion.LATEST)).orElse(false);
+    if (rollingUpgrade) {
+      log.info("Setting cluster property {}: {}", ZkStateReader.OVERSEER_ENABLED, overseerEnabled);
+      new ClusterProperties(zkClient)
+          .setClusterProperty(ZkStateReader.OVERSEER_ENABLED, overseerEnabled);
+    }
+    return overseerEnabled;
   }
 
   private void onDisconnect(boolean sessionExpired) {
