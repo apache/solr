@@ -31,7 +31,7 @@ import org.apache.solr.ui.domain.Configset
 class ConfigsetsDropdownMenuTest {
 
     @Test
-    fun `GIVEN empty availableConifigsets WHEN dropdown clicked THEN not expanded`() = runComposeUiTest {
+    fun `GIVEN empty availableConfigsets WHEN dropdown clicked THEN not expanded`() = runComposeUiTest {
         setContent {
             ConfigsetsDropdown(
                 selectConfigset = {},
@@ -46,7 +46,7 @@ class ConfigsetsDropdownMenuTest {
     }
 
     @Test
-    fun `GIVEN empty availableConifigsets THEN dropdown disabled`() = runComposeUiTest {
+    fun `GIVEN empty availableConfigsets THEN dropdown disabled`() = runComposeUiTest {
         setContent {
             ConfigsetsDropdown(
                 selectConfigset = {},
