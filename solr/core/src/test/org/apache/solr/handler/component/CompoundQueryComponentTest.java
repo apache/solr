@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -92,6 +94,8 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
                     + " },\n"
                     + "    'components' : [ '"
                     + CompoundQueryComponent.COMPONENT_NAME
+                    + "',\n'"
+                    + HighlightComponent.COMPONENT_NAME
                     + "' ]\n"
                     + "  }\n"
                     + "}"),
@@ -119,6 +123,10 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
       // compose the query
       final SolrQuery solrQuery = new SolrQuery(q == null ? "*:*" : q);
       solrQuery.set("sort", "id asc");
+      // highlight, if we're searching for something specific i.e. not just everything
+      if (q != null) {
+        solrQuery.addHighlightField(t1);
+      }
 
       // make the query
       final QueryResponse queryResponse =
@@ -138,17 +146,31 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
         assertEquals("c", documentList.get(5).getFieldValue("id"));
       } else {
         assertEquals(3, documentList.size());
+        final Map<String, Map<String, List<String>>> highlighting = queryResponse.getHighlighting();
+        if (q == q_bee) {
+          assertEquals("solitary <em>bee</em>", highlighting.get("1").get(t1).get(0));
+          assertEquals("bumble <em>bee</em>", highlighting.get("10").get(t1).get(0));
+          assertEquals("honey <em>bee</em>", highlighting.get("1000").get(t1).get(0));
+        } else {
+          assertEquals("alfalfa <em>forage</em>", highlighting.get("a").get(t1).get(0));
+          assertEquals("borage <em>forage</em>", highlighting.get("b").get(t1).get(0));
+          assertEquals("clover <em>forage</em>", highlighting.get("c").get(t1).get(0));
+        }
       }
     }
 
     // search for the documents via two fused queries
-    {
+    for (final String highlightField : new String[] {null, t1}) {
       // compose the query
       final SolrQuery solrQuery = new SolrQuery("id:0");
       solrQuery.set("rrf.prefix.list", "rrf.1.,rrf.2.");
       solrQuery.set("rrf.1.q", "{!sort='id desc'}" + q_bee);
       solrQuery.set("rrf.2.q", "{!sort='id asc'}" + q_forage);
       solrQuery.setRequestHandler(compoundSearchHandlerName);
+      // highlight, sometimes
+      if (highlightField != null) {
+        solrQuery.addHighlightField(highlightField);
+      }
 
       // make the query
       final QueryResponse queryResponse =
@@ -171,6 +193,20 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
       assertEquals("solitary bee", documentList.get(4).getFieldValue("a_t"));
       assertEquals("c", documentList.get(5).getFieldValue("id"));
       assertEquals("clover forage", documentList.get(5).getFieldValue("a_t"));
+
+      final Map<String, Map<String, List<String>>> highlighting = queryResponse.getHighlighting();
+      if (highlightField != null) {
+        assertNotNull(highlighting);
+        assertEquals(documentList.size(), highlighting.size());
+        assertEquals("honey <em>bee</em>", highlighting.get("1000").get(highlightField).get(0));
+        assertEquals("alfalfa <em>forage</em>", highlighting.get("a").get(highlightField).get(0));
+        assertEquals("bumble <em>bee</em>", highlighting.get("10").get(highlightField).get(0));
+        assertEquals("borage <em>forage</em>", highlighting.get("b").get(highlightField).get(0));
+        assertEquals("solitary <em>bee</em>", highlighting.get("1").get(highlightField).get(0));
+        assertEquals("clover <em>forage</em>", highlighting.get("c").get(highlightField).get(0));
+      } else {
+        assertNull(highlighting);
+      }
     }
   }
 }

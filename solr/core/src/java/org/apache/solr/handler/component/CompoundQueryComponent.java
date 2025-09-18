@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.util.HashMap;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
@@ -116,6 +117,22 @@ public class CompoundQueryComponent extends QueryComponent {
       for (var rb_i : crb.responseBuilders) {
         super.finishStage(rb_i);
       }
+
+      if (rb.getStage() == CompoundResponseBuilder.STAGE_GET_FIELDS) {
+        rb.resultIds = new HashMap<>();
+        for (var rb_i : crb.responseBuilders) {
+          for (var entry : rb_i.resultIds.entrySet()) {
+            /*
+            this positionInResponse is an interim value that will change during the fusion stage
+            but we need it to be unique here to support any SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse
+            call in HighlightComponent (an alternative would be to make the HighlightComponent aware of the fusion stage)
+            */
+            entry.getValue().positionInResponse = rb.resultIds.size();
+            rb.resultIds.put(entry.getKey(), entry.getValue());
+          }
+        }
+      }
+
       if (rb.getStage() == CompoundResponseBuilder.STAGE_FUSION) {
         rb.rsp.addResponse(rb.getResponseDocs());
       }
