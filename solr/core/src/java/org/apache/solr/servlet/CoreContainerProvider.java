@@ -48,7 +48,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.VectorUtil;
 import org.apache.solr.client.api.util.SolrVersion;
@@ -56,6 +55,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
@@ -83,7 +83,6 @@ public class CoreContainerProvider implements ServletContextListener {
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private CoreContainer cores;
   private Properties extraProperties;
-  private HttpClient httpClient;
   private SolrMetricManager metricManager;
   private RateLimitManager rateLimitManager;
   private String registryName;
@@ -120,14 +119,6 @@ public class CoreContainerProvider implements ServletContextListener {
   CoreContainer getCoreContainer() throws UnavailableException {
     checkReady();
     return cores;
-  }
-
-  /**
-   * @see SolrDispatchFilter#getHttpClient()
-   */
-  HttpClient getHttpClient() throws UnavailableException {
-    checkReady();
-    return httpClient;
   }
 
   private void checkReady() throws UnavailableException {
@@ -175,7 +166,6 @@ public class CoreContainerProvider implements ServletContextListener {
       }
     } finally {
       if (cc != null) {
-        httpClient = null;
         cc.shutdown();
       }
     }
@@ -227,7 +217,6 @@ public class CoreContainerProvider implements ServletContextListener {
               });
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
-      this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit, coresInit.getNodeConfig().getMetricsConfig());
 
       SolrZkClient zkClient = null;
@@ -307,7 +296,7 @@ public class CoreContainerProvider implements ServletContextListener {
               "Solr typically starts with \"-XX:+CrashOnOutOfMemoryError\" that will crash on any OutOfMemoryError exception. "
                   + "Unable to get the specific file due to an exception."
                   + "The cause of the OOME will be logged in a crash file in the logs directory: %s",
-              System.getProperty("solr.log.dir"));
+              System.getProperty("solr.logs.dir"));
       log.info(logMessage, e);
     }
   }
@@ -327,7 +316,8 @@ public class CoreContainerProvider implements ServletContextListener {
   }
 
   /**
-   * We are in cloud mode if Java option zkRun exists OR zkHost exists and is non-empty
+   * We are in cloud mode if Java option solr.zookeeper.server.enabled exists OR zkHost exists and
+   * is non-empty
    *
    * @see SolrXmlConfig#wrapAndSetZkHostFromSysPropIfNeeded
    * @see #extraProperties
@@ -336,7 +326,7 @@ public class CoreContainerProvider implements ServletContextListener {
   private boolean isCloudMode() {
     assert null != extraProperties; // we should never be called w/o this being initialized
     return (null != extraProperties.getProperty(SolrXmlConfig.ZK_HOST))
-        || (null != System.getProperty("zkRun"));
+        || EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
   }
 
   /**

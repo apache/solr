@@ -119,8 +119,6 @@ public abstract class SolrRequest<T> implements Serializable {
 
   private String basicAuthUser, basicAuthPwd;
 
-  private String basePath;
-
   public SolrRequest<T> setBasicAuthCredentials(String user, String password) {
     this.basicAuthUser = user;
     this.basicAuthPwd = password;

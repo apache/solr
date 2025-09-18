@@ -111,7 +111,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-non-stored-docvalues.xml", tmpSolrHome);
 
@@ -123,7 +123,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     clearIndex();
     deleteCore();
     System.clearProperty("managed.schema.mutable");
-    System.clearProperty("enable.update.log");
+    System.clearProperty("solr.index.updatelog.enabled");
   }
 
   public String getCoreName() {
@@ -399,11 +399,12 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
       }
 
       // See SOLR-10924...
-      // Trie/String based Docvalues are sets, but stored values & Point DVs are ordered multisets,
-      // so cardinality depends on the value source
+      // Trie/String based Docvalues are sets, but stored values, Point DVs and Enum DVs are ordered
+      // multisets, so cardinality depends on the value source
       final int expectedCardinality =
           (isStoredField(field)
-                  || (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) && !field.startsWith("test_s")))
+                  || (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) && !field.startsWith("test_s"))
+                  || field.startsWith("enums"))
               ? value.length
               : valueSet.size();
       xpaths[value.length] =

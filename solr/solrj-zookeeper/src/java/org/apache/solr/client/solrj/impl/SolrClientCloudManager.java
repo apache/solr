@@ -17,11 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -102,17 +98,6 @@ public class SolrClientCloudManager implements SolrCloudManager {
   public DistribStateManager getDistribStateManager() {
     return stateManager;
   }
-
-  @Override
-  public <T extends SolrResponse> T request(SolrRequest<T> req) throws IOException {
-    try {
-      return req.process(cloudSolrClient);
-    } catch (SolrServerException e) {
-      throw new IOException(e);
-    }
-  }
-
-  private static final byte[] EMPTY = new byte[0];
 
   public SolrZkClient getZkClient() {
     return zkClient;

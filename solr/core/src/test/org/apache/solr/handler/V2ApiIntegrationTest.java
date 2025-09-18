@@ -236,7 +236,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     assertEquals(
         "/collections/collection1/get",
         Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
-    String tempDir = createTempDir().toFile().getPath();
+    String tempDir = createTempDir().toString();
     Map<String, Object> backupParams = new HashMap<>();
     backupParams.put("location", tempDir);
     cluster

@@ -21,6 +21,8 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -54,7 +56,6 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -240,6 +241,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
   private final ConfigSet configSet;
+  private final Cache<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache =
+      Caffeine.newBuilder().weakKeys().build();
   // singleton listener for all packages used in schema
 
   private final CircuitBreakerRegistry circuitBreakerRegistry;
@@ -269,9 +272,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   public Date getStartTimeStamp() {
     return startTime;
   }
-
-  private final Map<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache =
-      new WeakHashMap<>();
 
   public long getStartNanoTime() {
     return startNanoTime;
@@ -2068,8 +2068,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private int onDeckSearchers; // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not
   // vice-versa.
-  private Object searcherLock = new Object(); // the sync object for the searcher
-  private ReentrantLock openSearcherLock =
+  private final Object searcherLock = new Object(); // the sync object for the searcher
+  private final ReentrantLock openSearcherLock =
       new ReentrantLock(true); // used to serialize opens/reopens for absolute ordering
   private final int maxWarmingSearchers; // max number of on-deck searchers allowed
   private final int slowQueryThresholdMillis; // threshold above which a query is considered slow
@@ -2157,7 +2157,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     IndexFingerprint f = null;
-    f = perSegmentFingerprintCache.get(cacheHelper.getKey());
+    f = perSegmentFingerprintCache.getIfPresent(cacheHelper.getKey());
     // fingerprint is either not cached or if we want fingerprint only up to a version less than
     // maxVersionEncountered in the segment, or documents were deleted from segment for which
     // fingerprint was cached
@@ -2197,8 +2197,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
     if (log.isDebugEnabled()) {
       log.debug(
-          "Cache Size: {}, Segments Size:{}",
-          perSegmentFingerprintCache.size(),
+          "Approximate perSegmentFingerprintCache Size: {}, Segments Size:{}",
+          perSegmentFingerprintCache.estimatedSize(),
           searcher.getTopReaderContext().leaves().size());
     }
     return f;
@@ -2269,7 +2269,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public RefCounted<SolrIndexSearcher> getSearcher(
-      boolean forceNew, boolean returnSearcher, final Future<Void>[] waitSearcher) {
+      boolean forceNew, boolean returnSearcher, final Future<?>[] waitSearcher) {
     return getSearcher(forceNew, returnSearcher, waitSearcher, false);
   }
 
@@ -2506,7 +2506,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   public RefCounted<SolrIndexSearcher> getSearcher(
       boolean forceNew,
       boolean returnSearcher,
-      final Future<Void>[] waitSearcher,
+      final Future<?>[] waitSearcher,
       boolean updateHandlerReopens) {
     // it may take some time to open an index.... we may need to make
     // sure that two threads aren't trying to open one at the same time
@@ -2574,7 +2574,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     // a signal to decrement onDeckSearchers if something goes wrong.
-    final boolean[] decrementOnDeckCount = new boolean[] {true};
     RefCounted<SolrIndexSearcher> currSearcherHolder = null; // searcher we are autowarming from
     RefCounted<SolrIndexSearcher> searchHolder = null;
     boolean success = false;
@@ -2599,7 +2598,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
           // want to register this one before warming is complete instead of waiting.
           if (solrConfig.useColdSearcher) {
             registerSearcher(newSearchHolder);
-            decrementOnDeckCount[0] = false;
             alreadyRegistered = true;
           }
         } else {
@@ -2612,7 +2610,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       final SolrIndexSearcher currSearcher =
           currSearcherHolder == null ? null : currSearcherHolder.get();
 
-      Future<Void> future = null;
+      Future<?> future = null;
 
       // if the underlying searcher has not changed, no warming is needed
       if (newSearcher != currSearcher) {

@@ -26,6 +26,7 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
+import static org.apache.solr.search.SolrIndexSearcher.EXECUTOR_MAX_CPU_THREADS;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 import com.github.benmanes.caffeine.cache.Interner;
@@ -34,6 +35,7 @@ import io.opentelemetry.api.trace.Tracer;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -43,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -54,9 +55,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.http.auth.AuthSchemeProvider;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.config.Lookup;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
@@ -66,18 +64,11 @@ import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
-import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
-import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.AuthSchemeRegistryProvider;
-import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.CredentialsProviderProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterSingleton;
-import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.cluster.events.impl.ClusterEventProducerFactory;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
@@ -149,7 +140,6 @@ import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
-import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
@@ -185,6 +175,10 @@ public class CoreContainer {
 
   public Executor getIndexSearcherExecutor() {
     return indexSearcherExecutor;
+  }
+
+  public ExecutorService getIndexFingerprintExecutor() {
+    return indexFingerprintExecutor;
   }
 
   public static class CoreLoadFailure {
@@ -239,9 +233,7 @@ public class CoreContainer {
 
   private volatile HttpSolrClientProvider solrClientProvider;
 
-  private volatile ExecutorService coreContainerWorkExecutor =
-      ExecutorUtil.newMDCAwareCachedThreadPool(
-          new SolrNamedThreadFactory("coreContainerWorkExecutor"));
+  private volatile ExecutorService coreLoadExecutor;
 
   private final OrderedExecutor<BytesRef> replayUpdatesExecutor;
 
@@ -292,6 +284,8 @@ public class CoreContainer {
 
   private final ExecutorService indexSearcherExecutor;
 
+  private final ExecutorService indexFingerprintExecutor;
+
   private final ClusterSingletons clusterSingletons =
       new ClusterSingletons(
           () ->
@@ -319,14 +313,6 @@ public class CoreContainer {
 
   private ExecutorService coreContainerAsyncTaskExecutor =
       ExecutorUtil.newMDCAwareCachedThreadPool("Core Container Async Task");
-
-  /**
-   * Non-empty if the Collection API is executed in a distributed way and not on Overseer, once the
-   * CoreContainer has been initialized properly, i.e. method {@link #load()} called. Until then it
-   * is null, and it is not expected to be read.
-   */
-  private volatile Optional<DistributedCollectionConfigSetCommandRunner>
-      distributedCollectionCommandRunner;
 
   private enum CoreInitFailedAction {
     fromleader,
@@ -449,6 +435,12 @@ public class CoreContainer {
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
     this.indexSearcherExecutor = SolrIndexSearcher.initCollectorExecutor(cfg);
+
+    this.indexFingerprintExecutor =
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            EXECUTOR_MAX_CPU_THREADS,
+            Integer.MAX_VALUE,
+            new SolrNamedThreadFactory("IndexFingerprintPool"));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -593,58 +585,10 @@ public class CoreContainer {
   }
 
   private void setupHttpClientForAuthPlugin(Object authcPlugin) {
-    if (authcPlugin instanceof HttpClientBuilderPlugin builderPlugin) {
-      // Setup HttpClient for internode communication
-      SolrHttpClientBuilder builder =
-          builderPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
-
-      // The Hadoop Auth Plugin was removed in SOLR-17540, however leaving the below reference
-      // for future readers, as there may be an option to simplify this logic.
-      //
-      // this caused plugins like KerberosPlugin to register its intercepts, but this intercept
-      // logic is also handled by the pki authentication code when it decides to let the plugin
-      // handle auth via its intercept - so you would end up with two intercepts
-      // -->
-      //  shardHandlerFactory.setSecurityBuilder(builderPlugin); // calls setup for the authcPlugin
-      //  updateShardHandler.setSecurityBuilder(builderPlugin);
-      // <--
-
-      // This should not happen here at all - it's only currently required due to its effect on
-      // http1 clients in a test or two incorrectly counting on it for their configuration.
-      // -->
-
-      SolrHttpClientContextBuilder httpClientBuilder = new SolrHttpClientContextBuilder();
-      if (builder.getCredentialsProviderProvider() != null) {
-        httpClientBuilder.setDefaultCredentialsProvider(
-            new CredentialsProviderProvider() {
-
-              @Override
-              public CredentialsProvider getCredentialsProvider() {
-                return builder.getCredentialsProviderProvider().getCredentialsProvider();
-              }
-            });
-      }
-      if (builder.getAuthSchemeRegistryProvider() != null) {
-        httpClientBuilder.setAuthSchemeRegistryProvider(
-            new AuthSchemeRegistryProvider() {
-
-              @Override
-              public Lookup<AuthSchemeProvider> getAuthSchemeRegistry() {
-                return builder.getAuthSchemeRegistryProvider().getAuthSchemeRegistry();
-              }
-            });
-      }
-
-      HttpClientUtil.setHttpClientRequestContextBuilder(httpClientBuilder);
-
-      // <--
-    }
-
     // Always register PKI auth interceptor, which will then delegate the decision of who should
     // secure each request to the configured authentication plugin.
     if (pkiAuthenticationSecurityBuilder != null
         && !pkiAuthenticationSecurityBuilder.isInterceptorRegistered()) {
-      pkiAuthenticationSecurityBuilder.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
       shardHandlerFactory.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
       updateShardHandler.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
       solrClientProvider.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
@@ -674,10 +618,10 @@ public class CoreContainer {
     cfg = null;
     containerProperties = null;
     replayUpdatesExecutor = null;
-    distributedCollectionCommandRunner = Optional.empty();
     allowPaths = null;
     allowListUrlChecker = null;
     indexSearcherExecutor = null;
+    indexFingerprintExecutor = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -824,16 +768,6 @@ public class CoreContainer {
 
     tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
 
-    coreContainerWorkExecutor =
-        MetricUtils.instrumentedExecutorService(
-            coreContainerWorkExecutor,
-            null,
-            metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
-            SolrMetricManager.mkName(
-                "coreContainerWorkExecutor",
-                SolrInfoBean.Category.CONTAINER.toString(),
-                "threadPool"));
-
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
     if (shardHandlerFactory instanceof SolrMetricProducer metricProducer) {
@@ -896,19 +830,6 @@ public class CoreContainer {
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(
         ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
-
-    // CoreContainer is initialized enough at this stage so we can set
-    // distributedCollectionCommandRunner (the construction of
-    // DistributedCollectionConfigSetCommandRunner uses Zookeeper so can't be done from the
-    // CoreContainer constructor because there Zookeeper is not yet ready). Given this is used in
-    // the CollectionsHandler created next line, this is the latest point where
-    // distributedCollectionCommandRunner can be initialized without refactoring this method...
-    // TODO: manage to completely build CoreContainer in the constructor and not in the load()
-    // method... Requires some test refactoring.
-    this.distributedCollectionCommandRunner =
-        isZooKeeperAware() && cfg.getCloudConfig().getDistributedCollectionConfigSetExecution()
-            ? Optional.of(new DistributedCollectionConfigSetCommandRunner(this))
-            : Optional.empty();
 
     collectionsHandler =
         createHandler(
@@ -988,13 +909,32 @@ public class CoreContainer {
     Path dataHome =
         cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
     solrMetricsContext.gauge(
-        () -> dataHome.toFile().getTotalSpace(),
+        () -> {
+          try {
+            return Files.getFileStore(dataHome).getTotalSpace();
+          } catch (IOException e) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving total space for data home directory" + dataHome,
+                e);
+          }
+        },
         true,
         "totalSpace",
         SolrInfoBean.Category.CONTAINER.toString(),
         "fs");
+
     solrMetricsContext.gauge(
-        () -> dataHome.toFile().getUsableSpace(),
+        () -> {
+          try {
+            return Files.getFileStore(dataHome).getUsableSpace();
+          } catch (IOException e) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving usable space for data home directory" + dataHome,
+                e);
+          }
+        },
         true,
         "usableSpace",
         SolrInfoBean.Category.CONTAINER.toString(),
@@ -1002,14 +942,34 @@ public class CoreContainer {
     solrMetricsContext.gauge(
         dataHome::toString, true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     solrMetricsContext.gauge(
-        () -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
+        () -> {
+          try {
+            return Files.getFileStore(cfg.getCoreRootDirectory()).getTotalSpace();
+          } catch (IOException e) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Error retrieving total space for core root directory: "
+                    + cfg.getCoreRootDirectory(),
+                e);
+          }
+        },
         true,
         "totalSpace",
         SolrInfoBean.Category.CONTAINER.toString(),
         "fs",
         "coreRoot");
     solrMetricsContext.gauge(
-        () -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
+        () -> {
+          try {
+            return Files.getFileStore(cfg.getCoreRootDirectory()).getUsableSpace();
+          } catch (IOException e) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Error retrieving usable space for core root directory: "
+                    + cfg.getCoreRootDirectory(),
+                e);
+          }
+        },
         true,
         "usableSpace",
         SolrInfoBean.Category.CONTAINER.toString(),
@@ -1044,7 +1004,7 @@ public class CoreContainer {
     }
 
     // setup executor to load cores in parallel
-    ExecutorService coreLoadExecutor =
+    coreLoadExecutor =
         MetricUtils.instrumentedExecutorService(
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
@@ -1114,11 +1074,9 @@ public class CoreContainer {
       backgroundCloser.start();
 
     } finally {
-      if (asyncSolrCoreLoad) {
-        coreContainerWorkExecutor.execute(
-            () -> ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor));
-      } else {
-        ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor);
+      coreLoadExecutor.shutdown(); // doesn't block
+      if (!asyncSolrCoreLoad) {
+        ExecutorUtil.awaitTerminationForever(coreLoadExecutor);
       }
     }
 
@@ -1206,9 +1164,7 @@ public class CoreContainer {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
-      if (!distributedCollectionCommandRunner.isPresent()) {
-        zkSys.getZkController().checkOverseerDesignate();
-      }
+      zkSys.getZkController().checkOverseerDesignate();
     }
 
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at
@@ -1278,14 +1234,7 @@ public class CoreContainer {
 
     ZkController zkController = getZkController();
     if (zkController != null) {
-      if (distributedCollectionCommandRunner.isPresent()) {
-        // Local (i.e. distributed) Collection API processing
-        distributedCollectionCommandRunner.get().stopAndWaitForPendingTasksToComplete();
-      } else {
-        // Overseer based processing
-        OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
-        overseerCollectionQueue.allowOverseerPendingTasksToComplete();
-      }
+      zkController.waitForPendingTasksToComplete();
     }
     if (log.isInfoEnabled()) {
       log.info("Shutting down CoreContainer instance={}", System.identityHashCode(this));
@@ -1293,6 +1242,7 @@ public class CoreContainer {
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
     ExecutorUtil.shutdownAndAwaitTermination(indexSearcherExecutor);
+    ExecutorUtil.shutdownNowAndAwaitTermination(indexFingerprintExecutor);
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
@@ -1307,7 +1257,7 @@ public class CoreContainer {
         zkSys.zkController.tryCancelAllElections();
       }
 
-      ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
+      ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor); // actually already shutdown
 
       // First wake up the closer thread, it'll terminate almost immediately since it checks
       // isShutDown.
@@ -1766,7 +1716,8 @@ public class CoreContainer {
         // this mostly happens when the core is deleted when this node is down
         // but it can also happen if connecting to the wrong zookeeper
         final boolean deleteUnknownCores =
-            Boolean.parseBoolean(System.getProperty("solr.deleteUnknownCores", "false"));
+            Boolean.parseBoolean(
+                System.getProperty("solr.cloud.startup.delete.unknown.cores.enabled", "false"));
         log.error(
             "SolrCore {} in {} is not in cluster state.{}",
             dcore.getName(),
@@ -2520,6 +2471,8 @@ public class CoreContainer {
   }
 
   /**
+   * Checks whether a tragic exception was thrown during update (including update log).
+   *
    * @param solrCore the core against which we check if there has been a tragic exception
    * @return whether this Solr core has tragic exception
    * @see org.apache.lucene.index.IndexWriter#getTragicException()
@@ -2532,19 +2485,6 @@ public class CoreContainer {
       // failed to open an indexWriter
       tragicException = e;
     }
-
-    if (tragicException != null && isZooKeeperAware()) {
-      getZkController().giveupLeadership(solrCore.getCoreDescriptor());
-
-      try {
-        // If the error was something like a full file system disconnect, this probably won't help
-        // But if it is a transient disk failure then it's worth a try
-        solrCore.getSolrCoreState().newIndexWriter(solrCore, false); // should we rollback?
-      } catch (IOException e) {
-        log.warn("Could not roll index writer after tragedy");
-      }
-    }
-
     return tragicException != null;
   }
 
@@ -2562,11 +2502,6 @@ public class CoreContainer {
 
   public PlacementPluginFactory<? extends PlacementPluginConfig> getPlacementPluginFactory() {
     return placementPluginFactory;
-  }
-
-  public Optional<DistributedCollectionConfigSetCommandRunner>
-      getDistributedCollectionCommandRunner() {
-    return this.distributedCollectionCommandRunner;
   }
 
   /**

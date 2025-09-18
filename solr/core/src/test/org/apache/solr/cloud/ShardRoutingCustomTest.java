@@ -61,8 +61,7 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
     Files.createDirectories(jettyDir);
     setupJettySolrHome(jettyDir);
     JettySolrRunner j =
-        createJetty(
-            jettyDir, createTempDir().toFile().getAbsolutePath(), "shardA", "solrconfig.xml", null);
+        createJetty(jettyDir, createTempDir().toString(), "shardA", "solrconfig.xml", null);
     j.start();
     assertEquals(
         0,

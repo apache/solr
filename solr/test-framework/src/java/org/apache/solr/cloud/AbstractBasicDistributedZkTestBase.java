@@ -41,7 +41,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -759,7 +759,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     SolrQuery query = new SolrQuery("*:*");
     query.addFacetField(tsort);
     query.setFacetMissing(false);
-    QueryResponse resp = queryServer(query);
+    QueryResponse resp = queryRandomShard(query);
     List<FacetField> ffs = resp.getFacetFields();
     for (FacetField ff : ffs) {
       if (ff.getName().equals(tsort) == false) continue;
@@ -792,7 +792,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     query.addField("*");
     query.addField("eoe_sortable");
     query.addField(tsort);
-    QueryResponse resp = queryServer(query);
+    QueryResponse resp = queryRandomShard(query);
 
     SolrDocumentList docs = resp.getResults();
 
@@ -809,7 +809,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     SolrQuery query = new SolrQuery("*:*");
     query.add("group", "true");
     query.add("group.field", tsort);
-    QueryResponse resp = queryServer(query);
+    QueryResponse resp = queryRandomShard(query);
     GroupResponse groupResp = resp.getGroupResponse();
     List<GroupCommand> grpCmds = groupResp.getValues();
     for (GroupCommand grpCmd : grpCmds) {
@@ -1202,7 +1202,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     // query for each doc, and check both fields to ensure the value is correct
     for (int i = 1; i < numLoops; i++) {
       final String query = id + ":" + i;
-      QueryResponse qres = queryServer(new SolrQuery(query));
+      QueryResponse qres = queryRandomShard(new SolrQuery(query));
       assertEquals(chain + ": query failed: " + query, 0, qres.getStatus());
       assertEquals(
           chain + ": didn't find correct # docs with query: " + query,
@@ -1288,7 +1288,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       params.set("prefix", "UPDATE.updateHandler");
       params.set("registry", "solr.core." + collection);
       // use generic request to avoid extra processing of queries
-      var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+      var req =
+          new GenericSolrRequest(
+              SolrRequest.METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
       NamedList<Object> resp = client.request(req);
       NamedList<?> metrics = (NamedList<?>) resp.get("metrics");
       NamedList<?> uhandlerCat = (NamedList<?>) metrics.getVal(0);
@@ -1511,7 +1513,6 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
           try (SolrClient client = getHttpSolrClient(baseUrl)) {
             // client.setConnectionTimeout(15000);
             Create createCmd = new Create();
-            createCmd.setRoles("none");
             createCmd.setCoreName(collection + num);
             createCmd.setCollection(collection);
 
@@ -1700,10 +1701,10 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   }
 
   @Override
-  protected QueryResponse queryServer(ModifiableSolrParams params)
+  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
       throws SolrServerException, IOException {
 
-    if (r.nextBoolean()) return super.queryServer(params);
+    if (r.nextBoolean()) return super.queryRandomShard(params);
 
     if (r.nextBoolean()) params.set("collection", DEFAULT_COLLECTION);
 

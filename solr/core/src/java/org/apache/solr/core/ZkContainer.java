@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
@@ -62,17 +63,14 @@ public class ZkContainer {
   private ExecutorService coreZkRegister =
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("coreZkRegister"));
 
-  // see ZkController.zkRunOnly
-  private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
-
   private SolrMetricProducer metricProducer;
 
   public ZkContainer() {}
 
   public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
-    String zkRun = System.getProperty("zkRun");
+    boolean zkRun = EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
 
-    if (zkRun != null && config == null)
+    if (zkRun && config == null)
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Cannot start Solr in cloud mode - no cloud config provided");
@@ -87,13 +85,15 @@ public class ZkContainer {
     System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
     Path solrHome = cc.getSolrHome();
-    if (zkRun != null) {
+    if (zkRun) {
       String zkDataHome =
-          System.getProperty("zkServerDataDir", solrHome.resolve("zoo_data").toString());
-      String zkConfHome = System.getProperty("zkServerConfDir", solrHome.toString());
+          EnvUtils.getProperty(
+              "solr.zookeeper.server.datadir", solrHome.resolve("zoo_data").toString());
+      String zkConfHome =
+          EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString());
       zkServer =
           new SolrZkServer(
-              stripChroot(zkRun),
+              zkRun,
               stripChroot(config.getZkHost()),
               Path.of(zkDataHome),
               zkConfHome,
@@ -114,15 +114,15 @@ public class ZkContainer {
       // we are ZooKeeper enabled
       try {
         // If this is an ensemble, allow for a long connect time for other servers to come up
-        if (zkRun != null && zkServer.getServers().size() > 1) {
+        if (zkRun && zkServer.getServers().size() > 1) {
           zkClientConnectTimeout = 24 * 60 * 60 * 1000; // 1 day for embedded ensemble
           log.info("Zookeeper client={}  Waiting for a quorum.", zookeeperHost);
         } else {
           log.info("Zookeeper client={}", zookeeperHost);
         }
-        boolean createRoot = Boolean.getBoolean("createZkChroot");
+        boolean createRoot = EnvUtils.getPropertyAsBool("solr.zookeeper.chroot.create", false);
 
-        if (!ZkController.checkChrootPath(zookeeperHost, zkRunOnly || createRoot)) {
+        if (!ZkController.checkChrootPath(zookeeperHost, createRoot)) {
           throw new ZooKeeperException(
               SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
@@ -131,7 +131,7 @@ public class ZkContainer {
         ZkController zkController =
             new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config);
 
-        if (zkRun != null) {
+        if (zkRun) {
           if (StrUtils.isNotNullOrEmpty(System.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient())

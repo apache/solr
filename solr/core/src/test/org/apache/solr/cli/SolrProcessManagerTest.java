@@ -56,8 +56,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
     long processHttpsValue = isWindows ? processHttps.getKey() : processHttps.getValue().pid();
     SolrProcessManager.enableTestingMode = true;
     System.setProperty("jetty.port", Integer.toString(processHttp.getKey()));
-    Path pidDir = Files.createTempDirectory("solr-pid-dir").toAbsolutePath();
-    pidDir.toFile().deleteOnExit();
+    Path pidDir = createTempDir("solr-pid-dir");
     System.setProperty("solr.pid.dir", pidDir.toString());
     Files.writeString(
         pidDir.resolve("solr-" + processHttpValue + PID_SUFFIX), Long.toString(processHttpValue));

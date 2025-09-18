@@ -131,7 +131,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
 
       // node failure and recovery via PeerSync
       log.info("Forcing PeerSync");
-      CloudJettyRunner nodePeerSynced = forceNodeFailureAndDoPeerSync(false);
+      CloudJettyRunner nodePeerSynced = forceNodeFailureAndDoPeerSync(true);
 
       // add a few more docs
       indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
@@ -197,7 +197,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
       assertEquals(0L, counter.getCount());
       success = true;
     } finally {
-      System.clearProperty("solr.disableFingerprint");
+      System.clearProperty("solr.index.replication.fingerprint.enabled");
     }
   }
 
@@ -263,7 +263,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     nodesDown.addAll(replicasToShutDown);
   }
 
-  private CloudJettyRunner forceNodeFailureAndDoPeerSync(boolean disableFingerprint)
+  private CloudJettyRunner forceNodeFailureAndDoPeerSync(boolean enableFingerprint)
       throws Exception {
     // kill non leader - new leader could have all the docs or be missing one
     CloudJettyRunner leaderJetty = shardToLeaderJetty.get("shard1");
@@ -279,15 +279,16 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
     commit();
 
-    bringUpDeadNodeAndEnsureNoReplication(replicaToShutDown, disableFingerprint);
+    bringUpDeadNodeAndEnsureNoReplication(replicaToShutDown, enableFingerprint);
 
     return replicaToShutDown;
   }
 
   private void bringUpDeadNodeAndEnsureNoReplication(
-      CloudJettyRunner nodeToBringUp, boolean disableFingerprint) throws Exception {
+      CloudJettyRunner nodeToBringUp, boolean enableFingerprint) throws Exception {
     // disable fingerprint check if needed
-    System.setProperty("solr.disableFingerprint", String.valueOf(disableFingerprint));
+    System.setProperty(
+        "solr.index.replication.fingerprint.enabled", String.valueOf(enableFingerprint));
     // we wait a little while, so socket between leader -> replica will be timeout
     Thread.sleep(3000);
     IndexInBackGround iib = new IndexInBackGround(50, nodeToBringUp);

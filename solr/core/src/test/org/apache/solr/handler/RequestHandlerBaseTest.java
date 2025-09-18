@@ -105,7 +105,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
         };
     final Exception e = new SyntaxError("Some syntax error");
 
-    final Exception normalized = RequestHandlerBase.normalizeReceivedException(solrQueryRequest, e);
+    final Exception normalized = RequestHandlerBase.processReceivedException(solrQueryRequest, e);
 
     assertEquals(SolrException.class, normalized.getClass());
     final SolrException normalizedSolrException = (SolrException) normalized;
@@ -123,7 +123,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
         };
     final Exception e = new RuntimeException("Some generic, non-SolrException");
 
-    final Exception normalized = RequestHandlerBase.normalizeReceivedException(solrQueryRequest, e);
+    final Exception normalized = RequestHandlerBase.processReceivedException(solrQueryRequest, e);
 
     assertEquals(normalized, e);
   }
@@ -140,7 +140,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
         };
     final Exception e = new RuntimeException("Some generic, non-SolrException");
 
-    final Exception normalized = RequestHandlerBase.normalizeReceivedException(solrQueryRequest, e);
+    final Exception normalized = RequestHandlerBase.processReceivedException(solrQueryRequest, e);
 
     assertEquals(SolrException.class, normalized.getClass());
     final SolrException normalizedSolrException = (SolrException) normalized;

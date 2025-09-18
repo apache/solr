@@ -44,7 +44,7 @@ public class TestStreamBody extends RestTestBase {
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
     createJettyAndHarness(
         tmpSolrHome, "solrconfig-minimal.xml", "schema-rest.xml", "/solr", true, extraServlets);
@@ -68,7 +68,7 @@ public class TestStreamBody extends RestTestBase {
   // SOLR-3161
   @Test
   public void testQtUpdateFails() throws Exception {
-    System.setProperty("solr.enableStreamBody", "true");
+    System.setProperty("solr.requests.streaming.body.enabled", "true");
     startSolr();
 
     SolrQuery query = new SolrQuery();

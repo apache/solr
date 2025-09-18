@@ -45,7 +45,8 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.filterCache.async", "true");
     initCore("solrconfig.xml", "schema12.xml");
   }
@@ -216,9 +217,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
             "true");
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse()));
     final Query luceneQ =
-        QParser.getParser(req.getParams().get("q"), req)
-            .getQuery()
-            .rewrite(req.getSearcher().getSlowAtomicReader());
+        QParser.getParser(req.getParams().get("q"), req).getQuery().rewrite(req.getSearcher());
     assertTrue(luceneQ instanceof BoostQuery);
     float boost = ((BoostQuery) luceneQ).getBoost();
     assertEquals("" + luceneQ, Float.floatToIntBits(200), Float.floatToIntBits(boost));

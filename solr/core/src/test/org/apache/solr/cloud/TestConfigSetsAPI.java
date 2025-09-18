@@ -207,7 +207,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       throws Exception {
     final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
-    tmpConfigDir.toFile().deleteOnExit();
     PathUtils.copyDirectory(configDir, tmpConfigDir);
     if (oldProps != null) {
       Files.writeString(
@@ -418,7 +417,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
       ignoreException("Configset upload feature is disabled");
       for (boolean enabled : new boolean[] {true, false}) {
-        System.setProperty("configset.upload.enabled", String.valueOf(enabled));
+        System.setProperty("solr.configset.upload.enabled", String.valueOf(enabled));
         try {
           long statusCode =
               uploadConfigSet("regular", "test-enabled-is-" + enabled, null, zkClient, v2);
@@ -429,7 +428,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               enabled ? 0l : 400l,
               statusCode);
         } finally {
-          System.clearProperty("configset.upload.enabled");
+          System.clearProperty("solr.configset.upload.enabled");
         }
       }
       unIgnoreException("Configset upload feature is disabled");
@@ -1568,7 +1567,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
-    tmpConfigDir.toFile().deleteOnExit();
     // Ensure ConfigSet is immutable
     PathUtils.copyDirectory(configDir, tmpConfigDir);
     Files.writeString(
@@ -1672,12 +1670,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    * the real directory which matches what {@link ZkController} finds and uses to bootstrap ZK in
    * cloud based tests.
    *
-   * <p>This assumes the {@link SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE} system property
-   * has not been externally set in the environment where this test is being run -- which should
-   * <b>never</b> be the case, since it would prevent the test-framework from using {@link
+   * <p>This assumes the {@link SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE} system
+   * property has not been externally set in the environment where this test is being run -- which
+   * should <b>never</b> be the case, since it would prevent the test-framework from using {@link
    * ExternalPaths#DEFAULT_CONFIGSET}
    *
-   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
    * @see #beforeSolrTestCase
    * @see ConfigSetService#getDefaultConfigDirPath
    */

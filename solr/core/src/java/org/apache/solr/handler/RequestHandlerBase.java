@@ -22,6 +22,7 @@ import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,9 +35,11 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -245,7 +248,7 @@ public abstract class RequestHandlerBase
     } catch (QueryLimitsExceededException e) {
       rsp.setPartialResults(req);
     } catch (Exception e) {
-      Exception normalized = normalizeReceivedException(req, e);
+      Exception normalized = processReceivedException(req, e);
       processErrorMetricsOnException(normalized, metrics);
       rsp.setException(normalized);
     } finally {
@@ -303,10 +306,30 @@ public abstract class RequestHandlerBase
     }
   }
 
-  public static Exception normalizeReceivedException(SolrQueryRequest req, Exception e) {
-    if (req.getCore() != null) {
-      assert req.getCoreContainer() != null;
-      if (req.getCoreContainer().checkTragicException(req.getCore())) {
+  /**
+   * Processes and normalizes any exceptions that are received from the request handler. This method
+   * is called before any error metrics are recorded.
+   *
+   * <p>If a tragic exception occurred in the index writer, this method also gives up leadership of
+   * the shard, and replaces the index writer with a new one to attempt to get out of a transient
+   * failure (e.g. disk failure).
+   */
+  public static Exception processReceivedException(SolrQueryRequest req, Exception e) {
+    SolrCore core = req.getCore();
+    if (core != null) {
+      CoreContainer coreContainer = req.getCoreContainer();
+      assert coreContainer != null;
+      if (coreContainer.checkTragicException(core)) {
+        if (coreContainer.isZooKeeperAware()) {
+          coreContainer.getZkController().giveupLeadership(core.getCoreDescriptor());
+          try {
+            // If the error was something like a full file system disconnect, this probably won't
+            // help, but if it is a transient disk failure then it's worth a try.
+            core.getSolrCoreState().newIndexWriter(core, false); // should we rollback?
+          } catch (IOException ioe) {
+            log.warn("Could not roll index writer after tragedy");
+          }
+        }
         return SolrException.wrapLuceneTragicExceptionIfNecessary(e);
       }
     }

@@ -80,9 +80,9 @@ public class JWTIssuerConfig {
   private Collection<X509Certificate> trustedCerts;
 
   public static boolean ALLOW_OUTBOUND_HTTP =
-      Boolean.parseBoolean(EnvUtils.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
+      EnvUtils.getPropertyAsBool("solr.auth.jwt.outbound.http.enabled", false);
   public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG =
-      "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.";
+      "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.outbound.http.enabled=true to allow HTTP for test purposes.";
   private static final String DEFAULT_AUTHORIZATION_FLOW =
       "implicit"; // 'implicit' to be deprecated
   private static final Set<String> VALID_AUTHORIZATION_FLOWS =

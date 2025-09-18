@@ -39,6 +39,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -664,12 +665,14 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("qt", "/admin/mbeans");
       params.set("stats", "true");
       params.set("key", key);
       params.set("cat", category);
       // use generic request to avoid extra processing of queries
-      QueryRequest req = new QueryRequest(params);
+      var req =
+          new GenericSolrRequest(
+                  SolrRequest.METHOD.GET, "/admin/mbeans", SolrRequestType.ADMIN, params)
+              .setRequiresCollection(true);
       resp = client.request(req);
     }
     String name;
@@ -680,7 +683,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> map =
-        (Map<String, Object>) resp.findRecursive("solr-mbeans", category, key, "stats");
+        (Map<String, Object>) resp._get(List.of("solr-mbeans", category, key, "stats"), null);
     if (map == null) {
       return null;
     }
@@ -734,7 +737,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.set("action", "foobar"); // this should cause an error
-          params.set("qt", adminPath);
 
           var request =
               new GenericSolrRequest(METHOD.GET, adminPath, SolrRequestType.ADMIN, params);

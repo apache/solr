@@ -317,10 +317,10 @@ public class GetSegmentData extends JerseyResource implements SegmentsApi {
     if (seg != null) {
       LeafMetaData metaData = seg.getMetaData();
       if (metaData != null) {
-        segmentInfo.createdVersionMajor = metaData.getCreatedVersionMajor();
-        segmentInfo.minVersion = metaData.getMinVersion().toString();
-        if (metaData.getSort() != null) {
-          segmentInfo.sort = metaData.getSort().toString();
+        segmentInfo.createdVersionMajor = metaData.createdVersionMajor();
+        segmentInfo.minVersion = metaData.minVersion().toString();
+        if (metaData.sort() != null) {
+          segmentInfo.sort = metaData.sort().toString();
         }
       }
     }
@@ -417,7 +417,7 @@ public class GetSegmentData extends JerseyResource implements SegmentsApi {
     } else {
       flags.append("----");
     }
-    flags.append((fi.hasVectors()) ? FieldFlag.TERM_VECTOR_STORED.getAbbreviation() : '-');
+    flags.append((fi.hasTermVectors()) ? FieldFlag.TERM_VECTOR_STORED.getAbbreviation() : '-');
     flags.append((fi.omitsNorms()) ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-');
 
     flags.append((DOCS == opts) ? FieldFlag.OMIT_TF.getAbbreviation() : '-');
@@ -477,9 +477,9 @@ public class GetSegmentData extends JerseyResource implements SegmentsApi {
       if (!hasPoints && (sf.omitNorms() != fi.omitsNorms())) {
         nonCompliant.put("omitNorms", "schema=" + sf.omitNorms() + ", segment=" + fi.omitsNorms());
       }
-      if (sf.storeTermVector() != fi.hasVectors()) {
+      if (sf.storeTermVector() != fi.hasTermVectors()) {
         nonCompliant.put(
-            "termVectors", "schema=" + sf.storeTermVector() + ", segment=" + fi.hasVectors());
+            "termVectors", "schema=" + sf.storeTermVector() + ", segment=" + fi.hasTermVectors());
       }
       if (sf.storeOffsetsWithPositions()
           != (fi.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)) {
