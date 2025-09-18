@@ -1,4 +1,4 @@
-= Exercise: Sentiment Analysis with OpenNLP
+= Exercise 7: Sentiment Analysis with OpenNLP
 :experimental:
 :tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -19,27 +19,18 @@
 // under the License.
 
 [[exercise-opennlp]]
-== Exercise: Using OpenNLP and ONNX Models for Sentiment Analysis in Solr
+== Exercise 7: Using OpenNLP and ONNX Models for Sentiment Analysis in Solr
 
 This tutorial demonstrates how to enhance Solr with advanced Natural Language Processing (NLP) capabilities through Apache OpenNLP and ONNX. 
 You'll learn how to set up a sentiment analysis pipeline that automatically classifies documents during indexing.
 
-We are going to use the https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment model in the tutorial, however there are many others you can use.
+We are going to use the https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment[bert-base-multilingual-uncased-sentiment] model in the tutorial, however there are many others you can use.
 
 ----
 is a bert-base-multilingual-uncased model finetuned for sentiment analysis on product reviews in 
 six languages: English, Dutch, German, French, Spanish, and Italian. 
 It predicts the sentiment of the review as a number of stars (between 1 and 5).
 ----
-
-=== Prerequisites
-
-Before starting this tutorial, you'll need:
-
-* Apache Solr (version 10 or later)
-* The `analysis-extras` module enabled
-* Packages enabled in Solr (to allow you to upload the model files to the cluster)
-* At least 4GB of memory allocated to Solr
 
 === Step 1: Start Solr with Required Modules
 
@@ -53,7 +44,7 @@ $ bin/solr start -m 4g -Dsolr.modules=analysis-extras -Denable.packages=true
 
 [NOTE]
 ====
-We temporarily disable the security manager to allow loading of the ONNX runtime. In production environments, you would configure appropriate security policies instead.
+We disable the security manager to allow loading of the ONNX runtime. In older JVM's Solr runs with a security manager and you would need to disable it, in newer ones it is disabled.
 ====
 
 === Step 2: Download the Required Model Files
@@ -67,15 +58,19 @@ Let's create a directory for our models and download them:
 
 [,console]
 ----
-$ mkdir -p models/sentiment/
-$ wget -O models/sentiment/model.onnx https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/resolve/main/onnx/model_quantized.onnx
-$ wget -O models/sentiment/vocab.txt https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/raw/main/vocab.txt
+$ mkdir -p ./downloads/sentiment/
+$ wget -O ./downloads/sentiment/model.onnx https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/resolve/main/onnx/model_quantized.onnx
+$ wget -O ./downloads/sentiment/vocab.txt https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/raw/main/vocab.txt
 ----
+
+If you do not have `wget` installed you will need to adjust the above command or download manually.
 
 .About ONNX Models
 [sidebar]
 ****
-ONNX (Open Neural Network Exchange) is an open format for representing machine learning models. It allows models trained in different frameworks (like PyTorch, TensorFlow, or Hugging Face) to be exported to a standard format that can be used by various runtime environments.
+ONNX (Open Neural Network Exchange) is an open format for representing machine learning models. 
+It allows models trained in different frameworks (like PyTorch, TensorFlow, or Hugging Face) to be exported to a standard format that can be used by various runtime environments.
+Solr gains access to ONNX models via OpenNLP.
 
 The model we're using is a multilingual BERT model fine-tuned for sentiment classification and quantized for better performance. It produces classifications on a 5-point scale from "very bad" to "very good".
 
@@ -121,12 +116,12 @@ Solr's FileStore provides a distributed file storage mechanism for SolrCloud. Up
 
 [,console]
 ----
-$ curl --data-binary @models/sentiment/vocab.txt -X PUT "http://localhost:8983/api/cluster/filestore/files/models/sentiment/vocab.txt"
+$ curl --data-binary @./downloads/sentiment/vocab.txt -X PUT "http://localhost:8983/api/cluster/filestore/files/models/sentiment/vocab.txt"
 ----
 
 [,console]
 ----
-$ curl --data-binary @models/sentiment/model.onnx -X PUT "http://localhost:8983/api/cluster/filestore/files/models/sentiment/model.onnx"
+$ curl --data-binary @./downloads/sentiment/model.onnx -X PUT "http://localhost:8983/api/cluster/filestore/files/models/sentiment/model.onnx"
 ----
 
 .Understanding Solr's FileStore
