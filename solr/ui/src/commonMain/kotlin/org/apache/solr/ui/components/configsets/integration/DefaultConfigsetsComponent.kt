@@ -32,6 +32,7 @@ import org.apache.solr.ui.components.configsets.overview.integration.DefaultConf
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStoreProvider
 import org.apache.solr.ui.components.navigation.TabNavigationComponent
+import org.apache.solr.ui.components.navigation.TabNavigationComponent.Configuration
 import org.apache.solr.ui.components.navigation.integration.DefaultTabNavigationComponent
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.coroutineScope
@@ -63,16 +64,7 @@ class DefaultConfigsetsComponent internal constructor(
             initialTab = ConfigsetsTab.Overview,
             tabSerializer = ConfigsetsTab.serializer(),
             childFactory = { configuration, childContext ->
-                when (configuration.tab) {
-                    ConfigsetsTab.Overview -> Overview(
-                        DefaultConfigsetsOverviewComponent(
-                            componentContext = childContext,
-                            storeFactory = storeFactory,
-                            httpClient = httpClient,
-                        ),
-                    )
-                    else -> Placeholder(tabName = configuration.tab.name)
-                }
+                configsetsChildFactory(storeFactory, httpClient, configuration, childContext)
             },
         ),
     )
@@ -95,4 +87,20 @@ class DefaultConfigsetsComponent internal constructor(
     override fun onSelectConfigset(name: String) {
         store.accept(Intent.SelectConfigSet(configSetName = name))
     }
+}
+
+fun configsetsChildFactory(
+    storeFactory: StoreFactory,
+    httpClient: HttpClient,
+    configuration: Configuration<ConfigsetsTab>,
+    childContext: AppComponentContext,
+): Child = when (configuration.tab) {
+    ConfigsetsTab.Overview -> Overview(
+        DefaultConfigsetsOverviewComponent(
+            componentContext = childContext,
+            storeFactory = storeFactory,
+            httpClient = httpClient,
+        ),
+    )
+    else -> Placeholder(tabName = configuration.tab.name)
 }

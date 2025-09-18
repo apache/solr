@@ -23,6 +23,7 @@ import com.arkivanov.decompose.router.slot.activate
 import com.arkivanov.decompose.router.slot.childSlot
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.essenty.lifecycle.doOnCreate
+import com.arkivanov.essenty.lifecycle.doOnResume
 import kotlinx.serialization.KSerializer
 import org.apache.solr.ui.components.navigation.TabNavigationComponent
 import org.apache.solr.ui.components.navigation.TabNavigationComponent.Configuration
@@ -46,10 +47,7 @@ class DefaultTabNavigationComponent<T : Enum<T>, C : Any>(
     )
 
     init {
-        lifecycle.doOnCreate {
-            // Load the initial tab on component creation
-            navigation.activate(configuration = Configuration(initialTab))
-        }
+        navigation.activate(configuration = Configuration(initialTab))
     }
 
     override fun onNavigate(tab: T) = navigation.activate(configuration = Configuration(tab))
