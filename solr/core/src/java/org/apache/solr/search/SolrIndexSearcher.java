@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
 
 import com.codahale.metrics.Gauge;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
@@ -603,9 +604,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
     for (SolrCache<?, ?> cache : cacheList) {
       cache.initializeMetrics(
-          // TODO SOLR-17458: Add Otel
           solrMetricsContext,
-          Attributes.empty(),
+          core.getCoreAttributes().toBuilder().put(AttributeKey.stringKey("cache_name"), cache.name()).build(),
           SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
     // TODO SOLR-17458: Add Otel

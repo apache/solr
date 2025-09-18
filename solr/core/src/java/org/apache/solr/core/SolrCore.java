@@ -21,6 +21,7 @@ import static org.apache.solr.handler.admin.MetricsHandler.OPEN_METRICS_WT;
 import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
 import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -259,6 +260,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   private volatile boolean newSearcherReady = false;
 
+  private Attributes coreAttributes;
   private AttributedLongCounter newSearcherCounter;
   private AttributedLongCounter newSearcherMaxReachedCounter;
   private AttributedLongCounter newSearcherOtherErrorsCounter;
@@ -555,6 +557,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
     assert this.name != null;
     assert coreDescriptor.getCloudDescriptor() == null : "Cores are not renamed in SolrCloud";
     this.name = Objects.requireNonNull(v);
+  }
+
+  public Attributes getCoreAttributes() {
+    return coreAttributes;
   }
 
   /**
@@ -1108,22 +1114,20 @@ public class SolrCore implements SolrInfoBean, Closeable {
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
       setLatestSchema(schema);
 
+      this.coreAttributes =
+          (coreContainer.isZooKeeperAware())
+              ? Attributes.builder()
+                  .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
+                  .put(CORE_ATTR, coreDescriptor.getName())
+                  .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
+                  .put(
+                      REPLICA_ATTR,
+                      Utils.parseMetricsReplicaName(coreDescriptor.getCollectionName(), getName()))
+                  .build()
+              : Attributes.builder().put(CORE_ATTR, coreDescriptor.getName()).build();
+
       // initialize core metrics
-      if (coreContainer.isZooKeeperAware()) {
-        initializeMetrics(
-            solrMetricsContext,
-            Attributes.builder()
-                .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
-                .put(CORE_ATTR, coreDescriptor.getName())
-                .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
-                .build(),
-            "");
-      } else {
-        initializeMetrics(
-            solrMetricsContext,
-            Attributes.builder().put(CORE_ATTR, coreDescriptor.getName()).build(),
-            "");
-      }
+      initializeMetrics(solrMetricsContext, coreAttributes, "");
 
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
