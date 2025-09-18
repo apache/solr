@@ -145,6 +145,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public final String core;
   public final Type type;
   public final String shard, collection;
+  private String baseUrl, coreUrl; // Derived values
   private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
   // mutable
@@ -229,8 +230,9 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Objects.requireNonNull(this.state, "'state' must not be null");
     Objects.requireNonNull(this.node, "'node' must not be null");
 
-    String baseUrl = (String) propMap.get(ReplicaStateProps.BASE_URL);
+    baseUrl = (String) propMap.get(ReplicaStateProps.BASE_URL);
     Objects.requireNonNull(baseUrl, "'base_url' must not be null");
+    coreUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, core);
 
     // make sure all declared props are in the propMap
     propMap.put(ReplicaStateProps.NODE_NAME, node);
@@ -274,11 +276,11 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public String getCoreUrl() {
-    return ZkCoreNodeProps.getCoreUrl(getBaseUrl(), core);
+    return coreUrl;
   }
 
   public String getBaseUrl() {
-    return getStr(ReplicaStateProps.BASE_URL);
+    return baseUrl;
   }
 
   /** SolrCore name. */

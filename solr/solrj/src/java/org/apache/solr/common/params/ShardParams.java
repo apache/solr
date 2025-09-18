@@ -84,6 +84,9 @@ public interface ShardParams {
   /** Value denoting local replicas */
   String REPLICA_LOCAL = "local";
 
+  /** Value denoting local replicas */
+  String REPLICA_HOST = "host";
+
   /** Value denoting randomized replica sort */
   String REPLICA_RANDOM = "random";
 

@@ -409,6 +409,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
               .toString(),
           zkController.getNodeName(),
           zkController.getBaseUrl(),
+          zkController.getHostName(),
           zkController.getSysPropsCacher());
     } else {
       return requestReplicaListTransformerGenerator.getReplicaListTransformer(params);

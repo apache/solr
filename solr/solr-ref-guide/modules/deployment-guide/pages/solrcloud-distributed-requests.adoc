@@ -183,21 +183,25 @@ One or more replica types that are preferred.
 Any combination of `PULL`, `TLOG` and `NRT` is allowed.
 
 `replica.location`::
-One or more replica locations that are preferred.
-+
-A location starts with `http://hostname:port`.
-Matching is done for the given string as a prefix, so it's possible to e.g., leave out the port.
-+
-A special value `local` may be used to denote any local replica running on the same Solr instance as the one handling the query.
+Prefer replicas that match the given location. Available options are:
+- `local` - Replicas in the same Solr instance as the one handling the query.
 This is useful when a query requests many fields or large fields to be returned per document because it avoids moving large amounts of data over the network when it is available locally.
 In addition, this feature can be useful for minimizing the impact of a problematic replica with degraded performance, as it reduces the likelihood that the degraded replica will be hit by other healthy replicas.
 +
 The value of `replica.location:local` diminishes as the number of shards (that have no locally-available replicas) in a collection increases because the query controller will have to direct the query to non-local replicas for most of the shards.
 +
 In other words, this feature is mostly useful for optimizing queries directed towards collections with a small number of shards and many replicas.
+- `host` - Replicas in Solr instances running on the same host as the one handling the query.
+This can be useful in many of the same ways as `local`, but can help spare network costs when multiple Solr instances are running per host.
 +
-Also, this option should only be used if you are load balancing requests across all nodes that host replicas for the collection you are querying, as Solr's `CloudSolrClient` will do.
+As the number of shards grows, `replica.location:host` may be more useful than `replica.location:local`, since it is more likely that all shards can be found on the same host than all shards being found in the same Solr instance.
+- `_host-prefix_` - A replica location starts with `http://hostname:port`, i.e. `replica.location:http://hostname:port`.
+Matching is done for the given string as a prefix, so it's possible to e.g., leave out the port.
+
+IMPORTANT: The `local` and `host` options should only be used if you are load balancing requests across all nodes that host replicas for the collection you are querying, as Solr's `CloudSolrClient` will do.
 If not load-balancing, this feature can introduce a hotspot in the cluster since queries won't be evenly distributed across the cluster.
+
+NOTE: The `local` and `host` options are equivalent when only 1 Solr node is running on each host. This is also true in a setup like Kubernetes where each Solr node has a unique hostname.
 
 `replica.base`::
 Applied after sorting by inherent replica attributes, this property defines a fallback ordering among sets of preference-equivalent replicas; if specified, only one value may be specified for this property, and it must be specified last.
@@ -252,10 +256,10 @@ shards.preference=replica.location:local
 [source,text]
 shards.preference=replica.location:http://server1,replica.location:http://server2
 
-* Prefer PULL replicas if available, otherwise TLOG replicas, and local replicas among those:
+* Prefer PULL replicas if available, otherwise TLOG replicas, and among those, replicas on the same host:
 +
 [source,text]
-shards.preference=replica.type:PULL,replica.type:TLOG,replica.location:local
+shards.preference=replica.type:PULL,replica.type:TLOG,replica.location:host
 
 * Prefer local replicas, and among them PULL replicas when available, otherwise TLOG replicas:
 +
@@ -352,7 +356,7 @@ For example, the following line makes Solr use the `ExactStatsCache` implementat
 
 The query param distrib.statsCache defaults to `true`. If set to `false`, distributed calls to fetch global term stats is turned off for this query. This can reduce overhead for queries that do not utilize distributed IDF for score calculation.
 
-[source,xml]
+[source,plain]
 ----
 http://localhost:8987/solr/collection1/select?q=*%3A*&wt=json&fq={!terms f=id}id1,id2&distrib.statsCache=false
 ----
