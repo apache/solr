@@ -19,6 +19,7 @@ package org.apache.solr.handler.tika;
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
@@ -98,7 +99,7 @@ public class TikaServerRequestHandlerTest {
     // Default values from TikaServerRequestHandler
     assertEquals(5000, getField(handler, "connectionTimeout"));
     assertEquals(60000, getField(handler, "socketTimeout"));
-    assertEquals(null, getField(handler, "idField")); // Default is null
+    assertNull(getField(handler, "idField")); // Default is null
     assertEquals(true, getField(handler, "returnMetadata"));
     assertEquals("", getField(handler, "metadataPrefix"));
     assertEquals("content", getField(handler, "contentField"));

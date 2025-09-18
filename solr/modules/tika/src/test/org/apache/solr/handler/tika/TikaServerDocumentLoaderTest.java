@@ -67,16 +67,16 @@ public class TikaServerDocumentLoaderTest {
   private TikaServerDocumentLoader loader;
 
   // Default configuration values for the loader instance used in most tests
-  private String tikaServerUrl = "http://fakeTikaServer:9998";
-  private int connectionTimeout = 5000;
-  private int socketTimeout = 60000;
-  private String idField = "X-TIKA:resourceName"; // Tika field used for Solr ID
-  private boolean returnMetadata = true;
-  private String metadataPrefix = "meta_";
-  private String contentField = "text_content";
+  private final String tikaServerUrl = "http://fakeTikaServer:9998";
+  private final int connectionTimeout = 5000;
+  private final int socketTimeout = 60000;
+  private final String idField = "X-TIKA:resourceName"; // Tika field used for Solr ID
+  private final boolean returnMetadata = true;
+  private final String metadataPrefix = "meta_";
+  private final String contentField = "text_content";
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     assumeWorkingMockito();
 
     MockitoAnnotations.openMocks(this);
@@ -148,13 +148,12 @@ public class TikaServerDocumentLoaderTest {
     SolrException e =
         assertThrows(
             SolrException.class,
-            () -> {
-              loader.load(
-                  mockSolrQueryRequest,
-                  mockSolrQueryResponse,
-                  mockContentStream,
-                  mockUpdateRequestProcessor);
-            });
+            () ->
+                loader.load(
+                    mockSolrQueryRequest,
+                    mockSolrQueryResponse,
+                    mockContentStream,
+                    mockUpdateRequestProcessor));
     assertTrue(e.getMessage().contains("Tika Server returned HTTP error 500"));
 
     verify(mockUpdateRequestProcessor, never()).processAdd(any(AddUpdateCommand.class));
@@ -172,13 +171,12 @@ public class TikaServerDocumentLoaderTest {
     SolrException e =
         assertThrows(
             SolrException.class,
-            () -> {
-              loader.load(
-                  mockSolrQueryRequest,
-                  mockSolrQueryResponse,
-                  mockContentStream,
-                  mockUpdateRequestProcessor);
-            });
+            () ->
+                loader.load(
+                    mockSolrQueryRequest,
+                    mockSolrQueryResponse,
+                    mockContentStream,
+                    mockUpdateRequestProcessor));
     assertTrue(
         e.getMessage().contains("Error processing document")
             || e.getMessage().contains("Unexpected JSON response format"));
