@@ -30,9 +30,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -63,6 +62,7 @@ public class TikaServerDocumentLoaderTest {
   @Mock private HttpClient mockHttpClient; // Jetty HttpClient
   @Mock private Request mockJettyRequest; // Jetty Request
   @Mock private ContentResponse mockJettyResponse; // Jetty ContentResponse
+  @Mock private InputStream mockDataStream;
 
   private TikaServerDocumentLoader loader;
 
@@ -98,7 +98,7 @@ public class TikaServerDocumentLoaderTest {
   }
 
   private void setupDefaultJettyMocks()
-      throws ExecutionException, InterruptedException, TimeoutException {
+      throws ExecutionException, InterruptedException, TimeoutException, IOException {
     when(mockHttpClient.POST(anyString())).thenReturn(mockJettyRequest);
     when(mockJettyRequest.accept(anyString())).thenReturn(mockJettyRequest);
     when(mockJettyRequest.headers(any())).thenReturn(mockJettyRequest);
@@ -106,6 +106,7 @@ public class TikaServerDocumentLoaderTest {
     when(mockJettyRequest.body(any())).thenReturn(mockJettyRequest);
     when(mockJettyRequest.timeout(anyLong(), any(TimeUnit.class))).thenReturn(mockJettyRequest);
     when(mockJettyRequest.send()).thenReturn(mockJettyResponse);
+    when(mockContentStream.getStream()).thenReturn(mockDataStream);
   }
 
   @Test
@@ -116,10 +117,6 @@ public class TikaServerDocumentLoaderTest {
 
     when(mockJettyResponse.getStatus()).thenReturn(HttpStatus.OK_200);
     when(mockJettyResponse.getContentAsString()).thenReturn(sampleJson);
-
-    InputStream dataStream =
-        new ByteArrayInputStream("dummy data".getBytes(StandardCharsets.UTF_8));
-    when(mockContentStream.getStream()).thenReturn(dataStream);
     when(mockContentStream.getContentType()).thenReturn("application/pdf");
 
     loader.load(
@@ -138,7 +135,7 @@ public class TikaServerDocumentLoaderTest {
     assertNotNull(sdoc.getFieldValue(metadataPrefix + "X-TIKA:resourceName"));
     assertEquals("test.doc", sdoc.getFieldValue(metadataPrefix + "X-TIKA:resourceName"));
 
-    verify(dataStream, times(1)).close();
+    verify(mockDataStream, times(1)).close();
   }
 
   @Test
@@ -146,10 +143,6 @@ public class TikaServerDocumentLoaderTest {
     setupDefaultJettyMocks();
     when(mockJettyResponse.getStatus()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR_500);
     when(mockJettyResponse.getContentAsString()).thenReturn("Tika Server Error");
-
-    InputStream dataStream =
-        new ByteArrayInputStream("dummy data".getBytes(StandardCharsets.UTF_8));
-    when(mockContentStream.getStream()).thenReturn(dataStream);
     when(mockContentStream.getContentType()).thenReturn("application/pdf");
 
     SolrException e =
@@ -165,7 +158,7 @@ public class TikaServerDocumentLoaderTest {
     assertTrue(e.getMessage().contains("Tika Server returned HTTP error 500"));
 
     verify(mockUpdateRequestProcessor, never()).processAdd(any(AddUpdateCommand.class));
-    verify(dataStream, times(1)).close();
+    verify(mockDataStream, times(1)).close();
   }
 
   @Test
@@ -174,10 +167,6 @@ public class TikaServerDocumentLoaderTest {
     String malformedJson = "[{\"X-TIKA:content\": \"test content\",";
     when(mockJettyResponse.getStatus()).thenReturn(HttpStatus.OK_200);
     when(mockJettyResponse.getContentAsString()).thenReturn(malformedJson);
-
-    InputStream dataStream =
-        new ByteArrayInputStream("dummy data".getBytes(StandardCharsets.UTF_8));
-    when(mockContentStream.getStream()).thenReturn(dataStream);
     when(mockContentStream.getContentType()).thenReturn("application/pdf");
 
     SolrException e =
@@ -195,7 +184,7 @@ public class TikaServerDocumentLoaderTest {
             || e.getMessage().contains("Unexpected JSON response format"));
 
     verify(mockUpdateRequestProcessor, never()).processAdd(any(AddUpdateCommand.class));
-    verify(dataStream, times(1)).close();
+    verify(mockDataStream, times(1)).close();
   }
 
   @Test
@@ -219,10 +208,6 @@ public class TikaServerDocumentLoaderTest {
     when(mockJettyResponse.getStatus()).thenReturn(HttpStatus.OK_200);
     when(mockJettyResponse.getContentAsString()).thenReturn(sampleJson);
 
-    InputStream dataStream =
-        new ByteArrayInputStream("dummy data".getBytes(StandardCharsets.UTF_8));
-    when(mockContentStream.getStream()).thenReturn(dataStream);
-
     customLoader.load(
         mockSolrQueryRequest, mockSolrQueryResponse, mockContentStream, mockUpdateRequestProcessor);
 
@@ -238,7 +223,7 @@ public class TikaServerDocumentLoaderTest {
     assertNull(
         "Metadata field 'meta_X-TIKA:resourceName' should be null",
         sdoc.getField("meta_X-TIKA:resourceName"));
-    verify(dataStream, times(1)).close();
+    verify(mockDataStream, times(1)).close();
   }
 
   @Test
@@ -262,10 +247,6 @@ public class TikaServerDocumentLoaderTest {
     when(mockJettyResponse.getStatus()).thenReturn(HttpStatus.OK_200);
     when(mockJettyResponse.getContentAsString()).thenReturn(sampleJson);
 
-    InputStream dataStream =
-        new ByteArrayInputStream("dummy data".getBytes(StandardCharsets.UTF_8));
-    when(mockContentStream.getStream()).thenReturn(dataStream);
-
     customLoader.load(
         mockSolrQueryRequest, mockSolrQueryResponse, mockContentStream, mockUpdateRequestProcessor);
 
@@ -279,7 +260,7 @@ public class TikaServerDocumentLoaderTest {
     assertEquals("Doc Title", sdoc.getFieldValue("meta_dc:title"));
     assertEquals("doc1.pdf", sdoc.getFieldValue("meta_X-TIKA:resourceName"));
     assertNull("ID field should be null", sdoc.getFieldValue(CommonParams.ID));
-    verify(dataStream, times(1)).close();
+    verify(mockDataStream, times(1)).close();
   }
 
   @Test
@@ -303,10 +284,6 @@ public class TikaServerDocumentLoaderTest {
     when(mockJettyResponse.getStatus()).thenReturn(HttpStatus.OK_200);
     when(mockJettyResponse.getContentAsString()).thenReturn(sampleJson);
 
-    InputStream dataStream =
-        new ByteArrayInputStream("dummy data".getBytes(StandardCharsets.UTF_8));
-    when(mockContentStream.getStream()).thenReturn(dataStream);
-
     customLoader.load(
         mockSolrQueryRequest, mockSolrQueryResponse, mockContentStream, mockUpdateRequestProcessor);
 
@@ -322,7 +299,7 @@ public class TikaServerDocumentLoaderTest {
         sdoc.getField("content"));
     assertEquals("doc2.txt", sdoc.getFieldValue(CommonParams.ID));
     assertEquals("A Document", sdoc.getFieldValue("meta_dc:title"));
-    verify(dataStream, times(1)).close();
+    verify(mockDataStream, times(1)).close();
   }
 
   @Test
@@ -333,10 +310,6 @@ public class TikaServerDocumentLoaderTest {
         "[{\"dc:title\": \"Document with no content field\", \"X-TIKA:resourceName\": \"no_content_field.doc\"}]";
     when(mockJettyResponse.getStatus()).thenReturn(HttpStatus.OK_200);
     when(mockJettyResponse.getContentAsString()).thenReturn(sampleJsonNoContent);
-
-    InputStream dataStream =
-        new ByteArrayInputStream("dummy data".getBytes(StandardCharsets.UTF_8));
-    when(mockContentStream.getStream()).thenReturn(dataStream);
 
     loader.load(
         mockSolrQueryRequest, mockSolrQueryResponse, mockContentStream, mockUpdateRequestProcessor);
@@ -352,7 +325,7 @@ public class TikaServerDocumentLoaderTest {
         sdoc.getFieldValue(this.contentField));
     assertEquals("no_content_field.doc", sdoc.getFieldValue(CommonParams.ID));
     assertEquals("Document with no content field", sdoc.getFieldValue(metadataPrefix + "dc:title"));
-    verify(dataStream, times(1)).close();
+    verify(mockDataStream, times(1)).close();
   }
 
   @Test
@@ -363,10 +336,6 @@ public class TikaServerDocumentLoaderTest {
         "[{\"X-TIKA:content\": null, \"dc:title\": \"Document with null content\", \"X-TIKA:resourceName\": \"null_content.doc\"}]";
     when(mockJettyResponse.getStatus()).thenReturn(HttpStatus.OK_200);
     when(mockJettyResponse.getContentAsString()).thenReturn(sampleJsonNullContent);
-
-    InputStream dataStream =
-        new ByteArrayInputStream("dummy data".getBytes(StandardCharsets.UTF_8));
-    when(mockContentStream.getStream()).thenReturn(dataStream);
 
     loader.load(
         mockSolrQueryRequest, mockSolrQueryResponse, mockContentStream, mockUpdateRequestProcessor);
@@ -382,6 +351,6 @@ public class TikaServerDocumentLoaderTest {
         sdoc.getFieldValue(this.contentField));
     assertEquals("null_content.doc", sdoc.getFieldValue(CommonParams.ID));
     assertEquals("Document with null content", sdoc.getFieldValue(metadataPrefix + "dc:title"));
-    verify(dataStream, times(1)).close();
+    verify(mockDataStream, times(1)).close();
   }
 }
