@@ -59,8 +59,10 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 /**
- * The class responsible for loading extracted content into Solr. * @deprecated Will be replaced
- * with something similar that calls out to a separate Tika Server process running in its own JVM.
+ * The class responsible for loading extracted content into Solr.
+ *
+ * @deprecated Will be replaced with something similar that calls out to a separate Tika Server
+ *     process running in its own JVM.
  */
 @Deprecated(since = "9.10.0")
 public class ExtractingDocumentLoader extends ContentStreamLoader {
