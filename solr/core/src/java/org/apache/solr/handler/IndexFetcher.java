@@ -1022,8 +1022,7 @@ public class IndexFetcher {
       if (core == null) {
         return; // core closed, presumably
       }
-      @SuppressWarnings("unchecked")
-      Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
+      Future<?>[] waitSearcher = (Future<?>[]) Array.newInstance(Future.class, 1);
       RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true, true, waitSearcher, true);
       try {
         if (waitSearcher[0] != null) {
