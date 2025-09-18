@@ -229,7 +229,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     // Handling Responses in finishStage, because solrResponse will put
     // moreLikeThis xml
     // segment ahead of result/response.
-    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS
+    if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS
         && rb.req.getParams().getBool(COMPONENT_NAME, false)) {
       Map<Object, SolrDocumentList> tempResults = new LinkedHashMap<>();
 

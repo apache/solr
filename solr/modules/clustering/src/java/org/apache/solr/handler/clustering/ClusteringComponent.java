@@ -327,7 +327,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       return;
     }
 
-    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
       List<InputDocument> inputs = new ArrayList<>();
       rb.finished.stream()
           .filter(shardRequest -> (shardRequest.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0)

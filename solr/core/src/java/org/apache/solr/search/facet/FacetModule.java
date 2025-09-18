@@ -173,7 +173,7 @@ public class FacetModule extends SearchComponent {
     FacetComponentState facetState = getFacetComponentState(rb);
     if (facetState == null) return ResponseBuilder.STAGE_DONE;
 
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) {
       return ResponseBuilder.STAGE_DONE;
     }
 
@@ -328,7 +328,7 @@ public class FacetModule extends SearchComponent {
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) return;
+    if (rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) return;
 
     FacetComponentState facetState = getFacetComponentState(rb);
     if (facetState == null) return;

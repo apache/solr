@@ -397,7 +397,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   @Override
   public void finishStage(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
-    if (!params.getBool(COMPONENT_NAME, false) || rb.stage != ResponseBuilder.STAGE_GET_FIELDS)
+    if (!params.getBool(COMPONENT_NAME, false) || rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS)
       return;
 
     boolean extendedResults = params.getBool(SPELLCHECK_EXTENDED_RESULTS, false);
