@@ -34,6 +34,7 @@ public class Http2ClusterStateProvider extends BaseHttpClusterStateProvider {
 
   @Override
   public void close() throws IOException {
+    super.close();
     if (this.closeClient && this.httpClient != null) {
       httpClient.close();
     }
