@@ -37,7 +37,7 @@ import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.HttpHeaders;
 import org.apache.tika.metadata.Metadata;
-import org.apache.tika.metadata.TikaMetadataKeys;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.DefaultParser;
@@ -147,7 +147,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       // then Tika can make use of it in guessing the appropriate MIME type:
       String resourceName = req.getParams().get(ExtractingParams.RESOURCE_NAME, null);
       if (resourceName != null) {
-        metadata.add(TikaMetadataKeys.RESOURCE_NAME_KEY, resourceName);
+        metadata.add(TikaCoreProperties.RESOURCE_NAME_KEY, resourceName);
       }
       // Provide stream's content type as hint for auto detection
       if (stream.getContentType() != null) {
