@@ -163,6 +163,10 @@ public class ResponseBuilder {
   public List<ShardRequest> finished; // requests that have received responses from all shards
   public String shortCircuitedURL;
 
+  public Map<ResponseBuilder, List<ShardRequest>> getFinished() {
+    return Map.of(this, finished);
+  }
+
   /** This function will return true if this was a distributed search request. */
   public boolean isDistributed() {
     return this.isDistrib;

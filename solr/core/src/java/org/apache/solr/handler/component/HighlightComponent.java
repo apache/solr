@@ -218,21 +218,25 @@ public class HighlightComponent extends SearchComponent
       final String highlightingResponseField = highlightingResponseField();
 
       // TODO: make a generic routine to do automatic merging of id keyed data
-      for (ShardRequest sreq : rb.finished) {
-        if ((sreq.purpose & ShardRequest.PURPOSE_GET_HIGHLIGHTS) == 0) continue;
-        for (ShardResponse srsp : sreq.responses) {
-          if (srsp.getException() != null) {
-            // can't expect the highlight content if there was an exception for this request
-            // this should only happen when using shards.tolerant=true
-            continue;
+      for (var rb_to_sreqs : rb.getFinished().entrySet()) {
+        final ResponseBuilder rb_of_sreq = rb_to_sreqs.getKey();
+        final List<ShardRequest> sreqs = rb_to_sreqs.getValue();
+        for (ShardRequest sreq : sreqs) {
+          if ((sreq.purpose & ShardRequest.PURPOSE_GET_HIGHLIGHTS) == 0) continue;
+          for (ShardResponse srsp : sreq.responses) {
+            if (srsp.getException() != null) {
+              // can't expect the highlight content if there was an exception for this request
+              // this should only happen when using shards.tolerant=true
+              continue;
+            }
+            Object hl =
+                SolrResponseUtil.getSubsectionFromShardResponse(
+                    rb, srsp, highlightingResponseField, false);
+            if (hl == null) {
+              continue;
+            }
+            addHighlights(objArr, hl, rb_of_sreq.resultIds);
           }
-          Object hl =
-              SolrResponseUtil.getSubsectionFromShardResponse(
-                  rb, srsp, highlightingResponseField, false);
-          if (hl == null) {
-            continue;
-          }
-          addHighlights(objArr, hl, rb.resultIds);
         }
       }
 
