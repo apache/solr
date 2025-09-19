@@ -28,6 +28,7 @@ import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
+import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 import static org.apache.solr.search.SolrIndexSearcher.EXECUTOR_MAX_CPU_THREADS;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
@@ -140,6 +141,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -1000,6 +1002,26 @@ public class CoreContainer {
 
     // initialize gauges for reporting the number of cores and disk total/free
 
+    Attributes containerAttrs =
+        Attributes.builder().put(CATEGORY_ATTR, SolrInfoBean.Category.CONTAINER.toString()).build();
+
+    solrMetricsContext.observableLongGauge(
+        "solr_cores_loaded",
+        "Number of Solr cores loaded by CoreContainer",
+        measurement -> {
+          measurement.record(
+              solrCores.getNumLoadedPermanentCores(),
+              containerAttrs.toBuilder().put(TYPE_ATTR, "permanent").build());
+          measurement.record(
+              solrCores.getNumLoadedTransientCores(),
+              containerAttrs.toBuilder().put(TYPE_ATTR, "transient").build());
+          measurement.record(
+              solrCores.getNumUnloadedCores(),
+              containerAttrs.toBuilder().put(TYPE_ATTR, "unloaded").build());
+        });
+
+    // NOCOMMIT: Can't remove these without impacting node state reporting
+    // until NodeValueFetcher and SolrClientNodeStateProvider are patched
     solrMetricsContext.gauge(
         solrCores::getNumLoadedPermanentCores,
         true,
@@ -1018,8 +1040,52 @@ public class CoreContainer {
         "unloaded",
         SolrInfoBean.Category.CONTAINER.toString(),
         "cores");
+
     Path dataHome =
         cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
+
+    solrMetricsContext.observableLongGauge(
+        "solr_cores_filesystem_disk_space",
+        "Disk metrics for Solr's data home directory",
+        measurement -> {
+          try {
+            measurement.record(
+                Files.getFileStore(dataHome).getTotalSpace(),
+                containerAttrs.toBuilder().put(TYPE_ATTR, "total_space").build());
+            measurement.record(
+                Files.getFileStore(dataHome).getUsableSpace(),
+                containerAttrs.toBuilder().put(TYPE_ATTR, "usable_space").build());
+          } catch (IOException e) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving disk space information for data home directory" + dataHome,
+                e);
+          }
+        },
+        OtelUnit.BYTES);
+    solrMetricsContext.observableLongGauge(
+        "solr_cores_root_disk_space",
+        "Disk metrics for Solr's core root directory",
+        measurement -> {
+          try {
+            measurement.record(
+                Files.getFileStore(cfg.getCoreRootDirectory()).getTotalSpace(),
+                containerAttrs.toBuilder().put(TYPE_ATTR, "total_space").build());
+            measurement.record(
+                Files.getFileStore(cfg.getCoreRootDirectory()).getUsableSpace(),
+                containerAttrs.toBuilder().put(TYPE_ATTR, "usable_space").build());
+          } catch (IOException e) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving disk space information for core root directory"
+                    + cfg.getCoreRootDirectory(),
+                e);
+          }
+        },
+        OtelUnit.BYTES);
+
+    // NOCOMMIT: Can't remove these without impacting node state reporting
+    // until NodeValueFetcher and SolrClientNodeStateProvider are patched
     solrMetricsContext.gauge(
         () -> {
           try {
@@ -1107,7 +1173,6 @@ public class CoreContainer {
         "implementation",
         SolrInfoBean.Category.CONTAINER.toString(),
         "version");
-
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
     fieldCacheBean.initializeMetrics(
         solrMetricsContext,
