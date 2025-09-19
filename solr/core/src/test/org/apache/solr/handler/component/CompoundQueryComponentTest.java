@@ -156,7 +156,7 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
       } else {
         assertEquals(4, documentList.size());
         final Map<String, Map<String, List<String>>> highlighting = queryResponse.getHighlighting();
-        if (q == q_bee) {
+        if (q_bee.equals(q)) {
           assertEquals("solitary <em>bee</em>", highlighting.get("1").get(t1).get(0));
           assertEquals("bumble <em>bee</em>", highlighting.get("10").get(t1).get(0));
           assertEquals("honey <em>bee</em>", highlighting.get("1000").get(t1).get(0));
