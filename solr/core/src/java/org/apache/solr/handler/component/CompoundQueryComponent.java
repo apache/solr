@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
@@ -61,6 +62,8 @@ public class CompoundQueryComponent extends QueryComponent {
 
   private int doFusion(CompoundResponseBuilder crb) {
     final SolrDocumentList responseDocs = new SolrDocumentList();
+    final Map<Object, ShardDoc> resultIds = new HashMap<>();
+
     final TopDocs[] hits = new TopDocs[crb.responseBuilders.size()];
     for (int crb_idx = 0; crb_idx < crb.responseBuilders.size(); ++crb_idx) {
 
@@ -95,6 +98,19 @@ public class CompoundQueryComponent extends QueryComponent {
     responseDocs.setNumFound(totalHits.value());
     responseDocs.setNumFoundExact(TotalHits.Relation.EQUAL_TO.equals(totalHits.relation()));
 
+    for (var rb_i : crb.responseBuilders) {
+      for (var entry : rb_i.resultIds.entrySet()) {
+        /*
+        this positionInResponse is an interim value that will change during the fusion stage
+        but we need it to be unique here to support any SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse
+        call in HighlightComponent (an alternative would be to make the HighlightComponent aware of the fusion stage)
+        */
+        entry.getValue().positionInResponse = resultIds.size();
+        resultIds.put(entry.getKey(), entry.getValue());
+      }
+    }
+
+    crb.resultIds = resultIds;
     crb.setResponseDocs(responseDocs);
 
     return ResponseBuilder.STAGE_DONE;
@@ -116,21 +132,6 @@ public class CompoundQueryComponent extends QueryComponent {
     if (rb instanceof CompoundResponseBuilder crb) {
       for (var rb_i : crb.responseBuilders) {
         super.finishStage(rb_i);
-      }
-
-      if (rb.getStage() == CompoundResponseBuilder.STAGE_GET_FIELDS) {
-        rb.resultIds = new HashMap<>();
-        for (var rb_i : crb.responseBuilders) {
-          for (var entry : rb_i.resultIds.entrySet()) {
-            /*
-            this positionInResponse is an interim value that will change during the fusion stage
-            but we need it to be unique here to support any SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse
-            call in HighlightComponent (an alternative would be to make the HighlightComponent aware of the fusion stage)
-            */
-            entry.getValue().positionInResponse = rb.resultIds.size();
-            rb.resultIds.put(entry.getKey(), entry.getValue());
-          }
-        }
       }
 
       if (rb.getStage() == CompoundResponseBuilder.STAGE_FUSION) {

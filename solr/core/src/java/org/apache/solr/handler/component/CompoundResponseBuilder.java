@@ -77,4 +77,13 @@ public class CompoundResponseBuilder extends ResponseBuilder {
   protected String getParameterPrefix() {
     return req.getParams().get(RRF_PREFIX, super.getParameterPrefix());
   }
+
+  @Override
+  protected int getPreDoneStage() {
+    if (responseBuilders.isEmpty()) {
+      return super.getPreDoneStage();
+    } else {
+      return STAGE_FUSION;
+    }
+  }
 }
