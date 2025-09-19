@@ -235,7 +235,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
     {
       final ShardRequestTracker shardRequestTracker =
           CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
-      shardRequestTracker.sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
+      shardRequestTracker.sendShardRequest(targetLeader, params, shardHandler);
 
       shardRequestTracker.processResponses(
           results, shardHandler, true, "MIGRATE failed to request node to buffer updates");
@@ -352,7 +352,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
           CollectionHandlingUtils.syncRequestTracker(ccc);
       // we don't want this to happen asynchronously
       syncRequestTracker.sendShardRequest(
-          tempSourceLeader.getNodeName(), new ModifiableSolrParams(cmd.getParams()), shardHandler);
+          tempSourceLeader, new ModifiableSolrParams(cmd.getParams()), shardHandler);
 
       syncRequestTracker.processResponses(
           results,
@@ -375,7 +375,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
     {
       final ShardRequestTracker shardRequestTracker =
           CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
-      shardRequestTracker.sendShardRequest(tempNodeName, params, shardHandler);
+      shardRequestTracker.sendShardRequest(sourceLeader, params, shardHandler);
       shardRequestTracker.processResponses(
           results, shardHandler, true, "MIGRATE failed to invoke SPLIT core admin command");
     }
@@ -443,7 +443,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
     {
       final ShardRequestTracker shardRequestTracker =
           CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
-      shardRequestTracker.sendShardRequest(tempSourceLeader.getNodeName(), params, shardHandler);
+      shardRequestTracker.sendShardRequest(tempSourceLeader, params, shardHandler);
 
       shardRequestTracker.processResponses(
           results,
@@ -464,7 +464,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
       final ShardRequestTracker shardRequestTracker =
           CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
 
-      shardRequestTracker.sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
+      shardRequestTracker.sendShardRequest(targetLeader, params, shardHandler);
       String msg =
           "MIGRATE failed to merge "
               + tempCollectionReplica2
@@ -483,7 +483,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
     {
       final ShardRequestTracker shardRequestTracker =
           CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
-      shardRequestTracker.sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
+      shardRequestTracker.sendShardRequest(targetLeader, params, shardHandler);
       shardRequestTracker.processResponses(
           results, shardHandler, true, "MIGRATE failed to request node to apply buffered updates");
     }
