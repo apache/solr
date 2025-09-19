@@ -130,7 +130,28 @@ public class ResponseBuilder {
   public static final int STAGE_GET_FIELDS = 3000;
   public static final int STAGE_DONE = Integer.MAX_VALUE;
 
-  public int stage; // What stage is this current request at?
+  protected int getPreDoneStage() {
+    return STAGE_GET_FIELDS;
+  }
+
+  protected int getDoneStage() {
+    return STAGE_DONE;
+  }
+
+  protected String getParameterPrefix() {
+    return "";
+  }
+
+  // public access is deprecated, please use getStage and setStage instead.
+  @Deprecated public int stage; // What stage is this current request at?
+
+  public int getStage() {
+    return this.stage;
+  }
+
+  public void setStage(int stage) {
+    this.stage = stage;
+  }
 
   // The address of the Shard
   boolean isDistrib; // is this a distributed search?
@@ -141,6 +162,10 @@ public class ResponseBuilder {
   public List<ShardRequest> outgoing; // requests to be sent
   public List<ShardRequest> finished; // requests that have received responses from all shards
   public String shortCircuitedURL;
+
+  public Map<ResponseBuilder, List<ShardRequest>> getFinished() {
+    return Map.of(this, finished);
+  }
 
   /** This function will return true if this was a distributed search request. */
   public boolean isDistributed() {

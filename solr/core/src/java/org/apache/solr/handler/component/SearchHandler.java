@@ -538,7 +538,7 @@ public class SearchHandler extends RequestHandlerBase
       int nextStage = 0;
       long totalShardCpuTime = 0L;
       do {
-        rb.stage = nextStage;
+        rb.setStage(nextStage);
         nextStage = ResponseBuilder.STAGE_DONE;
 
         // call all components
