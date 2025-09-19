@@ -199,7 +199,7 @@ public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearc
       ModifiableSolrParams q = new ModifiableSolrParams(params);
       q.set("shards", getShardsString());
 
-      QueryResponse rsp = queryServer(q);
+      QueryResponse rsp = queryRandomShard(q);
       FieldStatsInfo fieldStatsInfo = rsp.getFieldStatsInfo().get("foo_i");
 
       String msg = q.toString();
@@ -299,7 +299,7 @@ public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearc
             "{!stats=s1}place_t,company_t",
             "stats.field",
             "{!key=avg_price tag=s1}foo_s");
-    QueryResponse rsp = queryServer(new ModifiableSolrParams(params));
+    QueryResponse rsp = queryRandomShard(new ModifiableSolrParams(params));
 
     List<PivotField> placePivots = rsp.getFacetPivot().get("place_t,company_t");
 

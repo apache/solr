@@ -30,15 +30,15 @@ apache-commons-exec = "1.5.0"
 apache-commons-lang3 = "3.18.0"
 apache-commons-math3 = "3.6.1"
 # @keep for version alignment
-apache-commons-text = "1.12.0"
+apache-commons-text = "1.14.0"
 apache-curator = "5.9.0"
 apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
-apache-kafka = "3.9.0"
+apache-kafka = "3.9.1"
 apache-log4j = "2.21.0"
 apache-lucene = "10.2.1"
-apache-opennlp = "2.5.3"
+apache-opennlp = "2.5.4"
 apache-poi = "5.2.2"
 apache-rat = "0.15"
 apache-tika = "1.28.5"
@@ -58,7 +58,7 @@ bats-core = "1.8.2"
 # @keep bats-file (node) version used in packaging
 bats-file = "0.3.0"
 bc-jose4j = "0.9.6"
-benmanes-caffeine = "3.1.8"
+benmanes-caffeine = "3.2.2"
 benmanes-versions = "0.51.0"
 bouncycastle = "1.81"
 # @keep Browserify version used in ref-guide
@@ -83,26 +83,26 @@ eclipse-ecj = "3.39.0"
 eclipse-jetty = "12.0.19"
 eclipse-jettytoolchain = "5.0.2"
 # @keep jgit version used by git-status.gradle
-eclipse-jgit = "6.7.0.202309050840-r"
+eclipse-jgit = "7.3.0.202506031305-r"
 essenty = "2.5.0"
-fasterxml = "2.18.2"
+fasterxml = "2.20.0"
 fasterxml-woodstox = "7.0.0"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
-google-api-gax = "2.33.0"
+google-api-gax = "2.70.0"
 # @keep for version alignment
-google-api-grpc-proto = "2.41.0"
+google-api-grpc-proto = "2.61.1"
 google-auth = "1.19.0"
 # @keep for version alignment
-google-autovalue = "1.10.4"
+google-autovalue = "1.11.0"
 google-cloud-bom = "0.224.0"
-google-cloud-core = "2.23.0"
+google-cloud-core = "2.60.1"
 google-cloud-nio = "0.127.3"
 google-cloud-storage = "2.27.0"
-google-errorprone = "2.31.0"
+google-errorprone = "2.41.0"
 # @keep for version alignment
 google-gson = "2.13.1"
-google-guava = "33.1.0-jre"
+google-guava = "33.4.8-jre"
 # @keep for version alignment
 google-j2objc = "3.1"
 # @keep This is GJF version for spotless/ tidy.
@@ -160,17 +160,18 @@ littlerobots-versioncatalogupdate = "0.8.5"
 lmax-disruptor = "3.4.4"
 ltgt-errorprone = "3.1.0"
 mockito = "5.19.0"
-morethan-jmhreport = "0.9.0"
+morethan-jmhreport = "0.9.6"
 mvikotlin = "4.3.0"
 navsecurity = "0.5.10"
 netty = "4.2.4.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.66.Final"
-nimbusds-josejwt = "10.4.2"
+nimbusds-josejwt = "10.5"
 nlopez-compose = "0.4.27"
 nodegradle-node = "7.1.0"
 # @keep Node JS version used in node.gradle (LTS)
 nodejs = "22.18.0"
+onnx = "1.22.0"
 openapi = "7.14.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.53.0"
@@ -187,8 +188,8 @@ quicktheories = "0.26"
 semver4j = "6.0.0"
 slf4j = "2.0.17"
 spatial4j = "0.8"
-spotbugs = "4.8.6"
-squareup-okhttp3-mockwebserver = "4.11.0"
+spotbugs = "4.9.4"
+squareup-okhttp3-mockwebserver = "4.12.0"
 squareup-okhttp3-okhttp = "4.12.0"
 stephenc-jcip = "1.0-1"
 swagger3 = "2.2.22"
@@ -285,6 +286,7 @@ apache-lucene-sandbox = { module = "org.apache.lucene:lucene-sandbox", version.r
 apache-lucene-spatialextras = { module = "org.apache.lucene:lucene-spatial-extras", version.ref = "apache-lucene" }
 apache-lucene-suggest = { module = "org.apache.lucene:lucene-suggest", version.ref = "apache-lucene" }
 apache-lucene-testframework = { module = "org.apache.lucene:lucene-test-framework", version.ref = "apache-lucene" }
+apache-opennlp-dl = { module = "org.apache.opennlp:opennlp-dl", version.ref = "apache-opennlp" }
 apache-opennlp-tools = { module = "org.apache.opennlp:opennlp-tools", version.ref = "apache-opennlp" }
 apache-poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "apache-poi" }
 apache-poi-poi = { module = "org.apache.poi:poi", version.ref = "apache-poi" }
@@ -353,11 +355,11 @@ eclipse-jetty-xml = { module = "org.eclipse.jetty:jetty-xml", version.ref = "ecl
 eclipse-jgit-jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "eclipse-jgit" }
 essenty-lifecycle = { module = "com.arkivanov.essenty:lifecycle", version.ref = "essenty" }
 fasterxml-jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "fasterxml" }
-fasterxml-jackson-core-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "fasterxml" }
-fasterxml-jackson-core-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "fasterxml" }
-fasterxml-jackson-core-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "fasterxml" }
-fasterxml-jackson-dataformat-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref = "fasterxml" }
-fasterxml-jackson-dataformat-smile = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-smile", version.ref = "fasterxml" }
+fasterxml-jackson-core-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
+fasterxml-jackson-core-core = { module = "com.fasterxml.jackson.core:jackson-core" }
+fasterxml-jackson-core-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
+fasterxml-jackson-dataformat-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor" }
+fasterxml-jackson-dataformat-smile = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-smile" }
 fasterxml-woodstox-core = { module = "com.fasterxml.woodstox:woodstox-core", version.ref = "fasterxml-woodstox" }
 flexmark-extensions-abbreviation = { module = "com.vladsch.flexmark:flexmark-ext-abbreviation", version.ref = "flexmark" }
 flexmark-extensions-attributes = { module = "com.vladsch.flexmark:flexmark-ext-attributes", version.ref = "flexmark" }
@@ -473,6 +475,7 @@ netty-transport-classes-epoll = { module = "io.netty:netty-transport-classes-epo
 netty-transport-native-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
 nimbusds-josejwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusds-josejwt" }
 nlopez-compose-ktlintrules = { module = "io.nlopez.compose.rules:ktlint", version.ref = "nlopez-compose" }
+onnxruntime = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = "onnx" }
 openjdk-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "openjdk-jmh" }
 openjdk-jmh-generatorannprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "openjdk-jmh" }
 opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }

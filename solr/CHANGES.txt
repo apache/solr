@@ -21,7 +21,9 @@ New Features
 
 * SOLR-17780: Add support for scalar quantized dense vectors (Kevin Liang via Alessandro Benedetti)
 
-* SOLR-17812: Add support binary quantized dense vectors (Kevin Liang via Alessandro Benedetti)
+* SOLR-17812: Add support for binary quantized dense vectors (Kevin Liang via Alessandro Benedetti)
+
+* SOLR-17023: Use Modern NLP Models from Apache OpenNLP with Solr (Jeff Zemerick, Eric Pugh)
 
 Improvements
 ---------------------
@@ -58,6 +60,10 @@ Improvements
 * SOLR-17852: Migrate Schema Designer to use FileStore API instead of BlobHandler for persisting working data. (Eric Pugh)
 
 * SOLR-17867: Export tool should properly output exported documents in json, json w/ lines, and javabin formats. (Eric Pugh)
+
+* Minor refactoring of the TextToVectorQParserPlugin (Ilaria Petreti via Alessandro Benedetti)
+
+* GITHUB#3666: Removing redundant check if field exists in TextToVectorUpdateProcessorFactory (Renato Haeberli via Alessandro Benedetti)
 
 Optimizations
 ---------------------
@@ -164,6 +170,8 @@ Dependency Upgrades
 
 * SOLR-17631: Upgrade to Lucene 10.2.1 (Ishan Chattopadhyaya, noble, Jason Gerlowski, Eric Pugh, janhoy, Christine Poerschke)
 
+* SOLR-17445: The base docker image has been upgraded from Ubuntu 22 (Jammy) to Ubuntu 24 (Noble). (Jan Høydahl)
+
 Other Changes
 ---------------------
 
@@ -233,11 +241,18 @@ Other Changes
 ==================  9.10.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-17915: shards.preference=replica.location now supports the "host" option for routing to replicas on the same host. (Houston Putman)
 
 Improvements
 ---------------------
 * SOLR-17860: DocBasedVersionConstraintsProcessorFactory now supports PULL replicas. (Houston Putman)
+
+* SOLR-17893: Speed up Remote Proxy for high QPS, utilizing ClusterState caching. (Houston Putman)
+
+* SOLR-17884: SolrJ users not using deprecated SolrClients can safely exclude Apache HttpClient dependencies.
+  (David Smiley)
+
+* SOLR-17641: Solr is now able to start on Java 24 and later, but with Security Manager disabled (Houston Putman, Jan Høydahl)
 
 Optimizations
 ---------------------
@@ -258,6 +273,8 @@ Bug Fixes
 
 * SOLR-17863: Fix race condition in SolrCore's fingerprint cache which caused leader election to hang. (Luke Kot-Zaniewski, Matthew Biscocho)
 
+* SOLR-17837: PULL replica nodes could be marked as "preferredLeader" by BALANCESHARDUNIQUE despite never being able to be elected leader (Kevin Liang via Houston Putman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -265,6 +282,9 @@ Dependency Upgrades
 Other Changes
 ---------------------
 * SOLR-17620: SolrCloud "live_node" now has metadata: version of Solr, roles (Yuntong Qu, David Smiley)
+
+* SOLR-17879: A Solr node will now fail to start if it's major.minor version (e.g. 9.10) is *lower* than that of any existing
+  Solr node in a SolrCloud cluster (as reported by info in "live_node").  (David Smiley)
 
 ==================  9.9.1 ==================
 Bug Fixes

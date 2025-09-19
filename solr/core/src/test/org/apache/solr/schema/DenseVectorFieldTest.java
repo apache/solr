@@ -604,7 +604,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   public void denseVectorField_shouldBePresentAfterAtomicUpdate() throws Exception {
     assumeTrue(
         "update log must be enabled for atomic update",
-        Boolean.getBoolean(System.getProperty("enable.update.log")));
+        Boolean.getBoolean(System.getProperty("solr.index.updatelog.enabled")));
     try {
       initCore("solrconfig.xml", "schema-densevector.xml");
       SolrInputDocument doc = new SolrInputDocument();
@@ -643,7 +643,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   public void denseVectorFieldOnAtomicUpdate_shouldBeUpdatedCorrectly() throws Exception {
     assumeTrue(
         "update log must be enabled for atomic update",
-        Boolean.getBoolean(System.getProperty("enable.update.log")));
+        Boolean.getBoolean(System.getProperty("solr.index.updatelog.enabled")));
     try {
       initCore("solrconfig.xml", "schema-densevector.xml");
       SolrInputDocument doc = new SolrInputDocument();

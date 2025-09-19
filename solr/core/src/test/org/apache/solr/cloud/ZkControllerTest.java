@@ -41,6 +41,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -66,6 +67,7 @@ import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.hamcrest.Matchers;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL
@@ -473,6 +475,155 @@ public class ZkControllerTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  @Ignore("Would need to disable ObjectReleaseTracker")
+  public void testVersionCompatibilityFailsStartup() throws Exception {
+    Path zkDir = createTempDir("testVersionCompatibilityFailsStartup");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+
+      // Manually create a live node with a high version (99.0.0) to simulate
+      // a newer cluster that the current node (SolrVersion.LATEST=10.0.0) cannot join
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+
+        // Create cluster nodes first
+        ZkController.createClusterZkNodes(zkClient);
+
+        String liveNodeName = "test_node:8983_solr";
+        String liveNodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + liveNodeName;
+
+        // Create live node data with version 99.0.0
+        Map<String, Object> liveNodeData =
+            Map.of(LIVE_NODE_SOLR_VERSION, "99.0.0", LIVE_NODE_NODE_NAME, liveNodeName);
+        byte[] data = Utils.toJSON(liveNodeData);
+
+        // persistent since we're about to close this zkClient
+        zkClient.create(liveNodePath, data, CreateMode.PERSISTENT, true);
+      }
+
+      // Now try to create a ZkController - this should fail due to version incompatibility
+      CoreContainer cc = getCoreContainer();
+      try {
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8984).build();
+
+        SolrException exception =
+            expectThrows(
+                SolrException.class,
+                () -> {
+                  var zc = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig);
+                  zc.close();
+                });
+
+        // Verify the exception is due to version incompatibility
+        assertEquals(
+            "Expected INVALID_STATE error code",
+            SolrException.ErrorCode.INVALID_STATE.code,
+            exception.code());
+        assertTrue(
+            "Exception message should mention refusing to start: " + exception.getMessage(),
+            exception.getMessage().contains("Refusing to start Solr"));
+        assertTrue(
+            "Exception message should mention minor version: " + exception.getMessage(),
+            exception.getMessage().contains("minor version"));
+        assertTrue(
+            "Exception message should mention our version: " + exception.getMessage(),
+            exception.getMessage().contains("10.0.0"));
+        assertTrue(
+            "Exception message should mention cluster version: " + exception.getMessage(),
+            exception.getMessage().contains("99.0.0"));
+      } finally {
+        cc.shutdown();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Ignore("Would need to disable ObjectReleaseTracker")
+  public void testMinorVersionCompatibilityFailsStartup() throws Exception {
+    Path zkDir = createTempDir("testMinorVersionCompatibilityFailsStartup");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+
+      // Create a higher minor version based on SolrVersion.LATEST for cluster simulation
+      SolrVersion currentVersion = SolrVersion.LATEST;
+      SolrVersion higherMinorVersion =
+          SolrVersion.forIntegers(
+              currentVersion.getMajorVersion(),
+              currentVersion.getMinorVersion() + 1,
+              currentVersion.getPatchVersion());
+
+      // Manually create a live node with a higher minor version to simulate
+      // a newer cluster that the current node (SolrVersion.LATEST) cannot join
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+
+        // Create cluster nodes first
+        ZkController.createClusterZkNodes(zkClient);
+
+        String liveNodeName = "test_node:8983_solr";
+        String liveNodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + liveNodeName;
+
+        // Create live node data with higher minor version (same major, higher minor than LATEST)
+        Map<String, Object> liveNodeData =
+            Map.of(
+                LIVE_NODE_SOLR_VERSION,
+                higherMinorVersion.toString(),
+                LIVE_NODE_NODE_NAME,
+                liveNodeName);
+        byte[] data = Utils.toJSON(liveNodeData);
+
+        // persistent since we're about to close this zkClient
+        zkClient.create(liveNodePath, data, CreateMode.PERSISTENT, true);
+      }
+
+      // Now try to create a ZkController - this should fail due to minor version incompatibility
+      CoreContainer cc = getCoreContainer();
+      try {
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8984).build();
+
+        SolrException exception =
+            expectThrows(
+                SolrException.class,
+                () -> {
+                  var zc = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig);
+                  zc.close();
+                });
+
+        // Verify the exception is due to minor version incompatibility
+        assertEquals(
+            "Expected INVALID_STATE error code",
+            SolrException.ErrorCode.INVALID_STATE.code,
+            exception.code());
+        assertTrue(
+            "Exception message should mention refusing to start: " + exception.getMessage(),
+            exception.getMessage().contains("Refusing to start Solr"));
+        assertTrue(
+            "Exception message should mention minor version: " + exception.getMessage(),
+            exception.getMessage().contains("minor version"));
+        assertTrue(
+            "Exception message should mention our version: " + exception.getMessage(),
+            exception.getMessage().contains(currentVersion.toString()));
+        assertTrue(
+            "Exception message should mention cluster version: " + exception.getMessage(),
+            exception.getMessage().contains(higherMinorVersion.toString()));
+      } finally {
+        cc.shutdown();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
   public void testCheckNoOldClusterstate() throws Exception {
     Path zkDir = createTempDir("testCheckNoOldClusterstate");
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -527,6 +678,96 @@ public class ZkControllerTest extends SolrCloudTestCase {
       }
       server.getZkClient().close();
       cc.shutdown();
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testOverseerEnabledClusterPropertyRespected() throws Exception {
+    // Do not use MiniSolrCloudCluster
+    Path zkDir = createTempDir("testOverseerEnabledClusterPropertyRespected");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+
+      // Create cluster ZK nodes and set the overseerEnabled cluster property to false BEFORE
+      // ZkController starts
+      try (SolrZkClient client =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+
+        ZkController.createClusterZkNodes(client);
+        ClusterProperties cp = new ClusterProperties(client);
+        cp.setClusterProperty(ZkStateReader.OVERSEER_ENABLED, "false");
+      }
+
+      // Now create a ZkController - it should respect the cluster property and have overseer
+      // disabled
+      CoreContainer cc = getCoreContainer();
+      try {
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
+        try (ZkController zkController =
+            new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig)) {
+
+          // The overseer should be disabled due to the cluster property, meaning distributed state
+          // updates should be enabled
+          // Since overseerEnabled=false in cluster properties, !overseerEnabled should be true, so
+          // isDistributedStateUpdate() should return true
+          assertTrue(
+              "Overseer should be disabled when overseerEnabled cluster property is false, meaning distributed state updates should be enabled",
+              zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate());
+        }
+      } finally {
+        cc.shutdown();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testOverseerEnabledClusterPropertyTrue() throws Exception {
+    // Do not use MiniSolrCloudCluster
+    Path zkDir = createTempDir("testOverseerEnabledClusterPropertyTrue");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+
+      // Create cluster ZK nodes and set the overseerEnabled cluster property to true BEFORE
+      // ZkController starts
+      try (SolrZkClient client =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+
+        ZkController.createClusterZkNodes(client);
+        ClusterProperties cp = new ClusterProperties(client);
+        cp.setClusterProperty(ZkStateReader.OVERSEER_ENABLED, "true");
+      }
+
+      // Now create a ZkController - it should respect the cluster property and have overseer
+      // enabled
+      CoreContainer cc = getCoreContainer();
+      try {
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
+        try (ZkController zkController =
+            new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig)) {
+
+          // The overseer should be enabled due to the cluster property, meaning distributed state
+          // updates should be disabled
+          // Since overseerEnabled=true in cluster properties, !overseerEnabled should be false, so
+          // isDistributedStateUpdate() should return false
+          assertFalse(
+              "Overseer should be enabled when overseerEnabled cluster property is true, meaning distributed state updates should be disabled",
+              zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate());
+        }
+      } finally {
+        cc.shutdown();
+      }
+    } finally {
       server.shutdown();
     }
   }
