@@ -60,14 +60,15 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
     var baseAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
     var blockcacheStats =
-        solrMetricsContext.longMeasurement("solr_block_cache_stats", "Block cache stats");
+        solrMetricsContext.longGaugeMeasurement("solr_block_cache_stats", "Block cache stats");
     var hitRatio =
-        solrMetricsContext.doubleMeasurement("solr_block_cache_hit_ratio", "Block cache hit ratio");
+        solrMetricsContext.doubleGaugeMeasurement(
+            "solr_block_cache_hit_ratio", "Block cache hit ratio");
     var perSecStats =
-        solrMetricsContext.doubleMeasurement(
+        solrMetricsContext.doubleGaugeMeasurement(
             "solr_block_cache_stats_per_second", "Block cache per second stats");
     var bufferCacheStats =
-        solrMetricsContext.doubleMeasurement(
+        solrMetricsContext.doubleGaugeMeasurement(
             "solr_buffer_cache_stats", "Buffer cache per second stats");
 
     this.toClose =

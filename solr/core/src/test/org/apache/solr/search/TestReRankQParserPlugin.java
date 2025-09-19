@@ -26,8 +26,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -729,18 +728,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='3']",
         "//result/doc[5]/str[@name='id'][.='2']");
 
-    MetricsMap metrics =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper)
-                    h.getCore()
-                        .getCoreMetricManager()
-                        .getRegistry()
-                        .getMetrics()
-                        .get("CACHE.searcher.queryResultCache"))
-                .getGauge();
-    Map<String, Object> stats = metrics.getValue();
-
-    long inserts = (Long) stats.get("inserts");
+    long inserts =
+        (long)
+            SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                    h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE)
+                .getValue();
 
     assertTrue(inserts > 0);
 
@@ -770,9 +762,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='2']",
         "//result/doc[5]/str[@name='id'][.='1']");
 
-    stats = metrics.getValue();
-
-    long inserts1 = (Long) stats.get("inserts");
+    long inserts1 =
+        (long)
+            SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                    h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE)
+                .getValue();
 
     // Last query was added to the cache
     assertTrue(inserts1 > inserts);
@@ -804,8 +798,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='2']",
         "//result/doc[5]/str[@name='id'][.='1']");
 
-    stats = metrics.getValue();
-    long inserts2 = (Long) stats.get("inserts");
+    long inserts2 =
+        (long)
+            SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                    h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE)
+                .getValue();
     // Last query was NOT added to the cache
     assertEquals(inserts1, inserts2);
 

@@ -841,7 +841,6 @@ public class ReplicationHandler extends RequestHandlerBase
     }
   }
 
-  // NOCOMMIT SOLR-17458: Update with OTEL
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
@@ -853,51 +852,51 @@ public class ReplicationHandler extends RequestHandlerBase
     super.initializeMetrics(parentContext, replicationAttributes, scope);
 
     ObservableLongMeasurement indexSizeMetric =
-        solrMetricsContext.longMeasurement(
+        solrMetricsContext.longGaugeMeasurement(
             "solr_replication_index_size", "Size of the index in bytes", OtelUnit.BYTES);
 
     ObservableLongMeasurement indexVersionMetric =
-        solrMetricsContext.longMeasurement(
+        solrMetricsContext.longGaugeMeasurement(
             "solr_replication_index_version", "Current index version");
 
     ObservableLongMeasurement indexGenerationMetric =
-        solrMetricsContext.longMeasurement(
+        solrMetricsContext.longGaugeMeasurement(
             "solr_replication_index_generation", "Current index generation");
 
     ObservableLongMeasurement isLeaderMetric =
-        solrMetricsContext.longMeasurement(
+        solrMetricsContext.longGaugeMeasurement(
             "solr_replication_is_leader", "Whether this node is a leader (1) or not (0)");
 
     ObservableLongMeasurement isFollowerMetric =
-        solrMetricsContext.longMeasurement(
+        solrMetricsContext.longGaugeMeasurement(
             "solr_replication_is_follower", "Whether this node is a follower (1) or not (0)");
 
     ObservableLongMeasurement replicationEnabledMetric =
-        solrMetricsContext.longMeasurement(
+        solrMetricsContext.longGaugeMeasurement(
             "solr_replication_is_enabled", "Whether replication is enabled (1) or not (0)");
 
     ObservableLongMeasurement isPollingDisabledMetric =
-        solrMetricsContext.longMeasurement(
+        solrMetricsContext.longGaugeMeasurement(
             "solr_replication_is_polling_disabled", "Whether polling is disabled (1) or not (0)");
 
     ObservableLongMeasurement isReplicatingMetric =
-        solrMetricsContext.longMeasurement(
+        solrMetricsContext.longGaugeMeasurement(
             "solr_replication_is_replicating", "Whether replication is in progress (1) or not (0)");
 
     ObservableLongMeasurement timeElapsedMetric =
-        solrMetricsContext.longMeasurement(
+        solrMetricsContext.longGaugeMeasurement(
             "solr_replication_time_elapsed",
             "Time elapsed during replication in seconds",
             OtelUnit.SECONDS);
 
     ObservableLongMeasurement bytesDownloadedMetric =
-        solrMetricsContext.longMeasurement(
+        solrMetricsContext.longGaugeMeasurement(
             "solr_replication_downloaded_size",
             "Total bytes downloaded during replication",
             OtelUnit.BYTES);
 
     ObservableLongMeasurement downloadSpeedMetric =
-        solrMetricsContext.longMeasurement(
+        solrMetricsContext.longGaugeMeasurement(
             "solr_replication_download_speed", "Download speed in bytes per second");
 
     metricsCallback =
