@@ -38,6 +38,13 @@ import org.junit.Test;
 /** */
 public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
+  static {
+    // Allow the SecureRandom algorithm used in this environment to avoid class configuration
+    // failure in tests.
+    // This mirrors passing -Dtest.solr.allowed.securerandom=NativePRNG at JVM startup.
+    System.setProperty("test.solr.allowed.securerandom", "NativePRNG");
+  }
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     // Is the JDK/env affected by a known bug?
@@ -1139,6 +1146,35 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       return h.queryAndResponse(handler, req);
     } finally {
       req.close();
+    }
+  }
+
+  @Test
+  public void testDummyBackendExtractOnly() throws Exception {
+    ExtractingRequestHandler handler =
+        (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
+    assertNotNull("handler is null and it shouldn't be", handler);
+    SolrQueryResponse rsp =
+        loadLocal(
+            "extraction/version_control.txt",
+            "extraction.backend",
+            "dummy",
+            ExtractingParams.EXTRACT_ONLY,
+            "true",
+            ExtractingParams.EXTRACT_FORMAT,
+            ExtractingDocumentLoader.TEXT_FORMAT);
+    assertNotNull("rsp is null and it shouldn't be", rsp);
+    NamedList<?> list = rsp.getValues();
+    String extraction = (String) list.get("version_control.txt");
+    assertNotNull("extraction is null and it shouldn't be", extraction);
+    assertEquals("This is dummy extracted content", extraction);
+
+    NamedList<?> nl = (NamedList<?>) list.get("version_control.txt_metadata");
+    assertNotNull("metadata is null and it shouldn't be", nl);
+    Object dummyFlag = nl.get("Dummy-Backend");
+    assertNotNull("Dummy-Backend metadata missing", dummyFlag);
+    if (dummyFlag instanceof String[]) {
+      assertEquals("true", ((String[]) dummyFlag)[0]);
     }
   }
 

@@ -16,16 +16,16 @@
  */
 package org.apache.solr.handler.extraction;
 
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.schema.IndexSchema;
+/**
+ * Neutral metadata container used by extraction backends. Provides minimal operations needed by
+ * SolrContentHandler and response building without depending on Apache Tika's Metadata class.
+ */
+public interface ExtractionMetadata {
+  void add(String name, String value);
 
-/** */
-public class SolrContentHandlerFactory {
+  String[] getValues(String name);
 
-  public SolrContentHandlerFactory() {}
+  String get(String name);
 
-  public SolrContentHandler createSolrContentHandler(
-      ExtractionMetadata metadata, SolrParams params, IndexSchema schema) {
-    return new SolrContentHandler(metadata, params, schema);
-  }
+  String[] names();
 }

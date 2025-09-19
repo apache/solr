@@ -16,16 +16,16 @@
  */
 package org.apache.solr.handler.extraction;
 
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.schema.IndexSchema;
+import java.io.InputStream;
 
-/** */
-public class SolrContentHandlerFactory {
+/** Strategy interface for content extraction backends. */
+public interface ExtractionBackend {
+  /**
+   * Extract plain text and metadata from the inputStream. Implementations should not close the
+   * inputStream. This API is backend-neutral and does not expose SAX or XML-specific types.
+   */
+  ExtractionResult extract(InputStream inputStream, ExtractionRequest request) throws Exception;
 
-  public SolrContentHandlerFactory() {}
-
-  public SolrContentHandler createSolrContentHandler(
-      ExtractionMetadata metadata, SolrParams params, IndexSchema schema) {
-    return new SolrContentHandler(metadata, params, schema);
-  }
+  /** A short name for debugging/config, e.g., "local" or "dummy". */
+  String name();
 }

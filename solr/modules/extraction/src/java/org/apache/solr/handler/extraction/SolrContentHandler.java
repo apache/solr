@@ -30,7 +30,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.tika.metadata.Metadata;
+// note: decoupled from Tika Metadata
 import org.apache.tika.metadata.TikaMetadataKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   protected final SolrInputDocument document;
 
-  protected final Metadata metadata;
+  protected final ExtractionMetadata metadata;
   protected final SolrParams params;
   protected final StringBuilder catchAllBuilder = new StringBuilder(2048);
   protected final IndexSchema schema;
@@ -74,7 +74,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   private Set<String> literalFieldNames = null;
 
-  public SolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
+  public SolrContentHandler(ExtractionMetadata metadata, SolrParams params, IndexSchema schema) {
     this.document = new SolrInputDocument();
     this.metadata = metadata;
     this.params = params;
@@ -150,6 +150,13 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   protected void addContent() {
     if (literalsOverride && literalFieldNames.contains(contentFieldName)) return;
     addField(contentFieldName, catchAllBuilder.toString(), null);
+  }
+
+  /** Append pre-extracted plain text content to the catch-all builder. */
+  public void appendToContent(String text) {
+    if (text != null && !text.isEmpty()) {
+      catchAllBuilder.append(text);
+    }
   }
 
   /**

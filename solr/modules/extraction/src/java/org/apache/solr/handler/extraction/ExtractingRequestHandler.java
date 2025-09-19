@@ -44,6 +44,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
   protected ParseContextConfig parseContextConfig;
 
   protected SolrContentHandlerFactory factory;
+  protected ExtractionBackend backend;
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
@@ -82,6 +83,19 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
     }
 
     factory = createFactory();
+
+    // Choose backend implementation
+    String backendName = (String) initArgs.get("extraction.backend");
+    if (backendName == null
+        || backendName.trim().isEmpty()
+        || backendName.equalsIgnoreCase("local")) {
+      backend = new LocalTikaExtractionBackend(config, parseContextConfig);
+    } else if (backendName.equalsIgnoreCase("dummy")) {
+      backend = new DummyExtractionBackend();
+    } else {
+      // Fallback to local if unknown
+      backend = new LocalTikaExtractionBackend(config, parseContextConfig);
+    }
   }
 
   protected SolrContentHandlerFactory createFactory() {
@@ -90,7 +104,19 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
 
   @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
-    return new ExtractingDocumentLoader(req, processor, config, parseContextConfig, factory);
+    // Allow per-request override of backend via request param "extraction.backend"
+    ExtractionBackend backendToUse = this.backend;
+    String backendParam = req.getParams().get("extraction.backend");
+    if (backendParam != null) {
+      if (backendParam.equalsIgnoreCase("dummy")) {
+        backendToUse = new DummyExtractionBackend();
+      } else if (backendParam.equalsIgnoreCase("local")) {
+        backendToUse = new LocalTikaExtractionBackend(config, parseContextConfig);
+      }
+      // unknown values fall back to the handler-configured backend
+    }
+    return new ExtractingDocumentLoader(
+        req, processor, config, parseContextConfig, factory, backendToUse);
   }
 
   // ////////////////////// SolrInfoMBeans methods //////////////////////

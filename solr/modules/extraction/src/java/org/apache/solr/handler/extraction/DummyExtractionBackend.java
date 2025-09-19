@@ -16,16 +16,26 @@
  */
 package org.apache.solr.handler.extraction;
 
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.schema.IndexSchema;
+import java.io.InputStream;
 
-/** */
-public class SolrContentHandlerFactory {
+/** Dummy backend that emits predictable test data without actually parsing input content. */
+public class DummyExtractionBackend implements ExtractionBackend {
+  @Override
+  public String name() {
+    return "dummy";
+  }
 
-  public SolrContentHandlerFactory() {}
-
-  public SolrContentHandler createSolrContentHandler(
-      ExtractionMetadata metadata, SolrParams params, IndexSchema schema) {
-    return new SolrContentHandler(metadata, params, schema);
+  @Override
+  public ExtractionResult extract(InputStream inputStream, ExtractionRequest request) {
+    ExtractionMetadata metadata = new SimpleExtractionMetadata();
+    metadata.add("Dummy-Backend", "true");
+    metadata.add(
+        "Content-Type",
+        request.contentType != null ? request.contentType : "application/octet-stream");
+    if (request.resourceName != null) {
+      metadata.add("resourcename", request.resourceName);
+    }
+    String text = "This is dummy extracted content";
+    return new ExtractionResult(text, metadata);
   }
 }
