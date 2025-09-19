@@ -29,7 +29,7 @@ teardown() {
 }
 
 @test "lifecycle of package" {
-  run solr start -Denable.packages=true
+  run solr start -Dsolr.packages.enabled=true
 
   run solr package --help
   assert_output --partial "Add a repository to Solr"
@@ -39,7 +39,7 @@ teardown() {
 }
 
 @test "deploying and undeploying a collection level package" {
-  run solr start -Denable.packages=true
+  run solr start -Dsolr.packages.enabled=true
 
   solr create -c foo-1.2
 
@@ -64,7 +64,7 @@ teardown() {
 @test "deploying and undeploying a cluster level package" {
   skip "For developing package infra; requires a connection to github"
 
-  run solr start -Denable.packages=true
+  run solr start -Dsolr.packages.enabled=true
   
   run solr package add-repo splainer "https://raw.githubusercontent.com/o19s/splainer/refs/heads/main/solr-splainer-package/repo/"
   assert_output --partial "Added repository: splainer"

@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.http.client.HttpClient;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -35,48 +34,20 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.JmxUtil;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestHarness;
 import org.hamcrest.number.OrderingComparison;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-// NOCOMMIT: Test fails because of the @After assert on index path. Was going to migrate to just
-// check the registry for the core is deleted but this test does a rename operation which otel has
-// not addressed yet. Need to migrate the rename operation to otel first.
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
 public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
-  private static final int MAX_ITERATIONS = 20;
-  private static final String CORE_NAME = "metrics_integration";
-  private static final String METRIC_NAME = "requestTimes";
-  private static final String HANDLER_NAME = "/select";
-  private static final String[] REPORTER_NAMES = {"reporter1", "reporter2"};
-  private static final String UNIVERSAL = "universal";
-  private static final String SPECIFIC = "specific";
-  private static final String MULTIGROUP = "multigroup";
-  private static final String MULTIREGISTRY = "multiregistry";
-  private static final String[] INITIAL_REPORTERS = {
-    REPORTER_NAMES[0], REPORTER_NAMES[1], UNIVERSAL, SPECIFIC, MULTIGROUP, MULTIREGISTRY
-  };
-  private static final String[] RENAMED_REPORTERS = {
-    REPORTER_NAMES[0], REPORTER_NAMES[1], UNIVERSAL, MULTIGROUP
-  };
-  private static final SolrInfoBean.Category HANDLER_CATEGORY = SolrInfoBean.Category.QUERY;
-
   private CoreContainer cc;
   private SolrMetricManager metricManager;
-  private String tag;
-  private int jmxReporter;
-
-  private void assertTagged(Map<String, SolrMetricReporter> reporters, String name) {
-    assertTrue(
-        "Reporter '" + name + "' missing in " + reporters, reporters.containsKey(name + "@" + tag));
-  }
 
   @Before
   public void beforeTest() throws Exception {
@@ -97,36 +68,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
                 "schema.xml"));
 
     h.coreName = DEFAULT_TEST_CORENAME;
-    jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1 : 0;
-    metricManager = cc.getMetricManager();
-    tag = h.getCore().getCoreMetricManager().getTag();
-    // initially there are more reporters, because two of them are added via a matching collection
-    // name
-    Map<String, SolrMetricReporter> reporters =
-        metricManager.getReporters("solr.core." + DEFAULT_TEST_CORENAME);
-    assertEquals(INITIAL_REPORTERS.length + jmxReporter, reporters.size());
-    for (String r : INITIAL_REPORTERS) {
-      assertTagged(reporters, r);
-    }
-    // test rename operation
-    cc.rename(DEFAULT_TEST_CORENAME, CORE_NAME);
-    h.coreName = CORE_NAME;
-    cfg = cc.getConfig();
-    PluginInfo[] plugins = cfg.getMetricsConfig().getMetricReporters();
-    assertNotNull(plugins);
-    assertEquals(10 + jmxReporter, plugins.length);
-    reporters = metricManager.getReporters("solr.node");
-    assertEquals(4 + jmxReporter, reporters.size());
-    assertTrue(
-        "Reporter '" + REPORTER_NAMES[0] + "' missing in solr.node",
-        reporters.containsKey(REPORTER_NAMES[0]));
-    assertTrue(
-        "Reporter '" + UNIVERSAL + "' missing in solr.node", reporters.containsKey(UNIVERSAL));
-    assertTrue(
-        "Reporter '" + MULTIGROUP + "' missing in solr.node", reporters.containsKey(MULTIGROUP));
-    assertTrue(
-        "Reporter '" + MULTIREGISTRY + "' missing in solr.node",
-        reporters.containsKey(MULTIREGISTRY));
+    metricManager = h.getCore().getCoreContainer().getMetricManager();
   }
 
   @After
@@ -134,12 +76,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     if (null == metricManager) {
       return; // test failed to init, nothing to clean up
     }
-
-    SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
-    Gauge<?> gauge = (Gauge<?>) coreMetricManager.getRegistry().getMetrics().get("CORE.indexDir");
-    assertNotNull(gauge.getValue());
     deleteCore(); // closes TestHarness which closes CoreContainer which closes SolrCore
-    assertEquals(metricManager.nullString(), gauge.getValue());
   }
 
   @Test
@@ -165,7 +102,9 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertEquals(g.getValue(), cc.getSolrHome().toString());
   }
 
+  // NOCOMMIT: Comeback and fix this test after merging the SolrZKClient metrics migration
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testZkMetrics() throws Exception {
     System.setProperty("metricsEnabled", "true");
     MiniSolrCloudCluster cluster =
@@ -227,6 +166,36 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
       }
     } finally {
       cluster.shutdown();
+    }
+  }
+
+  @Test
+  public void testCoreRename() {
+    String newCoreName = "renamed_core";
+    String originalRegistryName;
+
+    try (SolrCore core = cc.getCore(DEFAULT_TEST_CORENAME)) {
+      originalRegistryName = core.getCoreMetricManager().getRegistryName();
+      assertTrue("Original registry should exist", metricManager.hasRegistry(originalRegistryName));
+      assertQ(req("q", "*:*"), "//result[@numFound='0']");
+      assertEquals(
+          1.0, SolrMetricTestUtils.newStandaloneSelectRequestsDatapoint(core).getValue(), 0.0);
+    }
+
+    cc.rename(DEFAULT_TEST_CORENAME, newCoreName);
+    h.coreName = newCoreName;
+
+    try (SolrCore core = cc.getCore(newCoreName)) {
+      assertFalse(
+          "Original registry should not exist", metricManager.hasRegistry(originalRegistryName));
+      assertTrue(
+          "Renamed registry should exist",
+          metricManager.hasRegistry(core.getCoreMetricManager().getRegistryName()));
+      assertQ(req("q", "*:*"), "//result[@numFound='0']");
+      assertEquals(
+          1.0,
+          SolrMetricTestUtils.newStandaloneSelectRequestsDatapoint(h.getCore()).getValue(),
+          0.0);
     }
   }
 

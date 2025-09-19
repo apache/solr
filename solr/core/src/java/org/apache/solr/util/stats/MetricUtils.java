@@ -19,7 +19,6 @@ package org.apache.solr.util.stats;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
-import com.codahale.metrics.InstrumentedExecutorService;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
@@ -56,6 +55,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -744,18 +744,6 @@ public class MetricUtils {
     }
   }
 
-  /** Returns an instrumented wrapper over the given executor service. */
-  public static ExecutorService instrumentedExecutorService(
-      ExecutorService delegate, SolrInfoBean info, MetricRegistry metricRegistry, String scope) {
-    if (info != null && info.getSolrMetricsContext() != null) {
-      info.getSolrMetricsContext().registerMetricName(MetricRegistry.name(scope, "submitted"));
-      info.getSolrMetricsContext().registerMetricName(MetricRegistry.name(scope, "running"));
-      info.getSolrMetricsContext().registerMetricName(MetricRegistry.name(scope, "completed"));
-      info.getSolrMetricsContext().registerMetricName(MetricRegistry.name(scope, "duration"));
-    }
-    return new InstrumentedExecutorService(delegate, metricRegistry, scope);
-  }
-
   /**
    * Creates a set of metrics (gauges) that correspond to available bean properties for the provided
    * MXBean.
@@ -828,6 +816,15 @@ public class MetricUtils {
         "com.sun.management.UnixOperatingSystemMXBean",
         "com.ibm.lang.management.OperatingSystemMXBean"
       };
+
+  /** Returns an instrumented wrapper over the given executor service. */
+  public static ExecutorService instrumentedExecutorService(
+      ExecutorService delegate,
+      SolrMetricsContext ctx,
+      SolrInfoBean.Category category,
+      String name) {
+    return new OtelInstrumentedExecutorService(delegate, ctx, category, name);
+  }
 
   /**
    * Creates a set of metrics (gauges) that correspond to available bean properties for the provided

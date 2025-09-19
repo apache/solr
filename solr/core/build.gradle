@@ -91,6 +91,7 @@ dependencies {
   implementation libs.apache.lucene.join
   implementation libs.apache.lucene.misc
   implementation libs.apache.lucene.queryparser
+  implementation libs.apache.lucene.sandbox
   implementation libs.apache.lucene.spatialextras
   implementation libs.apache.lucene.suggest
 
@@ -123,6 +124,7 @@ dependencies {
   implementation libs.eclipse.jetty.http
   implementation libs.eclipse.jetty.io
   implementation libs.eclipse.jetty.toolchain.servletapi
+  implementation libs.eclipse.jetty.util
 
   // ZooKeeper
 
@@ -165,6 +167,9 @@ dependencies {
   implementation(libs.opentelemetry.sdk, {
     exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
   })
+
+  // JVM Runtime Telemetry metrics
+  implementation libs.opentelemetry.runtime.telemetry
 
   implementation libs.apache.commons.exec
 

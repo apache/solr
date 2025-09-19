@@ -47,6 +47,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -62,48 +63,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     // Initialize a metric reader for tests
     metricManager.meterProvider(METER_PROVIDER_NAME);
     this.reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-  }
-
-  // NOCOMMIT: We might not be supported core swapping in 10. Maybe remove this test
-  @Test
-  public void testSwapRegistries() {
-    Random r = random();
-
-    SolrMetricManager metricManager = new SolrMetricManager();
-
-    Map<String, Counter> metrics1 = SolrMetricTestUtils.getRandomMetrics(r, true);
-    Map<String, Counter> metrics2 = SolrMetricTestUtils.getRandomMetrics(r, true);
-    String fromName = "from-" + TestUtil.randomSimpleString(r, 1, 10);
-    String toName = "to-" + TestUtil.randomSimpleString(r, 1, 10);
-    // register test metrics
-    for (Map.Entry<String, Counter> entry : metrics1.entrySet()) {
-      metricManager.registerMetric(
-          null, fromName, entry.getValue(), false, entry.getKey(), "metrics1");
-    }
-    for (Map.Entry<String, Counter> entry : metrics2.entrySet()) {
-      metricManager.registerMetric(
-          null, toName, entry.getValue(), false, entry.getKey(), "metrics2");
-    }
-    assertEquals(metrics1.size(), metricManager.registry(fromName).getMetrics().size());
-    assertEquals(metrics2.size(), metricManager.registry(toName).getMetrics().size());
-
-    // swap
-    metricManager.swapRegistries(fromName, toName);
-    // check metrics
-    Map<String, Metric> fromMetrics = metricManager.registry(fromName).getMetrics();
-    assertEquals(metrics2.size(), fromMetrics.size());
-    for (Map.Entry<String, Counter> entry : metrics2.entrySet()) {
-      Object value = fromMetrics.get(SolrMetricManager.mkName(entry.getKey(), "metrics2"));
-      assertNotNull(value);
-      assertEquals(entry.getValue(), value);
-    }
-    Map<String, Metric> toMetrics = metricManager.registry(toName).getMetrics();
-    assertEquals(metrics1.size(), toMetrics.size());
-    for (Map.Entry<String, Counter> entry : metrics1.entrySet()) {
-      Object value = toMetrics.get(SolrMetricManager.mkName(entry.getKey(), "metrics1"));
-      assertNotNull(value);
-      assertEquals(entry.getValue(), value);
-    }
   }
 
   // NOCOMMIT: Migration of this to OTEL isn't possible. You can't register instruments to a

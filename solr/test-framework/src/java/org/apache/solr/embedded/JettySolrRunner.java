@@ -54,7 +54,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
@@ -304,7 +303,7 @@ public class JettySolrRunner {
         configuration.addCustomizer(customizer);
         HttpConnectionFactory http1ConnectionFactory = new HttpConnectionFactory(configuration);
 
-        if (config.onlyHttp1 || !Constants.JRE_IS_MINIMUM_JAVA9) {
+        if (config.onlyHttp1) {
           connector =
               new ServerConnector(
                   server,

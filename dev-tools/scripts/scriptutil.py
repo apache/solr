@@ -229,7 +229,7 @@ def attemptDownload(urlString, fileName):
 
 version_prop_re = re.compile(r'baseVersion\s*=\s*([\'"])(.*)\1')
 
-lucene_version_prop_re = re.compile(r'^apache-lucene\s*=\s*"([a-zA-Z0-9\.\-]+)"')
+lucene_version_prop_re = re.compile(r'apache-lucene\s*=\s*"([a-zA-Z0-9\.\-]+)"')
 
 def find_current_version():
   script_path = os.path.dirname(os.path.realpath(__file__))

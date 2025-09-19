@@ -233,6 +233,34 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       assertThat(
           clusterStateZk.getCollection("col2"), equalTo(clusterStateHttp.getCollection("col2")));
     }
+
+    try (var cspZk = zkClientClusterStateProvider();
+        var cspHttp = http2ClusterStateProvider()) {
+      // Even older SolrJ versionsg for non streamed response
+      cspHttp
+          .getHttpClient()
+          .getHttpClient()
+          .setUserAgentField(
+              new HttpField(
+                  HttpHeader.USER_AGENT,
+                  "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + "2.0"));
+
+      assertThat(cspHttp.getCollection("col1"), equalTo(cspZk.getCollection("col1")));
+
+      final var clusterStateZk = cspZk.getClusterState();
+      final var clusterStateHttp = cspHttp.getClusterState();
+      assertThat(
+          clusterStateHttp.getLiveNodes(),
+          containsInAnyOrder(clusterStateHttp.getLiveNodes().toArray()));
+      assertEquals(2, clusterStateZk.size());
+      assertEquals(clusterStateZk.size(), clusterStateHttp.size());
+      assertThat(
+          clusterStateHttp.collectionStream().toList(),
+          containsInAnyOrder(clusterStateHttp.collectionStream().toArray()));
+
+      assertThat(
+          clusterStateZk.getCollection("col2"), equalTo(clusterStateHttp.getCollection("col2")));
+    }
   }
 
   @Test

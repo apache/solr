@@ -104,7 +104,7 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
 
     { // GET
       @SuppressWarnings({"unchecked"})
-      List<Map<String, Object>> loggers = (List<Map<String, Object>>) rsp._get("loggers", null);
+      List<Map<String, Object>> loggers = (List<Map<String, Object>>) rsp._get("loggers");
 
       // check expected log levels returned by handler
       assertLoggerLevel(loggers, PARENT_LOGGER_NAME, "DEBUG", true);
@@ -122,7 +122,7 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
               new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
       @SuppressWarnings({"unchecked"})
       List<Map<String, Object>> updatedLoggerLevel =
-          (List<Map<String, Object>>) rsp._get("loggers", null);
+          (List<Map<String, Object>>) rsp._get("loggers");
 
       // check new log levels returned by handler
       assertLoggerLevel(updatedLoggerLevel, PARENT_LOGGER_NAME, "DEBUG", true);
@@ -153,7 +153,7 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
 
       @SuppressWarnings({"unchecked"})
       List<Map<String, Object>> removedLoggerLevel =
-          (List<Map<String, Object>>) rsp._get("loggers", null);
+          (List<Map<String, Object>>) rsp._get("loggers");
 
       // check new log levels returned by handler
       assertLoggerLevel(removedLoggerLevel, PARENT_LOGGER_NAME, "DEBUG", true);

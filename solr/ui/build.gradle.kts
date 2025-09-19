@@ -42,7 +42,7 @@ kotlin {
     // Add targets to support
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        moduleName = "composeApp"
+        outputModuleName = provider { "composeApp" }
         browser {
             commonWebpackConfig {
                 outputFileName = "composeApp.js"
@@ -91,6 +91,7 @@ kotlin {
                 implementation(libs.mvikotlin.main)
                 implementation(libs.mvikotlin.logging)
 
+                implementation(libs.ktor.client.auth)
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.client.contentNegotiation)
@@ -107,6 +108,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.test)
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.uiTest)
+                implementation(libs.ktor.client.mock)
             }
         }
 

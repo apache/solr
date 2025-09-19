@@ -43,7 +43,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 
 import jakarta.inject.Inject;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,8 +61,6 @@ import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -77,8 +74,6 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 
 /**
  * V2 API for creating a SolrCLoud collection
@@ -108,13 +103,6 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
         instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(requestBody.name, solrQueryRequest);
-
-    // We must always create a .system collection with only a single shard
-    if (CollectionAdminParams.SYSTEM_COLL.equals(requestBody.name)) {
-      requestBody.numShards = 1;
-      requestBody.shardNames = null;
-      createSysConfigSet(coreContainer);
-    }
 
     validateRequestBody(requestBody);
 
@@ -253,41 +241,6 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
     if (defaultValue == null) return null;
 
     return Integer.valueOf(String.valueOf(defaultValue));
-  }
-
-  private static void createSysConfigSet(CoreContainer coreContainer)
-      throws KeeperException, InterruptedException {
-    SolrZkClient zk = coreContainer.getZkController().getZkStateReader().getZkClient();
-    ZkMaintenanceUtils.ensureExists(ZkStateReader.CONFIGS_ZKNODE, zk);
-    ZkMaintenanceUtils.ensureExists(
-        ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL, zk);
-
-    try {
-      String path =
-          ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL + "/schema.xml";
-      byte[] data;
-      try (InputStream inputStream =
-          CollectionsHandler.class.getResourceAsStream("/SystemCollectionSchema.xml")) {
-        assert inputStream != null;
-        data = inputStream.readAllBytes();
-      }
-      assert data != null && data.length > 0;
-      ZkMaintenanceUtils.ensureExists(path, data, CreateMode.PERSISTENT, zk);
-      path =
-          ZkStateReader.CONFIGS_ZKNODE
-              + "/"
-              + CollectionAdminParams.SYSTEM_COLL
-              + "/solrconfig.xml";
-      try (InputStream inputStream =
-          CollectionsHandler.class.getResourceAsStream("/SystemCollectionSolrConfig.xml")) {
-        assert inputStream != null;
-        data = inputStream.readAllBytes();
-      }
-      assert data != null && data.length > 0;
-      ZkMaintenanceUtils.ensureExists(path, data, CreateMode.PERSISTENT, zk);
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
   }
 
   public static CreateCollectionRequestBody createRequestBodyFromV1Params(

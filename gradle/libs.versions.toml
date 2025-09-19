@@ -14,13 +14,13 @@
 # limitations under the License.
 [versions]
 adobe-testing-s3mock = "3.9.1"
-amazon-awssdk = "2.28.11"
+amazon-awssdk = "2.31.77"
 # @keep Antora version used in ref-guide
-antora = "3.1.4"
-# @keep Most recent commit as of 2022-06-24, this repo does not have tags
-antora-default-ui = "51ad811622394027afb4e182c2fdabc235ae04dd"
+antora = "3.1.12"
+# @keep Most recent commit as of 2025-08-03, this repo does not have tags
+antora-default-ui = "782311344b54aaa734d4c86629b8cd75e4da36d6"
 # @keep Antora Lunr extensions version used in ref-guide
-antora-lunr-extension = "1.0.0-alpha.8"
+antora-lunr-extension = "1.0.0-alpha.10"
 apache-calcite = "1.37.0"
 apache-calcite-avatica = "1.25.0"
 apache-commons-collections4 = "4.4"
@@ -37,13 +37,13 @@ apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
 apache-kafka = "3.9.0"
 apache-log4j = "2.21.0"
-apache-lucene = "9.12.1"
-apache-opennlp = "1.9.4"
+apache-lucene = "10.2.1"
+apache-opennlp = "2.5.3"
 apache-poi = "5.2.2"
 apache-rat = "0.15"
 apache-tika = "1.28.5"
 apache-tomcat = "6.0.53"
-apache-zookeeper = "3.9.2"
+apache-zookeeper = "3.9.3"
 # @keep for version alignment
 apiguardian = "1.1.2"
 aqute-bnd = "6.4.1"
@@ -70,21 +70,21 @@ carrotsearch-randomizedtesting = "2.8.1"
 # @keep for version alignment
 checkerframework = "3.44.0"
 codehaus-woodstox = "4.2.2"
-commons-cli = "1.9.0"
-commons-codec = "1.17.1"
+commons-cli = "1.10.0"
+commons-codec = "1.17.2"
 commons-io = "2.15.1"
-compose = "1.7.3"
+compose = "1.8.2"
 cutterslade-analyze = "1.10.0"
 cybozulabs-langdetect = "1.1-20120112"
-decompose = "3.2.2"
-diffplug-spotless = "6.5.2"
+decompose = "3.3.0"
+diffplug-spotless = "7.2.1"
 dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.39.0"
 eclipse-jetty = "12.0.19"
 eclipse-jettytoolchain = "5.0.2"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "6.7.0.202309050840-r"
-essenty = "2.4.0"
+essenty = "2.5.0"
 fasterxml = "2.18.2"
 fasterxml-woodstox = "7.0.0"
 # @keep Flexmark used in classpath
@@ -108,16 +108,16 @@ google-j2objc = "3.0.0"
 # @keep This is GJF version for spotless/ tidy.
 google-javaformat = "1.18.1"
 # @keep for version alignment
-google-protobuf = "3.25.3"
+google-protobuf = "3.25.8"
 # @keep Gradle version to run the build
 gradle = "8.10"
 grpc = "1.65.1"
 # @keep Gulp version used in ref-guide
-gulp-cli = "2.3.0"
+gulp-cli = "3.1.0"
 hamcrest = "3.0"
 hk2 = "3.1.1"
 hsqldb = "2.7.4"
-ibm-icu = "74.2"
+ibm-icu = "77.1"
 immutables-valueannotations = "2.10.1"
 j256-simplemagic = "1.17"
 jakarta-annotation = "2.1.1"
@@ -142,15 +142,17 @@ jetbrains-annotations = "26.0.2"
 joda-time = "2.13.0"
 junit = "4.13.2"
 junit-jupiter = "5.8.1"
-kotlin = "2.1.10"
+kotlin = "2.2.0"
 # @keep for version alignment
-kotlinx-atomicfu = "0.27.0"
+kotlinx-atomicfu = "0.29.0"
 # @keep for version alignment
 kotlinx-browser = "0.3"
 kotlinx-coroutines = "1.10.1"
-kotlinx-datetime = "0.6.2"
-kotlinx-serialization = "1.8.0"
-ktor = "3.1.0"
+kotlinx-datetime = "0.7.1"
+kotlinx-serialization = "1.9.0"
+# @keep used by spotless
+ktlint = "1.7.1"
+ktor = "3.2.2"
 langchain4j = "0.35.0"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
@@ -161,22 +163,24 @@ mockito = "5.16.1"
 morethan-jmhreport = "0.9.0"
 mvikotlin = "4.3.0"
 navsecurity = "0.5.10"
-netty = "4.1.114.Final"
+netty = "4.2.4.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.66.Final"
 nimbusds-josejwt = "9.48"
-nodegradle-node = "7.0.1"
+nlopez-compose = "0.4.26"
+nodegradle-node = "7.1.0"
 # @keep Node JS version used in node.gradle (LTS)
-nodejs = "16.20.2"
+nodejs = "22.18.0"
 openapi = "7.6.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.50.0"
 opentelemetry-prometheus = "1.50.0-alpha"
+opentelemetry-runtime-telemetry = "2.11.0-alpha"
 osgi-annotation = "8.1.0"
 oshai-logging = "7.0.3"
 # @keep for version alignment
 ow2-asm = "9.7.1"
-owasp-dependencycheck = "12.0.2"
+owasp-dependencycheck = "12.1.3"
 # @keep for version alignment
 perfmark = "0.27.0"
 prometheus-metrics = "1.1.0"
@@ -226,6 +230,7 @@ amazon-awssdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "amaz
 amazon-awssdk-httpclient-spi = { module = "software.amazon.awssdk:http-client-spi", version.ref = "amazon-awssdk" }
 amazon-awssdk-profiles = { module = "software.amazon.awssdk:profiles", version.ref = "amazon-awssdk" }
 amazon-awssdk-regions = { module = "software.amazon.awssdk:regions", version.ref = "amazon-awssdk" }
+amazon-awssdk-retries-spi = { module = "software.amazon.awssdk:retries-spi", version.ref = "amazon-awssdk" }
 amazon-awssdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "amazon-awssdk" }
 amazon-awssdk-sdkcore = { module = "software.amazon.awssdk:sdk-core", version.ref = "amazon-awssdk" }
 amazon-awssdk-sts = { module = "software.amazon.awssdk:sts", version.ref = "amazon-awssdk" }
@@ -278,6 +283,7 @@ apache-lucene-join = { module = "org.apache.lucene:lucene-join", version.ref = "
 apache-lucene-misc = { module = "org.apache.lucene:lucene-misc", version.ref = "apache-lucene" }
 apache-lucene-queries = { module = "org.apache.lucene:lucene-queries", version.ref = "apache-lucene" }
 apache-lucene-queryparser = { module = "org.apache.lucene:lucene-queryparser", version.ref = "apache-lucene" }
+apache-lucene-sandbox = { module = "org.apache.lucene:lucene-sandbox", version.ref = "apache-lucene" }
 apache-lucene-spatialextras = { module = "org.apache.lucene:lucene-spatial-extras", version.ref = "apache-lucene" }
 apache-lucene-suggest = { module = "org.apache.lucene:lucene-suggest", version.ref = "apache-lucene" }
 apache-lucene-testframework = { module = "org.apache.lucene:lucene-test-framework", version.ref = "apache-lucene" }
@@ -436,9 +442,11 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere", version.ref = "langchain4j" }
 langchain4j-core = { module = "dev.langchain4j:langchain4j-core", version.ref = "langchain4j" }
@@ -466,6 +474,7 @@ netty-transport-classes-epoll = { module = "io.netty:netty-transport-classes-epo
 # @keep transitive dependency for version alignment
 netty-transport-native-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
 nimbusds-josejwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusds-josejwt" }
+nlopez-compose-ktlintrules = { module = "io.nlopez.compose.rules:ktlint", version.ref = "nlopez-compose" }
 openjdk-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "openjdk-jmh" }
 openjdk-jmh-generatorannprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "openjdk-jmh" }
 opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
@@ -473,6 +482,7 @@ opentelemetry-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref
 opentelemetry-context = { module = "io.opentelemetry:opentelemetry-context", version.ref = "opentelemetry" }
 opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
 opentelemetry-exporter-prometheus = { module = "io.opentelemetry:opentelemetry-exporter-prometheus", version.ref = "opentelemetry-prometheus" }
+opentelemetry-runtime-telemetry = { module = "io.opentelemetry.instrumentation:opentelemetry-runtime-telemetry-java17", version.ref = "opentelemetry-runtime-telemetry" }
 opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
 opentelemetry-sdkextension-autoconfigure = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }
 opentelemetry-sdktesting = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
