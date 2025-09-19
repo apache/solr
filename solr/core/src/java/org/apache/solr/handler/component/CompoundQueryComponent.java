@@ -18,10 +18,12 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 
@@ -90,9 +92,13 @@ public class CompoundQueryComponent extends QueryComponent {
 
     final TopDocs fusion = TopDocs.rrf(topN, k, hits);
 
+    final HashSet<Object> seenKeys = new HashSet<>(); // TODO: use resultIds instead
     for (ScoreDoc scoreDoc : fusion.scoreDocs) {
-      responseDocs.add(
-          crb.responseBuilders.get(scoreDoc.shardIndex).getResponseDocs().get(scoreDoc.doc));
+      final SolrDocument solrDocument =
+          crb.responseBuilders.get(scoreDoc.shardIndex).getResponseDocs().get(scoreDoc.doc);
+      if (seenKeys.add(solrDocument.getFieldValue("id"))) { // TODO: do not hard-code "id" here
+        responseDocs.add(solrDocument);
+      }
     }
     final TotalHits totalHits = fusion.totalHits;
     responseDocs.setNumFound(totalHits.value());
@@ -106,7 +112,7 @@ public class CompoundQueryComponent extends QueryComponent {
         call in HighlightComponent (an alternative would be to make the HighlightComponent aware of the fusion stage)
         */
         entry.getValue().positionInResponse = resultIds.size();
-        resultIds.put(entry.getKey(), entry.getValue());
+        resultIds.putIfAbsent(entry.getKey(), entry.getValue());
       }
     }
 

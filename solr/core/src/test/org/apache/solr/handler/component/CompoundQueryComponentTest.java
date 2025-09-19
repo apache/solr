@@ -112,6 +112,12 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
           .add(sdoc(id, "1", t1, "solitary bee"))
           .add(sdoc(id, "10", t1, "bumble bee"))
           .add(sdoc(id, "1000", t1, "honey bee"))
+          .add(
+              sdoc(
+                  id,
+                  "1916perkins",
+                  t1,
+                  "many a chocolate mining bee likes to forage in blossom-rich habitats"))
           .commit(cluster.getSolrClient(), COLLECTION);
     }
 
@@ -126,6 +132,8 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
       // highlight, if we're searching for something specific i.e. not just everything
       if (q != null) {
         solrQuery.addHighlightField(t1);
+        solrQuery.set("hl.fragsize", "13");
+        solrQuery.set("hl.bs.type", "WORD");
       }
 
       // make the query
@@ -137,21 +145,26 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
       assertTrue(documentList.getNumFoundExact());
       assertEquals(documentList.getNumFound(), documentList.size());
       if (q == null) {
-        assertEquals(6, documentList.size());
+        assertEquals(7, documentList.size());
         assertEquals("1", documentList.get(0).getFieldValue("id"));
         assertEquals("10", documentList.get(1).getFieldValue("id"));
         assertEquals("1000", documentList.get(2).getFieldValue("id"));
-        assertEquals("a", documentList.get(3).getFieldValue("id"));
-        assertEquals("b", documentList.get(4).getFieldValue("id"));
-        assertEquals("c", documentList.get(5).getFieldValue("id"));
+        assertEquals("1916perkins", documentList.get(3).getFieldValue("id"));
+        assertEquals("a", documentList.get(4).getFieldValue("id"));
+        assertEquals("b", documentList.get(5).getFieldValue("id"));
+        assertEquals("c", documentList.get(6).getFieldValue("id"));
       } else {
-        assertEquals(3, documentList.size());
+        assertEquals(4, documentList.size());
         final Map<String, Map<String, List<String>>> highlighting = queryResponse.getHighlighting();
         if (q == q_bee) {
           assertEquals("solitary <em>bee</em>", highlighting.get("1").get(t1).get(0));
           assertEquals("bumble <em>bee</em>", highlighting.get("10").get(t1).get(0));
           assertEquals("honey <em>bee</em>", highlighting.get("1000").get(t1).get(0));
+          assertEquals(
+              "mining <em>bee</em> likes ", highlighting.get("1916perkins").get(t1).get(0));
         } else {
+          assertEquals(
+              "to <em>forage</em> in blossom-rich", highlighting.get("1916perkins").get(t1).get(0));
           assertEquals("alfalfa <em>forage</em>", highlighting.get("a").get(t1).get(0));
           assertEquals("borage <em>forage</em>", highlighting.get("b").get(t1).get(0));
           assertEquals("clover <em>forage</em>", highlighting.get("c").get(t1).get(0));
@@ -170,6 +183,8 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
       // highlight, sometimes
       if (highlightField != null) {
         solrQuery.addHighlightField(highlightField);
+        solrQuery.set("hl.fragsize", "13");
+        solrQuery.set("hl.bs.type", "WORD");
       }
 
       // make the query
@@ -179,20 +194,24 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
       // analyse the response
       SolrDocumentList documentList = queryResponse.getResults();
       assertFalse(documentList.getNumFoundExact());
-      assertEquals(3, documentList.getNumFound());
-      assertEquals(6, documentList.size());
-      assertEquals("1000", documentList.get(0).getFieldValue("id"));
-      assertEquals("honey bee", documentList.get(0).getFieldValue("a_t"));
-      assertEquals("a", documentList.get(1).getFieldValue("id"));
-      assertEquals("alfalfa forage", documentList.get(1).getFieldValue("a_t"));
-      assertEquals("10", documentList.get(2).getFieldValue("id"));
-      assertEquals("bumble bee", documentList.get(2).getFieldValue("a_t"));
-      assertEquals("b", documentList.get(3).getFieldValue("id"));
-      assertEquals("borage forage", documentList.get(3).getFieldValue("a_t"));
-      assertEquals("1", documentList.get(4).getFieldValue("id"));
-      assertEquals("solitary bee", documentList.get(4).getFieldValue("a_t"));
-      assertEquals("c", documentList.get(5).getFieldValue("id"));
-      assertEquals("clover forage", documentList.get(5).getFieldValue("a_t"));
+      assertEquals(4, documentList.getNumFound());
+      assertEquals(7, documentList.size());
+      assertEquals("1916perkins", documentList.get(0).getFieldValue("id"));
+      assertEquals(
+          "many a chocolate mining bee likes to forage in blossom-rich habitats",
+          documentList.get(0).getFieldValue("a_t"));
+      assertEquals("1000", documentList.get(1).getFieldValue("id"));
+      assertEquals("honey bee", documentList.get(1).getFieldValue("a_t"));
+      assertEquals("a", documentList.get(2).getFieldValue("id"));
+      assertEquals("alfalfa forage", documentList.get(2).getFieldValue("a_t"));
+      assertEquals("10", documentList.get(3).getFieldValue("id"));
+      assertEquals("bumble bee", documentList.get(3).getFieldValue("a_t"));
+      assertEquals("b", documentList.get(4).getFieldValue("id"));
+      assertEquals("borage forage", documentList.get(4).getFieldValue("a_t"));
+      assertEquals("1", documentList.get(5).getFieldValue("id"));
+      assertEquals("solitary bee", documentList.get(5).getFieldValue("a_t"));
+      assertEquals("c", documentList.get(6).getFieldValue("id"));
+      assertEquals("clover forage", documentList.get(6).getFieldValue("a_t"));
 
       final Map<String, Map<String, List<String>>> highlighting = queryResponse.getHighlighting();
       if (highlightField != null) {
@@ -204,6 +223,12 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
         assertEquals("borage <em>forage</em>", highlighting.get("b").get(highlightField).get(0));
         assertEquals("solitary <em>bee</em>", highlighting.get("1").get(highlightField).get(0));
         assertEquals("clover <em>forage</em>", highlighting.get("c").get(highlightField).get(0));
+        assertNotEquals(
+            "",
+            highlighting
+                .get("1916perkins")
+                .get(highlightField)
+                .get(0)); // TODO: make this more specific
       } else {
         assertNull(highlighting);
       }
