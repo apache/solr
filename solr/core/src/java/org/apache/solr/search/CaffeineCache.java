@@ -501,7 +501,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
     ObservableLongMeasurement ramBytesUsedMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_searcher_cache_ram_bytes_used", "RAM bytes used by cache", OtelUnit.BYTES);
+            "solr_searcher_cache_ram_used", "RAM bytes used by cache", OtelUnit.BYTES);
 
     ObservableLongMeasurement warmupTimeMetric =
         solrMetricsContext.longGaugeMeasurement(
