@@ -24,7 +24,6 @@ import static org.apache.solr.cloud.TestPullReplica.waitForNumDocsInAllReplicas;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -40,8 +39,11 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SecurityJson;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -68,9 +70,6 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
   }
 
   @Test
-  // NOCOMMIT: This test is broken from OTEL migration and the /admin/plugins endpoint. Placing
-  // BadApple test but this must be fixed before this feature gets merged to a release branch
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testPKIAuthWorksForPullReplication() throws Exception {
     int numPullReplicas = 2;
     withBasicAuth(
@@ -104,19 +103,36 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       waitForNumDocsInAllReplicas(
           numDocs, pullReplicas, "*:*", SecurityJson.USER, SecurityJson.PASS);
 
-      for (Replica r : pullReplicas) {
-        try (SolrClient pullReplicaClient = getHttpSolrClient(r)) {
-          QueryResponse statsResponse =
-              queryWithBasicAuth(
-                  pullReplicaClient, new SolrQuery("qt", "/admin/plugins", "stats", "true"));
-          // the 'adds' metric is a gauge, which is null for PULL replicas
-          assertNull(
-              "Replicas shouldn't process the add document request: " + statsResponse,
-              getUpdateHandlerMetric(statsResponse, "UPDATE.updateHandler.adds"));
-          assertEquals(
-              "Replicas shouldn't process the add document request: " + statsResponse,
-              0L,
-              getUpdateHandlerMetric(statsResponse, "UPDATE.updateHandler.cumulativeAdds.count"));
+      for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+        CoreContainer cc = jetty.getCoreContainer();
+        for (String coreName : cc.getAllCoreNames()) {
+          try (SolrCore core = cc.getCore(coreName)) {
+            var addOpsDatapoint =
+                org.apache.solr.util.SolrMetricTestUtils.getCounterDatapoint(
+                    core,
+                    "solr_core_update_committed_ops",
+                    org.apache.solr.util.SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "UPDATE")
+                        .label("ops", "adds")
+                        .build());
+            var cumulativeAddsDatapoint =
+                SolrMetricTestUtils.getGaugeDatapoint(
+                    core,
+                    "solr_core_update_cumulative_ops",
+                    SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "UPDATE")
+                        .label("ops", "adds")
+                        .build());
+            // The adds gauge metric should be null for pull replicas since they don't process adds
+            if ((core.getCoreDescriptor().getCloudDescriptor().getReplicaType()
+                == Replica.Type.PULL)) {
+              assertNull(addOpsDatapoint);
+              assertNull(cumulativeAddsDatapoint);
+            } else {
+              assertNotNull(addOpsDatapoint);
+              assertNotNull(cumulativeAddsDatapoint);
+            }
+          }
         }
       }
     }
@@ -153,13 +169,5 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
     withBasicAuth(CollectionAdminRequest.deleteCollection(collectionName))
         .process(cluster.getSolrClient());
     waitForDeletion(collectionName);
-  }
-
-  @SuppressWarnings("unchecked")
-  private Object getUpdateHandlerMetric(QueryResponse statsResponse, String metric) {
-    NamedList<Object> entries = statsResponse.getResponse();
-    return ((Map<String, Object>)
-            entries._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
-        .get(metric);
   }
 }
