@@ -383,16 +383,18 @@ public class DenseVectorField extends FloatPointField {
           KnnSearchStrategy knnSearchStrategy = new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
           return new KnnFloatVectorQuery(
               fieldName, vectorBuilder.getFloatVector(), topK, filterQuery, knnSearchStrategy);
+        } else {
+          return new KnnFloatVectorQuery(
+              fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
         }
-        return new KnnFloatVectorQuery(
-            fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
       case BYTE:
         if (filteredSearchThreshold != null) {
           KnnSearchStrategy knnSearchStrategy = new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
           return new KnnByteVectorQuery(
               fieldName, vectorBuilder.getByteVector(), topK, filterQuery, knnSearchStrategy);
+        } else {
+          return new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
         }
-        return new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
