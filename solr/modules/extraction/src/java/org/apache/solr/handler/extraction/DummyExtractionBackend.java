@@ -29,7 +29,7 @@ public class DummyExtractionBackend implements ExtractionBackend {
 
   @Override
   public ExtractionResult extract(InputStream inputStream, ExtractionRequest request) {
-    ExtractionMetadata metadata = new SimpleExtractionMetadata();
+    ExtractionMetadata metadata = new ExtractionMetadata();
     metadata.add("Dummy-Backend", "true");
     metadata.add(
         "Content-Type",
@@ -43,7 +43,7 @@ public class DummyExtractionBackend implements ExtractionBackend {
 
   @Override
   public ExtractionResult extractOnly(
-      InputStream inputStream, ExtractionRequest request, String extractFormat, String xpathExpr) {
+      InputStream inputStream, ExtractionRequest request, String xpathExpr) {
     if (xpathExpr != null) {
       throw new UnsupportedOperationException("XPath not supported by dummy backend");
     }

@@ -28,6 +28,7 @@ public class ExtractionRequest {
   public final String resourcePassword; // optional password for encrypted docs
   public final java.util.LinkedHashMap<java.util.regex.Pattern, String>
       passwordsMap; // optional passwords map
+  public final String extractFormat;
 
   public ExtractionRequest(
       String streamType,
@@ -38,7 +39,8 @@ public class ExtractionRequest {
       String streamSourceInfo,
       Long streamSize,
       String resourcePassword,
-      java.util.LinkedHashMap<java.util.regex.Pattern, String> passwordsMap) {
+      java.util.LinkedHashMap<java.util.regex.Pattern, String> passwordsMap,
+      String extractFormat) {
     this.streamType = streamType;
     this.resourceName = resourceName;
     this.contentType = contentType;
@@ -48,5 +50,6 @@ public class ExtractionRequest {
     this.streamSize = streamSize;
     this.resourcePassword = resourcePassword;
     this.passwordsMap = passwordsMap;
+    this.extractFormat = extractFormat;
   }
 }

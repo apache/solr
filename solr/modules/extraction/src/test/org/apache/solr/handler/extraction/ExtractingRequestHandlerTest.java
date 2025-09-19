@@ -16,10 +16,15 @@
  */
 package org.apache.solr.handler.extraction;
 
+import com.carrotsearch.randomizedtesting.ThreadFilter;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
@@ -31,20 +36,44 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
-/** */
+/** Generic tests, randomized between local and tikaserver backends */
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      ExtractingRequestHandlerTest.TestcontainersThreadsFilter.class
+    })
 public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
-
-  static {
-    // Allow the SecureRandom algorithm used in this environment to avoid class configuration
-    // failure in tests.
-    // This mirrors passing -Dtest.solr.allowed.securerandom=NativePRNG at JVM startup.
-    System.setProperty("test.solr.allowed.securerandom", "NativePRNG");
+  // Ignore known non-daemon threads spawned by Testcontainers and Java HttpClient in this test
+  @SuppressWarnings("NewClassNamingConvention")
+  public static class TestcontainersThreadsFilter implements ThreadFilter {
+    @Override
+    public boolean reject(Thread t) {
+      if (t == null || t.getName() == null) return false;
+      String n = t.getName();
+      return n.startsWith("testcontainers-ryuk")
+          || n.startsWith("testcontainers-wait-")
+          || n.startsWith("HttpClient-")
+          || n.startsWith("HttpClient-TestContainers");
+    }
   }
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static GenericContainer<?> tika;
+  private static boolean useTikaServer;
+
+  @SuppressWarnings("resource")
   @BeforeClass
   public static void beforeClass() throws Exception {
     // Is the JDK/env affected by a known bug?
@@ -59,7 +88,34 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
           false);
     }
 
+    useTikaServer = random().nextBoolean();
+    if (useTikaServer) {
+      String baseUrl;
+      tika =
+          new GenericContainer<>("apache/tika:3.2.3.0-full")
+              .withExposedPorts(9998)
+              .waitingFor(Wait.forListeningPort());
+      tika.start();
+      baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);
+      System.setProperty("solr.test.tikaserver.url", baseUrl);
+      System.setProperty("solr.test.extraction.backend", "tikaserver");
+      log.info("Using extraction backend 'tikaserver'. Tika server running on {}", baseUrl);
+    } else {
+      log.info("Using extraction backend 'local'");
+    }
+
     initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    System.clearProperty("solr.test.tikaserver.url");
+    System.clearProperty("solr.test.extraction.backend");
+    if (useTikaServer && tika != null) {
+      tika.stop();
+      tika.close();
+      tika = null;
+    }
   }
 
   @Override

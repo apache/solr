@@ -32,8 +32,7 @@ public interface ExtractionBackend {
    * xpathExpr; if unsupported and xpathExpr is not null, they should throw
    * UnsupportedOperationException.
    */
-  ExtractionResult extractOnly(
-      InputStream inputStream, ExtractionRequest request, String extractFormat, String xpathExpr)
+  ExtractionResult extractOnly(InputStream inputStream, ExtractionRequest request, String xpathExpr)
       throws Exception;
 
   /**

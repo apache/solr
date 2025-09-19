@@ -56,12 +56,6 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     }
   }
 
-  static {
-    // Allow the SecureRandom algorithm used in this environment to avoid class configuration
-    // failure in tests.
-    System.setProperty("test.solr.allowed.securerandom", "NativePRNG");
-  }
-
   private static GenericContainer<?> tika;
   private static String baseUrl;
   private static ExecutorService httpExec;
@@ -107,7 +101,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     client = null;
   }
 
-  private static ExtractionRequest newRequest(String resourceName, String contentType) {
+  private static ExtractionRequest newRequest(
+      String resourceName, String contentType, String extractFormat) {
     return new ExtractionRequest(
         contentType, // streamType
         resourceName, // resourceName
@@ -117,7 +112,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         null, // sourceInfo
         null, // size
         null, // resourcePassword
-        null // passwordsMap
+        null, // passwordsMap
+        extractFormat // extraction format xml or text
         );
   }
 
@@ -127,7 +123,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     TikaServerExtractionBackend backend = new TikaServerExtractionBackend(client, baseUrl);
     byte[] data = "Hello TestContainers".getBytes(java.nio.charset.StandardCharsets.UTF_8);
     try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
-      ExtractionResult res = backend.extract(in, newRequest("test.txt", "text/plain"));
+      ExtractionResult res = backend.extract(in, newRequest("test.txt", "text/plain", "text"));
       assertNotNull(res);
       assertNotNull(res.getContent());
       assertTrue(res.getContent().contains("Hello TestContainers"));
@@ -147,8 +143,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     byte[] data = "Hello XML".getBytes(java.nio.charset.StandardCharsets.UTF_8);
     try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
       ExtractionResult res =
-          backend.extractOnly(
-              in, newRequest("test.txt", "text/plain"), ExtractingDocumentLoader.XML_FORMAT, null);
+          backend.extractOnly(in, newRequest("test.txt", "text/plain", "xml"), null);
       assertNotNull(res);
       String c = res.getContent();
       assertNotNull(c);
@@ -172,9 +167,9 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
           () ->
               backend.parseToSolrContentHandler(
                   in,
-                  newRequest("test.txt", "text/plain"),
-                  new SolrContentHandler(new SimpleExtractionMetadata(), params(), null),
-                  new SimpleExtractionMetadata()));
+                  newRequest("test.txt", "text/plain", "text"),
+                  new SolrContentHandler(new ExtractionMetadata(), params(), null),
+                  new ExtractionMetadata()));
     }
   }
 }

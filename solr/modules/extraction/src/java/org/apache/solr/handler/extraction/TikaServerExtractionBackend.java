@@ -24,6 +24,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Set;
 import org.noggit.JSONParser;
 
 /**
@@ -62,33 +64,43 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   @Override
   public ExtractionResult extract(InputStream inputStream, ExtractionRequest request)
       throws Exception {
-    // Buffer the input so we can send it to multiple Tika Server endpoints
-    byte[] data = inputStream.readAllBytes();
+    String url =
+        baseUrl
+            + "/tika/"
+            + (Set.of("html", "xml").contains(request.extractFormat) ? "html" : "text");
+    HttpRequest.Builder b =
+        HttpRequest.newBuilder(URI.create(url))
+            .timeout(timeout)
+            .header("Accept", "application/json");
+    String contentType = firstNonNull(request.streamType, request.contentType);
+    if (contentType != null) {
+      b.header("Content-Type", contentType);
+    }
+    if (request.resourceName != null) {
+      b.header("Content-Disposition", "attachment; filename=\"" + request.resourceName + "\"");
+    }
+    b.PUT(HttpRequest.BodyPublishers.ofInputStream(() -> inputStream));
 
-    // 1) Extract text
-    String text = requestText(data, request, false, null);
-
-    // 2) Fetch metadata as JSON and convert to neutral metadata
-    ExtractionMetadata md = fetchMetadata(data, request);
-
-    return new ExtractionResult(text, md);
+    HttpResponse<String> resp =
+        httpClient.send(b.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    int code = resp.statusCode();
+    if (code < 200 || code >= 300) {
+      String body = resp.body();
+      String preview = body == null ? "" : body.substring(0, Math.min(body.length(), 512));
+      throw new IOException("TikaServer " + url + " returned status " + code + " body: " + preview);
+    }
+    String body = resp.body();
+    return parseCombinedJson(body);
   }
 
   @Override
   public ExtractionResult extractOnly(
-      InputStream inputStream, ExtractionRequest request, String extractFormat, String xpathExpr)
-      throws Exception {
+      InputStream inputStream, ExtractionRequest request, String xpathExpr) throws Exception {
     if (xpathExpr != null) {
       throw new UnsupportedOperationException(
           "XPath filtering is not supported by TikaServer backend");
     }
-    // Buffer the input so we can send it to multiple Tika Server endpoints
-    byte[] data = inputStream.readAllBytes();
-
-    boolean wantXml = !ExtractingDocumentLoader.TEXT_FORMAT.equalsIgnoreCase(extractFormat);
-    String content = requestText(data, request, wantXml, xpathExpr);
-    ExtractionMetadata md = fetchMetadata(data, request);
-    return new ExtractionResult(content, md);
+    return extract(inputStream, request);
   }
 
   @Override
@@ -96,128 +108,145 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       InputStream inputStream,
       ExtractionRequest request,
       SolrContentHandler handler,
-      ExtractionMetadata outMetadata)
-      throws Exception {
+      ExtractionMetadata outMetadata) {
     throw new UnsupportedOperationException(
         "Legacy SAX-based parsing is not supported by TikaServer backend");
-  }
-
-  private String requestText(byte[] data, ExtractionRequest request, boolean wantXml, String xpath)
-      throws IOException, InterruptedException {
-    String path = wantXml ? "/tika/xhtml" : "/tika/text";
-    String url = baseUrl + path;
-    HttpRequest.Builder b =
-        HttpRequest.newBuilder(URI.create(url))
-            .timeout(timeout)
-            .PUT(HttpRequest.BodyPublishers.ofByteArray(data));
-    // Content-Type
-    String contentType = firstNonNull(request.streamType, request.contentType);
-    if (contentType != null) {
-      b.header("Content-Type", contentType);
-    }
-    // Filename hint
-    if (request.resourceName != null) {
-      b.header("Content-Disposition", "attachment; filename=\"" + request.resourceName + "\"");
-    }
-    // Do not set Accept, let server choose default representation for the endpoint
-
-    HttpResponse<byte[]> resp = httpClient.send(b.build(), HttpResponse.BodyHandlers.ofByteArray());
-    int code = resp.statusCode();
-    if (code < 200 || code >= 300) {
-      throw new IOException("TikaServer /tika returned status " + code);
-    }
-    return new String(resp.body(), StandardCharsets.UTF_8);
-  }
-
-  private ExtractionMetadata fetchMetadata(byte[] data, ExtractionRequest request)
-      throws IOException, InterruptedException {
-    // Call /meta to get metadata for the provided content. Ask JSON form.
-    String url = baseUrl + "/meta";
-    HttpRequest.Builder b =
-        HttpRequest.newBuilder(URI.create(url))
-            .timeout(timeout)
-            .PUT(HttpRequest.BodyPublishers.ofByteArray(data));
-    String contentType = firstNonNull(request.streamType, request.contentType);
-    if (contentType != null) {
-      b.header("Content-Type", contentType);
-    }
-    if (request.resourceName != null) {
-      b.header("Content-Disposition", "attachment; filename=\"" + request.resourceName + "\"");
-    }
-    b.header("Accept", "application/json");
-
-    HttpResponse<String> resp =
-        httpClient.send(b.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-    int code = resp.statusCode();
-    if (code < 200 || code >= 300) {
-      throw new IOException("TikaServer /meta returned status " + code);
-    }
-    return parseJsonToMetadata(resp.body());
   }
 
   private static String firstNonNull(String a, String b) {
     return a != null ? a : b;
   }
 
-  // Parse Tika Server metadata JSON using Noggit JSONParser. Supports values as strings,
-  // arrays of strings, and basic scalars (numbers/booleans) which are coerced to String.
-  private static ExtractionMetadata parseJsonToMetadata(String json) {
-    SimpleExtractionMetadata md = new SimpleExtractionMetadata();
-    if (json == null) return md;
+  // Reads key-values of the current object into md. Assumes the parser is positioned
+  // right after OBJECT_START of that object.
+  private static ExtractionMetadata parseMetadataObject(JSONParser p) throws java.io.IOException {
+    ExtractionMetadata md = new ExtractionMetadata();
+    String currentKey;
+    while (true) {
+      int ev = p.nextEvent();
+      if (ev == JSONParser.OBJECT_END || ev == JSONParser.EOF) {
+        break;
+      }
+      if (ev == JSONParser.STRING && p.wasKey()) {
+        currentKey = p.getString();
+        ev = p.nextEvent();
+        if (ev == JSONParser.STRING) {
+          md.add(currentKey, p.getString());
+        } else if (ev == JSONParser.ARRAY_START) {
+          while (true) {
+            ev = p.nextEvent();
+            if (ev == JSONParser.ARRAY_END) break;
+            if (ev == JSONParser.STRING) {
+              md.add(currentKey, p.getString());
+            } else if (ev == JSONParser.LONG
+                || ev == JSONParser.NUMBER
+                || ev == JSONParser.BIGNUMBER) {
+              md.add(currentKey, p.getNumberChars().toString());
+            } else if (ev == JSONParser.BOOLEAN) {
+              md.add(currentKey, String.valueOf(p.getBoolean()));
+            } else if (ev == JSONParser.NULL) {
+              // ignore nulls
+            } else {
+              // skip nested objects or unsupported types within arrays
+            }
+          }
+        } else if (ev == JSONParser.LONG || ev == JSONParser.NUMBER || ev == JSONParser.BIGNUMBER) {
+          md.add(currentKey, p.getNumberChars().toString());
+        } else if (ev == JSONParser.BOOLEAN) {
+          md.add(currentKey, String.valueOf(p.getBoolean()));
+        } else if (ev == JSONParser.NULL) {
+          // ignore nulls
+        } else if (ev == JSONParser.OBJECT_START) {
+          // Unexpected nested object; skip it entirely
+          skipObject(p);
+        } else {
+          // skip unsupported value types
+        }
+      }
+    }
+    return md;
+  }
+
+  private static void skipObject(JSONParser p) throws java.io.IOException {
+    int depth = 1;
+    while (depth > 0) {
+      int ev = p.nextEvent();
+      if (ev == JSONParser.OBJECT_START) depth++;
+      else if (ev == JSONParser.OBJECT_END) depth--;
+      else if (ev == JSONParser.EOF) break;
+    }
+  }
+
+  // Parses combined JSON from /tika/text with Accept: application/json and returns both content
+  // and metadata. Supports two shapes:
+  // 1) {"content": "...", "metadata": { ... }}
+  // 2) {"content": "...", <flat metadata fields> }
+  private static ExtractionResult parseCombinedJson(String json) {
+    String content = "";
+    ExtractionMetadata md = new ExtractionMetadata();
+    if (json == null) return new ExtractionResult(content, md);
     try {
       JSONParser p = new JSONParser(json);
       int ev = p.nextEvent();
       if (ev != JSONParser.OBJECT_START) {
-        return md;
+        return new ExtractionResult(content, md);
       }
-      String currentKey = null;
       while (true) {
         ev = p.nextEvent();
-        if (ev == JSONParser.OBJECT_END || ev == JSONParser.EOF) {
-          break;
-        }
+        if (ev == JSONParser.OBJECT_END || ev == JSONParser.EOF) break;
         if (ev == JSONParser.STRING && p.wasKey()) {
-          currentKey = p.getString();
-          // Next event is the value for this key
+          String key = p.getString();
           ev = p.nextEvent();
-          if (ev == JSONParser.STRING) {
-            md.add(currentKey, p.getString());
-          } else if (ev == JSONParser.ARRAY_START) {
-            // Read array elements
-            while (true) {
-              ev = p.nextEvent();
-              if (ev == JSONParser.ARRAY_END) break;
-              if (ev == JSONParser.STRING) {
-                md.add(currentKey, p.getString());
-              } else if (ev == JSONParser.LONG
-                  || ev == JSONParser.NUMBER
-                  || ev == JSONParser.BIGNUMBER) {
-                md.add(currentKey, p.getNumberChars().toString());
-              } else if (ev == JSONParser.BOOLEAN) {
-                md.add(currentKey, String.valueOf(p.getBoolean()));
-              } else if (ev == JSONParser.NULL) {
-                // ignore nulls
-              } else {
-                // skip nested objects or unsupported types within arrays
-              }
+          if ("X-TIKA:content".equals(key)) {
+            if (ev == JSONParser.STRING) {
+              content = p.getString();
+            } else {
+              // Skip non-string content
+              if (ev == JSONParser.OBJECT_START) skipObject(p);
             }
-          } else if (ev == JSONParser.LONG
-              || ev == JSONParser.NUMBER
-              || ev == JSONParser.BIGNUMBER) {
-            md.add(currentKey, p.getNumberChars().toString());
-          } else if (ev == JSONParser.BOOLEAN) {
-            md.add(currentKey, String.valueOf(p.getBoolean()));
-          } else if (ev == JSONParser.NULL) {
-            // ignore nulls
+          } else if ("metadata".equals(key)) {
+            if (ev == JSONParser.OBJECT_START) {
+              md = parseMetadataObject(p);
+            } else {
+              // unexpected shape; skip
+              if (ev == JSONParser.OBJECT_START) skipObject(p);
+            }
           } else {
-            // skip nested objects or unsupported value types
+            // Treat as flat metadata field
+            if (ev == JSONParser.STRING) {
+              md.add(key, p.getString());
+            } else if (ev == JSONParser.ARRAY_START) {
+              while (true) {
+                ev = p.nextEvent();
+                if (ev == JSONParser.ARRAY_END) break;
+                if (ev == JSONParser.STRING) md.add(key, p.getString());
+                else if (ev == JSONParser.LONG
+                    || ev == JSONParser.NUMBER
+                    || ev == JSONParser.BIGNUMBER) md.add(key, p.getNumberChars().toString());
+                else if (ev == JSONParser.BOOLEAN) md.add(key, String.valueOf(p.getBoolean()));
+                else if (ev == JSONParser.NULL) {
+                  // ignore
+                }
+              }
+            } else if (ev == JSONParser.LONG
+                || ev == JSONParser.NUMBER
+                || ev == JSONParser.BIGNUMBER) {
+              md.add(key, p.getNumberChars().toString());
+            } else if (ev == JSONParser.BOOLEAN) {
+              md.add(key, String.valueOf(p.getBoolean()));
+            } else if (ev == JSONParser.NULL) {
+              // ignore
+            } else if (ev == JSONParser.OBJECT_START) {
+              // skip nested object for unknown key
+              skipObject(p);
+            }
           }
         }
       }
     } catch (java.io.IOException ioe) {
-      // Fall back to empty metadata on parsing error
-      return md;
+      // ignore, return what we have
     }
-    return md;
+    Arrays.stream(md.names()).filter(k -> k.startsWith("X-TIKA:Parsed-")).forEach(md::remove);
+    return new ExtractionResult(content, md);
   }
 }

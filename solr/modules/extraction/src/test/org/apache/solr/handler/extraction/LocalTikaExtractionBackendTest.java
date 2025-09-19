@@ -53,7 +53,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
       String streamName,
       String streamSourceInfo,
       Long streamSize,
-      String resourcePassword) {
+      String resourcePassword,
+      String returnType) {
     return new ExtractionRequest(
         streamType,
         resourceName,
@@ -63,7 +64,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
         streamSourceInfo,
         streamSize,
         resourcePassword,
-        null);
+        null,
+        returnType);
   }
 
   @Test
@@ -80,7 +82,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
               "version_control.txt",
               null,
               null,
-              null);
+              null,
+              "text");
       expectThrows(IllegalArgumentException.class, () -> backend.extract(in, req));
     }
 
@@ -95,7 +98,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
               "version_control.txt",
               null,
               null,
-              null);
+              null,
+              "text");
       expectThrows(Exception.class, () -> backend.extract(in, req));
     }
   }
@@ -113,7 +117,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
               "password-is-Word2010.docx",
               null,
               null,
-              null);
+              null,
+              "text");
       expectThrows(Exception.class, () -> backend.extract(in, req));
     }
   }
@@ -131,7 +136,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
               "password-is-Word2010.docx",
               null,
               null,
-              "Word2010");
+              "Word2010",
+              "text");
       ExtractionResult res = backend.extract(in, req);
       assertNotNull(res);
       assertNotNull(res.getMetadata());

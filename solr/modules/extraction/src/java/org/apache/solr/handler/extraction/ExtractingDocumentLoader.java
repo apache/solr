@@ -102,6 +102,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
       String xpathExpr = params.get(ExtractingParams.XPATH_EXPRESSION);
       boolean extractOnly = params.getBool(ExtractingParams.EXTRACT_ONLY, false);
+      String extractFormat =
+          params.get(ExtractingParams.EXTRACT_FORMAT, extractOnly ? XML_FORMAT : TEXT_FORMAT);
 
       // Parse optional passwords file into a map (keeps Tika usages out of this class)
       LinkedHashMap<Pattern, String> pwMap = null;
@@ -122,7 +124,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               stream.getSourceInfo(),
               stream.getSize(),
               params.get(ExtractingParams.RESOURCE_PASSWORD, null),
-              pwMap);
+              pwMap,
+              extractFormat);
 
       boolean captureAttr = params.getBool(ExtractingParams.CAPTURE_ATTRIBUTES, false);
       String[] captureElems = params.getParams(ExtractingParams.CAPTURE_ELEMENTS);
@@ -135,10 +138,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               || (passwordsFile != null);
 
       if (extractOnly) {
-        String extractFormat = params.get(ExtractingParams.EXTRACT_FORMAT, XML_FORMAT);
         try {
-          ExtractionResult result =
-              backend.extractOnly(inputStream, extractionRequest, extractFormat, xpathExpr);
+          ExtractionResult result = backend.extractOnly(inputStream, extractionRequest, xpathExpr);
           // Write content
           rsp.add(stream.getName(), result.getContent());
           // Write metadata
@@ -165,7 +166,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
       if (needLegacySax) {
         // Indexing with capture/xpath/etc: delegate SAX parse to backend
-        SimpleExtractionMetadata neutral = new SimpleExtractionMetadata();
+        ExtractionMetadata neutral = new ExtractionMetadata();
         SolrContentHandler handler =
             factory.createSolrContentHandler(neutral, params, req.getSchema());
         try {
@@ -194,8 +195,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
             log.warn("skip extracting text due to {}.", e.getLocalizedMessage(), e);
           // Index a document with literals only (no extracted content/metadata)
           SolrContentHandler handler =
-              factory.createSolrContentHandler(
-                  new SimpleExtractionMetadata(), params, req.getSchema());
+              factory.createSolrContentHandler(new ExtractionMetadata(), params, req.getSchema());
           addDoc(handler);
           return;
         }

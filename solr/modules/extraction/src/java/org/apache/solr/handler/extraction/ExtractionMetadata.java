@@ -16,16 +16,64 @@
  */
 package org.apache.solr.handler.extraction;
 
-/**
- * Neutral metadata container used by extraction backends. Provides minimal operations needed by
- * SolrContentHandler and response building without depending on Apache Tika's Metadata class.
- */
-public interface ExtractionMetadata {
-  void add(String name, String value);
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
-  String[] getValues(String name);
+/** Simple metadata bean */
+public class ExtractionMetadata {
+  private final Map<String, List<String>> map = new LinkedHashMap<>();
 
-  String get(String name);
+  public void add(String name, String value) {
+    if (name == null || value == null) return;
+    map.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
+  }
 
-  String[] names();
+  public String[] getValues(String name) {
+    List<String> vals = map.get(name);
+    if (vals == null) return new String[0];
+    return vals.toArray(new String[0]);
+  }
+
+  public String get(String name) {
+    List<String> vals = map.get(name);
+    if (vals == null || vals.isEmpty()) return null;
+    return vals.get(0);
+  }
+
+  public String[] names() {
+    return map.keySet().toArray(new String[0]);
+  }
+
+  public void remove(String name) {
+    map.remove(name);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("ExtractionMetadata{");
+    boolean first = true;
+    for (Map.Entry<String, List<String>> e : map.entrySet()) {
+      if (!first) sb.append(", ");
+      first = false;
+      sb.append(e.getKey()).append('=').append(e.getValue());
+    }
+    sb.append('}');
+    return sb.toString();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (!(obj instanceof ExtractionMetadata)) return false;
+    ExtractionMetadata that = (ExtractionMetadata) obj;
+    return Objects.equals(this.map, that.map);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(map);
+  }
 }

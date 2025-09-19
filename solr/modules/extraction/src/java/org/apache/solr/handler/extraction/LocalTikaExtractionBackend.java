@@ -144,7 +144,7 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
   }
 
   private static ExtractionMetadata copyToNeutral(Metadata md) {
-    ExtractionMetadata out = new SimpleExtractionMetadata();
+    ExtractionMetadata out = new ExtractionMetadata();
     for (String name : md.names()) {
       String[] vals = md.getValues(name);
       if (vals != null) for (String v : vals) out.add(name, v);
@@ -168,8 +168,7 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
 
   @Override
   public ExtractionResult extractOnly(
-      InputStream inputStream, ExtractionRequest request, String extractFormat, String xpathExpr)
-      throws Exception {
+      InputStream inputStream, ExtractionRequest request, String xpathExpr) throws Exception {
     Parser parser = selectParser(request);
     if (parser == null) {
       throw new IllegalArgumentException("No Tika parser for stream type: " + request.streamType);
@@ -178,7 +177,7 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
     ParseContext context = buildContext(parser, request);
 
     String content;
-    if (ExtractingDocumentLoader.TEXT_FORMAT.equals(extractFormat) || xpathExpr != null) {
+    if (ExtractingDocumentLoader.TEXT_FORMAT.equals(request.extractFormat) || xpathExpr != null) {
       org.apache.tika.sax.ToTextContentHandler textHandler =
           new org.apache.tika.sax.ToTextContentHandler();
       org.xml.sax.ContentHandler ch = textHandler;
