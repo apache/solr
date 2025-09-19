@@ -33,7 +33,10 @@ public class ExtractionBackendFactory {
   private final Map<String, ExtractionBackend> cache = new ConcurrentHashMap<>();
 
   public ExtractionBackendFactory(
-      SolrCore core, String tikaConfigLoc, ParseContextConfig parseContextConfig, String tikaServerUrl) {
+      SolrCore core,
+      String tikaConfigLoc,
+      ParseContextConfig parseContextConfig,
+      String tikaServerUrl) {
     this.core = core;
     this.tikaConfigLoc = tikaConfigLoc;
     this.parseContextConfig = parseContextConfig;
@@ -67,7 +70,8 @@ public class ExtractionBackendFactory {
       case DummyExtractionBackend.ID:
         return new DummyExtractionBackend();
       case TikaServerExtractionBackend.ID:
-        return new TikaServerExtractionBackend(tikaServerUrl != null ? tikaServerUrl : "http://localhost:9998");
+        return new TikaServerExtractionBackend(
+            tikaServerUrl != null ? tikaServerUrl : "http://localhost:9998");
       default:
         // Fallback to local for unknown names
         return new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);

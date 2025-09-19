@@ -35,11 +35,10 @@ dependencies {
     exclude group: 'org.quartz-scheduler', module: 'quartz'
     exclude group: 'xml-apis', module: 'xml-apis'
   })
-  implementation (libs.xerces.impl, {
-    exclude group: 'xml-apis', module: 'xml-apis'
-  })
 
   testImplementation project(':solr:test-framework')
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.junit.junit
+  testImplementation libs.testcontainers
+  testImplementation libs.carrotsearch.randomizedtesting.runner
 }

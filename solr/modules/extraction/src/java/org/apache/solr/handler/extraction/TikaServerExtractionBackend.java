@@ -30,8 +30,8 @@ import org.noggit.JSONParser;
  * Extraction backend that delegates parsing to a remote Apache Tika Server.
  *
  * <p>This backend uses Java 11 HttpClient to call Tika Server endpoints. It supports
- * backend-neutral extract() and extractOnly() operations. Legacy SAX-based parsing
- * is not supported and will throw UnsupportedOperationException.
+ * backend-neutral extract() and extractOnly() operations. Legacy SAX-based parsing is not supported
+ * and will throw UnsupportedOperationException.
  */
 public class TikaServerExtractionBackend implements ExtractionBackend {
   private final HttpClient httpClient;
@@ -62,11 +62,14 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   @Override
   public ExtractionResult extract(InputStream inputStream, ExtractionRequest request)
       throws Exception {
+    // Buffer the input so we can send it to multiple Tika Server endpoints
+    byte[] data = inputStream.readAllBytes();
+
     // 1) Extract text
-    String text = requestText(inputStream, request, false, null);
+    String text = requestText(data, request, false, null);
 
     // 2) Fetch metadata as JSON and convert to neutral metadata
-    ExtractionMetadata md = fetchMetadata(request);
+    ExtractionMetadata md = fetchMetadata(data, request);
 
     return new ExtractionResult(text, md);
   }
@@ -76,11 +79,15 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       InputStream inputStream, ExtractionRequest request, String extractFormat, String xpathExpr)
       throws Exception {
     if (xpathExpr != null) {
-      throw new UnsupportedOperationException("XPath filtering is not supported by TikaServer backend");
+      throw new UnsupportedOperationException(
+          "XPath filtering is not supported by TikaServer backend");
     }
+    // Buffer the input so we can send it to multiple Tika Server endpoints
+    byte[] data = inputStream.readAllBytes();
+
     boolean wantXml = !ExtractingDocumentLoader.TEXT_FORMAT.equalsIgnoreCase(extractFormat);
-    String content = requestText(inputStream, request, wantXml, xpathExpr);
-    ExtractionMetadata md = fetchMetadata(request);
+    String content = requestText(data, request, wantXml, xpathExpr);
+    ExtractionMetadata md = fetchMetadata(data, request);
     return new ExtractionResult(content, md);
   }
 
@@ -95,11 +102,14 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
         "Legacy SAX-based parsing is not supported by TikaServer backend");
   }
 
-  private String requestText(
-      InputStream inputStream, ExtractionRequest request, boolean wantXml, String xpath)
+  private String requestText(byte[] data, ExtractionRequest request, boolean wantXml, String xpath)
       throws IOException, InterruptedException {
-    String url = baseUrl + "/tika";
-    HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(url)).timeout(timeout).POST(HttpRequest.BodyPublishers.ofInputStream(() -> inputStream));
+    String path = wantXml ? "/tika/xhtml" : "/tika/text";
+    String url = baseUrl + path;
+    HttpRequest.Builder b =
+        HttpRequest.newBuilder(URI.create(url))
+            .timeout(timeout)
+            .PUT(HttpRequest.BodyPublishers.ofByteArray(data));
     // Content-Type
     String contentType = firstNonNull(request.streamType, request.contentType);
     if (contentType != null) {
@@ -109,8 +119,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     if (request.resourceName != null) {
       b.header("Content-Disposition", "attachment; filename=\"" + request.resourceName + "\"");
     }
-    // Response type
-    b.header("Accept", wantXml ? "application/xml" : "text/plain");
+    // Do not set Accept, let server choose default representation for the endpoint
 
     HttpResponse<byte[]> resp = httpClient.send(b.build(), HttpResponse.BodyHandlers.ofByteArray());
     int code = resp.statusCode();
@@ -120,11 +129,14 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     return new String(resp.body(), StandardCharsets.UTF_8);
   }
 
-  private ExtractionMetadata fetchMetadata(ExtractionRequest request)
+  private ExtractionMetadata fetchMetadata(byte[] data, ExtractionRequest request)
       throws IOException, InterruptedException {
-    // Call /meta to get metadata. Ask JSON form; Tika Server returns application/json map.
+    // Call /meta to get metadata for the provided content. Ask JSON form.
     String url = baseUrl + "/meta";
-    HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(url)).timeout(timeout).POST(HttpRequest.BodyPublishers.noBody());
+    HttpRequest.Builder b =
+        HttpRequest.newBuilder(URI.create(url))
+            .timeout(timeout)
+            .PUT(HttpRequest.BodyPublishers.ofByteArray(data));
     String contentType = firstNonNull(request.streamType, request.contentType);
     if (contentType != null) {
       b.header("Content-Type", contentType);
@@ -134,7 +146,8 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     }
     b.header("Accept", "application/json");
 
-    HttpResponse<String> resp = httpClient.send(b.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    HttpResponse<String> resp =
+        httpClient.send(b.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
     int code = resp.statusCode();
     if (code < 200 || code >= 300) {
       throw new IOException("TikaServer /meta returned status " + code);

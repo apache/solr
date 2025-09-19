@@ -194,6 +194,7 @@ squareup-okhttp3-okhttp = "4.12.0"
 stephenc-jcip = "1.0-1"
 swagger3 = "2.2.22"
 tdunning-tdigest = "3.3"
+testcontainers = "1.20.4"
 thetaphi-forbiddenapis = "3.9"
 thisptr-jacksonjq = "0.0.13"
 threeten-bp = "1.6.8"
@@ -512,6 +513,7 @@ stephenc-jcip-annotations = { module = "com.github.stephenc.jcip:jcip-annotation
 swagger3-annotations-jakarta = { module = "io.swagger.core.v3:swagger-annotations-jakarta", version.ref = "swagger3" }
 swagger3-jaxrs2-jakarta = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger3" }
 tdunning-tdigest = { module = "com.tdunning:t-digest", version.ref = "tdunning-tdigest" }
+testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 thisptr-jacksonjq = { module = "net.thisptr:jackson-jq", version.ref = "thisptr-jacksonjq" }
 threeten-bp = { module = "org.threeten:threetenbp", version.ref = "threeten-bp" }
 xerces-impl = { module = "xerces:xercesImpl", version.ref = "xerces" }

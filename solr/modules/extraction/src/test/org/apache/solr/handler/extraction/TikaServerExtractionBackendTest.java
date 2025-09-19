@@ -16,28 +16,45 @@
  */
 package org.apache.solr.handler.extraction;
 
+import com.carrotsearch.randomizedtesting.ThreadFilter;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.CookieHandler;
-import java.net.ProxySelector;
-import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpHeaders;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.security.SecureRandom;
-import java.time.Duration;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
+import java.util.concurrent.ExecutorService;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.junit.AfterClass;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.testcontainers.containers.GenericContainer;
 
-/** Unit tests for TikaServerExtractionBackend using a mocked HttpClient (no networking). */
+/**
+ * Integration tests for TikaServerExtractionBackend using a real Tika Server via Testcontainers.
+ */
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      TikaServerExtractionBackendTest.TestcontainersThreadsFilter.class
+    })
 public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
+
+  // Ignore known non-daemon threads spawned by Testcontainers and Java HttpClient in this test
+  public static class TestcontainersThreadsFilter implements ThreadFilter {
+    @Override
+    public boolean reject(Thread t) {
+      if (t == null || t.getName() == null) return false;
+      String n = t.getName();
+      return n.startsWith("testcontainers-ryuk")
+          || n.startsWith("testcontainers-wait-")
+          || n.startsWith("HttpClient-")
+          || n.startsWith("HttpClient-TestContainers");
+    }
+  }
 
   static {
     // Allow the SecureRandom algorithm used in this environment to avoid class configuration
@@ -45,98 +62,49 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     System.setProperty("test.solr.allowed.securerandom", "NativePRNG");
   }
 
-  private static class FakeHttpClient extends HttpClient {
-    @Override
-    public Optional<CookieHandler> cookieHandler() { return Optional.empty(); }
+  private static GenericContainer<?> tika;
+  private static String baseUrl;
+  private static ExecutorService httpExec;
+  private static HttpClient client;
 
-    @Override
-    public Optional<Duration> connectTimeout() { return Optional.of(Duration.ofSeconds(5)); }
-
-    @Override
-    public Redirect followRedirects() { return Redirect.NEVER; }
-
-    @Override
-    public Optional<ProxySelector> proxy() { return Optional.empty(); }
-
-    @Override
-    public SSLContext sslContext() { try { return SSLContext.getDefault(); } catch (Exception e) { throw new RuntimeException(e);} }
-
-    @Override
-    public SSLParameters sslParameters() { return new SSLParameters(); }
-
-    @Override
-    public Optional<Executor> executor() { return Optional.empty(); }
-
-    @Override
-    public Optional<java.net.Authenticator> authenticator() { return Optional.empty(); }
-
-    @Override
-    public Version version() { return Version.HTTP_1_1; }
-
-    @Override
-    public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler)
-        throws IOException, InterruptedException {
-      return respond(request, responseBodyHandler);
+  @BeforeClass
+  public static void startTikaServer() {
+    try {
+      httpExec =
+          ExecutorUtil.newMDCAwareFixedThreadPool(
+              2,
+              r -> {
+                Thread t = new Thread(r, "HttpClient-TestContainers");
+                t.setDaemon(true);
+                return t;
+              });
+      client = HttpClient.newBuilder().executor(httpExec).build();
+      tika = new GenericContainer<>("apache/tika:3.2.3.0-full").withExposedPorts(9998);
+      tika.start();
+      baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);
+    } catch (Throwable t) {
+      // Skip tests if Docker/Testcontainers are not available in the environment
+      Assume.assumeNoException("Docker/Testcontainers not available; skipping TikaServer tests", t);
     }
+  }
 
-    @Override
-    public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler) {
-      return CompletableFuture.completedFuture(respond(request, responseBodyHandler));
-    }
-
-    @Override
-    public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler, HttpResponse.PushPromiseHandler<T> pushPromiseHandler) {
-      return CompletableFuture.completedFuture(respond(request, responseBodyHandler));
-    }
-
-    private <T> HttpResponse<T> respond(HttpRequest request, HttpResponse.BodyHandler<T> handler) {
+  @AfterClass
+  public static void stopTikaServer() {
+    if (tika != null) {
       try {
-        URI uri = request.uri();
-        String path = uri.getPath();
-        byte[] body;
-        String ct;
-        int sc = 200;
-        if ("/tika".equals(path)) {
-          String accept = request.headers().firstValue("Accept").orElse("text/plain");
-          if ("application/xml".equalsIgnoreCase(accept)) {
-            String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><xhtml><body>XML OUT</body></xhtml>";
-            body = xml.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            ct = "application/xml";
-          } else {
-            body = "TEXT OUT".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            ct = "text/plain";
-          }
-        } else if ("/meta".equals(path)) {
-          String json =
-              "{\"Content-Type\":[\"text/plain\"],\"resourcename\":[\"test.txt\"],\"X-Parsed-By\":[\"SomeParser\"]}";
-          body = json.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-          ct = "application/json";
-        } else {
-          body = "Not Found".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-          sc = 404;
-          ct = "text/plain";
-        }
-        final int status = sc;
-        final String contentType = ct;
-        // Decide expected body type based on endpoint (mimics our backend usage)
-        final Object bodyObj =
-            "/meta".equals(path)
-                ? new String(body, java.nio.charset.StandardCharsets.UTF_8)
-                : body; // /tika returns bytes
-        return new HttpResponse<>() {
-          @Override public int statusCode() { return status; }
-          @Override public HttpRequest request() { return request; }
-          @Override public Optional<HttpResponse<T>> previousResponse() { return Optional.empty(); }
-          @Override public HttpHeaders headers() { return HttpHeaders.of(java.util.Map.of("Content-Type", java.util.List.of(contentType)), (k,v)->true); }
-          @Override public T body() { @SuppressWarnings("unchecked") T t = (T) bodyObj; return t; }
-          @Override public Optional<javax.net.ssl.SSLSession> sslSession() { return Optional.empty(); }
-          @Override public URI uri() { return uri; }
-          @Override public Version version() { return Version.HTTP_1_1; }
-        };
-      } catch (Exception e) {
-        throw new RuntimeException(e);
+        tika.stop();
+      } catch (Throwable ignore) {
       }
+      tika = null;
     }
+    if (httpExec != null) {
+      try {
+        httpExec.shutdownNow();
+      } catch (Throwable ignore) {
+      }
+      httpExec = null;
+    }
+    client = null;
   }
 
   private static ExtractionRequest newRequest(String resourceName, String contentType) {
@@ -155,35 +123,48 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testExtractTextAndMetadata() throws Exception {
-    TikaServerExtractionBackend backend = new TikaServerExtractionBackend(new FakeHttpClient(), "http://example");
-    byte[] data = "dummy".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    Assume.assumeTrue("Tika server container not started", tika != null);
+    TikaServerExtractionBackend backend = new TikaServerExtractionBackend(client, baseUrl);
+    byte[] data = "Hello TestContainers".getBytes(java.nio.charset.StandardCharsets.UTF_8);
     try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
       ExtractionResult res = backend.extract(in, newRequest("test.txt", "text/plain"));
       assertNotNull(res);
-      assertEquals("TEXT OUT", res.getContent());
+      assertNotNull(res.getContent());
+      assertTrue(res.getContent().contains("Hello TestContainers"));
       assertNotNull(res.getMetadata());
-      assertArrayEquals(new String[] {"text/plain"}, res.getMetadata().getValues("Content-Type"));
-      assertArrayEquals(new String[] {"test.txt"}, res.getMetadata().getValues("resourcename"));
+      String[] cts = res.getMetadata().getValues("Content-Type");
+      assertNotNull(cts);
+      assertTrue(cts.length >= 1);
+      // Tika may append charset; be flexible
+      assertTrue(cts[0].startsWith("text/plain"));
     }
   }
 
   @Test
   public void testExtractOnlyXml() throws Exception {
-    TikaServerExtractionBackend backend = new TikaServerExtractionBackend(new FakeHttpClient(), "http://example");
-    byte[] data = "dummy".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    Assume.assumeTrue("Tika server container not started", tika != null);
+    TikaServerExtractionBackend backend = new TikaServerExtractionBackend(client, baseUrl);
+    byte[] data = "Hello XML".getBytes(java.nio.charset.StandardCharsets.UTF_8);
     try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
       ExtractionResult res =
           backend.extractOnly(
               in, newRequest("test.txt", "text/plain"), ExtractingDocumentLoader.XML_FORMAT, null);
       assertNotNull(res);
-      assertTrue(res.getContent().contains("<?xml"));
-      assertTrue(res.getContent().contains("XML OUT"));
+      String c = res.getContent();
+      assertNotNull(c);
+      // Tika Server may return XHTML without XML declaration; be flexible
+      assertTrue(
+          c.contains("<?xml")
+              || c.toLowerCase(java.util.Locale.ROOT).contains("<html")
+              || c.toLowerCase(java.util.Locale.ROOT).contains("<xhtml"));
+      assertTrue(c.contains("Hello XML"));
     }
   }
 
   @Test
   public void testParseToSolrContentHandlerUnsupported() throws Exception {
-    TikaServerExtractionBackend backend = new TikaServerExtractionBackend(new FakeHttpClient(), "http://example");
+    Assume.assumeTrue("Tika server container not started", tika != null);
+    TikaServerExtractionBackend backend = new TikaServerExtractionBackend(client, baseUrl);
     byte[] data = "dummy".getBytes(java.nio.charset.StandardCharsets.UTF_8);
     try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
       expectThrows(

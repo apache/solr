@@ -66,12 +66,15 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
 
       // Initialize backend factory once; backends are created lazily on demand
       String tikaServerUrl = (String) initArgs.get(TIKASERVER_URL);
-      backendFactory = new ExtractionBackendFactory(core, tikaConfigLoc, parseContextConfig, tikaServerUrl);
+      backendFactory =
+          new ExtractionBackendFactory(core, tikaConfigLoc, parseContextConfig, tikaServerUrl);
 
       // Choose default backend name (do not instantiate yet)
       String backendName = (String) initArgs.get(ExtractingParams.EXTRACTION_BACKEND);
       defaultBackendName =
-          (backendName == null || backendName.trim().isEmpty()) ? LocalTikaExtractionBackend.ID : backendName;
+          (backendName == null || backendName.trim().isEmpty())
+              ? LocalTikaExtractionBackend.ID
+              : backendName;
 
     } catch (Exception e) {
       throw new SolrException(
