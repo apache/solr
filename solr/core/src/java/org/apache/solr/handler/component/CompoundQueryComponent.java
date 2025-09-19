@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
@@ -92,29 +91,19 @@ public class CompoundQueryComponent extends QueryComponent {
 
     final TopDocs fusion = TopDocs.rrf(topN, k, hits);
 
-    final HashSet<Object> seenKeys = new HashSet<>(); // TODO: use resultIds instead
     for (ScoreDoc scoreDoc : fusion.scoreDocs) {
-      final SolrDocument solrDocument =
-          crb.responseBuilders.get(scoreDoc.shardIndex).getResponseDocs().get(scoreDoc.doc);
-      if (seenKeys.add(solrDocument.getFieldValue("id"))) { // TODO: do not hard-code "id" here
+      final ResponseBuilder crb_i = crb.responseBuilders.get(scoreDoc.shardIndex);
+      final SolrDocument solrDocument = crb_i.getResponseDocs().get(scoreDoc.doc);
+      final Object id = solrDocument.getFieldValue("id"); // TODO: do not hard-code "id" here
+      final ShardDoc sdoc = crb_i.resultIds.get(id);
+      sdoc.positionInResponse = resultIds.size();
+      if (resultIds.putIfAbsent(id, sdoc) == null) {
         responseDocs.add(solrDocument);
       }
     }
     final TotalHits totalHits = fusion.totalHits;
     responseDocs.setNumFound(totalHits.value());
     responseDocs.setNumFoundExact(TotalHits.Relation.EQUAL_TO.equals(totalHits.relation()));
-
-    for (var rb_i : crb.responseBuilders) {
-      for (var entry : rb_i.resultIds.entrySet()) {
-        /*
-        this positionInResponse is an interim value that will change during the fusion stage
-        but we need it to be unique here to support any SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse
-        call in HighlightComponent (an alternative would be to make the HighlightComponent aware of the fusion stage)
-        */
-        entry.getValue().positionInResponse = resultIds.size();
-        resultIds.putIfAbsent(entry.getKey(), entry.getValue());
-      }
-    }
 
     crb.resultIds = resultIds;
     crb.setResponseDocs(responseDocs);
