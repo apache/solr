@@ -26,7 +26,7 @@ public class BinaryQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
       initCore("solrconfig-basic.xml", "schema-densevector-bq.xml");
       IndexSchema schema = h.getCore().getLatestSchema();
 
-      SchemaField vector = schema.getField("v_bbq");
+      SchemaField vector = schema.getField("v_bq");
       assertNotNull(vector);
 
       BinaryQuantizedDenseVectorField type =
