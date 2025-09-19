@@ -91,8 +91,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -1003,6 +1005,30 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /**
+   * When {@link QueryLimits#isLimitsEnabled()}, there is potential for crosstalk among different
+   * threads when waiting on cache entries computed by other threads. Setting this to {@code true}
+   * (the default) errs on the side of deduping simultaneous redundant computation, with a potential
+   * risk of increased latency for individual requests (no more than 2x).
+   *
+   * <p>The relative risk of increased latency is greater for:
+   *
+   * <ul>
+   *   <li>systems with ample compute power (relative to request load), in which case deduping
+   *       computation is not as much of a priority
+   *   <li>systems that include aggressive query limits (e.g., {@value CommonParams#TIME_ALLOWED}
+   *       configured very low
+   * </ul>
+   *
+   * <p>For systems where compute power is a potential bottleneck relative to request load, and/or
+   * where {@value CommonParams#TIME_ALLOWED} is mostly employed as a failsafe (configured high), an
+   * optimistic approach is likely to be preferable (the edge-case risk of {@code < 2x} increased
+   * latency on individual requests will be outweighed by systemic benefit of deduping requests,
+   * reducing latency overall in the common case).
+   */
+  private static final boolean OPTIMISTIC_QUERY_LIMITED_CACHE_COMPUTATION =
+      EnvUtils.getPropertyAsBool("solr.optimisticQueryLimitedCacheComputation", true);
+
+  /**
    * Attempt to read the query from the filter cache, if not will compute the result and insert back
    * into the cache
    *
@@ -1027,8 +1053,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     DocSet answer;
-    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-    if (queryLimits.isLimitsEnabled()) {
+    if (!OPTIMISTIC_QUERY_LIMITED_CACHE_COMPUTATION
+        && QueryLimits.getCurrentLimits().isLimitsEnabled()) {
       // If there is a possibility of timeout for this query, then don't reserve a computation slot.
       // Further, we can't naively wait for an in progress computation to finish, because if we time
       // out before it does then we won't even have partial results to provide. We could possibly

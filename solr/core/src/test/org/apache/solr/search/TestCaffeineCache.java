@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,12 +27,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Accountable;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.Test;
@@ -169,6 +175,85 @@ public class TestCaffeineCache extends SolrTestCase {
     assertTrue("did not expire entry in in time", await);
     assertEquals(RemovalCause.EXPIRED, removalCause.get());
     assertNull(cache.get("foo"));
+  }
+
+  @Test
+  @SuppressWarnings("try")
+  public void testExceptionThrowing() throws Exception {
+    int n = 3;
+    CountDownLatch cdl = new CountDownLatch(n);
+    CountDownLatch cdl2 = new CountDownLatch(n);
+    ExecutorService exec = ExecutorUtil.newMDCAwareCachedThreadPool("test");
+    try (CaffeineCache<String, String> cache = new CaffeineCache<>();
+        Closeable c = () -> ExecutorUtil.shutdownNowAndAwaitTermination(exec); ) {
+      Map<String, String> params = new HashMap<>();
+      params.put("size", "6");
+      cache.init(params, null, new NoOpRegenerator());
+      @SuppressWarnings({"unchecked", "rawtypes"})
+      Future<String>[] futures = new Future[n];
+      int computeIdx = random().nextInt(n);
+
+      for (int i = 0; i < n; i++) {
+        int idx = i;
+        futures[i] =
+            exec.submit(
+                () -> {
+                  if (idx != computeIdx) {
+                    cdl.countDown();
+                    try {
+                      cdl.await();
+                    } catch (InterruptedException ex) {
+                      Thread.currentThread().interrupt();
+                      throw new RuntimeException(ex);
+                    }
+                  }
+                  try {
+                    return cache.computeIfAbsent(
+                        "a",
+                        (k) -> {
+                          cdl.countDown();
+                          try {
+                            cdl.await();
+                          } catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException(ex);
+                          }
+                          if (idx == 0) {
+                            throw new UnsupportedOperationException("nope!");
+                          }
+                          return k.concat(Integer.toString(idx));
+                        });
+                  } finally {
+                    cdl2.countDown();
+                  }
+                });
+      }
+      assertTrue(cdl2.await(5, TimeUnit.SECONDS));
+      if (computeIdx == 0) {
+        for (int i = 0; i < n; i++) {
+          try {
+            futures[i].get(0, TimeUnit.NANOSECONDS);
+            fail("we expect an exception");
+          } catch (ExecutionException ex) {
+            Throwable cause = ex.getCause();
+            Throwable rootCause;
+            if (i == computeIdx) {
+              rootCause = cause;
+            } else {
+              assertEquals(CompletionException.class, cause.getClass());
+              rootCause = cause.getCause();
+            }
+            assertEquals(UnsupportedOperationException.class, rootCause.getClass());
+            assertEquals("nope!", rootCause.getMessage());
+          }
+        }
+      } else {
+        String expect = "a".concat(Integer.toString(computeIdx));
+        for (int i = 0; i < n; i++) {
+          assertEquals(expect, futures[i].get(0, TimeUnit.NANOSECONDS));
+        }
+      }
+    }
   }
 
   @Test

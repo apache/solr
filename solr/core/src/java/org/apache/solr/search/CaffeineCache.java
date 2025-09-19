@@ -35,17 +35,24 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
+import org.apache.lucene.index.ExitableDirectoryReader;
+import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.IOFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -219,22 +226,57 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     if (result != null) {
       try {
         // Another thread is already working on this computation, wait for them to finish
-        V value = result.join();
+        QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+        // TODO: below respects `TimeAllowedLimit` for the calling thread, but in order to
+        //  support query limits more generically, we would need to poll `queryLimits.shouldExit()`
+        //  in a loop in conjunction with `result.get(long, TimeUnit)`.
+        //  NOTE: the only other currently available limit is `CpuAllowedLimit`, which in the
+        //  case of a thread blocking on a result to be made available from another thread's
+        //  computation, should be a non-issue in practice.
+        Long nanosElapsed;
+        V value;
+        if (queryLimits != null
+            && (nanosElapsed =
+                    (Long) queryLimits.currentLimitValueFor(TimeAllowedLimit.class).orElse(null))
+                != null) {
+          SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+          assert requestInfo != null
+              : "non-null QueryLimits should guarantee non-null SolrRequestInfo";
+          SolrQueryRequest req = requestInfo.getReq();
+          assert req != null
+              : "TimeAllowedLimit is set from request, so non-null TimeAllowedLimit implies non-null req";
+          long timeAllowedMillis = req.getParams().getLong(CommonParams.TIME_ALLOWED, -1L);
+          assert timeAllowedMillis >= 0 : "TimeAllowedLimit implies timeAllowed >= 0";
+          long nanosRemaining = TimeUnit.MILLISECONDS.toNanos(timeAllowedMillis) - nanosElapsed;
+          value = result.get(nanosRemaining, TimeUnit.NANOSECONDS);
+        } else {
+          value = result.get(); // prefer `get()`, since `join()` is uninterruptible
+        }
         hits.increment();
         return value;
-      } catch (CompletionException e) {
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new CompletionException(e);
+      } catch (TimeoutException e) {
+        // we are almost certainly in violation of `TimeAllowedLimit`, but the easiest thing to
+        // do is attempt to compute the result ourselves and allow (e.g.) ExitingDirectoryReader
+        // to handle appropriately.
+        return mappingFunction.apply(key);
+      } catch (ExecutionException e) {
         Throwable cause = e.getCause();
         if (cause instanceof IOException) {
           // Computation had an IOException, likely index problems, so fail this result too
           throw (IOException) cause;
         }
-        if (cause instanceof CancellableCollector.QueryCancelledException) {
-          // The reserved slot that we were waiting for got cancelled, so we will compute directly
-          // If we go back to waiting for a new cache result then that can lead to thread starvation
-          // Should we record a cache miss here?
+        if (cause == REQUEST_SCOPED_EXCEPTION) {
+          // The reserved slot that we were waiting for failed for a reason associated with the
+          // computing thread, rather than the computation _per se_, so we fallback to compute
+          // directly. If we go back to waiting for a new cache result then that can lead to thread
+          // starvation.
+          // We implicitly "record" a cache miss here (by not incrementing `hits`).
           return mappingFunction.apply(key);
         }
-        throw e;
+        throw new CompletionException(cause);
       }
     }
     try {
@@ -244,10 +286,26 @@ public class CaffeineCache<K, V> extends SolrCacheBase
       recordRamBytes(key, null, value);
       inserts.increment();
       return value;
+    } catch (TimeLimitingCollector.TimeExceededException
+        | CancellableCollector.QueryCancelledException
+        | ExitableDirectoryReader.ExitingReaderException e) {
+      // These exceptions are related to the calling thread, so are "recoverable" from other threads
+      // that might be waiting for our computation to complete.
+      future.completeExceptionally(REQUEST_SCOPED_EXCEPTION);
+      throw e;
     } catch (Error | RuntimeException | IOException e) {
-      // TimeExceeded exception is runtime and will bubble up from here
       future.completeExceptionally(e); // This will remove the future from the cache
       throw e;
+    }
+  }
+
+  @SuppressWarnings("StaticAssignmentOfThrowable")
+  private static final RuntimeException REQUEST_SCOPED_EXCEPTION = new RequestScopedException();
+
+  private static final class RequestScopedException extends RuntimeException {
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+      return this; // just for signalling; we don't care
     }
   }
 
