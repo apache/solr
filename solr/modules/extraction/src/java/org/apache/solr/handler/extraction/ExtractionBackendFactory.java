@@ -29,13 +29,15 @@ public class ExtractionBackendFactory {
   private final SolrCore core;
   private final String tikaConfigLoc;
   private final ParseContextConfig parseContextConfig;
+  private final String tikaServerUrl;
   private final Map<String, ExtractionBackend> cache = new ConcurrentHashMap<>();
 
   public ExtractionBackendFactory(
-      SolrCore core, String tikaConfigLoc, ParseContextConfig parseContextConfig) {
+      SolrCore core, String tikaConfigLoc, ParseContextConfig parseContextConfig, String tikaServerUrl) {
     this.core = core;
     this.tikaConfigLoc = tikaConfigLoc;
     this.parseContextConfig = parseContextConfig;
+    this.tikaServerUrl = tikaServerUrl;
   }
 
   /** Returns a backend instance for the given name, creating it if necessary. */
@@ -53,17 +55,19 @@ public class ExtractionBackendFactory {
   }
 
   private String normalize(String name) {
-    if (name == null || name.trim().isEmpty()) return "local";
+    if (name == null || name.trim().isEmpty()) return LocalTikaExtractionBackend.ID;
     return name.trim().toLowerCase(Locale.ROOT);
   }
 
   /** Creates a new backend instance for the given normalized name. */
   protected ExtractionBackend create(String normalizedName) throws Exception {
     switch (normalizedName) {
-      case "local":
+      case LocalTikaExtractionBackend.ID:
         return new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);
-      case "dummy":
+      case DummyExtractionBackend.ID:
         return new DummyExtractionBackend();
+      case TikaServerExtractionBackend.ID:
+        return new TikaServerExtractionBackend(tikaServerUrl != null ? tikaServerUrl : "http://localhost:9998");
       default:
         // Fallback to local for unknown names
         return new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);

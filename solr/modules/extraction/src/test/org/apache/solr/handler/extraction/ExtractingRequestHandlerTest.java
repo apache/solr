@@ -1080,8 +1080,8 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp =
         loadLocal(
             "extraction/version_control.txt",
-            "extraction.backend",
-            "dummy",
+            ExtractingParams.EXTRACTION_BACKEND,
+            DummyExtractionBackend.ID,
             ExtractingParams.EXTRACT_ONLY,
             "true",
             ExtractingParams.EXTRACT_FORMAT,

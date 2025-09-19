@@ -96,9 +96,11 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
     this.autoDetectParser = new AutoDetectParser(cfg);
   }
 
+  public static final String ID = "local";
+
   @Override
   public String name() {
-    return "local";
+    return ID;
   }
 
   private Parser selectParser(ExtractionRequest request) {

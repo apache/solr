@@ -136,4 +136,7 @@ public interface ExtractingParams {
    * .*=&lt;defaultmypassword&gt; at the end
    */
   public static final String PASSWORD_MAP_FILE = "passwordsFile";
+
+  /** Backend selection parameter and */
+  public static final String EXTRACTION_BACKEND = "extraction.backend";
 }

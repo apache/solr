@@ -36,6 +36,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
 
   public static final String PARSE_CONTEXT_CONFIG = "parseContext.config";
   public static final String CONFIG_LOCATION = "tika.config";
+  public static final String TIKASERVER_URL = "tikaserver.url";
 
   protected String tikaConfigLoc;
   protected ParseContextConfig parseContextConfig;
@@ -64,12 +65,13 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
       }
 
       // Initialize backend factory once; backends are created lazily on demand
-      backendFactory = new ExtractionBackendFactory(core, tikaConfigLoc, parseContextConfig);
+      String tikaServerUrl = (String) initArgs.get(TIKASERVER_URL);
+      backendFactory = new ExtractionBackendFactory(core, tikaConfigLoc, parseContextConfig, tikaServerUrl);
 
       // Choose default backend name (do not instantiate yet)
-      String backendName = (String) initArgs.get("extraction.backend");
+      String backendName = (String) initArgs.get(ExtractingParams.EXTRACTION_BACKEND);
       defaultBackendName =
-          (backendName == null || backendName.trim().isEmpty()) ? "local" : backendName;
+          (backendName == null || backendName.trim().isEmpty()) ? LocalTikaExtractionBackend.ID : backendName;
 
     } catch (Exception e) {
       throw new SolrException(
@@ -81,8 +83,8 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
 
   @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
-    // Allow per-request override of backend via request param "extraction.backend"
-    String backendParam = req.getParams().get("extraction.backend");
+    // Allow per-request override of backend via request param
+    String backendParam = req.getParams().get(ExtractingParams.EXTRACTION_BACKEND);
     String nameToUse =
         (backendParam != null && !backendParam.trim().isEmpty())
             ? backendParam
