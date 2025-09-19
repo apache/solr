@@ -143,7 +143,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
           estimatedDocSizeInBytes,
           maxMirroringDocSizeBytes);
     }
-    producerMetrics.getDocumentSize().update(estimatedDocSizeInBytes);
+    producerMetrics.getDocumentSize().record(estimatedDocSizeInBytes);
     final boolean tooLargeForKafka = estimatedDocSizeInBytes > maxMirroringDocSizeBytes;
     if (tooLargeForKafka && !indexUnmirrorableDocs) {
       throw new SolrException(
