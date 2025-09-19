@@ -109,7 +109,6 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       CacheRegenerator cr = new NoOpRegenerator();
       Object o = cache.init(params, null, cr);
       cache.setState(SolrCache.State.LIVE);
-      // TODO SOLR-17458: Fix test later
       cache.initializeMetrics(
           new SolrMetricsContext(metricManager, "foo", "bar"),
           Attributes.of(AttributeKey.stringKey("cache_name"), "foo"),

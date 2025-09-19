@@ -557,6 +557,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
     assert this.name != null;
     assert coreDescriptor.getCloudDescriptor() == null : "Cores are not renamed in SolrCloud";
     this.name = Objects.requireNonNull(v);
+    initCoreAttributes();
+  }
+
+  public Attributes getCoreAttributes() {
+    return coreAttributes;
+  }
+
+  public void initCoreAttributes() {
     this.coreAttributes =
         (coreContainer.isZooKeeperAware())
             ? Attributes.builder()
@@ -568,10 +576,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
                     Utils.parseMetricsReplicaName(coreDescriptor.getCollectionName(), getName()))
                 .build()
             : Attributes.builder().put(CORE_ATTR, getName()).build();
-  }
-
-  public Attributes getCoreAttributes() {
-    return coreAttributes;
   }
 
   /**
@@ -1125,17 +1129,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
       setLatestSchema(schema);
 
-      this.coreAttributes =
-          (coreContainer.isZooKeeperAware())
-              ? Attributes.builder()
-                  .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
-                  .put(CORE_ATTR, coreDescriptor.getName())
-                  .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
-                  .put(
-                      REPLICA_ATTR,
-                      Utils.parseMetricsReplicaName(coreDescriptor.getCollectionName(), getName()))
-                  .build()
-              : Attributes.builder().put(CORE_ATTR, coreDescriptor.getName()).build();
+      initCoreAttributes();
 
       // initialize core metrics
       initializeMetrics(solrMetricsContext, coreAttributes, "");

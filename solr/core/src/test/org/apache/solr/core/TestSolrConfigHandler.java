@@ -1016,6 +1016,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertTrue(
         "fieldValueCache metrics should be present",
         prometheusMetrics.contains("cache_name=\"fieldValueCache\""));
+    // Here documentCache is disabled at initialization in SolrConfig
     assertFalse(
         "documentCache metrics should be absent",
         prometheusMetrics.contains("cache_name=\"documentCache\""));
@@ -1033,11 +1034,8 @@ public class TestSolrConfigHandler extends RestTestBase {
     // Setting size only will not enable the cache
     restTestHarness.setServerProvider(() -> getBaseUrl());
 
-    // Check prometheus metrics - cache should still be absent
     String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
-    assertFalse(
-        "documentCache metrics should still be absent after setting size only",
-        prometheusMetrics.contains("cache_name=\"documentCache\""));
+    assertFalse(prometheusMetrics.contains("cache_name=\"documentCache\""));
 
     restTestHarness.setServerProvider(oldProvider);
   }
@@ -1049,23 +1047,18 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(restTestHarness, "/config", payload);
     restTestHarness.setServerProvider(() -> getBaseUrl());
 
-    // Check prometheus metrics - cache should now be present
     String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
-    assertTrue(
-        "documentCache metrics should be present after enabling",
-        prometheusMetrics.contains("cache_name=\"documentCache\""));
+    assertTrue(prometheusMetrics.contains("cache_name=\"documentCache\""));
 
     // Disabling Cache
-    restTestHarness.setServerProvider(oldProvider);
     payload = "{ 'set-property' : { 'query.documentCache.enabled': false } }";
+    restTestHarness.setServerProvider(oldProvider);
+
     runConfigCommand(restTestHarness, "/config", payload);
     restTestHarness.setServerProvider(() -> getBaseUrl());
 
-    // Check prometheus metrics - cache should now be absent
     prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
-    assertFalse(
-        "documentCache metrics should be absent after disabling",
-        prometheusMetrics.contains("cache_name=\"documentCache\""));
+    assertFalse(prometheusMetrics.contains("cache_name=\"documentCache\""));
 
     restTestHarness.setServerProvider(oldProvider);
   }

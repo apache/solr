@@ -226,7 +226,6 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     indexDataForScoring();
 
     {
-      // Get initial cache metrics
       CounterSnapshot.CounterDataPointSnapshot lookupsPre =
           SolrMetricTestUtils.getCacheSearcherOpsLookups(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
@@ -250,7 +249,6 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     }
 
     {
-      // Get metrics before second query
       CounterSnapshot.CounterDataPointSnapshot lookupsPre =
           SolrMetricTestUtils.getCacheSearcherOpsLookups(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
@@ -274,7 +272,6 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     }
 
     {
-      // Get metrics before dynamic query
       CounterSnapshot.CounterDataPointSnapshot lookupsPre =
           SolrMetricTestUtils.getCacheSearcherOpsLookups(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
@@ -320,7 +317,6 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
       assertInsert(lookupsPre, hitsPre, insertsPre);
 
-      // Get metrics before repeat query
       CounterSnapshot.CounterDataPointSnapshot lookupsPreRepeat =
           SolrMetricTestUtils.getCacheSearcherOpsLookups(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);

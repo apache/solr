@@ -717,15 +717,13 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
     SolrCore solrCore = h.getCore();
 
-    // Get pre-test metrics for filterCache
+    // Get initial metrics for filter and query cache
     var preFilterInserts =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(solrCore, SolrMetricTestUtils.FILTER_CACHE)
             .getValue();
     var preFilterHits =
         SolrMetricTestUtils.getCacheSearcherOpsHits(solrCore, SolrMetricTestUtils.FILTER_CACHE)
             .getValue();
-
-    // Get pre-test metrics for queryResultCache
     var preQueryInserts =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(
                 solrCore, SolrMetricTestUtils.QUERY_RESULT_CACHE)
@@ -744,7 +742,6 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
     assertEquals(6, ids.size());
 
-    // Get post-test metrics
     var postFilterInserts =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(solrCore, SolrMetricTestUtils.FILTER_CACHE)
             .getValue();
@@ -756,9 +753,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
                 solrCore, SolrMetricTestUtils.QUERY_RESULT_CACHE)
             .getValue();
 
-    assertEquals("query cache inserts changed", preQueryInserts, postQueryInserts, 0.001);
+    assertEquals("query cache inserts changed", preQueryInserts, postQueryInserts, 0.0);
     assertEquals(
-        "filter cache did not grow correctly", 2, postFilterInserts - preFilterInserts, 0.001);
+        "filter cache did not grow correctly", 2, postFilterInserts - preFilterInserts, 0.0);
     assertTrue("filter cache did not have any new cache hits", 0 < postFilterHits - preFilterHits);
   }
 
