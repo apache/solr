@@ -41,7 +41,8 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
   protected ParseContextConfig parseContextConfig;
 
   protected SolrContentHandlerFactory factory;
-  protected ExtractionBackend backend;
+  protected ExtractionBackendFactory backendFactory;
+  protected String defaultBackendName;
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
@@ -61,55 +62,33 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
         parseContextConfig =
             new ParseContextConfig(core.getResourceLoader(), parseContextConfigLoc);
       }
+
+      // Initialize backend factory once; backends are created lazily on demand
+      backendFactory = new ExtractionBackendFactory(core, tikaConfigLoc, parseContextConfig);
+
+      // Choose default backend name (do not instantiate yet)
+      String backendName = (String) initArgs.get("extraction.backend");
+      defaultBackendName =
+          (backendName == null || backendName.trim().isEmpty()) ? "local" : backendName;
+
     } catch (Exception e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Unable to initialize ExtractingRequestHandler", e);
     }
 
-    factory = createFactory();
-
-    // Choose backend implementation
-    String backendName = (String) initArgs.get("extraction.backend");
-    try {
-      if (backendName == null
-          || backendName.trim().isEmpty()
-          || backendName.equalsIgnoreCase("local")) {
-        backend = new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);
-      } else if (backendName.equalsIgnoreCase("dummy")) {
-        backend = new DummyExtractionBackend();
-      } else {
-        // Fallback to local if unknown
-        backend = new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);
-      }
-    } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to initialize extraction backend", e);
-    }
-  }
-
-  protected SolrContentHandlerFactory createFactory() {
-    return new SolrContentHandlerFactory();
+    factory = new SolrContentHandlerFactory();
   }
 
   @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
     // Allow per-request override of backend via request param "extraction.backend"
-    ExtractionBackend backendToUse = this.backend;
     String backendParam = req.getParams().get("extraction.backend");
-    if (backendParam != null) {
-      if (backendParam.equalsIgnoreCase("dummy")) {
-        backendToUse = new DummyExtractionBackend();
-      } else if (backendParam.equalsIgnoreCase("local")) {
-        try {
-          backendToUse =
-              new LocalTikaExtractionBackend(req.getCore(), tikaConfigLoc, parseContextConfig);
-        } catch (Exception e) {
-          throw new SolrException(
-              ErrorCode.SERVER_ERROR, "Unable to initialize extraction backend", e);
-        }
-      }
-      // unknown values fall back to the handler-configured backend
-    }
-    return new ExtractingDocumentLoader(req, processor, factory, backendToUse);
+    String nameToUse =
+        (backendParam != null && !backendParam.trim().isEmpty())
+            ? backendParam
+            : defaultBackendName;
+    ExtractionBackend extractionBackend = backendFactory.getBackend(nameToUse);
+    return new ExtractingDocumentLoader(req, processor, factory, extractionBackend);
   }
 
   // ////////////////////// SolrInfoMBeans methods //////////////////////
