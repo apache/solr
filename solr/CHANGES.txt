@@ -248,6 +248,9 @@ Improvements
 
 * SOLR-17641: Solr is now able to start on Java 24 and later, but with Security Manager disabled (Houston Putman, Jan Høydahl)
 
+* SOLR-17921: The BaseHttpClusterStateProvider now refreshes liveNodes in the background. This will reduce spikes in request
+  latency when the cached liveNodes have expired. (Houston Putman)
+
 Optimizations
 ---------------------
 (No changes)
