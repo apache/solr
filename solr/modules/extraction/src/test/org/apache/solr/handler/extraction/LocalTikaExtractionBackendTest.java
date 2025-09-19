@@ -31,9 +31,10 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    try (InputStream is = LocalTikaExtractionBackendTest.class
-        .getClassLoader()
-        .getResourceAsStream("solr-default-tika-config.xml")) {
+    try (InputStream is =
+        LocalTikaExtractionBackendTest.class
+            .getClassLoader()
+            .getResourceAsStream("solr-default-tika-config.xml")) {
       assertNotNull("solr-default-tika-config.xml not on classpath", is);
       tikaConfig = new TikaConfig(is);
     }
@@ -61,7 +62,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
         streamName,
         streamSourceInfo,
         streamSize,
-        resourcePassword);
+        resourcePassword,
+        null);
   }
 
   @Test
@@ -69,29 +71,31 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
     LocalTikaExtractionBackend backend = newBackend();
     try (InputStream in = Files.newInputStream(getFile("extraction/version_control.txt"))) {
       // Non-existing type -> no parser available
-      ExtractionRequest req = newRequest(
-          "version_control.txt",
-          "foo/bar",
-          null,
-          null,
-          "version_control.txt",
-          null,
-          null,
-          null);
+      ExtractionRequest req =
+          newRequest(
+              "version_control.txt",
+              "foo/bar",
+              null,
+              null,
+              "version_control.txt",
+              null,
+              null,
+              null);
       expectThrows(IllegalArgumentException.class, () -> backend.extract(in, req));
     }
 
     try (InputStream in = Files.newInputStream(getFile("extraction/version_control.txt"))) {
       // Wrong but existing type -> likely to fail when parsing
-      ExtractionRequest req = newRequest(
-          "version_control.txt",
-          "application/pdf",
-          null,
-          null,
-          "version_control.txt",
-          null,
-          null,
-          null);
+      ExtractionRequest req =
+          newRequest(
+              "version_control.txt",
+              "application/pdf",
+              null,
+              null,
+              "version_control.txt",
+              null,
+              null,
+              null);
       expectThrows(Exception.class, () -> backend.extract(in, req));
     }
   }
@@ -100,15 +104,16 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
   public void testPasswordProtectedDocxWithoutPasswordThrows() throws Exception {
     LocalTikaExtractionBackend backend = newBackend();
     try (InputStream in = Files.newInputStream(getFile("extraction/password-is-Word2010.docx"))) {
-      ExtractionRequest req = newRequest(
-          "password-is-Word2010.docx",
-          null,
-          null,
-          null,
-          "password-is-Word2010.docx",
-          null,
-          null,
-          null);
+      ExtractionRequest req =
+          newRequest(
+              "password-is-Word2010.docx",
+              null,
+              null,
+              null,
+              "password-is-Word2010.docx",
+              null,
+              null,
+              null);
       expectThrows(Exception.class, () -> backend.extract(in, req));
     }
   }
@@ -117,21 +122,23 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
   public void testPasswordProtectedDocxWithPasswordSucceeds() throws Exception {
     LocalTikaExtractionBackend backend = newBackend();
     try (InputStream in = Files.newInputStream(getFile("extraction/password-is-Word2010.docx"))) {
-      ExtractionRequest req = newRequest(
-          "password-is-Word2010.docx",
-          null,
-          null,
-          null,
-          "password-is-Word2010.docx",
-          null,
-          null,
-          "Word2010");
+      ExtractionRequest req =
+          newRequest(
+              "password-is-Word2010.docx",
+              null,
+              null,
+              null,
+              "password-is-Word2010.docx",
+              null,
+              null,
+              "Word2010");
       ExtractionResult res = backend.extract(in, req);
       assertNotNull(res);
       assertNotNull(res.getMetadata());
       String content = res.getContent();
       assertNotNull(content);
-      assertTrue("Content should mention password-protected doc text",
+      assertTrue(
+          "Content should mention password-protected doc text",
           content.contains("Test password protected word doc"));
     }
   }

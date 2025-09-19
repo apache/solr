@@ -17,7 +17,9 @@
 package org.apache.solr.handler.extraction;
 
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Locale;
+import org.apache.solr.core.SolrCore;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.metadata.HttpHeaders;
 import org.apache.tika.metadata.Metadata;
@@ -40,10 +42,58 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
   private final ParseContextConfig parseContextConfig;
   private final AutoDetectParser autoDetectParser;
 
+  // Local HtmlMapper moved from ExtractingDocumentLoader
+  private static class MostlyPassthroughHtmlMapper implements HtmlMapper {
+    static final HtmlMapper INSTANCE = new MostlyPassthroughHtmlMapper();
+
+    @Override
+    public boolean isDiscardElement(String name) {
+      return false;
+    }
+
+    @Override
+    public String mapSafeAttribute(String elementName, String attributeName) {
+      return attributeName.toLowerCase(java.util.Locale.ENGLISH);
+    }
+
+    @Override
+    public String mapSafeElement(String name) {
+      String lowerName = name.toLowerCase(java.util.Locale.ROOT);
+      return (lowerName.equals("br") || lowerName.equals("body")) ? null : lowerName;
+    }
+  }
+
   public LocalTikaExtractionBackend(TikaConfig config, ParseContextConfig parseContextConfig) {
     this.tikaConfig = config;
     this.parseContextConfig = parseContextConfig;
     this.autoDetectParser = new AutoDetectParser(config);
+  }
+
+  /**
+   * Construct backend by loading TikaConfig based on handler/core configuration without exposing
+   * Tika types to the handler.
+   */
+  public LocalTikaExtractionBackend(
+      SolrCore core, String tikaConfigLoc, ParseContextConfig parseContextConfig) throws Exception {
+    TikaConfig cfg;
+    if (tikaConfigLoc == null) { // default
+      ClassLoader classLoader = core.getResourceLoader().getClassLoader();
+      try (InputStream is = classLoader.getResourceAsStream("solr-default-tika-config.xml")) {
+        cfg = new TikaConfig(is);
+      }
+    } else {
+      Path configFile = Path.of(tikaConfigLoc);
+      if (configFile.isAbsolute()) {
+        cfg = new TikaConfig(configFile);
+      } else { // in conf/
+        try (InputStream is = core.getResourceLoader().openResource(tikaConfigLoc)) {
+          cfg = new TikaConfig(is);
+        }
+      }
+    }
+    this.tikaConfig = cfg;
+    this.parseContextConfig = parseContextConfig;
+    this.autoDetectParser = new AutoDetectParser(cfg);
   }
 
   @Override
@@ -51,68 +101,131 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
     return "local";
   }
 
+  private Parser selectParser(ExtractionRequest request) {
+    if (request.streamType != null) {
+      MediaType mt = MediaType.parse(request.streamType.trim().toLowerCase(Locale.ROOT));
+      return new DefaultParser(tikaConfig.getMediaTypeRegistry()).getParsers().get(mt);
+    }
+    return autoDetectParser;
+  }
+
+  private Metadata buildMetadata(ExtractionRequest request) {
+    Metadata md = new Metadata();
+    if (request.resourceName != null)
+      md.add(TikaMetadataKeys.RESOURCE_NAME_KEY, request.resourceName);
+    if (request.contentType != null) md.add(HttpHeaders.CONTENT_TYPE, request.contentType);
+    if (request.streamName != null)
+      md.add(ExtractingMetadataConstants.STREAM_NAME, request.streamName);
+    if (request.streamSourceInfo != null)
+      md.add(ExtractingMetadataConstants.STREAM_SOURCE_INFO, request.streamSourceInfo);
+    if (request.streamSize != null)
+      md.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(request.streamSize));
+    if (request.contentType != null)
+      md.add(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, request.contentType);
+    if (request.charset != null) md.add(HttpHeaders.CONTENT_ENCODING, request.charset);
+    return md;
+  }
+
+  private ParseContext buildContext(Parser parser, ExtractionRequest request) {
+    ParseContext context = parseContextConfig.create();
+    context.set(Parser.class, parser);
+    context.set(HtmlMapper.class, MostlyPassthroughHtmlMapper.INSTANCE);
+    PasswordProvider pwd = new RegexRulesPasswordProvider();
+    if (request.resourcePassword != null && pwd instanceof RegexRulesPasswordProvider) {
+      ((RegexRulesPasswordProvider) pwd).setExplicitPassword(request.resourcePassword);
+    }
+    if (request.passwordsMap != null && pwd instanceof RegexRulesPasswordProvider) {
+      ((RegexRulesPasswordProvider) pwd).setPasswordMap(request.passwordsMap);
+    }
+    context.set(PasswordProvider.class, pwd);
+    return context;
+  }
+
+  private static ExtractionMetadata copyToNeutral(Metadata md) {
+    ExtractionMetadata out = new SimpleExtractionMetadata();
+    for (String name : md.names()) {
+      String[] vals = md.getValues(name);
+      if (vals != null) for (String v : vals) out.add(name, v);
+    }
+    return out;
+  }
+
   @Override
   public ExtractionResult extract(InputStream inputStream, ExtractionRequest request)
       throws Exception {
-    Parser parser = null;
-    if (request.streamType != null) {
-      MediaType mt = MediaType.parse(request.streamType.trim().toLowerCase(Locale.ROOT));
-      parser = new DefaultParser(tikaConfig.getMediaTypeRegistry()).getParsers().get(mt);
-    } else {
-      parser = autoDetectParser;
-    }
+    Parser parser = selectParser(request);
     if (parser == null) {
       throw new IllegalArgumentException("No Tika parser for stream type: " + request.streamType);
     }
-
-    Metadata md = new Metadata();
-    if (request.resourceName != null) {
-      md.add(TikaMetadataKeys.RESOURCE_NAME_KEY, request.resourceName);
-    }
-    if (request.contentType != null) {
-      md.add(HttpHeaders.CONTENT_TYPE, request.contentType);
-    }
-    if (request.streamName != null) {
-      md.add(ExtractingMetadataConstants.STREAM_NAME, request.streamName);
-    }
-    if (request.streamSourceInfo != null) {
-      md.add(ExtractingMetadataConstants.STREAM_SOURCE_INFO, request.streamSourceInfo);
-    }
-    if (request.streamSize != null) {
-      md.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(request.streamSize));
-    }
-    if (request.contentType != null) {
-      md.add(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, request.contentType);
-    }
-    if (request.charset != null) {
-      md.add(HttpHeaders.CONTENT_ENCODING, request.charset);
-    }
-
-    ParseContext context = parseContextConfig.create();
-    context.set(Parser.class, parser);
-    context.set(HtmlMapper.class, ExtractingDocumentLoader.MostlyPassthroughHtmlMapper.INSTANCE);
-
-    // Password handling: allow passing explicit and map via params in future if needed.
-    PasswordProvider epp = new RegexRulesPasswordProvider();
-    if (request.resourcePassword != null && epp instanceof RegexRulesPasswordProvider) {
-      ((RegexRulesPasswordProvider) epp).setExplicitPassword(request.resourcePassword);
-    }
-    context.set(PasswordProvider.class, epp);
-
+    Metadata md = buildMetadata(request);
+    ParseContext context = buildContext(parser, request);
     BodyContentHandler textHandler = new BodyContentHandler(-1);
     parser.parse(inputStream, textHandler, md, context);
+    return new ExtractionResult(textHandler.toString(), copyToNeutral(md));
+  }
 
-    // copy metadata to neutral container
-    ExtractionMetadata outMetadata = new SimpleExtractionMetadata();
-    for (String name : md.names()) {
-      String[] vals = md.getValues(name);
-      if (vals != null) {
-        for (String v : vals) {
-          outMetadata.add(name, v);
-        }
+  @Override
+  public ExtractionResult extractOnly(
+      InputStream inputStream, ExtractionRequest request, String extractFormat, String xpathExpr)
+      throws Exception {
+    Parser parser = selectParser(request);
+    if (parser == null) {
+      throw new IllegalArgumentException("No Tika parser for stream type: " + request.streamType);
+    }
+    Metadata md = buildMetadata(request);
+    ParseContext context = buildContext(parser, request);
+
+    String content;
+    if (ExtractingDocumentLoader.TEXT_FORMAT.equals(extractFormat) || xpathExpr != null) {
+      org.apache.tika.sax.ToTextContentHandler textHandler =
+          new org.apache.tika.sax.ToTextContentHandler();
+      org.xml.sax.ContentHandler ch = textHandler;
+      if (xpathExpr != null) {
+        org.apache.tika.sax.xpath.XPathParser xparser =
+            new org.apache.tika.sax.xpath.XPathParser(
+                "xhtml", org.apache.tika.sax.XHTMLContentHandler.XHTML);
+        org.apache.tika.sax.xpath.Matcher matcher = xparser.parse(xpathExpr);
+        ch = new org.apache.tika.sax.xpath.MatchingContentHandler(textHandler, matcher);
+      }
+      parser.parse(inputStream, ch, md, context);
+      content = textHandler.toString();
+    } else { // XML format
+      org.apache.tika.sax.ToXMLContentHandler toXml = new org.apache.tika.sax.ToXMLContentHandler();
+      org.xml.sax.ContentHandler ch = toXml;
+      if (xpathExpr != null) {
+        org.apache.tika.sax.xpath.XPathParser xparser =
+            new org.apache.tika.sax.xpath.XPathParser(
+                "xhtml", org.apache.tika.sax.XHTMLContentHandler.XHTML);
+        org.apache.tika.sax.xpath.Matcher matcher = xparser.parse(xpathExpr);
+        ch = new org.apache.tika.sax.xpath.MatchingContentHandler(toXml, matcher);
+      }
+      parser.parse(inputStream, ch, md, context);
+      content = toXml.toString();
+      if (!content.startsWith("<?xml")) {
+        content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + content;
       }
     }
-    String content = textHandler.toString();
-    return new ExtractionResult(content, outMetadata);
+    return new ExtractionResult(content, copyToNeutral(md));
+  }
+
+  @Override
+  public void parseToSolrContentHandler(
+      InputStream inputStream,
+      ExtractionRequest request,
+      SolrContentHandler handler,
+      ExtractionMetadata outMetadata)
+      throws Exception {
+    Parser parser = selectParser(request);
+    if (parser == null) {
+      throw new IllegalArgumentException("No Tika parser for stream type: " + request.streamType);
+    }
+    Metadata md = buildMetadata(request);
+    ParseContext context = buildContext(parser, request);
+    parser.parse(inputStream, handler, md, context);
+    // populate outMetadata
+    for (String name : md.names()) {
+      String[] vals = md.getValues(name);
+      if (vals != null) for (String v : vals) outMetadata.add(name, v);
+    }
   }
 }

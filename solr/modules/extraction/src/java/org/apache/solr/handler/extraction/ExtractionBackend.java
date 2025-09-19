@@ -26,6 +26,27 @@ public interface ExtractionBackend {
    */
   ExtractionResult extract(InputStream inputStream, ExtractionRequest request) throws Exception;
 
+  /**
+   * Perform extractOnly operation. If extractFormat equals ExtractingDocumentLoader.TEXT_FORMAT,
+   * return plain text. If XML, return XML body as string. Implementations may support optional
+   * xpathExpr; if unsupported and xpathExpr is not null, they should throw
+   * UnsupportedOperationException.
+   */
+  ExtractionResult extractOnly(
+      InputStream inputStream, ExtractionRequest request, String extractFormat, String xpathExpr)
+      throws Exception;
+
+  /**
+   * Parse the content and stream SAX events into the provided SolrContentHandler, while also
+   * filling outMetadata with extracted metadata.
+   */
+  void parseToSolrContentHandler(
+      InputStream inputStream,
+      ExtractionRequest request,
+      SolrContentHandler handler,
+      ExtractionMetadata outMetadata)
+      throws Exception;
+
   /** A short name for debugging/config, e.g., "local" or "dummy". */
   String name();
 }

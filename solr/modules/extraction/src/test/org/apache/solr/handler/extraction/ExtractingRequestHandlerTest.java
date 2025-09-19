@@ -796,8 +796,6 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("wdf_nocase:السلم"), "//result[@numFound=1]");
   }
 
-
-
   public void testLiteralsOverride() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");

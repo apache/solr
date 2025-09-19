@@ -16,8 +16,6 @@
  */
 package org.apache.solr.handler.extraction;
 
-import java.io.InputStream;
-import java.nio.file.Path;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrCore;
@@ -28,7 +26,6 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.tika.config.TikaConfig;
 
 /**
  * Handler for rich documents like PDF or Word or any other file format that Tika handles that need
@@ -40,7 +37,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
   public static final String PARSE_CONTEXT_CONFIG = "parseContext.config";
   public static final String CONFIG_LOCATION = "tika.config";
 
-  protected TikaConfig config;
+  protected String tikaConfigLoc;
   protected ParseContextConfig parseContextConfig;
 
   protected SolrContentHandlerFactory factory;
@@ -54,22 +51,8 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
   @Override
   public void inform(SolrCore core) {
     try {
-      String tikaConfigLoc = (String) initArgs.get(CONFIG_LOCATION);
-      if (tikaConfigLoc == null) { // default
-        ClassLoader classLoader = core.getResourceLoader().getClassLoader();
-        try (InputStream is = classLoader.getResourceAsStream("solr-default-tika-config.xml")) {
-          config = new TikaConfig(is);
-        }
-      } else {
-        Path configFile = Path.of(tikaConfigLoc);
-        if (configFile.isAbsolute()) {
-          config = new TikaConfig(configFile);
-        } else { // in conf/
-          try (InputStream is = core.getResourceLoader().openResource(tikaConfigLoc)) {
-            config = new TikaConfig(is);
-          }
-        }
-      }
+      // Store tika config location (backend-specific)
+      this.tikaConfigLoc = (String) initArgs.get(CONFIG_LOCATION);
 
       String parseContextConfigLoc = (String) initArgs.get(PARSE_CONTEXT_CONFIG);
       if (parseContextConfigLoc == null) { // default:
@@ -79,22 +62,27 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
             new ParseContextConfig(core.getResourceLoader(), parseContextConfigLoc);
       }
     } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load Tika Config", e);
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Unable to initialize ExtractingRequestHandler", e);
     }
 
     factory = createFactory();
 
     // Choose backend implementation
     String backendName = (String) initArgs.get("extraction.backend");
-    if (backendName == null
-        || backendName.trim().isEmpty()
-        || backendName.equalsIgnoreCase("local")) {
-      backend = new LocalTikaExtractionBackend(config, parseContextConfig);
-    } else if (backendName.equalsIgnoreCase("dummy")) {
-      backend = new DummyExtractionBackend();
-    } else {
-      // Fallback to local if unknown
-      backend = new LocalTikaExtractionBackend(config, parseContextConfig);
+    try {
+      if (backendName == null
+          || backendName.trim().isEmpty()
+          || backendName.equalsIgnoreCase("local")) {
+        backend = new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);
+      } else if (backendName.equalsIgnoreCase("dummy")) {
+        backend = new DummyExtractionBackend();
+      } else {
+        // Fallback to local if unknown
+        backend = new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);
+      }
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to initialize extraction backend", e);
     }
   }
 
@@ -111,12 +99,17 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
       if (backendParam.equalsIgnoreCase("dummy")) {
         backendToUse = new DummyExtractionBackend();
       } else if (backendParam.equalsIgnoreCase("local")) {
-        backendToUse = new LocalTikaExtractionBackend(config, parseContextConfig);
+        try {
+          backendToUse =
+              new LocalTikaExtractionBackend(req.getCore(), tikaConfigLoc, parseContextConfig);
+        } catch (Exception e) {
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR, "Unable to initialize extraction backend", e);
+        }
       }
       // unknown values fall back to the handler-configured backend
     }
-    return new ExtractingDocumentLoader(
-        req, processor, config, parseContextConfig, factory, backendToUse);
+    return new ExtractingDocumentLoader(req, processor, factory, backendToUse);
   }
 
   // ////////////////////// SolrInfoMBeans methods //////////////////////

@@ -38,4 +38,29 @@ public class DummyExtractionBackend implements ExtractionBackend {
     String text = "This is dummy extracted content";
     return new ExtractionResult(text, metadata);
   }
+
+  @Override
+  public ExtractionResult extractOnly(
+      InputStream inputStream, ExtractionRequest request, String extractFormat, String xpathExpr) {
+    if (xpathExpr != null) {
+      throw new UnsupportedOperationException("XPath not supported by dummy backend");
+    }
+    return extract(inputStream, request);
+  }
+
+  @Override
+  public void parseToSolrContentHandler(
+      InputStream inputStream,
+      ExtractionRequest request,
+      SolrContentHandler handler,
+      ExtractionMetadata outMetadata) {
+    // Fill metadata
+    ExtractionResult r = extract(inputStream, request);
+    for (String name : r.getMetadata().names()) {
+      String[] vals = r.getMetadata().getValues(name);
+      if (vals != null) for (String v : vals) outMetadata.add(name, v);
+    }
+    // Append content
+    handler.appendToContent(r.getContent());
+  }
 }
