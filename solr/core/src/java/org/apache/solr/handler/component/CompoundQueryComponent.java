@@ -68,7 +68,15 @@ public class CompoundQueryComponent extends QueryComponent {
     final TopDocs[] hits = new TopDocs[crb.responseBuilders.size()];
     for (int crb_idx = 0; crb_idx < crb.responseBuilders.size(); ++crb_idx) {
 
-      final SolrDocumentList sdl = crb.responseBuilders.get(crb_idx).getResponseDocs();
+      final ResponseBuilder crb_i = crb.responseBuilders.get(crb_idx);
+
+      for (var entry : crb_i.resultIds.entrySet()) {
+        ShardDoc sdoc = entry.getValue();
+
+        sdoc.positionInResponse = -1;
+      }
+
+      final SolrDocumentList sdl = crb_i.getResponseDocs();
 
       final ScoreDoc[] scoreDocs = new ScoreDoc[sdl.size()];
       for (int idx = 0; idx < sdl.size(); ++idx) {
@@ -96,8 +104,8 @@ public class CompoundQueryComponent extends QueryComponent {
       final SolrDocument solrDocument = crb_i.getResponseDocs().get(scoreDoc.doc);
       final Object id = solrDocument.getFieldValue("id"); // TODO: do not hard-code "id" here
       final ShardDoc sdoc = crb_i.resultIds.get(id);
-      sdoc.positionInResponse = resultIds.size();
       if (resultIds.putIfAbsent(id, sdoc) == null) {
+        sdoc.positionInResponse = responseDocs.size();
         responseDocs.add(solrDocument);
       }
     }

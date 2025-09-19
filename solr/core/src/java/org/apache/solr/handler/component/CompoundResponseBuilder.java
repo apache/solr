@@ -17,7 +17,9 @@
 package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -85,5 +87,18 @@ public class CompoundResponseBuilder extends ResponseBuilder {
     } else {
       return STAGE_FUSION;
     }
+  }
+
+  @Override
+  public Map<ResponseBuilder, List<ShardRequest>> getFinished() {
+    final Map<ResponseBuilder, List<ShardRequest>> result = new LinkedHashMap<>();
+    for (ShardRequest sreq : this.finished) {
+      for (CompoundResponseBuilder.Inner rb : this.responseBuilders) {
+        if (rb.isThisFromMe(sreq)) {
+          result.computeIfAbsent(rb, k -> new ArrayList<>(finished.size())).add(sreq);
+        }
+      }
+    }
+    return result;
   }
 }

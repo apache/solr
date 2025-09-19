@@ -223,12 +223,9 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
         assertEquals("borage <em>forage</em>", highlighting.get("b").get(highlightField).get(0));
         assertEquals("solitary <em>bee</em>", highlighting.get("1").get(highlightField).get(0));
         assertEquals("clover <em>forage</em>", highlighting.get("c").get(highlightField).get(0));
-        assertNotEquals(
-            "",
-            highlighting
-                .get("1916perkins")
-                .get(highlightField)
-                .get(0)); // TODO: make this more specific
+        assertEquals(
+            "mining <em>bee</em> likes ",
+            highlighting.get("1916perkins").get(highlightField).get(0));
       } else {
         assertNull(highlighting);
       }
