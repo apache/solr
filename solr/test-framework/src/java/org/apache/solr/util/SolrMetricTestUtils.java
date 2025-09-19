@@ -246,6 +246,11 @@ public final class SolrMetricTestUtils {
     return getDataPoint(reader, metricName, labels, CounterSnapshot.CounterDataPointSnapshot.class);
   }
 
+  public static GaugeSnapshot.GaugeDataPointSnapshot getGaugeDatapoint(
+      PrometheusMetricReader reader, String metricName, Labels labels) {
+    return getDataPoint(reader, metricName, labels, GaugeSnapshot.GaugeDataPointSnapshot.class);
+  }
+
   public static HistogramSnapshot.HistogramDataPointSnapshot getHistogramDatapoint(
       PrometheusMetricReader reader, String metricName, Labels labels) {
     return getDataPoint(
@@ -301,6 +306,30 @@ public final class SolrMetricTestUtils {
         SolrMetricTestUtils.newCloudLabelsBuilder(core)
             .label("handler", "/update")
             .label("category", "UPDATE")
+            .build());
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOps(
+      SolrCore core, String cacheName, String operation) {
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core,
+        "solr_searcher_cache_ops",
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("category", "CACHE")
+            .label("ops", operation)
+            .label("cache_name", cacheName)
+            .build());
+  }
+
+  public static GaugeSnapshot.GaugeDataPointSnapshot getCacheSearcherOpsCumulative(
+      SolrCore core, String cacheName, String operation) {
+    return SolrMetricTestUtils.getGaugeDatapoint(
+        core,
+        "solr_cache_cumulative_ops",
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("category", "CACHE")
+            .label("ops", operation)
+            .label("cache_name", cacheName)
             .build());
   }
 

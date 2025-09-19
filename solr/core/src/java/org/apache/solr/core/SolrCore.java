@@ -557,6 +557,17 @@ public class SolrCore implements SolrInfoBean, Closeable {
     assert this.name != null;
     assert coreDescriptor.getCloudDescriptor() == null : "Cores are not renamed in SolrCloud";
     this.name = Objects.requireNonNull(v);
+    this.coreAttributes =
+        (coreContainer.isZooKeeperAware())
+            ? Attributes.builder()
+                .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
+                .put(CORE_ATTR, getName())
+                .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
+                .put(
+                    REPLICA_ATTR,
+                    Utils.parseMetricsReplicaName(coreDescriptor.getCollectionName(), getName()))
+                .build()
+            : Attributes.builder().put(CORE_ATTR, getName()).build();
   }
 
   public Attributes getCoreAttributes() {

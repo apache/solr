@@ -29,6 +29,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -89,16 +90,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   }
 
   private static long coreToInserts(SolrCore core, String cacheName) {
-    return (long)
-        ((MetricsMap)
-                ((SolrMetricManager.GaugeWrapper<?>)
-                        core.getCoreMetricManager()
-                            .getRegistry()
-                            .getMetrics()
-                            .get("CACHE.searcher.".concat(cacheName)))
-                    .getGauge())
-            .getValue()
-            .get("inserts");
+    return (long) SolrMetricTestUtils.getCacheSearcherOps(core, cacheName, "insert").getValue();
   }
 
   private static long coreToSortCount(SolrCore core, String skipOrFull) {
@@ -112,6 +104,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
             .getValue();
   }
 
+  // NOCOMMIT: Fix this once SolrIndexSearcher is migrated for OTEL
   private static long coreToMatchAllDocsInsertCount(SolrCore core) {
     return (long) coreToLiveDocsCacheMetrics(core).get("inserts");
   }

@@ -33,6 +33,7 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Tracer;
 import jakarta.inject.Singleton;
@@ -871,8 +872,12 @@ public class CoreContainer {
       for (Map.Entry<String, CacheConfig> e : cachesConfig.entrySet()) {
         SolrCache<?, ?> c = e.getValue().newInstance();
         String cacheName = e.getKey();
-        // NOCOMMIT SOLR-17458: Add Otel
-        c.initializeMetrics(solrMetricsContext, Attributes.empty(), "nodeLevelCache/" + cacheName);
+        c.initializeMetrics(
+            solrMetricsContext,
+            Attributes.builder()
+                .put(AttributeKey.stringKey("cache_name"), "nodeLevelCache/" + cacheName)
+                .build(),
+            "");
         m.put(cacheName, c);
       }
       this.caches = Collections.unmodifiableMap(m);

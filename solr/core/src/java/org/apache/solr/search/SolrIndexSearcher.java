@@ -605,7 +605,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     for (SolrCache<?, ?> cache : cacheList) {
       cache.initializeMetrics(
           solrMetricsContext,
-          core.getCoreAttributes().toBuilder().put(AttributeKey.stringKey("cache_name"), cache.name()).build(),
+          core.getCoreAttributes().toBuilder()
+              .put(AttributeKey.stringKey("cache_name"), cache.name())
+              .build(),
           SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
     // TODO SOLR-17458: Add Otel

@@ -489,21 +489,23 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
     ObservableLongMeasurement cacheOperation =
         solrMetricsContext.longCounterMeasurement(
-            "solr_cache_ops", "Number of cache operations (hits, lookups, inserts and evictions)");
+            "solr_searcher_cache_ops",
+            "Number of cache operations (hits, lookups, inserts and evictions)");
 
     ObservableLongMeasurement hitRatioMetric =
-        solrMetricsContext.longGaugeMeasurement("solr_cache_hit_ratio", "Cache hit ratio");
+        solrMetricsContext.longGaugeMeasurement("solr_searcher_cache_hit_ratio", "Cache hit ratio");
 
     ObservableLongMeasurement sizeMetric =
-        solrMetricsContext.longGaugeMeasurement("solr_cache_size", "Current number cache entries");
+        solrMetricsContext.longGaugeMeasurement(
+            "solr_searcher_cache_size", "Current number cache entries");
 
     ObservableLongMeasurement ramBytesUsedMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_cache_ram_bytes_used", "RAM bytes used by cache", OtelUnit.BYTES);
+            "solr_searcher_cache_ram_bytes_used", "RAM bytes used by cache", OtelUnit.BYTES);
 
     ObservableLongMeasurement warmupTimeMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_cache_warmup_time", "Cache warmup time", OtelUnit.MILLISECONDS);
+            "solr_searcher_cache_warmup_time", "Cache warmup time", OtelUnit.MILLISECONDS);
 
     ObservableLongMeasurement cumulativeCacheOperation =
         solrMetricsContext.longGaugeMeasurement(
@@ -520,11 +522,13 @@ public class CaffeineCache<K, V> extends SolrCacheBase
                 long lookupCount = stats.requestCount() + lookups.sum();
 
                 cacheOperation.record(
-                    hitCount, cacheAttributes.toBuilder().put(OPERATION_ATTR, "hit").build());
+                    hitCount, cacheAttributes.toBuilder().put(OPERATION_ATTR, "hits").build());
                 cacheOperation.record(
-                    lookupCount, cacheAttributes.toBuilder().put(OPERATION_ATTR, "lookup").build());
+                    lookupCount,
+                    cacheAttributes.toBuilder().put(OPERATION_ATTR, "lookups").build());
                 cacheOperation.record(
-                    insertCount, cacheAttributes.toBuilder().put(OPERATION_ATTR, "insert").build());
+                    insertCount,
+                    cacheAttributes.toBuilder().put(OPERATION_ATTR, "inserts").build());
                 cacheOperation.record(
                     stats.evictionCount(),
                     cacheAttributes.toBuilder().put(OPERATION_ATTR, "evictions").build());
@@ -541,7 +545,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
                 long cumHits = priorHits + hitCount;
 
                 cumulativeCacheOperation.record(
-                    cumHits, cacheAttributes.toBuilder().put(OPERATION_ATTR, "hit").build());
+                    cumHits, cacheAttributes.toBuilder().put(OPERATION_ATTR, "hits").build());
                 cumulativeCacheOperation.record(
                     cumLookups, cacheAttributes.toBuilder().put(OPERATION_ATTR, "lookups").build());
                 cumulativeCacheOperation.record(
@@ -556,6 +560,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
             sizeMetric,
             ramBytesUsedMetric,
             warmupTimeMetric,
-            cumulativeCacheOperation);
+            cumulativeCacheOperation,
+            hitRatioMetric);
   }
 }

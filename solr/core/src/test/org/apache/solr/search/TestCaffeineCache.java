@@ -19,7 +19,12 @@ package org.apache.solr.search;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +40,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Test;
 
 /** Test for {@link CaffeineCache}. */
@@ -45,15 +51,20 @@ public class TestCaffeineCache extends SolrTestCase {
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
   @Test
-  public void testSimple() {
+  public void testSimple() throws IOException {
     CaffeineCache<Integer, String> lfuCache = new CaffeineCache<>();
-    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
-    // TODO SOLR-17458: Fix tests for OTEL
-    lfuCache.initializeMetrics(solrMetricsContext, Attributes.empty(), scope + "-1");
-
     CaffeineCache<Integer, String> newLFUCache = new CaffeineCache<>();
-    // TODO SOLR-17458: Fix tests for OTEL
-    newLFUCache.initializeMetrics(solrMetricsContext, Attributes.empty(), scope + "-2");
+    String lfuCacheName = scope + "-1";
+    String newLfuCacheName = scope + "-2";
+
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+
+    lfuCache.initializeMetrics(
+        solrMetricsContext, Attributes.of(AttributeKey.stringKey("cache_name"), lfuCacheName), "");
+    newLFUCache.initializeMetrics(
+        solrMetricsContext,
+        Attributes.of(AttributeKey.stringKey("cache_name"), newLfuCacheName),
+        "");
 
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
@@ -69,31 +80,41 @@ public class TestCaffeineCache extends SolrTestCase {
     assertEquals("15", lfuCache.get(15));
     assertEquals("75", lfuCache.get(75));
     assertNull(lfuCache.get(110));
-    Map<String, Object> nl = lfuCache.getMetricsMap().getValue();
-    assertEquals(3L, nl.get("lookups"));
-    assertEquals(2L, nl.get("hits"));
-    assertEquals(101L, nl.get("inserts"));
 
-    assertNull(lfuCache.get(1)); // first item put in should be the first out
+    var prometheusReader = metricManager.getPrometheusMetricReader(registry);
+
+    var lookupDatapoint = getCounterDatapoint(prometheusReader, lfuCacheName, "lookups");
+    var hitDatapoint = getCounterDatapoint(prometheusReader, lfuCacheName, "hits");
+    var insertDatapoint = getCounterDatapoint(prometheusReader, lfuCacheName, "inserts");
+    assertEquals(3.0, lookupDatapoint.getValue(), 0.001);
+    assertEquals(2.0, hitDatapoint.getValue(), 0.001);
+    assertEquals(101.0, insertDatapoint.getValue(), 0.001);
+    assertNull(lfuCache.get(1));
 
     // Test autowarming
     newLFUCache.init(params, initObj, regenerator);
     newLFUCache.warm(null, lfuCache);
     newLFUCache.setState(SolrCache.State.LIVE);
-
     newLFUCache.put(103, "103");
     assertEquals("15", newLFUCache.get(15));
     assertEquals("75", newLFUCache.get(75));
     assertNull(newLFUCache.get(50));
-    nl = newLFUCache.getMetricsMap().getValue();
-    assertEquals(3L, nl.get("lookups"));
-    assertEquals(2L, nl.get("hits"));
-    assertEquals(1L, nl.get("inserts"));
-    assertEquals(0L, nl.get("evictions"));
 
-    assertEquals(7L, nl.get("cumulative_lookups"));
-    assertEquals(4L, nl.get("cumulative_hits"));
-    assertEquals(102L, nl.get("cumulative_inserts"));
+    lookupDatapoint = getCounterDatapoint(prometheusReader, newLfuCacheName, "lookups");
+    hitDatapoint = getCounterDatapoint(prometheusReader, newLfuCacheName, "hits");
+    insertDatapoint = getCounterDatapoint(prometheusReader, newLfuCacheName, "inserts");
+    var evictionDatapoint = getCounterDatapoint(prometheusReader, newLfuCacheName, "evictions");
+    assertEquals(3.0, lookupDatapoint.getValue(), 0.001);
+    assertEquals(2.0, hitDatapoint.getValue(), 0.001);
+    assertEquals(1.0, insertDatapoint.getValue(), 0.001);
+    assertEquals(0.0, evictionDatapoint.getValue(), 0.001);
+
+    var cumLookupDatapoint = getGaugeDatapoint(prometheusReader, newLfuCacheName, "lookups");
+    var cumHitDatapoint = getGaugeDatapoint(prometheusReader, newLfuCacheName, "hits");
+    var cumInsertDatapoint = getGaugeDatapoint(prometheusReader, newLfuCacheName, "inserts");
+    assertEquals(7.0, cumLookupDatapoint.getValue(), 0.001);
+    assertEquals(4.0, cumHitDatapoint.getValue(), 0.001);
+    assertEquals(102.0, cumInsertDatapoint.getValue(), 0.001);
   }
 
   @Test
@@ -148,7 +169,7 @@ public class TestCaffeineCache extends SolrTestCase {
     int IDLE_TIME_SEC = 5;
     CountDownLatch removed = new CountDownLatch(1);
     AtomicReference<RemovalCause> removalCause = new AtomicReference<>();
-    CaffeineCache<String, String> cache =
+    try (CaffeineCache<String, String> cache =
         new CaffeineCache<>() {
           @Override
           public void onRemoval(String key, String value, RemovalCause cause) {
@@ -156,22 +177,23 @@ public class TestCaffeineCache extends SolrTestCase {
             removalCause.set(cause);
             removed.countDown();
           }
-        };
-    Map<String, String> params = new HashMap<>();
-    params.put("size", "6");
-    params.put("maxIdleTime", "" + IDLE_TIME_SEC);
-    cache.init(params, null, new NoOpRegenerator());
+        }) {
+      Map<String, String> params = new HashMap<>();
+      params.put("size", "6");
+      params.put("maxIdleTime", "" + IDLE_TIME_SEC);
+      cache.init(params, null, new NoOpRegenerator());
 
-    cache.put("foo", "bar");
-    assertEquals("bar", cache.get("foo"));
-    // sleep for at least the idle time before inserting other entries
-    // the eviction is piggy-backed on put()
-    Thread.sleep(TimeUnit.SECONDS.toMillis(IDLE_TIME_SEC * 2));
-    cache.put("abc", "xyz");
-    boolean await = removed.await(30, TimeUnit.SECONDS);
-    assertTrue("did not expire entry in in time", await);
-    assertEquals(RemovalCause.EXPIRED, removalCause.get());
-    assertNull(cache.get("foo"));
+      cache.put("foo", "bar");
+      assertEquals("bar", cache.get("foo"));
+      // sleep for at least the idle time before inserting other entries
+      // the eviction is piggy-backed on put()
+      Thread.sleep(TimeUnit.SECONDS.toMillis(IDLE_TIME_SEC * 2));
+      cache.put("abc", "xyz");
+      boolean await = removed.await(30, TimeUnit.SECONDS);
+      assertTrue("did not expire entry in in time", await);
+      assertEquals(RemovalCause.EXPIRED, removalCause.get());
+      assertNull(cache.get("foo"));
+    }
   }
 
   @Test
@@ -357,5 +379,33 @@ public class TestCaffeineCache extends SolrTestCase {
     cache.put(1, "test3");
     cache.close();
     assertEquals(emptySize, cache.ramBytesUsed());
+  }
+
+  private CounterSnapshot.CounterDataPointSnapshot getCounterDatapoint(
+      org.apache.solr.metrics.otel.FilterablePrometheusMetricReader prometheusReader,
+      String cacheName,
+      String operation) {
+    return SolrMetricTestUtils.getCounterDatapoint(
+        prometheusReader,
+        "solr_searcher_cache_ops",
+        Labels.builder()
+            .label("category", "CACHE")
+            .label("ops", operation)
+            .label("cache_name", cacheName)
+            .label("otel_scope_name", "org.apache.solr")
+            .build());
+  }
+
+  private GaugeSnapshot.GaugeDataPointSnapshot getGaugeDatapoint(
+      PrometheusMetricReader prometheusReader, String cacheName, String operation) {
+    return SolrMetricTestUtils.getGaugeDatapoint(
+        prometheusReader,
+        "solr_cache_cumulative_ops",
+        Labels.builder()
+            .label("category", "CACHE")
+            .label("ops", operation)
+            .label("cache_name", cacheName)
+            .label("otel_scope_name", "org.apache.solr")
+            .build());
   }
 }
