@@ -20,9 +20,11 @@ package org.apache.solr.security;
 import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_ANONYMOUS;
 import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_AUTHENTICATED;
 
+import io.opentelemetry.api.common.Attributes;
 import java.util.HashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,6 +40,8 @@ public class SolrLogAuditLoggerPluginTest extends SolrTestCaseJ4 {
     plugin = new SolrLogAuditLoggerPlugin();
     config = new HashMap<>();
     config.put("async", false);
+    SolrMetricsContext mockSolrMetricsContext = MockSolrMetricsContextFactory.create();
+    plugin.initializeMetrics(mockSolrMetricsContext, Attributes.empty(), "solr.test");
   }
 
   @Test(expected = SolrException.class)

@@ -336,46 +336,6 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     return metrics;
   }
 
-  /**
-   * Common test method to be able to check audit metrics
-   *
-   * @param className the class name to be used for composing prefix, e.g.
-   *     "SECURITY./auditlogging/SolrLogAuditLoggerPlugin"
-   */
-  protected void assertAuditMetricsMinimums(
-      MiniSolrCloudCluster cluster, String className, int count, int errors)
-      throws InterruptedException {
-    String prefix = "SECURITY./auditlogging." + className + ".";
-    Map<String, Long> expectedCounts = new HashMap<>();
-    expectedCounts.put("count", (long) count);
-
-    Map<String, Long> counts = countSecurityMetrics(cluster, prefix, AUDIT_METRICS_KEYS);
-    boolean success = isMetricsEqualOrLarger(AUDIT_METRICS_TO_COMPARE, expectedCounts, counts);
-    if (!success) {
-      log.info("First metrics count assert failed, pausing 2s before re-attempt");
-      Thread.sleep(2000);
-      counts = countSecurityMetrics(cluster, prefix, AUDIT_METRICS_KEYS);
-      success = isMetricsEqualOrLarger(AUDIT_METRICS_TO_COMPARE, expectedCounts, counts);
-    }
-
-    assertTrue(
-        "Expected metric minimums for prefix "
-            + prefix
-            + ": "
-            + expectedCounts
-            + ", but got: "
-            + counts,
-        success);
-  }
-
-  private boolean isMetricsEqualOrLarger(
-      List<String> metricsToCompare,
-      Map<String, Long> expectedCounts,
-      Map<String, Long> actualCounts) {
-    return metricsToCompare.stream()
-        .allMatch(k -> actualCounts.get(k).intValue() >= expectedCounts.get(k).intValue());
-  }
-
   // Have to sum the metrics from all three shards/nodes
   private long sumCount(String prefix, String key, List<Map<String, Metric>> metrics) {
     assertTrue(
