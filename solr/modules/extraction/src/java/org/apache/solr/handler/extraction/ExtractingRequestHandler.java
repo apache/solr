@@ -33,7 +33,11 @@ import org.apache.tika.config.TikaConfig;
 /**
  * Handler for rich documents like PDF or Word or any other file format that Tika handles that need
  * the text to be extracted first from the document.
+ *
+ * @deprecated Will be replaced with something similar that calls out to a separate Tika Server
+ *     process running in its own JVM.
  */
+@Deprecated(since = "9.10.0")
 public class ExtractingRequestHandler extends ContentStreamHandlerBase
     implements SolrCoreAware, PermissionNameProvider {
 
