@@ -36,12 +36,12 @@ apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
 apache-kafka = "3.9.1"
-apache-log4j = "2.21.0"
+apache-log4j = "2.25.1"
 apache-lucene = "10.2.1"
 apache-opennlp = "2.5.4"
 apache-poi = "5.2.2"
 apache-rat = "0.15"
-apache-tika = "1.28.5"
+apache-tika = "2.9.4"
 apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.4"
 # @keep for version alignment
@@ -292,7 +292,9 @@ apache-poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "apache-
 apache-poi-poi = { module = "org.apache.poi:poi", version.ref = "apache-poi" }
 apache-rat-rat = { module = "org.apache.rat:apache-rat", version.ref = "apache-rat" }
 apache-tika-core = { module = "org.apache.tika:tika-core", version.ref = "apache-tika" }
-apache-tika-parsers = { module = "org.apache.tika:tika-parsers", version.ref = "apache-tika" }
+apache-tika-langdetect = { module = "org.apache.tika:tika-langdetect", version.ref = "apache-tika" }
+apache-tika-parser-html-module = { module = "org.apache.tika:tika-parser-html-module", version.ref = "apache-tika" }
+apache-tika-parsers-standard-package = { module = "org.apache.tika:tika-parsers-standard-package", version.ref = "apache-tika" }
 apache-tomcat-annotationsapi = { module = "org.apache.tomcat:annotations-api", version.ref = "apache-tomcat" }
 apache-zookeeper-jute = { module = "org.apache.zookeeper:zookeeper-jute", version.ref = "apache-zookeeper" }
 apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", version.ref = "apache-zookeeper" }
