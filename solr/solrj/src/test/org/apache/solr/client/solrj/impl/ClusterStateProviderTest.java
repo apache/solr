@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -345,9 +346,10 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(jettyNode2);
       waitForCSPCacheTimeout();
 
-      long start = System.currentTimeMillis();
+      long start = System.nanoTime();
       actualKnownNodes = cspHttp.getLiveNodes();
-      long liveNodeFetchTime = System.currentTimeMillis() - start;
+      long liveNodeFetchTime =
+          TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
       assertEquals(1, actualKnownNodes.size());
       assertEquals(Set.of(nodeName3), actualKnownNodes);
       // This should already be cached, because it is being updated in the background
