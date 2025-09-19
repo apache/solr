@@ -579,9 +579,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(commit()); // arg... commit no longer "commits" unless there has been a change.
 
     CounterSnapshot.CounterDataPointSnapshot filterInsertsInitial =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     CounterSnapshot.CounterDataPointSnapshot filterHitsInitial =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
 
     long inserts = (long) filterInsertsInitial.getValue();
     long hits = (long) filterHitsInitial.getValue();
@@ -592,9 +593,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     inserts += 3;
     CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter1 =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     CounterSnapshot.CounterDataPointSnapshot filterHitsAfter1 =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter1.getValue());
     assertEquals("wrong number of hits", hits, (long) filterHitsAfter1.getValue());
 
@@ -604,9 +606,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     hits += 3;
     CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter2 =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     CounterSnapshot.CounterDataPointSnapshot filterHitsAfter2 =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter2.getValue());
     assertEquals("wrong number of hits", hits, (long) filterHitsAfter2.getValue());
 
@@ -617,9 +620,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     hits += 3;
     CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter3 =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     CounterSnapshot.CounterDataPointSnapshot filterHitsAfter3 =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter3.getValue());
     assertEquals("wrong number of hits", hits, (long) filterHitsAfter3.getValue());
 
@@ -635,9 +639,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     inserts += 1; // +1 for top level fq
     hits += 3;
     CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter4 =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     CounterSnapshot.CounterDataPointSnapshot filterHitsAfter4 =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter4.getValue());
     assertEquals("wrong number of hits", hits, (long) filterHitsAfter4.getValue());
 
@@ -652,9 +657,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     hits += 1; // top-level fq should have been found.
     CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter5 =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     CounterSnapshot.CounterDataPointSnapshot filterHitsAfter5 =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter5.getValue());
     assertEquals("wrong number of hits", hits, (long) filterHitsAfter5.getValue());
 
@@ -664,9 +670,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     hits += 1; // the inner filter
     inserts += 1; // the outer filter
     CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter6 =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     CounterSnapshot.CounterDataPointSnapshot filterHitsAfter6 =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "filterCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
     assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter6.getValue());
     assertEquals("wrong number of hits", hits, (long) filterHitsAfter6.getValue());
 

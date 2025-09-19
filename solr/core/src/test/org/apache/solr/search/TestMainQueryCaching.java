@@ -90,7 +90,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   }
 
   private static long coreToInserts(SolrCore core, String cacheName) {
-    return (long) SolrMetricTestUtils.getCacheSearcherOps(core, cacheName, "insert").getValue();
+    return (long) SolrMetricTestUtils.getCacheSearcherOpsInserts(core, cacheName).getValue();
   }
 
   private static long coreToSortCount(SolrCore core, String skipOrFull) {
@@ -253,10 +253,11 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     Map<?, ?> body = (Map<?, ?>) (res.get("response"));
     SolrCore core = h.getCore();
     assertEquals("Bad matchAllDocs insert count", 1, coreToMatchAllDocsInsertCount(core));
-    assertEquals("Bad filterCache insert count", 0, coreToInserts(core, "filterCache"));
+    assertEquals(
+        "Bad filterCache insert count", 0, coreToInserts(core, SolrMetricTestUtils.FILTER_CACHE));
     assertEquals("Bad full sort count", 0, coreToSortCount(core, "full"));
     assertEquals("Should have exactly " + ALL_DOCS, ALL_DOCS, (long) (body.get("numFound")));
-    long queryCacheInsertCount = coreToInserts(core, "queryResultCache");
+    long queryCacheInsertCount = coreToInserts(core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     if (queryCacheInsertCount == expectCounters[0]) {
       // should be a hit, so all insert/sort-count metrics remain unchanged.
     } else {
@@ -408,7 +409,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     assertEquals(
         "Bad filterCache insert count",
         expectFilterCacheInsertCount,
-        coreToInserts(core, "filterCache"));
+        coreToInserts(core, SolrMetricTestUtils.FILTER_CACHE));
     assertEquals("Bad full sort count", expectFullSortCount, coreToSortCount(core, "full"));
     assertEquals("Bad skip sort count", expectSkipSortCount, coreToSortCount(core, "skip"));
     assertEquals(

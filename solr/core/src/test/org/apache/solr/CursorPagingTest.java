@@ -719,13 +719,17 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
     // Get pre-test metrics for filterCache
     var preFilterInserts =
-        SolrMetricTestUtils.getCacheSearcherOps(solrCore, "filterCache", "inserts").getValue();
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(solrCore, SolrMetricTestUtils.FILTER_CACHE)
+            .getValue();
     var preFilterHits =
-        SolrMetricTestUtils.getCacheSearcherOps(solrCore, "filterCache", "hits").getValue();
+        SolrMetricTestUtils.getCacheSearcherOpsHits(solrCore, SolrMetricTestUtils.FILTER_CACHE)
+            .getValue();
 
     // Get pre-test metrics for queryResultCache
     var preQueryInserts =
-        SolrMetricTestUtils.getCacheSearcherOps(solrCore, "queryResultCache", "inserts").getValue();
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                solrCore, SolrMetricTestUtils.QUERY_RESULT_CACHE)
+            .getValue();
 
     SentinelIntSet ids =
         assertFullWalkNoDups(
@@ -742,11 +746,15 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
     // Get post-test metrics
     var postFilterInserts =
-        SolrMetricTestUtils.getCacheSearcherOps(solrCore, "filterCache", "inserts").getValue();
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(solrCore, SolrMetricTestUtils.FILTER_CACHE)
+            .getValue();
     var postFilterHits =
-        SolrMetricTestUtils.getCacheSearcherOps(solrCore, "filterCache", "hits").getValue();
+        SolrMetricTestUtils.getCacheSearcherOpsHits(solrCore, SolrMetricTestUtils.FILTER_CACHE)
+            .getValue();
     var postQueryInserts =
-        SolrMetricTestUtils.getCacheSearcherOps(solrCore, "queryResultCache", "inserts").getValue();
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                solrCore, SolrMetricTestUtils.QUERY_RESULT_CACHE)
+            .getValue();
 
     assertEquals("query cache inserts changed", preQueryInserts, postQueryInserts, 0.001);
     assertEquals(

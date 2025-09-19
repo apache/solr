@@ -228,11 +228,14 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     {
       // Get initial cache metrics
       CounterSnapshot.CounterDataPointSnapshot lookupsPre =
-          SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "lookups");
+          SolrMetricTestUtils.getCacheSearcherOpsLookups(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
       CounterSnapshot.CounterDataPointSnapshot hitsPre =
-          SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "hits");
+          SolrMetricTestUtils.getCacheSearcherOpsHits(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
       CounterSnapshot.CounterDataPointSnapshot insertsPre =
-          SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "inserts");
+          SolrMetricTestUtils.getCacheSearcherOpsInserts(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
       h.query(
           req(
@@ -249,11 +252,14 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     {
       // Get metrics before second query
       CounterSnapshot.CounterDataPointSnapshot lookupsPre =
-          SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "lookups");
+          SolrMetricTestUtils.getCacheSearcherOpsLookups(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
       CounterSnapshot.CounterDataPointSnapshot hitsPre =
-          SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "hits");
+          SolrMetricTestUtils.getCacheSearcherOpsHits(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
       CounterSnapshot.CounterDataPointSnapshot insertsPre =
-          SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "inserts");
+          SolrMetricTestUtils.getCacheSearcherOpsInserts(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
       h.query(
           req(
@@ -270,11 +276,14 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     {
       // Get metrics before dynamic query
       CounterSnapshot.CounterDataPointSnapshot lookupsPre =
-          SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "lookups");
+          SolrMetricTestUtils.getCacheSearcherOpsLookups(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
       CounterSnapshot.CounterDataPointSnapshot hitsPre =
-          SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "hits");
+          SolrMetricTestUtils.getCacheSearcherOpsHits(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
       CounterSnapshot.CounterDataPointSnapshot insertsPre =
-          SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "inserts");
+          SolrMetricTestUtils.getCacheSearcherOpsInserts(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
       Random r = random();
       boolean changed = false;
@@ -313,11 +322,14 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
       // Get metrics before repeat query
       CounterSnapshot.CounterDataPointSnapshot lookupsPreRepeat =
-          SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "lookups");
+          SolrMetricTestUtils.getCacheSearcherOpsLookups(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
       CounterSnapshot.CounterDataPointSnapshot hitsPreRepeat =
-          SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "hits");
+          SolrMetricTestUtils.getCacheSearcherOpsHits(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
       CounterSnapshot.CounterDataPointSnapshot insertsPreRepeat =
-          SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "inserts");
+          SolrMetricTestUtils.getCacheSearcherOpsInserts(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
       final String repeat =
           h.query(
@@ -359,7 +371,8 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     // however, it might be better to extract this method into a separate suite
     // for a while let's nuke a cache content, in case of repetitions
     @SuppressWarnings("rawtypes")
-    SolrCache cache = (SolrCache) h.getCore().getInfoRegistry().get("queryResultCache");
+    SolrCache cache =
+        (SolrCache) h.getCore().getInfoRegistry().get(SolrMetricTestUtils.QUERY_RESULT_CACHE);
     cache.clear();
   }
 
@@ -375,11 +388,14 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
       CounterSnapshot.CounterDataPointSnapshot hitsPre,
       CounterSnapshot.CounterDataPointSnapshot insertsPre) {
     CounterSnapshot.CounterDataPointSnapshot lookupsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "lookups");
+        SolrMetricTestUtils.getCacheSearcherOpsLookups(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
     CounterSnapshot.CounterDataPointSnapshot hitsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
     CounterSnapshot.CounterDataPointSnapshot insertsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
     assertEquals("it lookups", 1, delta(lookupsPost, lookupsPre));
     assertEquals("it doesn't hit", 0, delta(hitsPost, hitsPre));
@@ -391,11 +407,14 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
       CounterSnapshot.CounterDataPointSnapshot hitsPre,
       CounterSnapshot.CounterDataPointSnapshot insertsPre) {
     CounterSnapshot.CounterDataPointSnapshot lookupsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "lookups");
+        SolrMetricTestUtils.getCacheSearcherOpsLookups(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
     CounterSnapshot.CounterDataPointSnapshot hitsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
     CounterSnapshot.CounterDataPointSnapshot insertsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
     assertEquals("it lookups", 1, delta(lookupsPost, lookupsPre));
     assertEquals("it hits", 1, delta(hitsPost, hitsPre));
@@ -407,11 +426,14 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
       CounterSnapshot.CounterDataPointSnapshot hitsPre,
       CounterSnapshot.CounterDataPointSnapshot insertsPre) {
     CounterSnapshot.CounterDataPointSnapshot lookupsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "lookups");
+        SolrMetricTestUtils.getCacheSearcherOpsLookups(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
     CounterSnapshot.CounterDataPointSnapshot hitsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
     CounterSnapshot.CounterDataPointSnapshot insertsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
     assertEquals("it lookups", 1, delta(lookupsPost, lookupsPre));
     final long mayHit = delta(hitsPost, hitsPre);

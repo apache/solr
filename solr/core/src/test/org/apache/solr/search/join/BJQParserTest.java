@@ -646,17 +646,14 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   private long getCacheHits(String cacheName) {
-    return (long)
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), cacheName, "hits").getValue();
+    return (long) SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), cacheName).getValue();
   }
 
   private long getCacheLookups(String cacheName) {
-    return (long)
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), cacheName, "lookups").getValue();
+    return (long) SolrMetricTestUtils.getCacheSearcherOpsLookups(h.getCore(), cacheName).getValue();
   }
 
   private long getCacheInserts(String cacheName) {
-    return (long)
-        SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), cacheName, "inserts").getValue();
+    return (long) SolrMetricTestUtils.getCacheSearcherOpsInserts(h.getCore(), cacheName).getValue();
   }
 }

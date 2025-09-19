@@ -730,7 +730,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     long inserts =
         (long)
-            SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "inserts")
+            SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                    h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE)
                 .getValue();
 
     assertTrue(inserts > 0);
@@ -763,7 +764,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     long inserts1 =
         (long)
-            SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "inserts")
+            SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                    h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE)
                 .getValue();
 
     // Last query was added to the cache
@@ -798,7 +800,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     long inserts2 =
         (long)
-            SolrMetricTestUtils.getCacheSearcherOps(h.getCore(), "queryResultCache", "inserts")
+            SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                    h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE)
                 .getValue();
     // Last query was NOT added to the cache
     assertEquals(inserts1, inserts2);

@@ -49,11 +49,11 @@ public class TestFiltersQueryCaching extends SolrTestCaseJ4 {
   }
 
   private static CounterSnapshot.CounterDataPointSnapshot getFilterCacheInserts(SolrCore core) {
-    return SolrMetricTestUtils.getCacheSearcherOps(core, "filterCache", "inserts");
+    return SolrMetricTestUtils.getCacheSearcherOpsInserts(core, SolrMetricTestUtils.FILTER_CACHE);
   }
 
   private static CounterSnapshot.CounterDataPointSnapshot getFilterCacheHits(SolrCore core) {
-    return SolrMetricTestUtils.getCacheSearcherOps(core, "filterCache", "hits");
+    return SolrMetricTestUtils.getCacheSearcherOpsHits(core, SolrMetricTestUtils.FILTER_CACHE);
   }
 
   private static long lookupFilterCacheInserts(SolrCore core) {

@@ -112,11 +112,12 @@ public class TimeAllowedTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
 
     CounterSnapshot.CounterDataPointSnapshot fqInsertsPre =
-        SolrMetricTestUtils.getCacheSearcherOps(core, "filterCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(core, SolrMetricTestUtils.FILTER_CACHE);
     long fqInserts = (long) fqInsertsPre.getValue();
 
     CounterSnapshot.CounterDataPointSnapshot qrInsertsPre =
-        SolrMetricTestUtils.getCacheSearcherOps(core, "queryResultCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     long qrInserts = (long) qrInsertsPre.getValue();
 
     // This gets 0 docs back. Use 10000 instead of 1 for timeAllowed, and it gets 100 back and the
@@ -133,14 +134,15 @@ public class TimeAllowedTest extends SolrTestCaseJ4 {
         (Boolean) (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)));
 
     CounterSnapshot.CounterDataPointSnapshot qrInsertsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(core, "queryResultCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     assertEquals(
         "Should NOT have inserted partial results in the cache!",
         (long) qrInsertsPost.getValue(),
         qrInserts);
 
     CounterSnapshot.CounterDataPointSnapshot fqInsertsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(core, "filterCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(core, SolrMetricTestUtils.FILTER_CACHE);
     assertEquals("Should NOT have another insert", fqInserts, (long) fqInsertsPost.getValue());
 
     // At the end of all this, we should have no hits in the queryResultCache.
@@ -148,11 +150,11 @@ public class TimeAllowedTest extends SolrTestCaseJ4 {
 
     // Check that we did insert this one.
     CounterSnapshot.CounterDataPointSnapshot fqHitsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(core, "filterCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(core, SolrMetricTestUtils.FILTER_CACHE);
     assertEquals("Hits should still be 0", (long) fqHitsPost.getValue(), 0L);
 
     CounterSnapshot.CounterDataPointSnapshot fqInsertsPostSecond =
-        SolrMetricTestUtils.getCacheSearcherOps(core, "filterCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(core, SolrMetricTestUtils.FILTER_CACHE);
     assertEquals("Inserts should be bumped", (long) fqInsertsPostSecond.getValue(), fqInserts + 1);
 
     res = (Map<?, ?>) fromJSONString(response);
@@ -173,18 +175,20 @@ public class TimeAllowedTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
 
     CounterSnapshot.CounterDataPointSnapshot insertsPre =
-        SolrMetricTestUtils.getCacheSearcherOps(core, "queryResultCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     long inserts = (long) insertsPre.getValue();
 
     CounterSnapshot.CounterDataPointSnapshot hitsPre =
-        SolrMetricTestUtils.getCacheSearcherOps(core, "queryResultCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     long hits = (long) hitsPre.getValue();
 
     String response = JQ(req("q", q, "indent", "true", "timeAllowed", "1", "sleep", sleep));
 
     // The queryResultCache should NOT get an entry here.
     CounterSnapshot.CounterDataPointSnapshot insertsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(core, "queryResultCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     assertEquals(
         "Should NOT have inserted partial results!", inserts, (long) insertsPost.getValue());
 
@@ -201,9 +205,10 @@ public class TimeAllowedTest extends SolrTestCaseJ4 {
 
     // Check that we did insert this one.
     CounterSnapshot.CounterDataPointSnapshot hitsPost =
-        SolrMetricTestUtils.getCacheSearcherOps(core, "queryResultCache", "hits");
+        SolrMetricTestUtils.getCacheSearcherOpsHits(core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     CounterSnapshot.CounterDataPointSnapshot insertsPost2 =
-        SolrMetricTestUtils.getCacheSearcherOps(core, "queryResultCache", "inserts");
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     assertEquals("Hits should still be 0", hits, (long) hitsPost.getValue());
     assertTrue("Inserts should be bumped", inserts < (long) insertsPost2.getValue());
 
