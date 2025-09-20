@@ -292,7 +292,7 @@ apache-poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "apache-
 apache-poi-poi = { module = "org.apache.poi:poi", version.ref = "apache-poi" }
 apache-rat-rat = { module = "org.apache.rat:apache-rat", version.ref = "apache-rat" }
 apache-tika-core = { module = "org.apache.tika:tika-core", version.ref = "apache-tika" }
-apache-tika-langdetect = { module = "org.apache.tika:tika-langdetect", version.ref = "apache-tika" }
+apache-tika-langdetect-tika = { module = "org.apache.tika:tika-langdetect-tika", version.ref = "apache-tika" }
 apache-tika-parser-html-module = { module = "org.apache.tika:tika-parser-html-module", version.ref = "apache-tika" }
 apache-tika-parsers-standard-package = { module = "org.apache.tika:tika-parsers-standard-package", version.ref = "apache-tika" }
 apache-tomcat-annotationsapi = { module = "org.apache.tomcat:annotations-api", version.ref = "apache-tomcat" }

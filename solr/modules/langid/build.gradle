@@ -23,8 +23,7 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
-  implementation(libs.apache.tika.core) { transitive = false }
-  implementation(libs.apache.tika.langdetect)
+  implementation libs.apache.tika.langdetect.tika
   implementation libs.commonsio.commonsio
   implementation libs.cybozulabs.langdetect
   implementation libs.apache.opennlp.tools
