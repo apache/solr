@@ -18,9 +18,9 @@
 
 If the documents you need to index are in a binary format, such as Word, Excel, PDFs, etc., Solr includes a request handler which uses http://tika.apache.org/[Apache Tika] to extract text for indexing to Solr.
 
-Solr uses code from the Tika project to provide a framework for incorporating many different file-format parsers such as http://pdfbox.apache.org/[Apache PDFBox] and http://poi.apache.org/index.html[Apache POI] into Solr itself.
+There are two backends for this module. The `local` backend uses code from the Tika project to provide a framework for incorporating many different file-format parsers such as http://pdfbox.apache.org/[Apache PDFBox] and http://poi.apache.org/index.html[Apache POI] into Solr itself. The `tikaserver` backend uses an external Tika server process to do the extraction.
 
-Working with this framework, Solr's `ExtractingRequestHandler` uses Tika internally to support uploading binary files
+Working with this framework, Solr's `ExtractingRequestHandler` uses Tika to support uploading binary files
 for data extraction and indexing.
 Downloading Tika is not required to use Solr Cell.
 
@@ -49,6 +49,9 @@ By default it maps to the same name but several parameters control how this is d
 * When Solr Cell finishes creating the internal `SolrInputDocument`, the rest of the indexing stack takes over.
 The next step after any update handler is the xref:configuration-guide:update-request-processors.adoc[Update Request Processor] chain.
 
+== Tika Server
+
+TODO: Add documentation about Tika Server backend.
 
 == Module
 
@@ -169,6 +172,32 @@ The easiest way to try out the `uprefix` parameter is to start over with a fresh
 The following parameters are accepted by the `ExtractingRequestHandler`.
 
 These parameters can be set for each indexing request (as request parameters), or they can be set for all requests to the request handler by defining them in <<solrconfig.xml Configuration,`solrconfig.xml`>>.
+
+`extraction.backend`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: local
+|===
++
+Choose the backend to use for extraction. The options are `local` or `tikaserver`.
+The `local` backend uses Tika libraries included with Solr to do the extraction, and is the default in Solr 9.
+The `tikaserver` backend uses an external Tika server process to do the extraction.
+**The `local` backend is deprecated and will be removed in a future release.**
++
+Example: In `solrconfig.xml`: `<str name="extraction.backend">tikaserver</str>`.
+
+`tikaserver.url`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Specifies the URL of the Tika server to use when the `extraction.backend` parameter is set to `tikaserver`.
+This parameter is required when using the `tikaserver` backend.
++
+Example: In `solrconfig.xml`: `<str name="tikaserver.url">http://my.tika.server</str>`.
 
 `capture`::
 +
