@@ -192,8 +192,6 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
   @Test
   public void testHybridQueryWithPaginationPre() throws Exception {
     prepareIndexDocs();
-    // lexical => 2,3
-    // vector => 1,4,2,10,3,6
     QueryResponse rsp =
         query(
             CommonParams.JSON,
@@ -238,14 +236,14 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * @throws Exception if any unexpected error occurs during the test execution.
    */
   @Test
-  public void testVectorQueryWithFaceting() throws Exception {
+  public void testQueryWithFaceting() throws Exception {
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
             + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}}},"
             + "\"limit\":3,\"offset\":1"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
-            + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\","
+            + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\",\"facet.mincount\":1,"
             + "\"combiner.query\":[\"lexical\"]}}";
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
     assertEquals(3, rsp.getResults().size());

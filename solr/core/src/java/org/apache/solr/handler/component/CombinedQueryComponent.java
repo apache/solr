@@ -297,6 +297,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     for (int queryIndex = 0; queryIndex < queriesToCombineKeys.length; queryIndex++) {
       int failedShardCount = 0;
       long queryNumFound = 0;
+      long queryApproximateTotalHits = 0;
       Map<Object, ShardDoc> uniqueDoc = new HashMap<>();
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
@@ -348,9 +349,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         Object ath =
             responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
         if (ath == null) {
-          approximateTotalHits += queryNumFound;
+          queryApproximateTotalHits += queryNumFound;
         } else {
-          approximateTotalHits += ((Number) ath).longValue();
+          queryApproximateTotalHits += ((Number) ath).longValue();
         }
 
         @SuppressWarnings("unchecked")
@@ -399,6 +400,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       } // end for-each-response
       shardDocMap.put(queriesToCombineKeys[queryIndex], uniqueDoc.values().stream().toList());
       numFound = max(numFound, queryNumFound);
+      approximateTotalHits = max(approximateTotalHits, queryApproximateTotalHits);
     }
 
     SolrDocumentList responseDocs = new SolrDocumentList();
