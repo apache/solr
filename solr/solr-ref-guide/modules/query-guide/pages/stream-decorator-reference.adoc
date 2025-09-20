@@ -786,6 +786,52 @@ fetch(addresses,
 
 The example above fetches addresses for users by matching the username in the tuple with the userId field in the addresses collection.
 
+== fullOuterJoin
+
+The `fullOuterJoin` function wraps two streams, Left and Right, and emits tuples from both.
+If there is a tuple in Right equal to that in the Left (as defined by `on`) then the values in that tuple will be included in the emitted tuple.
+An equal tuple in one stream *need not* exist for a tuple in the other to be emitted.
+This supports one-to-one, one-to-many, many-to-one, and many-to-many full outer join scenarios.
+The tuples are emitted in the order in which they appear in the streams.
+Both streams must be sorted by the fields being used to determine equality (using the `on` parameter).
+If both tuples contain a field of the same name then the value from the Right stream will be used in the emitted tuple.
+
+You can wrap the incoming streams with a `select` function to be specific about which field values are included in the emitted tuple.
+
+=== fullOuterJoin Parameters
+
+* `StreamExpression for StreamLeft`
+* `StreamExpression for StreamRight`
+* `on`: Fields to be used for checking equality of tuples between Left and Right.
+Can be of the format `on="fieldName"`, `on="fieldNameInLeft=fieldNameInRight"`, or `on="fieldName, otherFieldName=rightOtherFieldName"`.
+
+=== fullOuterJoin Syntax
+
+[source,text]
+----
+fullOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  search(pets, q="type:cat", qt="/export", fl="personId,petName", sort="personId asc"),
+  on="personId"
+)
+
+fullOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  search(pets, q="type:cat", qt="/export", fl="ownerId,petName", sort="ownerId asc"),
+  on="personId=ownerId"
+)
+
+fullOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  select(
+    search(pets, q="type:cat", qt="/export", fl="ownerId,name", sort="ownerId asc"),
+    ownerId,
+    name as petName
+  ),
+  on="personId=ownerId"
+)
+----
+
 == having
 
 The `having` expression wraps a stream and applies a boolean operation to each tuple.
