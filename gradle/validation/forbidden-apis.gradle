@@ -53,7 +53,7 @@ allprojects { prj ->
       // commons-io is special: forbiddenapis has a versioned bundledSignature.
       bundledSignatures += resolvedMods
         .findAll { id -> id.group == 'commons-io' && id.name == 'commons-io' }
-        .findAll { id -> id.version != "2.19.0" }
+        .findAll { id -> id.version != "2.19.0" && id.version != "2.20.0" }
         .collect { id -> "${id.name}-unsafe-${id.version}" as String }
     }
 
