@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -263,14 +265,19 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   public static class MostlyPassthroughHtmlMapper implements HtmlMapper {
     public static final HtmlMapper INSTANCE = new MostlyPassthroughHtmlMapper();
 
-    /**
-     * Keep all elements and their content.
-     *
-     * <p>Apparently &lt;SCRIPT&gt; and &lt;STYLE&gt; elements are blocked elsewhere
-     */
+    /** Elements that are not relevant and can be discarded. */
+    private static final Set<String> DISCARDABLE_ELEMENTS =
+        new HashSet<>() {
+          {
+            add("STYLE");
+            add("SCRIPT");
+          }
+        };
+
+    /** Discard &lt;STYLE&gt; and &lt;SCRIPT&gt; elements. */
     @Override
     public boolean isDiscardElement(String name) {
-      return false;
+      return DISCARDABLE_ELEMENTS.contains(name);
     }
 
     /** Lowercases the attribute name */
