@@ -404,18 +404,19 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       ignoreException("unknown field 'meta'"); // TODO: should this exception be happening?
       expectThrows(
           SolrException.class,
-          () -> loadLocal(
-              "extraction/simple.html",
-              "literal.id",
-              "simple2",
-              "lowernames",
-              "true",
-              "captureAttr",
-              "true",
-              // "fmap.content_type", "abcxyz",
-              "commit",
-              "true" // test immediate commit
-              ));
+          () ->
+              loadLocal(
+                  "extraction/simple.html",
+                  "literal.id",
+                  "simple2",
+                  "lowernames",
+                  "true",
+                  "captureAttr",
+                  "true",
+                  // "fmap.content_type", "abcxyz",
+                  "commit",
+                  "true" // test immediate commit
+                  ));
     } finally {
       resetExceptionIgnores();
     }
