@@ -16,10 +16,11 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
@@ -59,12 +60,9 @@ public class TestCaffeineCache extends SolrTestCase {
 
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
 
-    lfuCache.initializeMetrics(
-        solrMetricsContext, Attributes.of(AttributeKey.stringKey("cache_name"), lfuCacheName), "");
+    lfuCache.initializeMetrics(solrMetricsContext, Attributes.of(NAME_ATTR, lfuCacheName), "");
     newLFUCache.initializeMetrics(
-        solrMetricsContext,
-        Attributes.of(AttributeKey.stringKey("cache_name"), newLfuCacheName),
-        "");
+        solrMetricsContext, Attributes.of(NAME_ATTR, newLfuCacheName), "");
 
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
@@ -83,9 +81,9 @@ public class TestCaffeineCache extends SolrTestCase {
 
     var prometheusReader = metricManager.getPrometheusMetricReader(registry);
 
-    var lookupDatapoint = getCounterDatapoint(prometheusReader, lfuCacheName, "lookups");
-    var hitDatapoint = getCounterDatapoint(prometheusReader, lfuCacheName, "hits");
-    var insertDatapoint = getCounterDatapoint(prometheusReader, lfuCacheName, "inserts");
+    var lookupDatapoint = getCacheLookup(prometheusReader, lfuCacheName, null);
+    var hitDatapoint = getCacheLookup(prometheusReader, lfuCacheName, "hit");
+    var insertDatapoint = getCacheOperation(prometheusReader, lfuCacheName, "inserts");
     assertEquals(3.0, lookupDatapoint.getValue(), 0.001);
     assertEquals(2.0, hitDatapoint.getValue(), 0.001);
     assertEquals(101.0, insertDatapoint.getValue(), 0.001);
@@ -100,18 +98,19 @@ public class TestCaffeineCache extends SolrTestCase {
     assertEquals("75", newLFUCache.get(75));
     assertNull(newLFUCache.get(50));
 
-    lookupDatapoint = getCounterDatapoint(prometheusReader, newLfuCacheName, "lookups");
-    hitDatapoint = getCounterDatapoint(prometheusReader, newLfuCacheName, "hits");
-    insertDatapoint = getCounterDatapoint(prometheusReader, newLfuCacheName, "inserts");
-    var evictionDatapoint = getCounterDatapoint(prometheusReader, newLfuCacheName, "evictions");
+    lookupDatapoint = getCacheLookup(prometheusReader, newLfuCacheName, null);
+    hitDatapoint = getCacheLookup(prometheusReader, newLfuCacheName, "hit");
+    insertDatapoint = getCacheOperation(prometheusReader, newLfuCacheName, "inserts");
+    var evictionDatapoint = getCacheOperation(prometheusReader, newLfuCacheName, "evictions");
     assertEquals(3.0, lookupDatapoint.getValue(), 0.001);
     assertEquals(2.0, hitDatapoint.getValue(), 0.001);
     assertEquals(1.0, insertDatapoint.getValue(), 0.001);
     assertEquals(0.0, evictionDatapoint.getValue(), 0.001);
 
-    var cumLookupDatapoint = getGaugeDatapoint(prometheusReader, newLfuCacheName, "lookups");
-    var cumHitDatapoint = getGaugeDatapoint(prometheusReader, newLfuCacheName, "hits");
-    var cumInsertDatapoint = getGaugeDatapoint(prometheusReader, newLfuCacheName, "inserts");
+    var cumLookupDatapoint = getCacheLookupCumulative(prometheusReader, newLfuCacheName, null);
+    var cumHitDatapoint = getCacheLookupCumulative(prometheusReader, newLfuCacheName, "hit");
+    var cumInsertDatapoint =
+        getCacheOperationCumulative(prometheusReader, newLfuCacheName, "inserts");
     assertEquals(7.0, cumLookupDatapoint.getValue(), 0.001);
     assertEquals(4.0, cumHitDatapoint.getValue(), 0.001);
     assertEquals(102.0, cumInsertDatapoint.getValue(), 0.001);
@@ -381,22 +380,22 @@ public class TestCaffeineCache extends SolrTestCase {
     assertEquals(emptySize, cache.ramBytesUsed());
   }
 
-  private CounterSnapshot.CounterDataPointSnapshot getCounterDatapoint(
+  private CounterSnapshot.CounterDataPointSnapshot getCacheOperation(
       org.apache.solr.metrics.otel.FilterablePrometheusMetricReader prometheusReader,
       String cacheName,
       String operation) {
     return SolrMetricTestUtils.getCounterDatapoint(
         prometheusReader,
-        "solr_searcher_cache_ops",
+        "solr_cache_ops",
         Labels.builder()
             .label("category", "CACHE")
             .label("ops", operation)
-            .label("cache_name", cacheName)
+            .label("name", cacheName)
             .label("otel_scope_name", "org.apache.solr")
             .build());
   }
 
-  private GaugeSnapshot.GaugeDataPointSnapshot getGaugeDatapoint(
+  private GaugeSnapshot.GaugeDataPointSnapshot getCacheOperationCumulative(
       PrometheusMetricReader prometheusReader, String cacheName, String operation) {
     return SolrMetricTestUtils.getGaugeDatapoint(
         prometheusReader,
@@ -404,8 +403,36 @@ public class TestCaffeineCache extends SolrTestCase {
         Labels.builder()
             .label("category", "CACHE")
             .label("ops", operation)
-            .label("cache_name", cacheName)
+            .label("name", cacheName)
             .label("otel_scope_name", "org.apache.solr")
             .build());
+  }
+
+  private CounterSnapshot.CounterDataPointSnapshot getCacheLookup(
+      org.apache.solr.metrics.otel.FilterablePrometheusMetricReader prometheusReader,
+      String cacheName,
+      String result) {
+    var builder =
+        Labels.builder()
+            .label("category", "CACHE")
+            .label("name", cacheName)
+            .label("otel_scope_name", "org.apache.solr");
+    if (result != null) builder.label("result", result);
+    return SolrMetricTestUtils.getCounterDatapoint(
+        prometheusReader, "solr_cache_lookups", builder.build());
+  }
+
+  private GaugeSnapshot.GaugeDataPointSnapshot getCacheLookupCumulative(
+      org.apache.solr.metrics.otel.FilterablePrometheusMetricReader prometheusReader,
+      String cacheName,
+      String result) {
+    var builder =
+        Labels.builder()
+            .label("category", "CACHE")
+            .label("name", cacheName)
+            .label("otel_scope_name", "org.apache.solr");
+    if (result != null) builder.label("result", result);
+    return SolrMetricTestUtils.getGaugeDatapoint(
+        prometheusReader, "solr_cache_cumulative_lookups", builder.build());
   }
 }

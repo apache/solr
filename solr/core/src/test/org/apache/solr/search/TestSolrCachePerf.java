@@ -16,7 +16,8 @@
  */
 package org.apache.solr.search;
 
-import io.opentelemetry.api.common.AttributeKey;
+import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
+
 import io.opentelemetry.api.common.Attributes;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.IOException;
@@ -111,7 +112,7 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       cache.setState(SolrCache.State.LIVE);
       cache.initializeMetrics(
           new SolrMetricsContext(metricManager, "foo", "bar"),
-          Attributes.of(AttributeKey.stringKey("cache_name"), "foo"),
+          Attributes.of(NAME_ATTR, "foo"),
           "foo");
       AtomicBoolean stop = new AtomicBoolean();
       SummaryStatistics perImplRatio =
@@ -170,10 +171,10 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
           SolrMetricTestUtils.getGaugeDatapoint(
               metricManager.getPrometheusMetricReader(
                   cache.getSolrMetricsContext().getRegistryName()),
-              "solr_searcher_cache_hit_ratio",
+              "solr_cache_hit_ratio",
               Labels.builder()
                   .label("category", "CACHE")
-                  .label("cache_name", "foo")
+                  .label("name", "foo")
                   .label("otel_scope_name", "org.apache.solr")
                   .build());
 

@@ -28,12 +28,12 @@ import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
+import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
 import static org.apache.solr.search.SolrIndexSearcher.EXECUTOR_MAX_CPU_THREADS;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Tracer;
 import jakarta.inject.Singleton;
@@ -874,9 +874,7 @@ public class CoreContainer {
         String cacheName = e.getKey();
         c.initializeMetrics(
             solrMetricsContext,
-            Attributes.builder()
-                .put(AttributeKey.stringKey("cache_name"), "nodeLevelCache/" + cacheName)
-                .build(),
+            Attributes.builder().put(NAME_ATTR, "nodeLevelCache/" + cacheName).build(),
             "");
         m.put(cacheName, c);
       }

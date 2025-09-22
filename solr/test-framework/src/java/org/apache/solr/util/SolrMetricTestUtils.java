@@ -323,7 +323,7 @@ public final class SolrMetricTestUtils {
         SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
             .label("category", "CACHE")
             .label("ops", operation)
-            .label("cache_name", cacheName)
+            .label("name", cacheName)
             .build());
   }
 
@@ -331,22 +331,43 @@ public final class SolrMetricTestUtils {
       SolrCore core, String cacheName, String operation) {
     return SolrMetricTestUtils.getCounterDatapoint(
         core,
-        "solr_searcher_cache_ops",
+        "solr_cache_ops",
         SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
             .label("category", "CACHE")
             .label("ops", operation)
-            .label("cache_name", cacheName)
+            .label("name", cacheName)
             .build());
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherLookups(
+      SolrCore core, String cacheName, String result) {
+    var builder =
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("category", "CACHE")
+            .label("name", cacheName);
+    if (result != null) builder.label("result", result);
+    return SolrMetricTestUtils.getCounterDatapoint(core, "solr_cache_lookups", builder.build());
+  }
+
+  public static GaugeSnapshot.GaugeDataPointSnapshot getCacheSearcherLookupsCumulative(
+      SolrCore core, String cacheName, String result) {
+    var builder =
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("category", "CACHE")
+            .label("name", cacheName);
+    if (result != null) builder.label("result", result);
+    return SolrMetricTestUtils.getGaugeDatapoint(
+        core, "solr_cache_cumulative_lookups", builder.build());
   }
 
   public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOpsHits(
       SolrCore core, String cacheName) {
-    return SolrMetricTestUtils.getCacheSearcherOps(core, cacheName, "hits");
+    return SolrMetricTestUtils.getCacheSearcherLookups(core, cacheName, "hit");
   }
 
   public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOpsLookups(
       SolrCore core, String cacheName) {
-    return SolrMetricTestUtils.getCacheSearcherOps(core, cacheName, "lookups");
+    return SolrMetricTestUtils.getCacheSearcherLookups(core, cacheName, null);
   }
 
   public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOpsInserts(

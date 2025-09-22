@@ -156,8 +156,8 @@ public class TestThinCache extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", "fq", "id:0"));
     assertQ(req("q", "*:*", "fq", "id:1"));
 
-    assertEquals(3L, getNodeCacheOp(thinCacheName, "lookups"));
-    assertEquals(1L, getNodeCacheOp(thinCacheName, "hits"));
+    assertEquals(3L, getNodeCacheLookups(thinCacheName, null));
+    assertEquals(1L, getNodeCacheLookups(thinCacheName, "hit"));
     assertEquals(2L, getNodeCacheOp(thinCacheName, "inserts"));
 
     assertEquals(2, getNodeCacheSize(thinCacheName));
@@ -171,13 +171,27 @@ public class TestThinCache extends SolrTestCaseJ4 {
     return (long)
         SolrMetricTestUtils.getCounterDatapoint(
                 reader,
-                "solr_searcher_cache_ops",
+                "solr_cache_ops",
                 Labels.builder()
                     .label("category", "CACHE")
                     .label("ops", operation)
-                    .label("cache_name", cacheName)
+                    .label("name", cacheName)
                     .label("otel_scope_name", "org.apache.solr")
                     .build())
+            .getValue();
+  }
+
+  private long getNodeCacheLookups(String cacheName, String result) {
+    var reader = h.getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.node");
+    var builder =
+        Labels.builder()
+            .label("category", "CACHE")
+            .label("name", cacheName)
+            .label("otel_scope_name", "org.apache.solr");
+    if (result != null) builder.label("result", result);
+
+    return (long)
+        SolrMetricTestUtils.getCounterDatapoint(reader, "solr_cache_lookups", builder.build())
             .getValue();
   }
 
@@ -186,10 +200,10 @@ public class TestThinCache extends SolrTestCaseJ4 {
     return (long)
         SolrMetricTestUtils.getGaugeDatapoint(
                 reader,
-                "solr_searcher_cache_size",
+                "solr_cache_size",
                 Labels.builder()
                     .label("category", "CACHE")
-                    .label("cache_name", cacheName)
+                    .label("name", cacheName)
                     .label("otel_scope_name", "org.apache.solr")
                     .build())
             .getValue();
