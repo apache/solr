@@ -43,6 +43,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
+import org.apache.solr.metrics.otel.instruments.AttributedLongGauge;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.util.TimeOut;
@@ -320,11 +321,12 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
               attrsWithCategory);
     }
 
-    solrMetricsContext.observableLongGauge(
-        "solr_auditlogger_async_enabled",
-        "Whether the audit logger is running in async mode (1) or not (0)",
-        (observableLongMeasurement ->
-            observableLongMeasurement.record(async ? 1 : 0, attrsWithCategory)));
+    AttributedLongGauge asyncEnabledGauge = new AttributedLongGauge(
+        solrMetricsContext.longGauge(
+            "solr_auditlogger_async_enabled",
+            "Whether the audit logger is running in async mode (1) or not (0)"),
+        attrsWithCategory);
+    asyncEnabledGauge.set(async ? 1L : 0L);
   }
 
   @Override

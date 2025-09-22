@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongHistogram;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
@@ -39,6 +40,9 @@ public final class MockSolrMetricsContextFactory {
 
     when(mockChildContext.observableLongGauge(anyString(), anyString(), any())).thenReturn(null);
     when(mockChildContext.observableLongCounter(anyString(), anyString(), any())).thenReturn(null);
+
+    LongGauge mockLongGauge = mock(LongGauge.class);
+    when(mockChildContext.longGauge(anyString(), anyString())).thenReturn(mockLongGauge);
 
     return mockParentContext;
   }
