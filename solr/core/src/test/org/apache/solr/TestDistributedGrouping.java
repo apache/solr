@@ -1260,42 +1260,46 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
       for (String rows : new String[] {"10", "0"}) {
         simpleQuery(
             "q", "*:*", "group", "true", "group.field", i1, "group.ngroups", ngroups, "rows", rows);
-        QueryResponse rsp = simpleQuery(
-            "q",
-            t1 + ":eggs",
-            "group",
-            "true",
-            "group.field",
-            i1,
-            "group.ngroups",
-            ngroups,
-            "rows",
-            rows,
-            "cache",
-            "false",
-            "timeAllowed",
-            "200",
-            "sleep",
-            "300");
-        assertTrue("header: " + rsp.getHeader(), SolrQueryResponse.isPartialResults(rsp.getHeader()));
-        rsp = simpleQuery(
-            "q",
-            t1 + ":eggs",
-            "group",
-            "true",
-            "group.field",
-            i1,
-            "group.ngroups",
-            ngroups,
-            "rows",
-            rows,
-            "cache",
-            "false",
-            "timeAllowed",
-            "200",
-            "sleep",
-            "10");
-        assertFalse("header: " + rsp.getHeader(), SolrQueryResponse.isPartialResults(rsp.getHeader()));
+        QueryResponse rsp =
+            simpleQuery(
+                "q",
+                t1 + ":eggs",
+                "group",
+                "true",
+                "group.field",
+                i1,
+                "group.ngroups",
+                ngroups,
+                "rows",
+                rows,
+                "cache",
+                "false",
+                "timeAllowed",
+                "200",
+                "sleep",
+                "300");
+        assertTrue(
+            "header: " + rsp.getHeader(), SolrQueryResponse.isPartialResults(rsp.getHeader()));
+        rsp =
+            simpleQuery(
+                "q",
+                t1 + ":eggs",
+                "group",
+                "true",
+                "group.field",
+                i1,
+                "group.ngroups",
+                ngroups,
+                "rows",
+                rows,
+                "cache",
+                "false",
+                "timeAllowed",
+                "200",
+                "sleep",
+                "10");
+        assertFalse(
+            "header: " + rsp.getHeader(), SolrQueryResponse.isPartialResults(rsp.getHeader()));
       }
     }
 

@@ -83,7 +83,8 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
     sreq.purpose = ShardRequest.PURPOSE_GET_TOP_IDS;
     sreq.params = new ModifiableSolrParams(rb.req.getParams());
 
-    // TODO: eventually all components should be subject to similar logic if we are running with timeAllowed
+    // TODO: should eventually all components that send sub-requests be subject to similar
+    //  logic if we are running with timeAllowed?
     int origTimeAllowed = sreq.params.getInt(CommonParams.TIME_ALLOWED, -1);
     if (origTimeAllowed > 0) {
       int remainingTimeAllowed = origTimeAllowed - rb.firstPhaseElapsedTime;
@@ -91,11 +92,11 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
       if (remainingTimeAllowed <= 1) {
         // We've already used up our time budget
         rb.rsp.setPartialResults(rb.req);
-        rb.rsp.addPartialResponseDetail(getClass().getSimpleName() + ": timeAllowed exhausted in first phase");
+        rb.rsp.addPartialResponseDetail(
+            getClass().getSimpleName() + ": timeAllowed exhausted in first phase");
         return new ShardRequest[0];
       }
-      sreq.params.set(
-          CommonParams.TIME_ALLOWED, remainingTimeAllowed);
+      sreq.params.set(CommonParams.TIME_ALLOWED, remainingTimeAllowed);
     }
 
     // If group.format=simple group.offset doesn't make sense
