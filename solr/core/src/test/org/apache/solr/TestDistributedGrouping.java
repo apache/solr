@@ -30,7 +30,12 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.QueryComponent;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.grouping.distributed.requestfactory.TopGroupsShardRequestFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -1684,6 +1689,44 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         i1,
         "debug",
         "true");
+  }
+
+  @Test
+  public void testShardRequestFactory() throws Exception {
+    SolrQueryRequest req =
+        req(
+            "q",
+            "*:*",
+            "rows",
+            "100",
+            "fl",
+            "id," + i1,
+            "group",
+            "true",
+            "group.field",
+            i1,
+            "group.limit",
+            "-1",
+            "sort",
+            i1 + " asc, id asc",
+            "timeAllowed",
+            "200");
+    try {
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      ResponseBuilder rb = new ResponseBuilder(req, rsp, List.of());
+      new QueryComponent().prepare(rb);
+      rb.setNeedDocSet(true);
+
+      TopGroupsShardRequestFactory f = new TopGroupsShardRequestFactory();
+      ShardRequest[] sreq = f.constructRequest(rb);
+      assertTrue(sreq.length > 0);
+
+      rb.firstPhaseElapsedTime = 200; // simulate timeout
+      sreq = f.constructRequest(rb);
+      assertEquals(0, sreq.length);
+    } finally {
+      req.close();
+    }
   }
 
   private QueryResponse simpleQuery(Object... queryParams) throws SolrServerException, IOException {
