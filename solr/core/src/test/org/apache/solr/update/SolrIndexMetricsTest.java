@@ -153,8 +153,6 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       //     4. 300 + 100 + 100 ==> new 500 doc segment, above the 450 threshold ==> major merge
 
       // check basic index meters
-
-      // solr_indexwriter_mergetime_ms
       var minorMergeTimer =
           SolrMetricTestUtils.getHistogramDatapoint(
               core,
@@ -163,7 +161,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "minor")
                   .build());
-      assertTrue("minorMergeTimer: " + minorMergeTimer.getCount(), minorMergeTimer.getCount() == 2);
+      assertTrue("minorMergeTimer instances should be at least 2, got: " + minorMergeTimer.getCount(), minorMergeTimer.getCount() == 2);
       var majorMergeTimer =
           SolrMetricTestUtils.getHistogramDatapoint(
               core,
@@ -172,9 +170,8 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "major")
                   .build());
-      assertTrue("majorMergeTimer: " + majorMergeTimer.getCount(), majorMergeTimer.getCount() == 2);
+      assertTrue("majorMergeTimer instances should be at least 2, got: " + majorMergeTimer.getCount(), majorMergeTimer.getCount() == 2);
 
-      // check detailed meters
       var majorMergeDocs =
           SolrMetricTestUtils.getCounterDatapoint(
               core,
@@ -185,7 +182,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(MERGE_STATE_ATTR.toString(), "finished")
                   .build());
       // majorMergeDocs is the total number of docs merged during major merge operations
-      assertTrue("majorMergeDocs: " + majorMergeDocs.getValue(), majorMergeDocs.getValue() == 1000);
+      assertTrue("majorMergeDocs should be 1000, got: " + majorMergeDocs.getValue(), majorMergeDocs.getValue() == 1000);
 
       var flushCounter =
           SolrMetricTestUtils.getCounterDatapoint(
@@ -194,7 +191,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .build());
-      assertTrue("flush: " + flushCounter.getValue(), flushCounter.getValue() >= 10);
+      assertTrue("should be at greater than 10 flushes: " + flushCounter.getValue(), flushCounter.getValue() >= 10);
     }
   }
 }
