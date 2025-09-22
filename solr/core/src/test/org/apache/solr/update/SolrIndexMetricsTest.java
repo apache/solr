@@ -161,7 +161,9 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "minor")
                   .build());
-      assertTrue("minorMergeTimer instances should be at least 2, got: " + minorMergeTimer.getCount(), minorMergeTimer.getCount() == 2);
+      assertTrue(
+          "minorMergeTimer instances should be at least 2, got: " + minorMergeTimer.getCount(),
+          minorMergeTimer.getCount() == 2);
       var majorMergeTimer =
           SolrMetricTestUtils.getHistogramDatapoint(
               core,
@@ -170,7 +172,9 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "major")
                   .build());
-      assertTrue("majorMergeTimer instances should be at least 2, got: " + majorMergeTimer.getCount(), majorMergeTimer.getCount() == 2);
+      assertTrue(
+          "majorMergeTimer instances should be at least 2, got: " + majorMergeTimer.getCount(),
+          majorMergeTimer.getCount() == 2);
 
       var majorMergeDocs =
           SolrMetricTestUtils.getCounterDatapoint(
@@ -182,7 +186,9 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(MERGE_STATE_ATTR.toString(), "finished")
                   .build());
       // majorMergeDocs is the total number of docs merged during major merge operations
-      assertTrue("majorMergeDocs should be 1000, got: " + majorMergeDocs.getValue(), majorMergeDocs.getValue() == 1000);
+      assertTrue(
+          "majorMergeDocs should be 1000, got: " + majorMergeDocs.getValue(),
+          majorMergeDocs.getValue() == 1000);
 
       var flushCounter =
           SolrMetricTestUtils.getCounterDatapoint(
@@ -191,7 +197,9 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .build());
-      assertTrue("should be at greater than 10 flushes: " + flushCounter.getValue(), flushCounter.getValue() >= 10);
+      assertTrue(
+          "should be at greater than 10 flushes: " + flushCounter.getValue(),
+          flushCounter.getValue() >= 10);
     }
   }
 }
