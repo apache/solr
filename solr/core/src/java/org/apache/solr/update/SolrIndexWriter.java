@@ -73,8 +73,7 @@ public class SolrIndexWriter extends IndexWriter {
   public static final String COMMIT_COMMAND_VERSION = "commitCommandVer";
 
   public static final AttributeKey<String> MERGE_TYPE_ATTR = AttributeKey.stringKey("merge_type");
-  public static final AttributeKey<String> MERGE_STATE_ATTR =
-      AttributeKey.stringKey("merge_state");
+  public static final AttributeKey<String> MERGE_STATE_ATTR = AttributeKey.stringKey("merge_state");
 
   private final Object CLOSE_LOCK = new Object();
 
@@ -99,8 +98,6 @@ public class SolrIndexWriter extends IndexWriter {
   private AttributedLongTimer minorMergeTimer;
   private AttributedLongCounter mergeErrorsCounter;
   private AttributedLongCounter flushesCounter;
-
-  private boolean mergeTotals = false;
 
   private SolrMetricsContext solrMetricsContext;
   // merge diagnostics.
@@ -140,7 +137,6 @@ public class SolrIndexWriter extends IndexWriter {
     numOpens.incrementAndGet();
     log.debug("Opened Writer {}", name);
     // no metrics
-    mergeTotals = false;
     solrMetricsContext = null;
   }
 
@@ -179,7 +175,7 @@ public class SolrIndexWriter extends IndexWriter {
         }
       }
     }
-    initMetrics();
+    initMetrics(core);
   }
 
   @SuppressForbidden(
@@ -215,33 +211,25 @@ public class SolrIndexWriter extends IndexWriter {
     String segString = merge.segString();
     long totalNumDocs = merge.totalNumDocs();
     runningMerges.put(segString, totalNumDocs);
-    if (!mergeTotals) {
-      try {
-        super.merge(merge);
-      } finally {
-        runningMerges.remove(segString);
-      }
-      return;
-    }
     long deletedDocs = 0;
     for (SegmentCommitInfo info : merge.segments) {
       totalNumDocs -= info.getDelCount();
       deletedDocs += info.getDelCount();
     }
     int segmentsCount = merge.segments.size();
-    Timer.Context context =
+    AttributedLongTimer.MetricTimer timer =
         updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, false, null);
     try {
       super.merge(merge);
+      updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, true, timer);
     } catch (Throwable t) {
-      if (context != null) {
-        context.stop();
+      if (timer != null) {
+        timer.stop();
       }
       mergeErrorsCounter.inc();
       throw t;
     } finally {
       runningMerges.remove(segString);
-      updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, true, context);
     }
   }
 
@@ -275,24 +263,16 @@ public class SolrIndexWriter extends IndexWriter {
     }
     var baseAttributes = baseAttributesBuilder.build();
 
+    var mergeTimerBaseMetric =
+        solrMetricsContext.longHistogram(
+            "solr_indexwriter_merge_time", "Time spent merging segments", OtelUnit.MILLISECONDS);
+
     majorMergeTimer =
         new AttributedLongTimer(
-            solrMetricsContext.longHistogram(
-                "solr_indexwriter_mergetime_ms",
-                "Time spent merging segments above the majorMergeDocs threshold ("
-                    + majorMergeDocs
-                    + ")",
-                OtelUnit.MILLISECONDS),
-            baseAttributes.toBuilder().put(MERGE_TYPE_ATTR, "major").build());
+            mergeTimerBaseMetric, baseAttributes.toBuilder().put(MERGE_TYPE_ATTR, "major").build());
     minorMergeTimer =
         new AttributedLongTimer(
-            solrMetricsContext.longHistogram(
-                "solr_indexwriter_mergetime_ms",
-                "Time spent merging segments below or equal to the majorMergeDocs threshold ("
-                    + majorMergeDocs
-                    + ")",
-                OtelUnit.MILLISECONDS),
-            baseAttributes.toBuilder().put(MERGE_TYPE_ATTR, "minor").build());
+            mergeTimerBaseMetric, baseAttributes.toBuilder().put(MERGE_TYPE_ATTR, "minor").build());
 
     mergeErrorsCounter =
         new AttributedLongCounter(
@@ -306,6 +286,18 @@ public class SolrIndexWriter extends IndexWriter {
                 "solr_indexwriter_flushes", "Number of times documents have been flushed to disk"),
             baseAttributes);
 
+    var mergesCountBaseMetric =
+        solrMetricsContext.longCounter("solr_indexwriter_merges", "Number of merge operations");
+    var docsMergedCountBaseMetric =
+        solrMetricsContext.longCounter(
+            "solr_indexwriter_docs_merged", "Number of documents involved in merge");
+    var docsDeletedCountBasedMetric =
+        solrMetricsContext.longCounter(
+            "solr_indexwriter_docs_deleted", "Number of documents involved in merge");
+    var segmentsCountBaseMetric =
+        solrMetricsContext.longCounter(
+            "solr_indexwriter_segments", "Number of segments involved in merge");
+
     // merge started metrics
     var majorStartedAttributes =
         baseAttributes.toBuilder()
@@ -314,27 +306,16 @@ public class SolrIndexWriter extends IndexWriter {
             .build();
     majorMergeStartedMetrics.put(
         MERGES_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter("solr_indexwriter_merges", "Number of merge operations"),
-            majorStartedAttributes));
+        new AttributedLongCounter(mergesCountBaseMetric, majorStartedAttributes));
     majorMergeStartedMetrics.put(
         MERGE_DOCS_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter(
-                "solr_indexwriter_docsmerged", "Number of documents involved in merge"),
-            majorStartedAttributes));
+        new AttributedLongCounter(docsMergedCountBaseMetric, majorStartedAttributes));
     majorMergeStartedMetrics.put(
         MERGE_DELETED_DOCS_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter(
-                "solr_indexwriter_docsdeleted", "Number of documents involved in merge"),
-            majorStartedAttributes));
+        new AttributedLongCounter(docsDeletedCountBasedMetric, majorStartedAttributes));
     majorMergeStartedMetrics.put(
         MERGE_SEGMENTS_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter(
-                "solr_indexwriter_segments", "Number of segments involved in merge"),
-            majorStartedAttributes));
+        new AttributedLongCounter(segmentsCountBaseMetric, majorStartedAttributes));
 
     var minorStartedAttributes =
         baseAttributes.toBuilder()
@@ -343,27 +324,16 @@ public class SolrIndexWriter extends IndexWriter {
             .build();
     minorMergeStartedMetrics.put(
         MERGES_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter("solr_indexwriter_merges", "Number of merge operations"),
-            minorStartedAttributes));
+        new AttributedLongCounter(mergesCountBaseMetric, minorStartedAttributes));
     minorMergeStartedMetrics.put(
         MERGE_DOCS_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter(
-                "solr_indexwriter_docsmerged", "Number of documents involved in merge"),
-            minorStartedAttributes));
+        new AttributedLongCounter(docsMergedCountBaseMetric, minorStartedAttributes));
     minorMergeStartedMetrics.put(
         MERGE_DELETED_DOCS_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter(
-                "solr_indexwriter_docsdeleted", "Number of documents involved in merge"),
-            minorStartedAttributes));
+        new AttributedLongCounter(docsDeletedCountBasedMetric, minorStartedAttributes));
     minorMergeStartedMetrics.put(
         MERGE_SEGMENTS_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter(
-                "solr_indexwriter_segments", "Number of segments involved in merge"),
-            minorStartedAttributes));
+        new AttributedLongCounter(segmentsCountBaseMetric, minorStartedAttributes));
 
     // merge finished metrics
     var majorFinishedAttributes =
@@ -373,27 +343,16 @@ public class SolrIndexWriter extends IndexWriter {
             .build();
     majorMergeFinishedMetrics.put(
         MERGES_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter("solr_indexwriter_merges", "Number of merge operations"),
-            majorFinishedAttributes));
+        new AttributedLongCounter(mergesCountBaseMetric, majorFinishedAttributes));
     majorMergeFinishedMetrics.put(
         MERGE_DOCS_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter(
-                "solr_indexwriter_docsmerged", "Number of documents involved in merge"),
-            majorFinishedAttributes));
+        new AttributedLongCounter(docsMergedCountBaseMetric, majorFinishedAttributes));
     majorMergeFinishedMetrics.put(
         MERGE_DELETED_DOCS_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter(
-                "solr_indexwriter_docsdeleted", "Number of documents involved in merge"),
-            majorFinishedAttributes));
+        new AttributedLongCounter(docsDeletedCountBasedMetric, majorFinishedAttributes));
     majorMergeFinishedMetrics.put(
         MERGE_SEGMENTS_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter(
-                "solr_indexwriter_segments", "Number of segments involved in merge"),
-            majorFinishedAttributes));
+        new AttributedLongCounter(segmentsCountBaseMetric, majorFinishedAttributes));
 
     var minorFinishedAttributes =
         baseAttributes.toBuilder()
@@ -402,27 +361,16 @@ public class SolrIndexWriter extends IndexWriter {
             .build();
     minorMergeFinishedMetrics.put(
         MERGES_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter("solr_indexwriter_merges", "Number of merge operations"),
-            minorFinishedAttributes));
+        new AttributedLongCounter(mergesCountBaseMetric, minorFinishedAttributes));
     minorMergeFinishedMetrics.put(
         MERGE_DOCS_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter(
-                "solr_indexwriter_docsmerged", "Number of documents involved in merge"),
-            minorFinishedAttributes));
+        new AttributedLongCounter(docsMergedCountBaseMetric, minorFinishedAttributes));
     minorMergeFinishedMetrics.put(
         MERGE_DELETED_DOCS_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter(
-                "solr_indexwriter_docsdeleted", "Number of documents involved in merge"),
-            minorFinishedAttributes));
+        new AttributedLongCounter(docsDeletedCountBasedMetric, minorFinishedAttributes));
     minorMergeFinishedMetrics.put(
         MERGE_SEGMENTS_METRIC_NAME,
-        new AttributedLongCounter(
-            solrMetricsContext.longCounter(
-                "solr_indexwriter_segments", "Number of segments involved in merge"),
-            minorFinishedAttributes));
+        new AttributedLongCounter(segmentsCountBaseMetric, minorFinishedAttributes));
   }
 
   /**
@@ -433,23 +381,23 @@ public class SolrIndexWriter extends IndexWriter {
    * @param numSegments number of segments in merge op
    * @param mergeCompleted true if being called post-merge, else false to signify a merge is about
    *     to start
-   * @param timerContext an existing timer context for actively running merge
+   * @param metricTimer an existing timer context for actively running merge
    * @return timer context for current merge operation
    */
-  private Timer.Context updateMergeMetrics(
+  private AttributedLongTimer.MetricTimer updateMergeMetrics(
       long numDocs,
       long numDeletedDocs,
       long numSegments,
       boolean mergeCompleted,
-      Timer.Context timerContext) {
+      AttributedLongTimer.MetricTimer metricTimer) {
     if (solrMetricsContext == null) {
       return null;
     }
     boolean isMajorMerge = numDocs - numDeletedDocs > majorMergeDocs;
-    Map<String, Counter> metricsToUpdate;
+    Map<String, AttributedLongCounter> metricsToUpdate;
     if (mergeCompleted) {
-      if (timerContext != null) {
-        timerContext.stop();
+      if (metricTimer != null) {
+        metricTimer.stop();
       }
       if (isMajorMerge) {
         metricsToUpdate = majorMergeFinishedMetrics;
@@ -459,22 +407,22 @@ public class SolrIndexWriter extends IndexWriter {
     } else { // merge is starting
       if (isMajorMerge) {
         metricsToUpdate = majorMergeStartedMetrics;
-        timerContext = majorMergeTimer.start();
+        metricTimer = majorMergeTimer.start();
       } else {
         metricsToUpdate = minorMergeStartedMetrics;
-        timerContext = minorMergeTimer.start();
+        metricTimer = minorMergeTimer.start();
       }
     }
 
     try {
       metricsToUpdate.get(MERGES_METRIC_NAME).inc();
-      metricsToUpdate.get(MERGE_DOCS_METRIC_NAME).inc(numDocs);
-      metricsToUpdate.get(MERGE_DELETED_DOCS_METRIC_NAME).inc(numDeletedDocs);
-      metricsToUpdate.get(MERGE_SEGMENTS_METRIC_NAME).inc(numSegments);
+      metricsToUpdate.get(MERGE_DOCS_METRIC_NAME).add(numDocs);
+      metricsToUpdate.get(MERGE_DELETED_DOCS_METRIC_NAME).add(numDeletedDocs);
+      metricsToUpdate.get(MERGE_SEGMENTS_METRIC_NAME).add(numSegments);
     } catch (Exception e) {
       log.warn("unable to update merge metrics", e);
     }
-    return timerContext;
+    return metricTimer;
   }
 
   // use DocumentBuilder now...
