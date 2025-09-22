@@ -260,7 +260,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   private volatile boolean newSearcherReady = false;
 
-  private Attributes coreAttributes;
+  private final Attributes coreAttributes;
   private AttributedLongCounter newSearcherCounter;
   private AttributedLongCounter newSearcherMaxReachedCounter;
   private AttributedLongCounter newSearcherOtherErrorsCounter;
@@ -1140,8 +1140,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
       // also register it here for back-compat
-      // NOCOMMIT SOLR-17458: Add Otel
-      solrFieldCacheBean.initializeMetrics(solrMetricsContext, Attributes.empty(), "core");
+      solrFieldCacheBean.initializeMetrics(
+          solrMetricsContext,
+          coreAttributes.toBuilder().put(CATEGORY_ATTR, Category.CACHE.toString()).build(),
+          "");
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
