@@ -44,7 +44,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.servlet.DirectSolrConnection;
-import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -135,23 +134,10 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     int baseRefCount = r3.getRefCount();
     assertEquals(1, baseRefCount);
 
-    var registeredAtMetric =
-        SolrMetricTestUtils.getGaugeDatapoint(
-            h.getCore(),
-            "solr_searcher_registered_at_milliseconds",
-            SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
-                .label("category", "SEARCHER")
-                .build());
-    var registeredAt = registeredAtMetric.getValue();
     assertU(commit()); // nothing has changed
     SolrQueryRequest sr4 = req("q", "foo");
     assertSame(
         "nothing changed, searcher should be the same", sr3.getSearcher(), sr4.getSearcher());
-    assertEquals(
-        "nothing changed, searcher should not have been re-registered",
-        registeredAt,
-        registeredAtMetric.getValue(),
-        0);
     IndexReader r4 = sr4.getSearcher().getRawReader();
 
     // force an index change so the registered searcher won't be the one we are testing (and

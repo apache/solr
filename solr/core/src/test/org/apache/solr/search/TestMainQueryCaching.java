@@ -29,6 +29,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -103,28 +104,25 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
 
   private static long coreToSortCount(SolrCore core, String skipOrFull) {
     return (long)
-        ((SolrMetricManager.GaugeWrapper<?>)
-                core.getCoreMetricManager()
-                    .getRegistry()
-                    .getMetrics()
-                    .get("SEARCHER.searcher." + skipOrFull + "SortCount"))
-            .getGauge()
+        SolrMetricTestUtils.getCounterDatapoint(
+                core,
+                "solr_searcher_" + skipOrFull + "_sort",
+                SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                    .label("category", "SEARCHER")
+                    .build())
             .getValue();
   }
 
-  private static long coreToMatchAllDocsInsertCount(SolrCore core) {
-    return (long) coreToLiveDocsCacheMetrics(core).get("inserts");
-  }
-
-  private static Map<String, Object> coreToLiveDocsCacheMetrics(SolrCore core) {
-    return ((MetricsMap)
-            ((SolrMetricManager.GaugeWrapper<?>)
-                    core.getCoreMetricManager()
-                        .getRegistry()
-                        .getMetrics()
-                        .get("SEARCHER.searcher.liveDocsCache"))
-                .getGauge())
-        .getValue();
+  private static long coreToMatchAllDocsCount(SolrCore core, String type) {
+    return (long)
+        SolrMetricTestUtils.getGaugeDatapoint(
+                core,
+                "solr_searcher_live_docs_cache",
+                SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                    .label("category", "SEARCHER")
+                    .label("type", type)
+                    .build())
+            .getValue();
   }
 
   private static final String SCORING_QUERY = "str:d*";
@@ -259,7 +257,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
     Map<?, ?> body = (Map<?, ?>) (res.get("response"));
     SolrCore core = h.getCore();
-    assertEquals("Bad matchAllDocs insert count", 1, coreToMatchAllDocsInsertCount(core));
+    assertEquals("Bad matchAllDocs insert count", 1, coreToMatchAllDocsCount(core, "inserts"));
     assertEquals("Bad filterCache insert count", 0, coreToInserts(core, "filterCache"));
     assertEquals("Bad full sort count", 0, coreToSortCount(core, "full"));
     assertEquals("Should have exactly " + ALL_DOCS, ALL_DOCS, (long) (body.get("numFound")));
@@ -411,7 +409,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     assertEquals(
         "Bad matchAllDocs insert count",
         (matchAllDocs ? 1 : 0),
-        coreToMatchAllDocsInsertCount(core));
+        coreToMatchAllDocsCount(core, "inserts"));
     assertEquals(
         "Bad filterCache insert count",
         expectFilterCacheInsertCount,
@@ -471,15 +469,14 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
       assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
     }
     final SolrCore core = h.getCore();
-    Map<String, Object> liveDocsCacheMetrics = coreToLiveDocsCacheMetrics(core);
 
     // the one and only liveDocs computation
-    long inserts = (long) liveDocsCacheMetrics.get("inserts");
+    long inserts = coreToMatchAllDocsCount(core, "inserts");
 
     // hits during the initial phase
-    long hits = (long) liveDocsCacheMetrics.get("hits");
+    long hits = coreToMatchAllDocsCount(core, "hits");
 
-    long naiveHits = (long) liveDocsCacheMetrics.get("naiveHits");
+    long naiveHits = coreToMatchAllDocsCount(core, "naive_hits");
 
     assertEquals(1, inserts);
     assertEquals(nThreads - 1, hits + naiveHits);

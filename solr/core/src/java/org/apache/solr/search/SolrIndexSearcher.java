@@ -629,7 +629,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               .put(COLLECTION_ATTR, core.getCoreDescriptor().getCollectionName())
               .put(CORE_ATTR, core.getCoreDescriptor().getName())
               .put(SHARD_ATTR, core.getCoreDescriptor().getCloudDescriptor().getShardId())
-              .put(REPLICA_ATTR, Utils.parseMetricsReplicaName(core.getCoreDescriptor().getCollectionName(), core.getName()))
+              .put(
+                  REPLICA_ATTR,
+                  Utils.parseMetricsReplicaName(
+                      core.getCoreDescriptor().getCollectionName(), core.getName()))
               .build();
     } else {
       baseAttributes =
@@ -2524,7 +2527,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   @SuppressWarnings({"unchecked"})
   public void warm(SolrIndexSearcher old) {
     // Make sure this is first! filters can help queryResults execute!
-    AttributedLongTimer.MetricTimer timer = warmupTimer.start();
+    long warmingStartTime = System.nanoTime();
     // warm the caches in order...
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("warming", "true");
@@ -2550,7 +2553,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         log.debug("autowarming result for [{}]\n\t{}", this, cacheList[i]);
       }
     }
-    this.warmupTime = (long) timer.stop();
+    this.warmupTime =
+        TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
+    if (warmupTimer != null) warmupTimer.record(warmupTime);
   }
 
   /** return the named generic cache */
