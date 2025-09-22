@@ -24,9 +24,12 @@ import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.AbstractBadConfigTestBase;
+import org.apache.solr.search.neural.SolrKnnByteVectorQuery;
+import org.apache.solr.search.neural.SolrKnnFloatVectorQuery;
 import org.apache.solr.util.vector.DenseVectorParser;
 import org.junit.Before;
 import org.junit.Test;
@@ -756,6 +759,51 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
           thrown.getCause().getCause().getMessage(),
           is(
               "incorrect vector element: '14.3'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThresholdKnnFloatVectorQuery() throws Exception {
+    try {
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      SolrKnnFloatVectorQuery vectorQuery =
+          (SolrKnnFloatVectorQuery)
+              type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, null, expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThresholdKnnByteVectorQuery() throws Exception {
+    try {
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_byte_encoding");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      SolrKnnByteVectorQuery vectorQuery =
+          (SolrKnnByteVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding", "[2, 1, 3, 4]", 3, null, expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
     } finally {
       deleteCore();
     }

@@ -41,10 +41,13 @@ import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.neural.SolrKnnByteVectorQuery;
+import org.apache.solr.search.neural.SolrKnnFloatVectorQuery;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
 import org.apache.solr.util.vector.DenseVectorParser;
@@ -371,17 +374,34 @@ public class DenseVectorField extends FloatPointField {
   }
 
   public Query getKnnVectorQuery(
-      String fieldName, String vectorToSearch, int topK, Query filterQuery) {
+      String fieldName,
+      String vectorToSearch,
+      int topK,
+      Query filterQuery,
+      Integer filteredSearchThreshold) {
 
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
 
     switch (vectorEncoding) {
       case FLOAT32:
-        return new KnnFloatVectorQuery(
-            fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
+        if (filteredSearchThreshold != null) {
+          KnnSearchStrategy knnSearchStrategy = new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
+          return new SolrKnnFloatVectorQuery(
+              fieldName, vectorBuilder.getFloatVector(), topK, filterQuery, knnSearchStrategy);
+        } else {
+          return new KnnFloatVectorQuery(
+              fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
+        }
       case BYTE:
-        return new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
+        if (filteredSearchThreshold != null) {
+          KnnSearchStrategy knnSearchStrategy = new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
+          return new SolrKnnByteVectorQuery(
+              fieldName, vectorBuilder.getByteVector(), topK, filterQuery, knnSearchStrategy);
+        } else {
+          return new KnnByteVectorQuery(
+              fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
+        }
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
