@@ -108,7 +108,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     System.clearProperty("solr.test.tikaserver.url");
     System.clearProperty("solr.test.extraction.backend");
     if (useTikaServer && tika != null) {
@@ -404,20 +404,18 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       ignoreException("unknown field 'meta'"); // TODO: should this exception be happening?
       expectThrows(
           SolrException.class,
-          () -> {
-            loadLocal(
-                "extraction/simple.html",
-                "literal.id",
-                "simple2",
-                "lowernames",
-                "true",
-                "captureAttr",
-                "true",
-                // "fmap.content_type", "abcxyz",
-                "commit",
-                "true" // test immediate commit
-                );
-          });
+          () -> loadLocal(
+              "extraction/simple.html",
+              "literal.id",
+              "simple2",
+              "lowernames",
+              "true",
+              "captureAttr",
+              "true",
+              // "fmap.content_type", "abcxyz",
+              "commit",
+              "true" // test immediate commit
+              ));
     } finally {
       resetExceptionIgnores();
     }
@@ -1115,16 +1113,13 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   SolrQueryResponse loadLocalFromHandler(String handler, String filename, String... args)
       throws Exception {
 
-    LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);
-    try {
+    try (LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args)) {
       // TODO: stop using locally defined streams once stream.file and
       // stream.body work everywhere
       List<ContentStream> cs = new ArrayList<>();
       cs.add(new ContentStreamBase.FileStream(getFile(filename)));
       req.setContentStreams(cs);
       return h.queryAndResponse(handler, req);
-    } finally {
-      req.close();
     }
   }
 
