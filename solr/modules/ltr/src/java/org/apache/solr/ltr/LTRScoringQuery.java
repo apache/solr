@@ -82,6 +82,8 @@ public class LTRScoringQuery extends Query implements Accountable {
   // Original solr request
   private SolrQueryRequest request;
 
+  private Feature.FeatureWeight[] extractedFeatureWeights;
+
   public LTRScoringQuery(LTRScoringModel ltrScoringModel) {
     this(ltrScoringModel, Collections.<String, String[]>emptyMap(), null);
   }
@@ -138,6 +140,10 @@ public class LTRScoringQuery extends Query implements Accountable {
 
   public SolrQueryRequest getRequest() {
     return request;
+  }
+
+  public Feature.FeatureWeight[] getExtractedFeatureWeights() {
+    return extractedFeatureWeights;
   }
 
   @Override
@@ -217,7 +223,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     } else {
       features = modelFeatures;
     }
-    final Feature.FeatureWeight[] extractedFeatureWeights =
+    this.extractedFeatureWeights =
         new Feature.FeatureWeight[features.size()];
     final Feature.FeatureWeight[] modelFeaturesWeights = new Feature.FeatureWeight[modelFeatSize];
     List<Feature.FeatureWeight> featureWeights = new ArrayList<>(features.size());
@@ -242,7 +248,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         modelFeaturesWeights[j++] = fw;
       }
     }
-    return new ModelWeight(modelFeaturesWeights, extractedFeatureWeights, allFeatures.size());
+    return new ModelWeight(modelFeaturesWeights, allFeatures.size());
   }
 
   private void createWeights(
@@ -393,7 +399,6 @@ public class LTRScoringQuery extends Query implements Accountable {
      */
     public ModelWeight(
         Feature.FeatureWeight[] modelFeatureWeights,
-        Feature.FeatureWeight[] extractedFeatureWeights,
         int allFeaturesSize) {
       super(LTRScoringQuery.this);
       this.modelFeatureWeights = modelFeatureWeights;
@@ -505,9 +510,9 @@ public class LTRScoringQuery extends Query implements Accountable {
         }
         if (featureScorers.size() <= 1) {
           // future enhancement: allow the use of dense features in other cases
-          featureTraversalScorer = new SingleFeatureScorer(this, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi, featureScorers);
+          featureTraversalScorer = new SingleFeatureScorer(ModelWeight.this, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi, featureScorers);
         } else {
-          featureTraversalScorer = new MultiFeaturesScorer(this, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi, featureScorers);
+          featureTraversalScorer = new MultiFeaturesScorer(ModelWeight.this, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi, featureScorers);
         }
       }
 

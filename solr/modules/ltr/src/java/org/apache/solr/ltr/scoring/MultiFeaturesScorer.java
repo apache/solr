@@ -44,6 +44,7 @@ public class MultiFeaturesScorer extends FeatureTraversalScorer {
     this.allFeaturesInStore = allFeaturesInStore;
     this.ltrScoringModel = ltrScoringModel;
     this.featureExtractor = new MultiFeaturesExtractor(this, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi, subScorers);
+    this.modelWeight = modelWeight;
   }
 
   @Override

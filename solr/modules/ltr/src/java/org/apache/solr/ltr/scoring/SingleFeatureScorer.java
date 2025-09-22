@@ -29,6 +29,7 @@ public class SingleFeatureScorer extends FeatureTraversalScorer {
     this.allFeaturesInStore = allFeaturesInStore;
     this.ltrScoringModel = ltrScoringModel;
     this.featureExtractor = new SingleFeatureExtractor(this, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi, featureScorers);
+    this.modelWeight = modelWeight;
   }
 
   @Override

@@ -194,7 +194,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     featuresInfo = modelWeight.getAllFeaturesInStore();
 
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);
-    assertEquals(allFeatures.size(), modelWeight.getExtractedFeatureWeights().length);
+    assertEquals(allFeatures.size(), ltrQuery2.getExtractedFeatureWeights().length);
 
     nonDefaultFeatures = 0;
     for (int i = 0; i < featuresInfo.length; ++i) {

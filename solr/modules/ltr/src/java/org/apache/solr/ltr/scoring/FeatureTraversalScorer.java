@@ -12,9 +12,10 @@ public abstract class FeatureTraversalScorer extends Scorer {
   protected int targetDoc = -1;
   protected int activeDoc = -1;
   protected FeatureExtractor featureExtractor;
-  protected Feature.FeatureWeight[] extractedFeatureWeights;
   protected LTRScoringQuery.FeatureInfo[] allFeaturesInStore;
   protected LTRScoringModel ltrScoringModel;
+  protected Feature.FeatureWeight[] extractedFeatureWeights;
+  protected LTRScoringQuery.ModelWeight modelWeight;
 
   public int getTargetDoc() {
     return targetDoc;
