@@ -18,15 +18,20 @@ package org.apache.solr.schema;
 
 import static org.hamcrest.core.Is.is;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.AbstractBadConfigTestBase;
+import org.apache.solr.query.FilterQuery;
 import org.apache.solr.util.vector.DenseVectorParser;
 import org.junit.Before;
 import org.junit.Test;
@@ -756,6 +761,32 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
           thrown.getCause().getCause().getMessage(),
           is(
               "incorrect vector element: '14.3'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold() throws Exception {
+    try {
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      Query vectorQuery = type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, null, expectedThreshold);
+
+      Field strategy = vectorQuery.getClass().getSuperclass().getDeclaredField("searchStrategy");
+      strategy.setAccessible(true);
+      Object strategyObj = strategy.get(vectorQuery);
+
+      Field threshold = strategyObj.getClass().getDeclaredField("filteredSearchThreshold");
+      threshold.setAccessible(true);
+      Integer thresholdObj = (Integer) threshold.get(strategyObj);
+
+      assertEquals(expectedThreshold, thresholdObj);
     } finally {
       deleteCore();
     }
