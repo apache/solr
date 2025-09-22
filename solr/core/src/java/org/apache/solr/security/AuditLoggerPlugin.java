@@ -288,7 +288,8 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     numLost =
         new AttributedLongCounter(
             solrMetricsContext.longCounter(
-                "solr_auditlogger_lost", "The number of audit events that were lost."),
+                "solr_auditlogger_lost",
+                "The number of audit events that were lost due to async queue being full."),
             attrsWithCategory);
     requestTimes =
         new AttributedLongTimer(
