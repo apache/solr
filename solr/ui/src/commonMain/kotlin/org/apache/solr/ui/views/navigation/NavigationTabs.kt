@@ -17,12 +17,8 @@
 
 package org.apache.solr.ui.views.navigation
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,24 +52,25 @@ fun <T : Enum<T>, C : Any> NavigationTabs(
     val currentTab = slot.child?.configuration?.tab
     val currentTabIndex = currentTab?.ordinal ?: 0
 
-    Column(modifier) {
-        ScrollableTabRow(
-            selectedTabIndex = currentTabIndex,
-            edgePadding = 16.dp,
-            divider = { HorizontalDivider(thickness = 1.dp) },
-            indicator = { pos ->
-                TabRowDefaults.SecondaryIndicator(
-                    Modifier.tabIndicatorOffset(pos[currentTabIndex]),
-                )
-            },
-        ) {
-            entries.forEach { tab ->
-                Tab(
-                    selected = currentTab == tab,
-                    onClick = { component.onNavigate(tab) },
-                    text = { Text(stringResource(mapper(tab)), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                )
-            }
+    ScrollableTabRow(
+        modifier = modifier,
+        selectedTabIndex = currentTabIndex,
+        edgePadding = 16.dp,
+    ) {
+        entries.forEach { tab ->
+            val selected = currentTab == tab
+
+            Tab(
+                selected = selected,
+                onClick = { component.onNavigate(tab) },
+                text = {
+                    Text(
+                        text = stringResource(mapper(tab)),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+            )
         }
     }
 }

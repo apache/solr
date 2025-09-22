@@ -18,8 +18,10 @@
 package org.apache.solr.ui.views.cluster
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.cluster.ClusterComponent
 import org.apache.solr.ui.components.cluster.ClusterComponent.ClusterTab
 import org.apache.solr.ui.generated.resources.Res
@@ -38,6 +40,7 @@ fun ClusterContent(
         component = component,
         entries = ClusterTab.entries,
         mapper = ::clusterTabsMapper,
+        modifier = Modifier.padding(1.dp),
     )
 }
 

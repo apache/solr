@@ -68,14 +68,12 @@ fun MainContent(
                 is MainComponent.Child.Cluster -> ClusterContent(
                     component = child.component,
                     modifier = Modifier.fillMaxWidth()
-                        .verticalScroll(scrollState)
-                        .padding(16.dp),
+                        .verticalScroll(scrollState),
                 )
                 is MainComponent.Child.Configsets -> ConfigsetsContent(
                     component = child.component,
                     modifier = Modifier.fillMaxWidth()
-                        .verticalScroll(scrollState)
-                        .padding(16.dp),
+                        .verticalScroll(scrollState),
                 )
                 is MainComponent.Child.Environment -> EnvironmentContent(
                     component = child.component,
