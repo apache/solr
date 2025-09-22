@@ -1,5 +1,10 @@
 package org.apache.solr.ltr.scoring;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.solr.ltr.LTRScoringQuery;
@@ -7,11 +12,6 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.extraction.SingleFeatureExtractor;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.request.SolrQueryRequest;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 public class SingleFeatureScorer extends FeatureTraversalScorer {
   private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
@@ -28,7 +28,15 @@ public class SingleFeatureScorer extends FeatureTraversalScorer {
     this.extractedFeatureWeights = extractedFeatureWeights;
     this.allFeaturesInStore = allFeaturesInStore;
     this.ltrScoringModel = ltrScoringModel;
-    this.featureExtractor = new SingleFeatureExtractor(this, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi, featureScorers);
+    this.featureExtractor =
+        new SingleFeatureExtractor(
+            this,
+            request,
+            extractedFeatureWeights,
+            allFeaturesInStore,
+            ltrScoringModel,
+            efi,
+            featureScorers);
     this.modelWeight = modelWeight;
   }
 

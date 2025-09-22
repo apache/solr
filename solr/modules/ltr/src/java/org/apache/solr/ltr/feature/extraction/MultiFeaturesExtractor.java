@@ -1,5 +1,7 @@
 package org.apache.solr.ltr.feature.extraction;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
 import org.apache.solr.ltr.LTRScoringQuery;
@@ -7,8 +9,6 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.scoring.FeatureTraversalScorer;
 import org.apache.solr.request.SolrQueryRequest;
-import java.io.IOException;
-import java.util.Map;
 
 public class MultiFeaturesExtractor extends FeatureExtractor {
   DisiPriorityQueue subScorers;
@@ -21,7 +21,13 @@ public class MultiFeaturesExtractor extends FeatureExtractor {
       LTRScoringModel ltrScoringModel,
       Map<String, String[]> efi,
       DisiPriorityQueue subScorers) {
-    super(multiFeaturesScorer, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi);
+    super(
+        multiFeaturesScorer,
+        request,
+        extractedFeatureWeights,
+        allFeaturesInStore,
+        ltrScoringModel,
+        efi);
     this.subScorers = subScorers;
   }
 

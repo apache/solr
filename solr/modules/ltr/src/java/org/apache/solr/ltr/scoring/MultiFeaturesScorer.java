@@ -1,5 +1,10 @@
 package org.apache.solr.ltr.scoring;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -9,11 +14,6 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.extraction.MultiFeaturesExtractor;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.request.SolrQueryRequest;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 public class MultiFeaturesScorer extends FeatureTraversalScorer {
   private final DisiPriorityQueue subScorers;
@@ -43,7 +43,15 @@ public class MultiFeaturesScorer extends FeatureTraversalScorer {
     this.extractedFeatureWeights = extractedFeatureWeights;
     this.allFeaturesInStore = allFeaturesInStore;
     this.ltrScoringModel = ltrScoringModel;
-    this.featureExtractor = new MultiFeaturesExtractor(this, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi, subScorers);
+    this.featureExtractor =
+        new MultiFeaturesExtractor(
+            this,
+            request,
+            extractedFeatureWeights,
+            allFeaturesInStore,
+            ltrScoringModel,
+            efi,
+            subScorers);
     this.modelWeight = modelWeight;
   }
 

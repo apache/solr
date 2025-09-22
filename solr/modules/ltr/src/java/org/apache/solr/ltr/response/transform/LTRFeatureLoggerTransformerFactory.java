@@ -445,15 +445,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         }
       }
       if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) || hasExplicitFeatureStore) {
-        LTRScoringQuery.FeatureInfo[] featuresInfo = extractFeatures(
-            featureLogger,
-            rerankingModelWeight,
-            docid,
-            (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,
-            leafContexts);
-        String featureVector =
-            featureLogger.printFeatureVector(
-                featuresInfo);
+        LTRScoringQuery.FeatureInfo[] featuresInfo =
+            extractFeatures(
+                featureLogger,
+                rerankingModelWeight,
+                docid,
+                (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,
+                leafContexts);
+        String featureVector = featureLogger.printFeatureVector(featuresInfo);
         doc.addField(name, featureVector);
       }
     }

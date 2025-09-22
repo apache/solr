@@ -1,11 +1,11 @@
 package org.apache.solr.ltr.scoring;
 
+import java.io.IOException;
 import org.apache.lucene.search.Scorer;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.extraction.FeatureExtractor;
 import org.apache.solr.ltr.model.LTRScoringModel;
-import java.io.IOException;
 
 /** This class is responsible for extracting features and using them to score the document. */
 public abstract class FeatureTraversalScorer extends Scorer {

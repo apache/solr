@@ -1,5 +1,10 @@
 package org.apache.solr.ltr.feature.extraction;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 import org.apache.solr.ltr.FeatureLogger;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.feature.Feature;
@@ -8,11 +13,6 @@ import org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory
 import org.apache.solr.ltr.scoring.FeatureTraversalScorer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrCache;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
 
 public abstract class FeatureExtractor {
   protected final FeatureTraversalScorer traversalScorer;
@@ -85,8 +85,8 @@ public abstract class FeatureExtractor {
     int prime = 31;
     int result = docId;
     if (Objects.equals(
-        ltrScoringModel.getName(),
-        LTRFeatureLoggerTransformerFactory.DEFAULT_LOGGING_MODEL_NAME)
+            ltrScoringModel.getName(),
+            LTRFeatureLoggerTransformerFactory.DEFAULT_LOGGING_MODEL_NAME)
         || (logger != null && logger.isLogFeatures() && logger.isLoggingAll())) {
       result = (prime * result) + ltrScoringModel.getFeatureStoreName().hashCode();
     } else {

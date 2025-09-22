@@ -1,14 +1,14 @@
 package org.apache.solr.ltr.feature.extraction;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.search.Scorer;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.scoring.FeatureTraversalScorer;
 import org.apache.solr.request.SolrQueryRequest;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 public class SingleFeatureExtractor extends FeatureExtractor {
   List<Feature.FeatureWeight.FeatureScorer> featureScorers;
@@ -21,7 +21,13 @@ public class SingleFeatureExtractor extends FeatureExtractor {
       LTRScoringModel ltrScoringModel,
       Map<String, String[]> efi,
       List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
-    super(singleFeatureScorer, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi);
+    super(
+        singleFeatureScorer,
+        request,
+        extractedFeatureWeights,
+        allFeaturesInStore,
+        ltrScoringModel,
+        efi);
     this.featureScorers = featureScorers;
   }
 

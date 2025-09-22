@@ -30,8 +30,6 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DisiPriorityQueue;
-import org.apache.lucene.search.DisiWrapper;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -44,9 +42,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.ltr.feature.Feature;
-import org.apache.solr.ltr.feature.extraction.FeatureExtractor;
-import org.apache.solr.ltr.feature.extraction.MultiFeaturesExtractor;
-import org.apache.solr.ltr.feature.extraction.SingleFeatureExtractor;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.scoring.FeatureTraversalScorer;
 import org.apache.solr.ltr.scoring.MultiFeaturesScorer;
@@ -223,8 +218,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     } else {
       features = modelFeatures;
     }
-    this.extractedFeatureWeights =
-        new Feature.FeatureWeight[features.size()];
+    this.extractedFeatureWeights = new Feature.FeatureWeight[features.size()];
     final Feature.FeatureWeight[] modelFeaturesWeights = new Feature.FeatureWeight[modelFeatSize];
     List<Feature.FeatureWeight> featureWeights = new ArrayList<>(features.size());
 
@@ -397,9 +391,7 @@ public class LTRScoringQuery extends Query implements Accountable {
      * @param allFeaturesSize
      *     - total number of feature in the feature store used by this model
      */
-    public ModelWeight(
-        Feature.FeatureWeight[] modelFeatureWeights,
-        int allFeaturesSize) {
+    public ModelWeight(Feature.FeatureWeight[] modelFeatureWeights, int allFeaturesSize) {
       super(LTRScoringQuery.this);
       this.modelFeatureWeights = modelFeatureWeights;
       this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
@@ -510,9 +502,25 @@ public class LTRScoringQuery extends Query implements Accountable {
         }
         if (featureScorers.size() <= 1) {
           // future enhancement: allow the use of dense features in other cases
-          featureTraversalScorer = new SingleFeatureScorer(ModelWeight.this, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi, featureScorers);
+          featureTraversalScorer =
+              new SingleFeatureScorer(
+                  ModelWeight.this,
+                  request,
+                  extractedFeatureWeights,
+                  allFeaturesInStore,
+                  ltrScoringModel,
+                  efi,
+                  featureScorers);
         } else {
-          featureTraversalScorer = new MultiFeaturesScorer(ModelWeight.this, request, extractedFeatureWeights, allFeaturesInStore, ltrScoringModel, efi, featureScorers);
+          featureTraversalScorer =
+              new MultiFeaturesScorer(
+                  ModelWeight.this,
+                  request,
+                  extractedFeatureWeights,
+                  allFeaturesInStore,
+                  ltrScoringModel,
+                  efi,
+                  featureScorers);
         }
       }
 
