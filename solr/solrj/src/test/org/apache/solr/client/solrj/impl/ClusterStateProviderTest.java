@@ -346,16 +346,16 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(jettyNode2);
       waitForCSPCacheTimeout();
 
-      long start = System.nanoTime();
+      long startTimeNs = System.nanoTime();
       actualKnownNodes = cspHttp.getLiveNodes();
-      long liveNodeFetchTime =
-          TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+      long liveNodeFetchTimeMs =
+          TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeNs, TimeUnit.NANOSECONDS);
       assertEquals(1, actualKnownNodes.size());
       assertEquals(Set.of(nodeName3), actualKnownNodes);
       // This should already be cached, because it is being updated in the background
       assertThat(
           "Cached getLiveNodes() should take no more than 2 milliseconds",
-          liveNodeFetchTime,
+          liveNodeFetchTimeMs,
           lessThanOrEqualTo(2L));
 
       // Bring back a backup node and take down the new node

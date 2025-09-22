@@ -224,7 +224,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     // Use cached liveNodes if cached and still valid
     if (liveNodes == null
         || (TimeUnit.SECONDS.convert((System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS)
-            <= getCacheTimeout())) {
+            > getCacheTimeout())) {
       // Do synchronized fetch when there is no cached value or the cached value is expired
       fetchLiveNodes(false);
     }
@@ -235,10 +235,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     if (!liveNodeReloadingScheduled) {
       // Method is synchronized, so this is safe
       liveNodeReloadingScheduled = true;
+      long liveNodeReloadDelayMs = (1000L * getCacheTimeout()) / 2;
       liveNodeReloadingService.scheduleWithFixedDelay(
           () -> fetchLiveNodes(true),
-          (1000L * getCacheTimeout()) / 2,
-          (1000L * getCacheTimeout()) / 2,
+          liveNodeReloadDelayMs,
+          liveNodeReloadDelayMs,
           TimeUnit.MILLISECONDS);
     }
 
