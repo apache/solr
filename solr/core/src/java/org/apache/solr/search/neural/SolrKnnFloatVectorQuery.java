@@ -5,7 +5,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.knn.KnnSearchStrategy;
 
 public class SolrKnnFloatVectorQuery extends KnnFloatVectorQuery {
-  public SolrKnnFloatVectorQuery(String field, float[] target, int k, Query filter, KnnSearchStrategy searchStrategy) {
+  public SolrKnnFloatVectorQuery(
+      String field, float[] target, int k, Query filter, KnnSearchStrategy searchStrategy) {
     super(field, target, k, filter, searchStrategy);
   }
 

@@ -18,14 +18,12 @@ package org.apache.solr.schema;
 
 import static org.hamcrest.core.Is.is;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -776,8 +774,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       SchemaField vectorField = schema.getField("vector");
       assertNotNull(vectorField);
       DenseVectorField type = (DenseVectorField) vectorField.getType();
-      SolrKnnFloatVectorQuery vectorQuery = (SolrKnnFloatVectorQuery)
-          type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, null, expectedThreshold);
+      SolrKnnFloatVectorQuery vectorQuery =
+          (SolrKnnFloatVectorQuery)
+              type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, null, expectedThreshold);
       KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getStrategy();
       Integer threshold = strategy.filteredSearchThreshold();
 
@@ -797,8 +796,10 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       SchemaField vectorField = schema.getField("vector_byte_encoding");
       assertNotNull(vectorField);
       DenseVectorField type = (DenseVectorField) vectorField.getType();
-      SolrKnnByteVectorQuery vectorQuery = (SolrKnnByteVectorQuery)
-          type.getKnnVectorQuery("vector_byte_encoding", "[2, 1, 3, 4]", 3, null, expectedThreshold);
+      SolrKnnByteVectorQuery vectorQuery =
+          (SolrKnnByteVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding", "[2, 1, 3, 4]", 3, null, expectedThreshold);
       KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getStrategy();
       Integer threshold = strategy.filteredSearchThreshold();
 
