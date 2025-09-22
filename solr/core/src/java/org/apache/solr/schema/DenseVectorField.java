@@ -372,7 +372,11 @@ public class DenseVectorField extends FloatPointField {
   }
 
   public Query getKnnVectorQuery(
-      String fieldName, String vectorToSearch, int topK, Query filterQuery, Integer filteredSearchThreshold) {
+      String fieldName,
+      String vectorToSearch,
+      int topK,
+      Query filterQuery,
+      Integer filteredSearchThreshold) {
 
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
@@ -393,7 +397,8 @@ public class DenseVectorField extends FloatPointField {
           return new KnnByteVectorQuery(
               fieldName, vectorBuilder.getByteVector(), topK, filterQuery, knnSearchStrategy);
         } else {
-          return new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
+          return new KnnByteVectorQuery(
+              fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
         }
       default:
         throw new SolrException(

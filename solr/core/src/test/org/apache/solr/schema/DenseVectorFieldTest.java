@@ -25,13 +25,10 @@ import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
-import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.AbstractBadConfigTestBase;
-import org.apache.solr.query.FilterQuery;
 import org.apache.solr.util.vector.DenseVectorParser;
 import org.junit.Before;
 import org.junit.Test;
@@ -776,7 +773,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       SchemaField vectorField = schema.getField("vector");
       assertNotNull(vectorField);
       DenseVectorField type = (DenseVectorField) vectorField.getType();
-      Query vectorQuery = type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, null, expectedThreshold);
+      Query vectorQuery =
+          type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, null, expectedThreshold);
 
       Field strategy = vectorQuery.getClass().getSuperclass().getDeclaredField("searchStrategy");
       strategy.setAccessible(true);

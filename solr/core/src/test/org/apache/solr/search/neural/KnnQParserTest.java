@@ -976,24 +976,40 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
     String topK = "4";
 
-    SolrParams params = params(
-        CommonParams.Q,
-        "{!knn f=" + vectorField + " topK=" + topK + " filteredSearchThreshold=" + expectedThreshold + "}"
-            + vectorToSearch);
-    SolrParams localParams = params("type",
-        "knn",
-        "f",
-        vectorField,
-        "topK",
-        topK,
-        "v",
-        vectorToSearch,
-        "filteredSearchThreshold",
-        expectedThreshold.toString());
-    SolrQueryRequest req = req(
-        CommonParams.Q,
-        "{!knn f=" + vectorField + " topK=" + topK + " filteredSearchThreshold=" + expectedThreshold + "}"
-            + vectorToSearch);
+    SolrParams params =
+        params(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorField
+                + " topK="
+                + topK
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+    SolrParams localParams =
+        params(
+            "type",
+            "knn",
+            "f",
+            vectorField,
+            "topK",
+            topK,
+            "v",
+            vectorToSearch,
+            "filteredSearchThreshold",
+            expectedThreshold.toString());
+    SolrQueryRequest req =
+        req(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorField
+                + " topK="
+                + topK
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
 
     KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
     try {
@@ -1019,11 +1035,40 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String vectorToSearch = "[1, 2, 3, 4]";
     String topK = "4";
 
-    SolrParams params = params(
-        CommonParams.Q,
-        "{!knn f=" + vectorFieldByteEncoding + " topK=" + topK + " filteredSearchThreshold=" + expectedThreshold + "}" + vectorToSearch);
-    SolrParams localParams = params("type", "knn", "f", vectorFieldByteEncoding, "topK", topK, "v", vectorToSearch, "filteredSearchThreshold", expectedThreshold.toString());
-    SolrQueryRequest req = req(CommonParams.Q, "{!knn f=" + vectorFieldByteEncoding + " topK=" + topK + " filteredSearchThreshold=" + expectedThreshold + "}" + vectorToSearch);
+    SolrParams params =
+        params(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorFieldByteEncoding
+                + " topK="
+                + topK
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+    SolrParams localParams =
+        params(
+            "type",
+            "knn",
+            "f",
+            vectorFieldByteEncoding,
+            "topK",
+            topK,
+            "v",
+            vectorToSearch,
+            "filteredSearchThreshold",
+            expectedThreshold.toString());
+    SolrQueryRequest req =
+        req(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorFieldByteEncoding
+                + " topK="
+                + topK
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
 
     KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
     try {
