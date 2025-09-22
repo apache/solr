@@ -21,6 +21,8 @@ New Features
 
 * SOLR-17780: Add support for scalar quantized dense vectors (Kevin Liang via Alessandro Benedetti)
 
+* SOLR-17023: Use Modern NLP Models from Apache OpenNLP with Solr (Jeff Zemerick, Eric Pugh)
+
 Improvements
 ---------------------
 
@@ -58,6 +60,8 @@ Improvements
 * SOLR-17867: Export tool should properly output exported documents in json, json w/ lines, and javabin formats. (Eric Pugh)
 
 * Minor refactoring of the TextToVectorQParserPlugin (Ilaria Petreti via Alessandro Benedetti)
+
+* GITHUB#3666: Removing redundant check if field exists in TextToVectorUpdateProcessorFactory (Renato Haeberli via Alessandro Benedetti)
 
 Optimizations
 ---------------------
@@ -235,7 +239,7 @@ Other Changes
 ==================  9.10.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-17915: shards.preference=replica.location now supports the "host" option for routing to replicas on the same host. (Houston Putman)
 
 Improvements
 ---------------------
