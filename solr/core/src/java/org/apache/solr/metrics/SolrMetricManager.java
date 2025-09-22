@@ -162,7 +162,7 @@ public class SolrMetricManager {
       new ConcurrentHashMap<>();
 
   private static final List<Double> SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES =
-      Arrays.asList(
+      List.of(
           0.0,
           5_000.0,
           10_000.0,
