@@ -321,11 +321,12 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
               attrsWithCategory);
     }
 
-    AttributedLongGauge asyncEnabledGauge = new AttributedLongGauge(
-        solrMetricsContext.longGauge(
-            "solr_auditlogger_async_enabled",
-            "Whether the audit logger is running in async mode (1) or not (0)"),
-        attrsWithCategory);
+    AttributedLongGauge asyncEnabledGauge =
+        new AttributedLongGauge(
+            solrMetricsContext.longGauge(
+                "solr_auditlogger_async_enabled",
+                "Whether the audit logger is running in async mode (1) or not (0)"),
+            attrsWithCategory);
     asyncEnabledGauge.set(async ? 1L : 0L);
   }
 

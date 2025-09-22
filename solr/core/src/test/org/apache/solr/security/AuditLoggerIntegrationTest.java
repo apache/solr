@@ -116,7 +116,8 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
     assertGaugeMetricValue("solr_auditlogger_async_enabled", labels, 0);
 
-    var snapshot = SolrMetricTestUtils.getHistogramDatapoint(
+    var snapshot =
+        SolrMetricTestUtils.getHistogramDatapoint(
             metricsReader, "solr_auditlogger_request_times_nanoseconds", labels);
     assertNotNull(snapshot);
     assertTrue("Expected at least 3 measurements", snapshot.getCount() >= 3);
@@ -141,7 +142,8 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     Labels sizeLabels = getDefaultAuditLoggerMetricsLabelsBuilder().label("type", "size").build();
     assertGaugeMetricValue("solr_auditlogger_queue", sizeLabels, 0);
 
-    var snapshot = SolrMetricTestUtils.getHistogramDatapoint(
+    var snapshot =
+        SolrMetricTestUtils.getHistogramDatapoint(
             metricsReader, "solr_auditlogger_request_times_nanoseconds", labels);
     assertNotNull(snapshot);
     assertTrue("Expected at least 3 measurements", snapshot.getCount() >= 3);
