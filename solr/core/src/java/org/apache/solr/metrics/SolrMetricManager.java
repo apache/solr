@@ -806,7 +806,7 @@ public class SolrMetricManager {
                               .setAggregation(
                                   Aggregation.explicitBucketHistogram(
                                       SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES))
-                              .build());
+                              .build()); // TODO: Make histogram bucket boundaries configurable
               SdkMeterProviderUtil.setExemplarFilter(provider, ExemplarFilter.traceBased());
               return new MeterProviderAndReaders(provider.build(), reader);
             })
