@@ -18,10 +18,12 @@ package org.apache.solr.search.neural;
 
 import static org.apache.solr.search.neural.KnnQParser.DEFAULT_TOP_K;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -966,5 +968,78 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[2]/str[@name='id'][.='2']",
         "//result/doc[3]/str[@name='id'][.='3']",
         "//result/doc[4]/str[@name='id'][.='9']");
+  }
+
+  @Test
+  public void testFilteredSearchThresholdParsingFloatEncoding() throws Exception {
+    Integer expectedThreshold = 30;
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    String topK = "4";
+
+    SolrParams params = params(
+        CommonParams.Q,
+        "{!knn f=" + vectorField + " topK=" + topK + " filteredSearchThreshold=" + expectedThreshold + "}"
+            + vectorToSearch);
+    SolrParams localParams = params("type",
+        "knn",
+        "f",
+        vectorField,
+        "topK",
+        topK,
+        "v",
+        vectorToSearch,
+        "filteredSearchThreshold",
+        expectedThreshold.toString());
+    SolrQueryRequest req = req(
+        CommonParams.Q,
+        "{!knn f=" + vectorField + " topK=" + topK + " filteredSearchThreshold=" + expectedThreshold + "}"
+            + vectorToSearch);
+
+    KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
+    try {
+      Query vectorQuery = qparser.parse();
+
+      Field strategy = vectorQuery.getClass().getSuperclass().getDeclaredField("searchStrategy");
+      strategy.setAccessible(true);
+      Object strategyObj = strategy.get(vectorQuery);
+
+      Field threshold = strategyObj.getClass().getDeclaredField("filteredSearchThreshold");
+      threshold.setAccessible(true);
+      Integer thresholdObj = (Integer) threshold.get(strategyObj);
+
+      assertEquals(expectedThreshold, thresholdObj);
+    } finally {
+      req.close();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThresholdParsingByteEncoding() throws Exception {
+    Integer expectedThreshold = 30;
+    String vectorToSearch = "[1, 2, 3, 4]";
+    String topK = "4";
+
+    SolrParams params = params(
+        CommonParams.Q,
+        "{!knn f=" + vectorFieldByteEncoding + " topK=" + topK + " filteredSearchThreshold=" + expectedThreshold + "}" + vectorToSearch);
+    SolrParams localParams = params("type", "knn", "f", vectorFieldByteEncoding, "topK", topK, "v", vectorToSearch, "filteredSearchThreshold", expectedThreshold.toString());
+    SolrQueryRequest req = req(CommonParams.Q, "{!knn f=" + vectorFieldByteEncoding + " topK=" + topK + " filteredSearchThreshold=" + expectedThreshold + "}" + vectorToSearch);
+
+    KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
+    try {
+      Query vectorQuery = qparser.parse();
+
+      Field strategy = vectorQuery.getClass().getSuperclass().getDeclaredField("searchStrategy");
+      strategy.setAccessible(true);
+      Object strategyObj = strategy.get(vectorQuery);
+
+      Field threshold = strategyObj.getClass().getDeclaredField("filteredSearchThreshold");
+      threshold.setAccessible(true);
+      Integer thresholdObj = (Integer) threshold.get(strategyObj);
+
+      assertEquals(expectedThreshold, thresholdObj);
+    } finally {
+      req.close();
+    }
   }
 }
