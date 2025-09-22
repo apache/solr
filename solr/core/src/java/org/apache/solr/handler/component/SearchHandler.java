@@ -538,7 +538,7 @@ public class SearchHandler extends RequestHandlerBase
 
       int nextStage = 0;
       do {
-        rb.stage = nextStage;
+        rb.setStage(nextStage);
         nextStage = ResponseBuilder.STAGE_DONE;
 
         // call all components
