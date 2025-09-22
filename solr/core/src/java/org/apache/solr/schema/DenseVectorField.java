@@ -46,6 +46,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.neural.SolrKnnByteVectorQuery;
+import org.apache.solr.search.neural.SolrKnnFloatVectorQuery;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
 import org.apache.solr.util.vector.DenseVectorParser;
@@ -385,7 +387,7 @@ public class DenseVectorField extends FloatPointField {
       case FLOAT32:
         if (filteredSearchThreshold != null) {
           KnnSearchStrategy knnSearchStrategy = new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
-          return new KnnFloatVectorQuery(
+          return new SolrKnnFloatVectorQuery(
               fieldName, vectorBuilder.getFloatVector(), topK, filterQuery, knnSearchStrategy);
         } else {
           return new KnnFloatVectorQuery(
@@ -394,7 +396,7 @@ public class DenseVectorField extends FloatPointField {
       case BYTE:
         if (filteredSearchThreshold != null) {
           KnnSearchStrategy knnSearchStrategy = new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
-          return new KnnByteVectorQuery(
+          return new SolrKnnByteVectorQuery(
               fieldName, vectorBuilder.getByteVector(), topK, filterQuery, knnSearchStrategy);
         } else {
           return new KnnByteVectorQuery(

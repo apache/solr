@@ -212,20 +212,3 @@ dependencies {
   testImplementation libs.apache.httpcomponents.httpcore
 }
 
-tasks.withType(Test).configureEach {
-  jvmArgs(["--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"])
-
-  doFirst {
-    if (filter.includePatterns.any { it.contains("KnnQParserTest") }) {
-      jvmArgs += [
-          "--add-opens=org.apache.lucene.core/org.apache.lucene.search.knn=ALL-UNNAMED",
-          "--add-opens=org.apache.solr.core/org.apache.solr.search.neural=ALL-UNNAMED"
-      ]
-    }
-  }
-}
-
-forbiddenApisTest {
-  bundledSignatures -= "jdk-reflection"
-}
-

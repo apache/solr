@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -1013,17 +1014,11 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
 
     KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
     try {
-      Query vectorQuery = qparser.parse();
+      SolrKnnFloatVectorQuery vectorQuery = (SolrKnnFloatVectorQuery) qparser.parse();
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
 
-      Field strategy = vectorQuery.getClass().getSuperclass().getDeclaredField("searchStrategy");
-      strategy.setAccessible(true);
-      Object strategyObj = strategy.get(vectorQuery);
-
-      Field threshold = strategyObj.getClass().getDeclaredField("filteredSearchThreshold");
-      threshold.setAccessible(true);
-      Integer thresholdObj = (Integer) threshold.get(strategyObj);
-
-      assertEquals(expectedThreshold, thresholdObj);
+      assertEquals(expectedThreshold, threshold);
     } finally {
       req.close();
     }
@@ -1072,17 +1067,11 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
 
     KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
     try {
-      Query vectorQuery = qparser.parse();
+      SolrKnnByteVectorQuery vectorQuery = (SolrKnnByteVectorQuery) qparser.parse();
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
 
-      Field strategy = vectorQuery.getClass().getSuperclass().getDeclaredField("searchStrategy");
-      strategy.setAccessible(true);
-      Object strategyObj = strategy.get(vectorQuery);
-
-      Field threshold = strategyObj.getClass().getDeclaredField("filteredSearchThreshold");
-      threshold.setAccessible(true);
-      Integer thresholdObj = (Integer) threshold.get(strategyObj);
-
-      assertEquals(expectedThreshold, thresholdObj);
+      assertEquals(expectedThreshold, threshold);
     } finally {
       req.close();
     }
