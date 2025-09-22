@@ -14,18 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.ui.views.configsets
 
-package org.apache.solr.ui.components.main.integration
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
 
-import org.apache.solr.ui.components.main.MainComponent
-import org.apache.solr.ui.components.root.RootComponent
-import org.apache.solr.ui.views.navigation.MainMenu
-
-val MainComponent.Child.asMainMenu: MainMenu
-    get() = when (this) {
-        // TODO Add additional mappings once more children are supported
-        is MainComponent.Child.Cluster -> MainMenu.Cluster
-        is MainComponent.Child.Configsets -> MainMenu.Configsets
-        is MainComponent.Child.Environment -> MainMenu.Environment
-        is MainComponent.Child.Logging -> MainMenu.Logging
-    }
+@Composable
+fun ConfigsetsOverviewContent(component: ConfigsetsOverviewComponent, modifier: Modifier = Modifier) {
+    Text("Overview section")
+}

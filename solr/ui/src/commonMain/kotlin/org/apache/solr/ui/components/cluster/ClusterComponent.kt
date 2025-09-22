@@ -15,17 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.main.integration
+package org.apache.solr.ui.components.cluster
 
-import org.apache.solr.ui.components.main.MainComponent
-import org.apache.solr.ui.components.root.RootComponent
-import org.apache.solr.ui.views.navigation.MainMenu
+import kotlinx.serialization.Serializable
+import org.apache.solr.ui.components.cluster.ClusterComponent.Child
+import org.apache.solr.ui.components.cluster.ClusterComponent.ClusterTab
+import org.apache.solr.ui.components.navigation.TabNavigationComponent
 
-val MainComponent.Child.asMainMenu: MainMenu
-    get() = when (this) {
-        // TODO Add additional mappings once more children are supported
-        is MainComponent.Child.Cluster -> MainMenu.Cluster
-        is MainComponent.Child.Configsets -> MainMenu.Configsets
-        is MainComponent.Child.Environment -> MainMenu.Environment
-        is MainComponent.Child.Logging -> MainMenu.Logging
+/**
+ * Cluster component that represents our current Cluster section.
+ *
+ * The cluster section's goal is to provide a "physical" representation of the connected Solr
+ * instance.
+ */
+interface ClusterComponent : TabNavigationComponent<ClusterTab, Child> {
+
+    sealed interface Child {
+        data object Zookeeper : Child
+
+        data object Nodes : Child
+
+        data object Cores : Child
     }
+
+    @Serializable
+    enum class ClusterTab {
+        Zookeeper,
+        Nodes,
+        Cores,
+    }
+}

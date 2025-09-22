@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.main.integration
+package org.apache.solr.ui.domain
 
-import org.apache.solr.ui.components.main.MainComponent
-import org.apache.solr.ui.components.root.RootComponent
-import org.apache.solr.ui.views.navigation.MainMenu
-
-val MainComponent.Child.asMainMenu: MainMenu
-    get() = when (this) {
-        // TODO Add additional mappings once more children are supported
-        is MainComponent.Child.Cluster -> MainMenu.Cluster
-        is MainComponent.Child.Configsets -> MainMenu.Configsets
-        is MainComponent.Child.Environment -> MainMenu.Environment
-        is MainComponent.Child.Logging -> MainMenu.Logging
-    }
+/**
+ * Configset entity that represents a basic configset. This data class does only hold the basic
+ * information of a configset.
+ *
+ * Note that the configsets are uniquely identified by the name right now and therefore do not
+ * use a separate ID property.
+ *
+ * @property name The name and unique identifier of the configset.
+ */
+data class Configset(
+    val name: String = "",
+)

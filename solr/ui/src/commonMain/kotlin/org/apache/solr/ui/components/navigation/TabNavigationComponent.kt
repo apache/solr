@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.main.integration
+package org.apache.solr.ui.components.navigation
 
-import org.apache.solr.ui.components.main.MainComponent
-import org.apache.solr.ui.components.root.RootComponent
-import org.apache.solr.ui.views.navigation.MainMenu
+import com.arkivanov.decompose.router.slot.ChildSlot
+import com.arkivanov.decompose.value.Value
+import kotlinx.serialization.Serializable
 
-val MainComponent.Child.asMainMenu: MainMenu
-    get() = when (this) {
-        // TODO Add additional mappings once more children are supported
-        is MainComponent.Child.Cluster -> MainMenu.Cluster
-        is MainComponent.Child.Configsets -> MainMenu.Configsets
-        is MainComponent.Child.Environment -> MainMenu.Environment
-        is MainComponent.Child.Logging -> MainMenu.Logging
-    }
+interface TabNavigationComponent<T : Enum<T>, C : Any> {
+
+    val tabSlot: Value<ChildSlot<Configuration<T>, C>>
+
+    fun onNavigate(tab: T)
+
+    @Serializable
+    data class Configuration<T : Enum<T>>(val tab: T)
+}
