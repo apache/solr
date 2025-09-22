@@ -40,6 +40,7 @@ import org.apache.lucene.queries.function.valuesource.FloatKnnVectorFieldSource;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SeededKnnVectorQuery;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
@@ -383,11 +384,17 @@ public class DenseVectorField extends FloatPointField {
 
     switch (vectorEncoding) {
       case FLOAT32:
-        return new KnnFloatVectorQuery(
-            fieldName, vectorBuilder.getFloatVector(), topK, filterQuery /*, seedQuery */);
+        KnnFloatVectorQuery floatVectorQuery =
+            new KnnFloatVectorQuery(fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
+        return (seedQuery != null)
+            ? SeededKnnVectorQuery.fromFloatQuery(floatVectorQuery, seedQuery)
+            : floatVectorQuery;
       case BYTE:
-        return new KnnByteVectorQuery(
-            fieldName, vectorBuilder.getByteVector(), topK, filterQuery /*, seedQuery */);
+        KnnByteVectorQuery byteVectorQuery =
+            new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
+        return (seedQuery != null)
+            ? SeededKnnVectorQuery.fromByteQuery(byteVectorQuery, seedQuery)
+            : byteVectorQuery;
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,

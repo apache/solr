@@ -23,6 +23,8 @@ New Features
 
 * SOLR-17023: Use Modern NLP Models from Apache OpenNLP with Solr (Jeff Zemerick, Eric Pugh)
 
+* SOLR-17813: Add support for SeededKnnVectorQuery (Ilaria Petreti via Alessandro Benedetti)
+
 Improvements
 ---------------------
 

@@ -384,6 +384,24 @@ Here's an example of a simple `knn` search:
 
 The search results retrieved are the k=10 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the `similarityFunction` configured at indexing time.
 
+`seed`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A query seed to initiate the vector search, i.e. entry points in the HNSW graph exploration. Solr relies on Lucene’s implementation of https://lucene.apache.org/core/10_2_0/core/org/apache/lucene/search/SeededKnnVectorQuery.html[org.apache.lucene.search.SeededKnnVectorQuery].
++
+The seed can be any valid Solr query, letting traditional query logic guide the vector search in a hybrid-like way.
+
+
+Here is an example of a `knn` search using a `seed` query:
+
+[source,text]
+?q={!knn f=vector topK=10 seed='id:(1 4 10)'}[1.0, 2.0, 3.0, 4.0]
+
+The search results retrieved are the k=10 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`. Documents matching the query `id:(1 4 10)` are used as entry points for the ANN search. If no documents match the seed, Solr falls back to a regular knn search without seeding, starting instead from random entry points.
 
 === knn_text_to_vector Query Parser
 

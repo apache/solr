@@ -76,10 +76,6 @@ public abstract class AbstractVectorQParserBase extends QParser {
     return (DenseVectorField) fieldType;
   }
 
-  protected Query getSeedQuery() throws SolrException, SyntaxError {
-    return null; // TODO
-  }
-
   protected Query getFilterQuery() throws SolrException, SyntaxError {
 
     // Default behavior of FQ wrapping, and suitability of some local params

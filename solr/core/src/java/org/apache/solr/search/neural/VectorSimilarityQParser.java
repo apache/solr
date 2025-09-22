@@ -62,18 +62,10 @@ public class VectorSimilarityQParser extends AbstractVectorQParserBase {
     switch (vectorEncoding) {
       case FLOAT32:
         return new FloatVectorSimilarityQuery(
-            fieldName,
-            vectorBuilder.getFloatVector(),
-            minTraverse,
-            minReturn,
-            getFilterQuery() /*, getSeedQuery() */);
+            fieldName, vectorBuilder.getFloatVector(), minTraverse, minReturn, getFilterQuery());
       case BYTE:
         return new ByteVectorSimilarityQuery(
-            fieldName,
-            vectorBuilder.getByteVector(),
-            minTraverse,
-            minReturn,
-            getFilterQuery() /*, getSeedQuery() */);
+            fieldName, vectorBuilder.getByteVector(), minTraverse, minReturn, getFilterQuery());
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,

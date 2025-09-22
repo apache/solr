@@ -17,10 +17,12 @@
 package org.apache.solr.search.neural;
 
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
 
 public class KnnQParser extends AbstractVectorQParserBase {
@@ -28,9 +30,18 @@ public class KnnQParser extends AbstractVectorQParserBase {
   // retrieve the top K results based on the distance similarity function
   protected static final String TOP_K = "topK";
   protected static final int DEFAULT_TOP_K = 10;
+  protected static final String SEED = "seed";
 
   public KnnQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
+  }
+
+  protected Query getSeedQuery() throws SolrException, SyntaxError {
+    String seed = localParams.get(SEED);
+    if (seed == null || seed.isBlank()) return null;
+
+    final QParser seedParser = subQuery(seed, null);
+    return seedParser.getQuery();
   }
 
   @Override
