@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** Contains the logic to extract features for logging. */
+/** Contains the logic to extract features. */
 package org.apache.solr.ltr.feature.extraction;
