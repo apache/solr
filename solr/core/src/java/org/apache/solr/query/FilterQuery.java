@@ -17,7 +17,6 @@
 package org.apache.solr.query;
 
 import java.io.IOException;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -104,8 +103,8 @@ public class FilterQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
-    Query newQ = q.rewrite(reader);
+  public Query rewrite(IndexSearcher searcher) throws IOException {
+    Query newQ = q.rewrite(searcher);
     if (!newQ.equals(q)) {
       return new FilterQuery(newQ);
     } else {

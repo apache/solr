@@ -43,7 +43,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricTestUtils;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -198,7 +198,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
         assertTrue(
             SolrMetricTestUtils.getHistogramDatapoint(
                     core,
-                    "solr_core_leader_sync_time_milliseconds",
+                    "solr_core_sync_with_leader_time_milliseconds",
                     SolrMetricTestUtils.newCloudLabelsBuilder(core)
                         .label("category", "REPLICATION")
                         .build())
@@ -206,7 +206,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
         assertNull(
             SolrMetricTestUtils.getCounterDatapoint(
                 core,
-                "solr_core_leader_sync_errors",
+                "solr_core_sync_with_leader_sync_errors",
                 SolrMetricTestUtils.newCloudLabelsBuilder(core)
                     .label("category", "REPLICATION")
                     .build()));

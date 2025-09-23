@@ -18,12 +18,11 @@ package org.apache.solr.update;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.ObservableLongCounter;
-import io.opentelemetry.api.metrics.ObservableLongGauge;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -50,6 +49,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
@@ -120,9 +120,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
   AttributedLongCounter rollbackCommands;
   AttributedLongCounter splitCommands;
-  ObservableLongGauge commitStats;
-  ObservableLongGauge updateStats;
-  ObservableLongCounter softAutoCommits;
+  List<AutoCloseable> toClose;
 
   // tracks when auto-commit should occur
   protected final CommitTracker commitTracker;
@@ -239,6 +237,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     } else {
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
+    final List<AutoCloseable> observables = new ArrayList<>();
 
     var baseAttributes =
         attributes.toBuilder()
@@ -306,7 +305,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     numErrorsCumulative =
         new AttributedLongCounter(baseErrorsMetric, baseAttributes.toBuilder().build());
 
-    softAutoCommits =
+    observables.add(
         solrMetricsContext.observableLongCounter(
             "solr_core_update_auto_commits",
             "Current number of auto commits",
@@ -317,12 +316,12 @@ public class DirectUpdateHandler2 extends UpdateHandler
               observableLongMeasurement.record(
                   softCommitTracker.getCommitCount(),
                   baseAttributes.toBuilder().put(TYPE_ATTR, "soft_auto_commits").build());
-            }));
+            })));
 
     // NOCOMMIT: This might not need to be an obseravableLongGauge, but a simple long gauge. Seems
     // like a waste to constantly call this callback to get the latest value if the upper bounds
     // rarely change.
-    commitStats =
+    observables.add(
         solrMetricsContext.observableLongGauge(
             "solr_core_update_commit_stats",
             "Metrics around commits",
@@ -352,9 +351,9 @@ public class DirectUpdateHandler2 extends UpdateHandler
                     softCommitTracker.getTimeUpperBound(),
                     baseAttributes.toBuilder().put(TYPE_ATTR, "soft_auto_commit_max_time").build());
               }
-            }));
+            })));
 
-    updateStats =
+    observables.add(
         solrMetricsContext.observableLongGauge(
             "solr_core_update_docs_pending_commit",
             "Current number of documents pending commit. Value is reset to 0 on commit.",
@@ -362,7 +361,9 @@ public class DirectUpdateHandler2 extends UpdateHandler
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
                   baseAttributes.toBuilder().put(OPERATION_ATTR, "docs_pending").build());
-            });
+            }));
+
+    this.toClose = Collections.unmodifiableList(observables);
 
     var baseSubmittedOpsMetric =
         solrMetricsContext.longCounter(
@@ -436,11 +437,18 @@ public class DirectUpdateHandler2 extends UpdateHandler
               + errorDetails;
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMsg, iae);
     } catch (RuntimeException t) {
+      SolrException.ErrorCode errorCode =
+          core.getCoreContainer().checkTragicException(core)
+              ? SolrException.ErrorCode.SERVER_ERROR
+              : SolrException.ErrorCode.BAD_REQUEST;
       String errorMsg =
           "Exception writing document id "
               + cmd.getPrintableId()
-              + " to the index; possible analysis error.";
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMsg, t);
+              + " to the index"
+              + (errorCode == SolrException.ErrorCode.SERVER_ERROR
+                  ? "."
+                  : "; possible analysis error.");
+      throw new SolrException(errorCode, errorMsg, t);
     }
   }
 
@@ -1014,8 +1022,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     commitTracker.close();
     softCommitTracker.close();
-    commitStats.close();
-
+    IOUtils.closeQuietly(toClose);
     numDocsPending.reset();
     try {
       super.close();

@@ -23,22 +23,27 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.metrics.BatchCallback;
 import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.DoubleGauge;
 import io.opentelemetry.api.metrics.DoubleHistogram;
+import io.opentelemetry.api.metrics.DoubleUpDownCounter;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
+import io.opentelemetry.api.metrics.ObservableDoubleCounter;
 import io.opentelemetry.api.metrics.ObservableDoubleGauge;
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
+import io.opentelemetry.api.metrics.ObservableMeasurement;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.util.stats.MetricUtils;
 
 /**
@@ -155,7 +160,7 @@ public class SolrMetricsContext {
     return longCounter(metricName, description, null);
   }
 
-  public LongCounter longCounter(String metricName, String description, String unit) {
+  public LongCounter longCounter(String metricName, String description, OtelUnit unit) {
     return metricManager.longCounter(registryName, metricName, description, unit);
   }
 
@@ -163,7 +168,7 @@ public class SolrMetricsContext {
     return longUpDownCounter(metricName, description, null);
   }
 
-  public LongUpDownCounter longUpDownCounter(String metricName, String description, String unit) {
+  public LongUpDownCounter longUpDownCounter(String metricName, String description, OtelUnit unit) {
     return metricManager.longUpDownCounter(registryName, metricName, description, unit);
   }
 
@@ -171,15 +176,24 @@ public class SolrMetricsContext {
     return doubleCounter(metricName, description, null);
   }
 
-  public DoubleCounter doubleCounter(String metricName, String description, String unit) {
+  public DoubleCounter doubleCounter(String metricName, String description, OtelUnit unit) {
     return metricManager.doubleCounter(registryName, metricName, description, unit);
+  }
+
+  public DoubleUpDownCounter doubleUpDownCounter(String metricName, String description) {
+    return doubleUpDownCounter(metricName, description, null);
+  }
+
+  public DoubleUpDownCounter doubleUpDownCounter(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.doubleUpDownCounter(registryName, metricName, description, unit);
   }
 
   public DoubleHistogram doubleHistogram(String metricName, String description) {
     return metricManager.doubleHistogram(registryName, metricName, description, null);
   }
 
-  public DoubleHistogram doubleHistogram(String metricName, String description, String unit) {
+  public DoubleHistogram doubleHistogram(String metricName, String description, OtelUnit unit) {
     return metricManager.doubleHistogram(registryName, metricName, description, unit);
   }
 
@@ -187,7 +201,7 @@ public class SolrMetricsContext {
     return metricManager.longHistogram(registryName, metricName, description, null);
   }
 
-  public LongHistogram longHistogram(String metricName, String description, String unit) {
+  public LongHistogram longHistogram(String metricName, String description, OtelUnit unit) {
     return metricManager.longHistogram(registryName, metricName, description, unit);
   }
 
@@ -195,7 +209,7 @@ public class SolrMetricsContext {
     return metricManager.longGauge(registryName, metricName, description, null);
   }
 
-  public LongGauge longGauge(String metricName, String description, String unit) {
+  public LongGauge longGauge(String metricName, String description, OtelUnit unit) {
     return metricManager.longGauge(registryName, metricName, description, unit);
   }
 
@@ -203,7 +217,7 @@ public class SolrMetricsContext {
     return metricManager.doubleGauge(registryName, metricName, description, null);
   }
 
-  public DoubleGauge doubleGauge(String metricName, String description, String unit) {
+  public DoubleGauge doubleGauge(String metricName, String description, OtelUnit unit) {
     return metricManager.doubleGauge(registryName, metricName, description, unit);
   }
 
@@ -216,7 +230,7 @@ public class SolrMetricsContext {
       String metricName,
       String description,
       Consumer<ObservableLongMeasurement> callback,
-      String unit) {
+      OtelUnit unit) {
     return metricManager.observableLongGauge(registryName, metricName, description, callback, unit);
   }
 
@@ -229,7 +243,7 @@ public class SolrMetricsContext {
       String metricName,
       String description,
       Consumer<ObservableDoubleMeasurement> callback,
-      String unit) {
+      OtelUnit unit) {
     return metricManager.observableDoubleGauge(
         registryName, metricName, description, callback, unit);
   }
@@ -243,9 +257,48 @@ public class SolrMetricsContext {
       String metricName,
       String description,
       Consumer<ObservableLongMeasurement> callback,
-      String unit) {
+      OtelUnit unit) {
     return metricManager.observableLongCounter(
         registryName, metricName, description, callback, unit);
+  }
+
+  public ObservableDoubleCounter observableDoubleCounter(
+      String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
+    return observableDoubleCounter(metricName, description, callback, null);
+  }
+
+  public ObservableDoubleCounter observableDoubleCounter(
+      String metricName,
+      String description,
+      Consumer<ObservableDoubleMeasurement> callback,
+      OtelUnit unit) {
+    return metricManager.observableDoubleCounter(
+        registryName, metricName, description, callback, unit);
+  }
+
+  public ObservableLongMeasurement longMeasurement(String metricName, String description) {
+    return longMeasurement(metricName, description, null);
+  }
+
+  public ObservableLongMeasurement longMeasurement(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.longMeasurement(registryName, metricName, description, unit);
+  }
+
+  public ObservableDoubleMeasurement doubleMeasurement(String metricName, String description) {
+    return doubleMeasurement(metricName, description, null);
+  }
+
+  public ObservableDoubleMeasurement doubleMeasurement(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.doubleMeasurement(registryName, metricName, description, unit);
+  }
+
+  public BatchCallback batchCallback(
+      Runnable callback,
+      ObservableMeasurement measurement,
+      ObservableMeasurement... additionalMeasurements) {
+    return metricManager.batchCallback(registryName, callback, measurement, additionalMeasurements);
   }
 
   /**

@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -249,7 +250,8 @@ public class PackageManager implements Closeable {
                       false) /* Making a collection request, but already baked into path */);
       packages =
           (Map<String, String>)
-              result._get("/response/params/PKG_VERSIONS", Collections.emptyMap());
+              Objects.requireNonNullElse(
+                  result._get("/response/params/PKG_VERSIONS"), Collections.emptyMap());
     } catch (PathNotFoundException ex) {
       // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched by
       // the package manager.
@@ -284,7 +286,7 @@ public class PackageManager implements Closeable {
       NamedList<Object> response =
           solrClient.request(
               new GenericV2SolrRequest(SolrRequest.METHOD.GET, PackageUtils.CLUSTERPROPS_PATH));
-      Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
+      Integer statusCode = (Integer) response._get(List.of("responseHeader", "status"), null);
       if (statusCode == null || statusCode == ErrorCode.NOT_FOUND.code) {
         // Cluster props doesn't exist, that means there are no cluster level plugins installed.
         result = Collections.emptyMap();
@@ -734,7 +736,9 @@ public class PackageManager implements Closeable {
                   .setRequiresCollection(
                       false) /* Making a collection-request, but already baked into path */);
       return (Map<String, String>)
-          response._get("/response/params/packages/" + packageName, Collections.emptyMap());
+          Objects.requireNonNullElse(
+              response._get("/response/params/packages/" + packageName), Collections.emptyMap());
+
     } catch (Exception ex) {
       // This should be because there are no parameters. Be tolerant here.
       log.warn("There are no parameters to return for package: {}", packageName);

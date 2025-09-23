@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.BitSetProducer;
@@ -67,8 +67,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
           .add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.MUST))
           .add(
               new BooleanClause(
-                  new DocValuesFieldExistsQuery(NEST_PATH_FIELD_NAME),
-                  BooleanClause.Occur.MUST_NOT))
+                  new FieldExistsQuery(NEST_PATH_FIELD_NAME), BooleanClause.Occur.MUST_NOT))
           .build();
   public static final String CACHE_NAME = "perSegFilter";
 

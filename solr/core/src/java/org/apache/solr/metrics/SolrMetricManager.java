@@ -29,6 +29,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.metrics.BatchCallback;
 import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.DoubleCounterBuilder;
 import io.opentelemetry.api.metrics.DoubleGauge;
@@ -53,7 +54,7 @@ import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.opentelemetry.api.metrics.ObservableMeasurement;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
@@ -90,8 +91,10 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.metrics.otel.MetricExporterFactory;
 import org.apache.solr.metrics.otel.NoopMetricExporter;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -184,69 +187,69 @@ public class SolrMetricManager {
   }
 
   public LongCounter longCounter(
-      String registry, String counterName, String description, String unit) {
+      String registry, String counterName, String description, OtelUnit unit) {
     LongCounterBuilder builder =
         meterProvider(registry)
             .get(OTEL_SCOPE_NAME)
             .counterBuilder(counterName)
             .setDescription(description);
-    if (unit != null) builder.setUnit(unit);
+    if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder.build();
   }
 
   public LongUpDownCounter longUpDownCounter(
-      String registry, String counterName, String description, String unit) {
+      String registry, String counterName, String description, OtelUnit unit) {
     LongUpDownCounterBuilder builder =
         meterProvider(registry)
             .get(OTEL_SCOPE_NAME)
             .upDownCounterBuilder(counterName)
             .setDescription(description);
-    if (unit != null) builder.setUnit(unit);
+    if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder.build();
   }
 
   public DoubleUpDownCounter doubleUpDownCounter(
-      String registry, String counterName, String description, String unit) {
+      String registry, String counterName, String description, OtelUnit unit) {
     DoubleUpDownCounterBuilder builder =
         meterProvider(registry)
             .get(OTEL_SCOPE_NAME)
             .upDownCounterBuilder(counterName)
             .setDescription(description)
             .ofDoubles();
-    if (unit != null) builder.setUnit(unit);
+    if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder.build();
   }
 
   public DoubleCounter doubleCounter(
-      String registry, String counterName, String description, String unit) {
+      String registry, String counterName, String description, OtelUnit unit) {
     DoubleCounterBuilder builder =
         meterProvider(registry)
             .get(OTEL_SCOPE_NAME)
             .counterBuilder(counterName)
             .setDescription(description)
             .ofDoubles();
-    if (unit != null) builder.setUnit(unit);
+    if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder.build();
   }
 
   public DoubleHistogram doubleHistogram(
-      String registry, String histogramName, String description, String unit) {
+      String registry, String histogramName, String description, OtelUnit unit) {
     DoubleHistogramBuilder builder =
         meterProvider(registry)
             .get(OTEL_SCOPE_NAME)
             .histogramBuilder(histogramName)
             .setDescription(description);
-    if (unit != null) builder.setUnit(unit);
+    if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder.build();
   }
 
   public LongHistogram longHistogram(
-      String registry, String histogramName, String description, String unit) {
+      String registry, String histogramName, String description, OtelUnit unit) {
     LongHistogramBuilder builder =
         meterProvider(registry)
             .get(OTEL_SCOPE_NAME)
@@ -254,33 +257,25 @@ public class SolrMetricManager {
             .setDescription(description)
             .ofLongs();
 
-    if (unit != null) builder.setUnit(unit);
+    if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder.build();
   }
 
   public DoubleGauge doubleGauge(
-      String registry, String gaugeName, String description, String unit) {
+      String registry, String gaugeName, String description, OtelUnit unit) {
     DoubleGaugeBuilder builder =
         meterProvider(registry)
             .get(OTEL_SCOPE_NAME)
             .gaugeBuilder(gaugeName)
             .setDescription(description);
-    if (unit != null) builder.setUnit(unit);
+    if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder.build();
   }
 
-  public LongGauge longGauge(String registry, String gaugeName, String description, String unit) {
-    LongGaugeBuilder builder =
-        meterProvider(registry)
-            .get(OTEL_SCOPE_NAME)
-            .gaugeBuilder(gaugeName)
-            .setDescription(description)
-            .ofLongs();
-    if (unit != null) builder.setUnit(unit);
-
-    return builder.build();
+  public LongGauge longGauge(String registry, String gaugeName, String description, OtelUnit unit) {
+    return longGaugeBuilder(registry, gaugeName, description, unit).build();
   }
 
   public ObservableLongCounter observableLongCounter(
@@ -288,13 +283,13 @@ public class SolrMetricManager {
       String counterName,
       String description,
       Consumer<ObservableLongMeasurement> callback,
-      String unit) {
+      OtelUnit unit) {
     LongCounterBuilder builder =
         meterProvider(registry)
             .get(OTEL_SCOPE_NAME)
             .counterBuilder(counterName)
             .setDescription(description);
-    if (unit != null) builder.setUnit(unit);
+    if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder.buildWithCallback(callback);
   }
@@ -304,14 +299,14 @@ public class SolrMetricManager {
       String counterName,
       String description,
       Consumer<ObservableDoubleMeasurement> callback,
-      String unit) {
+      OtelUnit unit) {
     DoubleCounterBuilder builder =
         meterProvider(registry)
             .get(OTEL_SCOPE_NAME)
             .counterBuilder(counterName)
             .setDescription(description)
             .ofDoubles();
-    if (unit != null) builder.setUnit(unit);
+    if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder.buildWithCallback(callback);
   }
@@ -321,16 +316,8 @@ public class SolrMetricManager {
       String gaugeName,
       String description,
       Consumer<ObservableLongMeasurement> callback,
-      String unit) {
-    LongGaugeBuilder builder =
-        meterProvider(registry)
-            .get(OTEL_SCOPE_NAME)
-            .gaugeBuilder(gaugeName)
-            .setDescription(description)
-            .ofLongs();
-    if (unit != null) builder.setUnit(unit);
-
-    return builder.buildWithCallback(callback);
+      OtelUnit unit) {
+    return longGaugeBuilder(registry, gaugeName, description, unit).buildWithCallback(callback);
   }
 
   public ObservableDoubleGauge observableDoubleGauge(
@@ -338,14 +325,14 @@ public class SolrMetricManager {
       String gaugeName,
       String description,
       Consumer<ObservableDoubleMeasurement> callback,
-      String unit) {
+      OtelUnit unit) {
     DoubleGaugeBuilder builder =
         meterProvider(registry)
             .get(OTEL_SCOPE_NAME)
             .gaugeBuilder(gaugeName)
             .setDescription(description);
 
-    if (unit != null) builder.setUnit(unit);
+    if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder.buildWithCallback(callback);
   }
@@ -381,6 +368,51 @@ public class SolrMetricManager {
     if (unit != null) builder.setUnit(unit);
 
     return builder.buildWithCallback(callback);
+  }
+
+  BatchCallback batchCallback(
+      String registry,
+      Runnable callback,
+      ObservableMeasurement measurement,
+      ObservableMeasurement... additionalMeasurements) {
+    return meterProvider(registry)
+        .get(OTEL_SCOPE_NAME)
+        .batchCallback(callback, measurement, additionalMeasurements);
+  }
+
+  ObservableLongMeasurement longMeasurement(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    return longGaugeBuilder(registry, gaugeName, description, unit).buildObserver();
+  }
+
+  ObservableDoubleMeasurement doubleMeasurement(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    return doubleGaugeBuilder(registry, gaugeName, description, unit).buildObserver();
+  }
+
+  private LongGaugeBuilder longGaugeBuilder(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    LongGaugeBuilder builder =
+        meterProvider(registry)
+            .get(OTEL_SCOPE_NAME)
+            .gaugeBuilder(gaugeName)
+            .setDescription(description)
+            .ofLongs();
+    if (unit != null) builder.setUnit(unit.getSymbol());
+
+    return builder;
+  }
+
+  private DoubleGaugeBuilder doubleGaugeBuilder(
+      String registry, String gaugeName, String description, OtelUnit unit) {
+    DoubleGaugeBuilder builder =
+        meterProvider(registry)
+            .get(OTEL_SCOPE_NAME)
+            .gaugeBuilder(gaugeName)
+            .setDescription(description);
+    if (unit != null) builder.setUnit(unit.getSymbol());
+
+    return builder;
   }
 
   // for unit tests
@@ -641,15 +673,15 @@ public class SolrMetricManager {
    * @param name registry name
    * @return true if this name points to a registry that already exists, false otherwise
    */
-  // TODO SOLR-17458: We may not need
   public boolean hasRegistry(String name) {
+    return meterProviderAndReaders.containsKey(enforcePrefix(name));
+  }
+
+  // NOCOMMIT: Used in filtering. Will remove later
+  public boolean hasDropwizardRegistry(String name) {
     Set<String> names = registryNames();
     name = enforcePrefix(name);
     return names.contains(name);
-  }
-
-  public boolean hasMeterProvider(String name) {
-    return meterProviderAndReaders.containsKey(enforcePrefix(name));
   }
 
   /**
@@ -702,20 +734,36 @@ public class SolrMetricManager {
   }
 
   /**
-   * Get (or create if not present) a named registry
+   * Get (or create if not present) a named registry. This method always creates and persists a new
+   * registry in case it does not already exist.
    *
    * @param registry name of the registry
    * @return existing or newly created registry
    */
   // NOCOMMIT SOLR-17458: We may not need
   public MetricRegistry registry(String registry) {
+    return registry(registry, true);
+  }
+
+  /**
+   * Get (or create if not present) a named registry.
+   *
+   * @param registry name of the registry.
+   * @param create When false and the registry does not exist, we return null instead of creating a
+   *     new one.
+   */
+  public MetricRegistry registry(String registry, boolean create) {
     registry = enforcePrefix(registry);
     if (isSharedRegistry(registry)) {
       return SharedMetricRegistries.getOrCreate(registry);
     } else {
       swapLock.lock();
       try {
-        return getOrCreateRegistry(registries, registry);
+        if (create) {
+          return getOrCreateRegistry(registries, registry);
+        } else {
+          return registries.get(registry);
+        }
       } finally {
         swapLock.unlock();
       }
@@ -734,7 +782,7 @@ public class SolrMetricManager {
         .computeIfAbsent(
             providerName,
             key -> {
-              var reader = new PrometheusMetricReader(true, null);
+              var reader = new FilterablePrometheusMetricReader(true, null);
               var builder =
                   SdkMeterProvider.builder()
                       .registerMetricReader(reader)
@@ -773,64 +821,12 @@ public class SolrMetricManager {
    */
   // NOCOMMIT: Remove this
   public void removeRegistry(String registry) {
-    // NOCOMMIT Remove all closing Dropwizard registries
-    // close any reporters for this registry first
-    closeReporters(registry, null);
-    // make sure we use a name with prefix
-    registry = enforcePrefix(registry);
-    if (isSharedRegistry(registry)) {
-      SharedMetricRegistries.remove(registry);
-    } else {
-      swapLock.lock();
-      try {
-        registries.remove(registry);
-      } finally {
-        swapLock.unlock();
-      }
-    }
     meterProviderAndReaders.computeIfPresent(
-        registry,
+        enforcePrefix(registry),
         (key, meterAndReader) -> {
           meterAndReader.sdkMeterProvider().close();
           return null;
         });
-  }
-
-  /**
-   * Swap registries. This is useful eg. during {@link org.apache.solr.core.SolrCore} rename or swap
-   * operations. NOTE: this operation is not supported for shared registries.
-   *
-   * @param registry1 source registry
-   * @param registry2 target registry. Note: when used after core rename the target registry doesn't
-   *     exist, so the swap operation will only rename the existing registry without creating an
-   *     empty one under the previous name.
-   */
-  // NOCOMMIT SOLR-17458: Don't think we need
-  public void swapRegistries(String registry1, String registry2) {
-    registry1 = enforcePrefix(registry1);
-    registry2 = enforcePrefix(registry2);
-    if (isSharedRegistry(registry1) || isSharedRegistry(registry2)) {
-      throw new UnsupportedOperationException(
-          "Cannot swap shared registry: " + registry1 + ", " + registry2);
-    }
-    swapLock.lock();
-    try {
-      MetricRegistry from = registries.get(registry1);
-      MetricRegistry to = registries.get(registry2);
-      if (from == to) {
-        return;
-      }
-      MetricRegistry reg1 = registries.remove(registry1);
-      MetricRegistry reg2 = registries.remove(registry2);
-      if (reg2 != null) {
-        registries.put(registry1, reg2);
-      }
-      if (reg1 != null) {
-        registries.put(registry2, reg1);
-      }
-    } finally {
-      swapLock.unlock();
-    }
   }
 
   /**
@@ -1132,11 +1128,12 @@ public class SolrMetricManager {
         context, registry, new GaugeWrapper<>(gauge, tag), strategy, metricName, metricPath);
   }
 
+  // NOCOMMIT: No longer need
   public int unregisterGauges(String registryName, String tagSegment) {
     if (tagSegment == null) {
       return 0;
     }
-    MetricRegistry registry = registry(registryName);
+    MetricRegistry registry = registry(registryName, false);
     if (registry == null) return 0;
     AtomicInteger removed = new AtomicInteger();
     registry.removeMatching(
@@ -1253,6 +1250,7 @@ public class SolrMetricManager {
    * @param group selected group, not null
    * @param registryNames optional child registry name elements
    */
+  // NOCOMMIT: Come back and cleanup and remove all reporters code
   public void loadReporters(
       PluginInfo[] pluginInfos,
       SolrResourceLoader loader,
@@ -1676,13 +1674,13 @@ public class SolrMetricManager {
     return metricsConfig;
   }
 
-  /** Get a shallow copied map of {@link PrometheusMetricReader}. */
-  public Map<String, PrometheusMetricReader> getPrometheusMetricReaders() {
+  /** Get a shallow copied map of {@link FilterablePrometheusMetricReader}. */
+  public Map<String, FilterablePrometheusMetricReader> getPrometheusMetricReaders() {
     return meterProviderAndReaders.entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().prometheusMetricReader()));
   }
 
-  public PrometheusMetricReader getPrometheusMetricReader(String providerName) {
+  public FilterablePrometheusMetricReader getPrometheusMetricReader(String providerName) {
     MeterProviderAndReaders mpr = meterProviderAndReaders.get(enforcePrefix(providerName));
     return (mpr != null) ? mpr.prometheusMetricReader() : null;
   }
@@ -1706,5 +1704,5 @@ public class SolrMetricManager {
   }
 
   private record MeterProviderAndReaders(
-      SdkMeterProvider sdkMeterProvider, PrometheusMetricReader prometheusMetricReader) {}
+      SdkMeterProvider sdkMeterProvider, FilterablePrometheusMetricReader prometheusMetricReader) {}
 }

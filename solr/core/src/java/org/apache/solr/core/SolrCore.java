@@ -23,6 +23,8 @@ import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
@@ -57,7 +59,6 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -117,6 +118,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.pkg.PackageListeners;
@@ -243,6 +245,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
   private final ConfigSet configSet;
+  private final Cache<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache =
+      Caffeine.newBuilder().weakKeys().build();
   // singleton listener for all packages used in schema
 
   private final CircuitBreakerRegistry circuitBreakerRegistry;
@@ -255,11 +259,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   private volatile boolean newSearcherReady = false;
 
+  private final Attributes coreAttributes;
   private AttributedLongCounter newSearcherCounter;
   private AttributedLongCounter newSearcherMaxReachedCounter;
   private AttributedLongCounter newSearcherOtherErrorsCounter;
   private AttributedLongTimer newSearcherTimer;
   private AttributedLongTimer newSearcherWarmupTimer;
+  private List<AutoCloseable> toClose;
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
@@ -273,9 +279,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   public Date getStartTimeStamp() {
     return startTime;
   }
-
-  private final Map<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache =
-      new WeakHashMap<>();
 
   public long getStartNanoTime() {
     return startNanoTime;
@@ -553,7 +556,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     assert this.name != null;
     assert coreDescriptor.getCloudDescriptor() == null : "Cores are not renamed in SolrCloud";
     this.name = Objects.requireNonNull(v);
-    coreMetricManager.afterCoreRename();
   }
 
   /**
@@ -1087,6 +1089,17 @@ public class SolrCore implements SolrInfoBean, Closeable {
       this.solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
+      if (coreContainer.isZooKeeperAware()) {
+        this.coreAttributes =
+            Attributes.builder()
+                .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
+                .put(CORE_ATTR, coreDescriptor.getName())
+                .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
+                .build();
+      } else {
+        this.coreAttributes = Attributes.builder().put(CORE_ATTR, coreDescriptor.getName()).build();
+      }
+
       if (updateHandler == null) {
         directoryFactory = initDirectoryFactory();
         recoveryStrategyBuilder = initRecoveryStrategyBuilder();
@@ -1108,21 +1121,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       setLatestSchema(schema);
 
       // initialize core metrics
-      if (coreContainer.isZooKeeperAware()) {
-        initializeMetrics(
-            solrMetricsContext,
-            Attributes.builder()
-                .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
-                .put(CORE_ATTR, coreDescriptor.getName())
-                .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
-                .build(),
-            "");
-      } else {
-        initializeMetrics(
-            solrMetricsContext,
-            Attributes.builder().put(CORE_ATTR, coreDescriptor.getName()).build(),
-            "");
-      }
+      initializeMetrics(solrMetricsContext, coreAttributes, "");
 
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
@@ -1130,8 +1129,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
       // also register it here for back-compat
-      // NOCOMMIT SOLR-17458: Add Otel
-      solrFieldCacheBean.initializeMetrics(solrMetricsContext, Attributes.empty(), "core");
+      solrFieldCacheBean.initializeMetrics(
+          solrMetricsContext,
+          coreAttributes.toBuilder().put(CATEGORY_ATTR, Category.CACHE.toString()).build(),
+          "");
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
@@ -1324,6 +1325,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
+    final List<AutoCloseable> observables = new ArrayList<>();
 
     Attributes baseSearcherAttributes =
         Attributes.builder()
@@ -1337,7 +1339,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
             .build();
 
     var baseSearcherTimerMetric =
-        parentContext.longHistogram("solr_searcher_timer", "Timer for opening new searchers", "ms");
+        parentContext.longHistogram(
+            "solr_searcher_timer", "Timer for opening new searchers", OtelUnit.MILLISECONDS);
 
     newSearcherCounter =
         new AttributedLongCounter(
@@ -1368,58 +1371,59 @@ public class SolrCore implements SolrInfoBean, Closeable {
             baseSearcherTimerMetric,
             Attributes.builder().putAll(baseSearcherAttributes).put(TYPE_ATTR, "warmup").build());
 
-    parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
+    observables.add(
+        parentContext.observableLongGauge(
+            "solr_core_ref_count",
+            "The current number of active references to a Solr core",
+            (observableLongMeasurement -> {
+              observableLongMeasurement.record(getOpenCount(), baseGaugeCoreAttributes);
+            })));
+
+    observables.add(
+        parentContext.observableLongGauge(
+            "solr_core_disk_space",
+            "Solr core disk space metrics",
+            (observableLongMeasurement -> {
+
+              // initialize disk total / free metrics
+              Path dataDirPath = Path.of(dataDir);
+              var totalSpaceAttributes =
+                  Attributes.builder()
+                      .putAll(baseGaugeCoreAttributes)
+                      .put(TYPE_ATTR, "total_space")
+                      .build();
+              var usableSpaceAttributes =
+                  Attributes.builder()
+                      .putAll(baseGaugeCoreAttributes)
+                      .put(TYPE_ATTR, "usable_space")
+                      .build();
+              try {
+                observableLongMeasurement.record(
+                    Files.getFileStore(dataDirPath).getTotalSpace(), totalSpaceAttributes);
+              } catch (IOException e) {
+                observableLongMeasurement.record(0L, totalSpaceAttributes);
+              }
+              try {
+                observableLongMeasurement.record(
+                    Files.getFileStore(dataDirPath).getUsableSpace(), usableSpaceAttributes);
+              } catch (IOException e) {
+                observableLongMeasurement.record(0L, usableSpaceAttributes);
+              }
+            }),
+            OtelUnit.BYTES));
+
+    observables.add(
+        parentContext.observableLongGauge(
+            "solr_core_index_size",
+            "Index size for a Solr core",
+            (observableLongMeasurement -> {
+              if (!isClosed())
+                observableLongMeasurement.record(getIndexSize(), baseGaugeCoreAttributes);
+            }),
+            OtelUnit.BYTES));
 
     parentContext.observableLongGauge(
-        "solr_core_ref_count",
-        "The current number of active references to a Solr core",
-        (observableLongMeasurement -> {
-          observableLongMeasurement.record(getOpenCount(), baseGaugeCoreAttributes);
-        }));
-
-    parentContext.observableLongGauge(
-        "solr_core_disk_space",
-        "Solr core disk space metrics",
-        (observableLongMeasurement -> {
-
-          // initialize disk total / free metrics
-          Path dataDirPath = Path.of(dataDir);
-          var totalSpaceAttributes =
-              Attributes.builder()
-                  .putAll(baseGaugeCoreAttributes)
-                  .put(TYPE_ATTR, "total_space")
-                  .build();
-          var usableSpaceAttributes =
-              Attributes.builder()
-                  .putAll(baseGaugeCoreAttributes)
-                  .put(TYPE_ATTR, "usable_space")
-                  .build();
-          try {
-            observableLongMeasurement.record(
-                Files.getFileStore(dataDirPath).getTotalSpace(), totalSpaceAttributes);
-          } catch (IOException e) {
-            observableLongMeasurement.record(0L, totalSpaceAttributes);
-          }
-          try {
-            observableLongMeasurement.record(
-                Files.getFileStore(dataDirPath).getUsableSpace(), usableSpaceAttributes);
-          } catch (IOException e) {
-            observableLongMeasurement.record(0L, usableSpaceAttributes);
-          }
-        }),
-        "By");
-
-    parentContext.observableLongGauge(
-        "solr_core_index_size",
-        "Index size for a Solr core",
-        (observableLongMeasurement -> {
-          if (!isClosed())
-            observableLongMeasurement.record(getIndexSize(), baseGaugeCoreAttributes);
-        }),
-        "By");
-
-    parentContext.observableLongGauge(
-        "solr_core_segment_count",
+        "solr_core_segments",
         "Number of segments in a Solr core",
         (observableLongMeasurement -> {
           if (isReady())
@@ -1428,26 +1432,31 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     // NOCOMMIT: Do we need these start_time metrics? I think at minimum it should be optional
     // otherwise we fall into metric bloat for something people may not care about.
-    parentContext.observableLongGauge(
-        "solr_core_start_time",
-        "Start time of a Solr core",
-        (observableLongMeasurement -> {
-          observableLongMeasurement.record(
-              startTime.getTime(),
-              Attributes.builder()
-                  .putAll(baseGaugeCoreAttributes)
-                  .put(TYPE_ATTR, "start_time")
-                  .build());
-        }));
+    observables.add(
+        parentContext.observableLongGauge(
+            "solr_core_start_time",
+            "Start time of a Solr core",
+            (observableLongMeasurement -> {
+              observableLongMeasurement.record(
+                  startTime.getTime(),
+                  Attributes.builder()
+                      .putAll(baseGaugeCoreAttributes)
+                      .put(TYPE_ATTR, "start_time")
+                      .build());
+            })));
 
     if (coreContainer.isZooKeeperAware())
-      parentContext.observableLongGauge(
-          "solr_core_is_leader",
-          "Indicates whether this Solr core is currently the leader",
-          (observableLongMeasurement -> {
-            observableLongMeasurement.record(
-                (coreDescriptor.getCloudDescriptor().isLeader()) ? 1 : 0, baseGaugeCoreAttributes);
-          }));
+      observables.add(
+          parentContext.observableLongGauge(
+              "solr_core_is_leader",
+              "Indicates whether this Solr core is currently the leader",
+              (observableLongMeasurement -> {
+                observableLongMeasurement.record(
+                    (coreDescriptor.getCloudDescriptor().isLeader()) ? 1 : 0,
+                    baseGaugeCoreAttributes);
+              })));
+
+    this.toClose = Collections.unmodifiableList(observables);
 
     // NOCOMMIT: Temporary to see metrics
     newSearcherCounter.inc();
@@ -1803,6 +1812,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         assert false : "Too many closes on SolrCore";
       } else if (count == 0) {
         doClose();
+        IOUtils.closeQuietly(toClose);
       }
     } finally {
       MDCLoggingContext.clear(); // balance out from SolrCore open with close
@@ -2227,7 +2237,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     IndexFingerprint f = null;
-    f = perSegmentFingerprintCache.get(cacheHelper.getKey());
+    f = perSegmentFingerprintCache.getIfPresent(cacheHelper.getKey());
     // fingerprint is either not cached or if we want fingerprint only up to a version less than
     // maxVersionEncountered in the segment, or documents were deleted from segment for which
     // fingerprint was cached
@@ -2267,8 +2277,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
     if (log.isDebugEnabled()) {
       log.debug(
-          "Cache Size: {}, Segments Size:{}",
-          perSegmentFingerprintCache.size(),
+          "Approximate perSegmentFingerprintCache Size: {}, Segments Size:{}",
+          perSegmentFingerprintCache.estimatedSize(),
           searcher.getTopReaderContext().leaves().size());
     }
     return f;

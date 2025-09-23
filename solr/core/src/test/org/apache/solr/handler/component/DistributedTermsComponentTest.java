@@ -228,8 +228,8 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
       // other way is to pass whole response to compare
       assertNull(
           compare(
-              rsp.findRecursive("terms"),
-              controlRsp.findRecursive("terms"),
+              rsp._get(List.of("terms"), null),
+              controlRsp._get(List.of("terms"), null),
               flags(handle, "terms"),
               handle));
     }

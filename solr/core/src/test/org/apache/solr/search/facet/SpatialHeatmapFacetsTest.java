@@ -152,12 +152,12 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
           2,
           response
               .getResponse()
-              .findRecursive("facet_counts", "facet_heatmaps", "course", "gridLevel"));
+              ._get(List.of("facet_counts", "facet_heatmaps", "course", "gridLevel"), null));
       assertTrue(
           ((NamedList<Object>)
                       response
                           .getResponse()
-                          .findRecursive("facet_counts", "facet_heatmaps", "course"))
+                          ._get(List.of("facet_counts", "facet_heatmaps", "course"), null))
                   .indexOf("counts_" + courseFormat, 0)
               >= 0);
     }
@@ -442,10 +442,10 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
                       + "}"));
       {
         final NamedList<?> q1Res =
-            (NamedList<?>) response.getResponse().findRecursive("facets", "q1");
+            (NamedList<?>) response.getResponse()._get(List.of("facets", "q1"), null);
         assertEquals("1", q1Res.get("count").toString());
-        final NamedList<?> q2Res =
-            (NamedList<?>) response.getResponse().findRecursive("facets", "q2");
+        NamedList<Object> entries = response.getResponse();
+        final NamedList<?> q2Res = (NamedList<?>) entries._get(List.of("facets", "q2"), null);
         assertEquals("1", q2Res.get("count").toString());
         // essentially, these will differ only in the heatmap counts but otherwise will be the same
         assertNotNull(compare(q1Res, q2Res, flags, handle));
@@ -507,12 +507,12 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
     // classic faceting
     final NamedList<?> classicResp =
         (NamedList<?>)
-            response.getResponse().findRecursive("facet_counts", "facet_heatmaps", FIELD);
+            response.getResponse()._get(List.of("facet_counts", "facet_heatmaps", FIELD), null);
     if (classicResp != null) {
       return classicResp;
     }
     // JSON Facet
-    return (NamedList<?>) response.getResponse().findRecursive("facets", "f1");
+    return (NamedList<?>) response.getResponse()._get(List.of("facets", "f1"), null);
   }
 
   @Test
