@@ -17,9 +17,6 @@
 package org.apache.solr.search.neural;
 
 import java.util.Optional;
-import org.apache.lucene.search.KnnByteVectorQuery;
-import org.apache.lucene.search.KnnFloatVectorQuery;
-import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -46,19 +43,31 @@ public class KnnQParser extends AbstractVectorQParserBase {
     super(qstr, localParams, params, req);
   }
 
-  @Override
-  public Query parse() throws SyntaxError {
-    final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
-    final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
-    final String vectorToSearch = getVectorToSearch();
-    final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
+  public class EarlyTerminationParams {
+    private final boolean enabled;
+    private final Double saturationThreshold;
+    private final Integer patience;
 
-    return wrapWithPatienceIfEarlyTerminationEnabled(
-        denseVectorType.getKnnVectorQuery(
-            schemaField.getName(), vectorToSearch, topK, getFilterQuery()));
+    public EarlyTerminationParams(boolean enabled, Double saturationThreshold, Integer patience) {
+      this.enabled = enabled;
+      this.saturationThreshold = saturationThreshold;
+      this.patience = patience;
+    }
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public Double getSaturationThreshold() {
+      return saturationThreshold;
+    }
+
+    public Integer getPatience() {
+      return patience;
+    }
   }
 
-  protected Query wrapWithPatienceIfEarlyTerminationEnabled(Query knnQuery) {
+  public EarlyTerminationParams getEarlyTerminationParams() {
     final Double saturationThreshold =
         Optional.ofNullable(localParams.get(SATURATION_THRESHOLD))
             .map(Double::parseDouble)
@@ -74,20 +83,19 @@ public class KnnQParser extends AbstractVectorQParserBase {
           "Parameters 'saturationThreshold' and 'patience' must both be provided, or neither.");
     }
 
-    final boolean earlyTerminationEnabled =
+    final boolean enabled =
         localParams.getBool(EARLY_TERMINATION, DEFAULT_EARLY_TERMINATION) || useExplicitParams;
+    return new EarlyTerminationParams(enabled, saturationThreshold, patience);
+  }
 
-    if (earlyTerminationEnabled) {
-      if (knnQuery instanceof KnnFloatVectorQuery knnFloatQuery) {
-        return useExplicitParams
-            ? PatienceKnnVectorQuery.fromFloatQuery(knnFloatQuery, saturationThreshold, patience)
-            : PatienceKnnVectorQuery.fromFloatQuery(knnFloatQuery);
-      } else if (knnQuery instanceof KnnByteVectorQuery knnByteQuery) {
-        return useExplicitParams
-            ? PatienceKnnVectorQuery.fromByteQuery(knnByteQuery, saturationThreshold, patience)
-            : PatienceKnnVectorQuery.fromByteQuery(knnByteQuery);
-      }
-    }
-    return knnQuery;
+  @Override
+  public Query parse() throws SyntaxError {
+    final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
+    final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
+    final String vectorToSearch = getVectorToSearch();
+    final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
+
+    return denseVectorType.getKnnVectorQuery(
+        schemaField.getName(), vectorToSearch, topK, getFilterQuery(), getEarlyTerminationParams());
   }
 }
