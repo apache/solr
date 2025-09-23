@@ -43,7 +43,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
     super(qstr, localParams, params, req);
   }
 
-  public class EarlyTerminationParams {
+  public static class EarlyTerminationParams {
     private final boolean enabled;
     private final Double saturationThreshold;
     private final Integer patience;
