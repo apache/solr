@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.extraction;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -26,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Set;
+import org.apache.solr.common.SolrException;
 import org.noggit.JSONParser;
 
 /**
@@ -96,13 +96,15 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     }
     b.PUT(HttpRequest.BodyPublishers.ofInputStream(() -> inputStream));
 
+    // TODO: Consider getting the InputStream instead
     HttpResponse<String> resp =
         httpClient.send(b.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
     int code = resp.statusCode();
     if (code < 200 || code >= 300) {
-      String body = resp.body();
-      String preview = body == null ? "" : body.substring(0, Math.min(body.length(), 512));
-      throw new IOException("TikaServer " + url + " returned status " + code + " body: " + preview);
+      // TODO: Parse error message from response?
+      throw new SolrException(
+          SolrException.ErrorCode.getErrorCode(code),
+          "TikaServer " + url + " returned status " + code);
     }
     String body = resp.body();
     return parseCombinedJson(body, md);
