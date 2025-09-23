@@ -391,8 +391,7 @@ The search results retrieved are the k=10 nearest documents to the vector in inp
 |Optional |Default: `false`
 |===
 +
-Early termination is an HNSW optimization. Solr relies on Lucene’s implementation of early termination for kNN queries, provided by
-https://lucene.apache.org/core/10_2_2/core/org/apache/lucene/search/PatienceKnnVectorQuery.html[org.apache.lucene.search.PatienceKnnVectorQuery].
+Early termination is an HNSW optimization. Solr relies on the Lucene’s implementation of early termination for kNN queries, based on https://cs.uwaterloo.ca/~jimmylin/publications/Teofili_Lin_ECIR2025.pdf[Patience in Proximity: A Simple Early Termination Strategy for HNSW Graph Traversal in Approximate k-Nearest Neighbor Search].
 +
 When enabled (true), the search may exit early when the HNSW candidate queue remains saturated over a threshold (saturationThreshold) for more than a given number of iterations (patience). Refer to the two parameters below for more details.
 +
@@ -428,7 +427,7 @@ Our recommendation is to rely on the default value and change this parameter onl
 +
 This parameter must be used together with `saturationThreshold`; either specify both to customize the behavior, or omit both to rely on the default values.
 
-Here's an example of a `knn` search using the early termination with custom parameters:
+Here's an example of a `knn` search using the early termination with input parameters:
 
 [source,text]
 ?q={!knn f=vector topK=10 earlyTermination=true saturationThreshold=0.989 patience=10}[1.0, 2.0, 3.0, 4.0]
