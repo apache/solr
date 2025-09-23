@@ -1109,8 +1109,10 @@ public class CoreContainer {
         "version");
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
-    // NOCOMMIT SOLR-17458: Otel migration
-    fieldCacheBean.initializeMetrics(solrMetricsContext, Attributes.empty(), "");
+    fieldCacheBean.initializeMetrics(
+        solrMetricsContext,
+        Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()),
+        "");
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
@@ -1122,10 +1124,9 @@ public class CoreContainer {
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
                 new SolrNamedThreadFactory("coreLoadExecutor")),
-            null,
-            metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
-            SolrMetricManager.mkName(
-                "coreLoadExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
+            solrMetricsContext,
+            SolrInfoBean.Category.CONTAINER,
+            "coreLoadExecutor");
 
     coreSorter =
         loader.newInstance(

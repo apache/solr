@@ -446,7 +446,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       }
       if (jwtConsumer == null) {
         log.warn("JWTAuth not configured");
-        numErrors.mark();
+        numErrors.inc();
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin not correctly configured");
       }
@@ -487,7 +487,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
         final Principal principal = authResponse.getPrincipal();
         request = wrapWithPrincipal(request, principal);
         if (!(principal instanceof JWTPrincipal)) {
-          numErrors.mark();
+          numErrors.inc();
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
               "JWTAuth plugin says AUTHENTICATED but no token extracted");
@@ -513,7 +513,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             "Authentication failed. {}, {}",
             authResponse.getAuthCode(),
             authResponse.getAuthCode().getMsg());
-        numErrors.mark();
+        numErrors.inc();
         authenticationFailure(
             response,
             authResponse.getAuthCode().getMsg(),

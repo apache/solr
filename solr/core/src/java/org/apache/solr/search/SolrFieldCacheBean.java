@@ -17,9 +17,10 @@
 package org.apache.solr.search;
 
 import io.opentelemetry.api.common.Attributes;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.uninverting.UninvertingReader;
 
 /** A SolrInfoBean that provides introspection of the Solr FieldCache */
@@ -28,6 +29,7 @@ public class SolrFieldCacheBean implements SolrInfoBean {
   private boolean disableEntryList = Boolean.getBoolean("disableSolrFieldCacheMBeanEntryList");
   private boolean disableJmxEntryList =
       Boolean.getBoolean("disableSolrFieldCacheMBeanEntryListJmx");
+  private AutoCloseable toClose;
 
   private SolrMetricsContext solrMetricsContext;
 
@@ -51,28 +53,35 @@ public class SolrFieldCacheBean implements SolrInfoBean {
     return solrMetricsContext;
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     this.solrMetricsContext = parentContext;
-    MetricsMap metricsMap =
-        new MetricsMap(
-            map -> {
+    var solrCacheStats =
+        solrMetricsContext.longMeasurement(
+            "solr_field_cache_entries", "Number of field cache entries");
+    var solrCacheSize =
+        solrMetricsContext.longMeasurement(
+            "solr_field_cache_size", "Size of field cache in bytes", OtelUnit.BYTES);
+    this.toClose =
+        solrMetricsContext.batchCallback(
+            () -> {
               if (!disableEntryList && !disableJmxEntryList) {
                 UninvertingReader.FieldCacheStats fieldCacheStats =
                     UninvertingReader.getUninvertedStats();
                 String[] entries = fieldCacheStats.info;
-                map.put("entries_count", entries.length);
-                map.put("total_size", fieldCacheStats.totalSize);
-                for (int i = 0; i < entries.length; i++) {
-                  final String entry = entries[i];
-                  map.put("entry#" + i, entry);
-                }
+                solrCacheStats.record(entries.length, attributes);
+                solrCacheSize.record(fieldCacheStats.totalSize, attributes);
               } else {
-                map.put("entries_count", UninvertingReader.getUninvertedStatsSize());
+                solrCacheStats.record(UninvertingReader.getUninvertedStatsSize(), attributes);
               }
-            });
-    solrMetricsContext.gauge(metricsMap, true, "fieldCache", Category.CACHE.toString(), scope);
+            },
+            solrCacheStats,
+            solrCacheSize);
+  }
+
+  @Override
+  public void close() {
+    IOUtils.closeQuietly(toClose);
   }
 }
