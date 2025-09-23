@@ -31,6 +31,12 @@ public class ExtractionMetadata {
     map.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
   }
 
+  public void addIfNotNull(String resourceNameKey, String resourceName) {
+    if (resourceName != null) {
+      add(resourceNameKey, resourceName);
+    }
+  }
+
   public String[] getValues(String name) {
     List<String> vals = map.get(name);
     if (vals == null) return new String[0];

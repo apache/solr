@@ -51,18 +51,13 @@ public interface ExtractionBackend {
   /** Build ExtractionMetadata from the request context */
   default ExtractionMetadata buildMetadataFromRequest(ExtractionRequest request) {
     ExtractionMetadata md = new ExtractionMetadata();
-    if (request.resourceName != null)
-      md.add(TikaMetadataKeys.RESOURCE_NAME_KEY, request.resourceName);
-    if (request.contentType != null) md.add(HttpHeaders.CONTENT_TYPE, request.contentType);
-    if (request.streamName != null)
-      md.add(ExtractingMetadataConstants.STREAM_NAME, request.streamName);
-    if (request.streamSourceInfo != null)
-      md.add(ExtractingMetadataConstants.STREAM_SOURCE_INFO, request.streamSourceInfo);
-    if (request.streamSize != null)
-      md.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(request.streamSize));
-    if (request.contentType != null)
-      md.add(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, request.contentType);
-    if (request.charset != null) md.add(HttpHeaders.CONTENT_ENCODING, request.charset);
+    md.addIfNotNull(TikaMetadataKeys.RESOURCE_NAME_KEY, request.resourceName);
+    md.addIfNotNull(HttpHeaders.CONTENT_TYPE, request.contentType);
+    md.addIfNotNull(ExtractingMetadataConstants.STREAM_NAME, request.streamName);
+    md.addIfNotNull(ExtractingMetadataConstants.STREAM_SOURCE_INFO, request.streamSourceInfo);
+    md.addIfNotNull(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(request.streamSize));
+    md.addIfNotNull(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, request.contentType);
+    md.addIfNotNull(HttpHeaders.CONTENT_ENCODING, request.charset);
     return md;
   }
 
