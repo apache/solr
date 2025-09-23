@@ -379,7 +379,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.queryResultMaxDocsCached = solrConfig.queryResultMaxDocsCached;
     this.useFilterForSortedQuery = solrConfig.useFilterForSortedQuery;
 
-    ordMapCache = solrConfig.ordMapCacheConfig.newInstance(core);
+    ordMapCache = buildCache(solrConfig, "ordMapCache", core);
     assert ordMapCache != null;
     this.leafReader = SlowCompositeReaderWrapper.wrap(this.reader, ordMapCache);
 
@@ -439,6 +439,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       SolrConfig solrConfig, String cacheName, SolrCore core) {
     CacheConfig cacheConfig;
     switch (cacheName) {
+      case "ordMapCache":
+        cacheConfig = solrConfig.ordMapCacheConfig;
+        break;
       case "fieldValueCache":
         cacheConfig = solrConfig.fieldValueCacheConfig;
         break;

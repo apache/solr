@@ -200,7 +200,7 @@ public class CacheOverridesManager {
   public CacheConfig applyOverrides(CacheConfig cacheConfig, String cacheName, SolrCore core) {
     List<Map<String, String>> overridesEntries = getOverrides(cacheName, core);
     for (Map<String, String> overrides : overridesEntries) {
-      cacheConfig = cacheConfig.withArgs(overrides);
+      cacheConfig = cacheConfig.withArgs(overrides, core);
     }
     return cacheConfig;
   }

@@ -66,11 +66,21 @@ public class CacheConfig implements MapSerializable {
   @SuppressWarnings({"rawtypes"})
   public CacheConfig(
       Class<? extends SolrCache> clazz, Map<String, String> args, CacheRegenerator regenerator) {
+    this(clazz, args, regenerator, new Object[1]);
+  }
+
+  @SuppressWarnings({"rawtypes"})
+  private CacheConfig(
+      Class<? extends SolrCache> clazz,
+      Map<String, String> args,
+      CacheRegenerator regenerator,
+      Object[] persistence) {
     this.clazz = () -> clazz;
     this.cacheImpl = clazz.getName();
     this.args = args;
     this.regenerator = regenerator;
     this.nodeName = args.get(NAME);
+    this.persistence = persistence;
   }
 
   public CacheRegenerator getRegenerator() {
@@ -109,7 +119,7 @@ public class CacheConfig implements MapSerializable {
     return getConfig(solrConfig.getResourceLoader(), solrConfig, nodeName, attrs, xpath);
   }
 
-  public static CacheConfig getConfig(
+  static CacheConfig getConfig(
       SolrResourceLoader loader,
       SolrConfig solrConfig,
       String nodeName,
@@ -212,20 +222,54 @@ public class CacheConfig implements MapSerializable {
 
   /**
    * Returns a CacheConfig with the given arguments merged into the existing ones. <br>
-   * The existing config should not be modified
+   * The existing config should not be modified.
+   *
+   * <p>Take note that the cloned config should only be used to instantiate the same "cache type"
+   * (filterCache, queryResultCache etc.) of this config
    *
    * @param newArgs new arguments to merge into the existing config, overrides existing values
+   * @param core the core to create the cache for
    */
-  public CacheConfig withArgs(Map<String, String> newArgs) {
+  public CacheConfig withArgs(Map<String, String> newArgs, SolrCore core) {
     if (newArgs == null || newArgs.isEmpty()) {
       return this;
     }
+
+    @SuppressWarnings({"rawtypes"})
+    Class<? extends SolrCache> cacheClass;
+    String classOverride = newArgs.get("class");
+
+    // compare against the explicitly configured value first, it could be the shortened class name
+    // (not fully qualified class name)
+    String previousClassName =
+        (this.args != null && this.args.get("class") != null)
+            ? this.args.get("class")
+            : this.cacheImpl;
+    boolean classChanged = classOverride != null && !classOverride.equals(previousClassName);
+    if (classChanged) {
+      if (log.isDebugEnabled()) {
+        log.debug(
+            "Cache class overridden from {} to {}, loading the new class",
+            previousClassName,
+            classOverride);
+      }
+      cacheClass =
+          core.getResourceLoader()
+              .findClass(
+                  new PluginInfo("cache", Collections.singletonMap("class", classOverride)),
+                  SolrCache.class,
+                  true);
+    } else {
+      cacheClass = this.clazz.get();
+    }
+
     if (this.args == null) {
-      return new CacheConfig(this.clazz.get(), new HashMap<>(newArgs), this.regenerator);
+      return new CacheConfig(
+          cacheClass, new HashMap<>(newArgs), this.regenerator, this.persistence);
     } else {
       Map<String, String> finalArgs = new HashMap<>(this.args);
       finalArgs.putAll(newArgs);
-      return new CacheConfig(this.clazz.get(), finalArgs, this.regenerator);
+      return new CacheConfig(cacheClass, finalArgs, this.regenerator, this.persistence);
     }
   }
 
