@@ -2669,7 +2669,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             "Number of queries where Solr skipped building a full sorted DocList and instead returned results directly from the DocSet",
             obs -> obs.record(skipSortCount.sum(), baseAttributes)));
     toClose.add(
-        solrMetricsContext.observableLongGauge(
+        solrMetricsContext.observableLongCounter(
             "solr_searcher_live_docs_cache",
             "LiveDocs cache metrics",
             obs -> {

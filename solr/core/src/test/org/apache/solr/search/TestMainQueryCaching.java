@@ -115,7 +115,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
 
   private static long coreToMatchAllDocsCount(SolrCore core, String type) {
     return (long)
-        SolrMetricTestUtils.getGaugeDatapoint(
+        SolrMetricTestUtils.getCounterDatapoint(
                 core,
                 "solr_searcher_live_docs_cache",
                 SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
