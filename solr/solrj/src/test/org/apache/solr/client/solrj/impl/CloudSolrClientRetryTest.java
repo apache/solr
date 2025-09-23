@@ -49,7 +49,7 @@ public class CloudSolrClientRetryTest extends SolrCloudTestCase {
     CloudSolrClient solrClient = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collectionName, 1, 1).process(solrClient);
     String prometheusMetric =
-        "solr_core_requests_total{category=\"UPDATE\",collection=\"testRetry\",core=\"testRetry_shard1_replica_n1\",handler=\"/update\",otel_scope_name=\"org.apache.solr\",replica=\"replica_n1\",shard=\"shard1\"}";
+        "solr_core_requests_total{category=\"UPDATE\",collection=\"testRetry\",core=\"testRetry_shard1_replica_n1\",handler=\"/update\",otel_scope_name=\"org.apache.solr\",replica_type=\"NRT\",shard=\"shard1\"}";
     solrClient.add(collectionName, new SolrInputDocument("id", "1"));
 
     assertEquals(1.0, getPrometheusMetricValue(solrClient, prometheusMetric), 0.0);

@@ -21,6 +21,7 @@ import static org.apache.solr.handler.admin.MetricsHandler.OPEN_METRICS_WT;
 import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
 import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_TYPE_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -1116,6 +1117,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
                 .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
                 .put(CORE_ATTR, coreDescriptor.getName())
                 .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
+                .put(
+                    REPLICA_TYPE_ATTR,
+                    coreDescriptor.getCloudDescriptor().getReplicaType().toString())
                 .build(),
             "");
       } else {

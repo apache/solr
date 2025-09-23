@@ -42,7 +42,8 @@ public class SolrCoreMetricManager implements Closeable {
   public static final AttributeKey<String> COLLECTION_ATTR = AttributeKey.stringKey("collection");
   public static final AttributeKey<String> CORE_ATTR = AttributeKey.stringKey("core");
   public static final AttributeKey<String> SHARD_ATTR = AttributeKey.stringKey("shard");
-  public static final AttributeKey<String> REPLICA_ATTR = AttributeKey.stringKey("replica");
+  public static final AttributeKey<String> REPLICA_TYPE_ATTR =
+      AttributeKey.stringKey("replica_type");
 
   private final SolrCore core;
   private SolrMetricsContext solrMetricsContext;
@@ -50,6 +51,7 @@ public class SolrCoreMetricManager implements Closeable {
   private String collectionName;
   private String shardName;
   private String replicaName;
+  private String replicaType;
   private String leaderRegistryName;
   private boolean cloudMode;
 
@@ -83,6 +85,7 @@ public class SolrCoreMetricManager implements Closeable {
       // replicaName = cd.getCoreNodeName();
       String coreName = core.getName();
       replicaName = Utils.parseMetricsReplicaName(collectionName, coreName);
+      replicaType = cd.getReplicaType().toString();
       if (replicaName == null) {
         replicaName = cd.getCoreNodeName();
       }
@@ -133,7 +136,7 @@ public class SolrCoreMetricManager implements Closeable {
             .put(CORE_ATTR, core.getName())
             .put(COLLECTION_ATTR, collectionName)
             .put(SHARD_ATTR, shardName)
-            .put(REPLICA_ATTR, replicaName)
+            .put(REPLICA_TYPE_ATTR, replicaType)
             .build();
 
     core.initializeMetrics(solrMetricsContext, attributes, core.getName());
@@ -178,7 +181,7 @@ public class SolrCoreMetricManager implements Closeable {
             .put(CORE_ATTR, core.getName())
             .put(COLLECTION_ATTR, collectionName)
             .put(SHARD_ATTR, shardName)
-            .put(REPLICA_ATTR, replicaName);
+            .put(REPLICA_TYPE_ATTR, replicaType);
     if (scope.startsWith("/")) attributesBuilder.put(HANDLER_ATTR, scope);
     producer.initializeMetrics(solrMetricsContext, attributesBuilder.build(), scope);
   }

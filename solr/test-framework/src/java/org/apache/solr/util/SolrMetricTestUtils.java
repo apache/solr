@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -184,9 +183,8 @@ public final class SolrMetricTestUtils {
         .label("shard", core.getCoreDescriptor().getCloudDescriptor().getShardId())
         .label("core", core.getName())
         .label(
-            "replica",
-            Utils.parseMetricsReplicaName(
-                core.getCoreDescriptor().getCollectionName(), core.getName()))
+            "replica_type",
+            core.getCoreDescriptor().getCloudDescriptor().getReplicaType().toString())
         .label("otel_scope_name", "org.apache.solr");
   }
 

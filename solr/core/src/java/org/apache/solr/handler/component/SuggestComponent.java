@@ -520,8 +520,8 @@ public class SuggestComponent extends SearchComponent
 
   @Override
   public void close() throws IOException {
-    super.close();
     IOUtils.closeQuietly(toClose);
+    super.close();
   }
 
   /** Listener to build or reload the maintained {@link SolrSuggester} by this component */
