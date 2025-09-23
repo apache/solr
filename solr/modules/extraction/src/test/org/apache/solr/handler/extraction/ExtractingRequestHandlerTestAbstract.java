@@ -16,62 +16,29 @@
  */
 package org.apache.solr.handler.extraction;
 
-import com.carrotsearch.randomizedtesting.ThreadFilter;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
-import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
 
-/** Generic tests, randomized between local and tikaserver backends */
-@ThreadLeakFilters(
-    defaultFilters = true,
-    filters = {
-      SolrIgnoredThreadsFilter.class,
-      QuickPatchThreadsFilter.class,
-      ExtractingRequestHandlerTest.TestcontainersThreadsFilter.class
-    })
-public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
-  // Ignore known non-daemon threads spawned by Testcontainers and Java HttpClient in this test
-  @SuppressWarnings("NewClassNamingConvention")
-  public static class TestcontainersThreadsFilter implements ThreadFilter {
-    @Override
-    public boolean reject(Thread t) {
-      if (t == null || t.getName() == null) return false;
-      String n = t.getName();
-      return n.startsWith("testcontainers-ryuk")
-          || n.startsWith("testcontainers-wait-")
-          || n.startsWith("HttpClient-")
-          || n.startsWith("HttpClient-TestContainers");
-    }
-  }
-
+public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static GenericContainer<?> tika;
-  private static boolean useTikaServer;
 
   @SuppressWarnings("resource")
   @BeforeClass
@@ -79,43 +46,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     // Is the JDK/env affected by a known bug?
     final String tzDisplayName =
         TimeZone.getDefault().getDisplayName(false, TimeZone.SHORT, Locale.US);
-    if (!tzDisplayName.matches("[A-Za-z]{3,}([+-]\\d\\d(:\\d\\d)?)?")) {
-      assertTrue(
-          "Is some other JVM affected?  Or bad regex? TzDisplayName: " + tzDisplayName,
-          EnvUtils.getProperty("java.version").startsWith("11"));
-      assumeTrue(
-          "SOLR-12759 JDK 11 (1st release) and Tika 1.x can result in extracting dates in a bad format.",
-          false);
-    }
-
-    useTikaServer = random().nextBoolean();
-    if (useTikaServer) {
-      String baseUrl;
-      tika =
-          new GenericContainer<>("apache/tika:3.2.3.0-full")
-              .withExposedPorts(9998)
-              .waitingFor(Wait.forListeningPort());
-      tika.start();
-      baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);
-      System.setProperty("solr.test.tikaserver.url", baseUrl);
-      System.setProperty("solr.test.extraction.backend", "tikaserver");
-      log.info("Using extraction backend 'tikaserver'. Tika server running on {}", baseUrl);
-    } else {
-      log.info("Using extraction backend 'local'");
-    }
-
     initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("solr.test.tikaserver.url");
-    System.clearProperty("solr.test.extraction.backend");
-    if (useTikaServer && tika != null) {
-      tika.stop();
-      tika.close();
-      tika = null;
-    }
   }
 
   @Override
@@ -754,9 +685,12 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     NamedList<?> nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
     assertNotNull("nl is null and it shouldn't be", nl);
-    Object title = nl.get("title");
+    // TODO: Tika server v3.x has normalized metadata and do not return the 'title' key. Consider
+    // backcompat mode mapping dc:title to title???
+    Object title = nl.get("dc:title");
     assertNotNull("title is null and it shouldn't be", title);
-    assertTrue(extraction.contains("<?xml"));
+    // TODO: Tika Server return xhtml, without xml header, otherwise fairly similar
+    assertTrue(extraction.contains("<?xml") || extraction.contains("<html xmlns"));
 
     rsp =
         loadLocal(
@@ -775,7 +709,8 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
     assertNotNull("nl is null and it shouldn't be", nl);
-    title = nl.get("title");
+    // TODO: See above
+    title = nl.get("dc:title");
     assertNotNull("title is null and it shouldn't be", title);
   }
 

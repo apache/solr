@@ -21,9 +21,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import org.apache.solr.core.SolrCore;
 import org.apache.tika.config.TikaConfig;
-import org.apache.tika.metadata.HttpHeaders;
 import org.apache.tika.metadata.Metadata;
-import org.apache.tika.metadata.TikaMetadataKeys;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.DefaultParser;
@@ -112,19 +110,12 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
   }
 
   private Metadata buildMetadata(ExtractionRequest request) {
+    ExtractionMetadata extractionMetadata = buildMetadataFromRequest(request);
     Metadata md = new Metadata();
-    if (request.resourceName != null)
-      md.add(TikaMetadataKeys.RESOURCE_NAME_KEY, request.resourceName);
-    if (request.contentType != null) md.add(HttpHeaders.CONTENT_TYPE, request.contentType);
-    if (request.streamName != null)
-      md.add(ExtractingMetadataConstants.STREAM_NAME, request.streamName);
-    if (request.streamSourceInfo != null)
-      md.add(ExtractingMetadataConstants.STREAM_SOURCE_INFO, request.streamSourceInfo);
-    if (request.streamSize != null)
-      md.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(request.streamSize));
-    if (request.contentType != null)
-      md.add(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, request.contentType);
-    if (request.charset != null) md.add(HttpHeaders.CONTENT_ENCODING, request.charset);
+    for (String name : extractionMetadata.names()) {
+      String[] vals = extractionMetadata.getValues(name);
+      if (vals != null) for (String v : vals) md.add(name, v);
+    }
     return md;
   }
 

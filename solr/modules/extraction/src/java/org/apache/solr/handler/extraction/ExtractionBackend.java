@@ -17,6 +17,8 @@
 package org.apache.solr.handler.extraction;
 
 import java.io.InputStream;
+import org.apache.tika.metadata.HttpHeaders;
+import org.apache.tika.metadata.TikaMetadataKeys;
 
 /** Strategy interface for content extraction backends. */
 public interface ExtractionBackend {
@@ -45,6 +47,24 @@ public interface ExtractionBackend {
       SolrContentHandler handler,
       ExtractionMetadata outMetadata)
       throws Exception;
+
+  /** Build ExtractionMetadata from the request context */
+  default ExtractionMetadata buildMetadataFromRequest(ExtractionRequest request) {
+    ExtractionMetadata md = new ExtractionMetadata();
+    if (request.resourceName != null)
+      md.add(TikaMetadataKeys.RESOURCE_NAME_KEY, request.resourceName);
+    if (request.contentType != null) md.add(HttpHeaders.CONTENT_TYPE, request.contentType);
+    if (request.streamName != null)
+      md.add(ExtractingMetadataConstants.STREAM_NAME, request.streamName);
+    if (request.streamSourceInfo != null)
+      md.add(ExtractingMetadataConstants.STREAM_SOURCE_INFO, request.streamSourceInfo);
+    if (request.streamSize != null)
+      md.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(request.streamSize));
+    if (request.contentType != null)
+      md.add(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, request.contentType);
+    if (request.charset != null) md.add(HttpHeaders.CONTENT_ENCODING, request.charset);
+    return md;
+  }
 
   /** A short name for debugging/config, e.g., "local" or "dummy". */
   String name();

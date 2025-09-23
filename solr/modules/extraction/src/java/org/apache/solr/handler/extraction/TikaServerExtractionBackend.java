@@ -76,6 +76,21 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     if (contentType != null) {
       b.header("Content-Type", contentType);
     }
+    ExtractionMetadata md = buildMetadataFromRequest(request);
+    if (request.resourcePassword != null || request.passwordsMap != null) {
+      RegexRulesPasswordProvider passwordProvider = new RegexRulesPasswordProvider();
+      if (request.resourcePassword != null) {
+        passwordProvider.setExplicitPassword(request.resourcePassword);
+      }
+      if (request.passwordsMap != null) {
+        passwordProvider.setPasswordMap(request.passwordsMap);
+      }
+
+      String pwd = passwordProvider.getPassword(md);
+      if (pwd != null) {
+        b.header("Password", pwd);
+      }
+    }
     if (request.resourceName != null) {
       b.header("Content-Disposition", "attachment; filename=\"" + request.resourceName + "\"");
     }
@@ -90,7 +105,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       throw new IOException("TikaServer " + url + " returned status " + code + " body: " + preview);
     }
     String body = resp.body();
-    return parseCombinedJson(body);
+    return parseCombinedJson(body, md);
   }
 
   @Override
@@ -181,9 +196,8 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   // and metadata. Supports two shapes:
   // 1) {"content": "...", "metadata": { ... }}
   // 2) {"content": "...", <flat metadata fields> }
-  private static ExtractionResult parseCombinedJson(String json) {
+  private ExtractionResult parseCombinedJson(String json, ExtractionMetadata md) {
     String content = "";
-    ExtractionMetadata md = new ExtractionMetadata();
     if (json == null) return new ExtractionResult(content, md);
     try {
       JSONParser p = new JSONParser(json);

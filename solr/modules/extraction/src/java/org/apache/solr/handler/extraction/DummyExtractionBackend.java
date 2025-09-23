@@ -29,7 +29,7 @@ public class DummyExtractionBackend implements ExtractionBackend {
 
   @Override
   public ExtractionResult extract(InputStream inputStream, ExtractionRequest request) {
-    ExtractionMetadata metadata = new ExtractionMetadata();
+    ExtractionMetadata metadata = buildMetadataFromRequest(request);
     metadata.add("Dummy-Backend", "true");
     metadata.add(
         "Content-Type",
