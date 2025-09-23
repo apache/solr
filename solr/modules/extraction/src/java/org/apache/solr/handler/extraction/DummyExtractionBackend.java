@@ -20,11 +20,11 @@ import java.io.InputStream;
 
 /** Dummy backend that emits predictable test data without actually parsing input content. */
 public class DummyExtractionBackend implements ExtractionBackend {
-  public static final String ID = "dummy";
+  public static final String NAME = "dummy";
 
   @Override
   public String name() {
-    return ID;
+    return NAME;
   }
 
   @Override

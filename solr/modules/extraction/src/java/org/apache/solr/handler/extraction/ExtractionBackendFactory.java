@@ -58,23 +58,17 @@ public class ExtractionBackendFactory {
   }
 
   private String normalize(String name) {
-    if (name == null || name.trim().isEmpty()) return LocalTikaExtractionBackend.ID;
+    if (name == null || name.trim().isEmpty()) return LocalTikaExtractionBackend.NAME;
     return name.trim().toLowerCase(Locale.ROOT);
   }
 
   /** Creates a new backend instance for the given normalized name. */
   protected ExtractionBackend create(String normalizedName) throws Exception {
-    switch (normalizedName) {
-      case LocalTikaExtractionBackend.ID:
-        return new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);
-      case DummyExtractionBackend.ID:
-        return new DummyExtractionBackend();
-      case TikaServerExtractionBackend.ID:
-        return new TikaServerExtractionBackend(
-            tikaServerUrl != null ? tikaServerUrl : "http://localhost:9998");
-      default:
-        // Fallback to local for unknown names
-        return new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);
-    }
+    return switch (normalizedName) {
+      case DummyExtractionBackend.NAME -> new DummyExtractionBackend();
+      case TikaServerExtractionBackend.NAME -> new TikaServerExtractionBackend(
+          tikaServerUrl != null ? tikaServerUrl : "http://localhost:9998");
+      default -> new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);
+    };
   }
 }

@@ -54,11 +54,11 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     this.httpClient = httpClient;
   }
 
-  public static final String ID = "tikaserver";
+  public static final String NAME = "tikaserver";
 
   @Override
   public String name() {
-    return ID;
+    return NAME;
   }
 
   @Override

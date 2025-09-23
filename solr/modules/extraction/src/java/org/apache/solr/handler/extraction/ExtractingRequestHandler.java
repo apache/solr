@@ -73,7 +73,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
       String backendName = (String) initArgs.get(ExtractingParams.EXTRACTION_BACKEND);
       defaultBackendName =
           (backendName == null || backendName.trim().isEmpty())
-              ? LocalTikaExtractionBackend.ID
+              ? LocalTikaExtractionBackend.NAME
               : backendName;
 
     } catch (Exception e) {

@@ -1068,7 +1068,7 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
         loadLocal(
             "extraction/version_control.txt",
             ExtractingParams.EXTRACTION_BACKEND,
-            DummyExtractionBackend.ID,
+            DummyExtractionBackend.NAME,
             ExtractingParams.EXTRACT_ONLY,
             "true",
             ExtractingParams.EXTRACT_FORMAT,
