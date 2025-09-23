@@ -216,7 +216,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       List<NamedList> foo_buckets =
           (List<NamedList>)
               ((NamedList<NamedList>)
-                      queryServer(
+                      queryRandomShard(
                               params(
                                   "q",
                                   "*:*",
@@ -250,7 +250,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       List<NamedList> foo_buckets =
           (List<NamedList>)
               ((NamedList<NamedList>)
-                      queryServer(
+                      queryRandomShard(
                               params(
                                   "q",
                                   "*:*",
@@ -317,7 +317,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       List<NamedList> buckets =
           (List<NamedList>)
               ((NamedList<NamedList>)
-                      queryServer(
+                      queryRandomShard(
                               params(
                                   "q",
                                   "*:*",
@@ -368,7 +368,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       List<NamedList> buckets =
           (List<NamedList>)
               ((NamedList<NamedList>)
-                      queryServer(
+                      queryRandomShard(
                               params(
                                   "q",
                                   "*:*",
@@ -414,7 +414,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       List<NamedList> buckets =
           (List<NamedList>)
               ((NamedList<NamedList>)
-                      queryServer(
+                      queryRandomShard(
                               params(
                                   "q",
                                   "*:*",
@@ -469,7 +469,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     @SuppressWarnings({"unchecked", "rawtypes"})
     NamedList<NamedList> all_facets =
         (NamedList)
-            queryServer(
+            queryRandomShard(
                     params(
                         "q",
                         "*:*",

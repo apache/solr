@@ -22,7 +22,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.junit.Before;
@@ -46,7 +46,7 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
     try (var httpSolrClientProvider = new HttpSolrClientProvider(null, parentSolrMetricCtx); ) {
       assertEquals(
           httpSolrClientProvider.getSolrClient().getIdleTimeout(),
-          HttpClientUtil.DEFAULT_SO_TIMEOUT);
+          SolrHttpConstants.DEFAULT_SO_TIMEOUT);
     }
   }
 

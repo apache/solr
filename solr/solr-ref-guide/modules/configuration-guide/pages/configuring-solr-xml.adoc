@@ -74,7 +74,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
 
 As you can see, the discovery Solr configuration is "SolrCloud friendly".
 However, the presence of the `<solrcloud>` element does _not_ mean that the Solr instance is running in SolrCloud mode.
-Unless the `-DzkHost` or `-DzkRun` are specified at startup time, this section is ignored.
+Unless the `-DzkHost` or `-Dsolr.zookeeper.server.enabled=true` are specified at startup time, this section is ignored.
 
 == Solr.xml Parameters
 
@@ -367,7 +367,7 @@ By default, Solr will hide all basicAuth, AWS, ZK or SSL secret sysProps. It wil
 === The <solrcloud> Element
 
 This element defines several parameters that relate so SolrCloud.
-This section is ignored unless the Solr instance is started with either `-DzkRun` or `-DzkHost`
+This section is ignored unless the Solr instance is started with either `-Dsolr.zookeeper.server.enabled=TRUE` or `-DzkHost`
 
 `distribUpdateConnTimeout`::
 +
