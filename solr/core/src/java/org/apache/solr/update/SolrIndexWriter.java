@@ -296,7 +296,7 @@ public class SolrIndexWriter extends IndexWriter {
             "solr_indexwriter_docs_deleted", "Number of documents involved in merge");
     var segmentsCountBaseMetric =
         solrMetricsContext.longCounter(
-            "solr_indexwriter_segments", "Number of segments involved in merge");
+            "solr_indexwriter_segments_merged", "Number of segments involved in merge");
 
     // merge started metrics
     var majorStartedAttributes =
