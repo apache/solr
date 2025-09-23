@@ -146,8 +146,8 @@ public class TestThinCache extends SolrTestCaseJ4 {
 
   @Test
   public void testInitCore() throws Exception {
-    String thinCacheName = "nodeLevelCache/myNodeLevelCacheThin";
-    String nodeCacheName = "nodeLevelCache/myNodeLevelCache";
+    String thinCacheName = "myNodeLevelCacheThin";
+    String nodeCacheName = "myNodeLevelCache";
     for (int i = 0; i < 20; i++) {
       assertU(adoc("id", Integer.toString(i)));
     }
@@ -156,7 +156,10 @@ public class TestThinCache extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", "fq", "id:0"));
     assertQ(req("q", "*:*", "fq", "id:1"));
 
-    assertEquals(3L, getNodeCacheLookups(thinCacheName, null));
+    assertEquals(
+        3L,
+        getNodeCacheLookups(thinCacheName, "hit")
+            + getNodeCacheLookups(thinCacheName, "miss")); // total lookups
     assertEquals(1L, getNodeCacheLookups(thinCacheName, "hit"));
     assertEquals(2L, getNodeCacheOp(thinCacheName, "inserts"));
 
@@ -169,9 +172,9 @@ public class TestThinCache extends SolrTestCaseJ4 {
   private long getNodeCacheOp(String cacheName, String operation) {
     var reader = h.getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.node");
     return (long)
-        SolrMetricTestUtils.getCounterDatapoint(
+        SolrMetricTestUtils.getGaugeDatapoint(
                 reader,
-                "solr_cache_ops",
+                "solr_node_cache_ops",
                 Labels.builder()
                     .label("category", "CACHE")
                     .label("ops", operation)
@@ -191,7 +194,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
     if (result != null) builder.label("result", result);
 
     return (long)
-        SolrMetricTestUtils.getCounterDatapoint(reader, "solr_cache_lookups", builder.build())
+        SolrMetricTestUtils.getGaugeDatapoint(reader, "solr_node_cache_lookups", builder.build())
             .getValue();
   }
 
@@ -200,7 +203,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
     return (long)
         SolrMetricTestUtils.getGaugeDatapoint(
                 reader,
-                "solr_cache_size",
+                "solr_node_cache_size",
                 Labels.builder()
                     .label("category", "CACHE")
                     .label("name", cacheName)

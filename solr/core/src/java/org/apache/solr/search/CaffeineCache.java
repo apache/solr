@@ -25,7 +25,6 @@ import com.github.benmanes.caffeine.cache.Policy.Eviction;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
-import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.io.IOException;
@@ -47,7 +46,6 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.util.IOFunction;
@@ -464,12 +462,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     return description;
   }
 
-  // for unit tests only
-  @VisibleForTesting
-  MetricsMap getMetricsMap() {
-    return null; // OTEL migration: MetricsMap no longer used
-  }
-
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
@@ -483,91 +475,89 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
+    initializeMetrics(parentContext, attributes, false);
+  }
+
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, boolean isNodeLevelCache) {
     Attributes cacheAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
     solrMetricsContext = parentContext.getChildContext(this);
+    String metricPrefix = isNodeLevelCache ? "solr_node_cache" : "solr_cache";
 
     ObservableLongMeasurement cacheLookupsMetric =
-        solrMetricsContext.longCounterMeasurement(
-            "solr_cache_lookups",
-            "Number of cache lookup counts and results (hits, misses and total lookups)");
+        solrMetricsContext.longGaugeMeasurement(
+            metricPrefix + "_lookups", "Number of cache lookup results (hits and misses)");
 
     ObservableLongMeasurement cacheOperationMetric =
-        solrMetricsContext.longCounterMeasurement(
-            "solr_cache_ops", "Number of cache operations (inserts and evictions)");
-
-    ObservableLongMeasurement hitRatioMetric =
-        solrMetricsContext.longGaugeMeasurement("solr_cache_hit_ratio", "Cache hit ratio");
+        solrMetricsContext.longGaugeMeasurement(
+            metricPrefix + "_ops", "Number of cache operations (inserts and evictions)");
 
     ObservableLongMeasurement sizeMetric =
-        solrMetricsContext.longGaugeMeasurement("solr_cache_size", "Current number cache entries");
+        solrMetricsContext.longGaugeMeasurement(
+            metricPrefix + "_size", "Current number cache entries");
 
     ObservableLongMeasurement ramBytesUsedMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_cache_ram_used", "RAM bytes used by cache", OtelUnit.BYTES);
+            metricPrefix + "_ram_used", "RAM bytes used by cache", OtelUnit.BYTES);
 
     ObservableLongMeasurement warmupTimeMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_cache_warmup_time", "Cache warmup time", OtelUnit.MILLISECONDS);
+            metricPrefix + "_warmup_time", "Cache warmup time", OtelUnit.MILLISECONDS);
 
     ObservableLongMeasurement cumulativeCacheLookupsMetric =
-        solrMetricsContext.longGaugeMeasurement(
-            "solr_cache_cumulative_lookups",
-            "Number of cumulative cache counts and results (hits, misses and total lookups)");
+        solrMetricsContext.longCounterMeasurement(
+            metricPrefix + "_cumulative_lookups",
+            "Number of cumulative cache lookup results (hits and misses)");
 
     ObservableLongMeasurement cumulativeCacheOperation =
-        solrMetricsContext.longGaugeMeasurement(
-            "solr_cache_cumulative_ops",
+        solrMetricsContext.longCounterMeasurement(
+            metricPrefix + "_cumulative_ops",
             "Number of cumulative cache operations (inserts and evictions)");
 
     this.toClose =
         solrMetricsContext.batchCallback(
             () -> {
-              if (cache != null) {
-                CacheStats stats = cache.stats();
-                long hitCount = stats.hitCount() + hits.sum();
-                long lookupCount = stats.requestCount() + lookups.sum();
-                long insertCount = inserts.sum();
-
-                cacheLookupsMetric.record(
-                    hitCount, cacheAttributes.toBuilder().put(RESULT_ATTR, "hit").build());
-                cacheLookupsMetric.record(
-                    lookupCount - hitCount,
-                    cacheAttributes.toBuilder().put(RESULT_ATTR, "miss").build());
-                cacheLookupsMetric.record(lookupCount, cacheAttributes);
-
-                cacheOperationMetric.record(
-                    insertCount,
-                    cacheAttributes.toBuilder().put(OPERATION_ATTR, "inserts").build());
-                cacheOperationMetric.record(
-                    stats.evictionCount(),
-                    cacheAttributes.toBuilder().put(OPERATION_ATTR, "evictions").build());
-
-                hitRatioMetric.record(
-                    lookupCount > 0 ? (hitCount * 100) / lookupCount : 0, cacheAttributes);
-
-                sizeMetric.record(cache.asMap().size(), cacheAttributes);
-                ramBytesUsedMetric.record(ramBytesUsed(), cacheAttributes);
-                warmupTimeMetric.record(warmupTime, cacheAttributes);
-
-                CacheStats cumulativeStats = priorStats.plus(stats);
-                long cumLookups = priorLookups + lookupCount;
-                long cumHits = priorHits + hitCount;
-
-                cumulativeCacheLookupsMetric.record(
-                    cumHits, cacheAttributes.toBuilder().put(RESULT_ATTR, "hit").build());
-                cumulativeCacheLookupsMetric.record(
-                    cumLookups - cumHits,
-                    cacheAttributes.toBuilder().put(RESULT_ATTR, "miss").build());
-                cumulativeCacheLookupsMetric.record(cumLookups, cacheAttributes);
-
-                cumulativeCacheOperation.record(
-                    priorInserts + insertCount,
-                    cacheAttributes.toBuilder().put(OPERATION_ATTR, "inserts").build());
-                cumulativeCacheOperation.record(
-                    cumulativeStats.evictionCount(),
-                    cacheAttributes.toBuilder().put(OPERATION_ATTR, "evictions").build());
+              if (cache == null) {
+                return;
               }
+              CacheStats stats = cache.stats();
+              long hitCount = stats.hitCount() + hits.sum();
+              long lookupCount = stats.requestCount() + lookups.sum();
+              long insertCount = inserts.sum();
+
+              cacheLookupsMetric.record(
+                  hitCount, cacheAttributes.toBuilder().put(RESULT_ATTR, "hit").build());
+              cacheLookupsMetric.record(
+                  lookupCount - hitCount,
+                  cacheAttributes.toBuilder().put(RESULT_ATTR, "miss").build());
+
+              cacheOperationMetric.record(
+                  insertCount, cacheAttributes.toBuilder().put(OPERATION_ATTR, "inserts").build());
+              cacheOperationMetric.record(
+                  stats.evictionCount(),
+                  cacheAttributes.toBuilder().put(OPERATION_ATTR, "evictions").build());
+
+              sizeMetric.record(cache.asMap().size(), cacheAttributes);
+              ramBytesUsedMetric.record(ramBytesUsed(), cacheAttributes);
+              warmupTimeMetric.record(warmupTime, cacheAttributes);
+
+              CacheStats cumulativeStats = priorStats.plus(stats);
+              long cumLookups = priorLookups + lookupCount;
+              long cumHits = priorHits + hitCount;
+
+              cumulativeCacheLookupsMetric.record(
+                  cumHits, cacheAttributes.toBuilder().put(RESULT_ATTR, "hit").build());
+              cumulativeCacheLookupsMetric.record(
+                  cumLookups - cumHits,
+                  cacheAttributes.toBuilder().put(RESULT_ATTR, "miss").build());
+
+              cumulativeCacheOperation.record(
+                  priorInserts + insertCount,
+                  cacheAttributes.toBuilder().put(OPERATION_ATTR, "inserts").build());
+              cumulativeCacheOperation.record(
+                  cumulativeStats.evictionCount(),
+                  cacheAttributes.toBuilder().put(OPERATION_ATTR, "evictions").build());
             },
             cacheLookupsMetric,
             cacheOperationMetric,
@@ -575,7 +565,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase
             ramBytesUsedMetric,
             warmupTimeMetric,
             cumulativeCacheOperation,
-            cumulativeCacheLookupsMetric,
-            hitRatioMetric);
+            cumulativeCacheLookupsMetric);
   }
 }

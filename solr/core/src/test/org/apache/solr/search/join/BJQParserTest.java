@@ -650,7 +650,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   private long getCacheLookups(String cacheName) {
-    return (long) SolrMetricTestUtils.getCacheSearcherOpsLookups(h.getCore(), cacheName).getValue();
+    return (long) SolrMetricTestUtils.getCacheSearcherTotalLookups(h.getCore(), cacheName);
   }
 
   private long getCacheInserts(String cacheName) {

@@ -138,15 +138,13 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
       assertNotNull(cache);
       var core = req.getSearcher().getCore();
       double before =
-          SolrMetricTestUtils.getCacheSearcherOpsLookups(
-                  core, SolrMetricTestUtils.PER_SEG_FILTER_CACHE)
-              .getValue();
+          SolrMetricTestUtils.getCacheSearcherTotalLookups(
+              core, SolrMetricTestUtils.PER_SEG_FILTER_CACHE);
 
       parse("childfield(name_s1,$q) asc");
       double after =
-          SolrMetricTestUtils.getCacheSearcherOpsLookups(
-                  core, SolrMetricTestUtils.PER_SEG_FILTER_CACHE)
-              .getValue();
+          SolrMetricTestUtils.getCacheSearcherTotalLookups(
+              core, SolrMetricTestUtils.PER_SEG_FILTER_CACHE);
       assertEquals(
           "parsing bjq lookups parent filter,"
               + "parsing sort spec lookups parent and child filters, "

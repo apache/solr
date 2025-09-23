@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,11 +48,11 @@ public class TestFiltersQueryCaching extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  private static CounterSnapshot.CounterDataPointSnapshot getFilterCacheInserts(SolrCore core) {
+  private static GaugeSnapshot.GaugeDataPointSnapshot getFilterCacheInserts(SolrCore core) {
     return SolrMetricTestUtils.getCacheSearcherOpsInserts(core, SolrMetricTestUtils.FILTER_CACHE);
   }
 
-  private static CounterSnapshot.CounterDataPointSnapshot getFilterCacheHits(SolrCore core) {
+  private static GaugeSnapshot.GaugeDataPointSnapshot getFilterCacheHits(SolrCore core) {
     return SolrMetricTestUtils.getCacheSearcherOpsHits(core, SolrMetricTestUtils.FILTER_CACHE);
   }
 
