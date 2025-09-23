@@ -109,7 +109,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     }
     final Aliases aliases = ccc.getZkStateReader().getAliases();
     final String collectionName = message.getStr(NAME);
-    final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
+    final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, true);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
     boolean prsDefault = EnvUtils.getPropertyAsBool(PRS_DEFAULT_PROP, false);

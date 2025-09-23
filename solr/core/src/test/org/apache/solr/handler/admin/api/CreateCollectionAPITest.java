@@ -134,7 +134,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     requestBody.shardNames = List.of("shard1", "shard2");
     requestBody.pullReplicas = 789;
     requestBody.tlogReplicas = 987;
-    requestBody.waitForFinalState = false;
+    requestBody.waitForFinalState = true;
     requestBody.perReplicaState = true;
     requestBody.alias = "someAliasName";
     requestBody.properties = Map.of("propName", "propValue");
@@ -157,7 +157,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     assertEquals(789, remoteMessage.get(PULL_REPLICAS));
     assertEquals(987, remoteMessage.get(TLOG_REPLICAS));
     assertEquals(123, remoteMessage.get(NRT_REPLICAS)); // replicationFactor value used
-    assertEquals(false, remoteMessage.get(WAIT_FOR_FINAL_STATE));
+    assertEquals(true, remoteMessage.get(WAIT_FOR_FINAL_STATE));
     assertEquals(true, remoteMessage.get(PER_REPLICA_STATE));
     assertEquals("someAliasName", remoteMessage.get(ALIAS));
     assertEquals("propValue", remoteMessage.get("property.propName"));

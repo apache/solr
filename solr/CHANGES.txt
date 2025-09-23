@@ -236,6 +236,8 @@ Other Changes
   overseerEnabled cluster property and an env var SOLR_CLOUD_OVERSEER_ENABLED.  Read more in the
   upgrade guide.  (David Smiley)
 
+* SOLR-17712: Changing default behaviour of `waitForFinalState` while handling the collection creation and collection management to true and is now deprecated. (Abhishek Umarjikar)
+
 ==================  9.10.0 ==================
 New Features
 ---------------------

@@ -263,11 +263,11 @@ Altering these entries by specifying `property._name_=_value_` is an expert-leve
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: true
 |===
 +
-If `true`, the request will complete only when all affected replicas become active.
-The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+Default is `true`, which means that the request will complete only when all affected replicas become active.
+If `false`, the API will return the status of the single action, which may be before the new replica is online and active.
 
 `alias`::
 +
@@ -703,7 +703,7 @@ To delete an existing collection property:
 
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/collections/techproducts_v2/properties/foo 
+curl -X DELETE http://localhost:8983/api/collections/techproducts_v2/properties/foo
 ----
 ====
 ======
@@ -1590,7 +1590,7 @@ s|Required |Default: none
 What to name the backup that is created.
 Provided as a query parameter for v1 requests, or as a path segment for v2 requests.
 +
-For incremental backups, the backup name should be reused to add new backup points to the existing backup. For non-incremental backups (deprecated), this name is checked to ensure it doesn't already exist, and an error message is raised if it does. 
+For incremental backups, the backup name should be reused to add new backup points to the existing backup. For non-incremental backups (deprecated), this name is checked to ensure it doesn't already exist, and an error message is raised if it does.
 
 `location`::
 +
