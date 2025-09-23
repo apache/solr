@@ -39,6 +39,7 @@ import org.apache.lucene.queries.function.valuesource.ByteKnnVectorFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatKnnVectorFieldSource;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SeededKnnVectorQuery;
 import org.apache.lucene.search.SortField;
@@ -46,6 +47,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.neural.KnnQParser.EarlyTerminationParams;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
 import org.apache.solr.util.vector.DenseVectorParser;
@@ -373,28 +375,46 @@ public class DenseVectorField extends FloatPointField {
 
   public Query getKnnVectorQuery(
       String fieldName, String vectorToSearch, int topK, Query filterQuery) {
-    return getKnnVectorQuery(fieldName, vectorToSearch, topK, filterQuery, null);
+    return getKnnVectorQuery(fieldName, vectorToSearch, topK, filterQuery, null, null);
   }
 
   public Query getKnnVectorQuery(
-      String fieldName, String vectorToSearch, int topK, Query filterQuery, Query seedQuery) {
+      String fieldName, String vectorToSearch, int topK, Query filterQuery, EarlyTerminationParams earlyTermination, Query seedQuery) {
 
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
 
     switch (vectorEncoding) {
       case FLOAT32:
-        KnnFloatVectorQuery floatVectorQuery =
+        KnnFloatVectorQuery knnFloatVectorQuery =
             new KnnFloatVectorQuery(fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
-        return (seedQuery != null)
-            ? SeededKnnVectorQuery.fromFloatQuery(floatVectorQuery, seedQuery)
-            : floatVectorQuery;
+        if (earlyTermination.isEnabled()) {
+          return (earlyTermination.getSaturationThreshold() != null
+                  && earlyTermination.getPatience() != null)
+              ? PatienceKnnVectorQuery.fromFloatQuery(
+                  knnFloatVectorQuery,
+                  earlyTermination.getSaturationThreshold(),
+                  earlyTermination.getPatience())
+              : PatienceKnnVectorQuery.fromFloatQuery(knnFloatVectorQuery);
+        }
+        else if (seedQuery != null)
+        return SeededKnnVectorQuery.fromFloatQuery(knnFloatVectorQuery, seedQuery);
+        return knnFloatVectorQuery;
       case BYTE:
-        KnnByteVectorQuery byteVectorQuery =
+        KnnByteVectorQuery knnByteVectorQuery =
             new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
-        return (seedQuery != null)
-            ? SeededKnnVectorQuery.fromByteQuery(byteVectorQuery, seedQuery)
-            : byteVectorQuery;
+        if (earlyTermination.isEnabled()) {
+          return (earlyTermination.getSaturationThreshold() != null
+                  && earlyTermination.getPatience() != null)
+              ? PatienceKnnVectorQuery.fromByteQuery(
+                  knnByteVectorQuery,
+                  earlyTermination.getSaturationThreshold(),
+                  earlyTermination.getPatience())
+              : PatienceKnnVectorQuery.fromByteQuery(knnByteVectorQuery);
+        }
+        else if (seedQuery != null)
+          return SeededKnnVectorQuery.fromByteQuery(knnByteVectorQuery, seedQuery);
+        return knnByteVectorQuery;
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
