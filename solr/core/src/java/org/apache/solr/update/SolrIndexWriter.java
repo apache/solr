@@ -293,7 +293,7 @@ public class SolrIndexWriter extends IndexWriter {
             "solr_indexwriter_docs_merged", "Number of documents involved in merge");
     var docsDeletedCountBasedMetric =
         solrMetricsContext.longCounter(
-            "solr_indexwriter_docs_deleted", "Number of documents involved in merge");
+            "solr_indexwriter_docs_deleted", "Number of documents deleted in merge");
     var segmentsCountBaseMetric =
         solrMetricsContext.longCounter(
             "solr_indexwriter_segments_merged", "Number of segments involved in merge");
@@ -393,7 +393,7 @@ public class SolrIndexWriter extends IndexWriter {
     if (solrMetricsContext == null) {
       return null;
     }
-    boolean isMajorMerge = numDocs - numDeletedDocs > majorMergeDocs;
+    boolean isMajorMerge = numDocs > majorMergeDocs;
     Map<String, AttributedLongCounter> metricsToUpdate;
     if (mergeCompleted) {
       if (metricTimer != null) {
