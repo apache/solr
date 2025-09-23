@@ -20,9 +20,18 @@ apply plugin: 'java-library'
 description = 'Solr Integration with Tika for extracting content from binary file formats such as Microsoft Word and Adobe PDF'
 
 configurations.configureEach {
-  // Spotbugs Annotations are only needed for old findbugs
-  // annotation usage like in Zookeeper during compilation time.
-  // It is not included in the release so exclude from checks.
+  // Exclude SpotBugs Annotations, a `compileOnlyApi` dependency of Log4j.
+  //
+  // Why:
+  // - Log4j includes them only to silence harmless `-Xlint:classfile` warnings
+  //   when consumers reference classes annotated with `@SuppressFBWarnings`.
+  //   Without the jar, compilation may emit warnings (and fail under `-Werror`).
+  //   See: https://github.com/apache/logging-log4j2/issues/3110#issuecomment-2423586754
+  //
+  // - However, SpotBugs Annotations are LGPL-2.1 licensed. Including them,
+  //   even at compile time, breaks our license compatibility checks.
+  //
+  // Net result: unless compiling with `-Werror`, it is safe to exclude the jar.
   exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
 }
 
