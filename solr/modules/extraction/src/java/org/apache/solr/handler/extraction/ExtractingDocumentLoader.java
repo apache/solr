@@ -173,14 +173,17 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           backend.parseToSolrContentHandler(inputStream, extractionRequest, handler, neutral);
         } catch (UnsupportedOperationException uoe) {
           // For backends that don't support parseToSolrContentHandler
-          log.warn("skip extracting text due to {}.", uoe.getMessage());
+          if (log.isWarnEnabled()) {
+            log.warn("skip extracting text since tika backend does not yet support this option");
+          }
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
               "The requested operation is not supported by backend '" + backend.name() + "'.");
         } catch (Exception e) {
           if (ignoreTikaException) {
-            if (log.isWarnEnabled())
+            if (log.isWarnEnabled()) {
               log.warn("skip extracting text due to {}.", e.getLocalizedMessage(), e);
+            }
             // Index a document with literals only (no extracted content/metadata)
             addDoc(handler);
             return;
