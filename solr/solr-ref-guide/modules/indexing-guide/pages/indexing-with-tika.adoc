@@ -51,7 +51,41 @@ The next step after any update handler is the xref:configuration-guide:update-re
 
 == Tika Server
 
-TODO: Add documentation about Tika Server backend.
+The `tikaserver` backend lets Solr delegate content extraction to an external Apache Tika Server process instead of running Tika parsers inside the Solr JVM. This can improve operational isolation (crashes or heavy parsing won’t impact Solr), simplify dependency management, and allow you to scale Tika independently of Solr.
+
+Example handler configuration:
+
+[source,xml]
+----
+<requestHandler name="/update/extract" class="solr.extraction.ExtractingRequestHandler">
+  <lst name="defaults">
+    <!-- Select the tikaserver backend by default for this handler -->
+    <str name="extraction.backend">tikaserver</str>
+  </lst>
+  <!-- Point Solr to your Tika Server -->
+  <str name="tikaserver.url">http://localhost:9998</str>
+</requestHandler>
+----
+
+=== Starting Tika Server with Docker
+
+The quickest way to run Tika Server for development is using Docker. The examples below expose Tika on port 9998 on localhost, matching the default value when `tikaserver.url` is not explicitly set.
+
+[,bash]
+----
+docker run --rm -p 9998:9998 apache/tika:3.2.3.0-full
+----
+
+NOTE: If Solr runs in Docker too, ensure both containers share a network and use the Tika container name as the host in `tikaserver.url`.
+
+=== Limitations
+Currently, the `tikaserver` option lacks some features and will return HTTP 400 in these cases:
+
+- `capture` and `captureAttr`: Selecting specific XHTML elements/attributes during indexing requires Solr’s SAX ContentHandler and is not supported by the `tikaserver` backend.
+- `xpath`: Server-side XPath filtering of the XHTML is not supported.
+- `passwordsFile` and `resource.password` for the indexing path: these options trigger the legacy SAX path in Solr and are not currently supported.
+
+Metadata produced by Tika Server can differ slightly from local Tika, particularly in key names and the presence/absence of certain fields. Adjust your `fmap.*` mappings accordingly.
 
 == Module
 
@@ -61,7 +95,7 @@ The "techproducts" example included with Solr is pre-configured to have Solr Cel
 If you are not using the example, you will want to pay attention to the section <<solrconfig.xml Configuration>> below.
 
 
-=== Solr Cell Performance Implications
+=== Solr Cell Performance Implications (local mode)
 
 Rich document formats are frequently not well documented, and even in cases where there is documentation for the format, not everyone who creates documents will follow the specifications faithfully.
 
@@ -76,7 +110,8 @@ the request handler is running in the same JVM that Solr uses for other operatio
 Indexing can also consume all available Solr resources, particularly with large PDFs, presentations, or other files
 that have a lot of rich media embedded in them.
 
-For these reasons, Solr Cell is not recommended for use in a production system.
+For these reasons, Solr Cell with `local` backend is not recommended for use in a production system. Prefer the
+`tikaserver` backend, which is more robust and isolates failures from Solr itself.
 
 It is a best practice to use Solr Cell as a proof-of-concept tool during development and then run Tika as an external
 process that sends the extracted documents to Solr (via xref:deployment-guide:solrj.adoc[]) for indexing.
@@ -181,7 +216,7 @@ These parameters can be set for each indexing request (as request parameters), o
 |===
 +
 Choose the backend to use for extraction. The options are `local` or `tikaserver`.
-The `local` backend uses Tika libraries included with Solr to do the extraction, and is the default in Solr 9.
+The `local` backend uses Tika libraries included with Solr to do the extraction, and is the default in Solr 9.x.
 The `tikaserver` backend uses an external Tika server process to do the extraction.
 **The `local` backend is deprecated and will be removed in a future release.**
 +
@@ -195,9 +230,9 @@ Example: In `solrconfig.xml`: `<str name="extraction.backend">tikaserver</str>`.
 |===
 +
 Specifies the URL of the Tika server to use when the `extraction.backend` parameter is set to `tikaserver`.
-This parameter is required when using the `tikaserver` backend.
+This parameter is required when using the `tikaserver` backend. Defaults to `http://localhost:9998` if not specified.
 +
-Example: In `solrconfig.xml`: `<str name="tikaserver.url">http://my.tika.server</str>`.
+Example: In `solrconfig.xml`: `<str name="tikaserver.url">http://localhost:9998</str>`.
 
 `capture`::
 +
@@ -500,6 +535,8 @@ So you can use the other URPs without worrying about unexpected field additions.
 
 === Parser-Specific Properties
 
+NOTE: This setting applies to `local` backend only.
+
 Parsers used by Tika may have specific properties to govern how data is extracted.
 These can be passed through Solr for special parsing situations.
 
@@ -520,6 +557,8 @@ To access that method via configuration with the `ExtractingRequestHandler`, one
 Consult the Tika Java API documentation for configuration parameters that can be set for any particular parsers that require this level of control.
 
 === Indexing Encrypted Documents
+
+NOTE: The `tikaserver` backend does not currently support indexing encrypted documents.
 
 The ExtractingRequestHandler will decrypt encrypted files and index their content if you supply a password in either `resource.password` in the request, or in a `passwordsFile` file.
 
@@ -658,6 +697,7 @@ public class SolrCellRequestDemo {
     req.setParam(ExtractingParams.EXTRACT_ONLY, "true");
     NamedList<Object> result = client.request(req);
     System.out.println("Result: " + result);
+  }
 }
 ----
 
