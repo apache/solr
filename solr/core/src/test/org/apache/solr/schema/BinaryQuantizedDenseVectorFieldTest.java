@@ -29,8 +29,7 @@ public class BinaryQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
       SchemaField vector = schema.getField("v_bq");
       assertNotNull(vector);
 
-      BinaryQuantizedDenseVectorField type =
-          (BinaryQuantizedDenseVectorField) vector.getType();
+      BinaryQuantizedDenseVectorField type = (BinaryQuantizedDenseVectorField) vector.getType();
       assertEquals(4, type.getDimension());
       assertTrue(vector.indexed());
       assertTrue(vector.stored());
