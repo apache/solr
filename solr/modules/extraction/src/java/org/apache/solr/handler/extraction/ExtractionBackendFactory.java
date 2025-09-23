@@ -19,6 +19,7 @@ package org.apache.solr.handler.extraction;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 
 /**
@@ -52,7 +53,10 @@ public class ExtractionBackendFactory {
           try {
             return create(k);
           } catch (Exception e) {
-            throw new RuntimeException("Failed to create extraction backend '" + k + "'", e);
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Failed to create extraction backend '" + k + "'",
+                e);
           }
         });
   }
@@ -68,7 +72,10 @@ public class ExtractionBackendFactory {
       case DummyExtractionBackend.NAME -> new DummyExtractionBackend();
       case TikaServerExtractionBackend.NAME -> new TikaServerExtractionBackend(
           tikaServerUrl != null ? tikaServerUrl : "http://localhost:9998");
-      default -> new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);
+      case LocalTikaExtractionBackend.NAME -> new LocalTikaExtractionBackend(
+          core, tikaConfigLoc, parseContextConfig);
+      default -> throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Unknown extraction backend: " + normalizedName);
     };
   }
 }
