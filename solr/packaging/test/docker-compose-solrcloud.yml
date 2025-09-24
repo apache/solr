@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: zookeeper:3.9
+    container_name: solr-zk
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181
+    volumes:
+      - zk-data:/data
+    networks:
+      - solr-network
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  solr-node1:
+    image: ${SOLR_IMAGE:-apache/solr-nightly:9.10.0-SNAPSHOT-slim}
+    container_name: solr-node1
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      - ZK_HOST=zookeeper:2181
+    volumes:
+      - solr-data1:/var/solr/data
+    networks:
+      - solr-network
+    mem_limit: 300m
+    command: solr start -f -c -m 200m
+    healthcheck:
+      test: ["CMD", "solr", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  solr-node2:
+    image: ${SOLR_IMAGE:-apache/solr-nightly:9.10.0-SNAPSHOT-slim}
+    container_name: solr-node2
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      - ZK_HOST=zookeeper:2181
+    volumes:
+      - solr-data2:/var/solr/data
+    networks:
+      - solr-network
+    mem_limit: 300m
+    command: solr start -f -c -m 200m
+    healthcheck:
+      test: ["CMD", "solr", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  solr-node3:
+    image: ${SOLR_IMAGE:-apache/solr-nightly:9.10.0-SNAPSHOT-slim}
+    container_name: solr-node3
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      - ZK_HOST=zookeeper:2181
+    volumes:
+      - solr-data3:/var/solr/data
+    networks:
+      - solr-network
+    mem_limit: 300m
+    command: solr start -f -c -m 200m
+    healthcheck:
+      test: ["CMD", "solr", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  zk-data:
+  solr-data1:
+  solr-data2:
+  solr-data3:
+
+networks:
+  solr-network:
+    driver: bridge
