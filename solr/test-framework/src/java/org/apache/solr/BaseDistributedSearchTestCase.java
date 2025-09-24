@@ -65,6 +65,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -117,6 +118,19 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         "SOLR-4147: ibm 64bit has jvm bugs!",
         Constants.JRE_IS_64BIT && Constants.JAVA_VENDOR.startsWith("IBM"));
     r = new Random(random().nextLong());
+  }
+
+  @SuppressWarnings("deprecation")
+  @BeforeClass
+  // Sets the solr.security.allow.urls.enable=false, disabling the need to provide an allow list.
+  public static void setSolrEnableUrlUrlAllowList() throws Exception {
+    systemSetPropertyEnableUrlAllowList(false);
+  }
+
+  @SuppressWarnings("deprecation")
+  @AfterClass
+  public static void clearSolrEnableUrlUrlAllowList() throws Exception {
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   private static String getHostContextSuitableForServletContext() {
