@@ -516,7 +516,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       // If we want to run with allowlist, this must be explicitly set to true for the test
       // otherwise we disable the check
       if (EnvUtils.getPropertyAsBool(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, null)) {
-        systemSetPropertySolrDisableUrlAllowList("true");
+        systemSetPropertyEnableUrlAllowList(false);
       }
 
       jetty.start();

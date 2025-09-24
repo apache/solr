@@ -2785,13 +2785,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemSetPropertySolrDisableUrlAllowList(String value) {
-    System.setProperty(
-        AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, String.valueOf(!Boolean.valueOf(value)));
+  protected static void systemSetPropertyEnableUrlAllowList(boolean value) {
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, String.valueOf(value));
   }
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemClearPropertySolrDisableUrlAllowList() {
+  protected static void systemClearPropertySolrEnableUrlAllowList() {
     System.clearProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST);
   }
 
