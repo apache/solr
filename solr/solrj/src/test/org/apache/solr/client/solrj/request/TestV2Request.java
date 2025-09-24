@@ -54,7 +54,7 @@ public class TestV2Request extends SolrCloudTestCase {
             .withMethod(SolrRequest.METHOD.GET)
             .build()
             .process(cluster.getSolrClient());
-    List<?> l = (List<?>) rsp._get("nodes", null);
+    List<?> l = (List<?>) rsp._get("nodes");
     assertNotNull(l);
     assertFalse(l.isEmpty());
   }
@@ -164,7 +164,7 @@ public class TestV2Request extends SolrCloudTestCase {
 
     try (SolrClient client1 = new HttpSolrClient.Builder().withBaseSolrUrl(testServer).build()) {
       V2Response rsp = v2r.process(client1);
-      assertEquals("0", rsp._getStr("responseHeader/status", null));
+      assertEquals("0", rsp._getStr("responseHeader/status"));
     }
   }
 }

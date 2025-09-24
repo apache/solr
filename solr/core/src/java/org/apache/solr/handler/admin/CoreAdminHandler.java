@@ -43,7 +43,6 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -75,7 +74,6 @@ import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCores;
 import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -129,7 +127,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
             + "it is a special Handler configured directly by the RequestDispatcher");
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
@@ -137,18 +134,16 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     coreAdminAsyncTracker.standardExecutor =
         MetricUtils.instrumentedExecutorService(
             coreAdminAsyncTracker.standardExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName(
-                "parallelCoreAdminExecutor", getCategory().name(), scope, "threadPool"));
+            solrMetricsContext,
+            getCategory(),
+            "parallelCoreAdminExecutor");
 
     coreAdminAsyncTracker.expensiveExecutor =
         MetricUtils.instrumentedExecutorService(
             coreAdminAsyncTracker.expensiveExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName(
-                "parallelCoreExpensiveAdminExecutor", getCategory().name(), scope, "threadPool"));
+            solrMetricsContext,
+            getCategory(),
+            "parallelCoreExpensiveAdminExecutor");
   }
 
   @Override
@@ -274,9 +269,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
           Map.entry(CoreAdminParams.TRANSIENT, CoreDescriptor.CORE_TRANSIENT),
           Map.entry(CoreAdminParams.SHARD, CoreDescriptor.CORE_SHARD),
           Map.entry(CoreAdminParams.COLLECTION, CoreDescriptor.CORE_COLLECTION),
-          Map.entry(CoreAdminParams.ROLES, CoreDescriptor.CORE_ROLES),
           Map.entry(CoreAdminParams.CORE_NODE_NAME, CoreDescriptor.CORE_NODE_NAME),
-          Map.entry(ZkStateReader.NUM_SHARDS_PROP, CloudDescriptor.NUM_SHARDS),
           Map.entry(CoreAdminParams.REPLICA_TYPE, CloudDescriptor.REPLICA_TYPE));
 
   private static Map<String, CoreAdminOp> initializeOpMap() {

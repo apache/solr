@@ -21,6 +21,7 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -120,8 +121,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
             assertNotNull(monitorOwnerThreadInfo);
             assertTrue(
                 "Thread monitor ownerT: ",
-                monitorOwnerThreadInfo
-                    ._getStr("monitors-locked", "")
+                Objects.requireNonNullElse(monitorOwnerThreadInfo._getStr("monitors-locked"), "")
                     .contains("TestMonitorStruct"));
           });
 
@@ -148,8 +148,8 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
                 assertNotNull(monitorOwnerThreadInfo);
                 assertTrue(
                     "Same thread ownerT: ",
-                    monitorOwnerThreadInfo
-                        ._getStr("monitors-locked", "")
+                    Objects.requireNonNullElse(
+                            monitorOwnerThreadInfo._getStr("monitors-locked"), "")
                         .contains("TestMonitorStruct"));
 
                 // blocked thread 'blockedT', waiting on the monitor
@@ -158,9 +158,9 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
                 assertNotNull(blockedThreadInfo);
                 assertTrue(
                     "blocked thread blockedT waiting on the monitor: ",
-                    blockedThreadInfo._getStr("state", "").contains("BLOCKED")
-                        && blockedThreadInfo
-                            ._getStr("lock-waiting", "")
+                    Objects.requireNonNullElse(blockedThreadInfo._getStr("state"), "")
+                            .contains("BLOCKED")
+                        && Objects.requireNonNullElse(blockedThreadInfo._getStr("lock-waiting"), "")
                             .contains("test-thread-monitor-owner"));
               });
         }
@@ -249,7 +249,8 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
             assertNotNull(lockOwnerThreadInfo);
             assertTrue(
                 "Thread lock:",
-                lockOwnerThreadInfo._getStr("synchronizers-locked", "").contains("ReentrantLock"));
+                Objects.requireNonNullElse(lockOwnerThreadInfo._getStr("synchronizers-locked"), "")
+                    .contains("ReentrantLock"));
           });
 
       if (checkWaitingThreadViaPolling) {
@@ -275,8 +276,8 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
                 assertNotNull(lockOwnerThreadInfo);
                 assertTrue(
                     "Thread locked: ",
-                    lockOwnerThreadInfo
-                        ._getStr("synchronizers-locked", "")
+                    Objects.requireNonNullElse(
+                            lockOwnerThreadInfo._getStr("synchronizers-locked"), "")
                         .contains("ReentrantLock"));
 
                 // blocked thread 'blockedT', waiting on the lock
@@ -285,9 +286,9 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
                 assertNotNull(blockedThreadInfo);
                 assertTrue(
                     "Waiting on the lock: ",
-                    blockedThreadInfo._getStr("state", "").contains("WAITING")
-                        && blockedThreadInfo
-                            ._getStr("lock-waiting", "")
+                    Objects.requireNonNullElse(blockedThreadInfo._getStr("state"), "")
+                            .contains("WAITING")
+                        && Objects.requireNonNullElse(blockedThreadInfo._getStr("lock-waiting"), "")
                             .contains("test-thread-sync-lock-owner"));
               });
         }
@@ -313,10 +314,9 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
   }
 
   private NamedList<?> getThreadInfo(NamedList<?> rsp, String threadName) {
-    for (Map.Entry<String, ?> threadInfoEntry :
-        (NamedList<?>) rsp._get("system/threadDump", null)) {
+    for (Map.Entry<String, ?> threadInfoEntry : (NamedList<?>) rsp._get("system/threadDump")) {
       NamedList<?> thread = (NamedList<?>) threadInfoEntry.getValue();
-      if (thread._getStr("name", "").contains(threadName)) {
+      if (Objects.requireNonNullElse(thread._getStr("name"), "").contains(threadName)) {
         return thread;
       }
     }

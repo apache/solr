@@ -106,6 +106,7 @@ public class JavaBinUpdateRequestCodec {
 
     // reads documents, sending to handler.  Other data is in NamedList
     try (var codec = new StreamingCodec(handler)) {
+      codec.readMapAsNamedList(false);
       namedList = codec.unmarshal(is);
     }
 

@@ -25,14 +25,23 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
+import io.prometheus.metrics.model.snapshots.InfoSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -49,6 +58,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -69,6 +79,16 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   public static final String KEY_PARAM = "key";
   public static final String EXPR_PARAM = "expr";
   public static final String TYPE_PARAM = "type";
+  // Prometheus filtering parameters
+  public static final String CATEGORY_PARAM = "category";
+  public static final String CORE_PARAM = "core";
+  public static final String COLLECTION_PARAM = "collection";
+  public static final String SHARD_PARAM = "shard";
+  public static final String REPLICA_PARAM = "replica";
+  public static final String METRIC_NAME_PARAM = "name";
+  private static final Set<String> labelFilterKeys =
+      Set.of(CATEGORY_PARAM, CORE_PARAM, COLLECTION_PARAM, SHARD_PARAM, REPLICA_PARAM);
+
   // NOCOMMIT: This wt=prometheus will be removed as it will become the default for /admin/metrics
   public static final String PROMETHEUS_METRICS_WT = "prometheus";
   public static final String OPEN_METRICS_WT = "openmetrics";
@@ -131,7 +151,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     // NOCOMMIT SOLR-17458: Make this the default option after dropwizard removal
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))
         || OPEN_METRICS_WT.equals(params.get(CommonParams.WT))) {
-      consumer.accept("metrics", metricManager.getPrometheusMetricReaders());
+      handlePrometheusRequest(params, consumer);
       return;
     }
 
@@ -149,6 +169,58 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     response = handleDropwizardRegistry(params);
 
     consumer.accept("metrics", response);
+  }
+
+  private void handlePrometheusRequest(SolrParams params, BiConsumer<String, Object> consumer) {
+    Set<String> metricNames = readParamsAsSet(params, METRIC_NAME_PARAM);
+    SortedMap<String, Set<String>> labelFilters = labelFilters(params);
+
+    if (metricNames.isEmpty() && labelFilters.isEmpty()) {
+      consumer.accept(
+          "metrics",
+          mergeSnapshots(
+              metricManager.getPrometheusMetricReaders().values().stream()
+                  .flatMap(r -> r.collect().stream())
+                  .toList()));
+      return;
+    }
+
+    List<MetricSnapshot> allSnapshots = new ArrayList<>();
+    for (FilterablePrometheusMetricReader reader :
+        metricManager.getPrometheusMetricReaders().values()) {
+      MetricSnapshots filteredSnapshots = reader.collect(metricNames, labelFilters);
+      filteredSnapshots.forEach(allSnapshots::add);
+    }
+
+    // Merge all filtered snapshots and return the merged result
+    MetricSnapshots mergedSnapshots = mergeSnapshots(allSnapshots);
+    consumer.accept("metrics", mergedSnapshots);
+  }
+
+  private SortedMap<String, Set<String>> labelFilters(SolrParams params) {
+    SortedMap<String, Set<String>> labelFilters = new TreeMap<>();
+    labelFilterKeys.forEach(
+        (paramName) -> {
+          Set<String> filterValues = readParamsAsSet(params, paramName);
+          if (!filterValues.isEmpty()) {
+            labelFilters.put(paramName, filterValues);
+          }
+        });
+
+    return labelFilters;
+  }
+
+  private Set<String> readParamsAsSet(SolrParams params, String paramName) {
+    String[] paramValues = params.getParams(paramName);
+    if (paramValues == null || paramValues.length == 0) {
+      return Set.of();
+    }
+
+    List<String> paramSet = new ArrayList<>();
+    for (String param : paramValues) {
+      paramSet.addAll(StrUtils.splitSmart(param, ','));
+    }
+    return Set.copyOf(paramSet);
   }
 
   private NamedList<Object> handleDropwizardRegistry(SolrParams params) {
@@ -182,6 +254,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return response;
   }
 
+  // NOCOMMIT: Remove this filtering logic
   private static class MetricsExpr {
     Pattern registryRegex;
     MetricFilter metricFilter;
@@ -294,7 +367,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       final String registryName = unescape(parts[0]);
       final String metricName = unescape(parts[1]);
       final String propertyName = parts.length > 2 ? unescape(parts[2]) : null;
-      if (!metricManager.hasRegistry(registryName)) {
+      if (!metricManager.hasDropwizardRegistry(registryName)) {
         errors.add(key, "registry '" + registryName + "' not found");
         continue;
       }
@@ -499,9 +572,87 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return metricTypes;
   }
 
-  private String getCoreNameFromRegistry(String registryName) {
-    String coreName = registryName.substring(registryName.indexOf('.') + 1);
-    return coreName.replace(".", "_");
+  /**
+   * Merge a collection of individual {@link MetricSnapshot} instances into one {@link
+   * MetricSnapshots}. This is necessary because we create a {@link
+   * io.opentelemetry.sdk.metrics.SdkMeterProvider} per Solr core resulting in duplicate metric
+   * names across cores which is an illegal format if under the same prometheus grouping.
+   */
+  private MetricSnapshots mergeSnapshots(List<MetricSnapshot> snapshots) {
+    Map<String, CounterSnapshot.Builder> counterSnapshotMap = new HashMap<>();
+    Map<String, GaugeSnapshot.Builder> gaugeSnapshotMap = new HashMap<>();
+    Map<String, HistogramSnapshot.Builder> histogramSnapshotMap = new HashMap<>();
+    InfoSnapshot otelInfoSnapshots = null;
+
+    for (MetricSnapshot snapshot : snapshots) {
+      String metricName = snapshot.getMetadata().getPrometheusName();
+
+      switch (snapshot) {
+        case CounterSnapshot counterSnapshot -> {
+          CounterSnapshot.Builder builder =
+              counterSnapshotMap.computeIfAbsent(
+                  metricName,
+                  k -> {
+                    var base =
+                        CounterSnapshot.builder()
+                            .name(counterSnapshot.getMetadata().getName())
+                            .help(counterSnapshot.getMetadata().getHelp());
+                    return counterSnapshot.getMetadata().hasUnit()
+                        ? base.unit(counterSnapshot.getMetadata().getUnit())
+                        : base;
+                  });
+          counterSnapshot.getDataPoints().forEach(builder::dataPoint);
+        }
+        case GaugeSnapshot gaugeSnapshot -> {
+          GaugeSnapshot.Builder builder =
+              gaugeSnapshotMap.computeIfAbsent(
+                  metricName,
+                  k -> {
+                    var base =
+                        GaugeSnapshot.builder()
+                            .name(gaugeSnapshot.getMetadata().getName())
+                            .help(gaugeSnapshot.getMetadata().getHelp());
+                    return gaugeSnapshot.getMetadata().hasUnit()
+                        ? base.unit(gaugeSnapshot.getMetadata().getUnit())
+                        : base;
+                  });
+          gaugeSnapshot.getDataPoints().forEach(builder::dataPoint);
+        }
+        case HistogramSnapshot histogramSnapshot -> {
+          HistogramSnapshot.Builder builder =
+              histogramSnapshotMap.computeIfAbsent(
+                  metricName,
+                  k -> {
+                    var base =
+                        HistogramSnapshot.builder()
+                            .name(histogramSnapshot.getMetadata().getName())
+                            .help(histogramSnapshot.getMetadata().getHelp());
+                    return histogramSnapshot.getMetadata().hasUnit()
+                        ? base.unit(histogramSnapshot.getMetadata().getUnit())
+                        : base;
+                  });
+          histogramSnapshot.getDataPoints().forEach(builder::dataPoint);
+        }
+        case InfoSnapshot infoSnapshot -> {
+          // InfoSnapshot is a special case in that each SdkMeterProvider will create a duplicate
+          // metric called target_info containing OTEL SDK metadata. Only one of these need to be
+          // kept
+          if (otelInfoSnapshots == null)
+            otelInfoSnapshots =
+                new InfoSnapshot(infoSnapshot.getMetadata(), infoSnapshot.getDataPoints());
+        }
+        default -> {
+          // Handle unexpected snapshot types gracefully
+        }
+      }
+    }
+
+    MetricSnapshots.Builder snapshotsBuilder = MetricSnapshots.builder();
+    counterSnapshotMap.values().forEach(b -> snapshotsBuilder.metricSnapshot(b.build()));
+    gaugeSnapshotMap.values().forEach(b -> snapshotsBuilder.metricSnapshot(b.build()));
+    histogramSnapshotMap.values().forEach(b -> snapshotsBuilder.metricSnapshot(b.build()));
+    if (otelInfoSnapshots != null) snapshotsBuilder.metricSnapshot(otelInfoSnapshots);
+    return snapshotsBuilder.build();
   }
 
   @Override

@@ -47,6 +47,7 @@ import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -192,8 +193,11 @@ public class RestoreCollection extends BackupAPIBase implements CollectionBackup
     restoreBody.backupId = solrParams.getInt(BACKUP_ID);
     restoreBody.async = solrParams.get(ASYNC);
 
+    ModifiableSolrParams createCollectionParams = new ModifiableSolrParams(solrParams);
+    createCollectionParams.set(NAME, solrParams.get(COLLECTION_PROP));
+
     restoreBody.createCollectionParams =
-        CreateCollection.createRequestBodyFromV1Params(solrParams, false);
+        CreateCollection.createRequestBodyFromV1Params(createCollectionParams, false);
 
     return restoreBody;
   }

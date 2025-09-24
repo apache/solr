@@ -21,25 +21,23 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -101,16 +99,14 @@ public class AdminHandlersProxy {
 
     ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
     params.remove(PARAM_NODES);
-    Map<String, Pair<Future<NamedList<Object>>, SolrClient>> responses = new HashMap<>();
+    Map<String, Future<NamedList<Object>>> responses = new LinkedHashMap<>();
     for (String node : nodes) {
       responses.put(node, callRemoteNode(node, pathStr, params, container.getZkController()));
     }
 
-    for (Map.Entry<String, Pair<Future<NamedList<Object>>, SolrClient>> entry :
-        responses.entrySet()) {
+    for (Map.Entry<String, Future<NamedList<Object>>> entry : responses.entrySet()) {
       try {
-        NamedList<Object> resp = entry.getValue().first().get(10, TimeUnit.SECONDS);
-        entry.getValue().second().close();
+        NamedList<Object> resp = entry.getValue().get(10, TimeUnit.SECONDS);
         rsp.add(entry.getKey(), resp);
       } catch (ExecutionException ee) {
         log.warn("Exception when fetching result from node {}", entry.getKey(), ee);
@@ -125,18 +121,17 @@ public class AdminHandlersProxy {
     return true;
   }
 
-  /**
-   * Makes a remote request and returns a future and the solr client. The caller is responsible for
-   * closing the client
-   */
-  public static Pair<Future<NamedList<Object>>, SolrClient> callRemoteNode(
-      String nodeName, String endpoint, SolrParams params, ZkController zkController)
+  /** Makes a remote request asynchronously. */
+  public static CompletableFuture<NamedList<Object>> callRemoteNode(
+      String nodeName, String uriPath, SolrParams params, ZkController zkController)
       throws IOException, SolrServerException {
-    log.debug("Proxying {} request to node {}", endpoint, nodeName);
+    log.debug("Proxying {} request to node {}", uriPath, nodeName);
     URI baseUri = URI.create(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
-    HttpSolrClient solr = new HttpSolrClient.Builder(baseUri.toString()).build();
-    SolrRequest<?> proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, endpoint, params);
-    HttpSolrClient.HttpUriRequestResponse proxyResp = solr.httpUriRequest(proxyReq);
-    return new Pair<>(proxyResp.future, solr);
+    SolrRequest<?> proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, uriPath, params);
+
+    return zkController
+        .getCoreContainer()
+        .getDefaultHttpSolrClient()
+        .requestWithBaseUrl(baseUri.toString(), c -> c.requestAsync(proxyReq));
   }
 }

@@ -179,8 +179,6 @@ public class IndexFetcher {
 
   private final Http2SolrClient solrClient;
 
-  private Integer connTimeout;
-
   private Integer soTimeout;
 
   private boolean skipCommitOnLeaderVersionZero = true;
@@ -258,7 +256,6 @@ public class IndexFetcher {
         .withHttpClient(updateShardHandler.getRecoveryOnlyHttpClient())
         .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
         .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
-        .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -287,7 +284,6 @@ public class IndexFetcher {
     String compress = (String) initArgs.get(COMPRESSION);
     useInternalCompression = ReplicationHandler.INTERNAL.equals(compress);
     useExternalCompression = ReplicationHandler.EXTERNAL.equals(compress);
-    connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
     soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
 
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);

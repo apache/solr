@@ -72,6 +72,8 @@ dependencies {
   implementation libs.apache.httpcomponents.httpclient
   implementation libs.apache.httpcomponents.httpcore
   implementation libs.opentelemetry.api
+  implementation libs.opentelemetry.exporter.prometheus
+  implementation libs.prometheus.metrics.model
 
   implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server

@@ -41,6 +41,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.slf4j.Logger;
@@ -120,7 +121,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     syncTime =
         new AttributedLongTimer(
             solrMetricsContext.longHistogram(
-                "solr_core_sync_with_leader_time", "leader sync times", "ms"),
+                "solr_core_sync_with_leader_time", "leader sync times", OtelUnit.MILLISECONDS),
             baseAttributes);
   }
 
