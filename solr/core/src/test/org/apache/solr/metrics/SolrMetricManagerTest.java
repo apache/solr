@@ -50,6 +50,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.util.SolrMetricTestUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -66,6 +67,12 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     // Initialize a metric reader for tests
     metricManager.meterProvider(METER_PROVIDER_NAME);
     this.reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    metricManager.closeAllRegistries();
+    super.tearDown();
   }
 
   // NOCOMMIT: Migration of this to OTEL isn't possible. You can't register instruments to a

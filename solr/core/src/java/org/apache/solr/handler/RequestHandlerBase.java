@@ -45,7 +45,6 @@ import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
@@ -193,8 +192,7 @@ public abstract class RequestHandlerBase
   public static class HandlerMetrics {
     public static final HandlerMetrics NO_OP =
         new HandlerMetrics(
-            new SolrMetricsContext(
-                new SolrMetricManager(new NoopMetricExporter()), "NO_OP", "NO_OP"),
+            new SolrMetricsContext(new SolrMetricManager(null), "NO_OP", "NO_OP"),
             Attributes.empty());
 
     public AttributedLongCounter requests;
@@ -204,7 +202,6 @@ public abstract class RequestHandlerBase
     public AttributedLongTimer requestTimes;
 
     public HandlerMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
-
       LongCounter requestMetric;
       LongCounter errorRequestMetric;
       LongCounter timeoutRequestMetric;

@@ -23,7 +23,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,7 +39,7 @@ public class BufferStoreTest extends SolrTestCase {
   @Before
   public void setup() {
     metrics = new Metrics();
-    metricManager = new SolrMetricManager(new NoopMetricExporter());
+    metricManager = new SolrMetricManager(null);
     registry = TestUtil.randomSimpleString(random(), 2, 10);
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");

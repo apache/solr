@@ -83,6 +83,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
@@ -783,13 +784,12 @@ public class SolrMetricManager {
             providerName,
             key -> {
               var reader = new FilterablePrometheusMetricReader(true, null);
-              var builder =
-                  SdkMeterProvider.builder()
-                      .registerMetricReader(reader)
-                      .registerMetricReader(
-                          PeriodicMetricReader.builder(metricExporter)
-                              .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
-                              .build());
+              var builder = SdkMeterProvider.builder().registerMetricReader(reader);
+              if (metricExporter != null)
+                builder.registerMetricReader(
+                    PeriodicMetricReader.builder(metricExporter)
+                        .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
+                        .build());
               SdkMeterProviderUtil.setExemplarFilter(builder, ExemplarFilter.traceBased());
               return new MeterProviderAndReaders(builder.build(), reader);
             })
@@ -824,9 +824,20 @@ public class SolrMetricManager {
     meterProviderAndReaders.computeIfPresent(
         enforcePrefix(registry),
         (key, meterAndReader) -> {
-          meterAndReader.sdkMeterProvider().close();
+          IOUtils.closeQuietly(meterAndReader.sdkMeterProvider());
           return null;
         });
+  }
+
+  /** Close all meter providers and their associated metric readers. */
+  public void closeAllRegistries() {
+    meterProviderAndReaders
+        .values()
+        .forEach(
+            meterAndReader -> {
+              IOUtils.closeQuietly(meterAndReader.sdkMeterProvider);
+            });
+    meterProviderAndReaders.clear();
   }
 
   /**
