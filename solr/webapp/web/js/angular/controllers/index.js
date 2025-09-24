@@ -60,6 +60,33 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
       $scope.javaMemoryUsedDisplay = pretty_print_bytes($scope.javaMemoryUsed);  // @todo These should really be an AngularJS Filter: {{ javaMemoryUsed | bytes }}
       $scope.javaMemoryMax = pretty_print_bytes(javaMemoryMax);
 
+      // GPU
+      $scope.gpuAvailable = data.gpu && data.gpu.available;
+      if ($scope.gpuAvailable) {
+        $scope.gpuCount = data.gpu.count;
+
+        var devices = data.gpu.devices;
+        if (devices && Object.keys(devices).length > 0) {
+          var device = devices[Object.keys(devices)[0]];
+          $scope.gpuName = device.name;
+          $scope.gpuId = device.id;
+          $scope.gpuCompute = device.computeCapability;
+          $scope.gpuConcurrentCopy = device.supportsConcurrentCopy;
+          $scope.gpuConcurrentKernels = device.supportsConcurrentKernels;
+        }
+
+        var memory = data.gpu.memory;
+        if (memory && memory.total && memory.used) {
+          var total = parse_memory_value(memory.total);
+          var used = parse_memory_value(memory.used);
+          $scope.gpuMemoryPercentage = (used / total * 100).toFixed(1) + "%";
+          $scope.gpuMemoryTotalDisplay = pretty_print_bytes(total);
+          $scope.gpuMemoryUsedDisplay = pretty_print_bytes(used);
+          $scope.gpuMemoryTotal = total;
+          $scope.gpuMemoryUsed = used;
+        }
+      }
+
       // no info bar:
       $scope.noInfo = !(
         data.system.totalPhysicalMemorySize && data.system.freePhysicalMemorySize &&

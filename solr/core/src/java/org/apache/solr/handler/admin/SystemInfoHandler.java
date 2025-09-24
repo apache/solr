@@ -19,6 +19,8 @@ package org.apache.solr.handler.admin;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
@@ -47,6 +49,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -153,6 +156,8 @@ public class SystemInfoHandler extends RequestHandlerBase {
     rsp.add("jvm", getJvmInfo(nodeConfig));
     rsp.add("security", getSecurityInfo(req));
     rsp.add("system", getSystemInfo());
+
+    rsp.add("gpu", getGpuInfo(req));
     if (solrCloudMode) {
       rsp.add("node", getCoreContainer(req).getZkController().getNodeName());
     }
@@ -432,6 +437,64 @@ public class SystemInfoHandler extends RequestHandlerBase {
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  private SimpleOrderedMap<Object> getGpuInfo(SolrQueryRequest req) {
+    SimpleOrderedMap<Object> gpuInfo = new SimpleOrderedMap<>();
+
+    try {
+      SolrMetricManager metricManager = getCoreContainer(req).getMetricManager();
+      MetricRegistry registry = metricManager.registry("solr.node");
+
+      Long gpuCount = getLongGaugeValue(registry, "gpu.count");
+      if (gpuCount != null && gpuCount > 0) {
+        gpuInfo.add("available", true);
+        gpuInfo.add("count", gpuCount);
+
+        Long gpuMemoryTotal = getLongGaugeValue(registry, "gpu.memory.total");
+        Long gpuMemoryUsed = getLongGaugeValue(registry, "gpu.memory.used");
+        Long gpuMemoryFree = getLongGaugeValue(registry, "gpu.memory.free");
+
+        if (gpuMemoryTotal != null && gpuMemoryUsed != null) {
+          SimpleOrderedMap<Object> memory = new SimpleOrderedMap<>();
+          memory.add("total", gpuMemoryTotal);
+          memory.add("used", gpuMemoryUsed);
+          memory.add(
+              "free", gpuMemoryFree != null ? gpuMemoryFree : (gpuMemoryTotal - gpuMemoryUsed));
+          gpuInfo.add("memory", memory);
+        }
+
+        Object devices = getGaugeValue(registry, "gpu.devices");
+        if (devices != null) {
+          gpuInfo.add("devices", devices);
+        }
+      } else {
+        gpuInfo.add("available", false);
+      }
+
+    } catch (Exception e) {
+      log.warn("Failed to get GPU information", e);
+      gpuInfo.add("available", false);
+    }
+
+    return gpuInfo;
+  }
+
+  @SuppressWarnings("unchecked")
+  private Object getGaugeValue(MetricRegistry registry, String metricName) {
+    Metric metric = registry.getMetrics().get(metricName);
+    if (metric instanceof Gauge) {
+      return ((Gauge<Object>) metric).getValue();
+    }
+    return null;
+  }
+
+  private Long getLongGaugeValue(MetricRegistry registry, String metricName) {
+    Object value = getGaugeValue(registry, metricName);
+    if (value instanceof Number) {
+      return ((Number) value).longValue();
+    }
+    return null;
   }
 
   @Override

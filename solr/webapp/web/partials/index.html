@@ -77,12 +77,12 @@ limitations under the License.
                 <dt><span>solr-spec</span></dt>
                   <dd>{{system.lucene["solr-spec-version"]}}</dd>
               </dl></li>
-              
+
               <li class="solr_impl_version"><dl class="clearfix">
                 <dt class=""><span>solr-impl</span></dt>
                   <dd>{{system.lucene["solr-impl-version"]}}</dd>
               </dl></li>
-              
+
               <li class="lucene lucene_spec_version"><dl class="clearfix">
                 <dt><span>lucene-spec</span></dt>
                   <dd>{{system.lucene["lucene-spec-version"]}}</dd>
@@ -92,7 +92,7 @@ limitations under the License.
                 <dt><span>lucene-impl</span></dt>
                   <dd>{{system.lucene["lucene-impl-version"]}}</dd>
               </dl></li>
-            
+
             </ul>
 
           </div>
@@ -103,7 +103,7 @@ limitations under the License.
       </div>
 
     </div>
-      
+
     <div class="index-right">
 
       <div class="block" id="system">
@@ -253,6 +253,50 @@ limitations under the License.
 
                 </div>
 
+              </div>
+            </div>
+
+            <div id="gpu" ng-show="gpuAvailable">
+              <h2><span>GPU</span>
+                <small class="bar-desc">{{gpuCount}} detected</small>
+              </h2>
+
+              <div class="content clearfix">
+                <ul class="data">
+                  <li class="gpu-name"><dl class="clearfix">
+                    <dt><span>Name</span></dt>
+                    <dd>{{gpuName}}</dd>
+                  </dl></li>
+
+                  <li class="gpu-compute"><dl class="clearfix">
+                    <dt><span>Compute</span></dt>
+                    <dd>{{gpuCompute}}</dd>
+                  </dl></li>
+
+                  <li class="gpu-concurrent-copy"><dl class="clearfix">
+                    <dt><span>Concurrent Copy</span></dt>
+                    <dd>{{gpuConcurrentCopy ? 'yes' : 'no'}}</dd>
+                  </dl></li>
+
+                  <li class="gpu-concurrent-kernels"><dl class="clearfix">
+                    <dt><span>Concurrent Kernels</span></dt>
+                    <dd>{{gpuConcurrentKernels ? 'yes' : 'no'}}</dd>
+                  </dl></li>
+                </ul>
+
+                <div id="gpu-memory-bar" ng-show="gpuMemoryTotal && gpuMemoryUsed">
+                  <p data-desc="gpu-memory-bar">GPU Memory
+                    <small class="bar-desc">{{gpuMemoryPercentage}}</small>
+                  </p>
+                  <div class="bar-holder bar-lvl-2">
+                    <div class="bar-max bar">
+                      <span class="bar-max val">{{gpuMemoryTotalDisplay}}</span>
+                      <div class="bar-total bar" ng-style="{width: gpuMemoryPercentage}">
+                        <span class="bar-total val" title="raw: {{gpuMemoryUsed}}B">{{gpuMemoryUsedDisplay}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
