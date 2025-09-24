@@ -716,12 +716,12 @@ python3 -m venv libcuvs-env
 source libcuvs-env/bin/activate
 
 # Install libcuvs-cu13 from NVIDIA's RAPIDS wheels (fetches latest 25.10.x artifact)
-pip install libcuvs-cu13<25.11.0 --pre --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple/
+pip install "libcuvs-cu13<25.11.0" --pre --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple/
 
 # Set LD_LIBRARY_PATH to include libcuvs libraries
-SITE_PACKAGES_PATH=$(find libcuvs-env -name site-packages)
+SITE_PACKAGES_PATH=$(pwd)/$(find libcuvs-env -name site-packages)
 export VENV_LIB=$SITE_PACKAGES_PATH/libcuvs/lib64:$SITE_PACKAGES_PATH/librmm/lib64:$SITE_PACKAGES_PATH/rapids_logger/lib64
-export LD_LIBRARY_PATH=$VENV_LIB:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$VENV_LIB:$LD_LIBRARY_PATH:/usr/local/cuda-13/lib64
 
 # Verify libcuvs_c.so is available
 find $LD_LIBRARY_PATH -name "libcuvs_c.so" | head -1
