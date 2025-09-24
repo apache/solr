@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreDescriptor;
@@ -514,7 +515,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
       // If we want to run with allowlist, this must be explicitly set to true for the test
       // otherwise we disable the check
-      if (System.getProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST) == null) {
+      if (EnvUtils.getPropertyAsBool(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, null)) {
         systemSetPropertySolrDisableUrlAllowList("true");
       }
 

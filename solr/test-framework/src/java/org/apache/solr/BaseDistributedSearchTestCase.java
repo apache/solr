@@ -65,7 +65,6 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -94,7 +93,8 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.5
  */
-public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
+public abstract class BaseDistributedSearchTestCase
+    extends SolrTestCaseJ4 {
 
   protected ExecutorService executor =
       new ExecutorUtil.MDCAwareThreadPoolExecutor(
@@ -118,18 +118,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         "SOLR-4147: ibm 64bit has jvm bugs!",
         Constants.JRE_IS_64BIT && Constants.JAVA_VENDOR.startsWith("IBM"));
     r = new Random(random().nextLong());
-  }
-
-  @SuppressWarnings("deprecation")
-  @BeforeClass
-  public static void setSolrDisableShardsWhitelist() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
-  }
-
-  @SuppressWarnings("deprecation")
-  @AfterClass
-  public static void clearSolrDisableShardsWhitelist() throws Exception {
-    systemClearPropertySolrDisableUrlAllowList();
   }
 
   private static String getHostContextSuitableForServletContext() {
