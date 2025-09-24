@@ -441,14 +441,14 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   private long getSpatialFieldCacheInserts(String fieldName) {
     return (long)
-        SolrMetricTestUtils.getCacheSearcherOpsCumulative(
+        SolrMetricTestUtils.getCacheSearcherOps(
                 h.getCore(), "perSegSpatialFieldCache_" + fieldName, "inserts")
             .getValue();
   }
 
   private long getSpatialFieldCacheHits(String fieldName) {
     return (long)
-        SolrMetricTestUtils.getCacheSearcherLookupsCumulative(
+        SolrMetricTestUtils.getCacheSearcherLookups(
                 h.getCore(), "perSegSpatialFieldCache_" + fieldName, "hit")
             .getValue();
   }

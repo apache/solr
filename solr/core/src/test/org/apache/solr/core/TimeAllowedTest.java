@@ -18,7 +18,7 @@ package org.apache.solr.core;
 
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
-import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.response.SolrQueryResponse;
@@ -111,11 +111,11 @@ public class TimeAllowedTest extends SolrTestCaseJ4 {
     String fq = "name:d*";
     SolrCore core = h.getCore();
 
-    GaugeSnapshot.GaugeDataPointSnapshot fqInsertsPre =
+    CounterSnapshot.CounterDataPointSnapshot fqInsertsPre =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(core, SolrMetricTestUtils.FILTER_CACHE);
     long fqInserts = (long) fqInsertsPre.getValue();
 
-    GaugeSnapshot.GaugeDataPointSnapshot qrInsertsPre =
+    CounterSnapshot.CounterDataPointSnapshot qrInsertsPre =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(
             core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     long qrInserts = (long) qrInsertsPre.getValue();
@@ -133,7 +133,7 @@ public class TimeAllowedTest extends SolrTestCaseJ4 {
         "Should have partial results",
         (Boolean) (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)));
 
-    GaugeSnapshot.GaugeDataPointSnapshot qrInsertsPost =
+    CounterSnapshot.CounterDataPointSnapshot qrInsertsPost =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(
             core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     assertEquals(
@@ -141,7 +141,7 @@ public class TimeAllowedTest extends SolrTestCaseJ4 {
         (long) qrInsertsPost.getValue(),
         qrInserts);
 
-    GaugeSnapshot.GaugeDataPointSnapshot fqInsertsPost =
+    CounterSnapshot.CounterDataPointSnapshot fqInsertsPost =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(core, SolrMetricTestUtils.FILTER_CACHE);
     assertEquals("Should NOT have another insert", fqInserts, (long) fqInsertsPost.getValue());
 
@@ -149,11 +149,11 @@ public class TimeAllowedTest extends SolrTestCaseJ4 {
     response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", longTimeout));
 
     // Check that we did insert this one.
-    GaugeSnapshot.GaugeDataPointSnapshot fqHitsPost =
+    CounterSnapshot.CounterDataPointSnapshot fqHitsPost =
         SolrMetricTestUtils.getCacheSearcherOpsHits(core, SolrMetricTestUtils.FILTER_CACHE);
     assertEquals("Hits should still be 0", (long) fqHitsPost.getValue(), 0L);
 
-    GaugeSnapshot.GaugeDataPointSnapshot fqInsertsPostSecond =
+    CounterSnapshot.CounterDataPointSnapshot fqInsertsPostSecond =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(core, SolrMetricTestUtils.FILTER_CACHE);
     assertEquals("Inserts should be bumped", (long) fqInsertsPostSecond.getValue(), fqInserts + 1);
 
@@ -174,19 +174,19 @@ public class TimeAllowedTest extends SolrTestCaseJ4 {
     String q = "name:e*";
     SolrCore core = h.getCore();
 
-    GaugeSnapshot.GaugeDataPointSnapshot insertsPre =
+    CounterSnapshot.CounterDataPointSnapshot insertsPre =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(
             core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     long inserts = (long) insertsPre.getValue();
 
-    GaugeSnapshot.GaugeDataPointSnapshot hitsPre =
+    CounterSnapshot.CounterDataPointSnapshot hitsPre =
         SolrMetricTestUtils.getCacheSearcherOpsHits(core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     long hits = (long) hitsPre.getValue();
 
     String response = JQ(req("q", q, "indent", "true", "timeAllowed", "1", "sleep", sleep));
 
     // The queryResultCache should NOT get an entry here.
-    GaugeSnapshot.GaugeDataPointSnapshot insertsPost =
+    CounterSnapshot.CounterDataPointSnapshot insertsPost =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(
             core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     assertEquals(
@@ -204,9 +204,9 @@ public class TimeAllowedTest extends SolrTestCaseJ4 {
     response = JQ(req("q", q, "indent", "true", "timeAllowed", longTimeout));
 
     // Check that we did insert this one.
-    GaugeSnapshot.GaugeDataPointSnapshot hitsPost =
+    CounterSnapshot.CounterDataPointSnapshot hitsPost =
         SolrMetricTestUtils.getCacheSearcherOpsHits(core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
-    GaugeSnapshot.GaugeDataPointSnapshot insertsPost2 =
+    CounterSnapshot.CounterDataPointSnapshot insertsPost2 =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(
             core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     assertEquals("Hits should still be 0", hits, (long) hitsPost.getValue());

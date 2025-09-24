@@ -315,21 +315,9 @@ public final class SolrMetricTestUtils {
             .build());
   }
 
-  public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOpsCumulative(
+  public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOps(
       SolrCore core, String cacheName, String operation) {
     return SolrMetricTestUtils.getCounterDatapoint(
-        core,
-        "solr_cache_cumulative_ops",
-        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
-            .label("category", "CACHE")
-            .label("ops", operation)
-            .label("name", cacheName)
-            .build());
-  }
-
-  public static GaugeSnapshot.GaugeDataPointSnapshot getCacheSearcherOps(
-      SolrCore core, String cacheName, String operation) {
-    return SolrMetricTestUtils.getGaugeDatapoint(
         core,
         "solr_cache_ops",
         SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
@@ -339,28 +327,17 @@ public final class SolrMetricTestUtils {
             .build());
   }
 
-  public static GaugeSnapshot.GaugeDataPointSnapshot getCacheSearcherLookups(
+  public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherLookups(
       SolrCore core, String cacheName, String result) {
     var builder =
         SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
             .label("category", "CACHE")
-            .label("name", cacheName);
-    if (result != null) builder.label("result", result);
-    return SolrMetricTestUtils.getGaugeDatapoint(core, "solr_cache_lookups", builder.build());
+            .label("name", cacheName)
+            .label("result", result);
+    return SolrMetricTestUtils.getCounterDatapoint(core, "solr_cache_lookups", builder.build());
   }
 
-  public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherLookupsCumulative(
-      SolrCore core, String cacheName, String result) {
-    var builder =
-        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
-            .label("category", "CACHE")
-            .label("name", cacheName);
-    if (result != null) builder.label("result", result);
-    return SolrMetricTestUtils.getCounterDatapoint(
-        core, "solr_cache_cumulative_lookups", builder.build());
-  }
-
-  public static GaugeSnapshot.GaugeDataPointSnapshot getCacheSearcherOpsHits(
+  public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOpsHits(
       SolrCore core, String cacheName) {
     return SolrMetricTestUtils.getCacheSearcherLookups(core, cacheName, "hit");
   }
@@ -373,7 +350,7 @@ public final class SolrMetricTestUtils {
     return hitDatapoint.getValue() + missDatapoint.getValue();
   }
 
-  public static GaugeSnapshot.GaugeDataPointSnapshot getCacheSearcherOpsInserts(
+  public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOpsInserts(
       SolrCore core, String cacheName) {
     return SolrMetricTestUtils.getCacheSearcherOps(core, cacheName, "inserts");
   }

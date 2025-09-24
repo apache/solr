@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search.join;
 
-import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -229,10 +229,10 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
       double lookupsPre =
           SolrMetricTestUtils.getCacheSearcherTotalLookups(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-      GaugeSnapshot.GaugeDataPointSnapshot hitsPre =
+      CounterSnapshot.CounterDataPointSnapshot hitsPre =
           SolrMetricTestUtils.getCacheSearcherOpsHits(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-      GaugeSnapshot.GaugeDataPointSnapshot insertsPre =
+      CounterSnapshot.CounterDataPointSnapshot insertsPre =
           SolrMetricTestUtils.getCacheSearcherOpsInserts(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
@@ -252,10 +252,10 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
       double lookupsPre =
           SolrMetricTestUtils.getCacheSearcherTotalLookups(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-      GaugeSnapshot.GaugeDataPointSnapshot hitsPre =
+      CounterSnapshot.CounterDataPointSnapshot hitsPre =
           SolrMetricTestUtils.getCacheSearcherOpsHits(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-      GaugeSnapshot.GaugeDataPointSnapshot insertsPre =
+      CounterSnapshot.CounterDataPointSnapshot insertsPre =
           SolrMetricTestUtils.getCacheSearcherOpsInserts(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
@@ -275,10 +275,10 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
       double lookupsPre =
           SolrMetricTestUtils.getCacheSearcherTotalLookups(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-      GaugeSnapshot.GaugeDataPointSnapshot hitsPre =
+      CounterSnapshot.CounterDataPointSnapshot hitsPre =
           SolrMetricTestUtils.getCacheSearcherOpsHits(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-      GaugeSnapshot.GaugeDataPointSnapshot insertsPre =
+      CounterSnapshot.CounterDataPointSnapshot insertsPre =
           SolrMetricTestUtils.getCacheSearcherOpsInserts(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
@@ -320,10 +320,10 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
       double lookupsPreRepeat =
           SolrMetricTestUtils.getCacheSearcherTotalLookups(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-      GaugeSnapshot.GaugeDataPointSnapshot hitsPreRepeat =
+      CounterSnapshot.CounterDataPointSnapshot hitsPreRepeat =
           SolrMetricTestUtils.getCacheSearcherOpsHits(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-      GaugeSnapshot.GaugeDataPointSnapshot insertsPreRepeat =
+      CounterSnapshot.CounterDataPointSnapshot insertsPreRepeat =
           SolrMetricTestUtils.getCacheSearcherOpsInserts(
               h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
@@ -381,15 +381,15 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
   private void assertInsert(
       double lookupsPre,
-      GaugeSnapshot.GaugeDataPointSnapshot hitsPre,
-      GaugeSnapshot.GaugeDataPointSnapshot insertsPre) {
+      CounterSnapshot.CounterDataPointSnapshot hitsPre,
+      CounterSnapshot.CounterDataPointSnapshot insertsPre) {
     double lookupsPost =
         SolrMetricTestUtils.getCacheSearcherTotalLookups(
             h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-    GaugeSnapshot.GaugeDataPointSnapshot hitsPost =
+    CounterSnapshot.CounterDataPointSnapshot hitsPost =
         SolrMetricTestUtils.getCacheSearcherOpsHits(
             h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-    GaugeSnapshot.GaugeDataPointSnapshot insertsPost =
+    CounterSnapshot.CounterDataPointSnapshot insertsPost =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(
             h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
@@ -400,15 +400,15 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
   private void assertHit(
       double lookupsPre,
-      GaugeSnapshot.GaugeDataPointSnapshot hitsPre,
-      GaugeSnapshot.GaugeDataPointSnapshot insertsPre) {
+      CounterSnapshot.CounterDataPointSnapshot hitsPre,
+      CounterSnapshot.CounterDataPointSnapshot insertsPre) {
     double lookupsPost =
         SolrMetricTestUtils.getCacheSearcherTotalLookups(
             h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-    GaugeSnapshot.GaugeDataPointSnapshot hitsPost =
+    CounterSnapshot.CounterDataPointSnapshot hitsPost =
         SolrMetricTestUtils.getCacheSearcherOpsHits(
             h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-    GaugeSnapshot.GaugeDataPointSnapshot insertsPost =
+    CounterSnapshot.CounterDataPointSnapshot insertsPost =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(
             h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
@@ -419,15 +419,15 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
   private void assertHitOrInsert(
       double lookupsPre,
-      GaugeSnapshot.GaugeDataPointSnapshot hitsPre,
-      GaugeSnapshot.GaugeDataPointSnapshot insertsPre) {
+      CounterSnapshot.CounterDataPointSnapshot hitsPre,
+      CounterSnapshot.CounterDataPointSnapshot insertsPre) {
     double lookupsPost =
         SolrMetricTestUtils.getCacheSearcherTotalLookups(
             h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-    GaugeSnapshot.GaugeDataPointSnapshot hitsPost =
+    CounterSnapshot.CounterDataPointSnapshot hitsPost =
         SolrMetricTestUtils.getCacheSearcherOpsHits(
             h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
-    GaugeSnapshot.GaugeDataPointSnapshot insertsPost =
+    CounterSnapshot.CounterDataPointSnapshot insertsPost =
         SolrMetricTestUtils.getCacheSearcherOpsInserts(
             h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
@@ -438,7 +438,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
   }
 
   private long delta(
-      GaugeSnapshot.GaugeDataPointSnapshot post, GaugeSnapshot.GaugeDataPointSnapshot pre) {
+      CounterSnapshot.CounterDataPointSnapshot post, CounterSnapshot.CounterDataPointSnapshot pre) {
     return delta(post.getValue(), pre.getValue());
   }
 

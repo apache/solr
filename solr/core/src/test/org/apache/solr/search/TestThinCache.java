@@ -172,7 +172,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
   private long getNodeCacheOp(String cacheName, String operation) {
     var reader = h.getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.node");
     return (long)
-        SolrMetricTestUtils.getGaugeDatapoint(
+        SolrMetricTestUtils.getCounterDatapoint(
                 reader,
                 "solr_node_cache_ops",
                 Labels.builder()
@@ -194,7 +194,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
     if (result != null) builder.label("result", result);
 
     return (long)
-        SolrMetricTestUtils.getGaugeDatapoint(reader, "solr_node_cache_lookups", builder.build())
+        SolrMetricTestUtils.getCounterDatapoint(reader, "solr_node_cache_lookups", builder.build())
             .getValue();
   }
 
