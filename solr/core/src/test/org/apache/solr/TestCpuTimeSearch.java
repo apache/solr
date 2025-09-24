@@ -27,7 +27,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.apache.solr.util.ThreadCpuTimer;
 import org.junit.BeforeClass;

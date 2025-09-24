@@ -93,8 +93,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.5
  */
-public abstract class BaseDistributedSearchTestCase
-    extends SolrTestCaseJ4 {
+public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected ExecutorService executor =
       new ExecutorUtil.MDCAwareThreadPoolExecutor(
