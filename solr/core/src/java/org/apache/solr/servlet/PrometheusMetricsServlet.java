@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -50,6 +51,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -80,7 +82,8 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
         new StatusCodeMetricsApiCaller(),
         new NodeMetricsApiCaller(),
         new AggregateMetricsApiCaller(),
-        new CoresMetricsApiCaller());
+        new CoresMetricsApiCaller(),
+        new CollectionCacheMetricsApiCaller());
   }
 
   private final Map<String, PrometheusMetricType> cacheMetricTypes =
@@ -858,30 +861,102 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
         "background request p99 duration",
         "p99_ms",
         PrometheusMetricType.GAUGE),
+    CUMULATIVE_DOCUMENT_CACHE_LOCAL_HITS(
+        "CACHE.searcher.documentCache",
+        "document_cache_store_local_hits",
+        "Cumulative hits from local document cache store (vs backing shared cache store)",
+        "cumulative_hits",
+        PrometheusMetricType.COUNTER),
+    CUMULATIVE_FILTER_CACHE_LOCAL_HITS(
+        "CACHE.searcher.filterCache",
+        "filter_cache_store_local_hits",
+        "Cumulative hits from local filter cache store (vs backing shared cache store)",
+        "cumulative_hits",
+        PrometheusMetricType.COUNTER),
+    CUMULATIVE_QUERY_RESULT_CACHE_LOCAL_HITS(
+        "CACHE.searcher.queryResultCache",
+        "query_result_cache_store_local_hits",
+        "Cumulative hits from local query result cache store (vs backing shared cache store)",
+        "cumulative_hits",
+        PrometheusMetricType.COUNTER),
+    CUMULATIVE_FCACHE_DOCS_HOT_LOCAL_HITS(
+        "CACHE.searcher.fcache-docs-hot",
+        "fcache_docs_hot_local_hits",
+        "Cumulative hits from local fcache-docs-hot cache store (vs backing shared cache store)",
+        "cumulative_hits",
+        PrometheusMetricType.COUNTER),
+    CUMULATIVE_DOCUMENT_CACHE_LOCAL_LOOKUPS(
+        "CACHE.searcher.documentCache",
+        "document_cache_store_local_lookups",
+        "Cumulative lookups from local document cache store (vs backing shared cache store)",
+        "cumulative_lookups",
+        PrometheusMetricType.COUNTER),
+    CUMULATIVE_FILTER_CACHE_LOCAL_LOOKUPS(
+        "CACHE.searcher.filterCache",
+        "filter_cache_store_local_lookups",
+        "Cumulative lookups from local filter cache store (vs backing shared cache store)",
+        "cumulative_lookups",
+        PrometheusMetricType.COUNTER),
+    CUMULATIVE_QUERY_RESULT_CACHE_LOCAL_LOOKUPS(
+        "CACHE.searcher.queryResultCache",
+        "query_result_cache_store_local_lookups",
+        "Cumulative lookups from local query result cache store (vs backing shared cache store)",
+        "cumulative_lookups",
+        PrometheusMetricType.COUNTER),
+    CUMULATIVE_FCACHE_DOCS_HOT_LOCAL_LOOKUPS(
+        "CACHE.searcher.fcache-docs-hot",
+        "fcache_docs_hot_local_lookups",
+        "Cumulative lookups from local fcache-docs-hot cache store (vs backing shared cache store)",
+        "cumulative_lookups",
+        PrometheusMetricType.COUNTER),
     CUMULATIVE_DOCUMENT_CACHE_LOCAL_EVICTION(
         "CACHE.searcher.documentCache",
         "document_cache_store_local_eviction",
-        "Cumulative evictions from the per core local document cache store (vs backing shared cache store)",
+        "Cumulative evictions from local document cache store (vs backing shared cache store)",
         "cumulative_evictions",
         PrometheusMetricType.COUNTER),
     CUMULATIVE_FILTER_CACHE_LOCAL_EVICTION(
         "CACHE.searcher.filterCache",
         "filter_cache_store_local_eviction",
-        "Cumulative evictions from the per core local filter cache store (vs backing shared cache store)",
+        "Cumulative evictions from local filter cache store (vs backing shared cache store)",
         "cumulative_evictions",
         PrometheusMetricType.COUNTER),
     CUMULATIVE_QUERY_RESULT_CACHE_LOCAL_EVICTION(
         "CACHE.searcher.queryResultCache",
         "query_result_cache_store_local_eviction",
-        "Cumulative evictions from the per core local query result cache store (vs backing shared cache store)",
+        "Cumulative evictions from local query result cache store (vs backing shared cache store)",
         "cumulative_evictions",
         PrometheusMetricType.COUNTER),
     CUMULATIVE_FCACHE_DOCS_HOT_LOCAL_EVICTION(
         "CACHE.searcher.fcache-docs-hot",
         "fcache_docs_hot_local_eviction",
-        "Cumulative evictions from the per core local fcache-docs-hot cache store (vs backing shared cache store)",
+        "Cumulative evictions from local fcache-docs-hot cache store (vs backing shared cache store)",
         "cumulative_evictions",
-        PrometheusMetricType.COUNTER);
+        PrometheusMetricType.COUNTER),
+    DOCUMENT_CACHE_LOCAL_BYTES_USED(
+        "CACHE.searcher.documentCache",
+        "document_cache_store_local_bytes_used",
+        "Bytes used from local document cache store (vs backing shared cache store)",
+        "bytesUsed",
+        PrometheusMetricType.GAUGE),
+    FILTER_CACHE_LOCAL_BYTES_USED(
+        "CACHE.searcher.filterCache",
+        "filter_cache_store_local_bytes_used",
+        "Bytes used from local filter cache store (vs backing shared cache store)",
+        "bytesUsed",
+        PrometheusMetricType.GAUGE),
+    QUERY_RESULT_CACHE_LOCAL_BYTES_USED(
+        "CACHE.searcher.queryResultCache",
+        "query_result_cache_store_local_bytes_used",
+        "Bytes used from local query result cache store (vs backing shared cache store)",
+        "bytesUsed",
+        PrometheusMetricType.GAUGE),
+    FCACHE_DOCS_HOT_LOCAL_BYTES_USED(
+        "CACHE.searcher.fcache-docs-hot",
+        "fcache_docs_hot_local_bytes_used",
+        "Bytes used from local fcache-docs-hot cache store (vs backing shared cache store)",
+        "bytesUsed",
+        PrometheusMetricType.GAUGE);
     final String key, metricName, desc, property;
     private final PrometheusMetricType metricType;
     private static final Map<String, CoreMetric> lookup = new HashMap<>();
@@ -1095,6 +1170,130 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
     }
   }
 
+  /**
+   * Aggregates and reports cache metrics grouped by collections configured as
+   * `ext.cacheMetricsCollections` in clusterprops.json in zk
+   */
+  static class CollectionCacheMetricsApiCaller extends MetricsApiCaller {
+    private static final String CLUSTER_PROP_KEY =
+        ClusterProperties.EXT_PROPRTTY_PREFIX + "cacheMetricsCollections";
+    List<CoreMetric> cacheCoreMetrics =
+        List.of(
+            CoreMetric.CUMULATIVE_QUERY_RESULT_CACHE_LOCAL_HITS,
+            CoreMetric.CUMULATIVE_DOCUMENT_CACHE_LOCAL_HITS,
+            CoreMetric.CUMULATIVE_FILTER_CACHE_LOCAL_HITS,
+            CoreMetric.CUMULATIVE_FCACHE_DOCS_HOT_LOCAL_HITS,
+            CoreMetric.CUMULATIVE_QUERY_RESULT_CACHE_LOCAL_LOOKUPS,
+            CoreMetric.CUMULATIVE_DOCUMENT_CACHE_LOCAL_LOOKUPS,
+            CoreMetric.CUMULATIVE_FILTER_CACHE_LOCAL_LOOKUPS,
+            CoreMetric.CUMULATIVE_FCACHE_DOCS_HOT_LOCAL_LOOKUPS,
+            CoreMetric.CUMULATIVE_QUERY_RESULT_CACHE_LOCAL_EVICTION,
+            CoreMetric.CUMULATIVE_DOCUMENT_CACHE_LOCAL_EVICTION,
+            CoreMetric.CUMULATIVE_FILTER_CACHE_LOCAL_EVICTION,
+            CoreMetric.CUMULATIVE_FCACHE_DOCS_HOT_LOCAL_EVICTION,
+            CoreMetric.QUERY_RESULT_CACHE_LOCAL_BYTES_USED,
+            CoreMetric.DOCUMENT_CACHE_LOCAL_BYTES_USED,
+            CoreMetric.FILTER_CACHE_LOCAL_BYTES_USED,
+            CoreMetric.FCACHE_DOCS_HOT_LOCAL_BYTES_USED);
+
+    @Override
+    protected String buildQueryString(ResultContext resultContext) {
+      throw new UnsupportedOperationException("Should call buildQueryString with CoreContainer");
+    }
+
+    @Override
+    protected String buildQueryString(ResultContext resultContext, CoreContainer coreContainer) {
+      // fetch the configured collections
+      if (coreContainer.getZkController() == null) {
+        return null;
+      }
+      List<String> configuredCollections =
+          coreContainer
+              .getZkController()
+              .getZkStateReader()
+              .getClusterProperty(CLUSTER_PROP_KEY, null);
+      if (configuredCollections == null || configuredCollections.isEmpty()) {
+        return null;
+      }
+
+      List<String> prefixes = new ArrayList<>();
+      List<String> properties = new ArrayList<>();
+
+      for (CoreMetric targetMetric : cacheCoreMetrics) {
+        prefixes.add(targetMetric.key);
+        if (targetMetric.property != null) {
+          properties.add(targetMetric.property);
+        }
+      }
+
+      String propertyClause =
+          properties.stream()
+              .distinct()
+              .map(p -> "&property=" + URLEncoder.encode(p, StandardCharsets.UTF_8))
+              .collect(Collectors.joining());
+
+      String groupVal =
+          configuredCollections.stream()
+              .map(c -> "solr.core." + c)
+              .collect(Collectors.joining(","));
+      return String.format(
+          Locale.ROOT,
+          "wt=json&indent=false&compact=true&group=%s&prefix=%s%s",
+          groupVal,
+          URLEncoder.encode(String.join(",", prefixes), StandardCharsets.UTF_8),
+          propertyClause);
+    }
+
+    @Override
+    protected void handle(ResultContext resultContext, JsonNode metrics) throws IOException {
+      List<PrometheusMetric> results = resultContext.resultMetrics;
+      Map<String, Map<CoreMetric, Long>> accumulativeByCollection = new LinkedHashMap<>();
+      for (CoreMetric cacheMetricEntry : cacheCoreMetrics) {
+        Iterator<Map.Entry<String, JsonNode>> fields = metrics.fields();
+        while (fields.hasNext()) {
+          Map.Entry<String, JsonNode> coreEntry =
+              fields.next(); // each entry with key as the core name and value as various cache type
+          // metrics within such core
+          JsonNode coreMetricNode = coreEntry.getValue();
+          String coreKey = coreEntry.getKey();
+          String collection = coreKey.substring("solr.core.".length()).split("\\.", 2)[0];
+
+          Number val =
+              cacheMetricEntry.property != null
+                  ? getNumber(coreMetricNode, cacheMetricEntry.key, cacheMetricEntry.property)
+                  : getNumber(coreMetricNode, cacheMetricEntry.key);
+          if (!val.equals(INVALID_NUMBER)) {
+            Map<CoreMetric, Long> accumulative =
+                accumulativeByCollection.computeIfAbsent(collection, k -> new LinkedHashMap<>());
+            accumulative.put(
+                cacheMetricEntry,
+                accumulative.getOrDefault(cacheMetricEntry, 0L) + val.longValue());
+          }
+        }
+      }
+
+      for (Map.Entry<String, Map<CoreMetric, Long>> entry : accumulativeByCollection.entrySet()) {
+        String collection = entry.getKey();
+        Map<CoreMetric, Long> accumulativeOfCollection = entry.getValue();
+        for (Map.Entry<CoreMetric, Long> coreMetricEntry : accumulativeOfCollection.entrySet()) {
+          CoreMetric coreMetric = coreMetricEntry.getKey();
+          Long accumulativeVal = coreMetricEntry.getValue();
+
+          PrometheusMetric metric =
+              new PrometheusMetric(
+                  coreMetric.metricName
+                      + "_by_collection", // so to distinguish it from whole node metrics
+                  Map.of("collection", collection),
+                  coreMetric.metricType,
+                  coreMetric.desc + "(collection " + collection + ")",
+                  accumulativeVal);
+
+          results.add(metric);
+        }
+      }
+    }
+  }
+
   enum PrometheusMetricType {
     COUNTER("counter"),
     GAUGE("gauge");
@@ -1116,9 +1315,20 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
     private final String type;
     private final String description;
     private final Number value;
+    private final Map<String, String> labels;
 
     PrometheusMetric(String name, PrometheusMetricType type, String description, Number value) {
+      this(name, null, type, description, value);
+    }
+
+    PrometheusMetric(
+        String name,
+        Map<String, String> labels,
+        PrometheusMetricType type,
+        String description,
+        Number value) {
       this.name = normalize(name);
+      this.labels = labels;
       this.type = type.getDisplayName();
       this.description = description;
       this.value = value;
@@ -1127,7 +1337,16 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
     void write(PrintWriter writer) throws IOException {
       writer.append("# HELP ").append(name).append(' ').append(description).println();
       writer.append("# TYPE ").append(name).append(' ').append(type).println();
-      writer.append(name).append(' ').append(value.toString()).println();
+
+      String labelsVal = "";
+      if (labels != null && !labels.isEmpty()) {
+        labelsVal =
+            labels.entrySet().stream()
+                .map(e -> e.getKey() + "=\"" + e.getValue() + "\"")
+                .collect(Collectors.joining(",", "{", "}"));
+      }
+
+      writer.append(name).append(labelsVal).append(' ').append(value.toString()).println();
     }
 
     static String normalize(String name) {
@@ -1183,8 +1402,11 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
         throws IOException, UnavailableException {
       SolrDispatchFilter filter = getSolrDispatchFilter(originalRequest);
       CoreContainer cores = filter.getCores();
-      HttpServletRequest request =
-          new MetricsApiRequest(originalRequest, buildQueryString(resultContext));
+      String queryString = buildQueryString(resultContext, cores);
+      if (queryString == null) {
+        return; // nothing to query for this caller - skipping
+      }
+      HttpServletRequest request = new MetricsApiRequest(originalRequest, queryString);
       MetricsApiResponse response = new MetricsApiResponse();
       SolrDispatchFilter.Action action =
           new HttpSolrCall(filter, cores, request, response, false).call();
@@ -1212,6 +1434,10 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
     }
 
     abstract void handle(ResultContext resultContext, JsonNode metrics) throws IOException;
+
+    String buildQueryString(ResultContext resultContext, CoreContainer cores) {
+      return buildQueryString(resultContext); // by default just ignore cores
+    }
 
     abstract String buildQueryString(ResultContext resultContext);
   }
