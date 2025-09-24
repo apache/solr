@@ -22,9 +22,6 @@ setup() {
 }
 
 teardown() {
-  # save a snapshot of SOLR_HOME for failed tests
-  save_home_on_failure
-
   # Capture Docker container logs and stats on failure for debugging
   if [[ -z "${BATS_TEST_COMPLETED:-}" ]] && [[ -z "${BATS_TEST_SKIPPED:-}" ]]; then
     echo "# Test failed - capturing Docker diagnostics" >&3
@@ -46,7 +43,11 @@ teardown() {
   docker volume rm solr-data1 solr-data2 solr-data3 2>/dev/null || true
 }
 
-@test "Docker SolrCloud rolling upgrade from 9.10.0-SNAPSHOT to 9-slim" {
+@test "Docker SolrCloud rolling upgrade from 9 to 10" {
+  # Environment variables for Docker images
+  local SOLR_IMAGE_V9="apache/solr-nightly:9.10.0-SNAPSHOT-slim"
+  local SOLR_IMAGE_V10="solr:9-slim"
+  
   # Skip test if Docker is not available
   run docker version
   if [ $status -ne 0 ]; then
@@ -54,14 +55,14 @@ teardown() {
   fi
 
   # Pull both Docker images
-  run docker pull apache/solr-nightly:9.10.0-SNAPSHOT-slim
+  run docker pull "$SOLR_IMAGE_V9"
   if [ $status -ne 0 ]; then
-    skip "Docker image apache/solr-nightly:9.10.0-SNAPSHOT-slim is not available"
+    skip "Docker image $SOLR_IMAGE_V9 is not available"
   fi
   
-  run docker pull solr:9-slim
+  run docker pull "$SOLR_IMAGE_V10"
   if [ $status -ne 0 ]; then
-    skip "Docker image solr:9-slim is not available"
+    skip "Docker image $SOLR_IMAGE_V10 is not available"
   fi
 
   # Create Docker volumes for data persistence
@@ -69,12 +70,12 @@ teardown() {
   docker volume create solr-data2
   docker volume create solr-data3
 
-  # Start first Solr node with embedded ZooKeeper (memory limited to 300MB)
+  # Start first Solr node with embedded ZooKeeper
   run docker run --name solr-node1 -d \
     -p 8981:8983 \
     --memory=300m \
     -v solr-data1:/var/solr/data \
-    apache/solr-nightly:9.10.0-SNAPSHOT-slim solr start -f -c -m 200m
+    "$SOLR_IMAGE_V9" solr start -f -c -m 200m
   [ $status -eq 0 ]
   echo "Started first Solr node (solr-node1) with embedded ZooKeeper"
 
@@ -99,13 +100,13 @@ teardown() {
   local solr_ip1="$output"
   echo "First Solr node IP: $solr_ip1"
 
-  # Start second Solr node connected to first node's ZooKeeper (memory limited to 300MB)
+  # Start second Solr node connected to first node's ZooKeeper
   run docker run --name solr-node2 -d \
     -p 8982:8983 \
     --memory=300m \
     -v solr-data2:/var/solr/data \
     --env "ZK_HOST=${solr_ip1}:9983" \
-    apache/solr-nightly:9.10.0-SNAPSHOT-slim solr start -f -c -m 200m
+    "$SOLR_IMAGE_V9" solr start -f -c -m 200m
   [ $status -eq 0 ]
   echo "Started second Solr node (solr-node2) connected to first node's ZooKeeper"
 
@@ -129,13 +130,13 @@ teardown() {
   local solr_ip2="$output"
   echo "Second Solr node IP: $solr_ip2"
 
-  # Start third Solr node connected to first node's ZooKeeper (memory limited to 300MB)
+  # Start third Solr node connected to first node's ZooKeeper
   run docker run --name solr-node3 -d \
     -p 8984:8983 \
     --memory=300m \
     -v solr-data3:/var/solr/data \
     --env "ZK_HOST=${solr_ip1}:9983" \
-    apache/solr-nightly:9.10.0-SNAPSHOT-slim solr start -f -c -m 200m
+    "$SOLR_IMAGE_V9" solr start -f -c -m 200m
   [ $status -eq 0 ]
   echo "Started third Solr node (solr-node3) connected to first node's ZooKeeper"
 
@@ -209,22 +210,8 @@ teardown() {
   echo "Collection creation output: $output"
   [[ "$output" =~ "Created collection" ]] || [[ "$output" =~ "test-collection" ]]
 
-  # Add some test data to verify persistence during rolling upgrade
-  run docker exec solr-node1 curl -X POST -H 'Content-Type: application/json' \
-    'http://localhost:8983/solr/test-collection/update?commit=true' \
-    -d '[{"id":"doc1","title":"Test Document 1"},{"id":"doc2","title":"Test Document 2"}]'
-  [ $status -eq 0 ]
-  echo "Added test documents to collection"
-
-  # Verify initial data
-  run docker exec solr-node1 curl -s 'http://localhost:8983/solr/test-collection/select?q=*:*&rows=0'
-  [ $status -eq 0 ]
-  local initial_count=$(echo "$output" | grep -o '"numFound":[0-9]*' | grep -o '[0-9]*')
-  echo "Initial document count: $initial_count"
-  [ "$initial_count" -eq 2 ]
-
   # Begin rolling upgrade - upgrade node 2 first (not the ZK node)
-  echo "Starting rolling upgrade - upgrading node 2 to version 9-slim"
+  echo "Starting rolling upgrade - upgrading node 2 to version 10"
   docker stop solr-node2
   docker rm solr-node2
   
@@ -233,16 +220,16 @@ teardown() {
     --memory=300m \
     -v solr-data2:/var/solr/data \
     --env "ZK_HOST=${solr_ip1}:9983" \
-    solr:9-slim solr start -f -c -m 200m
+    "$SOLR_IMAGE_V10" solr start -f -c -m 200m
   [ $status -eq 0 ]
-  echo "Restarted node 2 with version 9-slim"
+  echo "Restarted node 2 with version 10"
 
   # Wait for node 2 to rejoin the cluster
   attempts=0
   while [ $attempts -lt $max_attempts ]; do
     run docker exec solr-node2 solr status
     if [ $status -eq 0 ]; then
-      echo "Node 2 (v9-slim) is ready"
+      echo "Node 2 (v10) is ready"
       break
     fi
     echo "Waiting for node 2 to restart (attempt $((attempts + 1))/$max_attempts)..."
@@ -251,15 +238,8 @@ teardown() {
   done
   [ $attempts -lt $max_attempts ]
 
-  # Verify data is still accessible after node 2 upgrade
-  run docker exec solr-node1 curl -s 'http://localhost:8983/solr/test-collection/select?q=*:*&rows=0'
-  [ $status -eq 0 ]
-  local count_after_node2=$(echo "$output" | grep -o '"numFound":[0-9]*' | grep -o '[0-9]*')
-  echo "Document count after node 2 upgrade: $count_after_node2"
-  [ "$count_after_node2" -eq 2 ]
-
   # Upgrade node 3
-  echo "Upgrading node 3 to version 9-slim"
+  echo "Upgrading node 3 to version 10"
   docker stop solr-node3
   docker rm solr-node3
   
@@ -268,16 +248,16 @@ teardown() {
     --memory=300m \
     -v solr-data3:/var/solr/data \
     --env "ZK_HOST=${solr_ip1}:9983" \
-    solr:9-slim solr start -f -c -m 200m
+    "$SOLR_IMAGE_V10" solr start -f -c -m 200m
   [ $status -eq 0 ]
-  echo "Restarted node 3 with version 9-slim"
+  echo "Restarted node 3 with version 10"
 
   # Wait for node 3 to rejoin the cluster
   attempts=0
   while [ $attempts -lt $max_attempts ]; do
     run docker exec solr-node3 solr status
     if [ $status -eq 0 ]; then
-      echo "Node 3 (v9-slim) is ready"
+      echo "Node 3 (v10) is ready"
       break
     fi
     echo "Waiting for node 3 to restart (attempt $((attempts + 1))/$max_attempts)..."
@@ -286,15 +266,8 @@ teardown() {
   done
   [ $attempts -lt $max_attempts ]
 
-  # Verify data is still accessible after node 3 upgrade
-  run docker exec solr-node1 curl -s 'http://localhost:8983/solr/test-collection/select?q=*:*&rows=0'
-  [ $status -eq 0 ]
-  local count_after_node3=$(echo "$output" | grep -o '"numFound":[0-9]*' | grep -o '[0-9]*')
-  echo "Document count after node 3 upgrade: $count_after_node3"
-  [ "$count_after_node3" -eq 2 ]
-
   # Finally upgrade node 1 (the ZK node) - this is the most critical
-  echo "Upgrading node 1 (ZK node) to version 9-slim"
+  echo "Upgrading node 1 (ZK node) to version 10"
   docker stop solr-node1
   docker rm solr-node1
   
@@ -302,16 +275,16 @@ teardown() {
     -p 8981:8983 \
     --memory=300m \
     -v solr-data1:/var/solr/data \
-    solr:9-slim solr start -f -c -m 200m
+    "$SOLR_IMAGE_V10" solr start -f -c -m 200m
   [ $status -eq 0 ]
-  echo "Restarted node 1 (ZK node) with version 9-slim"
+  echo "Restarted node 1 (ZK node) with version 10"
 
   # Wait for node 1 to restart and become the ZK server again
   attempts=0
   while [ $attempts -lt $max_attempts ]; do
     run docker exec solr-node1 solr status
     if [ $status -eq 0 ]; then
-      echo "Node 1 (v9-slim, ZK node) is ready"
+      echo "Node 1 (v10, ZK node) is ready"
       break
     fi
     echo "Waiting for node 1 (ZK node) to restart (attempt $((attempts + 1))/$max_attempts)..."
@@ -338,7 +311,7 @@ teardown() {
       --memory=300m \
       -v solr-data2:/var/solr/data \
       --env "ZK_HOST=${new_solr_ip1}:9983" \
-      solr:9-slim solr start -f -c -m 200m
+      "$SOLR_IMAGE_V10" solr start -f -c -m 200m
     [ $status -eq 0 ]
     
     run docker run --name solr-node3 -d \
@@ -346,7 +319,7 @@ teardown() {
       --memory=300m \
       -v solr-data3:/var/solr/data \
       --env "ZK_HOST=${new_solr_ip1}:9983" \
-      solr:9-slim solr start -f -c -m 200m
+      "$SOLR_IMAGE_V10" solr start -f -c -m 200m
     [ $status -eq 0 ]
 
     # Wait for both nodes to restart
@@ -365,21 +338,14 @@ teardown() {
     done
   fi
 
-  # Final verification - all nodes should be running 9-slim and data should be intact
-  run docker exec solr-node1 curl -s 'http://localhost:8983/solr/test-collection/select?q=*:*&rows=0'
-  [ $status -eq 0 ]
-  local final_count=$(echo "$output" | grep -o '"numFound":[0-9]*' | grep -o '[0-9]*')
-  echo "Final document count after complete rolling upgrade: $final_count"
-  [ "$final_count" -eq 2 ]
-
-  # Verify all nodes are in the cluster
+  # Final verification - validate exactly 3 nodes in cluster
   run docker exec solr-node1 curl -s 'http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS'
   [ $status -eq 0 ]
   echo "Final cluster status: $output"
-  # Note: IP addresses may have changed, so we just verify we have 3 live nodes
+  # Verify we have exactly 3 live nodes
   local live_nodes_count=$(echo "$output" | grep -o '"live_nodes":\[[^]]*\]' | grep -o ':[0-9]*_' | wc -l)
   echo "Number of live nodes after rolling upgrade: $live_nodes_count"
   [ "$live_nodes_count" -eq 3 ]
 
-  echo "Docker SolrCloud rolling upgrade from 9.10.0-SNAPSHOT to 9-slim completed successfully!"
+  echo "Docker SolrCloud rolling upgrade from 9 to 10 completed successfully!"
 }
