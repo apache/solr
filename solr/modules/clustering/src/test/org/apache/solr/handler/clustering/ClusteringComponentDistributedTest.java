@@ -28,7 +28,9 @@ import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 @SuppressSSL
@@ -38,6 +40,18 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
   @Override
   public Path getSolrHome() {
     return getFile("clustering/solr/collection1").getParent();
+  }
+
+  @SuppressWarnings("deprecation")
+  @BeforeClass
+  public static void beforeTests() throws Exception {
+    systemSetPropertySolrDisableUrlAllowList("true");
+  }
+
+  @SuppressWarnings("deprecation")
+  @AfterClass
+  public static void afterTests() throws Exception {
+    systemClearPropertySolrDisableUrlAllowList();
   }
 
   @Before
