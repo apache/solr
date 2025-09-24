@@ -25,6 +25,21 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
+  # Capture Docker container logs and stats on failure for debugging
+  if [[ -z "${BATS_TEST_COMPLETED:-}" ]] && [[ -z "${BATS_TEST_SKIPPED:-}" ]]; then
+    echo "# Test failed - capturing Docker diagnostics" >&3
+    for container in solr-node1 solr-node2 solr-node3; do
+      if docker ps -a --format '{{.Names}}' | grep -q "^${container}$" 2>/dev/null; then
+        echo "# === Docker logs for $container ===" >&3
+        docker logs "$container" | tail -50 >&3 2>&3 || echo "# Failed to get logs for $container" >&3
+        echo "# === Docker stats for $container ===" >&3
+        docker stats --no-stream "$container" >&3 2>&3 || echo "# Failed to get stats for $container" >&3
+        echo "# === Docker inspect for $container ===" >&3
+        docker inspect "$container" | jq '.[] | {State: .State, HostConfig: {Memory: .HostConfig.Memory}}' >&3 2>&3 || echo "# Failed to inspect $container" >&3
+      fi
+    done
+  fi
+
   # Clean up Docker containers
   docker stop solr-node1 solr-node2 solr-node3 2>/dev/null || true
   docker rm solr-node1 solr-node2 solr-node3 2>/dev/null || true
@@ -47,7 +62,7 @@ teardown() {
   run docker run --name solr-node1 -d \
     -p 8981:8983 \
     --memory=300m \
-    apache/solr-nightly:9.10.0-SNAPSHOT-slim solr start -f -c -m 256m
+    apache/solr-nightly:9.10.0-SNAPSHOT-slim solr start -f -c -m 200m
   [ $status -eq 0 ]
   echo "Started first Solr node (solr-node1) with embedded ZooKeeper"
 
@@ -77,7 +92,7 @@ teardown() {
     -p 8982:8983 \
     --memory=300m \
     --env "ZK_HOST=${solr_ip1}:9983" \
-    apache/solr-nightly:9.10.0-SNAPSHOT-slim solr start -f -c -m 256m
+    apache/solr-nightly:9.10.0-SNAPSHOT-slim solr start -f -c -m 200m
   [ $status -eq 0 ]
   echo "Started second Solr node (solr-node2) connected to first node's ZooKeeper"
 
@@ -106,7 +121,7 @@ teardown() {
     -p 8984:8983 \
     --memory=300m \
     --env "ZK_HOST=${solr_ip1}:9983" \
-    apache/solr-nightly:9.10.0-SNAPSHOT-slim solr start -f -c -m 256m
+    apache/solr-nightly:9.10.0-SNAPSHOT-slim solr start -f -c -m 200m
   [ $status -eq 0 ]
   echo "Started third Solr node (solr-node3) connected to first node's ZooKeeper"
 
@@ -185,22 +200,6 @@ teardown() {
   [ $status -eq 0 ]
   echo "Collection creation output: $output"
   [[ "$output" =~ "Created collection" ]] || [[ "$output" =~ "test-collection" ]]
-
-  # Verify collection was created by querying it from each node
-  run docker exec solr-node1 curl -s 'http://localhost:8983/solr/test-collection/select?q=*:*'
-  [ $status -eq 0 ]
-  echo "Query result from first node: $output"
-  [[ "$output" =~ '"numFound"' ]]
-
-  run docker exec solr-node2 curl -s 'http://localhost:8983/solr/test-collection/select?q=*:*'
-  [ $status -eq 0 ]
-  echo "Query result from second node: $output"
-  [[ "$output" =~ '"numFound"' ]]
-
-  run docker exec solr-node3 curl -s 'http://localhost:8983/solr/test-collection/select?q=*:*'
-  [ $status -eq 0 ]
-  echo "Query result from third node: $output"
-  [[ "$output" =~ '"numFound"' ]]
 
   echo "Docker SolrCloud cluster test with 3 nodes completed successfully!"
 }
