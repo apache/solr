@@ -45,7 +45,6 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setupSolr() throws Exception {
     System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
-    System.setProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST, "true");
 
     Path configSet = createTempDir("configSet");
     copyMinConf(configSet);
