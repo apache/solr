@@ -88,7 +88,7 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
 
   private final Map<String, PrometheusMetricType> cacheMetricTypes =
       Map.of(
-          "bytesUsed", PrometheusMetricType.GAUGE,
+          "ramBytesUsed", PrometheusMetricType.GAUGE,
           "lookups", PrometheusMetricType.COUNTER,
           "hits", PrometheusMetricType.COUNTER,
           "puts", PrometheusMetricType.COUNTER,
@@ -937,25 +937,25 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
         "CACHE.searcher.documentCache",
         "document_cache_store_local_bytes_used",
         "Bytes used from local document cache store (vs backing shared cache store)",
-        "bytesUsed",
+        "ramBytesUsed",
         PrometheusMetricType.GAUGE),
     FILTER_CACHE_LOCAL_BYTES_USED(
         "CACHE.searcher.filterCache",
         "filter_cache_store_local_bytes_used",
         "Bytes used from local filter cache store (vs backing shared cache store)",
-        "bytesUsed",
+        "ramBytesUsed",
         PrometheusMetricType.GAUGE),
     QUERY_RESULT_CACHE_LOCAL_BYTES_USED(
         "CACHE.searcher.queryResultCache",
         "query_result_cache_store_local_bytes_used",
         "Bytes used from local query result cache store (vs backing shared cache store)",
-        "bytesUsed",
+        "ramBytesUsed",
         PrometheusMetricType.GAUGE),
     FCACHE_DOCS_HOT_LOCAL_BYTES_USED(
         "CACHE.searcher.fcache-docs-hot",
         "fcache_docs_hot_local_bytes_used",
         "Bytes used from local fcache-docs-hot cache store (vs backing shared cache store)",
-        "bytesUsed",
+        "ramBytesUsed",
         PrometheusMetricType.GAUGE);
     final String key, metricName, desc, property;
     private final PrometheusMetricType metricType;
