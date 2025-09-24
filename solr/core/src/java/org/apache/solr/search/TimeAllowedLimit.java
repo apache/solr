@@ -74,7 +74,7 @@ public class TimeAllowedLimit implements QueryLimit {
     if (parentUsedMs != -1L) {
       // this is a sub-request of a request that already had timeAllowed set.
       // We have to deduct the time already used by the parent request.
-      // Also, arbitrarily add 1 ms to account for the fact that the parentUsedMs
+      // Also, add some in-flight time to account for the fact that the parentUsedMs
       // value was captured before the request was sent from the parent
       inflightMs = req.getParams().getLong(INFLIGHT_PARAM, DEFAULT_INFLIGHT_MS);
       log.debug("parentUsedMs: {}, inflightMs: {}", parentUsedMs, inflightMs);
@@ -95,7 +95,7 @@ public class TimeAllowedLimit implements QueryLimit {
     boolean result = false;
     if (usedTimeAllowedMs >= reqTimeAllowedMs - reqInflightMs) {
       // there's no point in sending this request to the shard because the time will run out
-      // before we get a response back
+      // before it's processed at the target
       result = true;
     }
     params.set(USED_PARAM, Long.toString(usedTimeAllowedMs, 16));

@@ -205,7 +205,7 @@ public final class QueryLimits implements QueryTimeout {
    * Allow each limit to adjust the shard request parameters if needed. This is useful for
    * timeAllowed, cpu, or memory limits that need to be propagated to shards with potentially modified values.
    *
-   * @return true if the shard request should be skipped because one or more limits will be tripped after sending, during execution.
+   * @return true if the shard request should be skipped because one or more limits would be tripped after sending, during execution.
    * @throws QueryLimitsExceededException if {@link #allowPartialResults} is false and limits would have
    *     been tripped by the shard request.
    */

@@ -37,7 +37,7 @@ public interface QueryLimit extends QueryTimeout {
    * @return true if the shard request should be skipped because a limit will be tripped after sending, during execution.
    */
   default boolean adjustShardRequestLimit(ShardRequest sreq, String shard, ModifiableSolrParams params) {
-    // default is to do nothing
+    // default is to do nothing and process the request
     return false;
   }
 }
