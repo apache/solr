@@ -118,7 +118,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     when(zkStatusHandler.getZkRawResponse("zoo2:2181", "ruok")).thenReturn(Arrays.asList(""));
 
     when(zkStatusHandler.getZkRawResponse("zoo3:2181", "ruok")).thenReturn(Arrays.asList("imok"));
-    // Actual response from ZK if not whitelisted
+    // Actual response from ZK if not allow listed
     when(zkStatusHandler.getZkRawResponse("zoo3:2181", "mntr"))
         .thenReturn(Arrays.asList("mntr is not executed because it is not in the whitelist."));
     when(zkStatusHandler.getZkRawResponse("zoo3:2181", "conf"))

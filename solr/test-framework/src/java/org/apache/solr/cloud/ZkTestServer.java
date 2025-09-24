@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
+import static org.apache.solr.cloud.SolrZkServer.ZK_ALLOWLIST_PROPERTY;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
@@ -43,6 +43,7 @@ import javax.management.JMException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
@@ -540,7 +541,7 @@ public class ZkTestServer {
 
   public void run(boolean solrFormat) throws InterruptedException, IOException {
     log.info("STARTING ZK TEST SERVER");
-    ensureStatCommandWhitelisted();
+    ensureStatCommandAllowlisted();
 
     AtomicReference<Throwable> zooError = new AtomicReference<>();
     try {
@@ -863,26 +864,26 @@ public class ZkTestServer {
   }
 
   /** Ensure the {@link ClientBase} helper methods we want to use will work. */
-  private static void ensureStatCommandWhitelisted() {
+  private static void ensureStatCommandAllowlisted() {
     // Use this instead of hardcoding "stat" so we get compile error if ZK removes the command
     final String stat = FourLetterCommands.getCommandString(FourLetterCommands.statCmd);
     if (!FourLetterCommands.isEnabled(stat)) {
-      final String original = System.getProperty(ZK_WHITELIST_PROPERTY);
+      final String original = EnvUtils.getProperty(ZK_ALLOWLIST_PROPERTY);
       try {
         log.error(
             "ZkTestServer requires the 'stat' command, temporarily manipulating your whitelist");
-        System.setProperty(ZK_WHITELIST_PROPERTY, "*");
+        System.setProperty(ZK_ALLOWLIST_PROPERTY, "*");
         FourLetterCommands.resetWhiteList();
-        // This call to isEnabled should force ZK to "re-read" the system property in it's static
-        // vrs
+        // This call to isEnabled should force ZK to "re-read" the system property in its static
+        // variables
         assertTrue(
             "Temporary manipulation of ZK Whitelist didn't work?",
             FourLetterCommands.isEnabled(stat));
       } finally {
         if (null == original) {
-          System.clearProperty(ZK_WHITELIST_PROPERTY);
+          System.clearProperty(ZK_ALLOWLIST_PROPERTY);
         } else {
-          System.setProperty(ZK_WHITELIST_PROPERTY, original);
+          System.setProperty(ZK_ALLOWLIST_PROPERTY, original);
         }
       }
       assertTrue(
