@@ -154,10 +154,10 @@ public class PhrasesIdentificationComponent extends SearchComponent {
       return ResponseBuilder.STAGE_DONE;
     }
 
-    if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_EXECUTE_QUERY) {
       return ResponseBuilder.STAGE_EXECUTE_QUERY;
 
-    } else if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_EXECUTE_QUERY) {
       // if we're being used in conjunction with QueryComponent, it should have already created
       // (in this staged) the only ShardRequest we need...
       for (ShardRequest sreq : rb.outgoing) {
@@ -174,7 +174,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
       rb.addRequest(this, sreq);
       return ResponseBuilder.STAGE_GET_FIELDS;
 
-    } else if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
       // NOTE: we don't do any actual work in this stage, but we need to ensure that even if we are
       // being used in isolation w/o QueryComponent that SearchHandler "tracks" a STAGE_GET_FIELDS.
       // so that finishStage(STAGE_GET_FIELDS) is called on us and we can add our merged results
@@ -194,7 +194,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
 
     final PhrasesContextData contextData =
         (PhrasesContextData) rb.req.getContext().get(this.getClass());
-    if (null == contextData || rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+    if (null == contextData || rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) {
       // if prepare didn't give us anything to work with, or this isn't our stage, then do nothing
       return;
     }

@@ -120,9 +120,9 @@ public final class SolrVersion implements Comparable<SolrVersion> {
     if (this == other) {
       return true;
     }
-    if (!(other instanceof SolrVersion)) {
+    if (!(other instanceof SolrVersion solrVersion)) {
       return false;
     }
-    return compareTo((SolrVersion) other) == 0;
+    return compareTo(solrVersion) == 0;
   }
 }

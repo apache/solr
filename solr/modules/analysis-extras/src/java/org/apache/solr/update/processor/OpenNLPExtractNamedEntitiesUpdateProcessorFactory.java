@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -74,7 +75,7 @@ import org.slf4j.LoggerFactory;
  * </pre>
  *
  * <p>See the <a href="https://opennlp.apache.org/models.html">OpenNLP website</a> for information
- * on downloading pre-trained models. Note that in order to use model files larger than 1MB on
+ * on downloading pre-trained models. Note that in order to use model files larger than 1 MB on
  * SolrCloud, <a
  * href="https://solr.apache.org/guide/solr/latest/deployment-guide/zookeeper-ensemble.html#increasing-the-file-size-limit">ZooKeeper
  * server and client configuration is required</a>.
@@ -186,7 +187,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
   public static final String ENTITY_TYPE = "{EntityType}";
 
   private SelectorParams srcInclusions = new SelectorParams();
-  private Collection<SelectorParams> srcExclusions = new ArrayList<>();
+  private final Collection<SelectorParams> srcExclusions = new ArrayList<>();
 
   private FieldNameSelector srcSelector = null;
 
@@ -194,7 +195,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
   private String analyzerFieldType = null;
 
   /**
-   * If pattern is null, this this is a literal field name. If pattern is non-null then this is a
+   * If pattern is null, then this is a literal field name. If pattern is non-null then this is a
    * replacement string that may contain meta-characters (ie: capture group identifiers)
    *
    * @see #pattern
@@ -358,9 +359,8 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
     //
     //   source != null && dest != null
 
-    // if we got here we know we had source and dest, now check for the other two so that we can
-    // give a better
-    // message than "unexpected"
+    // if we got here we know we have source and dest, now check for the other two so that we can
+    // give a better message than "unexpected"
     if (0 <= args.indexOf(PATTERN_PARAM, 0) || 0 <= args.indexOf(REPLACEMENT_PARAM, 0)) {
       throw new SolrException(
           SERVER_ERROR,
@@ -419,7 +419,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
                   + "' contains unexpected child param(s): "
                   + selectorConfig);
         }
-        // consume from the named list so it doesn't interfere with subsequent processing
+        // consume from the named list, so it doesn't interfere with subsequent processing
         sources.remove(0);
       }
     }
@@ -537,7 +537,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
     final FieldNameSelector srcSelector = getSourceSelector();
     return new UpdateRequestProcessor(next) {
       private final NLPNERTaggerOp nerTaggerOp;
-      private Analyzer analyzer = null;
+      private final Analyzer analyzer;
 
       {
         try {
@@ -590,7 +590,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
 
           for (Object val : srcFieldValues) {
             for (Pair<String, String> entity : extractTypedNamedEntities(val)) {
-              SolrInputField destField = null;
+              SolrInputField destField;
               String entityName = entity.first();
               String entityType = entity.second();
               final String resolved = resolvedDest.replace(ENTITY_TYPE, entityType);
@@ -598,11 +598,8 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
                 destField = doc.getField(resolved);
               } else {
                 SolrInputField targetField = destMap.get(resolved);
-                if (targetField == null) {
-                  destField = new SolrInputField(resolved);
-                } else {
-                  destField = targetField;
-                }
+                destField =
+                    Objects.requireNonNullElseGet(targetField, () -> new SolrInputField(resolved));
               }
               destField.addValue(entityName);
 
@@ -612,9 +609,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
           }
         }
 
-        for (Map.Entry<String, SolrInputField> entry : destMap.entrySet()) {
-          doc.put(entry.getKey(), entry.getValue());
-        }
+        doc.putAll(destMap);
         super.processAdd(cmd);
       }
 

@@ -594,7 +594,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
   }
 
-  protected QueryResponse queryServer(ModifiableSolrParams params)
+  /**
+   * Queries a random shard; nothing more.
+   *
+   * <p>WARNING: tests should generally not call this as it doesn't compare to the control client
+   */
+  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
       throws SolrServerException, IOException {
     // query a random server
     int which = r.nextInt(clients.size());
@@ -603,24 +608,24 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return rsp;
   }
 
-  /** Sets distributed params. Returns the QueryResponse from {@link #queryServer}, */
+  /** Sets distributed params. Returns the distributed QueryResponse */
   protected QueryResponse query(Object... q) throws Exception {
     return query(true, q);
   }
 
-  /** Sets distributed params. Returns the QueryResponse from {@link #queryServer}, */
+  /** Sets distributed params. Returns the distributed QueryResponse */
   protected QueryResponse query(SolrParams params) throws Exception {
     return query(true, params);
   }
 
-  /** Returns the QueryResponse from {@link #queryServer} */
+  /** Returns the distributed QueryResponse */
   protected QueryResponse query(boolean setDistribParams, Object[] q) throws Exception {
 
     final ModifiableSolrParams params = createParams(q);
     return query(setDistribParams, params);
   }
 
-  /** Returns the QueryResponse from {@link #queryServer} */
+  /** Returns the distributed QueryResponse */
   protected QueryResponse query(boolean setDistribParams, SolrParams p) throws Exception {
 
     final ModifiableSolrParams params = new ModifiableSolrParams(p);
@@ -637,7 +642,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     params.remove("distrib");
     if (setDistribParams) setDistributedParams(params);
 
-    QueryResponse rsp = queryServer(params);
+    QueryResponse rsp = queryRandomShard(params);
 
     compareResponses(rsp, controlRsp);
 
