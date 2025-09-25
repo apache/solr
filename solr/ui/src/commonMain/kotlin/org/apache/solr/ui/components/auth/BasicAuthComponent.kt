@@ -52,7 +52,7 @@ interface BasicAuthComponent {
      * does not distinguish input fields.
      */
     data class Model(
-        val realm: String = "",
+        val realm: String? = null,
         val username: String = "",
         val password: String = "",
         val hasError: Boolean = false,

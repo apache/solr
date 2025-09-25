@@ -100,12 +100,11 @@ class DefaultAuthenticationComponent(
         }
 
     init {
-        lifecycle.doOnCreate {
-            methods.forEach { method ->
-                when (method) {
-                    is AuthMethod.BasicAuthMethod ->
-                        basicAuthNavigation.activate(configuration = BasicAuthConfiguration(method))
-                }
+        methods.forEach { method ->
+            when (method) {
+                is AuthMethod.BasicAuthMethod ->
+                    basicAuthNavigation.activate(configuration = BasicAuthConfiguration(method))
+                is AuthMethod.Unknown -> {} // TODO Handle unknown auth methods
             }
         }
     }
@@ -120,9 +119,9 @@ class DefaultAuthenticationComponent(
             OnAuthenticated(
                 option = AuthOption.BasicAuthOption(
                     url = url,
-                    method = output.method,
                     username = output.username,
                     password = output.password,
+                    realm = output.method.realm,
                 ),
             ),
         )
