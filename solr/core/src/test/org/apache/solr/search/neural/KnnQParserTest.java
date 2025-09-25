@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.apache.lucene.search.KnnByteVectorQuery;
+import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -1012,8 +1014,8 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
 
     KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
     try {
-      SolrKnnFloatVectorQuery vectorQuery = (SolrKnnFloatVectorQuery) qparser.parse();
-      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getStrategy();
+      KnnFloatVectorQuery vectorQuery = (KnnFloatVectorQuery) qparser.parse();
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
       Integer threshold = strategy.filteredSearchThreshold();
 
       assertEquals(expectedThreshold, threshold);
@@ -1065,8 +1067,8 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
 
     KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
     try {
-      SolrKnnByteVectorQuery vectorQuery = (SolrKnnByteVectorQuery) qparser.parse();
-      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getStrategy();
+      KnnByteVectorQuery vectorQuery = (KnnByteVectorQuery) qparser.parse();
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
       Integer threshold = strategy.filteredSearchThreshold();
 
       assertEquals(expectedThreshold, threshold);
