@@ -21,7 +21,11 @@ New Features
 
 * SOLR-17780: Add support for scalar quantized dense vectors (Kevin Liang via Alessandro Benedetti)
 
+* SOLR-17812: Add support for binary quantized dense vectors (Kevin Liang via Alessandro Benedetti)
+
 * SOLR-17023: Use Modern NLP Models from Apache OpenNLP with Solr (Jeff Zemerick, Eric Pugh)
+
+* SOLR-17814: Add support for PatienceKnnVectorQuery. (Ilaria Petreti via Alessandro Benedetti)
 
 Improvements
 ---------------------
@@ -254,6 +258,9 @@ Improvements
   (David Smiley)
 
 * SOLR-17641: Solr is now able to start on Java 24 and later, but with Security Manager disabled (Houston Putman, Jan Høydahl)
+
+* SOLR-17921: SolrJ CloudSolrClient configured with a Solr URL (not ZK) now refreshes liveNodes in the background.
+  This will reduce spikes in request latency when the cached liveNodes have expired. (Houston Putman, David Smiley)
 
 Optimizations
 ---------------------
