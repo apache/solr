@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
@@ -374,8 +375,8 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     if (!Files.exists(configDir)) {
       // TODO: maybe we should just open it this way to start with?
       try {
-        configDir =
-            Path.of(loader.getClassLoader().getResource(loader.getConfigPath().toString()).toURI());
+        URL configUrl = loader.getClassLoader().getResource(loader.getConfigPath().toString());
+        configDir = Path.of(configUrl.toURI());
       } catch (URISyntaxException e) {
         log.error("Can not access configuration directory!");
         rsp.setException(
