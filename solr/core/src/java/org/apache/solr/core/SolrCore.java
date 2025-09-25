@@ -564,7 +564,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return coreAttributes;
   }
 
-  public void initCoreAttributes() {
+  private void initCoreAttributes() {
     this.coreAttributes =
         (coreContainer.isZooKeeperAware())
             ? Attributes.builder()

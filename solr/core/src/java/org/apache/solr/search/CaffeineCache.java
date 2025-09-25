@@ -330,13 +330,13 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
   @Override
   public void close() throws IOException {
-    IOUtils.closeQuietly(toClose);
     cache.invalidateAll();
     cache.cleanUp();
     if (executor instanceof ExecutorService) {
       ((ExecutorService) executor).shutdownNow();
     }
     ramBytes.reset();
+    IOUtils.closeQuietly(toClose);
     SolrCache.super.close();
   }
 
@@ -506,7 +506,9 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
     ObservableLongMeasurement warmupTimeMetric =
         solrMetricsContext.longGaugeMeasurement(
-            metricPrefix + "_warmup_time", "Cache warmup time", OtelUnit.MILLISECONDS);
+            metricPrefix + "_warmup_time",
+            "Cache warmup time (most recent)",
+            OtelUnit.MILLISECONDS);
 
     this.toClose =
         solrMetricsContext.batchCallback(
