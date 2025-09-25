@@ -61,6 +61,7 @@ public class TestLang extends SolrTestCase {
     "stats",
     "innerJoin",
     "leftOuterJoin",
+    "fullOuterJoin",
     "hashJoin",
     "outerHashJoin",
     "intersect",
