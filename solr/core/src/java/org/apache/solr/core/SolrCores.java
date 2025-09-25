@@ -90,6 +90,7 @@ public class SolrCores {
 
     // It might be possible for one of the cores to move from one list to another while we're
     // closing them. So loop through the lists until they're all empty. In particular, the core
+    // NOCOMMIT
     // could have moved from the transient list to the pendingCloses list.
     while (true) {
       Collection<SolrCore> coreList = new ArrayList<>();
@@ -201,12 +202,6 @@ public class SolrCores {
     synchronized (modifyLock) {
       return cores.size();
     }
-  }
-
-  /** Gets the number of currently loaded transient cores. */
-  public int getNumLoadedTransientCores() {
-    // TODO; this metric ought to simply not exist here
-    return 0;
   }
 
   /** Gets the number of unloaded cores, including permanent and transient cores. */

@@ -895,12 +895,6 @@ public class CoreContainer {
         SolrInfoBean.Category.CONTAINER.toString(),
         "cores");
     solrMetricsContext.gauge(
-        solrCores::getNumLoadedTransientCores,
-        true,
-        "lazy",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "cores");
-    solrMetricsContext.gauge(
         solrCores::getNumUnloadedCores,
         true,
         "unloaded",
@@ -1028,7 +1022,7 @@ public class CoreContainer {
       status |= CORE_DISCOVERY_COMPLETE;
 
       for (final CoreDescriptor cd : cds) {
-        if (cd.isTransient() || !cd.isLoadOnStartup()) {
+        if (!cd.isLoadOnStartup()) {
           solrCores.addCoreDescriptor(cd);
         } else if (asyncSolrCoreLoad) {
           solrCores.markCoreAsLoading(cd);
@@ -1877,10 +1871,10 @@ public class CoreContainer {
   }
 
   /**
-   * Gets the permanent and transient cores that are currently loaded, i.e. cores that have 1:
-   * loadOnStartup=true and are either not-transient or, if transient, have been loaded and have not
-   * been aged out 2: loadOnStartup=false and have been loaded but are either non-transient or have
-   * not been aged out.
+   * NOCOMMIT: ERic needs some help on if loadOnStartup remains a thing or not. Gets the cores that
+   * are currently loaded, i.e. cores that have 1: loadOnStartup=true and are either not-transient
+   * or, if transient, have been loaded and have not been aged out 2: loadOnStartup=false and have
+   * been loaded but are either non-transient or have not been aged out.
    *
    * <p>Put another way, this will not return any names of cores that are lazily loaded but have not
    * been called for yet or are transient and either not loaded or have been swapped out.
@@ -1896,8 +1890,8 @@ public class CoreContainer {
   }
 
   /**
-   * Gets a collection of all the cores, permanent and transient, that are currently known, whether
-   * they are loaded or not.
+   * NOCOMMIT Need to clarify this as well Gets a collection of all the cores, permanent and
+   * transient, that are currently known, whether they are loaded or not.
    *
    * <p>For efficiency, prefer to check {@link #getCoreDescriptor(String)} != null instead of {@link
    * #getAllCoreNames()}.contains(coreName).
@@ -1910,8 +1904,9 @@ public class CoreContainer {
   }
 
   /**
-   * Gets the total number of cores, including permanent and transient cores, loaded and unloaded
-   * cores. Faster equivalent for {@link #getAllCoreNames()}.size().
+   * NOCOMMIT need help on this too Gets the total number of cores, including permanent and
+   * transient cores, loaded and unloaded cores. Faster equivalent for {@link
+   * #getAllCoreNames()}.size().
    */
   public int getNumAllCores() {
     return solrCores.getNumAllCores();
@@ -2148,11 +2143,6 @@ public class CoreContainer {
 
     solrCores.removeCoreDescriptor(cd);
     coresLocator.delete(this, cd);
-    if (core == null) {
-      // transient core
-      SolrCore.deleteUnloadedCore(cd, deleteDataDir, deleteInstanceDir);
-      return;
-    }
 
     // delete metrics specific to this core
     metricManager.removeRegistry(core.getCoreMetricManager().getRegistryName());
@@ -2267,6 +2257,7 @@ public class CoreContainer {
     if (null != loadFailure) {
       throw new SolrCoreInitializationException(name, loadFailure.exception);
     }
+    // NOCOMMIT.  I think that wihtout transient cores, this whole note here can be removed.
     // This is a bit of awkwardness where SolrCloud and transient cores don't play nice together.
     // For transient cores, we have to allow them to be created at any time there hasn't been a core
     // load failure (use reload to cure that). But for
