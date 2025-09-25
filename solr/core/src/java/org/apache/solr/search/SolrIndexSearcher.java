@@ -2642,12 +2642,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       SolrMetricsContext solrMetricsContext, Attributes attributes, String scope) {
     var baseAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, Category.SEARCHER.toString()).build();
-    // caching (boolean -> 0/1) - synchronous gauge
-    cachingEnabledGauge =
-        new AttributedLongGauge(
-            solrMetricsContext.longGauge("solr_searcher_caching_enabled", "1 if caching enabled"),
-            baseAttributes);
-    cachingEnabledGauge.set(cachingEnabled ? 1L : 0L);
 
     // warmupTime (ms) - timer for histogram tracking
     warmupTimer =
