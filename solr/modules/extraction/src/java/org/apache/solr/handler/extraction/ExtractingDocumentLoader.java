@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -258,46 +259,33 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     }
   }
 
+  private final Map<String, String> fieldMappings = new LinkedHashMap<>();
+  {
+    fieldMappings.put("dc:title", "title");
+    fieldMappings.put("dc:creator", "author");
+    fieldMappings.put("dc:description", "description");
+    fieldMappings.put("dc:subject", "subject");
+    fieldMappings.put("dc:language", "language");
+    fieldMappings.put("dc:publisher", "publisher");
+    fieldMappings.put("dcterms:created", "created");
+    fieldMappings.put("dcterms:modified", "modified");
+    fieldMappings.put("meta:author", "Author");
+    fieldMappings.put("meta:creation-date", "Creation-Date");
+    fieldMappings.put("meta:save-date", "Last-Save-Date");
+    fieldMappings.put("meta:keyword", "Keywords");
+  }
+
   private void appendBackCompatTikaMetadata(ExtractionMetadata md) {
     if (!backCompat) {
       return;
     }
 
-    if (md.get("dc:title") != null) {
-      md.addValues("title", md.getValues("dc:title"));
-    }
-    if (md.get("dc:creator") != null) {
-      md.addValues("author", md.getValues("dc:creator"));
-    }
-    if (md.get("dc:description") != null) {
-      md.addValues("description", md.getValues("dc:description"));
-    }
-    if (md.get("dc:subject") != null) {
-      md.addValues("subject", md.getValues("dc:subject"));
-    }
-    if (md.get("dc:language") != null) {
-      md.addValues("language", md.getValues("dc:language"));
-    }
-    if (md.get("dc:publisher") != null) {
-      md.addValues("publisher", md.getValues("dc:publisher"));
-    }
-    if (md.get("dcterms:created") != null) {
-      md.addValues("created", md.getValues("dcterms:created"));
-    }
-    if (md.get("dcterms:modified") != null) {
-      md.addValues("modified", md.getValues("dcterms:modified"));
-    }
-    if (md.get("meta:author") != null) {
-      md.addValues("Author", md.getValues("meta:author"));
-    }
-    if (md.get("meta:creation-date") != null) {
-      md.addValues("Creation-Date", md.getValues("meta:creation-date"));
-    }
-    if (md.get("meta:save-date") != null) {
-      md.addValues("Last-Save-Date", md.getValues("meta:save-date"));
-    }
-    if (md.get("meta:keyword") != null) {
-      md.addValues("Keywords", md.getValues("meta:keyword"));
+    for (Map.Entry<String, String> mapping : fieldMappings.entrySet()) {
+      String sourceField = mapping.getKey();
+      String targetField = mapping.getValue();
+      if (md.get(sourceField) != null && md.get(targetField) == null) {
+        md.addValues(targetField, md.getValues(sourceField));
+      }
     }
   }
 }
