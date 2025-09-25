@@ -3080,8 +3080,7 @@ public class ZkController implements Closeable {
         }
         registeredSearcher.decref();
       } else {
-        @SuppressWarnings("unchecked")
-        Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
+        Future<?>[] waitSearcher = (Future<?>[]) Array.newInstance(Future.class, 1);
         if (log.isInfoEnabled()) {
           log.info(
               "No registered searcher found for core: {}, waiting until a searcher is registered before publishing as active",
