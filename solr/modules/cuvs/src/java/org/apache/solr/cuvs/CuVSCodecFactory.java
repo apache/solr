@@ -24,15 +24,15 @@ import org.apache.solr.core.SchemaCodecFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-public class CuvsCodecFactory extends CodecFactory implements SolrCoreAware {
+public class CuVSCodecFactory extends CodecFactory implements SolrCoreAware {
 
   private final SchemaCodecFactory fallback;
   private SolrCore core;
   NamedList<?> args;
   Lucene101Codec fallbackCodec;
-  CuvsCodec codec;
+  CuVSCodec codec;
 
-  public CuvsCodecFactory() {
+  public CuVSCodecFactory() {
     this.fallback = new SchemaCodecFactory();
   }
 
@@ -40,7 +40,7 @@ public class CuvsCodecFactory extends CodecFactory implements SolrCoreAware {
   public Codec getCodec() {
     if (codec == null) {
       fallbackCodec = (Lucene101Codec) fallback.getCodec();
-      codec = new CuvsCodec(core, fallbackCodec, args);
+      codec = new CuVSCodec(core, fallbackCodec, args);
     }
     return codec;
   }

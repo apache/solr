@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since 10.0.0
  */
-public class CuvsCodec extends FilterCodec {
+public class CuVSCodec extends FilterCodec {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int DEFAULT_CUVS_WRITER_THREADS = 32;
@@ -54,7 +54,7 @@ public class CuvsCodec extends FilterCodec {
   private final Lucene101Codec fallbackCodec;
   private final Lucene99AcceleratedHNSWVectorsFormat cuvsHNSWVectorsFormat;
 
-  public CuvsCodec(SolrCore core, Lucene101Codec fallback, NamedList<?> args) {
+  public CuVSCodec(SolrCore core, Lucene101Codec fallback, NamedList<?> args) {
     super(FALLBACK_CODEC, fallback);
     this.core = core;
     this.fallbackCodec = fallback;

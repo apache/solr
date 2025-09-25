@@ -45,11 +45,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Integration test to verify the indexing and searching using {@link
- * org.apache.solr.cuvs.CuvsCodec}
+ * org.apache.solr.cuvs.CuVSCodec}
  *
  * @since 10.0.0
  */
-public class TestCuvsCodecSupportIT extends SolrTestCaseJ4 {
+public class TestCuVSCodecSupportIT extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static Random random;
@@ -89,7 +89,7 @@ public class TestCuvsCodecSupportIT extends SolrTestCaseJ4 {
     String codecFactory = config.get("codecFactory").attr("class");
     assertEquals(
         "Unexpected solrconfig codec factory",
-        "org.apache.solr.cuvs.CuvsCodecFactory",
+        "org.apache.solr.cuvs.CuVSCodecFactory",
         codecFactory);
     assertEquals("Unexpected core codec", "Lucene101", solrCore.getCodec().getName());
 

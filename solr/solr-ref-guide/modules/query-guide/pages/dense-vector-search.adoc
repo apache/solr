@@ -611,7 +611,7 @@ Define the xref:configuration-guide:codec-factory.adoc[codecFactory] in xref:con
 
 [source,xml]
 ----
-<codecFactory name="CuvsCodecFactory" class="org.apache.solr.cuvs.CuvsCodecFactory">
+<codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
     <str name="cuvsWriterThreads">8</str>
     <str name="intGraphDegree">128</str>
     <str name="graphDegree">64</str>
@@ -766,7 +766,7 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
         </autoSoftCommit>
     </updateHandler>
 
-    <codecFactory name="CuvsCodecFactory" class="org.apache.solr.cuvs.CuvsCodecFactory">
+    <codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
         <str name="cuvsWriterThreads">32</str>
         <str name="intGraphDegree">128</str>
         <str name="graphDegree">64</str>

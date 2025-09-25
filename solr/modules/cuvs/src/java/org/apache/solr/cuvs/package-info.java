@@ -16,6 +16,6 @@
  */
 
 /**
- * Contains the {@link org.apache.solr.cuvs.CuvsCodec} to enable GPU-based accelerated vector search
+ * Contains the {@link org.apache.solr.cuvs.CuVSCodec} to enable GPU-based accelerated vector search
  */
 package org.apache.solr.cuvs;
