@@ -21,6 +21,8 @@ New Features
 
 * SOLR-17780: Add support for scalar quantized dense vectors (Kevin Liang via Alessandro Benedetti)
 
+* SOLR-17892: Add support for cuVS-Lucene as a pluggable codec in Solr (Vivek Narang, Ishan Chattopadhyaya)
+
 * SOLR-17812: Add support for binary quantized dense vectors (Kevin Liang via Alessandro Benedetti)
 
 * SOLR-17023: Use Modern NLP Models from Apache OpenNLP with Solr (Jeff Zemerick, Eric Pugh)
