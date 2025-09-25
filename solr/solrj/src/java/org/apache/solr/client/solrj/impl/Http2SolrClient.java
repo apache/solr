@@ -542,11 +542,13 @@ public class Http2SolrClient extends HttpSolrClientBase {
                     new SolrServerException(failure.getMessage(), failure));
               }
             });
-    future.exceptionally(
-        (error) -> {
-          mrrv.request.abort(error);
-          return null;
-        });
+
+    // SOLR-17916: Disable request aborting
+    // future.exceptionally(
+    //    (error) -> {
+    //     mrrv.request.abort(error);
+    //      return null;
+    //   });
 
     if (mrrv.contentWriter != null) {
       try (var output = mrrv.requestContent.getOutputStream()) {
