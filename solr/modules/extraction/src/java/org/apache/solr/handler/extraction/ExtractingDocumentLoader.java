@@ -19,6 +19,7 @@ package org.apache.solr.handler.extraction;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -129,7 +130,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               stream.getSize(),
               params.get(ExtractingParams.RESOURCE_PASSWORD, null),
               pwMap,
-              extractFormat);
+              extractFormat,
+              Collections.emptyMap());
 
       boolean captureAttr = params.getBool(ExtractingParams.CAPTURE_ATTRIBUTES, false);
       String[] captureElems = params.getParams(ExtractingParams.CAPTURE_ELEMENTS);
@@ -260,6 +262,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   }
 
   private final Map<String, String> fieldMappings = new LinkedHashMap<>();
+
   {
     fieldMappings.put("dc:title", "title");
     fieldMappings.put("dc:creator", "author");

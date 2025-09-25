@@ -176,7 +176,8 @@ final class XmlSanitizingReader extends java.io.Reader {
                 } catch (IOException ignored) {
                 }
               }
-            });
+            },
+            "XmlSanitizingReaderWorker");
     worker.setDaemon(true);
     worker.start();
 

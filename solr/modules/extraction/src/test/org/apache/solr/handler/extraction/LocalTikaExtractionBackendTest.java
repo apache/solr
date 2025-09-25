@@ -18,6 +18,8 @@ package org.apache.solr.handler.extraction;
 
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.tika.config.TikaConfig;
 import org.junit.BeforeClass;
@@ -54,7 +56,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
       String streamSourceInfo,
       Long streamSize,
       String resourcePassword,
-      String returnType) {
+      String returnType,
+      Map<String, String> tikaRequestHeaders) {
     return new ExtractionRequest(
         streamType,
         resourceName,
@@ -65,7 +68,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
         streamSize,
         resourcePassword,
         null,
-        returnType);
+        returnType,
+        tikaRequestHeaders);
   }
 
   @Test
@@ -83,7 +87,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
               null,
               null,
               null,
-              "text");
+              "text",
+              Collections.emptyMap());
       expectThrows(IllegalArgumentException.class, () -> backend.extract(in, req));
     }
 
@@ -99,7 +104,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
               null,
               null,
               null,
-              "text");
+              "text",
+              Collections.emptyMap());
       expectThrows(Exception.class, () -> backend.extract(in, req));
     }
   }
@@ -118,7 +124,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
               null,
               null,
               null,
-              "text");
+              "text",
+              Collections.emptyMap());
       expectThrows(Exception.class, () -> backend.extract(in, req));
     }
   }
@@ -137,7 +144,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
               null,
               null,
               "Word2010",
-              "text");
+              "text",
+              Collections.emptyMap());
       ExtractionResult res = backend.extract(in, req);
       assertNotNull(res);
       assertNotNull(res.getMetadata());

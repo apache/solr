@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler.extraction;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /** Immutable request info needed by extraction backends. */
 public class ExtractionRequest {
   public final String streamType; // explicit MIME type (optional)
@@ -29,6 +32,7 @@ public class ExtractionRequest {
   public final java.util.LinkedHashMap<java.util.regex.Pattern, String>
       passwordsMap; // optional passwords map
   public final String extractFormat;
+  public final Map<String, String> tikaRequestHeaders = new HashMap<>();
 
   public ExtractionRequest(
       String streamType,
@@ -40,7 +44,8 @@ public class ExtractionRequest {
       Long streamSize,
       String resourcePassword,
       java.util.LinkedHashMap<java.util.regex.Pattern, String> passwordsMap,
-      String extractFormat) {
+      String extractFormat,
+      Map<String, String> tikaRequestHeaders) {
     this.streamType = streamType;
     this.resourceName = resourceName;
     this.contentType = contentType;
@@ -51,5 +56,6 @@ public class ExtractionRequest {
     this.resourcePassword = resourcePassword;
     this.passwordsMap = passwordsMap;
     this.extractFormat = extractFormat;
+    this.tikaRequestHeaders.putAll(tikaRequestHeaders);
   }
 }

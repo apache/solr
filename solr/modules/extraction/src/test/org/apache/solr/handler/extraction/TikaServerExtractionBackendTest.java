@@ -20,6 +20,8 @@ import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.ByteArrayInputStream;
 import java.net.http.HttpClient;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -103,7 +105,10 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   }
 
   private static ExtractionRequest newRequest(
-      String resourceName, String contentType, String extractFormat) {
+      String resourceName,
+      String contentType,
+      String extractFormat,
+      Map<String, String> tikaRequestHeaders) {
     return new ExtractionRequest(
         contentType, // streamType
         resourceName, // resourceName
@@ -114,8 +119,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         null, // size
         null, // resourcePassword
         null, // passwordsMap
-        extractFormat // extraction format xml or text
-        );
+        extractFormat, // extraction format xml or text
+        tikaRequestHeaders);
   }
 
   @Test
@@ -156,5 +161,9 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
               || c.toLowerCase(java.util.Locale.ROOT).contains("<xhtml"));
       assertTrue(c.contains("Hello XML"));
     }
+  }
+
+  private ExtractionRequest newRequest(String file, String contentType, String xml) {
+    return newRequest(file, contentType, xml, Collections.emptyMap());
   }
 }

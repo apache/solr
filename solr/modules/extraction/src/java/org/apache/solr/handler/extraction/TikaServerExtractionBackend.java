@@ -102,6 +102,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     if (contentType != null) {
       b.header("Content-Type", contentType);
     }
+    if (!request.tikaRequestHeaders.isEmpty()) {
+      request.tikaRequestHeaders.forEach(b::header);
+    }
     ExtractionMetadata md = buildMetadataFromRequest(request);
     if (request.resourcePassword != null || request.passwordsMap != null) {
       RegexRulesPasswordProvider passwordProvider = new RegexRulesPasswordProvider();
