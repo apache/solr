@@ -42,6 +42,8 @@ Bug Fixes
 
 * SOLR-17837: PULL replica nodes could be marked as "preferredLeader" by BALANCESHARDUNIQUE despite never being able to be elected leader (Kevin Liang via Houston Putman)
 
+* SOLR-17869: Avoid creating grouping shard requests when timeAllowed has already run out. (Andrzej Bialecki, hossman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
