@@ -1263,6 +1263,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
       for (String rows : new String[] {"10", "0"}) {
         simpleQuery(
             "q", "*:*", "group", "true", "group.field", i1, "group.ngroups", ngroups, "rows", rows);
+        // delaying component introduces a delay longer than timeAllowed
         QueryResponse rsp =
             simpleQuery(
                 "q",
@@ -1283,6 +1284,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
                 "300");
         assertTrue(
             "header: " + rsp.getHeader(), SolrQueryResponse.isPartialResults(rsp.getHeader()));
+        //
         rsp =
             simpleQuery(
                 "q",
@@ -1727,13 +1729,13 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     }
   }
 
-  private QueryResponse simpleQuery(Object... queryParams) throws SolrServerException, IOException {
+  private QueryResponse simpleQuery(Object... queryParams) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int i = 0; i < queryParams.length; i += 2) {
       params.add(queryParams[i].toString(), queryParams[i + 1].toString());
     }
     params.set("shards", shards);
-    return queryServer(params);
+    return queryRandomShard(params);
   }
 
   /**
