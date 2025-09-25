@@ -64,12 +64,7 @@ public class SolrCores {
   private final List<SolrCore> pendingCloses = new ArrayList<>();
 
   public static SolrCores newSolrCores(CoreContainer coreContainer) {
-    final int transientCacheSize = coreContainer.getConfig().getTransientCacheSize();
-    if (transientCacheSize > 0) {
-      return new TransientSolrCores(coreContainer, transientCacheSize);
-    } else {
-      return new SolrCores(coreContainer);
-    }
+    return new SolrCores(coreContainer);
   }
 
   SolrCores(CoreContainer container) {

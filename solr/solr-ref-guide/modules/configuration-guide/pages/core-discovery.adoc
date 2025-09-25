@@ -153,7 +153,7 @@ The value can be an absolute pathname or a path relative to the value of `instan
 |Optional |Default: `false`
 |===
 +
-When `true`, the core can be unloaded if Solr reaches the `transientCacheSize`.
+When `true`, the core can be unloaded if Solr needs it? (Werid text here!)
 Cores are unloaded in order of least recently used first.
 _Setting this to `true` is not recommended in SolrCloud mode._
 
