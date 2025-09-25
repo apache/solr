@@ -104,7 +104,7 @@ configure(allprojects) { prj ->
 
   // Emit a custom message about how to fix formatting errors.
   tasks.matching { task -> task.name == "spotlessJavaCheck" }.configureEach {
-    it.runToFixMessage.set("\nIMPORTANT: run the top-level './gradlew tidy' to format code automatically (see help/formatting.txt for more info).")
+    it.runToFixMessage.set("\nIMPORTANT: run the top-level './gradlew tidy' to format code automatically (see dev-docs/gradle-help/formatting.txt for more info).")
   }
 
   // Hook up spotless to tidy and check tasks.

@@ -22,7 +22,7 @@ Keeping them up-to-date is crucial for a number of reasons:
 * minimizing the risk of critical CVE vulnerabilities by staying on a recent and supported version
 * avoiding "dependency hell", that can arise from falling too far behind
 
-Read the https://github.com/apache/solr/blob/main/help/dependencies.txt[help/dependencies.txt] file for an in-depth
+Read the https://github.com/apache/solr/blob/main/dev-docs/gradle-help/dependencies.txt[dev-docs/gradle-help/dependencies.txt] file for an in-depth
 explanation of how dependencies are managed.
 
 == Manual dependency upgrades
@@ -34,11 +34,11 @@ To upgrade a dependency, you need to run through a number of steps:
    where the locked version of other dependencies also changes.
 4. Run `./gradlew kotlinUpgradeYarnLock` to update the kotlin-js-store lockfile used for the new UI.
    Most of the cases it will not have any changes.
-5. In case of a conflict, resolve the conflict according to `help/dependencies.txt`
-6. Update the license and notice files of the changed dependencies. See `help/dependencies.txt` for details.
+5. In case of a conflict, resolve the conflict according to `dev-docs/gradle-help/dependencies.txt`
+6. Update the license and notice files of the changed dependencies. See `dev-docs/gradle-help/dependencies.txt` for details.
 7. Run `./gradlew updateLicenses` to re-generate SHA1 checksums of the new jar files.
 8. Once in a while, a new version of a dependency will transitively bring in brand-new dependencies.
-   You'll need to decide whether to keep or exclude them. See `help/dependencies.txt` for details.
+   You'll need to decide whether to keep or exclude them. See `dev-docs/gradle-help/dependencies.txt` for details.
 
 === Constraints and Version Alignment
 

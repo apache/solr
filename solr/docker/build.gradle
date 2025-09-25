@@ -415,7 +415,7 @@ task createDockerfileOfficial {
 if (''.equals(releaseGpgFingerprint)) {
   gradle.taskGraph.whenReady { graph ->
     if ( graph.hasTask(tasks.createDockerfileOfficialFull) || graph.hasTask(tasks.createDockerfileOfficialSlim) ) {
-      throw new GradleException("No GPG keyName found, please see help/publishing.txt (GPG key is neccessary to create Dockerfile.official)")
+      throw new GradleException("No GPG keyName found, please see dev-docs/gradle-help/publishing.txt (GPG key is neccessary to create Dockerfile.official)")
     }
   }
 }
