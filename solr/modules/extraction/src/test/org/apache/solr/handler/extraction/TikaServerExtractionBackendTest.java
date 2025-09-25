@@ -25,6 +25,7 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.tika.sax.ToXMLContentHandler;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -137,15 +138,16 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExtractOnlyXml() throws Exception {
+  public void testExtractWithSaxHandlerXml() throws Exception {
     Assume.assumeTrue("Tika server container not started", tika != null);
     TikaServerExtractionBackend backend = new TikaServerExtractionBackend(client, baseUrl);
     byte[] data = "Hello XML".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    ExtractionRequest request = newRequest("test.txt", "text/plain", "xml");
     try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
-      ExtractionResult res =
-          backend.extractOnly(in, newRequest("test.txt", "text/plain", "xml"), null);
-      assertNotNull(res);
-      String c = res.getContent();
+      ToXMLContentHandler xmlHandler = new ToXMLContentHandler();
+      ExtractionMetadata md = backend.buildMetadataFromRequest(request);
+      backend.extractWithSaxHandler(in, request, md, xmlHandler);
+      String c = xmlHandler.toString();
       assertNotNull(c);
       // Tika Server may return XHTML without XML declaration; be flexible
       assertTrue(
@@ -153,23 +155,6 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
               || c.toLowerCase(java.util.Locale.ROOT).contains("<html")
               || c.toLowerCase(java.util.Locale.ROOT).contains("<xhtml"));
       assertTrue(c.contains("Hello XML"));
-    }
-  }
-
-  @Test
-  public void testParseToSolrContentHandlerUnsupported() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
-    TikaServerExtractionBackend backend = new TikaServerExtractionBackend(client, baseUrl);
-    byte[] data = "dummy".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-    try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
-      expectThrows(
-          UnsupportedOperationException.class,
-          () ->
-              backend.parseToSolrContentHandler(
-                  in,
-                  newRequest("test.txt", "text/plain", "text"),
-                  new SolrContentHandler(new ExtractionMetadata(), params(), null),
-                  new ExtractionMetadata()));
     }
   }
 }

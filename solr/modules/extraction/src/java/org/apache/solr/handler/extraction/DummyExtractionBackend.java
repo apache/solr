@@ -17,10 +17,12 @@
 package org.apache.solr.handler.extraction;
 
 import java.io.InputStream;
+import org.xml.sax.ContentHandler;
 
 /** Dummy backend that emits predictable test data without actually parsing input content. */
 public class DummyExtractionBackend implements ExtractionBackend {
   public static final String NAME = "dummy";
+  private final String text = "This is dummy extracted content";
 
   @Override
   public String name() {
@@ -37,32 +39,20 @@ public class DummyExtractionBackend implements ExtractionBackend {
     if (request.resourceName != null) {
       metadata.add("resourcename", request.resourceName);
     }
-    String text = "This is dummy extracted content";
     return new ExtractionResult(text, metadata);
   }
 
   @Override
-  public ExtractionResult extractOnly(
-      InputStream inputStream, ExtractionRequest request, String xpathExpr) {
-    if (xpathExpr != null) {
-      throw new UnsupportedOperationException("XPath not supported by dummy backend");
-    }
-    return extract(inputStream, request);
-  }
-
-  @Override
-  public void parseToSolrContentHandler(
+  public void extractWithSaxHandler(
       InputStream inputStream,
       ExtractionRequest request,
-      SolrContentHandler handler,
-      ExtractionMetadata outMetadata) {
-    // Fill metadata
-    ExtractionResult r = extract(inputStream, request);
-    for (String name : r.getMetadata().names()) {
-      String[] vals = r.getMetadata().getValues(name);
-      if (vals != null) for (String v : vals) outMetadata.add(name, v);
-    }
-    // Append content
-    handler.appendToContent(r.getContent());
+      ExtractionMetadata md,
+      ContentHandler saxContentHandler)
+      throws Exception {
+
+    ExtractionResult res = extract(inputStream, request);
+    md.putAll(res.getMetadata().asMap());
+    // Append the content to the SAX handler
+    saxContentHandler.characters(res.getContent().toCharArray(), 0, res.getContent().length());
   }
 }

@@ -19,6 +19,7 @@ package org.apache.solr.handler.extraction;
 import java.io.InputStream;
 import org.apache.tika.metadata.HttpHeaders;
 import org.apache.tika.metadata.TikaMetadataKeys;
+import org.xml.sax.ContentHandler;
 
 /** Strategy interface for content extraction backends. */
 public interface ExtractionBackend {
@@ -29,23 +30,14 @@ public interface ExtractionBackend {
   ExtractionResult extract(InputStream inputStream, ExtractionRequest request) throws Exception;
 
   /**
-   * Perform extractOnly operation. If extractFormat equals ExtractingDocumentLoader.TEXT_FORMAT,
-   * return plain text. If XML, return XML body as string. Implementations may support optional
-   * xpathExpr; if unsupported and xpathExpr is not null, they should throw
-   * UnsupportedOperationException.
+   * Perform extraction of text from input stream with SAX handler. Sax handler can be
+   * SolrContentHandler, ToTextContentHandler, ToXMLContentHandler, MatchingContentHandler etc
    */
-  ExtractionResult extractOnly(InputStream inputStream, ExtractionRequest request, String xpathExpr)
-      throws Exception;
-
-  /**
-   * Parse the content and stream SAX events into the provided SolrContentHandler, while also
-   * filling outMetadata with extracted metadata.
-   */
-  void parseToSolrContentHandler(
+  void extractWithSaxHandler(
       InputStream inputStream,
       ExtractionRequest request,
-      SolrContentHandler handler,
-      ExtractionMetadata outMetadata)
+      ExtractionMetadata md,
+      ContentHandler saxContentHandler)
       throws Exception;
 
   /** Build ExtractionMetadata from the request context */

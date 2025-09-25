@@ -31,10 +31,19 @@ public class ExtractionMetadata {
     map.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
   }
 
+  public void addValues(String name, String[] values) {
+    if (name == null || values == null || values.length == 0) return;
+    map.computeIfAbsent(name, k -> new ArrayList<>()).addAll(List.of(values));
+  }
+
   public void addIfNotNull(String resourceNameKey, String resourceName) {
     if (resourceName != null) {
       add(resourceNameKey, resourceName);
     }
+  }
+
+  public void putAll(Map<String, List<String>> map) {
+    this.map.putAll(map);
   }
 
   public String[] getValues(String name) {
@@ -55,6 +64,10 @@ public class ExtractionMetadata {
 
   public void remove(String name) {
     map.remove(name);
+  }
+
+  public Map<String, List<String>> asMap() {
+    return map;
   }
 
   @Override

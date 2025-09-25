@@ -139,4 +139,7 @@ public interface ExtractingParams {
 
   /** Backend selection parameter and */
   public static final String EXTRACTION_BACKEND = "extraction.backend";
+
+  /** Fix metadata to match Tika 1.x */
+  public static final String BACK_COMPATIBILITY = "backCompatibility";
 }

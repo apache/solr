@@ -51,6 +51,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   final SolrParams params;
   final UpdateRequestProcessor processor;
   final boolean ignoreTikaException;
+  final boolean backCompat;
 
   private final AddUpdateCommand templateAdd;
 
@@ -65,10 +66,12 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     this.params = req.getParams();
     this.core = req.getCore();
     this.processor = processor;
+    this.backCompat = params.getBool(ExtractingParams.BACK_COMPATIBILITY, true);
 
     templateAdd = new AddUpdateCommand(req);
     templateAdd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
     templateAdd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+    templateAdd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
 
     this.factory = factory;
     this.backend = backend;
@@ -139,13 +142,48 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
       if (extractOnly) {
         try {
-          ExtractionResult result = backend.extractOnly(inputStream, extractionRequest, xpathExpr);
+          ExtractionMetadata md = backend.buildMetadataFromRequest(extractionRequest);
+          String content;
+          if (ExtractingDocumentLoader.TEXT_FORMAT.equals(extractionRequest.extractFormat)
+              || xpathExpr != null) {
+            org.apache.tika.sax.ToTextContentHandler textHandler =
+                new org.apache.tika.sax.ToTextContentHandler();
+            org.xml.sax.ContentHandler ch = textHandler;
+            if (xpathExpr != null) {
+              org.apache.tika.sax.xpath.XPathParser xparser =
+                  new org.apache.tika.sax.xpath.XPathParser(
+                      "xhtml", org.apache.tika.sax.XHTMLContentHandler.XHTML);
+              org.apache.tika.sax.xpath.Matcher matcher = xparser.parse(xpathExpr);
+              ch = new org.apache.tika.sax.xpath.MatchingContentHandler(textHandler, matcher);
+            }
+            backend.extractWithSaxHandler(inputStream, extractionRequest, md, ch);
+            content = textHandler.toString();
+          } else { // XML format
+            org.apache.tika.sax.ToXMLContentHandler toXml =
+                new org.apache.tika.sax.ToXMLContentHandler();
+            org.xml.sax.ContentHandler ch = toXml;
+            if (xpathExpr != null) {
+              org.apache.tika.sax.xpath.XPathParser xparser =
+                  new org.apache.tika.sax.xpath.XPathParser(
+                      "xhtml", org.apache.tika.sax.XHTMLContentHandler.XHTML);
+              org.apache.tika.sax.xpath.Matcher matcher = xparser.parse(xpathExpr);
+              ch = new org.apache.tika.sax.xpath.MatchingContentHandler(toXml, matcher);
+            }
+            backend.extractWithSaxHandler(inputStream, extractionRequest, md, ch);
+            content = toXml.toString();
+            if (!content.startsWith("<?xml")) {
+              content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + content;
+            }
+          }
+
+          appendBackCompatTikaMetadata(md);
+
           // Write content
-          rsp.add(stream.getName(), result.getContent());
+          rsp.add(stream.getName(), content);
           // Write metadata
           NamedList<String[]> metadataNL = new NamedList<>();
-          for (String name : result.getMetadata().names()) {
-            metadataNL.add(name, result.getMetadata().getValues(name));
+          for (String name : md.names()) {
+            metadataNL.add(name, md.getValues(name));
           }
           rsp.add(stream.getName() + "_metadata", metadataNL);
         } catch (UnsupportedOperationException uoe) {
@@ -166,11 +204,11 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
       if (needLegacySax) {
         // Indexing with capture/xpath/etc: delegate SAX parse to backend
-        ExtractionMetadata neutral = new ExtractionMetadata();
+        ExtractionMetadata metadata = backend.buildMetadataFromRequest(extractionRequest);
         SolrContentHandler handler =
-            factory.createSolrContentHandler(neutral, params, req.getSchema());
+            factory.createSolrContentHandler(metadata, params, req.getSchema());
         try {
-          backend.parseToSolrContentHandler(inputStream, extractionRequest, handler, neutral);
+          backend.extractWithSaxHandler(inputStream, extractionRequest, metadata, handler);
         } catch (UnsupportedOperationException uoe) {
           // For backends that don't support parseToSolrContentHandler
           if (log.isWarnEnabled()) {
@@ -183,13 +221,13 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           if (ignoreTikaException) {
             if (log.isWarnEnabled()) {
               log.warn("skip extracting text due to {}.", e.getLocalizedMessage(), e);
+              return;
             }
-            // Index a document with literals only (no extracted content/metadata)
-            addDoc(handler);
-            return;
           }
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
+        appendBackCompatTikaMetadata(handler.metadata);
+
         addDoc(handler);
         return;
       }
@@ -202,22 +240,64 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         if (ignoreTikaException) {
           if (log.isWarnEnabled())
             log.warn("skip extracting text due to {}.", e.getLocalizedMessage(), e);
-          // Index a document with literals only (no extracted content/metadata)
-          SolrContentHandler handler =
-              factory.createSolrContentHandler(new ExtractionMetadata(), params, req.getSchema());
-          addDoc(handler);
           return;
         }
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 
       ExtractionMetadata metadata = result.getMetadata();
+
+      appendBackCompatTikaMetadata(metadata);
+
       String content = result.getContent();
 
       SolrContentHandler handler =
           factory.createSolrContentHandler(metadata, params, req.getSchema());
       handler.appendToContent(content);
       addDoc(handler);
+    }
+  }
+
+  private void appendBackCompatTikaMetadata(ExtractionMetadata md) {
+    if (!backCompat) {
+      return;
+    }
+
+    if (md.get("dc:title") != null) {
+      md.addValues("title", md.getValues("dc:title"));
+    }
+    if (md.get("dc:creator") != null) {
+      md.addValues("author", md.getValues("dc:creator"));
+    }
+    if (md.get("dc:description") != null) {
+      md.addValues("description", md.getValues("dc:description"));
+    }
+    if (md.get("dc:subject") != null) {
+      md.addValues("subject", md.getValues("dc:subject"));
+    }
+    if (md.get("dc:language") != null) {
+      md.addValues("language", md.getValues("dc:language"));
+    }
+    if (md.get("dc:publisher") != null) {
+      md.addValues("publisher", md.getValues("dc:publisher"));
+    }
+    if (md.get("dcterms:created") != null) {
+      md.addValues("created", md.getValues("dcterms:created"));
+    }
+    if (md.get("dcterms:modified") != null) {
+      md.addValues("modified", md.getValues("dcterms:modified"));
+    }
+    if (md.get("meta:author") != null) {
+      md.addValues("Author", md.getValues("meta:author"));
+    }
+    if (md.get("meta:creation-date") != null) {
+      md.addValues("Creation-Date", md.getValues("meta:creation-date"));
+    }
+    if (md.get("meta:save-date") != null) {
+      md.addValues("Last-Save-Date", md.getValues("meta:save-date"));
+    }
+    if (md.get("meta:keyword") != null) {
+      md.addValues("Keywords", md.getValues("meta:keyword"));
     }
   }
 }

@@ -30,6 +30,7 @@ import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.PasswordProvider;
 import org.apache.tika.parser.html.HtmlMapper;
 import org.apache.tika.sax.BodyContentHandler;
+import org.xml.sax.ContentHandler;
 
 /**
  * Extraction backend using local in-process Apache Tika. This encapsulates the previous direct
@@ -134,7 +135,7 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
     return context;
   }
 
-  private static ExtractionMetadata copyToNeutral(Metadata md) {
+  private static ExtractionMetadata tikaMetadataToExtractionMetadata(Metadata md) {
     ExtractionMetadata out = new ExtractionMetadata();
     for (String name : md.names()) {
       String[] vals = md.getValues(name);
@@ -150,74 +151,30 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
     if (parser == null) {
       throw new IllegalArgumentException("No Tika parser for stream type: " + request.streamType);
     }
-    Metadata md = buildMetadata(request);
     ParseContext context = buildContext(parser, request);
+    Metadata md = buildMetadata(request);
     BodyContentHandler textHandler = new BodyContentHandler(-1);
     parser.parse(inputStream, textHandler, md, context);
-    return new ExtractionResult(textHandler.toString(), copyToNeutral(md));
+    return new ExtractionResult(textHandler.toString(), tikaMetadataToExtractionMetadata(md));
   }
 
   @Override
-  public ExtractionResult extractOnly(
-      InputStream inputStream, ExtractionRequest request, String xpathExpr) throws Exception {
-    Parser parser = selectParser(request);
-    if (parser == null) {
-      throw new IllegalArgumentException("No Tika parser for stream type: " + request.streamType);
-    }
-    Metadata md = buildMetadata(request);
-    ParseContext context = buildContext(parser, request);
-
-    String content;
-    if (ExtractingDocumentLoader.TEXT_FORMAT.equals(request.extractFormat) || xpathExpr != null) {
-      org.apache.tika.sax.ToTextContentHandler textHandler =
-          new org.apache.tika.sax.ToTextContentHandler();
-      org.xml.sax.ContentHandler ch = textHandler;
-      if (xpathExpr != null) {
-        org.apache.tika.sax.xpath.XPathParser xparser =
-            new org.apache.tika.sax.xpath.XPathParser(
-                "xhtml", org.apache.tika.sax.XHTMLContentHandler.XHTML);
-        org.apache.tika.sax.xpath.Matcher matcher = xparser.parse(xpathExpr);
-        ch = new org.apache.tika.sax.xpath.MatchingContentHandler(textHandler, matcher);
-      }
-      parser.parse(inputStream, ch, md, context);
-      content = textHandler.toString();
-    } else { // XML format
-      org.apache.tika.sax.ToXMLContentHandler toXml = new org.apache.tika.sax.ToXMLContentHandler();
-      org.xml.sax.ContentHandler ch = toXml;
-      if (xpathExpr != null) {
-        org.apache.tika.sax.xpath.XPathParser xparser =
-            new org.apache.tika.sax.xpath.XPathParser(
-                "xhtml", org.apache.tika.sax.XHTMLContentHandler.XHTML);
-        org.apache.tika.sax.xpath.Matcher matcher = xparser.parse(xpathExpr);
-        ch = new org.apache.tika.sax.xpath.MatchingContentHandler(toXml, matcher);
-      }
-      parser.parse(inputStream, ch, md, context);
-      content = toXml.toString();
-      if (!content.startsWith("<?xml")) {
-        content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + content;
-      }
-    }
-    return new ExtractionResult(content, copyToNeutral(md));
-  }
-
-  @Override
-  public void parseToSolrContentHandler(
+  public void extractWithSaxHandler(
       InputStream inputStream,
       ExtractionRequest request,
-      SolrContentHandler handler,
-      ExtractionMetadata outMetadata)
+      ExtractionMetadata md,
+      ContentHandler saxContentHandler)
       throws Exception {
     Parser parser = selectParser(request);
     if (parser == null) {
       throw new IllegalArgumentException("No Tika parser for stream type: " + request.streamType);
     }
-    Metadata md = buildMetadata(request);
     ParseContext context = buildContext(parser, request);
-    parser.parse(inputStream, handler, md, context);
-    // populate outMetadata
-    for (String name : md.names()) {
-      String[] vals = md.getValues(name);
-      if (vals != null) for (String v : vals) outMetadata.add(name, v);
+    Metadata tikaMetadata = buildMetadata(request);
+    parser.parse(inputStream, saxContentHandler, tikaMetadata, context);
+    for (String name : tikaMetadata.names()) {
+      String[] vals = tikaMetadata.getValues(name);
+      if (vals != null) for (String v : vals) md.add(name, v);
     }
   }
 }
