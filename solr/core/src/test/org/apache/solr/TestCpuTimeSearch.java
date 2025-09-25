@@ -27,7 +27,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.apache.solr.util.ThreadCpuTimer;
 import org.junit.BeforeClass;
@@ -45,7 +44,6 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setupSolr() throws Exception {
     System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
-    System.setProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST, "true");
 
     Path configSet = createTempDir("configSet");
     copyMinConf(configSet);

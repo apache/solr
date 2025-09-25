@@ -58,7 +58,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void createThings() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
+    systemSetPropertyEnableUrlAllowList(false);
     Path solrHome = createSolrHome();
     createAndStartJetty(solrHome);
     String url = getBaseUrl();
@@ -102,7 +102,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       collection2 = null;
     }
     resetExceptionIgnores();
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @Test

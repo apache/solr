@@ -30,11 +30,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.NodeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Validates URLs based on an allow list or a {@link ClusterState} in SolrCloud. */
+/** Validates URLs using an allow-list or a {@link ClusterState} in SolrCloud. */
 public class AllowListUrlChecker {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -42,12 +43,12 @@ public class AllowListUrlChecker {
   /** {@link org.apache.solr.core.SolrXmlConfig} property to configure the allowed URLs. */
   public static final String URL_ALLOW_LIST = "allowUrls";
 
-  /** System property to disable URL checking and {@link #ALLOW_ALL} instead. */
-  public static final String DISABLE_URL_ALLOW_LIST = "solr.disable." + URL_ALLOW_LIST;
+  /** System property to enable URL checking against an allow-list and ignore {@link #ALLOW_ALL}. */
+  public static final String ENABLE_URL_ALLOW_LIST = "solr.security.allow.urls.enabled";
 
   /** Clue given in URL-forbidden exceptions messages. */
   public static final String SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE =
-      "Set -D" + DISABLE_URL_ALLOW_LIST + "=true to disable URL allow-list checks.";
+      "Set -D" + ENABLE_URL_ALLOW_LIST + "=false to disable URL allow-list checks.";
 
   /** Singleton checker which allows all URLs. {@link #isEnabled()} returns false. */
   public static final AllowListUrlChecker ALLOW_ALL;
@@ -83,7 +84,9 @@ public class AllowListUrlChecker {
    */
   private static final Pattern PROTOCOL_PATTERN = Pattern.compile("(\\w+)(://.*)");
 
-  /** Allow list of hosts. Elements in the list will be host:port (no protocol or context). */
+  /**
+   * Allow list of hosts. Elements in the list are formatted as host:port (no protocol or context).
+   */
   private final Set<String> hostAllowList;
 
   private volatile Set<String> liveHostUrlsCache;
@@ -94,7 +97,7 @@ public class AllowListUrlChecker {
    *     tolerated. An empty list means there is no explicit allow-list of URLs, in this case no URL
    *     is allowed unless a {@link ClusterState} is provided in {@link #checkAllowList(List,
    *     ClusterState)}.
-   * @throws MalformedURLException If an URL is invalid.
+   * @throws MalformedURLException If a URL is invalid.
    */
   public AllowListUrlChecker(List<String> urlAllowList) throws MalformedURLException {
     hostAllowList = parseHostPorts(urlAllowList);
@@ -104,12 +107,8 @@ public class AllowListUrlChecker {
    * Creates a URL checker based on the {@link NodeConfig} property to configure the allowed URLs.
    */
   public static AllowListUrlChecker create(NodeConfig config) {
-    if (Boolean.getBoolean(DISABLE_URL_ALLOW_LIST)) {
+    if (!EnvUtils.getPropertyAsBool(ENABLE_URL_ALLOW_LIST, true)) {
       return AllowListUrlChecker.ALLOW_ALL;
-    } else if (System.getProperty("solr.disable.shardsWhitelist") != null) {
-      log.warn(
-          "Property 'solr.disable.shardsWhitelist' is deprecated, please use '{}' instead.",
-          DISABLE_URL_ALLOW_LIST);
     }
     try {
       return new AllowListUrlChecker(config.getAllowUrls());
@@ -134,8 +133,8 @@ public class AllowListUrlChecker {
    *
    * @param urls The list of urls to check.
    * @param clusterState The up to date {@link ClusterState}, can be null in case of non-cloud mode.
-   * @throws MalformedURLException If an URL is invalid.
-   * @throws SolrException If an URL is not present in the allow-list or in the provided {@link
+   * @throws MalformedURLException If a URL is invalid.
+   * @throws SolrException If a URL is not present in the allow-list or in the provided {@link
    *     ClusterState}.
    */
   public void checkAllowList(List<String> urls, ClusterState clusterState)
