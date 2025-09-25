@@ -16,13 +16,15 @@
  */
 package org.apache.solr.handler.extraction;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.Reader;
-import java.io.StringWriter;
-import org.apache.commons.io.IOUtils;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Make sure the XHTML input is valid XML. Pipe text through this reader before passing it to an XML
@@ -156,13 +158,28 @@ final class XmlSanitizingReader extends java.io.Reader {
   }
 
   public static InputStream sanitize(InputStream in) throws IOException {
-    try (Reader reader = new XmlSanitizingReader(new InputStreamReader(in));
-        StringWriter writer = new StringWriter()) {
+    PipedOutputStream out = new PipedOutputStream();
+    PipedInputStream pipedIn = new PipedInputStream(out);
 
-      IOUtils.copy(reader, writer); // copy all sanitized chars to writer
+    Reader reader = new XmlSanitizingReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+    Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
 
-      byte[] bytes = writer.toString().getBytes("UTF-8");
-      return new ByteArrayInputStream(bytes);
-    }
+    Thread worker =
+        new Thread(
+            () -> {
+              try (reader;
+                  writer) {
+                reader.transferTo(writer);
+              } catch (IOException e) {
+                try {
+                  pipedIn.close();
+                } catch (IOException ignored) {
+                }
+              }
+            });
+    worker.setDaemon(true);
+    worker.start();
+
+    return pipedIn;
   }
 }
