@@ -40,7 +40,8 @@ import org.slf4j.LoggerFactory;
 public class SolrZkServer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String ZK_WHITELIST_PROPERTY = "zookeeper.4lw.commands.whitelist";
+  // We do not have control over how Zookeeper names it's properties.
+  public static final String ZK_ALLOWLIST_PROPERTY = "zookeeper.4lw.commands.whitelist";
 
   boolean zkRun = false;
   String zkHost;
@@ -138,8 +139,8 @@ public class SolrZkServer {
       return;
     }
 
-    if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
-      System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
+    if (EnvUtils.getProperty(ZK_ALLOWLIST_PROPERTY) == null) {
+      System.setProperty(ZK_ALLOWLIST_PROPERTY, "ruok, mntr, conf");
     }
     AtomicReference<Exception> zkException = new AtomicReference<>();
     zkThread =
