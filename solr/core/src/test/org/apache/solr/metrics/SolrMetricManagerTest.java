@@ -37,16 +37,19 @@ import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.util.SolrMetricTestUtils;
@@ -62,7 +65,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.metrics.otlpExporterInterval", "1000");
     this.metricManager = new SolrMetricManager(InMemoryMetricExporter.create());
     // Initialize a metric reader for tests
     metricManager.meterProvider(METER_PROVIDER_NAME);
@@ -402,22 +404,22 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     counter.add(3);
     InMemoryMetricExporter exporter = (InMemoryMetricExporter) metricManager.getMetricExporter();
 
-    // Wait 3 seconds for the exporter to push metrics
-    Thread.sleep(3000);
-
-    var metrics = exporter.getFinishedMetricItems();
-
-    MetricData actual =
-        metrics.stream()
-            .filter(m -> "my_counter".equals(m.getName()))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("my_counter metric not found from exporter"));
-
-    // Exporter pushes metrics every 1 second, so we only need to find at least 1 metric point with
-    // the correct value
-    assertTrue(
-        "Exported counter had different recorded value than expected",
-        actual.getLongSumData().getPoints().stream().anyMatch(p -> p.getValue() == 8L));
+    RetryUtil.retryUntil(
+        "my_counter metric not found from exporter within timeout",
+        50,
+        100L,
+        TimeUnit.MILLISECONDS,
+        () -> {
+          Collection<MetricData> metrics = exporter.getFinishedMetricItems();
+          return metrics.stream()
+              .filter(m -> "my_counter".equals(m.getName()))
+              .findFirst()
+              .map(
+                  actual ->
+                      actual.getLongSumData().getPoints().stream()
+                          .anyMatch(p -> p.getValue() == 8L))
+              .orElse(false);
+        });
   }
 
   @Test
