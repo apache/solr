@@ -70,17 +70,15 @@ public class TimeAllowedLimit implements QueryLimit {
     // time already spent locally before this limit was initialized, in milliseconds
     long timeAlreadySpentMs = (long) req.getRequestTimer().getTime();
     long parentUsedMs = req.getParams().getLong(USED_PARAM, -1L);
-    long inflightMs = DEFAULT_INFLIGHT_MS;
+    reqInflightMs = req.getParams().getLong(INFLIGHT_PARAM, DEFAULT_INFLIGHT_MS);
     if (parentUsedMs != -1L) {
       // this is a sub-request of a request that already had timeAllowed set.
       // We have to deduct the time already used by the parent request.
       // Also, add some in-flight time to account for the fact that the parentUsedMs
       // value was captured before the request was sent from the parent
-      inflightMs = req.getParams().getLong(INFLIGHT_PARAM, DEFAULT_INFLIGHT_MS);
-      log.debug("parentUsedMs: {}, inflightMs: {}", parentUsedMs, inflightMs);
-      timeAlreadySpentMs += parentUsedMs + inflightMs;
+      log.debug("parentUsedMs: {}, inflightMs: {}", parentUsedMs, reqInflightMs);
+      timeAlreadySpentMs += parentUsedMs + reqInflightMs;
     }
-    reqInflightMs = inflightMs;
     long nowNs = nanoTime();
     long remainingTimeAllowedMs = reqTimeAllowedMs - timeAlreadySpentMs;
     log.debug("remainingTimeAllowedMs: {}", remainingTimeAllowedMs);
@@ -98,7 +96,7 @@ public class TimeAllowedLimit implements QueryLimit {
       // before it's processed at the target
       result = true;
     }
-    params.set(USED_PARAM, Long.toString(usedTimeAllowedMs, 16));
+    params.set(USED_PARAM, Long.toString(usedTimeAllowedMs));
     log.debug("adjustShardRequestLimit: used {} ms (skip? {})", usedTimeAllowedMs, result);
     return result;
   }
