@@ -276,6 +276,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     fieldMappings.put("meta:creation-date", "Creation-Date");
     fieldMappings.put("meta:save-date", "Last-Save-Date");
     fieldMappings.put("meta:keyword", "Keywords");
+    fieldMappings.put("pdf:docinfo:keywords", "Keywords");
   }
 
   private void appendBackCompatTikaMetadata(ExtractionMetadata md) {
