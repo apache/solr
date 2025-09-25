@@ -55,7 +55,11 @@ import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
+import io.opentelemetry.sdk.metrics.Aggregation;
+import io.opentelemetry.sdk.metrics.InstrumentSelector;
+import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.View;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
@@ -167,6 +171,23 @@ public class SolrMetricManager {
       new ConcurrentHashMap<>();
 
   private final MetricExporter metricExporter;
+
+  private static final List<Double> SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES =
+      List.of(
+          0.0,
+          5_000.0,
+          10_000.0,
+          25_000.0,
+          50_000.0,
+          100_000.0,
+          250_000.0,
+          500_000.0,
+          1_000_000.0,
+          2_500_000.0,
+          5_000_000.0,
+          25_000_000.0,
+          100_000_000.0,
+          1_000_000_000.0);
 
   public SolrMetricManager(MetricExporter exporter) {
     metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
@@ -784,7 +805,19 @@ public class SolrMetricManager {
             providerName,
             key -> {
               var reader = new FilterablePrometheusMetricReader(true, null);
-              var builder = SdkMeterProvider.builder().registerMetricReader(reader);
+              var builder =
+                  SdkMeterProvider.builder()
+                      .registerMetricReader(reader)
+                      .registerView(
+                          InstrumentSelector.builder()
+                              .setType(InstrumentType.HISTOGRAM)
+                              .setUnit(OtelUnit.NANOSECONDS.getSymbol())
+                              .build(),
+                          View.builder()
+                              .setAggregation(
+                                  Aggregation.explicitBucketHistogram(
+                                      SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES))
+                              .build()); // TODO: Make histogram bucket boundaries configurable;
               if (metricExporter != null)
                 builder.registerMetricReader(
                     PeriodicMetricReader.builder(metricExporter)
