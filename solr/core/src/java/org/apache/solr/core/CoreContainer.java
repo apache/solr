@@ -2254,17 +2254,13 @@ public class CoreContainer {
     // if there was an error initializing this core, throw a 500
     // error with the details for clients attempting to access it.
     CoreLoadFailure loadFailure = getCoreInitFailures().get(name);
-    if (null != loadFailure) {
+    if (loadFailure != null) {
       throw new SolrCoreInitializationException(name, loadFailure.exception);
     }
-    // NOCOMMIT.  I think that wihtout transient cores, this whole note here can be removed.
-    // This is a bit of awkwardness where SolrCloud and transient cores don't play nice together.
-    // For transient cores, we have to allow them to be created at any time there hasn't been a core
-    // load failure (use reload to cure that). But for
-    // TestConfigSetsAPI.testUploadWithScriptUpdateProcessor, this needs to _not_ try to load the
-    // core if the core is null and there was an error. If you change this, be sure to run both
-    // TestConfigSetsAPI and TestLazyCores
-    if (desc == null || zkSys.getZkController() != null) return null;
+
+    if (desc == null || zkSys.getZkController() != null) {
+      return null;
+    }
 
     // This will put an entry in pending core ops if the core isn't loaded. Here's where moving the
     // waitAddPendingCoreOps to createFromDescriptor would introduce a race condition.
