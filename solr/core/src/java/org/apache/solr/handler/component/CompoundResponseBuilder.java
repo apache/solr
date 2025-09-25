@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -60,6 +61,9 @@ public class CompoundResponseBuilder extends ResponseBuilder {
       // something that we can use to detect only our request/response
       sreq.params.set(RRF_PREFIX, my_prefix);
       owner.addRequest(me, sreq);
+      // undo any 'facets=true' that FacetComponent.modifyRequest might have done
+      sreq.params.remove(FacetParams.FACET, "true");
+      sreq.purpose &= ~ShardRequest.PURPOSE_GET_FACETS;
     }
 
     public boolean isThisFromMe(ShardRequest sreq) {
@@ -73,6 +77,7 @@ public class CompoundResponseBuilder extends ResponseBuilder {
   public CompoundResponseBuilder(
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
     super(req, rsp, components);
+    this.shards_rows = 0;
   }
 
   @Override

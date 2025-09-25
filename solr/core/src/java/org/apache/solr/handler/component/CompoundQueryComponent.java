@@ -19,12 +19,15 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.FacetParams;
 
 public class CompoundQueryComponent extends QueryComponent {
   public static final String COMPONENT_NAME = "compound_query";
@@ -40,6 +43,14 @@ public class CompoundQueryComponent extends QueryComponent {
         for (var rb_i : crb.responseBuilders) {
           super.prepare(rb_i);
         }
+        if (params.getBool(FacetParams.FACET, false)) {
+          super.prepare(rb);
+          final BooleanQuery.Builder bqb = new BooleanQuery.Builder();
+          for (var rb_i : crb.responseBuilders) {
+            bqb.add(rb_i.getQuery(), BooleanClause.Occur.SHOULD);
+          }
+          rb.setQuery(bqb.build());
+        }
       } else {
         super.prepare(rb);
       }
@@ -50,6 +61,9 @@ public class CompoundQueryComponent extends QueryComponent {
   public int distributedProcess(ResponseBuilder rb) throws IOException {
     int nextStage = ResponseBuilder.STAGE_DONE;
     if (rb instanceof CompoundResponseBuilder crb) {
+      if (rb.doFacets && rb.getStage() == ResponseBuilder.STAGE_EXECUTE_QUERY) {
+        nextStage = Math.min(nextStage, super.distributedProcess(rb));
+      }
       if (rb.getStage() < CompoundResponseBuilder.STAGE_FUSION) {
         for (var rb_i : crb.responseBuilders) {
           nextStage = Math.min(nextStage, super.distributedProcess(rb_i));

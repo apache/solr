@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.ConfigRequest;
@@ -96,6 +97,8 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
                     + CompoundQueryComponent.COMPONENT_NAME
                     + "',\n'"
                     + HighlightComponent.COMPONENT_NAME
+                    + "',\n'"
+                    + FacetComponent.COMPONENT_NAME
                     + "' ]\n"
                     + "  }\n"
                     + "}"),
@@ -104,20 +107,25 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
     // add some documents
     final String id = "id";
     final String t1 = "a_t";
+    final String s1 = "b_s";
     {
       new UpdateRequest()
-          .add(sdoc(id, "a", t1, "alfalfa forage"))
-          .add(sdoc(id, "b", t1, "borage forage"))
-          .add(sdoc(id, "c", t1, "clover forage"))
-          .add(sdoc(id, "1", t1, "solitary bee"))
-          .add(sdoc(id, "10", t1, "bumble bee"))
-          .add(sdoc(id, "1000", t1, "honey bee"))
+          .add(sdoc(id, "a", t1, "alfalfa forage", s1, "forage"))
+          .add(sdoc(id, "b", t1, "borage forage", s1, "forage"))
+          .add(sdoc(id, "c", t1, "clover forage", s1, "forage"))
+          .add(sdoc(id, "1", t1, "solitary bee", s1, "bee"))
+          .add(sdoc(id, "10", t1, "bumble bee", s1, "bee"))
+          .add(sdoc(id, "1000", t1, "honey bee", s1, "bee"))
           .add(
               sdoc(
                   id,
                   "1916perkins",
                   t1,
-                  "many a chocolate mining bee likes to forage in blossom-rich habitats"))
+                  "many a chocolate mining bee likes to forage in blossom-rich habitats",
+                  s1,
+                  "bee",
+                  s1,
+                  "forage"))
           .commit(cluster.getSolrClient(), COLLECTION);
     }
 
@@ -135,6 +143,7 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
         solrQuery.set("hl.fragsize", "13");
         solrQuery.set("hl.bs.type", "WORD");
       }
+      solrQuery.addFacetField(s1);
 
       // make the query
       final QueryResponse queryResponse =
@@ -153,6 +162,17 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
         assertEquals("a", documentList.get(4).getFieldValue("id"));
         assertEquals("b", documentList.get(5).getFieldValue("id"));
         assertEquals("c", documentList.get(6).getFieldValue("id"));
+
+        // check returned facets
+        {
+          final FacetField facets = queryResponse.getFacetField(s1);
+          assertEquals(s1, facets.getName());
+          assertEquals(2, facets.getValues().size());
+          assertEquals("bee", facets.getValues().get(0).getName());
+          assertEquals(4, facets.getValues().get(0).getCount());
+          assertEquals("forage", facets.getValues().get(1).getName());
+          assertEquals(4, facets.getValues().get(1).getCount());
+        }
       } else {
         assertEquals(4, documentList.size());
         final Map<String, Map<String, List<String>>> highlighting = queryResponse.getHighlighting();
@@ -186,6 +206,8 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
         solrQuery.set("hl.fragsize", "13");
         solrQuery.set("hl.bs.type", "WORD");
       }
+      // facet, always
+      solrQuery.addFacetField(s1);
 
       // make the query
       final QueryResponse queryResponse =
@@ -212,6 +234,17 @@ public class CompoundQueryComponentTest extends SolrCloudTestCase {
       assertEquals("solitary bee", documentList.get(5).getFieldValue("a_t"));
       assertEquals("c", documentList.get(6).getFieldValue("id"));
       assertEquals("clover forage", documentList.get(6).getFieldValue("a_t"));
+
+      // check returned facets
+      {
+        final FacetField facets = queryResponse.getFacetField(s1);
+        assertEquals(s1, facets.getName());
+        assertEquals(2, facets.getValues().size());
+        assertEquals("bee", facets.getValues().get(0).getName());
+        assertEquals(4, facets.getValues().get(0).getCount());
+        assertEquals("forage", facets.getValues().get(1).getName());
+        assertEquals(4, facets.getValues().get(1).getCount());
+      }
 
       final Map<String, Map<String, List<String>>> highlighting = queryResponse.getHighlighting();
       if (highlightField != null) {
