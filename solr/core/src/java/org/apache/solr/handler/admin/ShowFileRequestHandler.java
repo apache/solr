@@ -376,6 +376,13 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       // TODO: maybe we should just open it this way to start with?
       try {
         URL configUrl = loader.getClassLoader().getResource(loader.getConfigPath().toString());
+        if (configUrl == null) {
+          log.error("Configuration directory resource not found: {}", loader.getConfigPath().toString());
+          rsp.setException(
+              new SolrException(
+                  SolrException.ErrorCode.FORBIDDEN, "Configuration directory resource not found: " + loader.getConfigPath().toString()));
+          return null;
+        }
         configDir = Path.of(configUrl.toURI());
       } catch (URISyntaxException e) {
         log.error("Can not access configuration directory!");
