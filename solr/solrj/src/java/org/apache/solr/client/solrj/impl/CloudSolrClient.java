@@ -555,6 +555,7 @@ public abstract class CloudSolrClient extends SolrClient {
       DocCollection col, ReplicaListTransformer replicaListTransformer) {
     Map<String, List<String>> urlMap = new HashMap<>();
     Slice[] slices = col.getActiveSlicesArr();
+    Set<String> liveNodes = getClusterStateProvider().getLiveNodes();
     for (Slice slice : slices) {
       String name = slice.getName();
       List<Replica> sortedReplicas = new ArrayList<>();
@@ -562,9 +563,7 @@ public abstract class CloudSolrClient extends SolrClient {
       if (directUpdatesToLeadersOnly && leader == null) {
         for (Replica replica :
             slice.getReplicas(
-                replica ->
-                    replica.isActive(getClusterStateProvider().getLiveNodes())
-                        && replica.getType() == Replica.Type.NRT)) {
+                replica -> replica.isActive(liveNodes) && replica.getType() == Replica.Type.NRT)) {
           leader = replica;
           break;
         }
@@ -783,8 +782,6 @@ public abstract class CloudSolrClient extends SolrClient {
   protected NamedList<Object> requestWithRetryOnStaleState(
       SolrRequest<?> request, int retryCount, List<String> inputCollections)
       throws SolrServerException, IOException {
-    connect(); // important to call this before you start working with the ZkStateReader
-
     // build up a _stateVer_ param to pass to the server containing all the
     // external collection state versions involved in this request, which allows
     // the server to notify us that our cached state for one or more of the external
@@ -994,8 +991,6 @@ public abstract class CloudSolrClient extends SolrClient {
 
   protected NamedList<Object> sendRequest(SolrRequest<?> request, List<String> inputCollections)
       throws SolrServerException, IOException {
-    connect();
-
     boolean sendToLeaders = false;
 
     if (request.getRequestType() == SolrRequestType.UPDATE) {
@@ -1281,8 +1276,6 @@ public abstract class CloudSolrClient extends SolrClient {
    * will be only one shard in the return value.
    */
   public Map<String, Integer> getShardReplicationFactor(String collection, NamedList<?> resp) {
-    connect();
-
     Map<String, Integer> results = new HashMap<>();
     if (resp instanceof RouteResponse) {
       NamedList<NamedList<?>> routes = ((RouteResponse<?>) resp).getRouteResponses();

@@ -76,10 +76,6 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
           SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + inputField + "\"");
     }
 
-    if (!latestSchema.isDynamicField(outputField) && !latestSchema.hasExplicitField(outputField)) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + outputField + "\"");
-    }
     final SchemaField outputFieldSchema = latestSchema.getField(outputField);
     assertIsDenseVectorField(outputFieldSchema);
 

@@ -48,5 +48,6 @@ public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
     if (this.clientIsInternal && this.httpClient != null) {
       HttpClientUtil.close(httpClient);
     }
+    super.close();
   }
 }

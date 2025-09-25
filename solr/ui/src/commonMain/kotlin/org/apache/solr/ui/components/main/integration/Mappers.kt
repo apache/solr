@@ -18,11 +18,14 @@
 package org.apache.solr.ui.components.main.integration
 
 import org.apache.solr.ui.components.main.MainComponent
+import org.apache.solr.ui.components.root.RootComponent
 import org.apache.solr.ui.views.navigation.MainMenu
 
 val MainComponent.Child.asMainMenu: MainMenu
     get() = when (this) {
         // TODO Add additional mappings once more children are supported
+        is MainComponent.Child.Cluster -> MainMenu.Cluster
+        is MainComponent.Child.Configsets -> MainMenu.Configsets
         is MainComponent.Child.Environment -> MainMenu.Environment
         is MainComponent.Child.Logging -> MainMenu.Logging
     }
