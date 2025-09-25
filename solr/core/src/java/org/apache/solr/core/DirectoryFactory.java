@@ -49,7 +49,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
       new IOContext(new FlushInfo(10 * 1000 * 1000, 100L * 1000 * 1000 * 1000));
 
   protected static final String INDEX_W_TIMESTAMP_REGEX =
-      "index\\.[0-9]{17}"; // see SnapShooter.DATE_FMT
+      "(index|restore)\\.[0-9]{17}"; // see SnapShooter.DATE_FMT
 
   // May be set by subclasses as data root, in which case getDataHome will use it as base.
   // Absolute.
