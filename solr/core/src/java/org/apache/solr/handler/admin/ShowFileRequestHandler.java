@@ -374,7 +374,8 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     if (!Files.exists(configDir)) {
       // TODO: maybe we should just open it this way to start with?
       try {
-        configDir = Path.of(loader.getClassLoader().getResource(loader.getConfigDir()).toURI());
+        configDir =
+            Path.of(loader.getClassLoader().getResource(loader.getConfigPath().toString()).toURI());
       } catch (URISyntaxException e) {
         log.error("Can not access configuration directory!");
         rsp.setException(
