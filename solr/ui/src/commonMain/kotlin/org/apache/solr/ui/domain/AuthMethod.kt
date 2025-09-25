@@ -35,5 +35,7 @@ sealed interface AuthMethod {
      * @property realm The realm of the basic auth.
      */
     @Serializable
-    data class BasicAuthMethod(val realm: String = "") : AuthMethod
+    data class BasicAuthMethod(val realm: String? = null) : AuthMethod
+
+    data object Unknown : AuthMethod
 }
