@@ -40,8 +40,6 @@ public class CreateShardRequestBody {
   @JsonProperty("nodeSet")
   public List<String> nodeSet;
 
-  @JsonProperty public Boolean waitForFinalState;
-
   @JsonProperty public Boolean followAliases;
 
   @JsonProperty public String async;

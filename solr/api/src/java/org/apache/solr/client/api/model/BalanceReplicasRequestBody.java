@@ -24,9 +24,8 @@ public class BalanceReplicasRequestBody {
 
   public BalanceReplicasRequestBody() {}
 
-  public BalanceReplicasRequestBody(Set<String> nodes, Boolean waitForFinalState, String async) {
+  public BalanceReplicasRequestBody(Set<String> nodes, String async) {
     this.nodes = nodes;
-    this.waitForFinalState = waitForFinalState;
     this.async = async;
   }
 
@@ -35,14 +34,6 @@ public class BalanceReplicasRequestBody {
           "The set of nodes across which replicas will be balanced. Defaults to all live data nodes.")
   @JsonProperty(value = "nodes")
   public Set<String> nodes;
-
-  @Schema(
-      description =
-          "If true, the request will complete only when all affected replicas become active. "
-              + "If false, the API will return the status of the single action, which may be "
-              + "before the new replica is online and active.")
-  @JsonProperty("waitForFinalState")
-  public Boolean waitForFinalState = true;
 
   @Schema(description = "Request ID to track this action which will be processed asynchronously.")
   @JsonProperty("async")

@@ -63,6 +63,9 @@ Improvements
 
 * GITHUB#3666: Removing redundant check if field exists in TextToVectorUpdateProcessorFactory (Renato Haeberli via Alessandro Benedetti)
 
+* SOLR-17712: SolrCloud admin commands should more reliably be fully completed when Solr returns a response.
+  The `waitForFinalState` param now defaults to true and is deprecated. (Abhishek Umarjikar)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -235,8 +238,6 @@ Other Changes
   `distributedCollectionConfigSetExecution`).  Those are now removed.  In their place is a new
   overseerEnabled cluster property and an env var SOLR_CLOUD_OVERSEER_ENABLED.  Read more in the
   upgrade guide.  (David Smiley)
-
-* SOLR-17712: Changing default behaviour of `waitForFinalState` while handling the collection creation and collection management to true and is now deprecated. (Abhishek Umarjikar)
 
 ==================  9.10.0 ==================
 New Features

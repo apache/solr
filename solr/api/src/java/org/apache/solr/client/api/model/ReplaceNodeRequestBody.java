@@ -23,9 +23,8 @@ public class ReplaceNodeRequestBody {
 
   public ReplaceNodeRequestBody() {}
 
-  public ReplaceNodeRequestBody(String targetNodeName, Boolean waitForFinalState, String async) {
+  public ReplaceNodeRequestBody(String targetNodeName, String async) {
     this.targetNodeName = targetNodeName;
-    this.waitForFinalState = waitForFinalState;
     this.async = async;
   }
 
@@ -35,14 +34,6 @@ public class ReplaceNodeRequestBody {
               + "will identify nodes automatically based on policies or number of cores in each node.")
   @JsonProperty("targetNodeName")
   public String targetNodeName;
-
-  @Schema(
-      description =
-          "If true, the request will complete only when all affected replicas become active. "
-              + "If false, the API will return the status of the single action, which may be "
-              + "before the new replica is online and active.")
-  @JsonProperty("waitForFinalState")
-  public Boolean waitForFinalState = true;
 
   @Schema(description = "Request ID to track this action which will be processed asynchronously.")
   @JsonProperty("async")

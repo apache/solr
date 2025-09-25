@@ -81,8 +81,7 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
   @Test
   public void testCreatesValidOverseerMessage() throws Exception {
     MigrateReplicasRequestBody requestBody =
-        new MigrateReplicasRequestBody(
-            Set.of("demoSourceNode"), Set.of("demoTargetNode"), false, "async");
+        new MigrateReplicasRequestBody(Set.of("demoSourceNode"), Set.of("demoTargetNode"), "async");
     migrateReplicasAPI.migrateReplicas(requestBody);
     verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
 
@@ -91,7 +90,6 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
     assertEquals(5, createdMessageProps.size());
     assertEquals(Set.of("demoSourceNode"), createdMessageProps.get("sourceNodes"));
     assertEquals(Set.of("demoTargetNode"), createdMessageProps.get("targetNodes"));
-    assertEquals(false, createdMessageProps.get("waitForFinalState"));
     assertEquals("async", createdMessageProps.get("async"));
     assertEquals("migrate_replicas", createdMessageProps.get("operation"));
   }
@@ -99,7 +97,7 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
   @Test
   public void testNoTargetNodes() throws Exception {
     MigrateReplicasRequestBody requestBody =
-        new MigrateReplicasRequestBody(Set.of("demoSourceNode"), null, null, null);
+        new MigrateReplicasRequestBody(Set.of("demoSourceNode"), null, null);
     migrateReplicasAPI.migrateReplicas(requestBody);
     verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
 
@@ -113,11 +111,10 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
   @Test
   public void testNoSourceNodesThrowsError() throws Exception {
     MigrateReplicasRequestBody requestBody1 =
-        new MigrateReplicasRequestBody(
-            Collections.emptySet(), Set.of("demoTargetNode"), null, null);
+        new MigrateReplicasRequestBody(Collections.emptySet(), Set.of("demoTargetNode"), null);
     assertThrows(SolrException.class, () -> migrateReplicasAPI.migrateReplicas(requestBody1));
     MigrateReplicasRequestBody requestBody2 =
-        new MigrateReplicasRequestBody(null, Set.of("demoTargetNode"), null, null);
+        new MigrateReplicasRequestBody(null, Set.of("demoTargetNode"), null);
     assertThrows(SolrException.class, () -> migrateReplicasAPI.migrateReplicas(requestBody2));
   }
 }
