@@ -86,10 +86,17 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
               computeCapability: device.computeCapability,
               totalMemory: device.totalMemory,
               usedMemory: device.usedMemory,
-              freeMemory: device.freeMemory
+              freeMemory: device.freeMemory,
+              active: device.active
             };
 
-            if (gpuData.totalMemory && gpuData.usedMemory) {
+            // Add "(active)" indicator to the name for active GPUs
+            if (gpuData.active) {
+              gpuData.name += " (active)";
+            }
+
+            // Only calculate memory display for active GPUs
+            if (gpuData.active && gpuData.totalMemory && gpuData.usedMemory) {
               var total = parse_memory_value(gpuData.totalMemory);
               var used = parse_memory_value(gpuData.usedMemory);
               gpuData.memoryPercentage = (used / total * 100).toFixed(1) + "%";

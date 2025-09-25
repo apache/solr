@@ -173,33 +173,76 @@ public class GpuMetricsService {
       long totalFree = 0;
 
       ConcurrentHashMap<String, Object> currentDevices = gpuDevices.get();
-      for (String deviceKey : currentDevices.keySet()) {
-        @SuppressWarnings("unchecked")
-        ConcurrentHashMap<String, Object> device =
-            (ConcurrentHashMap<String, Object>) currentDevices.get(deviceKey);
 
-        CuVSResources resources = CuVSResources.create();
-        try {
-          CuVSResourcesInfo currentInfo = gpuInfoProvider.getCurrentInfo(resources);
-          if (currentInfo != null) {
-            long free = currentInfo.freeDeviceMemoryInBytes();
-            long total = (Long) device.get("totalMemory");
-            long used = total - free;
+      CuVSResources resources = CuVSResources.create();
+      try {
+        CuVSResourcesInfo currentInfo = gpuInfoProvider.getCurrentInfo(resources);
+        if (currentInfo != null) {
+          long firstGpuFreeMemory = currentInfo.freeDeviceMemoryInBytes();
 
-            totalFree += free;
-            totalUsed += used;
-
-            device.put("usedMemory", used);
-            device.put("freeMemory", free);
-          } else {
-            long total = (Long) device.get("totalMemory");
-            totalFree += total;
-            device.put("usedMemory", 0L);
-            device.put("freeMemory", total);
+          String firstDeviceKey = null;
+          ConcurrentHashMap<String, Object> firstDevice = null;
+          for (String deviceKey : currentDevices.keySet()) {
+            firstDeviceKey = deviceKey;
+            @SuppressWarnings("unchecked")
+            ConcurrentHashMap<String, Object> device =
+                (ConcurrentHashMap<String, Object>) currentDevices.get(deviceKey);
+            firstDevice = device;
+            break;
           }
-        } finally {
-          resources.close();
+
+          if (firstDevice != null) {
+            long firstGpuTotalMemory = (Long) firstDevice.get("totalMemory");
+            long firstGpuUsedMemory = firstGpuTotalMemory - firstGpuFreeMemory;
+
+            // Mark the first GPU as active and update with actual memory values
+            firstDevice.put("usedMemory", firstGpuUsedMemory);
+            firstDevice.put("freeMemory", firstGpuFreeMemory);
+            firstDevice.put("active", true);
+
+            totalUsed = firstGpuUsedMemory;
+            totalFree = firstGpuFreeMemory;
+
+            log.debug(
+                "Updated active GPU {} memory: used={}, free={}, total={}",
+                firstDeviceKey,
+                firstGpuUsedMemory,
+                firstGpuFreeMemory,
+                firstGpuTotalMemory);
+
+            // Setting other GPUs as inactive (no memory data, just names/IDs)
+            for (String deviceKey : currentDevices.keySet()) {
+              if (!deviceKey.equals(firstDeviceKey)) {
+                @SuppressWarnings("unchecked")
+                ConcurrentHashMap<String, Object> device =
+                    (ConcurrentHashMap<String, Object>) currentDevices.get(deviceKey);
+                device.put("active", false);
+              }
+            }
+          }
+        } else {
+          String firstDeviceKey = null;
+          for (String deviceKey : currentDevices.keySet()) {
+            @SuppressWarnings("unchecked")
+            ConcurrentHashMap<String, Object> device =
+                (ConcurrentHashMap<String, Object>) currentDevices.get(deviceKey);
+
+            if (firstDeviceKey == null) {
+              // First GPU is active and gets memory data
+              firstDeviceKey = deviceKey;
+              long deviceTotalMemory = (Long) device.get("totalMemory");
+              device.put("usedMemory", 0L);
+              device.put("freeMemory", deviceTotalMemory);
+              device.put("active", true);
+              totalFree = deviceTotalMemory;
+            } else {
+              // Other GPUs are inactive
+              device.put("active", false);
+            }
+          }
         }
+      } finally {
+        resources.close();
       }
 
       gpuMemoryUsed.set(totalUsed);
@@ -235,6 +278,7 @@ public class GpuMetricsService {
         gpuDetails.put("supportsConcurrentKernels", concurrentKernels);
         gpuDetails.put("usedMemory", 0L);
         gpuDetails.put("freeMemory", totalMemory);
+        gpuDetails.put("active", gpuId == 0); // First GPU (ID 0) is active by default
 
         devices.put("gpu_" + gpuId, gpuDetails);
         totalMemoryAllGpus += totalMemory;

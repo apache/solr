@@ -276,7 +276,8 @@ limitations under the License.
                 </ul>
 
                 <div ng-repeat="gpu in gpuDevices" class="gpu-memory-bar-container">
-                  <div class="gpu-memory-bar" ng-show="gpu.totalMemory && gpu.usedMemory">
+                  <!-- Memory bar for active GPU -->
+                  <div class="gpu-memory-bar" ng-show="gpu.active && gpu.totalMemory && gpu.usedMemory">
                     <p data-desc="gpu-memory-bar">{{gpu.name}} Memory
                       <small class="bar-desc">{{gpu.memoryPercentage}}</small>
                     </p>
@@ -288,6 +289,11 @@ limitations under the License.
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  <!-- Simple list entry for inactive GPUs -->
+                  <div class="gpu-info" ng-show="!gpu.active">
+                    <p>{{gpu.name}} (ID: {{gpu.id}}, Compute: {{gpu.computeCapability}})</p>
                   </div>
                 </div>
               </div>
