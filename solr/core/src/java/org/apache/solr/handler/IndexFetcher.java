@@ -508,9 +508,7 @@ public class IndexFetcher {
 
       if (log.isInfoEnabled()) {
         log.info("Follower's generation: {}", commit.getGeneration());
-        log.info(
-            "Follower's version: {}",
-            IndexDeletionPolicyWrapper.getCommitTimestamp(commit)); // nowarn
+        log.info("Follower's version: {}", IndexDeletionPolicyWrapper.getCommitTimestamp(commit));
       }
 
       // Leader's version is 0 and generation is 0 -  not open for replication

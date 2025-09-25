@@ -1053,9 +1053,8 @@ public class Overseer implements SolrCloseable {
       final ZkNodeProps message = ZkNodeProps.load(data);
       final String operation = message.getStr(QUEUE_OPERATION);
       log.error(
-          "Received unexpected message on Overseer cluster state updater for "
-              + operation
-              + " when distributed updates are configured"); // nowarn
+          "Received unexpected message on Overseer cluster state updater for {} when distributed updates are configured",
+          operation);
       throw new RuntimeException(
           "Message "
               + operation
