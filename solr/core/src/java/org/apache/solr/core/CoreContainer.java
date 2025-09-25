@@ -1871,13 +1871,8 @@ public class CoreContainer {
   }
 
   /**
-   * NOCOMMIT: ERic needs some help on if loadOnStartup remains a thing or not. Gets the cores that
-   * are currently loaded, i.e. cores that have 1: loadOnStartup=true and are either not-transient
-   * or, if transient, have been loaded and have not been aged out 2: loadOnStartup=false and have
-   * been loaded but are either non-transient or have not been aged out.
-   *
-   * <p>Put another way, this will not return any names of cores that are lazily loaded but have not
-   * been called for yet or are transient and either not loaded or have been swapped out.
+   * Gets the cores that are currently loaded, i.e. cores that have 1: loadOnStartup=true and have
+   * been loaded and 2: loadOnStartup=false and have been subsequently loaded.
    *
    * <p>For efficiency, prefer to check {@link #isLoaded(String)} instead of {@link
    * #getLoadedCoreNames()}.contains(coreName).
