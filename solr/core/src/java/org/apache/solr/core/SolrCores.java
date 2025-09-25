@@ -90,7 +90,7 @@ public class SolrCores {
 
     // It might be possible for one of the cores to move from one list to another while we're
     // closing them. So loop through the lists until they're all empty. In particular, the core
-    // NOCOMMIT
+    // NOCOMMIT  I think i need help on determing what to do here.
     // could have moved from the transient list to the pendingCloses list.
     while (true) {
       Collection<SolrCore> coreList = new ArrayList<>();
