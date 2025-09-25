@@ -106,9 +106,10 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     return (long)
         SolrMetricTestUtils.getCounterDatapoint(
                 core,
-                "solr_searcher_" + skipOrFull + "_sort",
+                "solr_searcher_queries_sort",
                 SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                     .label("category", "SEARCHER")
+                    .label("type", skipOrFull)
                     .build())
             .getValue();
   }

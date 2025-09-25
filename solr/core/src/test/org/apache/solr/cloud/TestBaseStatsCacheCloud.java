@@ -153,7 +153,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
           String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
 
           for (String line : output.lines().toList()) {
-            if (line.startsWith("solr_searcher_stats_cache")) {
+            if (line.startsWith("solr_searcher_termstats_cache")) {
               String type = extractTypeAttribute(line);
               long value = extractMetricValue(line);
               switch (type) {

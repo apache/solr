@@ -415,6 +415,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.leafReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
     this.statsCache = core.createStatsCache();
+    this.toClose.add(this.statsCache);
     this.schema = schema;
     this.name =
         "Searcher@"
@@ -2655,19 +2656,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 "solr_searcher_warmup_time", "Searcher warmup time (ms)", OtelUnit.MILLISECONDS),
             baseAttributes);
 
-    // fullSortCount
+    // Query sorting counts
     toClose.add(
         solrMetricsContext.observableLongCounter(
-            "solr_searcher_full_sort",
-            "Number of queries that required building a full DocList with sorting",
-            obs -> obs.record(fullSortCount.sum(), baseAttributes)));
-
-    // skipSortCount
-    toClose.add(
-        solrMetricsContext.observableLongCounter(
-            "solr_searcher_skip_sort",
-            "Number of queries where Solr skipped building a full sorted DocList and instead returned results directly from the DocSet",
-            obs -> obs.record(skipSortCount.sum(), baseAttributes)));
+            "solr_searcher_queries_sort",
+            "Number of queries by sorting behavior: full (requires building a full DocList with sorting) or skip (skips sorting and returns results directly from DocSet)",
+            obs -> {
+              obs.record(
+                  fullSortCount.sum(), baseAttributes.toBuilder().put(TYPE_ATTR, "full").build());
+              obs.record(
+                  skipSortCount.sum(), baseAttributes.toBuilder().put(TYPE_ATTR, "skip").build());
+            }));
     toClose.add(
         solrMetricsContext.observableLongCounter(
             "solr_searcher_live_docs_cache",
@@ -2686,8 +2685,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // reader stats (numeric)
     toClose.add(
         solrMetricsContext.observableLongGauge(
-            "solr_searcher_num_docs",
-            "Number of live docs",
+            "solr_searcher_index_num_docs",
+            "Number of live docs in the index",
             obs -> {
               try {
                 obs.record(reader.numDocs(), baseAttributes);
@@ -2698,22 +2697,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     toClose.add(
         solrMetricsContext.observableLongGauge(
-            "solr_searcher_max_doc",
-            "Max doc (including deletions)",
+            "solr_searcher_index_docs",
+            "Total number of docs in the index (including deletions)",
             obs -> {
               try {
                 obs.record(reader.maxDoc(), baseAttributes);
-              } catch (Exception ignore) {
-              }
-            }));
-
-    toClose.add(
-        solrMetricsContext.observableLongGauge(
-            "solr_searcher_deleted_docs",
-            "Number of deleted docs",
-            obs -> {
-              try {
-                obs.record(reader.maxDoc() - reader.numDocs(), baseAttributes);
               } catch (Exception ignore) {
               }
             }));
@@ -2743,44 +2731,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               } catch (Exception e) {
                 // skip recording if unavailable (no nullNumber in OTel)
               }
-            }));
-
-    var cacheBaseAttribute =
-        attributes.toBuilder().put(CATEGORY_ATTR, Category.CACHE.toString()).build();
-    // statsCache metrics
-    toClose.add(
-        solrMetricsContext.observableLongGauge(
-            "solr_searcher_stats_cache",
-            "Operation counts for the searcher stats cache, reported per operation type",
-            obs -> {
-              var cacheMetrics = statsCache.getCacheMetrics();
-              obs.record(
-                  cacheMetrics.lookups.sum(),
-                  cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "lookups").build());
-              obs.record(
-                  cacheMetrics.missingGlobalFieldStats.sum(),
-                  cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "missing_global_field").build());
-              obs.record(
-                  cacheMetrics.missingGlobalTermStats.sum(),
-                  cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "missing_global_term").build());
-              obs.record(
-                  cacheMetrics.mergeToGlobalStats.sum(),
-                  cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "merge_to_global").build());
-              obs.record(
-                  cacheMetrics.retrieveStats.sum(),
-                  cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "retrieve").build());
-              obs.record(
-                  cacheMetrics.returnLocalStats.sum(),
-                  cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "return_local").build());
-              obs.record(
-                  cacheMetrics.sendGlobalStats.sum(),
-                  cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "send_global").build());
-              obs.record(
-                  cacheMetrics.useCachedGlobalStats.sum(),
-                  cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "use_cached_global").build());
-              obs.record(
-                  cacheMetrics.receiveGlobalStats.sum(),
-                  cacheBaseAttribute.toBuilder().put(TYPE_ATTR, "receive_global").build());
             }));
   }
 
