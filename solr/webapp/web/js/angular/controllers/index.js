@@ -66,24 +66,38 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
         $scope.gpuCount = data.gpu.count;
 
         var devices = data.gpu.devices;
+        $scope.gpuDevices = [];
         if (devices && Object.keys(devices).length > 0) {
-          var device = devices[Object.keys(devices)[0]];
-          $scope.gpuName = device.name;
-          $scope.gpuId = device.id;
-          $scope.gpuCompute = device.computeCapability;
-          $scope.gpuConcurrentCopy = device.supportsConcurrentCopy;
-          $scope.gpuConcurrentKernels = device.supportsConcurrentKernels;
-        }
+          var deviceKeys = Object.keys(devices);
+          var firstDevice = devices[deviceKeys[0]];
+          $scope.gpuName = firstDevice.name;
+          $scope.gpuId = firstDevice.id;
+          $scope.gpuCompute = firstDevice.computeCapability;
 
-        var memory = data.gpu.memory;
-        if (memory && memory.total && memory.used) {
-          var total = parse_memory_value(memory.total);
-          var used = parse_memory_value(memory.used);
-          $scope.gpuMemoryPercentage = (used / total * 100).toFixed(1) + "%";
-          $scope.gpuMemoryTotalDisplay = pretty_print_bytes(total);
-          $scope.gpuMemoryUsedDisplay = pretty_print_bytes(used);
-          $scope.gpuMemoryTotal = total;
-          $scope.gpuMemoryUsed = used;
+          if (deviceKeys.length > 1) {
+            $scope.gpuName += " (+" + (deviceKeys.length - 1) + " more)";
+          }
+
+          for (var i = 0; i < deviceKeys.length; i++) {
+            var device = devices[deviceKeys[i]];
+            var gpuData = {
+              id: device.id,
+              name: device.name,
+              computeCapability: device.computeCapability,
+              totalMemory: device.totalMemory,
+              usedMemory: device.usedMemory,
+              freeMemory: device.freeMemory
+            };
+
+            if (gpuData.totalMemory && gpuData.usedMemory) {
+              var total = parse_memory_value(gpuData.totalMemory);
+              var used = parse_memory_value(gpuData.usedMemory);
+              gpuData.memoryPercentage = (used / total * 100).toFixed(1) + "%";
+              gpuData.totalMemoryDisplay = pretty_print_bytes(total);
+              gpuData.usedMemoryDisplay = pretty_print_bytes(used);
+            }
+            $scope.gpuDevices.push(gpuData);
+          }
         }
       }
 

@@ -169,23 +169,42 @@ public class GpuMetricsService {
 
   private void updateDynamicMemoryMetrics(GPUInfoProvider gpuInfoProvider) {
     try {
-      CuVSResources resources = CuVSResources.create();
-      try {
-        // Get current memory usage (only dynamic data)
-        CuVSResourcesInfo currentInfo = gpuInfoProvider.getCurrentInfo(resources);
-        if (currentInfo != null) {
-          long free = currentInfo.freeDeviceMemoryInBytes();
-          long used = gpuMemoryTotal.get() - free; // Use already stored total
+      long totalUsed = 0;
+      long totalFree = 0;
 
-          gpuMemoryUsed.set(used);
-          gpuMemoryFree.set(free);
-        } else {
-          gpuMemoryUsed.set(0);
-          gpuMemoryFree.set(gpuMemoryTotal.get());
+      ConcurrentHashMap<String, Object> currentDevices = gpuDevices.get();
+      for (String deviceKey : currentDevices.keySet()) {
+        @SuppressWarnings("unchecked")
+        ConcurrentHashMap<String, Object> device =
+            (ConcurrentHashMap<String, Object>) currentDevices.get(deviceKey);
+
+        CuVSResources resources = CuVSResources.create();
+        try {
+          CuVSResourcesInfo currentInfo = gpuInfoProvider.getCurrentInfo(resources);
+          if (currentInfo != null) {
+            long free = currentInfo.freeDeviceMemoryInBytes();
+            long total = (Long) device.get("totalMemory");
+            long used = total - free;
+
+            totalFree += free;
+            totalUsed += used;
+
+            device.put("usedMemory", used);
+            device.put("freeMemory", free);
+          } else {
+            long total = (Long) device.get("totalMemory");
+            totalFree += total;
+            device.put("usedMemory", 0L);
+            device.put("freeMemory", total);
+          }
+        } finally {
+          resources.close();
         }
-      } finally {
-        resources.close();
       }
+
+      gpuMemoryUsed.set(totalUsed);
+      gpuMemoryFree.set(totalFree);
+
     } catch (Throwable e) {
       log.warn("Failed to update dynamic memory metrics", e);
     }
@@ -214,6 +233,8 @@ public class GpuMetricsService {
         gpuDetails.put("computeCapability", computeMajor + "." + computeMinor);
         gpuDetails.put("supportsConcurrentCopy", concurrentCopy);
         gpuDetails.put("supportsConcurrentKernels", concurrentKernels);
+        gpuDetails.put("usedMemory", 0L);
+        gpuDetails.put("freeMemory", totalMemory);
 
         devices.put("gpu_" + gpuId, gpuDetails);
         totalMemoryAllGpus += totalMemory;

@@ -273,26 +273,19 @@ limitations under the License.
                     <dd>{{gpuCompute}}</dd>
                   </dl></li>
 
-                  <li class="gpu-concurrent-copy"><dl class="clearfix">
-                    <dt><span>Concurrent Copy</span></dt>
-                    <dd>{{gpuConcurrentCopy ? 'yes' : 'no'}}</dd>
-                  </dl></li>
-
-                  <li class="gpu-concurrent-kernels"><dl class="clearfix">
-                    <dt><span>Concurrent Kernels</span></dt>
-                    <dd>{{gpuConcurrentKernels ? 'yes' : 'no'}}</dd>
-                  </dl></li>
                 </ul>
 
-                <div id="gpu-memory-bar" ng-show="gpuMemoryTotal && gpuMemoryUsed">
-                  <p data-desc="gpu-memory-bar">GPU Memory
-                    <small class="bar-desc">{{gpuMemoryPercentage}}</small>
-                  </p>
-                  <div class="bar-holder bar-lvl-2">
-                    <div class="bar-max bar">
-                      <span class="bar-max val">{{gpuMemoryTotalDisplay}}</span>
-                      <div class="bar-total bar" ng-style="{width: gpuMemoryPercentage}">
-                        <span class="bar-total val" title="raw: {{gpuMemoryUsed}}B">{{gpuMemoryUsedDisplay}}</span>
+                <div ng-repeat="gpu in gpuDevices" class="gpu-memory-bar-container">
+                  <div class="gpu-memory-bar" ng-show="gpu.totalMemory && gpu.usedMemory">
+                    <p data-desc="gpu-memory-bar">{{gpu.name}} Memory
+                      <small class="bar-desc">{{gpu.memoryPercentage}}</small>
+                    </p>
+                    <div class="bar-holder bar-lvl-2">
+                      <div class="bar-max bar">
+                        <span class="bar-max val">{{gpu.totalMemoryDisplay}}</span>
+                        <div class="bar-total bar" ng-style="{width: gpu.memoryPercentage}">
+                          <span class="bar-total val" title="raw: {{gpu.usedMemory}}B">{{gpu.usedMemoryDisplay}}</span>
+                        </div>
                       </div>
                     </div>
                   </div>

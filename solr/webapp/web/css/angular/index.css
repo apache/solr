@@ -238,4 +238,7 @@ limitations under the License.
 /* GPU section styling */
 #content #index #gpu .data li dt { width: 35%; }
 #content #index #gpu .data li dd { width: 65%; }
+#content #index #gpu .gpu-memory-bar-container {
+  margin-bottom: 15px;
+}
 
