@@ -33,7 +33,7 @@ common_setup() {
     load "${BATS_LIB_PREFIX}/bats-assert/load.bash"
     load "${BATS_LIB_PREFIX}/bats-file/load.bash"
 
-    PATH="${SOLR_TIP:-.}/bin:${SOLR_TIP:-.}/prometheus-exporter/bin:$PATH"
+    PATH="${SOLR_TIP:-.}/bin:$PATH"
     export SOLR_ULIMIT_CHECKS=false
 }
 
