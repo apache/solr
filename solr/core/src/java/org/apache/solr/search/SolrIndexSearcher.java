@@ -2656,17 +2656,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 "solr_searcher_warmup_time", "Searcher warmup time (ms)", OtelUnit.MILLISECONDS),
             baseAttributes);
 
-    // Query sorting counts
-    toClose.add(
-        solrMetricsContext.observableLongCounter(
-            "solr_searcher_queries_sort",
-            "Number of queries by sorting behavior: full (requires building a full DocList with sorting) or skip (skips sorting and returns results directly from DocSet)",
-            obs -> {
-              obs.record(
-                  fullSortCount.sum(), baseAttributes.toBuilder().put(TYPE_ATTR, "full").build());
-              obs.record(
-                  skipSortCount.sum(), baseAttributes.toBuilder().put(TYPE_ATTR, "skip").build());
-            }));
     toClose.add(
         solrMetricsContext.observableLongCounter(
             "solr_searcher_live_docs_cache",

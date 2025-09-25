@@ -102,18 +102,6 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
             .get("inserts");
   }
 
-  private static long coreToSortCount(SolrCore core, String skipOrFull) {
-    return (long)
-        SolrMetricTestUtils.getCounterDatapoint(
-                core,
-                "solr_searcher_queries_sort",
-                SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
-                    .label("category", "SEARCHER")
-                    .label("type", skipOrFull)
-                    .build())
-            .getValue();
-  }
-
   private static long coreToMatchAllDocsCount(SolrCore core, String type) {
     return (long)
         SolrMetricTestUtils.getCounterDatapoint(
@@ -260,7 +248,6 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     assertEquals("Bad matchAllDocs insert count", 1, coreToMatchAllDocsCount(core, "inserts"));
     assertEquals("Bad filterCache insert count", 0, coreToInserts(core, "filterCache"));
-    assertEquals("Bad full sort count", 0, coreToSortCount(core, "full"));
     assertEquals("Should have exactly " + ALL_DOCS, ALL_DOCS, (long) (body.get("numFound")));
     long queryCacheInsertCount = coreToInserts(core, "queryResultCache");
     if (queryCacheInsertCount == expectCounters[0]) {
@@ -269,7 +256,6 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
       assertEquals(++expectCounters[0], queryCacheInsertCount);
       expectCounters[1]++;
     }
-    assertEquals("Bad skip sort count", expectCounters[1], coreToSortCount(core, "skip"));
   }
 
   @Test
@@ -415,8 +401,6 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
         "Bad filterCache insert count",
         expectFilterCacheInsertCount,
         coreToInserts(core, "filterCache"));
-    assertEquals("Bad full sort count", expectFullSortCount, coreToSortCount(core, "full"));
-    assertEquals("Bad skip sort count", expectSkipSortCount, coreToSortCount(core, "skip"));
     assertEquals(
         "Should have exactly " + expectNumFound, expectNumFound, (long) (body.get("numFound")));
   }
