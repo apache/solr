@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.tika.metadata.Metadata;
-import org.apache.tika.metadata.TikaMetadataKeys;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.parser.PasswordProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
     }
 
     if (passwordMap.size() > 0)
-      return lookupPasswordFromMap(meta.get(TikaMetadataKeys.RESOURCE_NAME_KEY));
+      return lookupPasswordFromMap(meta.get(TikaCoreProperties.RESOURCE_NAME_KEY));
 
     return null;
   }
