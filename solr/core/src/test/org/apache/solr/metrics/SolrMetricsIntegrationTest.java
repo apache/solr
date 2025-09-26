@@ -17,14 +17,17 @@
 
 package org.apache.solr.metrics;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
+import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
+
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot.GaugeDataPointSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.SolrTestCaseJ4;
@@ -36,7 +39,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrMetricTestUtils;
@@ -82,25 +84,38 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCoreContainerMetrics() {
-    String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
-    assertTrue(
-        cc.getMetricManager().registryNames().toString(),
-        cc.getMetricManager().registryNames().contains(registryName));
-    MetricRegistry registry = cc.getMetricManager().registry(registryName);
-    Map<String, Metric> metrics = registry.getMetrics();
-    assertTrue(metrics.containsKey("CONTAINER.cores.loaded"));
-    assertTrue(metrics.containsKey("CONTAINER.cores.lazy"));
-    assertTrue(metrics.containsKey("CONTAINER.cores.unloaded"));
-    assertTrue(metrics.containsKey("CONTAINER.fs.totalSpace"));
-    assertTrue(metrics.containsKey("CONTAINER.fs.usableSpace"));
-    assertTrue(metrics.containsKey("CONTAINER.fs.path"));
-    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.totalSpace"));
-    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.usableSpace"));
-    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.path"));
-    assertTrue(metrics.containsKey("CONTAINER.version.specification"));
-    assertTrue(metrics.containsKey("CONTAINER.version.implementation"));
-    Gauge<?> g = (Gauge<?>) metrics.get("CONTAINER.fs.path");
-    assertEquals(g.getValue(), cc.getSolrHome().toString());
+    MetricSnapshots metrics =
+        new MetricSnapshots(
+             metricManager.getPrometheusMetricReaders().entrySet().stream()
+                .flatMap(
+                    entry ->
+                        entry.getValue().collect().stream()
+                            .filter(m -> !m.getMetadata().getPrometheusName().startsWith("target")))
+                .toList());
+
+    GaugeSnapshot coresLoaded =
+        SolrMetricTestUtils.getMetricSnapshot(GaugeSnapshot.class, metrics, "solr_cores_loaded");
+    assertTrue(getGaugeOpt(coresLoaded, "permanent").isPresent());
+    assertTrue(getGaugeOpt(coresLoaded, "transient").isPresent());
+    assertTrue(getGaugeOpt(coresLoaded, "unloaded").isPresent());
+
+    GaugeSnapshot fsDiskSpace =
+        SolrMetricTestUtils.getMetricSnapshot(
+            GaugeSnapshot.class, metrics, "solr_cores_filesystem_disk_space_bytes");
+    assertTrue(getGaugeOpt(fsDiskSpace, "total_space").isPresent());
+    assertTrue(getGaugeOpt(fsDiskSpace, "usable_space").isPresent());
+
+    GaugeSnapshot rootDiskSpace =
+        SolrMetricTestUtils.getMetricSnapshot(
+            GaugeSnapshot.class, metrics, "solr_cores_root_disk_space_bytes");
+    assertTrue(getGaugeOpt(rootDiskSpace, "total_space").isPresent());
+    assertTrue(getGaugeOpt(rootDiskSpace, "usable_space").isPresent());
+  }
+
+  private static Optional<GaugeDataPointSnapshot> getGaugeOpt(GaugeSnapshot gauges, String type) {
+    return gauges.getDataPoints().stream()
+        .filter(g -> g.getLabels().get(TYPE_ATTR.toString()).equals(type))
+        .findFirst();
   }
 
   // NOCOMMIT: Comeback and fix this test after merging the SolrZKClient metrics migration

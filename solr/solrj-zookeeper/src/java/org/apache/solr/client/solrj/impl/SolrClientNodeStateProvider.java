@@ -181,6 +181,8 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     return ctx.tags;
   }
 
+  // NOCOMMIT: We need to change the /admin/metrics call here to work with
+  // Prometheus/OTEL telemetry
   static void fetchReplicaMetrics(
       String solrNode, RemoteCallCtx ctx, Map<String, Set<Object>> metricsKeyVsTag) {
     if (!ctx.isNodeAlive(solrNode)) return;
