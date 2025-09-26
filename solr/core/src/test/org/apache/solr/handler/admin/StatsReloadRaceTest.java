@@ -23,8 +23,9 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -126,34 +127,27 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     boolean found = false;
     int count = 10;
     while (!found && count-- > 0) {
-      h.getCoreContainer()
-          .getRequestHandler("/admin/metrics")
-          .handleRequest(req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
-
-      NamedList<?> values = rsp.getValues();
       // this is not guaranteed to exist right away after core reload - there's a
       // small window between core load and before searcher metrics are registered,
       // so we may have to check a few times, and then fail softly if reload is not complete yet
-      NamedList<?> metrics = (NamedList<?>) values.get("metrics");
-      if (metrics == null) {
-        if (softFail) {
-          return;
-        } else {
-          fail("missing 'metrics' element in handler's output: " + values.asMap(5).toString());
-        }
-      }
-      metrics = (NamedList<?>) metrics.get(registry);
-      if (metrics.get(key) != null) {
-        found = true;
-        assertTrue(metrics.get(key) instanceof Long);
-        break;
-      } else {
+      SolrCore core = h.getCore();
+      var indexVersion =
+          SolrMetricTestUtils.getGaugeDatapoint(
+              core,
+              "solr_searcher_index_version",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label("category", "SEARCHER")
+                  .build());
+      if (indexVersion == null) {
         Thread.sleep(500);
+      } else {
+        found = true;
+        break;
       }
     }
     if (softFail && !found) {
       return;
     }
-    assertTrue("Key " + key + " not found in registry " + registry, found);
+    assertTrue("solr_searcher_index_version metric not found", found);
   }
 }
