@@ -389,14 +389,24 @@ public class SolrMetricManager {
         .batchCallback(callback, measurement, additionalMeasurements);
   }
 
-  ObservableLongMeasurement longMeasurement(
+  ObservableLongMeasurement longGaugeMeasurement(
       String registry, String gaugeName, String description, OtelUnit unit) {
     return longGaugeBuilder(registry, gaugeName, description, unit).buildObserver();
   }
 
-  ObservableDoubleMeasurement doubleMeasurement(
+  ObservableDoubleMeasurement doubleGaugeMeasurement(
       String registry, String gaugeName, String description, OtelUnit unit) {
     return doubleGaugeBuilder(registry, gaugeName, description, unit).buildObserver();
+  }
+
+  ObservableLongMeasurement longCounterMeasurement(
+      String registry, String counterName, String description, OtelUnit unit) {
+    return longCounterBuilder(registry, counterName, description, unit).buildObserver();
+  }
+
+  ObservableDoubleMeasurement doubleCounterMeasurement(
+      String registry, String counterName, String description, OtelUnit unit) {
+    return doubleCounterBuilder(registry, counterName, description, unit).buildObserver();
   }
 
   private LongGaugeBuilder longGaugeBuilder(
@@ -419,6 +429,31 @@ public class SolrMetricManager {
             .get(OTEL_SCOPE_NAME)
             .gaugeBuilder(gaugeName)
             .setDescription(description);
+    if (unit != null) builder.setUnit(unit.getSymbol());
+
+    return builder;
+  }
+
+  private LongCounterBuilder longCounterBuilder(
+      String registry, String counterName, String description, OtelUnit unit) {
+    LongCounterBuilder builder =
+        meterProvider(registry)
+            .get(OTEL_SCOPE_NAME)
+            .counterBuilder(counterName)
+            .setDescription(description);
+    if (unit != null) builder.setUnit(unit.getSymbol());
+
+    return builder;
+  }
+
+  private DoubleCounterBuilder doubleCounterBuilder(
+      String registry, String counterName, String description, OtelUnit unit) {
+    DoubleCounterBuilder builder =
+        meterProvider(registry)
+            .get(OTEL_SCOPE_NAME)
+            .counterBuilder(counterName)
+            .setDescription(description)
+            .ofDoubles();
     if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder;
