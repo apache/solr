@@ -142,4 +142,7 @@ public interface ExtractingParams {
 
   /** Fix metadata to match Tika 1.x */
   public static final String BACK_COMPATIBILITY = "backCompatibility";
+
+  /** Enable recursive parsing of embedded documents */
+  String RECURSIVE = "recursive";
 }

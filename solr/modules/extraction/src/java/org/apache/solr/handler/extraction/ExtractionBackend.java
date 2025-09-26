@@ -19,7 +19,7 @@ package org.apache.solr.handler.extraction;
 import java.io.InputStream;
 import org.apache.tika.metadata.HttpHeaders;
 import org.apache.tika.metadata.TikaMetadataKeys;
-import org.xml.sax.ContentHandler;
+import org.xml.sax.helpers.DefaultHandler;
 
 /** Strategy interface for content extraction backends. */
 public interface ExtractionBackend {
@@ -37,7 +37,7 @@ public interface ExtractionBackend {
       InputStream inputStream,
       ExtractionRequest request,
       ExtractionMetadata md,
-      ContentHandler saxContentHandler)
+      DefaultHandler saxContentHandler)
       throws Exception;
 
   /** Build ExtractionMetadata from the request context */

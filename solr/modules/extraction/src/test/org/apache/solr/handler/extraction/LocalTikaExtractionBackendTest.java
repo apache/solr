@@ -57,6 +57,7 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
       Long streamSize,
       String resourcePassword,
       String returnType,
+      boolean recursive,
       Map<String, String> tikaRequestHeaders) {
     return new ExtractionRequest(
         streamType,
@@ -69,6 +70,7 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
         resourcePassword,
         null,
         returnType,
+        recursive,
         tikaRequestHeaders);
   }
 
@@ -88,6 +90,7 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
               null,
               null,
               "text",
+              false,
               Collections.emptyMap());
       expectThrows(IllegalArgumentException.class, () -> backend.extract(in, req));
     }
@@ -105,6 +108,7 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
               null,
               null,
               "text",
+              false,
               Collections.emptyMap());
       expectThrows(Exception.class, () -> backend.extract(in, req));
     }
@@ -125,6 +129,7 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
               null,
               null,
               "text",
+              false,
               Collections.emptyMap());
       expectThrows(Exception.class, () -> backend.extract(in, req));
     }
@@ -145,6 +150,7 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
               null,
               "Word2010",
               "text",
+              false,
               Collections.emptyMap());
       ExtractionResult res = backend.extract(in, req);
       assertNotNull(res);

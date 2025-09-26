@@ -29,7 +29,10 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
-/** Generic tests, randomized between local and tikaserver backends */
+/**
+ * Generic tests, randomized between local and tikaserver backends TODO: This test still has thread
+ * leaks.
+ */
 @ThreadLeakFilters(
     defaultFilters = true,
     filters = {

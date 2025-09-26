@@ -20,6 +20,7 @@ import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.ByteArrayInputStream;
 import java.net.http.HttpClient;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -108,6 +109,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
       String resourceName,
       String contentType,
       String extractFormat,
+      boolean recursive,
       Map<String, String> tikaRequestHeaders) {
     return new ExtractionRequest(
         contentType, // streamType
@@ -120,6 +122,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         null, // resourcePassword
         null, // passwordsMap
         extractFormat, // extraction format xml or text
+        recursive,
         tikaRequestHeaders);
   }
 
@@ -163,7 +166,32 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testPdfWithImageRecursive() throws Exception {
+    Assume.assumeTrue("Tika server container not started", tika != null);
+    TikaServerExtractionBackend backend = new TikaServerExtractionBackend(client, baseUrl);
+    byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf"));
+    // Enable recursive extraction and set header to extract images from PDF
+    ExtractionRequest request =
+        newRequest(
+            "pdf-with-image.pdf",
+            "application/pdf",
+            "xml",
+            true,
+            Map.of("X-Tika-PDFextractInlineImages", "true"));
+    try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+      ToXMLContentHandler xmlHandler = new ToXMLContentHandler();
+      ExtractionMetadata md = backend.buildMetadataFromRequest(request);
+      backend.extractWithSaxHandler(in, request, md, xmlHandler);
+      String c = xmlHandler.toString();
+      assertNotNull(c);
+      assertTrue(c.contains("Puppet Apply"));
+      assertTrue(c.contains("embedded:image0.jpg"));
+      assertEquals("org.apache.tika.parser.DefaultParser", md.get("X-TIKA:Parsed-By-Full-Set"));
+    }
+  }
+
   private ExtractionRequest newRequest(String file, String contentType, String xml) {
-    return newRequest(file, contentType, xml, Collections.emptyMap());
+    return newRequest(file, contentType, xml, false, Collections.emptyMap());
   }
 }

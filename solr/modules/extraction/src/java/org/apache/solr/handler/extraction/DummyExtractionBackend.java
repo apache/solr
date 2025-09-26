@@ -17,7 +17,7 @@
 package org.apache.solr.handler.extraction;
 
 import java.io.InputStream;
-import org.xml.sax.ContentHandler;
+import org.xml.sax.helpers.DefaultHandler;
 
 /** Dummy backend that emits predictable test data without actually parsing input content. */
 public class DummyExtractionBackend implements ExtractionBackend {
@@ -47,7 +47,7 @@ public class DummyExtractionBackend implements ExtractionBackend {
       InputStream inputStream,
       ExtractionRequest request,
       ExtractionMetadata md,
-      ContentHandler saxContentHandler)
+      DefaultHandler saxContentHandler)
       throws Exception {
 
     ExtractionResult res = extract(inputStream, request);

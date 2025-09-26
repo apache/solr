@@ -460,6 +460,14 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
           "ignored_parser",
           "fmap.X-TIKA:Parsed-By",
           "ignored_parser",
+          "fmap.X-TIKA:Parsed-By-Full-Set",
+          "ignored_parser",
+          "fmap.X-TIKA:content_handler",
+          "ignored_parser",
+          "fmap.X-TIKA:parse_time_millis",
+          "ignored_parser",
+          "fmap.X-TIKA:embedded_depth",
+          "ignored_parser",
           "fmap.Last-Modified",
           "extractedDate");
       // TODO: original author did not specify why an exception should be thrown... how to fix?
@@ -491,6 +499,14 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
         "fmap.X-Parsed-By",
         "ignored_parser",
         "fmap.X-TIKA:Parsed-By",
+        "ignored_parser",
+        "fmap.X-TIKA:Parsed-By-Full-Set",
+        "ignored_parser",
+        "fmap.X-TIKA:content_handler",
+        "ignored_parser",
+        "fmap.X-TIKA:parse_time_millis",
+        "ignored_parser",
+        "fmap.X-TIKA:embedded_depth",
         "ignored_parser",
         "fmap.Last-Modified",
         "extractedDate");
@@ -604,6 +620,14 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
         "ignored_parser",
         "fmap.X-TIKA:encodingDetector",
         "ignored_parser",
+        "fmap.X-TIKA:Parsed-By-Full-Set",
+        "ignored_parser",
+        "fmap.X-TIKA:content_handler",
+        "ignored_parser",
+        "fmap.X-TIKA:parse_time_millis",
+        "ignored_parser",
+        "fmap.X-TIKA:embedded_depth",
+        "ignored_parser",
         "fmap.content",
         "extractedContent",
         ExtractingParams.STREAM_TYPE,
@@ -643,6 +667,14 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
         "fmap.X-TIKA:detectedEncoding",
         "ignored_parser",
         "fmap.X-TIKA:encodingDetector",
+        "ignored_parser",
+        "fmap.X-TIKA:Parsed-By-Full-Set",
+        "ignored_parser",
+        "fmap.X-TIKA:content_handler",
+        "ignored_parser",
+        "fmap.X-TIKA:parse_time_millis",
+        "ignored_parser",
+        "fmap.X-TIKA:embedded_depth",
         "ignored_parser",
         "fmap.content",
         "extractedContent",
@@ -905,41 +937,6 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
     assertQ(req("title:wolf-man"), "//*[@numFound='1']");
     assertQ(
         req("extractedKeywords:(solr AND word AND pdf AND literalkeyword)"), "//*[@numFound='1']");
-  }
-
-  @Test
-  public void testPdfWithImages() throws Exception {
-    // Tests possibility to configure ParseContext (by example to extract embedded images from pdf)
-    loadLocal(
-        "extraction/pdf-with-image.pdf",
-        "fmap.created",
-        "extractedDate",
-        "fmap.producer",
-        "extractedProducer",
-        "fmap.creator",
-        "extractedCreator",
-        "fmap.Keywords",
-        "extractedKeywords",
-        "fmap.Creation-Date",
-        "extractedDate",
-        "uprefix",
-        "ignored_",
-        "fmap.Author",
-        "extractedAuthor",
-        "fmap.content",
-        "wdf_nocase",
-        "literal.id",
-        "pdfWithImage",
-        "resource.name",
-        "pdf-with-image.pdf",
-        "resource.password",
-        "solrRules",
-        "fmap.Last-Modified",
-        "extractedDate");
-
-    assertQ(req("wdf_nocase:\"embedded:image0.jpg\""), "//*[@numFound='0']");
-    assertU(commit());
-    assertQ(req("wdf_nocase:\"embedded:image0.jpg\""), "//*[@numFound='1']");
   }
 
   @Test

@@ -30,7 +30,7 @@ import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.PasswordProvider;
 import org.apache.tika.parser.html.HtmlMapper;
 import org.apache.tika.sax.BodyContentHandler;
-import org.xml.sax.ContentHandler;
+import org.xml.sax.helpers.DefaultHandler;
 
 /**
  * Extraction backend using local in-process Apache Tika. This encapsulates the previous direct
@@ -163,7 +163,7 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
       InputStream inputStream,
       ExtractionRequest request,
       ExtractionMetadata md,
-      ContentHandler saxContentHandler)
+      DefaultHandler saxContentHandler)
       throws Exception {
     Parser parser = selectParser(request);
     if (parser == null) {

@@ -25,7 +25,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import org.apache.solr.common.SolrException;
 import org.apache.tika.sax.BodyContentHandler;
-import org.xml.sax.ContentHandler;
+import org.xml.sax.helpers.DefaultHandler;
 
 /**
  * Extraction backend that delegates parsing to a remote Apache Tika Server.
@@ -38,7 +38,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   private final HttpClient httpClient;
   private final String baseUrl; // e.g., http://localhost:9998
   private final Duration timeout = Duration.ofSeconds(30);
-  private final TikaServerXmlParser tikaServerXmlParser = new TikaServerXmlParser();
+  private final TikaServerParser tikaServerResponseParser = new TikaServerParser();
 
   public TikaServerExtractionBackend(String baseUrl) {
     this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build(), baseUrl);
@@ -67,7 +67,11 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     try (InputStream tikaResponse = callTikaServer(inputStream, request)) {
       ExtractionMetadata md = buildMetadataFromRequest(request);
       BodyContentHandler textHandler = new BodyContentHandler(-1);
-      tikaServerXmlParser.parse(tikaResponse, textHandler, md);
+      if (request.recursive) {
+        tikaServerResponseParser.parseRmetaJson(tikaResponse, textHandler, md);
+      } else {
+        tikaServerResponseParser.parseXml(tikaResponse, textHandler, md);
+      }
       return new ExtractionResult(textHandler.toString(), md);
     }
   }
@@ -77,10 +81,14 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       InputStream inputStream,
       ExtractionRequest request,
       ExtractionMetadata md,
-      ContentHandler saxContentHandler)
+      DefaultHandler saxContentHandler)
       throws Exception {
     try (InputStream tikaResponse = callTikaServer(inputStream, request)) {
-      tikaServerXmlParser.parse(tikaResponse, saxContentHandler, md);
+      if (request.recursive) {
+        tikaServerResponseParser.parseRmetaJson(tikaResponse, saxContentHandler, md);
+      } else {
+        tikaServerResponseParser.parseXml(tikaResponse, saxContentHandler, md);
+      }
     }
   }
 
@@ -89,15 +97,18 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   }
 
   /**
-   * Call the Tika Server /tika endpoint to extract text and metadata.
+   * Call the Tika Server to extract text and metadata. Depending on request.recursive, will either
+   * return XML (false) or JSON array (true)
    *
-   * @return InputStream of the response body, which is XML format
+   * @return InputStream of the response body, either XML or json depending on request.recursive
    */
   private InputStream callTikaServer(InputStream inputStream, ExtractionRequest request)
       throws IOException, InterruptedException {
-    String url = baseUrl + "/tika";
+    String url = baseUrl + (request.recursive ? "/rmeta" : "/tika");
     HttpRequest.Builder b =
-        HttpRequest.newBuilder(URI.create(url)).timeout(timeout).header("Accept", "text/xml");
+        HttpRequest.newBuilder(URI.create(url))
+            .timeout(timeout)
+            .header("Accept", (request.recursive ? "application/json" : "text/xml"));
     String contentType = firstNonNull(request.streamType, request.contentType);
     if (contentType != null) {
       b.header("Content-Type", contentType);

@@ -37,6 +37,7 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.helpers.DefaultHandler;
 
 /** The class responsible for loading extracted content into Solr. */
 public class ExtractingDocumentLoader extends ContentStreamLoader {
@@ -107,6 +108,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
       String xpathExpr = params.get(ExtractingParams.XPATH_EXPRESSION);
       boolean extractOnly = params.getBool(ExtractingParams.EXTRACT_ONLY, false);
+      boolean recursive = params.getBool(ExtractingParams.RECURSIVE, false);
       String extractFormat =
           params.get(ExtractingParams.EXTRACT_FORMAT, extractOnly ? XML_FORMAT : TEXT_FORMAT);
 
@@ -131,6 +133,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               params.get(ExtractingParams.RESOURCE_PASSWORD, null),
               pwMap,
               extractFormat,
+              recursive,
               Collections.emptyMap());
 
       boolean captureAttr = params.getBool(ExtractingParams.CAPTURE_ATTRIBUTES, false);
@@ -151,7 +154,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               || xpathExpr != null) {
             org.apache.tika.sax.ToTextContentHandler textHandler =
                 new org.apache.tika.sax.ToTextContentHandler();
-            org.xml.sax.ContentHandler ch = textHandler;
+            DefaultHandler ch = textHandler;
             if (xpathExpr != null) {
               org.apache.tika.sax.xpath.XPathParser xparser =
                   new org.apache.tika.sax.xpath.XPathParser(
@@ -164,7 +167,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           } else { // XML format
             org.apache.tika.sax.ToXMLContentHandler toXml =
                 new org.apache.tika.sax.ToXMLContentHandler();
-            org.xml.sax.ContentHandler ch = toXml;
+            DefaultHandler ch = toXml;
             if (xpathExpr != null) {
               org.apache.tika.sax.xpath.XPathParser xparser =
                   new org.apache.tika.sax.xpath.XPathParser(

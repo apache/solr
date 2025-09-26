@@ -32,6 +32,7 @@ public class ExtractionRequest {
   public final java.util.LinkedHashMap<java.util.regex.Pattern, String>
       passwordsMap; // optional passwords map
   public final String extractFormat;
+  public final boolean recursive;
   public final Map<String, String> tikaRequestHeaders = new HashMap<>();
 
   public ExtractionRequest(
@@ -45,6 +46,7 @@ public class ExtractionRequest {
       String resourcePassword,
       java.util.LinkedHashMap<java.util.regex.Pattern, String> passwordsMap,
       String extractFormat,
+      boolean recursive,
       Map<String, String> tikaRequestHeaders) {
     this.streamType = streamType;
     this.resourceName = resourceName;
@@ -56,6 +58,9 @@ public class ExtractionRequest {
     this.resourcePassword = resourcePassword;
     this.passwordsMap = passwordsMap;
     this.extractFormat = extractFormat;
-    this.tikaRequestHeaders.putAll(tikaRequestHeaders);
+    this.recursive = recursive;
+    if (tikaRequestHeaders != null) {
+      this.tikaRequestHeaders.putAll(tikaRequestHeaders);
+    }
   }
 }

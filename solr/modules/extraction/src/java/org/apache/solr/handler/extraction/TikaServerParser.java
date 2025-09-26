@@ -16,19 +16,24 @@
  */
 package org.apache.solr.handler.extraction;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-public class TikaServerXmlParser {
+public class TikaServerParser {
   private final SAXParser saxParser;
 
-  public TikaServerXmlParser() {
+  public TikaServerParser() {
     SAXParserFactory factory = SAXParserFactory.newInstance();
     factory.setNamespaceAware(true);
     try {
@@ -49,11 +54,53 @@ public class TikaServerXmlParser {
    * Parses response in XML format from Tika Server /tika endpoint. The result is that the metadata
    * object is populated and the content handler is called with extracted text.
    */
-  public void parse(InputStream inputStream, ContentHandler handler, ExtractionMetadata metadata)
+  public void parseXml(InputStream inputStream, ContentHandler handler, ExtractionMetadata metadata)
       throws IOException, SAXException {
     DefaultHandler myHandler = new TikaXmlResponseSaxContentHandler(handler, metadata);
     InputStream sanitizedStream = XmlSanitizingReader.sanitize(inputStream);
     saxParser.parse(sanitizedStream, myHandler);
+  }
+
+  // TODO: Warning, this method 100% AI generated, not reviewed
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  void parseRmetaJson(InputStream jsonStream, DefaultHandler handler, ExtractionMetadata md)
+      throws Exception {
+    Object parsed = Utils.fromJSON(jsonStream);
+    if (!(parsed instanceof List)) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Unexpected /rmeta response, expected JSON array");
+    }
+    List list = (List) parsed;
+    for (Object o : list) {
+      if (!(o instanceof Map)) continue;
+      Map map = (Map) o;
+      // Copy metadata
+      for (Object k : map.keySet()) {
+        String key = String.valueOf(k);
+        Object val = map.get(k);
+        if ("X-TIKA:content".equalsIgnoreCase(key)) {
+          // handled below
+          continue;
+        }
+        if (val instanceof List) {
+          for (Object v : (List) val) {
+            if (v != null) md.add(key, String.valueOf(v));
+          }
+        } else if (val != null) {
+          md.add(key, String.valueOf(val));
+        }
+      }
+      Object content = map.get("X-TIKA:content");
+      if (content != null) {
+        String xhtml = String.valueOf(content);
+        if (!xhtml.isEmpty() && handler != null) {
+          InputStream inputStream =
+              new ByteArrayInputStream(xhtml.getBytes(StandardCharsets.UTF_8));
+          InputStream sanitizedStream = XmlSanitizingReader.sanitize(inputStream);
+          saxParser.parse(sanitizedStream, handler);
+        }
+      }
+    }
   }
 
   /** Custom SAX handler that will extract meta tags from the tika xml and delegate */

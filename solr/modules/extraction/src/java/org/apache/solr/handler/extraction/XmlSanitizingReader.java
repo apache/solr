@@ -28,7 +28,8 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Make sure the XHTML input is valid XML. Pipe text through this reader before passing it to an XML
- * parser
+ * parser. TODO: Warning: Most of this class is AI generated. Can be a lot smaller, only sanitize
+ * '0x0'?
  */
 final class XmlSanitizingReader extends java.io.Reader {
   private final java.io.Reader in;
