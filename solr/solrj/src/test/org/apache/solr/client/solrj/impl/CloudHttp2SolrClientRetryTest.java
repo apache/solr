@@ -49,7 +49,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
   public void testRetry() throws Exception {
     String collectionName = "testRetry";
     String prometheusMetric =
-        "solr_core_requests_total{category=\"UPDATE\",collection=\"testRetry\",core=\"testRetry_shard1_replica_n1\",handler=\"/update\",otel_scope_name=\"org.apache.solr\",replica=\"replica_n1\",shard=\"shard1\"}";
+        "solr_core_requests_total{category=\"UPDATE\",collection=\"testRetry\",core=\"testRetry_shard1_replica_n1\",handler=\"/update\",otel_scope_name=\"org.apache.solr\",replica_type=\"NRT\",shard=\"shard1\"}";
     try (CloudSolrClient solrClient =
         new CloudHttp2SolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
