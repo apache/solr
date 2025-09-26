@@ -167,6 +167,7 @@ dependencies {
   implementation(libs.opentelemetry.sdk, {
     exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
   })
+  runtimeOnly libs.opentelemetry.exporter.sender.okhttp
 
   // JVM Runtime Telemetry metrics
   implementation libs.opentelemetry.runtime.telemetry
@@ -222,4 +223,6 @@ dependencies {
   testRuntimeOnly(libs.mockito.subclass, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
+
+  testImplementation libs.opentelemetry.sdktesting
 }

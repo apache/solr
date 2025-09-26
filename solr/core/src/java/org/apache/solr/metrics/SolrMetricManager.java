@@ -16,6 +16,9 @@
  */
 package org.apache.solr.metrics;
 
+import static org.apache.solr.metrics.otel.MetricExporterFactory.OTLP_EXPORTER_ENABLED;
+import static org.apache.solr.metrics.otel.MetricExporterFactory.OTLP_EXPORTER_INTERVAL;
+
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
@@ -57,6 +60,8 @@ import io.opentelemetry.sdk.metrics.InstrumentSelector;
 import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.View;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
 import io.opentelemetry.sdk.metrics.internal.exemplar.ExemplarFilter;
 import java.io.IOException;
@@ -81,6 +86,8 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
@@ -90,6 +97,8 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
+import org.apache.solr.metrics.otel.MetricExporterFactory;
+import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,6 +170,8 @@ public class SolrMetricManager {
   private final ConcurrentMap<String, MeterProviderAndReaders> meterProviderAndReaders =
       new ConcurrentHashMap<>();
 
+  private final MetricExporter metricExporter;
+
   private static final List<Double> SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES =
       List.of(
           0.0,
@@ -178,8 +189,9 @@ public class SolrMetricManager {
           100_000_000.0,
           1_000_000_000.0);
 
-  public SolrMetricManager() {
+  public SolrMetricManager(MetricExporter exporter) {
     metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
+    metricExporter = exporter;
     counterSupplier = MetricSuppliers.counterSupplier(null, null);
     meterSupplier = MetricSuppliers.meterSupplier(null, null);
     timerSupplier = MetricSuppliers.timerSupplier(null, null);
@@ -188,6 +200,7 @@ public class SolrMetricManager {
 
   public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
     this.metricsConfig = metricsConfig;
+    this.metricExporter = loadMetricExporter(loader);
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
     timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());
@@ -827,9 +840,7 @@ public class SolrMetricManager {
             providerName,
             key -> {
               var reader = new FilterablePrometheusMetricReader(true, null);
-              // NOCOMMIT: We need to add a Periodic Metric Reader here if we want to push with OTLP
-              // with an exporter
-              var provider =
+              var builder =
                   SdkMeterProvider.builder()
                       .registerMetricReader(reader)
                       .registerView(
@@ -841,9 +852,14 @@ public class SolrMetricManager {
                               .setAggregation(
                                   Aggregation.explicitBucketHistogram(
                                       SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES))
-                              .build()); // TODO: Make histogram bucket boundaries configurable
-              SdkMeterProviderUtil.setExemplarFilter(provider, ExemplarFilter.traceBased());
-              return new MeterProviderAndReaders(provider.build(), reader);
+                              .build()); // TODO: Make histogram bucket boundaries configurable;
+              if (metricExporter != null)
+                builder.registerMetricReader(
+                    PeriodicMetricReader.builder(metricExporter)
+                        .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
+                        .build());
+              SdkMeterProviderUtil.setExemplarFilter(builder, ExemplarFilter.traceBased());
+              return new MeterProviderAndReaders(builder.build(), reader);
             })
         .sdkMeterProvider();
   }
@@ -871,13 +887,25 @@ public class SolrMetricManager {
    *
    * @param registry name of the registry to remove
    */
+  // NOCOMMIT: Remove this
   public void removeRegistry(String registry) {
     meterProviderAndReaders.computeIfPresent(
         enforcePrefix(registry),
         (key, meterAndReader) -> {
-          meterAndReader.sdkMeterProvider().close();
+          IOUtils.closeQuietly(meterAndReader.sdkMeterProvider());
           return null;
         });
+  }
+
+  /** Close all meter providers and their associated metric readers. */
+  public void closeAllRegistries() {
+    meterProviderAndReaders
+        .values()
+        .forEach(
+            meterAndReader -> {
+              IOUtils.closeQuietly(meterAndReader.sdkMeterProvider);
+            });
+    meterProviderAndReaders.clear();
   }
 
   /**
@@ -1734,6 +1762,24 @@ public class SolrMetricManager {
   public FilterablePrometheusMetricReader getPrometheusMetricReader(String providerName) {
     MeterProviderAndReaders mpr = meterProviderAndReaders.get(enforcePrefix(providerName));
     return (mpr != null) ? mpr.prometheusMetricReader() : null;
+  }
+
+  public MetricExporter getMetricExporter() {
+    return metricExporter;
+  }
+
+  private MetricExporter loadMetricExporter(SolrResourceLoader loader) {
+    if (!OTLP_EXPORTER_ENABLED) return new NoopMetricExporter();
+    try {
+      MetricExporterFactory exporterFactory =
+          loader.newInstance(
+              "org.apache.solr.opentelemetry.OtlpExporterFactory", MetricExporterFactory.class);
+      return exporterFactory.getExporter();
+    } catch (SolrException e) {
+      log.error(
+          "Could not load OTLP exporter. Check that the Open Telemetry module is enabled.", e);
+      return new NoopMetricExporter();
+    }
   }
 
   private record MeterProviderAndReaders(

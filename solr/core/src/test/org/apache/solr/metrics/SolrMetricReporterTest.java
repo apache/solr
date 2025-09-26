@@ -33,7 +33,7 @@ public class SolrMetricReporterTest extends SolrTestCaseJ4 {
   public void testInit() throws Exception {
     Random random = random();
 
-    SolrMetricManager metricManager = new SolrMetricManager();
+    SolrMetricManager metricManager = new SolrMetricManager(null);
 
     final String registryName = TestUtil.randomSimpleString(random);
     final MockMetricReporter reporter = new MockMetricReporter(metricManager, registryName);

@@ -30,24 +30,30 @@ import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.opentelemetry.sdk.metrics.data.MetricData;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.util.SolrMetricTestUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,10 +65,16 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    this.metricManager = new SolrMetricManager();
+    this.metricManager = new SolrMetricManager(InMemoryMetricExporter.create());
     // Initialize a metric reader for tests
     metricManager.meterProvider(METER_PROVIDER_NAME);
     this.reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    metricManager.closeAllRegistries();
+    super.tearDown();
   }
 
   // NOCOMMIT: Migration of this to OTEL isn't possible. You can't register instruments to a
@@ -70,8 +82,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   @Test
   public void testRegisterAll() throws Exception {
     Random r = random();
-
-    SolrMetricManager metricManager = new SolrMetricManager();
 
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(r, true);
     MetricRegistry mr = new MetricRegistry();
@@ -100,8 +110,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   @Test
   public void testClearMetrics() {
     Random r = random();
-
-    SolrMetricManager metricManager = new SolrMetricManager();
 
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(r, true);
     String registryName = TestUtil.randomSimpleString(r, 1, 10);
@@ -143,8 +151,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   @Test
   public void testSimpleMetrics() {
     Random r = random();
-
-    SolrMetricManager metricManager = new SolrMetricManager();
 
     String registryName = TestUtil.randomSimpleString(r, 1, 10);
 
@@ -388,6 +394,32 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
     // Observable metrics value changes anytime metricReader collects() to trigger callback
     assertEquals(-10.1, actual.getDataPoints().getFirst().getValue(), 1e-6);
+  }
+
+  @Test
+  public void testMetricExporter() throws Exception {
+    LongCounter counter =
+        metricManager.longCounter(METER_PROVIDER_NAME, "my_counter", "desc", null);
+    counter.add(5);
+    counter.add(3);
+    InMemoryMetricExporter exporter = (InMemoryMetricExporter) metricManager.getMetricExporter();
+
+    RetryUtil.retryUntil(
+        "my_counter metric not found from exporter within timeout",
+        50,
+        100L,
+        TimeUnit.MILLISECONDS,
+        () -> {
+          Collection<MetricData> metrics = exporter.getFinishedMetricItems();
+          return metrics.stream()
+              .filter(m -> "my_counter".equals(m.getName()))
+              .findFirst()
+              .map(
+                  actual ->
+                      actual.getLongSumData().getPoints().stream()
+                          .anyMatch(p -> p.getValue() == 8L))
+              .orElse(false);
+        });
   }
 
   @Test

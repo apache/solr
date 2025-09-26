@@ -250,7 +250,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   @BeforeClass
   public static void setupTestCases() {
-    OpenTelemetryConfigurator.resetForTest();
     resetExceptionIgnores();
 
     testExecutor =
@@ -283,6 +282,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.http.disableCookies", Boolean.toString(rarely()));
     System.setProperty("solr.metrics.jvm.enabled", "false");
+    System.setProperty("solr.metrics.otlpExporterInterval", "1000");
 
     startTrackingSearchers();
     ignoreException("ignore_exception");
@@ -299,6 +299,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     ExecutorUtil.resetThreadLocalProviders();
+    OpenTelemetryConfigurator.resetForTest();
   }
 
   @AfterClass
