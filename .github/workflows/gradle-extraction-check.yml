@@ -1,0 +1,25 @@
+name: Gradle Extraction Check
+
+on:
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  test:
+    name: gradle extraction test
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - uses: ./.github/actions/prepare-for-build
+
+      - name: Run gradle check (without tests)
+        run: ./gradlew --no-daemon solr:modules:extraction:check
