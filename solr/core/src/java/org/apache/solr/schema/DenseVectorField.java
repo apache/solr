@@ -47,6 +47,8 @@ import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.neural.KnnQParser.EarlyTerminationParams;
+import org.apache.solr.search.neural.SolrKnnByteVectorQuery;
+import org.apache.solr.search.neural.SolrKnnFloatVectorQuery;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
 import org.apache.solr.util.vector.DenseVectorParser;
@@ -418,14 +420,15 @@ public class DenseVectorField extends FloatPointField {
 
   public Query getKnnVectorQuery(
       String fieldName, String vectorToSearch, int topK, int efSearch, Query filterQuery) {
-    final int k = efSearch;
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
     switch (vectorEncoding) {
       case FLOAT32:
-        return new KnnFloatVectorQuery(fieldName, vectorBuilder.getFloatVector(), k, filterQuery);
+        return new SolrKnnFloatVectorQuery(
+            fieldName, vectorBuilder.getFloatVector(), topK, efSearch, filterQuery);
       case BYTE:
-        return new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), k, filterQuery);
+        return new SolrKnnByteVectorQuery(
+            fieldName, vectorBuilder.getByteVector(), topK, efSearch, filterQuery);
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,

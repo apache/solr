@@ -218,21 +218,6 @@ public class QueryComponent extends SearchComponent {
       rb.setSortSpec(parser.getSortSpec(true));
       rb.setQparser(parser);
 
-      // If this is a KNN request, cap effective rows to topK
-      Object tk = req.getContext().get("knn.topK");
-      if (tk instanceof Integer) {
-        int topK = (Integer) tk;
-
-        // Adjust the SortSpec count
-        SortSpec ss = rb.getSortSpec();
-        int rows = ss.getCount();
-        int start = ss.getOffset();
-        if (rows > topK) {
-          rb.setSortSpec(new SortSpec(ss.getSort(), ss.getSchemaFields(), topK, start));
-          rb.shards_rows = topK;
-        }
-      }
-
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
       if (fqs != null && fqs.length != 0) {
         List<Query> filters = rb.getFilters();
