@@ -130,11 +130,6 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     }
 
     List<Object> schemeList = (List<Object>) o;
-    // if you only have one scheme, then you don't need to use this class
-    if (schemeList.size() < 2) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR, "Invalid config: MultiAuthPlugin requires at least two schemes!");
-    }
 
     for (Object s : schemeList) {
       if (!(s instanceof Map)) {
