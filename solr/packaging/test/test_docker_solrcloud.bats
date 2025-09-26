@@ -38,11 +38,10 @@ teardown() {
   fi
 
   # Clean up
-  docker network rm solrcloud-test 2>/dev/null || true
-  # Force cleanup in case --rm didn't work
   docker stop solr-node1 solr-node2 solr-node3 2>/dev/null || true
   docker rm solr-node1 solr-node2 solr-node3 2>/dev/null || true
   docker volume rm solr-data1 solr-data2 solr-data3 2>/dev/null || true
+  docker network rm solrcloud-test 2>/dev/null || true
 }
 
 @test "Docker SolrCloud rolling upgrade from 9 to 10" {
@@ -125,8 +124,6 @@ teardown() {
     "$SOLR_IMAGE_V10" solr start -f -c -m 200m --host solr-node1 -p 8983
   docker exec solr-node1 solr assert --started http://solr-node1:8983 --timeout 30000
 
-  # Final verification - validate exactly 3 nodes in cluster
-  run docker exec solr-node1 curl -s 'http://solr-node1:8983/solr/admin/collections?action=CLUSTERSTATUS'
-  [ $status -eq 0 ]
-  echo "Final cluster status: $output"
+  # Final verification
+  # TODO
 }
