@@ -16,10 +16,6 @@
  */
 package org.apache.solr.search;
 
-import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
 
 import com.codahale.metrics.Gauge;
@@ -102,7 +98,6 @@ import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.NodeConfig;
@@ -621,23 +616,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           core.getCoreAttributes().toBuilder().put(NAME_ATTR, cache.name()).build(),
           "solr_searcher_cache");
     }
-    Attributes baseAttributes;
-    if (core.getCoreContainer().isZooKeeperAware()) {
-      baseAttributes =
-          Attributes.builder()
-              .put(COLLECTION_ATTR, core.getCoreDescriptor().getCollectionName())
-              .put(CORE_ATTR, core.getCoreDescriptor().getName())
-              .put(SHARD_ATTR, core.getCoreDescriptor().getCloudDescriptor().getShardId())
-              .put(
-                  REPLICA_ATTR,
-                  Utils.parseMetricsReplicaName(
-                      core.getCoreDescriptor().getCollectionName(), core.getName()))
-              .build();
-    } else {
-      baseAttributes =
-          Attributes.builder().put(CORE_ATTR, core.getCoreDescriptor().getName()).build();
-    }
-    initializeMetrics(solrMetricsContext, baseAttributes, STATISTICS_KEY);
+    initializeMetrics(solrMetricsContext, core.getCoreAttributes(), STATISTICS_KEY);
     registerTime = new Date();
   }
 

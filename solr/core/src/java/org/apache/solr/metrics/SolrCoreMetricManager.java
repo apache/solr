@@ -41,7 +41,8 @@ public class SolrCoreMetricManager implements Closeable {
   public static final AttributeKey<String> COLLECTION_ATTR = AttributeKey.stringKey("collection");
   public static final AttributeKey<String> CORE_ATTR = AttributeKey.stringKey("core");
   public static final AttributeKey<String> SHARD_ATTR = AttributeKey.stringKey("shard");
-  public static final AttributeKey<String> REPLICA_ATTR = AttributeKey.stringKey("replica");
+  public static final AttributeKey<String> REPLICA_TYPE_ATTR =
+      AttributeKey.stringKey("replica_type");
 
   private final SolrCore core;
   private SolrMetricsContext solrMetricsContext;

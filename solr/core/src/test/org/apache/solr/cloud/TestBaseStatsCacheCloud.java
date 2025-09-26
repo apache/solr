@@ -245,9 +245,12 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
    * "solr_searcher_stats_cache{...type="lookups",...}" -> "lookups"
    */
   private String extractTypeAttribute(String line) {
-    int typeStart = line.indexOf("type=\"");
-    int typeEnd = line.indexOf('"', typeStart += 6);
-    return line.substring(typeStart, typeEnd);
+    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\btype=\"([^\"]+)\"");
+    java.util.regex.Matcher matcher = pattern.matcher(line);
+    if (matcher.find()) {
+      return matcher.group(1);
+    }
+    throw new IllegalArgumentException("No type attribute found in line: " + line);
   }
 
   /**

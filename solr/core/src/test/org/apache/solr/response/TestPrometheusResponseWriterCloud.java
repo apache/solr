@@ -87,7 +87,7 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
                           && line.contains("handler=\"/select\"")
                           && line.contains("collection=\"collection1\"")
                           && line.contains("core=\"collection1_shard1_replica_n1\"")
-                          && line.contains("replica=\"replica_n1\"")
+                          && line.contains("replica_type=\"NRT\"")
                           && line.contains("shard=\"shard1\"")));
     }
   }
