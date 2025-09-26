@@ -39,7 +39,7 @@ public class BufferStoreTest extends SolrTestCase {
   @Before
   public void setup() {
     metrics = new Metrics();
-    metricManager = new SolrMetricManager();
+    metricManager = new SolrMetricManager(null);
     registry = TestUtil.randomSimpleString(random(), 2, 10);
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");

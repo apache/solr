@@ -23,6 +23,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
@@ -113,9 +114,12 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     commitUpdateCommand.openSearcher = true;
     commitUpdateCommand.waitSearcher = true;
 
+    core = mock(SolrCore.class);
+    when(core.getCoreAttributes()).thenReturn(Attributes.empty());
+
     producerMetrics =
         spy(
-            new ProducerMetrics(mock(SolrMetricsContext.class), mock(SolrCore.class)) {
+            new ProducerMetrics(mock(SolrMetricsContext.class), core) {
               private final AttributedLongCounter counterMock = mock(AttributedLongCounter.class);
 
               @Override
@@ -168,8 +172,6 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
             return requestMock;
           }
         };
-
-    core = mock(SolrCore.class);
     CoreDescriptor coreDesc = mock(CoreDescriptor.class);
     cloudDesc = mock(CloudDescriptor.class);
     when(cloudDesc.getShardId()).thenReturn("shard1");

@@ -16,15 +16,8 @@
  */
 package org.apache.solr.crossdc.update.processor;
 
-import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_TYPE_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 
-import io.opentelemetry.api.common.Attributes;
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
@@ -42,17 +35,7 @@ public class ProducerMetrics {
   private final AttributedLongCounter documentTooLarge;
 
   public ProducerMetrics(SolrMetricsContext solrMetricsContext, SolrCore solrCore) {
-    CoreDescriptor coreDescriptor = solrCore.getCoreDescriptor();
-    CloudDescriptor cloudDescriptor =
-        (coreDescriptor != null) ? coreDescriptor.getCloudDescriptor() : null;
-    var attributesBuilder = Attributes.builder().put(CORE_ATTR, solrCore.getName());
-    if (cloudDescriptor != null) {
-      attributesBuilder
-          .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
-          .put(SHARD_ATTR, cloudDescriptor.getShardId())
-          .put(REPLICA_TYPE_ATTR, cloudDescriptor.getReplicaType().toString());
-    }
-    var attributes = attributesBuilder.build();
+    var attributes = solrCore.getCoreAttributes();
 
     var localProcessed =
         solrMetricsContext.longCounter(

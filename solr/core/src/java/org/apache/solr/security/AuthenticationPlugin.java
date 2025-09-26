@@ -171,8 +171,8 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
     Attributes attrsWithCategory =
         Attributes.builder()
             .putAll(attributes)
-            .put("category", getCategory().toString())
-            .put("plugin_name", this.getClass().getSimpleName())
+            .put(CATEGORY_ATTR, getCategory().toString())
+            .put(PLUGIN_NAME_ATTR, this.getClass().getSimpleName())
             .build();
     // Metrics
     numErrors =

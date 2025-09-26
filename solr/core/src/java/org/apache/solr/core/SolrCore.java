@@ -260,7 +260,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   private volatile boolean newSearcherReady = false;
 
-  private final Attributes coreAttributes;
+  private Attributes coreAttributes;
   private AttributedLongCounter newSearcherCounter;
   private AttributedLongCounter newSearcherMaxReachedCounter;
   private AttributedLongCounter newSearcherOtherErrorsCounter;
@@ -557,6 +557,25 @@ public class SolrCore implements SolrInfoBean, Closeable {
     assert this.name != null;
     assert coreDescriptor.getCloudDescriptor() == null : "Cores are not renamed in SolrCloud";
     this.name = Objects.requireNonNull(v);
+    initCoreAttributes();
+  }
+
+  public Attributes getCoreAttributes() {
+    return coreAttributes;
+  }
+
+  private void initCoreAttributes() {
+    this.coreAttributes =
+        (coreContainer.isZooKeeperAware())
+            ? Attributes.builder()
+                .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
+                .put(CORE_ATTR, getName())
+                .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
+                .put(
+                    REPLICA_TYPE_ATTR,
+                    coreDescriptor.getCloudDescriptor().getReplicaType().toString())
+                .build()
+            : Attributes.builder().put(CORE_ATTR, getName()).build();
   }
 
   /**
@@ -1090,20 +1109,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
       this.solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
-      if (coreContainer.isZooKeeperAware()) {
-        this.coreAttributes =
-            Attributes.builder()
-                .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
-                .put(CORE_ATTR, coreDescriptor.getName())
-                .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
-                .put(
-                    REPLICA_TYPE_ATTR,
-                    coreDescriptor.getCloudDescriptor().getReplicaType().toString())
-                .build();
-      } else {
-        this.coreAttributes = Attributes.builder().put(CORE_ATTR, coreDescriptor.getName()).build();
-      }
-
       if (updateHandler == null) {
         directoryFactory = initDirectoryFactory();
         recoveryStrategyBuilder = initRecoveryStrategyBuilder();
@@ -1123,6 +1128,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
       setLatestSchema(schema);
+
+      initCoreAttributes();
 
       // initialize core metrics
       initializeMetrics(solrMetricsContext, coreAttributes, "");
@@ -1705,6 +1712,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       }
       cache = new LocalStatsCache();
     }
+    cache.initializeMetrics(solrMetricsContext, coreAttributes, null);
     return cache;
   }
 

@@ -16,15 +16,10 @@
  */
 package org.apache.solr.update;
 
-import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_TYPE_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -190,21 +185,10 @@ public class SolrIndexWriter extends IndexWriter {
       } else {
         mergeTotals = false;
       }
-      String coreName = core.getCoreDescriptor().getName();
-      var baseAttributesBuilder =
-          Attributes.builder()
+      var baseAttributes =
+          core.getCoreAttributes().toBuilder()
               .put(CATEGORY_ATTR, SolrInfoBean.Category.INDEX.toString())
-              .put(CORE_ATTR, coreName);
-      if (core.getCoreContainer().isZooKeeperAware()) {
-        String collectionName = core.getCoreDescriptor().getCollectionName();
-        baseAttributesBuilder
-            .put(COLLECTION_ATTR, collectionName)
-            .put(SHARD_ATTR, core.getCoreDescriptor().getCloudDescriptor().getShardId())
-            .put(
-                REPLICA_TYPE_ATTR,
-                core.getCoreDescriptor().getCloudDescriptor().getReplicaType().toString());
-      }
-      var baseAttributes = baseAttributesBuilder.build();
+              .build();
       if (mergeDetails) {
         mergeTotals = true; // override
         majorMergedDocs =
