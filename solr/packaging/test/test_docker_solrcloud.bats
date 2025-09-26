@@ -19,6 +19,20 @@ load bats_helper
 
 setup() {
   common_clean_setup
+  
+  # Parameterized Docker images
+  SOLR_IMAGE_V9="apache/solr-nightly:9.10.0-SNAPSHOT-slim"
+  SOLR_IMAGE_V10="solr:9-slim"
+
+  # Initialize volumes with proper ownership for solr user (UID 8983)
+  docker volume create solr-data1 2>/dev/null || true
+  docker volume create solr-data2 2>/dev/null || true
+  docker volume create solr-data3 2>/dev/null || true
+  
+  # Fix ownership of volume data directories to solr user
+  docker run --rm -v solr-data1:/data --user=root busybox chown 8983:8983 /data 2>/dev/null || true
+  docker run --rm -v solr-data2:/data --user=root busybox chown 8983:8983 /data 2>/dev/null || true
+  docker run --rm -v solr-data3:/data --user=root busybox chown 8983:8983 /data 2>/dev/null || true
 }
 
 teardown() {
@@ -46,10 +60,6 @@ teardown() {
 }
 
 @test "Docker SolrCloud rolling upgrade from 9 to 10" {
-  # Environment variables for Docker images
-  local SOLR_IMAGE_V9="apache/solr-nightly:9.10.0-SNAPSHOT-slim"
-  local SOLR_IMAGE_V10="solr:9-slim"
-
   # Pre-check requirements - fail immediately if not available
   docker version || skip "Docker is not available"
   docker pull "$SOLR_IMAGE_V9" || skip "Docker image $SOLR_IMAGE_V9 is not available"
