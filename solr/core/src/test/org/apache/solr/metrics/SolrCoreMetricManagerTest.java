@@ -260,7 +260,6 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
 
     // Make sure the core metric registry does not exist anymore once we fully removed the core
     // from the container
-    names = metricManager.registryNames();
-    assertFalse(names.contains(coreRegistryName));
+    assertFalse(metricManager.getPrometheusMetricReaders().containsKey(coreRegistryName));
   }
 }

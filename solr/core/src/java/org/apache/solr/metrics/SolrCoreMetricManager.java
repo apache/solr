@@ -191,7 +191,7 @@ public class SolrCoreMetricManager implements Closeable {
     metricManager.unregisterGauges(
         solrMetricsContext.getRegistryName(), solrMetricsContext.getTag());
 
-    metricManager.meterProvider(solrMetricsContext.getRegistryName()).close();
+    metricManager.removeRegistry(solrMetricsContext.getRegistryName());
     registeredProducers.clear();
   }
 

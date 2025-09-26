@@ -259,7 +259,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   // NOCOMMIT: This test is broken from OTEL migration and the /admin/plugins endpoint. Placing
   // BadApple test but this must be fixed before this feature gets merged to a release branch
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testAddDocs() throws Exception {
     int numTlogReplicas = 1 + random().nextInt(3);
     DocCollection docCollection = createAndWaitForCollection(1, 0, numTlogReplicas, 0);

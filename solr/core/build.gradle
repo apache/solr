@@ -222,4 +222,6 @@ dependencies {
   })
   testImplementation libs.apache.httpcomponents.httpclient
   testImplementation libs.apache.httpcomponents.httpcore
+
+  testImplementation libs.opentelemetry.sdktesting
 }
