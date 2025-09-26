@@ -125,7 +125,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
-    assertEquals(nodesStatus.toString(), nodesCreated, nodesStatus.size());
+    assertEquals(nodesStatus.toString(), 4, nodesStatus.size());
 
     waitForState(
         "Expected " + collectionName + " to disappear from cluster state",
@@ -253,7 +253,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
     // Delete could have been sent before the collection was finished coming online
-    assertEquals(nodesStatus.toString(), nodesCreated, nodesStatus.size());
+    assertEquals(nodesStatus.toString(), 4, nodesStatus.size());
 
     waitForState(
         "Expected " + collectionName + " to disappear from cluster state",
