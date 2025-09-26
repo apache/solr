@@ -33,6 +33,7 @@ import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -102,7 +103,7 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       boolean useCompute)
       throws Exception {
     for (Class<? extends SolrCache> clazz : IMPLS) {
-      SolrMetricManager metricManager = new SolrMetricManager();
+      SolrMetricManager metricManager = new SolrMetricManager(new NoopMetricExporter());
       @SuppressWarnings({"unchecked"})
       SolrCache<String, String> cache = clazz.getDeclaredConstructor().newInstance();
       Map<String, String> params = new HashMap<>();
@@ -182,6 +183,7 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       perImplRatio.addValue(hitRatio);
       perImplTime.addValue((double) (stopTime - startTime));
       cache.close();
+      metricManager.closeAllRegistries();
     }
   }
 }

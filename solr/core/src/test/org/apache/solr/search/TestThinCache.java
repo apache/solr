@@ -84,7 +84,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
     lrf = h.getRequestFactory("/select", 0, 20);
   }
 
-  SolrMetricManager metricManager = new SolrMetricManager();
+  SolrMetricManager metricManager = new SolrMetricManager(null);
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 

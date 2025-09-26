@@ -1362,6 +1362,9 @@ public class CoreContainer {
             SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm), metricTag);
         metricManager.unregisterGauges(
             SolrMetricManager.getRegistryName(SolrInfoBean.Group.jetty), metricTag);
+
+        // Close all OTEL meter providers and metrics
+        metricManager.closeAllRegistries();
       }
 
       if (isZooKeeperAware()) {

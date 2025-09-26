@@ -45,7 +45,7 @@ import org.junit.Test;
 /** Test for {@link CaffeineCache}. */
 public class TestCaffeineCache extends SolrTestCase {
 
-  SolrMetricManager metricManager = new SolrMetricManager();
+  SolrMetricManager metricManager = new SolrMetricManager(null);
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
