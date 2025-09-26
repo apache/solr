@@ -276,22 +276,41 @@ public class SolrMetricsContext {
         registryName, metricName, description, callback, unit);
   }
 
-  public ObservableLongMeasurement longMeasurement(String metricName, String description) {
-    return longMeasurement(metricName, description, null);
+  public ObservableLongMeasurement longGaugeMeasurement(String metricName, String description) {
+    return longGaugeMeasurement(metricName, description, null);
   }
 
-  public ObservableLongMeasurement longMeasurement(
+  public ObservableLongMeasurement longGaugeMeasurement(
       String metricName, String description, OtelUnit unit) {
-    return metricManager.longMeasurement(registryName, metricName, description, unit);
+    return metricManager.longGaugeMeasurement(registryName, metricName, description, unit);
   }
 
-  public ObservableDoubleMeasurement doubleMeasurement(String metricName, String description) {
-    return doubleMeasurement(metricName, description, null);
+  public ObservableDoubleMeasurement doubleGaugeMeasurement(String metricName, String description) {
+    return doubleGaugeMeasurement(metricName, description, null);
   }
 
-  public ObservableDoubleMeasurement doubleMeasurement(
+  public ObservableDoubleMeasurement doubleGaugeMeasurement(
       String metricName, String description, OtelUnit unit) {
-    return metricManager.doubleMeasurement(registryName, metricName, description, unit);
+    return metricManager.doubleGaugeMeasurement(registryName, metricName, description, unit);
+  }
+
+  public ObservableLongMeasurement longCounterMeasurement(String metricName, String description) {
+    return longCounterMeasurement(metricName, description, null);
+  }
+
+  public ObservableLongMeasurement longCounterMeasurement(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.longCounterMeasurement(registryName, metricName, description, unit);
+  }
+
+  public ObservableDoubleMeasurement doubleCounterMeasurement(
+      String metricName, String description) {
+    return doubleCounterMeasurement(metricName, description, null);
+  }
+
+  public ObservableDoubleMeasurement doubleCounterMeasurement(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.doubleCounterMeasurement(registryName, metricName, description, unit);
   }
 
   public BatchCallback batchCallback(

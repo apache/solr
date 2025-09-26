@@ -110,7 +110,6 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongGauge;
@@ -618,10 +617,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
     for (SolrCache<?, ?> cache : cacheList) {
       cache.initializeMetrics(
-          // TODO SOLR-17458: Add Otel
           solrMetricsContext,
-          Attributes.empty(),
-          SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+          core.getCoreAttributes().toBuilder().put(NAME_ATTR, cache.name()).build(),
+          "solr_searcher_cache");
     }
     Attributes baseAttributes;
     if (core.getCoreContainer().isZooKeeperAware()) {

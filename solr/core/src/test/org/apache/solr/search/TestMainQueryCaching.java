@@ -27,8 +27,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -90,16 +88,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   }
 
   private static long coreToInserts(SolrCore core, String cacheName) {
-    return (long)
-        ((MetricsMap)
-                ((SolrMetricManager.GaugeWrapper<?>)
-                        core.getCoreMetricManager()
-                            .getRegistry()
-                            .getMetrics()
-                            .get("CACHE.searcher.".concat(cacheName)))
-                    .getGauge())
-            .getValue()
-            .get("inserts");
+    return (long) SolrMetricTestUtils.getCacheSearcherOpsInserts(core, cacheName).getValue();
   }
 
   private static long coreToMatchAllDocsCount(SolrCore core, String type) {
@@ -249,7 +238,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     assertEquals("Bad matchAllDocs insert count", 1, coreToMatchAllDocsCount(core, "inserts"));
     assertEquals("Bad filterCache insert count", 0, coreToInserts(core, "filterCache"));
     assertEquals("Should have exactly " + ALL_DOCS, ALL_DOCS, (long) (body.get("numFound")));
-    long queryCacheInsertCount = coreToInserts(core, "queryResultCache");
+    long queryCacheInsertCount = coreToInserts(core, SolrMetricTestUtils.QUERY_RESULT_CACHE);
     if (queryCacheInsertCount == expectCounters[0]) {
       // should be a hit, so all insert/sort-count metrics remain unchanged.
     } else {

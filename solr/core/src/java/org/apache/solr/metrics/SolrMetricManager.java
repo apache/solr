@@ -52,7 +52,11 @@ import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
+import io.opentelemetry.sdk.metrics.Aggregation;
+import io.opentelemetry.sdk.metrics.InstrumentSelector;
+import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.View;
 import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
 import io.opentelemetry.sdk.metrics.internal.exemplar.ExemplarFilter;
 import java.io.IOException;
@@ -156,6 +160,23 @@ public class SolrMetricManager {
 
   private final ConcurrentMap<String, MeterProviderAndReaders> meterProviderAndReaders =
       new ConcurrentHashMap<>();
+
+  private static final List<Double> SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES =
+      List.of(
+          0.0,
+          5_000.0,
+          10_000.0,
+          25_000.0,
+          50_000.0,
+          100_000.0,
+          250_000.0,
+          500_000.0,
+          1_000_000.0,
+          2_500_000.0,
+          5_000_000.0,
+          25_000_000.0,
+          100_000_000.0,
+          1_000_000_000.0);
 
   public SolrMetricManager() {
     metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
@@ -368,14 +389,24 @@ public class SolrMetricManager {
         .batchCallback(callback, measurement, additionalMeasurements);
   }
 
-  ObservableLongMeasurement longMeasurement(
+  ObservableLongMeasurement longGaugeMeasurement(
       String registry, String gaugeName, String description, OtelUnit unit) {
     return longGaugeBuilder(registry, gaugeName, description, unit).buildObserver();
   }
 
-  ObservableDoubleMeasurement doubleMeasurement(
+  ObservableDoubleMeasurement doubleGaugeMeasurement(
       String registry, String gaugeName, String description, OtelUnit unit) {
     return doubleGaugeBuilder(registry, gaugeName, description, unit).buildObserver();
+  }
+
+  ObservableLongMeasurement longCounterMeasurement(
+      String registry, String counterName, String description, OtelUnit unit) {
+    return longCounterBuilder(registry, counterName, description, unit).buildObserver();
+  }
+
+  ObservableDoubleMeasurement doubleCounterMeasurement(
+      String registry, String counterName, String description, OtelUnit unit) {
+    return doubleCounterBuilder(registry, counterName, description, unit).buildObserver();
   }
 
   private LongGaugeBuilder longGaugeBuilder(
@@ -398,6 +429,31 @@ public class SolrMetricManager {
             .get(OTEL_SCOPE_NAME)
             .gaugeBuilder(gaugeName)
             .setDescription(description);
+    if (unit != null) builder.setUnit(unit.getSymbol());
+
+    return builder;
+  }
+
+  private LongCounterBuilder longCounterBuilder(
+      String registry, String counterName, String description, OtelUnit unit) {
+    LongCounterBuilder builder =
+        meterProvider(registry)
+            .get(OTEL_SCOPE_NAME)
+            .counterBuilder(counterName)
+            .setDescription(description);
+    if (unit != null) builder.setUnit(unit.getSymbol());
+
+    return builder;
+  }
+
+  private DoubleCounterBuilder doubleCounterBuilder(
+      String registry, String counterName, String description, OtelUnit unit) {
+    DoubleCounterBuilder builder =
+        meterProvider(registry)
+            .get(OTEL_SCOPE_NAME)
+            .counterBuilder(counterName)
+            .setDescription(description)
+            .ofDoubles();
     if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder;
@@ -773,7 +829,19 @@ public class SolrMetricManager {
               var reader = new FilterablePrometheusMetricReader(true, null);
               // NOCOMMIT: We need to add a Periodic Metric Reader here if we want to push with OTLP
               // with an exporter
-              var provider = SdkMeterProvider.builder().registerMetricReader(reader);
+              var provider =
+                  SdkMeterProvider.builder()
+                      .registerMetricReader(reader)
+                      .registerView(
+                          InstrumentSelector.builder()
+                              .setType(InstrumentType.HISTOGRAM)
+                              .setUnit(OtelUnit.NANOSECONDS.getSymbol())
+                              .build(),
+                          View.builder()
+                              .setAggregation(
+                                  Aggregation.explicitBucketHistogram(
+                                      SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES))
+                              .build()); // TODO: Make histogram bucket boundaries configurable
               SdkMeterProviderUtil.setExemplarFilter(provider, ExemplarFilter.traceBased());
               return new MeterProviderAndReaders(provider.build(), reader);
             })
