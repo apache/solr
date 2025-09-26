@@ -121,7 +121,6 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * BlobHandler and the `.system` collection have been removed in favour of FileStore API.  (SOLR-17851).
 
-
 === Security
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
@@ -131,7 +130,7 @@ Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-lif
 
 === Open Telemetry
 
-* JMX, SLF4J and Graphite metric reporters have been removed. Users should migrate to using OTLP or the /admin/metrics endpoint with external tools to get metrics to their preferred backend.
+* The Prometheus exporter, JMX, SLF4J and Graphite metric reporters have been removed. Users should migrate to using OTLP or the /admin/metrics endpoint with external tools to get metrics to their preferred backend such as the link:https://opentelemetry.io/docs/collector/[OTEL Collector].
 
 * Core renaming and swapping will reset the state of all the corresponding cores metrics
 
