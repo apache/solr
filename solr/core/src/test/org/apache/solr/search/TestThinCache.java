@@ -17,20 +17,19 @@
 package org.apache.solr.search;
 
 import io.opentelemetry.api.common.Attributes;
+import io.prometheus.metrics.model.snapshots.Labels;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestHarness;
-import org.apache.solr.util.stats.MetricUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -85,7 +84,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
     lrf = h.getRequestFactory("/select", 0, 20);
   }
 
-  SolrMetricManager metricManager = new SolrMetricManager(new NoopMetricExporter());
+  SolrMetricManager metricManager = new SolrMetricManager(null);
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
@@ -96,13 +95,11 @@ public class TestThinCache extends SolrTestCaseJ4 {
     ThinCache<Object, Integer, String> lfuCache = new ThinCache<>();
     lfuCache.setBacking(cacheScope, backing);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
-    // TODO SOLR-17458: Fix test later
     lfuCache.initializeMetrics(solrMetricsContext, Attributes.empty(), scope + "-1");
 
     Object cacheScope2 = new Object();
     ThinCache<Object, Integer, String> newLFUCache = new ThinCache<>();
     newLFUCache.setBacking(cacheScope2, backing);
-    // TODO SOLR-17458: Fix test later
     newLFUCache.initializeMetrics(solrMetricsContext, Attributes.empty(), scope + "-2");
 
     Map<String, String> params = new HashMap<>();
@@ -149,6 +146,8 @@ public class TestThinCache extends SolrTestCaseJ4 {
 
   @Test
   public void testInitCore() throws Exception {
+    String thinCacheName = "myNodeLevelCacheThin";
+    String nodeCacheName = "myNodeLevelCache";
     for (int i = 0; i < 20; i++) {
       assertU(adoc("id", Integer.toString(i)));
     }
@@ -156,28 +155,60 @@ public class TestThinCache extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", "fq", "id:0"));
     assertQ(req("q", "*:*", "fq", "id:0"));
     assertQ(req("q", "*:*", "fq", "id:1"));
-    Map<String, Object> nodeMetricsSnapshot =
-        MetricUtils.convertMetrics(
-            h.getCoreContainer().getMetricManager().registry("solr.node"),
-            List.of(
-                "CACHE.nodeLevelCache/myNodeLevelCacheThin",
-                "CACHE.nodeLevelCache/myNodeLevelCache"));
-    Map<String, Object> coreMetricsSnapshot =
-        MetricUtils.convertMetrics(
-            h.getCore().getCoreMetricManager().getRegistry(),
-            List.of("CACHE.searcher.filterCache"));
 
-    // check that metrics are accessible, and the core cache writes through to the node-level cache
-    Map<String, Number> assertions = Map.of("lookups", 3L, "hits", 1L, "inserts", 2L, "size", 2);
-    for (Map.Entry<String, Number> e : assertions.entrySet()) {
-      String key = e.getKey();
-      Number val = e.getValue();
-      assertEquals(
-          val, nodeMetricsSnapshot.get("CACHE.nodeLevelCache/myNodeLevelCacheThin.".concat(key)));
-      assertEquals(val, coreMetricsSnapshot.get("CACHE.searcher.filterCache.".concat(key)));
-    }
+    assertEquals(
+        3L,
+        getNodeCacheLookups(thinCacheName, "hit")
+            + getNodeCacheLookups(thinCacheName, "miss")); // total lookups
+    assertEquals(1L, getNodeCacheLookups(thinCacheName, "hit"));
+    assertEquals(2L, getNodeCacheOp(thinCacheName, "inserts"));
+
+    assertEquals(2, getNodeCacheSize(thinCacheName));
 
     // for the other node-level cache, simply check that metrics are accessible
-    assertEquals(0, nodeMetricsSnapshot.get("CACHE.nodeLevelCache/myNodeLevelCache.size"));
+    assertEquals(0, getNodeCacheSize(nodeCacheName));
+  }
+
+  private long getNodeCacheOp(String cacheName, String operation) {
+    var reader = h.getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.node");
+    return (long)
+        SolrMetricTestUtils.getCounterDatapoint(
+                reader,
+                "solr_node_cache_ops",
+                Labels.builder()
+                    .label("category", "CACHE")
+                    .label("ops", operation)
+                    .label("name", cacheName)
+                    .label("otel_scope_name", "org.apache.solr")
+                    .build())
+            .getValue();
+  }
+
+  private long getNodeCacheLookups(String cacheName, String result) {
+    var reader = h.getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.node");
+    var builder =
+        Labels.builder()
+            .label("category", "CACHE")
+            .label("name", cacheName)
+            .label("otel_scope_name", "org.apache.solr");
+    if (result != null) builder.label("result", result);
+
+    return (long)
+        SolrMetricTestUtils.getCounterDatapoint(reader, "solr_node_cache_lookups", builder.build())
+            .getValue();
+  }
+
+  private long getNodeCacheSize(String cacheName) {
+    var reader = h.getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.node");
+    return (long)
+        SolrMetricTestUtils.getGaugeDatapoint(
+                reader,
+                "solr_node_cache_size",
+                Labels.builder()
+                    .label("category", "CACHE")
+                    .label("name", cacheName)
+                    .label("otel_scope_name", "org.apache.solr")
+                    .build())
+            .getValue();
   }
 }

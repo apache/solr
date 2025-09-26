@@ -16,7 +16,10 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
+
 import io.opentelemetry.api.common.Attributes;
+import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +34,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.NoopMetricExporter;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runners.model.MultipleFailureException;
@@ -107,9 +111,10 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       CacheRegenerator cr = new NoOpRegenerator();
       Object o = cache.init(params, null, cr);
       cache.setState(SolrCache.State.LIVE);
-      // TODO SOLR-17458: Fix test later
       cache.initializeMetrics(
-          new SolrMetricsContext(metricManager, "foo", "bar"), Attributes.empty(), "foo");
+          new SolrMetricsContext(metricManager, "foo", "bar"),
+          Attributes.of(NAME_ATTR, "foo"),
+          "foo");
       AtomicBoolean stop = new AtomicBoolean();
       SummaryStatistics perImplRatio =
           ratioStats.computeIfAbsent(clazz.getSimpleName(), c -> new SummaryStatistics());
@@ -162,10 +167,23 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
         throw new MultipleFailureException(new ArrayList<>(exceptions));
       }
       long stopTime = System.nanoTime();
-      Map<String, Object> metrics = cache.getSolrMetricsContext().getMetricsSnapshot();
-      perImplRatio.addValue(Double.parseDouble(String.valueOf(metrics.get("CACHE.foo.hitratio"))));
+
+      var hitRatioDatapoint =
+          SolrMetricTestUtils.getGaugeDatapoint(
+              metricManager.getPrometheusMetricReader(
+                  cache.getSolrMetricsContext().getRegistryName()),
+              "solr_cache_hit_ratio",
+              Labels.builder()
+                  .label("category", "CACHE")
+                  .label("name", "foo")
+                  .label("otel_scope_name", "org.apache.solr")
+                  .build());
+
+      double hitRatio = hitRatioDatapoint != null ? hitRatioDatapoint.getValue() : 0.0;
+      perImplRatio.addValue(hitRatio);
       perImplTime.addValue((double) (stopTime - startTime));
       cache.close();
+      metricManager.closeAllRegistries();
     }
   }
 }

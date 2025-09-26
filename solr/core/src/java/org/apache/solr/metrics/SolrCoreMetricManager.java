@@ -20,7 +20,6 @@ import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
 
 import com.codahale.metrics.MetricRegistry;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -128,19 +127,11 @@ public class SolrCoreMetricManager implements Closeable {
     // tracked producers.
     // There is some possible improvement that can be done here to not have to duplicate code in
     // registerMetricProducer
-    var attributes =
-        Attributes.builder()
-            .put(CORE_ATTR, core.getName())
-            .put(COLLECTION_ATTR, collectionName)
-            .put(SHARD_ATTR, shardName)
-            .put(REPLICA_ATTR, replicaName)
-            .build();
-
-    core.initializeMetrics(solrMetricsContext, attributes, core.getName());
+    core.initializeMetrics(solrMetricsContext, core.getCoreAttributes(), core.getName());
 
     registeredProducers.forEach(
         metricProducer -> {
-          var producerAttributes = attributes.toBuilder();
+          var producerAttributes = core.getCoreAttributes().toBuilder();
           if (metricProducer.scope().startsWith("/"))
             producerAttributes.put(HANDLER_ATTR, metricProducer.scope);
           metricProducer.producer.initializeMetrics(
@@ -173,12 +164,7 @@ public class SolrCoreMetricManager implements Closeable {
     // reregisterCoreMetrics
     // There is some possible improvement that can be done here to not have to duplicate code in
     // reregisterCoreMetrics
-    var attributesBuilder =
-        Attributes.builder()
-            .put(CORE_ATTR, core.getName())
-            .put(COLLECTION_ATTR, collectionName)
-            .put(SHARD_ATTR, shardName)
-            .put(REPLICA_ATTR, replicaName);
+    var attributesBuilder = core.getCoreAttributes().toBuilder();
     if (scope.startsWith("/")) attributesBuilder.put(HANDLER_ATTR, scope);
     producer.initializeMetrics(solrMetricsContext, attributesBuilder.build(), scope);
   }
