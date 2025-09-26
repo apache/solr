@@ -73,6 +73,8 @@ Bug Fixes
   and then was used to create future clients (via builder.withHttpClient), then redirect processing was wrongly
   disabled on the shared instance. (David Smiley)
 
+* SOLR-3696: Fix for LB/Cloud SolrClients that could leak on close() if concurrent request failed and triggered zombie server logic. (hossman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
