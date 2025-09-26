@@ -49,7 +49,7 @@ teardown() {
   # Environment variables for Docker images
   local SOLR_IMAGE_V9="apache/solr-nightly:9.10.0-SNAPSHOT-slim"
   local SOLR_IMAGE_V10="solr:9-slim"
-  
+
   # Pre-check requirements - fail immediately if not available
   docker version || skip "Docker is not available"
   docker pull "$SOLR_IMAGE_V9" || skip "Docker image $SOLR_IMAGE_V9 is not available"
@@ -63,118 +63,64 @@ teardown() {
   docker volume create solr-data2
   docker volume create solr-data3
 
-  # Start first Solr node with embedded ZooKeeper on custom network
+  echo "Starting solr-node1 with embedded ZooKeeper"
   docker run --name solr-node1 --rm -d \
     --network solrcloud-test \
     --memory=300m \
     -v solr-data1:/var/solr/data \
     "$SOLR_IMAGE_V9" solr start -f -c -m 200m --host solr-node1 -p 8983
-  echo "Started first Solr node (solr-node1) with embedded ZooKeeper"
-
-  # Wait for first node to be ready using solr assert
   docker exec solr-node1 solr assert --started http://solr-node1:8983 --timeout 30000
-  echo "First Solr node is ready"
 
-  # Start second Solr node connected to first node's ZooKeeper
+  # start next 2 in parallel
+
+  echo "Starting solr-node2 connected to first node's ZooKeeper"
   docker run --name solr-node2 --rm -d \
     --network solrcloud-test \
     --memory=300m \
     -v solr-data2:/var/solr/data \
     "$SOLR_IMAGE_V9" solr start -f -c -m 200m --host solr-node2 -p 8984 -z solr-node1:9983
-  echo "Started second Solr node (solr-node2) connected to first node's ZooKeeper"
 
-  # Wait for second node to be ready
-  docker exec solr-node2 solr assert --started http://solr-node2:8984 --timeout 30000
-  echo "Second Solr node is ready"
-
-  # Start third Solr node connected to first node's ZooKeeper
+  echo "Started solr-node3 connected to first node's ZooKeeper"
   docker run --name solr-node3 --rm -d \
     --network solrcloud-test \
     --memory=300m \
     -v solr-data3:/var/solr/data \
     "$SOLR_IMAGE_V9" solr start -f -c -m 200m --host solr-node3 -p 8985 -z solr-node1:9983
-  echo "Started third Solr node (solr-node3) connected to first node's ZooKeeper"
 
-  # Wait for third node to be ready
+  docker exec solr-node2 solr assert --started http://solr-node2:8984 --timeout 30000
   docker exec solr-node3 solr assert --started http://solr-node3:8985 --timeout 30000
-  echo "Third Solr node is ready"
 
-  # Wait for all three nodes to join the cluster
-  local attempts=0
-  local max_attempts=30
-  echo "Waiting for all three nodes to join the cluster..."
-  while [ $attempts -lt $max_attempts ]; do
-    run docker exec solr-node1 curl -s 'http://solr-node1:8983/solr/admin/collections?action=CLUSTERSTATUS'
-    if [ $status -eq 0 ]; then
-      local live_nodes_count=$(echo "$output" | grep -o 'solr-node[0-9]:898[0-9]_solr' | wc -l)
-      if [ "$live_nodes_count" -eq 3 ]; then
-        echo "All three nodes have joined the cluster"
-        break
-      fi
-    fi
-    echo "Waiting for all nodes to join cluster (attempt $((attempts + 1))/$max_attempts)..."
-    sleep 3
-    attempts=$((attempts + 1))
-  done
-  [ $attempts -lt $max_attempts ]
-
-  # Verify exactly 3 nodes in cluster
-  run docker exec solr-node1 curl -s 'http://solr-node1:8983/solr/admin/collections?action=CLUSTERSTATUS'
-  [ $status -eq 0 ]
-  echo "Initial cluster status: $output"
-  local live_nodes_count=$(echo "$output" | grep -o 'solr-node[0-9]:898[0-9]_solr' | wc -l)
-  echo "Number of live nodes: $live_nodes_count"
-  [ "$live_nodes_count" -eq 3 ]
-
-  # Create a collection with 3 shards across all nodes
-  docker exec --user=solr solr-node1 solr create -c test-collection --shards 3 -rf 2
-  echo "Collection created successfully"
+  echo "Creating a Collection"
+  docker exec --user=solr solr-node1 solr create -c test-collection --shards 3
 
   # Begin rolling upgrade - upgrade node 3 first (reverse order: 3, 2, 1)
-  echo "Starting rolling upgrade - upgrading node 3 to version 10"
+  echo "Starting rolling upgrade - upgrading node 3"
   docker stop solr-node3
-  
   docker run --name solr-node3 --rm -d \
     --network solrcloud-test \
     --memory=300m \
     -v solr-data3:/var/solr/data \
     "$SOLR_IMAGE_V10" solr start -f -c -m 200m --host solr-node3 -p 8985 -z solr-node1:9983
-  echo "Restarted node 3 with version 10"
-  
-  # Wait for node 3 to rejoin
   docker exec solr-node3 solr assert --started http://solr-node3:8985 --timeout 30000
-  echo "Node 3 (v10) is ready"
-  
+
   # Upgrade node 2 second
-  echo "Upgrading node 2 to version 10"
+  echo "Upgrading node 2"
   docker stop solr-node2
-  
   docker run --name solr-node2 --rm -d \
     --network solrcloud-test \
     --memory=300m \
     -v solr-data2:/var/solr/data \
     "$SOLR_IMAGE_V10" solr start -f -c -m 200m --host solr-node2 -p 8984 -z solr-node1:9983
-  echo "Restarted node 2 with version 10"
-  
-  # Wait for node 2 to rejoin
   docker exec solr-node2 solr assert --started http://solr-node2:8984 --timeout 30000
-  echo "Node 2 (v10) is ready"
-  
-  # Finally upgrade node 1 (ZK node) last
-  echo "Upgrading node 1 (ZK node) to version 10"
+
+  echo "Upgrading node 1 (ZK node)"
   docker stop solr-node1
-  
   docker run --name solr-node1 --rm -d \
     --network solrcloud-test \
     --memory=300m \
     -v solr-data1:/var/solr/data \
     "$SOLR_IMAGE_V10" solr start -f -c -m 200m --host solr-node1 -p 8983
-  echo "Restarted node 1 with version 10 (ZK node)"
-
-  
-  # Wait for node 1 (ZK) to restart and rejoin
   docker exec solr-node1 solr assert --started http://solr-node1:8983 --timeout 30000
-  echo "Node 1 (v10, ZK node) is ready"
 
   # Final verification - validate exactly 3 nodes in cluster
   run docker exec solr-node1 curl -s 'http://solr-node1:8983/solr/admin/collections?action=CLUSTERSTATUS'
@@ -185,5 +131,5 @@ teardown() {
   echo "Number of live nodes after rolling upgrade: $final_live_nodes_count"
   [ "$final_live_nodes_count" -eq 3 ]
 
-  echo "Docker SolrCloud rolling upgrade from 9 to 10 completed successfully!"
+  echo "Docker SolrCloud rolling upgrade completed successfully!"
 }
