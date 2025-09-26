@@ -1038,7 +1038,7 @@ public class CoreContainer {
 
     solrMetricsContext.observableLongGauge(
         "solr_disk_space",
-        "Disk metrics for Solr's data home directory",
+        String.format("Disk metrics for Solr's data home directory (%s)", dataHome.toString()),
         measurement -> {
           try {
             var fileStore = Files.getFileStore(dataHome);
