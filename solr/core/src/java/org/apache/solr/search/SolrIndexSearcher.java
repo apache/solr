@@ -106,7 +106,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -605,7 +604,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       cache.initializeMetrics(
           solrMetricsContext,
           core.getCoreAttributes().toBuilder().put(NAME_ATTR, cache.name()).build(),
-          SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+          "solr_searcher_cache");
     }
     // TODO SOLR-17458: Add Otel
     initializeMetrics(solrMetricsContext, Attributes.empty(), STATISTICS_KEY);

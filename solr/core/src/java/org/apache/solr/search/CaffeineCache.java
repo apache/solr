@@ -476,39 +476,30 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    initializeMetrics(parentContext, attributes, false);
-  }
-
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, boolean isNodeLevelCache) {
+      SolrMetricsContext parentContext, Attributes attributes, String metricName) {
     Attributes cacheAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
     solrMetricsContext = parentContext.getChildContext(this);
-    String metricPrefix = isNodeLevelCache ? "solr_node_cache" : "solr_cache";
 
     ObservableLongMeasurement cacheLookupsMetric =
         solrMetricsContext.longCounterMeasurement(
-            metricPrefix + "_lookups",
-            "Number of cumulative cache lookup results (hits and misses)");
+            metricName + "_lookups", "Number of cumulative cache lookup results (hits and misses)");
 
     ObservableLongMeasurement cacheOperationMetric =
         solrMetricsContext.longCounterMeasurement(
-            metricPrefix + "_ops", "Number of cumulative cache operations (inserts and evictions)");
+            metricName + "_ops", "Number of cumulative cache operations (inserts and evictions)");
 
     ObservableLongMeasurement sizeMetric =
         solrMetricsContext.longGaugeMeasurement(
-            metricPrefix + "_size", "Current number cache entries");
+            metricName + "_size", "Current number cache entries");
 
     ObservableLongMeasurement ramBytesUsedMetric =
         solrMetricsContext.longGaugeMeasurement(
-            metricPrefix + "_ram_used", "RAM bytes used by cache", OtelUnit.BYTES);
+            metricName + "_ram_used", "RAM bytes used by cache", OtelUnit.BYTES);
 
     ObservableLongMeasurement warmupTimeMetric =
         solrMetricsContext.longGaugeMeasurement(
-            metricPrefix + "_warmup_time",
-            "Cache warmup time (most recent)",
-            OtelUnit.MILLISECONDS);
+            metricName + "_warmup_time", "Cache warmup time (most recent)", OtelUnit.MILLISECONDS);
 
     this.toClose =
         solrMetricsContext.batchCallback(

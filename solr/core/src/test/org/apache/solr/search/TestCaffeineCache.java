@@ -58,9 +58,10 @@ public class TestCaffeineCache extends SolrTestCase {
 
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
 
-    lfuCache.initializeMetrics(solrMetricsContext, Attributes.of(NAME_ATTR, lfuCacheName), "");
+    lfuCache.initializeMetrics(
+        solrMetricsContext, Attributes.of(NAME_ATTR, lfuCacheName), "solr_cache");
     newLFUCache.initializeMetrics(
-        solrMetricsContext, Attributes.of(NAME_ATTR, newLfuCacheName), "");
+        solrMetricsContext, Attributes.of(NAME_ATTR, newLfuCacheName), "solr_cache");
 
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");

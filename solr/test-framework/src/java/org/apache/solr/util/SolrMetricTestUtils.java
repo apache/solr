@@ -319,7 +319,7 @@ public final class SolrMetricTestUtils {
       SolrCore core, String cacheName, String operation) {
     return SolrMetricTestUtils.getCounterDatapoint(
         core,
-        "solr_cache_ops",
+        "solr_searcher_cache_ops",
         SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
             .label("category", "CACHE")
             .label("ops", operation)
@@ -334,7 +334,8 @@ public final class SolrMetricTestUtils {
             .label("category", "CACHE")
             .label("name", cacheName)
             .label("result", result);
-    return SolrMetricTestUtils.getCounterDatapoint(core, "solr_cache_lookups", builder.build());
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core, "solr_searcher_cache_lookups", builder.build());
   }
 
   public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOpsHits(

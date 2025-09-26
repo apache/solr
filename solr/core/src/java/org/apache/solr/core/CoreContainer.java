@@ -875,7 +875,9 @@ public class CoreContainer {
         String cacheName = e.getKey();
         if (c instanceof CaffeineCache<?, ?> caffeineCache) {
           caffeineCache.initializeMetrics(
-              solrMetricsContext, Attributes.builder().put(NAME_ATTR, cacheName).build(), true);
+              solrMetricsContext,
+              Attributes.builder().put(NAME_ATTR, cacheName).build(),
+              "solr_node_cache");
         }
         m.put(cacheName, c);
       }
