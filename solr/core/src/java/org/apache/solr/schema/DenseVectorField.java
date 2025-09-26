@@ -37,8 +37,6 @@ import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ByteKnnVectorFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatKnnVectorFieldSource;
-import org.apache.lucene.search.KnnByteVectorQuery;
-import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SeededKnnVectorQuery;
@@ -504,6 +502,7 @@ public class DenseVectorField extends FloatPointField {
       String fieldName,
       String vectorToSearch,
       int topK,
+      int efSearch,
       Query filterQuery,
       Query seedQuery,
       EarlyTerminationParams earlyTermination,
@@ -514,28 +513,10 @@ public class DenseVectorField extends FloatPointField {
 
     final Query knnQuery =
         switch (vectorEncoding) {
-          case FLOAT32 -> {
-            if (filteredSearchThreshold != null) {
-              KnnSearchStrategy knnSearchStrategy =
-                  new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
-              yield new KnnFloatVectorQuery(
-                  fieldName, vectorBuilder.getFloatVector(), topK, filterQuery, knnSearchStrategy);
-            } else {
-              yield new KnnFloatVectorQuery(
-                  fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
-            }
-          }
-          case BYTE -> {
-            if (filteredSearchThreshold != null) {
-              KnnSearchStrategy knnSearchStrategy =
-                  new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
-              yield new KnnByteVectorQuery(
-                  fieldName, vectorBuilder.getByteVector(), topK, filterQuery, knnSearchStrategy);
-            } else {
-              yield new KnnByteVectorQuery(
-                  fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
-            }
-          }
+          case FLOAT32 -> new SolrKnnFloatVectorQuery(
+              fieldName, vectorBuilder.getFloatVector(), topK, efSearch, filterQuery);
+          case BYTE -> new SolrKnnByteVectorQuery(
+              fieldName, vectorBuilder.getByteVector(), topK, efSearch, filterQuery);
         };
 
     final boolean seedEnabled = (seedQuery != null);
@@ -553,24 +534,6 @@ public class DenseVectorField extends FloatPointField {
         // 3: seed + early termination -> Patience(Seeded(knnQuery))
       case 3 -> getEarlyTerminationQuery(getSeededQuery(knnQuery, seedQuery), earlyTermination);
     };
-  }
-
-  public Query getKnnVectorQuery(
-      String fieldName, String vectorToSearch, int topK, int efSearch, Query filterQuery) {
-    DenseVectorParser vectorBuilder =
-        getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
-    switch (vectorEncoding) {
-      case FLOAT32:
-        return new SolrKnnFloatVectorQuery(
-            fieldName, vectorBuilder.getFloatVector(), topK, efSearch, filterQuery);
-      case BYTE:
-        return new SolrKnnByteVectorQuery(
-            fieldName, vectorBuilder.getByteVector(), topK, efSearch, filterQuery);
-      default:
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Unexpected state. Vector Encoding: " + vectorEncoding);
-    }
   }
 
   /**
