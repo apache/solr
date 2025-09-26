@@ -35,6 +35,7 @@ import org.apache.solr.ui.components.auth.BasicAuthComponent
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.action_sign_in_with_credentials
 import org.apache.solr.ui.generated.resources.authenticating
+import org.apache.solr.ui.generated.resources.desc_sign_in_with_credentials
 import org.apache.solr.ui.generated.resources.desc_sign_in_with_credentials_to_realm
 import org.apache.solr.ui.generated.resources.label_password
 import org.apache.solr.ui.generated.resources.label_username
@@ -62,7 +63,9 @@ fun BasicAuthContent(
     val model by component.model.collectAsState()
 
     Text(
-        text = stringResource(Res.string.desc_sign_in_with_credentials_to_realm, model.realm),
+        text = model.realm?.let {
+            stringResource(Res.string.desc_sign_in_with_credentials_to_realm, it)
+        } ?: stringResource(Res.string.desc_sign_in_with_credentials),
         style = MaterialTheme.typography.bodyMedium,
     )
 

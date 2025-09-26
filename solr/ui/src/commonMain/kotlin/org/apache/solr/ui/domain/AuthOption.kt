@@ -38,17 +38,17 @@ sealed interface AuthOption {
     /**
      * Authentication option for authenticating with basic auth (credentials).
      *
-     * @property method The basic auth method used for authentication (holds metadata).
      * @property url The URL of the instance that requires basic auth and the credentials of this
      * instance are for.
      * @property username The username to use for further authenticated requests.
      * @property password The password to use for further authenticated requests.
+     * @property realm The realm defined and used in the Basic auth method.
      */
     @Serializable
     data class BasicAuthOption(
-        val method: AuthMethod.BasicAuthMethod,
         val url: Url,
         val username: String,
         val password: String,
+        val realm: String? = null,
     ) : AuthOption
 }
