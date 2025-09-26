@@ -29,6 +29,7 @@ import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
+import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
 import static org.apache.solr.search.SolrIndexSearcher.EXECUTOR_MAX_CPU_THREADS;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
@@ -148,6 +149,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.CacheConfig;
+import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -873,8 +875,12 @@ public class CoreContainer {
       for (Map.Entry<String, CacheConfig> e : cachesConfig.entrySet()) {
         SolrCache<?, ?> c = e.getValue().newInstance();
         String cacheName = e.getKey();
-        // NOCOMMIT SOLR-17458: Add Otel
-        c.initializeMetrics(solrMetricsContext, Attributes.empty(), "nodeLevelCache/" + cacheName);
+        if (c instanceof CaffeineCache<?, ?> caffeineCache) {
+          caffeineCache.initializeMetrics(
+              solrMetricsContext,
+              Attributes.builder().put(NAME_ATTR, cacheName).build(),
+              "solr_node_cache");
+        }
         m.put(cacheName, c);
       }
       this.caches = Collections.unmodifiableMap(m);
@@ -1512,6 +1518,9 @@ public class CoreContainer {
             SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm), metricTag);
         metricManager.unregisterGauges(
             SolrMetricManager.getRegistryName(SolrInfoBean.Group.jetty), metricTag);
+
+        // Close all OTEL meter providers and metrics
+        metricManager.closeAllRegistries();
       }
 
       if (isZooKeeperAware()) {
