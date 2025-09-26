@@ -416,6 +416,23 @@ public class DenseVectorField extends FloatPointField {
     }
   }
 
+  public Query getKnnVectorQuery(
+      String fieldName, String vectorToSearch, int topK, int efSearch, Query filterQuery) {
+    final int k = efSearch;
+    DenseVectorParser vectorBuilder =
+        getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
+    switch (vectorEncoding) {
+      case FLOAT32:
+        return new KnnFloatVectorQuery(fieldName, vectorBuilder.getFloatVector(), k, filterQuery);
+      case BYTE:
+        return new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), k, filterQuery);
+      default:
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Unexpected state. Vector Encoding: " + vectorEncoding);
+    }
+  }
+
   /**
    * Not Supported. Please use the {!knn} query parser to run K nearest neighbors search queries.
    */
