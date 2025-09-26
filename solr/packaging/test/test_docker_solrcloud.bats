@@ -131,14 +131,13 @@ teardown() {
   echo "Final verification - checking cluster has exactly 3 nodes and collection is healthy"
   local cluster_status=$(docker exec solr-node1 curl -s "http://solr-node1:8983/solr/admin/collections?action=CLUSTERSTATUS")
   local live_nodes_count=$(echo "$cluster_status" | jq -r '.cluster.live_nodes | length')
-  
+
   if [ "$live_nodes_count" != "3" ]; then
     echo "Expected 3 live nodes, but found $live_nodes_count"
     echo "Cluster status: $cluster_status"
     return 1
   fi
-  
+
   # Final collection health check
   wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection
-}
 }
