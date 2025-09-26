@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Locale;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
@@ -35,7 +36,10 @@ import org.xml.sax.helpers.DefaultHandler;
 /**
  * Extraction backend using local in-process Apache Tika. This encapsulates the previous direct
  * usage of Tika from the loader.
+ *
+ * @deprecated Will be removed soon, please use the 'tikaserver' extraction backend instead.
  */
+@Deprecated(since = "9.10.0")
 public class LocalTikaExtractionBackend implements ExtractionBackend {
   private final TikaConfig tikaConfig;
   private final ParseContextConfig parseContextConfig;
@@ -93,6 +97,7 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
     this.tikaConfig = cfg;
     this.parseContextConfig = parseContextConfig;
     this.autoDetectParser = new AutoDetectParser(cfg);
+    DeprecationLog.log("Local Tika", "The 'local' extraction backend is deprecated");
   }
 
   public static final String NAME = "local";
