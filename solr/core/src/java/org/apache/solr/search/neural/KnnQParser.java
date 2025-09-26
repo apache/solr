@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.neural;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -25,6 +26,8 @@ import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class KnnQParser extends AbstractVectorQParserBase {
 
@@ -40,6 +43,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
   protected static final boolean DEFAULT_EARLY_TERMINATION = false;
   protected static final String SATURATION_THRESHOLD = "saturationThreshold";
   protected static final String PATIENCE = "patience";
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public KnnQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
@@ -92,8 +96,11 @@ public class KnnQParser extends AbstractVectorQParserBase {
 
   protected Query getSeedQuery() throws SolrException, SyntaxError {
     String seed = localParams.get(SEED);
-    if (seed == null || seed.isBlank()) return null;
-
+    if (seed == null) return null;
+    if (seed.isBlank()) {
+      log.warn("Seed query is blank, defaulting to null");
+      return null;
+    }
     final QParser seedParser = subQuery(seed, null);
     return seedParser.getQuery();
   }
@@ -106,6 +113,11 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
 
     return denseVectorType.getKnnVectorQuery(
-        schemaField.getName(), vectorToSearch, topK, getFilterQuery(), getEarlyTerminationParams(), getSeedQuery());
+        schemaField.getName(),
+        vectorToSearch,
+        topK,
+        getFilterQuery(),
+        getSeedQuery(),
+        getEarlyTerminationParams());
   }
 }

@@ -374,52 +374,43 @@ public class DenseVectorField extends FloatPointField {
   }
 
   public Query getKnnVectorQuery(
-      String fieldName, String vectorToSearch, int topK, Query filterQuery) {
-    return getKnnVectorQuery(fieldName, vectorToSearch, topK, filterQuery, null, null);
-  }
-
-  public Query getKnnVectorQuery(
-      String fieldName, String vectorToSearch, int topK, Query filterQuery, EarlyTerminationParams earlyTermination, Query seedQuery) {
+      String fieldName,
+      String vectorToSearch,
+      int topK,
+      Query filterQuery,
+      Query seedQuery,
+      EarlyTerminationParams earlyTermination) {
 
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
 
-    switch (vectorEncoding) {
-      case FLOAT32:
-        KnnFloatVectorQuery knnFloatVectorQuery =
-            new KnnFloatVectorQuery(fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
-        if (earlyTermination.isEnabled()) {
-          return (earlyTermination.getSaturationThreshold() != null
-                  && earlyTermination.getPatience() != null)
-              ? PatienceKnnVectorQuery.fromFloatQuery(
-                  knnFloatVectorQuery,
-                  earlyTermination.getSaturationThreshold(),
-                  earlyTermination.getPatience())
-              : PatienceKnnVectorQuery.fromFloatQuery(knnFloatVectorQuery);
-        }
-        else if (seedQuery != null)
-        return SeededKnnVectorQuery.fromFloatQuery(knnFloatVectorQuery, seedQuery);
-        return knnFloatVectorQuery;
-      case BYTE:
-        KnnByteVectorQuery knnByteVectorQuery =
-            new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
-        if (earlyTermination.isEnabled()) {
-          return (earlyTermination.getSaturationThreshold() != null
-                  && earlyTermination.getPatience() != null)
-              ? PatienceKnnVectorQuery.fromByteQuery(
-                  knnByteVectorQuery,
-                  earlyTermination.getSaturationThreshold(),
-                  earlyTermination.getPatience())
-              : PatienceKnnVectorQuery.fromByteQuery(knnByteVectorQuery);
-        }
-        else if (seedQuery != null)
-          return SeededKnnVectorQuery.fromByteQuery(knnByteVectorQuery, seedQuery);
-        return knnByteVectorQuery;
-      default:
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Unexpected state. Vector Encoding: " + vectorEncoding);
+    Query knnQuery =
+        switch (vectorEncoding) {
+          case FLOAT32 -> new KnnFloatVectorQuery(
+              fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
+          case BYTE -> new KnnByteVectorQuery(
+              fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
+        };
+
+    // NOTE: Currently seed and earlyTermination parameters cannot be used together due to
+    // https://github.com/apache/lucene/pull/14688
+    // PatienceKnnVectorQuery does not rewrite its SeededKnnVectorQuery delegate, leaving seedWeight
+    // uninitialized and triggering a NullPointerException.
+    // Solr must be upgraded to a Lucene version that includes this patch.
+    if (seedQuery != null && earlyTermination.isEnabled()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Seeded queries and early termination cannot be used together. "
+              + "This limitation is due to Lucene issue #14688, which is not yet included in the current version.");
     }
+
+    if (seedQuery != null) {
+      return applySeeded(knnQuery, seedQuery);
+    }
+    if (earlyTermination.isEnabled()) {
+      return applyEarlyTermination(knnQuery, earlyTermination);
+    }
+    return knnQuery;
   }
 
   /**
@@ -451,5 +442,37 @@ public class DenseVectorField extends FloatPointField {
   public SortField getSortField(SchemaField field, boolean top) {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST, "Cannot sort on a Dense Vector field");
+  }
+
+  private static Query applySeeded(Query knnQuery, Query seed) {
+    return switch (knnQuery) {
+      case KnnFloatVectorQuery knnFloatQuery -> SeededKnnVectorQuery.fromFloatQuery(
+          knnFloatQuery, seed);
+      case KnnByteVectorQuery knnByteQuery -> SeededKnnVectorQuery.fromByteQuery(
+          knnByteQuery, seed);
+      default -> knnQuery;
+    };
+  }
+
+  private static Query applyEarlyTermination(
+      Query knnQuery, EarlyTerminationParams earlyTermination) {
+    final boolean useExplicitParams =
+        (earlyTermination.getSaturationThreshold() != null
+            && earlyTermination.getPatience() != null);
+    return switch (knnQuery) {
+      case KnnFloatVectorQuery knnFloatQuery -> useExplicitParams
+          ? PatienceKnnVectorQuery.fromFloatQuery(
+              knnFloatQuery,
+              earlyTermination.getSaturationThreshold(),
+              earlyTermination.getPatience())
+          : PatienceKnnVectorQuery.fromFloatQuery(knnFloatQuery);
+      case KnnByteVectorQuery knnByteQuery -> useExplicitParams
+          ? PatienceKnnVectorQuery.fromByteQuery(
+              knnByteQuery,
+              earlyTermination.getSaturationThreshold(),
+              earlyTermination.getPatience())
+          : PatienceKnnVectorQuery.fromByteQuery(knnByteQuery);
+      default -> knnQuery;
+    };
   }
 }
