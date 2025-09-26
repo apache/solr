@@ -1855,8 +1855,7 @@ public class CoreContainer {
   }
 
   /**
-   * NOCOMMIT Need to clarify this as well Gets a collection of all the cores, permanent and
-   * transient, that are currently known, whether they are loaded or not.
+   * Gets a collection of all the cores that are currently known, whether they are loaded or not.
    *
    * <p>For efficiency, prefer to check {@link #getCoreDescriptor(String)} != null instead of {@link
    * #getAllCoreNames()}.contains(coreName).
@@ -1869,9 +1868,8 @@ public class CoreContainer {
   }
 
   /**
-   * NOCOMMIT need help on this too Gets the total number of cores, including permanent and
-   * transient cores, loaded and unloaded cores. Faster equivalent for {@link
-   * #getAllCoreNames()}.size().
+   * Gets the total number of cores, including both loaded and unloaded cores. Faster equivalent to
+   * {@link #getAllCoreNames()}.size().
    */
   public int getNumAllCores() {
     return solrCores.getNumAllCores();
