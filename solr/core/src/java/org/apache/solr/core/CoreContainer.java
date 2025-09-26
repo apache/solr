@@ -239,7 +239,6 @@ public class CoreContainer {
 
   protected volatile LogWatcher<?> logging = null;
 
-  private volatile CloserThread backgroundCloser = null;
   protected final NodeConfig cfg;
   protected final SolrResourceLoader loader;
 
@@ -1063,10 +1062,6 @@ public class CoreContainer {
         }
       }
 
-      // Start the background thread
-      backgroundCloser = new CloserThread(this, solrCores, cfg);
-      backgroundCloser.start();
-
     } finally {
       coreLoadExecutor.shutdown(); // doesn't block
       if (!asyncSolrCoreLoad) {
@@ -1253,31 +1248,6 @@ public class CoreContainer {
 
       ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor); // actually already shutdown
 
-      // First wake up the closer thread, it'll terminate almost immediately since it checks
-      // isShutDown.
-      synchronized (solrCores.getModifyLock()) {
-        solrCores.getModifyLock().notifyAll(); // wake up anyone waiting
-      }
-      if (backgroundCloser
-          != null) { // Doesn't seem right, but tests get in here without initializing the core.
-        try {
-          while (true) {
-            backgroundCloser.join(15000);
-            if (backgroundCloser.isAlive()) {
-              synchronized (solrCores.getModifyLock()) {
-                solrCores.getModifyLock().notifyAll(); // there is a race we have to protect against
-              }
-            } else {
-              break;
-            }
-          }
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          if (log.isDebugEnabled()) {
-            log.debug("backgroundCloser thread was interrupted before finishing");
-          }
-        }
-      }
       // Now clear all the cores that are being operated upon.
       solrCores.close();
 
@@ -2133,7 +2103,7 @@ public class CoreContainer {
           ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
     }
 
-    boolean close = solrCores.isLoadedNotPendingClose(name);
+    boolean close = solrCores.isLoaded(name);
     SolrCore core = solrCores.remove(name);
 
     solrCores.removeCoreDescriptor(cd);
@@ -2554,47 +2524,5 @@ public class CoreContainer {
             }
           }
         });
-  }
-}
-
-class CloserThread extends Thread {
-  CoreContainer container;
-  SolrCores solrCores;
-  NodeConfig cfg;
-
-  CloserThread(CoreContainer container, SolrCores solrCores, NodeConfig cfg) {
-    super("CloserThread");
-    this.container = container;
-    this.solrCores = solrCores;
-    this.cfg = cfg;
-  }
-
-  // It's important that this be the _only_ thread removing things from pendingDynamicCloses!
-  // This is single-threaded, but I tried a multithreaded approach and didn't see any performance
-  // gains, so there's no good justification for the complexity. I suspect that the locking on
-  // things like DefaultSolrCoreState essentially create a single-threaded process anyway.
-  @Override
-  public void run() {
-    while (!container.isShutDown()) {
-      synchronized (solrCores.getModifyLock()) { // need this so we can wait and be awoken.
-        try {
-          solrCores.getModifyLock().wait();
-        } catch (InterruptedException e) {
-          // Well, if we've been told to stop, we will. Otherwise, continue on and check to see if
-          // there are any cores to close.
-        }
-      }
-
-      SolrCore core;
-      while (!container.isShutDown() && (core = solrCores.getCoreToClose()) != null) {
-        assert core.getOpenCount() == 1;
-        try {
-          MDCLoggingContext.setCore(core);
-          core.close(); // will clear MDC
-        } finally {
-          solrCores.removeFromPendingOps(core.getName());
-        }
-      }
-    }
   }
 }

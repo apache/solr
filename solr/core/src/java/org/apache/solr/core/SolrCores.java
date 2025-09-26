@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** AKA CoreManager: Holds/manages {@link SolrCore}s within {@link CoreContainer}. */
-public class SolrCores {
+class SolrCores {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -59,11 +59,7 @@ public class SolrCores {
   // being operated upon.
   private final Set<String> pendingCoreOps = new HashSet<>();
 
-  // Due to the fact that closes happen potentially whenever anything is _added_ to the transient
-  // core list, we need to essentially queue them up to be handled via pendingCoreOps.
-  private final List<SolrCore> pendingCloses = new ArrayList<>();
-
-  public static SolrCores newSolrCores(CoreContainer coreContainer) {
+  static SolrCores newSolrCores(CoreContainer coreContainer) {
     return new SolrCores(coreContainer);
   }
 
@@ -86,11 +82,10 @@ public class SolrCores {
   // We are shutting down. You can't hold the lock on the various lists of cores while they shut
   // down, so we need to make a temporary copy of the names and shut them down outside the lock.
   protected void close() {
-    waitForLoadingCoresToFinish(30 * 1000);
+    waitForLoadingCoresToFinish(30_000);
 
     // It might be possible for one of the cores to move from one list to another while we're
     // closing them. So loop through the lists until they're all empty. In particular, the core
-    // NOCOMMIT  I think i need help on determing what to do here.
     // could have moved from the transient list to the pendingCloses list.
     while (true) {
       Collection<SolrCore> coreList = new ArrayList<>();
@@ -103,9 +98,6 @@ public class SolrCores {
             coreList.add(core);
           }
         }
-
-        coreList.addAll(pendingCloses);
-        pendingCloses.clear();
       }
 
       if (coreList.isEmpty()) {
@@ -288,35 +280,9 @@ public class SolrCores {
     }
   }
 
-  // See SOLR-5366 for why the UNLOAD command needs to know whether a core is actually loaded or
-  // not, it might have to close the core. However, there's a race condition. If the core happens to
-  // be in the pending "to close" queue, we should NOT close it in unload core.
-  public boolean isLoadedNotPendingClose(String name) {
-    synchronized (modifyLock) {
-      if (!isLoaded(name)) {
-        return false;
-      }
-      // Check pending
-      for (SolrCore core : pendingCloses) {
-        if (core.getName().equals(name)) {
-          return false;
-        }
-      }
-
-      return true;
-    }
-  }
-
   public boolean isLoaded(String name) {
     synchronized (modifyLock) {
       return cores.containsKey(name);
-    }
-  }
-
-  /** The core is currently loading, unloading, or reloading. */
-  protected boolean hasPendingCoreOps(String name) {
-    synchronized (modifyLock) {
-      return pendingCoreOps.contains(name);
     }
   }
 
@@ -325,17 +291,7 @@ public class SolrCores {
 
     // Keep multiple threads from operating on a core at one time.
     synchronized (modifyLock) {
-      boolean pending;
-      do { // Are we currently doing anything to this core? Loading, unloading, reloading?
-        pending = pendingCoreOps.contains(name); // wait for the core to be done being operated upon
-        if (!pending) { // Linear list, but shouldn't be too long
-          for (SolrCore core : pendingCloses) {
-            if (core.getName().equals(name)) {
-              pending = true;
-              break;
-            }
-          }
-        }
+      while (true) { // Are we currently doing anything to this core? Loading, unloading, reloading?
         if (container.isShutDown()) {
           // Just stop already.
           // Seems best to throw a SolrException if shutting down, because returning any value,
@@ -343,17 +299,21 @@ public class SolrCores {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Server is shutting down");
         }
 
-        if (pending) {
-          try {
-            modifyLock.wait();
-          } catch (InterruptedException e) {
-            // Seems best to throw a SolrException if interrupted, because returning any value,
-            // including null, would mean the waiting is complete.
-            Thread.currentThread().interrupt();
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-          }
+        if (!pendingCoreOps.contains(name)) {
+          break;
         }
-      } while (pending);
+
+        // wait for the core to be done being operated upon
+        try {
+          modifyLock.wait();
+        } catch (InterruptedException e) {
+          // Seems best to throw a SolrException if interrupted, because returning any value,
+          // including null, would mean the waiting is complete.
+          Thread.currentThread().interrupt();
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      }
+
       // We _really_ need to do this within the synchronized block!
       if (!pendingCoreOps.add(name)) {
         log.warn("Replaced an entry in pendingCoreOps {}, we should not be doing this", name);
@@ -376,23 +336,6 @@ public class SolrCores {
 
   public Object getModifyLock() {
     return modifyLock;
-  }
-
-  // Be a little careful. We don't want to either open or close a core unless it's _not_ being
-  // opened or closed by another thread. So within this lock we'll walk along the list of pending
-  // closes until we find something NOT in the list of threads currently being loaded or reloaded.
-  // The "usual" case will probably return the very first one anyway.
-  public SolrCore getCoreToClose() {
-    synchronized (modifyLock) {
-      for (SolrCore core : pendingCloses) {
-        if (!pendingCoreOps.contains(core.getName())) {
-          pendingCoreOps.add(core.getName());
-          pendingCloses.remove(core);
-          return core;
-        }
-      }
-    }
-    return null;
   }
 
   /**
@@ -474,12 +417,5 @@ public class SolrCores {
 
   public boolean isCoreLoading(String name) {
     return currentlyLoadingCores.contains(name);
-  }
-
-  public void queueCoreToClose(SolrCore coreToClose) {
-    synchronized (modifyLock) {
-      pendingCloses.add(coreToClose); // Essentially just queue this core up for closing.
-      modifyLock.notifyAll(); // Wakes up closer thread too
-    }
   }
 }
