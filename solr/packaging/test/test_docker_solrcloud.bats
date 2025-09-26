@@ -24,18 +24,19 @@ SOLR_END_IMAGE="${SOLR_END_IMAGE:-apache/solr-nightly:10.0.0-SNAPSHOT-slim}"
 setup() {
   common_clean_setup
 
-  # Pre-check requirements - fail immediately if not available
+  # Pre-checks
   docker version || skip "Docker is not available"
   docker pull "$SOLR_BEGIN_IMAGE" || skip "Docker image $SOLR_BEGIN_IMAGE is not available"
   docker pull "$SOLR_END_IMAGE" || skip "Docker image $SOLR_END_IMAGE is not available"
 
-  # Create Docker network for consistent networking
-  docker network create solrcloud-test
+  # Record test start time for scoping logs on failure
+  TEST_STARTED_AT_ISO=$(date -Iseconds)
+  export TEST_STARTED_AT_ISO
 
-  # Create Docker volumes for data persistence
-  docker volume create solr-data1
-  docker volume create solr-data2
-  docker volume create solr-data3
+  # Persist artifacts under Gradle’s test-output (fallback to Bats temp dir)
+  ARTIFACT_DIR="${TEST_OUTPUT_DIR:-$BATS_TEST_TMPDIR}/docker"
+  mkdir -p "$ARTIFACT_DIR"
+  export ARTIFACT_DIR
 }
 
 teardown() {
@@ -61,7 +62,7 @@ teardown() {
     fi
   done
 
-  [[ "$failed" -eq 1 ]] && echo "# Docker artifacts saved to: $ARTIFACT_DIR" >&3
+  echo "# Docker artifacts saved to: $ARTIFACT_DIR" >&3
 
   docker stop solr-node1 solr-node2 solr-node3 2>/dev/null || true
   docker rm solr-node1 solr-node2 solr-node3 2>/dev/null || true
@@ -70,6 +71,11 @@ teardown() {
 }
 
 @test "Docker SolrCloud rolling upgrade" {
+  # Networking & volumes
+  docker network create solrcloud-test
+  docker volume create solr-data1
+  docker volume create solr-data2
+  docker volume create solr-data3
 
   echo "Starting solr-node1 with embedded ZooKeeper"
   docker run --name solr-node1 -d \
