@@ -67,6 +67,7 @@ teardown() {
   docker run --name solr-node1 --rm -d \
     --network solrcloud-test \
     --memory=300m \
+    --user=solr \
     -v solr-data1:/var/solr/data \
     "$SOLR_IMAGE_V9" solr start -f -c -m 200m --host solr-node1 -p 8983
   docker exec solr-node1 solr assert --started http://solr-node1:8983 --timeout 30000
@@ -77,6 +78,7 @@ teardown() {
   docker run --name solr-node2 --rm -d \
     --network solrcloud-test \
     --memory=300m \
+    --user=solr \
     -v solr-data2:/var/solr/data \
     "$SOLR_IMAGE_V9" solr start -f -c -m 200m --host solr-node2 -p 8984 -z solr-node1:9983
 
@@ -84,6 +86,7 @@ teardown() {
   docker run --name solr-node3 --rm -d \
     --network solrcloud-test \
     --memory=300m \
+    --user=solr \
     -v solr-data3:/var/solr/data \
     "$SOLR_IMAGE_V9" solr start -f -c -m 200m --host solr-node3 -p 8985 -z solr-node1:9983
 
@@ -99,6 +102,7 @@ teardown() {
   docker run --name solr-node3 --rm -d \
     --network solrcloud-test \
     --memory=300m \
+    --user=solr \
     -v solr-data3:/var/solr/data \
     "$SOLR_IMAGE_V10" solr start -f -c -m 200m --host solr-node3 -p 8985 -z solr-node1:9983
   docker exec solr-node3 solr assert --started http://solr-node3:8985 --timeout 30000
@@ -109,6 +113,7 @@ teardown() {
   docker run --name solr-node2 --rm -d \
     --network solrcloud-test \
     --memory=300m \
+    --user=solr \
     -v solr-data2:/var/solr/data \
     "$SOLR_IMAGE_V10" solr start -f -c -m 200m --host solr-node2 -p 8984 -z solr-node1:9983
   docker exec solr-node2 solr assert --started http://solr-node2:8984 --timeout 30000
@@ -118,6 +123,7 @@ teardown() {
   docker run --name solr-node1 --rm -d \
     --network solrcloud-test \
     --memory=300m \
+    --user=solr \
     -v solr-data1:/var/solr/data \
     "$SOLR_IMAGE_V10" solr start -f -c -m 200m --host solr-node1 -p 8983
   docker exec solr-node1 solr assert --started http://solr-node1:8983 --timeout 30000
