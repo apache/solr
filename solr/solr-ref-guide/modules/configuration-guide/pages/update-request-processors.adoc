@@ -16,6 +16,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+:onnx: https://onnx.ai/
+
 Every update request received by Solr is run through a chain of plugins known as Update Request Processors, or _URPs_.
 
 This can be useful, for example, to add a field to the document being indexed; to change the value of a particular field; or to drop an update if the incoming document doesn't fulfill certain criteria.
@@ -429,6 +431,10 @@ The {solr-javadocs}/modules/analysis-extras/index.html[`analysis-extras`] module
 
 {solr-javadocs}/modules/analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.
 Note that in order to use model files larger than 1MB on SolrCloud, you must xref:deployment-guide:zookeeper-ensemble#increasing-the-file-size-limit[configure both ZooKeeper server and clients].
+
+{solr-javadocs}/modules/analysis-extras/org/apache/solr/update/processor/DocumentCategorizerUpdateProcessorFactory.html[DocumentCategorizerUpdateProcessorFactory]::: Classify text in fields using models.  These models must be in {onnx}[ONNX] format and can be sourced from Huggingface and run directly in Solr via OpenNLP.
+Learn more by following the xref:getting-started:tutorial-opennlp.adoc[sentiment analysis tutorial with OpenNLP and ONNX models].
+
 
 === Update Processor Factories You Should _Not_ Modify or Remove
 

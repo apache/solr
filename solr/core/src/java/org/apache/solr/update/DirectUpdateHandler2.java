@@ -729,9 +729,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
       if (cmd.expungeDeletes) expungeDeleteCommands.mark();
     }
 
-    @SuppressWarnings("unchecked")
-    Future<Void>[] waitSearcher =
-        cmd.waitSearcher ? (Future<Void>[]) Array.newInstance(Future.class, 1) : null;
+    Future<?>[] waitSearcher =
+        cmd.waitSearcher ? (Future<?>[]) Array.newInstance(Future.class, 1) : null;
 
     boolean error = true;
     try {

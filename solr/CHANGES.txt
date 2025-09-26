@@ -21,6 +21,12 @@ New Features
 
 * SOLR-17780: Add support for scalar quantized dense vectors (Kevin Liang via Alessandro Benedetti)
 
+* SOLR-17812: Add support for binary quantized dense vectors (Kevin Liang via Alessandro Benedetti)
+
+* SOLR-17023: Use Modern NLP Models from Apache OpenNLP with Solr (Jeff Zemerick, Eric Pugh)
+
+* SOLR-17814: Add support for PatienceKnnVectorQuery. (Ilaria Petreti via Alessandro Benedetti)
+
 Improvements
 ---------------------
 
@@ -58,6 +64,8 @@ Improvements
 * SOLR-17867: Export tool should properly output exported documents in json, json w/ lines, and javabin formats. (Eric Pugh)
 
 * Minor refactoring of the TextToVectorQParserPlugin (Ilaria Petreti via Alessandro Benedetti)
+
+* GITHUB#3666: Removing redundant check if field exists in TextToVectorUpdateProcessorFactory (Renato Haeberli via Alessandro Benedetti)
 
 Optimizations
 ---------------------
@@ -235,7 +243,7 @@ Other Changes
 ==================  9.10.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-17915: shards.preference=replica.location now supports the "host" option for routing to replicas on the same host. (Houston Putman)
 
 Improvements
 ---------------------
@@ -247,6 +255,9 @@ Improvements
   (David Smiley)
 
 * SOLR-17641: Solr is now able to start on Java 24 and later, but with Security Manager disabled (Houston Putman, Jan Høydahl)
+
+* SOLR-17921: SolrJ CloudSolrClient configured with a Solr URL (not ZK) now refreshes liveNodes in the background.
+  This will reduce spikes in request latency when the cached liveNodes have expired. (Houston Putman, David Smiley)
 
 Optimizations
 ---------------------
@@ -268,6 +279,8 @@ Bug Fixes
 * SOLR-17863: Fix race condition in SolrCore's fingerprint cache which caused leader election to hang. (Luke Kot-Zaniewski, Matthew Biscocho)
 
 * SOLR-17837: PULL replica nodes could be marked as "preferredLeader" by BALANCESHARDUNIQUE despite never being able to be elected leader (Kevin Liang via Houston Putman)
+
+* SOLR-17869: Avoid creating grouping shard requests when timeAllowed has already run out. (Andrzej Bialecki, hossman)
 
 Dependency Upgrades
 ---------------------
@@ -295,6 +308,8 @@ Bug Fixes
 * SOLR-17876: Http2SolrClient: followRedirects=true: if Http2SolrClient was created with followRedirects=true,
   and then was used to create future clients (via builder.withHttpClient), then redirect processing was wrongly
   disabled on the shared instance. (David Smiley)
+
+* SOLR-3696: Fix for LB/Cloud SolrClients that could leak on close() if concurrent request failed and triggered zombie server logic. (hossman)
 
 Dependency Upgrades
 ---------------------

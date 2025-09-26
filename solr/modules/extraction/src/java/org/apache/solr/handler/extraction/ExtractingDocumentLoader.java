@@ -39,7 +39,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.helpers.DefaultHandler;
 
-/** The class responsible for loading extracted content into Solr. */
+/**
+ * The class responsible for loading extracted content into Solr.
+ *
+ * @deprecated Will be replaced with something similar that calls out to a separate Tika Server
+ *     process running in its own JVM.
+ */
+@Deprecated(since = "9.10.0")
 public class ExtractingDocumentLoader extends ContentStreamLoader {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
