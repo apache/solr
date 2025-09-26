@@ -292,13 +292,13 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
         "uprefix",
         "t_",
         "capture",
-        "div",
-        "fmap.div",
+        "h1",
+        "fmap.h1",
         "foo_t",
         "commit",
         "true");
     assertQ(req("+id:capture1 +t_content:Solr"), "//*[@numFound='1']");
-    assertQ(req("+id:capture1 +foo_t:\"here is some text in a div\""), "//*[@numFound='1']");
+    assertQ(req("+id:capture1 +foo_t:\"here is some text in a h1\""), "//*[@numFound='1']");
 
     loadLocal(
         "extraction/simple.html",
@@ -308,18 +308,18 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
         "true",
         "defaultField",
         "text",
-        "fmap.div",
-        "div_t",
+        "fmap.h1",
+        "h1_t",
         "fmap.a",
         "anchor_t",
         "capture",
-        "div",
+        "h1",
         "capture",
         "a",
         "commit",
         "true");
     assertQ(req("+id:capture2 +text:Solr"), "//*[@numFound='1']");
-    assertQ(req("+id:capture2 +div_t:\"here is some text in a div\""), "//*[@numFound='1']");
+    assertQ(req("+id:capture2 +h1_t:\"here is some text in a h1\""), "//*[@numFound='1']");
     assertQ(req("+id:capture2 +anchor_t:http\\://www.apache.org"), "//*[@numFound='1']");
     assertQ(req("+id:capture2 +anchor_t:link"), "//*[@numFound='1']");
   }
@@ -756,16 +756,16 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
         "defaultField",
         "text",
         "capture",
-        "div",
-        "fmap.div",
+        "h1",
+        "fmap.h1",
         "foo_t",
         "boost.foo_t",
         "3",
         "xpath",
-        "/xhtml:html/xhtml:body/xhtml:div//node()",
+        "/xhtml:html/xhtml:body/xhtml:cite//node()",
         "commit",
         "true");
-    assertQ(req("+id:example1 +foo_t:\"here is some text in a div\""), "//*[@numFound='1']");
+    assertQ(req("+id:example1 +foo_t:\"a h1 tag\""), "//*[@numFound='1']");
   }
 
   /** test arabic PDF extraction is functional */
