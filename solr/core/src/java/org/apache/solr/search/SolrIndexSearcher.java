@@ -16,6 +16,10 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
 
 import com.codahale.metrics.Gauge;
@@ -25,7 +29,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -96,8 +99,10 @@ import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.NodeConfig;
@@ -105,8 +110,10 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.metrics.otel.instruments.AttributedLongGauge;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -170,6 +177,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final LongAdder liveDocsNaiveCacheHitCount = new LongAdder();
   private final LongAdder liveDocsInsertsCount = new LongAdder();
   private final LongAdder liveDocsHitCount = new LongAdder();
+  private final List<AutoCloseable> toClose = new ArrayList<>();
+
+  // Synchronous gauge for caching enabled status
+  private AttributedLongGauge cachingEnabledGauge;
+
+  // Timer for warmup time histogram
+  private AttributedLongTimer warmupTimer;
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final Map<String, SolrCache<?, ?>> cacheMap;
@@ -400,6 +414,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.leafReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
     this.statsCache = core.createStatsCache();
+    this.toClose.add(this.statsCache);
     this.schema = schema;
     this.name =
         "Searcher@"
@@ -606,8 +621,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           core.getCoreAttributes().toBuilder().put(NAME_ATTR, cache.name()).build(),
           "solr_searcher_cache");
     }
-    // TODO SOLR-17458: Add Otel
-    initializeMetrics(solrMetricsContext, Attributes.empty(), STATISTICS_KEY);
+    Attributes baseAttributes;
+    if (core.getCoreContainer().isZooKeeperAware()) {
+      baseAttributes =
+          Attributes.builder()
+              .put(COLLECTION_ATTR, core.getCoreDescriptor().getCollectionName())
+              .put(CORE_ATTR, core.getCoreDescriptor().getName())
+              .put(SHARD_ATTR, core.getCoreDescriptor().getCloudDescriptor().getShardId())
+              .put(
+                  REPLICA_ATTR,
+                  Utils.parseMetricsReplicaName(
+                      core.getCoreDescriptor().getCollectionName(), core.getName()))
+              .build();
+    } else {
+      baseAttributes =
+          Attributes.builder().put(CORE_ATTR, core.getCoreDescriptor().getName()).build();
+    }
+    initializeMetrics(solrMetricsContext, baseAttributes, STATISTICS_KEY);
     registerTime = new Date();
   }
 
@@ -669,6 +699,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // do this at the end so it only gets done if there are no exceptions
     numCloses.incrementAndGet();
+    IOUtils.closeQuietly(toClose);
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -2522,8 +2553,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         log.debug("autowarming result for [{}]\n\t{}", this, cacheList[i]);
       }
     }
-    warmupTime =
+    this.warmupTime =
         TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
+    if (warmupTimer != null) warmupTimer.record(warmupTime);
   }
 
   /** return the named generic cache */
@@ -2604,95 +2636,84 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return solrMetricsContext;
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    parentContext.gauge(() -> name, true, "searcherName", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> cachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(
-        () -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(
-        fullSortCount::sum, true, "fullSortCount", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(
-        skipSortCount::sum, true, "skipSortCount", Category.SEARCHER.toString(), scope);
-    final MetricsMap liveDocsCacheMetrics =
-        new MetricsMap(
-            (map) -> {
-              map.put("inserts", liveDocsInsertsCount.sum());
-              map.put("hits", liveDocsHitCount.sum());
-              map.put("naiveHits", liveDocsNaiveCacheHitCount.sum());
-            });
-    parentContext.gauge(
-        liveDocsCacheMetrics, true, "liveDocsCache", Category.SEARCHER.toString(), scope);
-    // reader stats
-    parentContext.gauge(
-        rgauge(parentContext.nullNumber(), () -> reader.numDocs()),
-        true,
-        "numDocs",
-        Category.SEARCHER.toString(),
-        scope);
-    parentContext.gauge(
-        rgauge(parentContext.nullNumber(), () -> reader.maxDoc()),
-        true,
-        "maxDoc",
-        Category.SEARCHER.toString(),
-        scope);
-    parentContext.gauge(
-        rgauge(parentContext.nullNumber(), () -> reader.maxDoc() - reader.numDocs()),
-        true,
-        "deletedDocs",
-        Category.SEARCHER.toString(),
-        scope);
-    parentContext.gauge(
-        rgauge(parentContext.nullString(), () -> reader.toString()),
-        true,
-        "reader",
-        Category.SEARCHER.toString(),
-        scope);
-    parentContext.gauge(
-        rgauge(parentContext.nullString(), () -> reader.directory().toString()),
-        true,
-        "readerDir",
-        Category.SEARCHER.toString(),
-        scope);
-    parentContext.gauge(
-        rgauge(parentContext.nullNumber(), () -> reader.getVersion()),
-        true,
-        "indexVersion",
-        Category.SEARCHER.toString(),
-        scope);
+      SolrMetricsContext solrMetricsContext, Attributes attributes, String scope) {
+    var baseAttributes =
+        attributes.toBuilder().put(CATEGORY_ATTR, Category.SEARCHER.toString()).build();
+
+    // warmupTime (ms) - timer for histogram tracking
+    warmupTimer =
+        new AttributedLongTimer(
+            solrMetricsContext.longHistogram(
+                "solr_searcher_warmup_time", "Searcher warmup time (ms)", OtelUnit.MILLISECONDS),
+            baseAttributes);
+
+    toClose.add(
+        solrMetricsContext.observableLongCounter(
+            "solr_searcher_live_docs_cache",
+            "LiveDocs cache metrics",
+            obs -> {
+              obs.record(
+                  liveDocsInsertsCount.sum(),
+                  baseAttributes.toBuilder().put(TYPE_ATTR, "inserts").build());
+              obs.record(
+                  liveDocsHitCount.sum(),
+                  baseAttributes.toBuilder().put(TYPE_ATTR, "hits").build());
+              obs.record(
+                  liveDocsNaiveCacheHitCount.sum(),
+                  baseAttributes.toBuilder().put(TYPE_ATTR, "naive_hits").build());
+            }));
+    // reader stats (numeric)
+    toClose.add(
+        solrMetricsContext.observableLongGauge(
+            "solr_searcher_index_num_docs",
+            "Number of live docs in the index",
+            obs -> {
+              try {
+                obs.record(reader.numDocs(), baseAttributes);
+              } catch (Exception ignore) {
+                // replacement for nullNumber
+              }
+            }));
+
+    toClose.add(
+        solrMetricsContext.observableLongGauge(
+            "solr_searcher_index_docs",
+            "Total number of docs in the index (including deletions)",
+            obs -> {
+              try {
+                obs.record(reader.maxDoc(), baseAttributes);
+              } catch (Exception ignore) {
+              }
+            }));
+    // indexVersion (numeric)
+    toClose.add(
+        solrMetricsContext.observableLongGauge(
+            "solr_searcher_index_version",
+            "Lucene index version",
+            obs -> {
+              try {
+                obs.record(reader.getVersion(), baseAttributes);
+              } catch (Exception ignore) {
+              }
+            }));
     // size of the currently opened commit
-    parentContext.gauge(
-        () -> {
-          try {
-            Collection<String> files = reader.getIndexCommit().getFileNames();
-            long total = 0;
-            for (String file : files) {
-              total += DirectoryFactory.sizeOf(reader.directory(), file);
-            }
-            return total;
-          } catch (Exception e) {
-            return parentContext.nullNumber();
-          }
-        },
-        true,
-        "indexCommitSize",
-        Category.SEARCHER.toString(),
-        scope);
-    // statsCache metrics
-    parentContext.gauge(
-        new MetricsMap(
-            map -> {
-              statsCache.getCacheMetrics().getSnapshot(map::putNoEx);
-              map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
-            }),
-        true,
-        "statsCache",
-        Category.CACHE.toString(),
-        scope);
+    toClose.add(
+        solrMetricsContext.observableLongGauge(
+            "solr_searcher_index_commit_size_bytes",
+            "Size of the current index commit (bytes)",
+            obs -> {
+              try {
+                long total = 0L;
+                for (String file : reader.getIndexCommit().getFileNames()) {
+                  total += DirectoryFactory.sizeOf(reader.directory(), file);
+                }
+                obs.record(total, baseAttributes);
+              } catch (Exception e) {
+                // skip recording if unavailable (no nullNumber in OTel)
+              }
+            }));
   }
 
   /**
