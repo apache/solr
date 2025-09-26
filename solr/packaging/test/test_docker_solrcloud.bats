@@ -92,6 +92,9 @@ teardown() {
   echo "Creating a Collection"
   docker exec --user=solr solr-node1 solr create -c test-collection --shards 3
 
+  echo "Checking collection health"
+  wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection
+
   # Begin rolling upgrade - upgrade node 3 first (reverse order: 3, 2, 1)
   echo "Starting rolling upgrade - upgrading node 3"
   docker stop solr-node3
@@ -124,6 +127,18 @@ teardown() {
     "$SOLR_IMAGE_V10" solr start -f -c -m 200m --host solr-node1 -p 8983
   docker exec solr-node1 solr assert --started http://solr-node1:8983 --timeout 30000
 
-  # Final verification
-  # TODO
+  # Final verification - check that exactly 3 nodes are running and collection is healthy
+  echo "Final verification - checking cluster has exactly 3 nodes and collection is healthy"
+  local cluster_status=$(docker exec solr-node1 curl -s "http://solr-node1:8983/solr/admin/collections?action=CLUSTERSTATUS")
+  local live_nodes_count=$(echo "$cluster_status" | jq -r '.cluster.live_nodes | length')
+  
+  if [ "$live_nodes_count" != "3" ]; then
+    echo "Expected 3 live nodes, but found $live_nodes_count"
+    echo "Cluster status: $cluster_status"
+    return 1
+  fi
+  
+  # Final collection health check
+  wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection
+}
 }
