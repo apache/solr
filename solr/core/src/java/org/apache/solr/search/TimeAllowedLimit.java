@@ -74,10 +74,8 @@ public class TimeAllowedLimit implements QueryLimit {
     if (parentUsedMs != -1L) {
       // this is a sub-request of a request that already had timeAllowed set.
       // We have to deduct the time already used by the parent request.
-      // Also, add some in-flight time to account for the fact that the parentUsedMs
-      // value was captured before the request was sent from the parent
-      log.debug("parentUsedMs: {}, inflightMs: {}", parentUsedMs, reqInflightMs);
-      timeAlreadySpentMs += parentUsedMs + reqInflightMs;
+      log.debug("parentUsedMs: {}", parentUsedMs);
+      timeAlreadySpentMs += parentUsedMs;
     }
     long nowNs = nanoTime();
     long remainingTimeAllowedMs = reqTimeAllowedMs - timeAlreadySpentMs;
@@ -90,8 +88,10 @@ public class TimeAllowedLimit implements QueryLimit {
   @Override
   public boolean adjustShardRequestLimit(ShardRequest sreq, String shard, ModifiableSolrParams params) {
     long usedTimeAllowedMs = TimeUnit.NANOSECONDS.toMillis(nanoTime() - timingSince);
+    // increase by the expected in-flight time
+    usedTimeAllowedMs += reqInflightMs;
     boolean result = false;
-    if (usedTimeAllowedMs >= reqTimeAllowedMs - reqInflightMs) {
+    if (usedTimeAllowedMs >= reqTimeAllowedMs) {
       // there's no point in sending this request to the shard because the time will run out
       // before it's processed at the target
       result = true;

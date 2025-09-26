@@ -525,7 +525,7 @@ public class SearchHandler extends RequestHandlerBase
           }
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
-        log.warn("Query: {}; ", req.getParamString(), ex);
+        log.warn("Query terminated: {}; ", req.getParamString(), ex);
         shortCircuitedResults(req, rb);
       }
     } else {
@@ -593,7 +593,7 @@ public class SearchHandler extends RequestHandlerBase
                 if (queryLimits.adjustShardRequestLimits(sreq, shard, params, rb)) {
                   // Skip this shard since one or more limits will be tripped
                   if (log.isDebugEnabled()) {
-                    log.debug("Skipping request to shard '{}' due to query limits, params {}", shard, params);
+                    log.info("Skipping request to shard '{}' due to query limits, params {}", shard, params);
                   }
                   continue;
                 }

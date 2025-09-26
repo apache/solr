@@ -118,18 +118,18 @@ public class TestQueryLimits extends SolrCloudTestCase {
     // reduce timeAllowed to force partial results
     params.set("timeAllowed", "100");
     // pretend this is a request with some time already used
-    params.set(TimeAllowedLimit.USED_PARAM, "4");
+    params.set(TimeAllowedLimit.USED_PARAM, "60");
     // set a high skew to trigger skipping shard requests
     params.set(TimeAllowedLimit.INFLIGHT_PARAM, "50");
     QueryResponse rsp1 = solrClient.query(COLLECTION, params);
     assertNotNull("should have partial results: " + rsp1.jsonStr(), rsp1.getHeader().get("partialResults"));
     assertEquals("partialResults should be true", "true", rsp1.getHeader().get("partialResults").toString());
-    assertTrue("partialResultsDetails should contain 'skipped'", rsp1.getHeader().get("partialResultsDetails").toString().contains("skipped"));
+    assertTrue("partialResultsDetails should contain 'skipped':" + rsp1.jsonStr(), rsp1.getHeader().get("partialResultsDetails").toString().contains("skipped"));
 
     params.set(CommonParams.PARTIAL_RESULTS, false);
     QueryResponse rsp2 = solrClient.query(COLLECTION, params);
     assertNotNull("should have partial results: " + rsp2.jsonStr(), rsp2.getHeader().get("partialResults"));
-    assertEquals("partialResults should be omitted", "omitted", rsp2.getHeader().get("partialResults").toString());
-    assertTrue("partialResultsDetails should contain 'skipped'", rsp2.getHeader().get("partialResultsDetails").toString().contains("skipped"));
+    assertEquals("partialResults should be omitted: " + rsp2.jsonStr(), "omitted", rsp2.getHeader().get("partialResults").toString());
+    assertTrue("partialResultsDetails should contain 'skipped': " + rsp2.jsonStr(), rsp2.getHeader().get("partialResultsDetails").toString().contains("skipped"));
   }
 }
