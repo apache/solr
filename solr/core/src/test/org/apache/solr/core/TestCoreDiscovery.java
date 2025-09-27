@@ -161,7 +161,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       TestLazyCores.checkLoadedCores(cc, "core1");
       TestLazyCores.checkCoresNotLoaded(cc, "core2");
 
-      // force loading of core2 by getting them from the CoreContainer
+      // force loading of core2 by getting it from the CoreContainer
       try (SolrCore core1 = cc.getCore("core1");
           SolrCore core2 = cc.getCore("core2"); ) {
 
@@ -287,21 +287,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc.shutdown();
     }
   }
-
-  // Ensure that if the number of transient cores that are loaded on startup is greater than the
-  // cache size that Solr "does the right thing". Which means
-  // 1> stop loading cores after transient cache size is reached, in this case that magic number is
-  // 3 one non-transient and two transient.
-  // 2> still loads cores as time passes.
-  //
-  // This seems like a silly test, but it hangs forever on 4.10 so let's guard against it in the
-  // future.
-  // The behavior has gone away with the removal of the complexity around the old-style solr.xml
-  // files.
-  //
-  // NOTE: The order that cores are loaded depends upon how the core discovery is traversed. I don't
-  // think we can make the test depend on that order, so after load just ensure that the cores
-  // counts are correct.
 
   @Test
   public void testDuplicateNames() throws Exception {

@@ -243,7 +243,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
           listeners.forEach(listener -> listener.modified(old, apiInfoFinal));
           if (old != null) {
             // this is an update of the plugin. But, it is possible that
-            // some paths are removed in the newer version of the plugin
+            // some paths are remved in the newer version of the plugin
             for (ApiHolder oldHolder : old.holders) {
               if (apiInfo.get(oldHolder.api.getEndPoint()) == null) {
                 // there was a path in the old plugin which is not present in the new one
@@ -334,7 +334,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         Optional<SolrPackageLoader.SolrPackage.Version> ver =
             coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         if (ver.isEmpty()) {
-          // maybe we are a bit early. Do a refresh and try again
+          // may be we are a bit early. Do a refresh and try again
           coreContainer.getPackageLoader().getPackageAPI().refreshPackages(null);
           ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         }
@@ -342,6 +342,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
           SolrPackageLoader.SolrPackage p = coreContainer.getPackageLoader().getPackage(pkg);
           if (p == null) {
             errs.add("Invalid package " + klassInfo.pkg);
+            return;
           } else {
             errs.add(
                 "No such package version:"
@@ -350,15 +351,15 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
                     + info.version
                     + " . available versions :"
                     + p.allVersions());
+            return;
           }
-          return;
         }
         this.pkgVersion = ver.get();
         try {
           klas = pkgVersion.getLoader().findClass(klassInfo.className, Object.class);
         } catch (Exception e) {
           log.error("Error loading class", e);
-          errs.add("Error loading class " + e);
+          errs.add("Error loading class " + e.toString());
           return;
         }
       } else {
@@ -406,6 +407,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       }
       if (!Modifier.isPublic(constructor.getModifiers())) {
         errs.add("Must have a public constructor ");
+        return;
       }
     }
 
@@ -456,7 +458,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     return null;
   }
 
-  /** Get the generic Type of the {@link ConfigurablePlugin} */
+  /** Get the generic type of a {@link ConfigurablePlugin} */
   @SuppressWarnings("unchecked")
   public static <T extends MapWriter> Class<T> getConfigClass(ConfigurablePlugin<T> o) {
     Class<?> klas = o.getClass();
