@@ -33,7 +33,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
 import org.apache.solr.search.IncompleteRerankingException;
 import org.apache.solr.search.QueryLimits;
-import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * Implements the rescoring logic. The top documents returned by solr with their original scores,
@@ -138,7 +137,7 @@ public class LTRRescorer extends Rescorer {
         (LTRScoringQuery.ModelWeight)
             searcher.createWeight(searcher.rewrite(scoringQuery), ScoreMode.COMPLETE, 1);
 
-    scoreFeatures(searcher, topN, modelWeight, firstPassResults, leaves, reranked);
+    scoreFeatures(topN, modelWeight, firstPassResults, leaves, reranked);
     // Must sort all documents that we reranked, and then select the top
     Arrays.sort(reranked, scoreComparator);
     return reranked;
@@ -153,7 +152,6 @@ public class LTRRescorer extends Rescorer {
   }
 
   public void scoreFeatures(
-      IndexSearcher indexSearcher,
       int topN,
       LTRScoringQuery.ModelWeight modelWeight,
       ScoreDoc[] hits,
@@ -182,36 +180,13 @@ public class LTRRescorer extends Rescorer {
         docBase = readerContext.docBase;
         scorer = modelWeight.modelScorer(readerContext);
       }
-      if (scoreSingleHit(topN, docBase, hitUpto, hit, docID, scorer, reranked)) {
-        logSingleHit(indexSearcher, modelWeight, hit.doc, scoringQuery);
-      }
+      scoreSingleHit(topN, docBase, hitUpto, hit, docID, scorer, reranked);
       hitUpto++;
     }
   }
 
-  /**
-   * Call this method if the {@link #scoreSingleHit(int, int, int, ScoreDoc, int,
-   * org.apache.solr.ltr.LTRScoringQuery.ModelWeight.ModelScorer, ScoreDoc[])} method indicated that
-   * the document's feature info should be logged.
-   */
-  protected static void logSingleHit(
-      IndexSearcher indexSearcher,
-      LTRScoringQuery.ModelWeight modelWeight,
-      int docid,
-      LTRScoringQuery scoringQuery) {
-    final FeatureLogger featureLogger = scoringQuery.getFeatureLogger();
-    if (featureLogger != null && indexSearcher instanceof SolrIndexSearcher) {
-      featureLogger.log(
-          docid, scoringQuery, (SolrIndexSearcher) indexSearcher, modelWeight.getFeaturesInfo());
-    }
-  }
-
-  /**
-   * Scores a single document and returns true if the document's feature info should be logged via
-   * the {@link #logSingleHit(IndexSearcher, org.apache.solr.ltr.LTRScoringQuery.ModelWeight, int,
-   * LTRScoringQuery)} method. Feature info logging is only necessary for the topN documents.
-   */
-  protected static boolean scoreSingleHit(
+  /** Scores a single document. */
+  protected void scoreSingleHit(
       int topN,
       int docBase,
       int hitUpto,
@@ -232,8 +207,6 @@ public class LTRRescorer extends Rescorer {
     scorer.docID();
     scorer.iterator().advance(targetDoc);
 
-    boolean logHit = false;
-
     scorer.getDocInfo().setOriginalDocScore(hit.score);
     hit.score = scorer.score();
     if (QueryLimits.getCurrentLimits()
@@ -245,26 +218,19 @@ public class LTRRescorer extends Rescorer {
     }
     if (hitUpto < topN) {
       reranked[hitUpto] = hit;
-      // if the heap is not full, maybe I want to log the features for this
-      // document
-      logHit = true;
     } else if (hitUpto == topN) {
       // collected topN document, I create the heap
       heapify(reranked, topN);
     }
     if (hitUpto >= topN) {
-      // once that heap is ready, if the score of this document is lower that
-      // the minimum
-      // i don't want to log the feature. Otherwise I replace it with the
-      // minimum and fix the
-      // heap.
+      // once that heap is ready, if the score of this document is greater that
+      // the minimum I replace it with the
+      // minimum and fix the heap.
       if (hit.score > reranked[0].score) {
         reranked[0] = hit;
         heapAdjust(reranked, topN, 0);
-        logHit = true;
       }
     }
-    return logHit;
   }
 
   @Override
@@ -288,28 +254,5 @@ public class LTRRescorer extends Rescorer {
           searcher.createWeight(searcher.rewrite(rerankingQuery), ScoreMode.COMPLETE, 1);
     }
     return rankingWeight.explain(context, deBasedDoc);
-  }
-
-  public static LTRScoringQuery.FeatureInfo[] extractFeaturesInfo(
-      LTRScoringQuery.ModelWeight modelWeight,
-      int docid,
-      Float originalDocScore,
-      List<LeafReaderContext> leafContexts)
-      throws IOException {
-    final int n = ReaderUtil.subIndex(docid, leafContexts);
-    final LeafReaderContext atomicContext = leafContexts.get(n);
-    final int deBasedDoc = docid - atomicContext.docBase;
-    final LTRScoringQuery.ModelWeight.ModelScorer r = modelWeight.modelScorer(atomicContext);
-    if ((r == null) || (r.iterator().advance(deBasedDoc) != deBasedDoc)) {
-      return new LTRScoringQuery.FeatureInfo[0];
-    } else {
-      if (originalDocScore != null) {
-        // If results have not been reranked, the score passed in is the original query's
-        // score, which some features can use instead of recalculating it
-        r.getDocInfo().setOriginalDocScore(originalDocScore);
-      }
-      r.score();
-      return modelWeight.getFeaturesInfo();
-    }
   }
 }
