@@ -377,10 +377,13 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       try {
         URL configUrl = loader.getClassLoader().getResource(loader.getConfigPath().toString());
         if (configUrl == null) {
-          log.error("Configuration directory resource not found: {}", loader.getConfigPath().toString());
+          log.error(
+              "Configuration directory resource not found: {}", loader.getConfigPath().toString());
           rsp.setException(
               new SolrException(
-                  SolrException.ErrorCode.FORBIDDEN, "Configuration directory resource not found: " + loader.getConfigPath().toString()));
+                  SolrException.ErrorCode.FORBIDDEN,
+                  "Configuration directory resource not found: "
+                      + loader.getConfigPath().toString()));
           return null;
         }
         configDir = Path.of(configUrl.toURI());
