@@ -30,7 +30,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
@@ -114,7 +113,6 @@ public class CreateReplica extends AdminAPIBase implements CreateReplicaApi {
     insertIfNotNull(remoteMessage, DATA_DIR, requestBody.dataDir);
     insertIfNotNull(remoteMessage, ULOG_DIR, requestBody.ulogDir);
     insertIfNotNull(remoteMessage, REPLICA_TYPE, requestBody.type);
-    insertIfNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
     insertIfNotNull(remoteMessage, NRT_REPLICAS, requestBody.nrtReplicas);
     insertIfNotNull(remoteMessage, TLOG_REPLICAS, requestBody.tlogReplicas);
     insertIfNotNull(remoteMessage, PULL_REPLICAS, requestBody.pullReplicas);
@@ -146,7 +144,6 @@ public class CreateReplica extends AdminAPIBase implements CreateReplicaApi {
     requestBody.nrtReplicas = params.getInt(NRT_REPLICAS);
     requestBody.tlogReplicas = params.getInt(TLOG_REPLICAS);
     requestBody.pullReplicas = params.getInt(PULL_REPLICAS);
-    requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
     requestBody.followAliases = params.getBool(FOLLOW_ALIASES);
     requestBody.async = params.get(ASYNC);
 

@@ -126,7 +126,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
         callMigrateReplicas(
             cloudClient,
             new MigrateReplicasRequestBody(
-                Set.of(nodeToBeDecommissioned), Set.of(emptyNode), true, null));
+                Set.of(nodeToBeDecommissioned), Set.of(emptyNode), null));
     assertEquals(
         "MigrateReplicas request was unsuccessful",
         0L,
@@ -154,7 +154,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
         callMigrateReplicas(
             cloudClient,
             new MigrateReplicasRequestBody(
-                Set.of(emptyNode), Set.of(nodeToBeDecommissioned), true, null));
+                Set.of(emptyNode), Set.of(nodeToBeDecommissioned), null));
     assertEquals(
         "MigrateReplicas request was unsuccessful",
         0L,
@@ -279,7 +279,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
         callMigrateReplicas(
             cloudClient,
             new MigrateReplicasRequestBody(
-                new HashSet<>(nodesToBeDecommissioned), Collections.emptySet(), true, null));
+                new HashSet<>(nodesToBeDecommissioned), Collections.emptySet(), null));
     assertEquals(
         "MigrateReplicas request was unsuccessful",
         0L,
@@ -328,7 +328,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     Map<?, ?> response =
         callMigrateReplicas(
             cloudClient,
-            new MigrateReplicasRequestBody(Set.of(liveNode), Collections.emptySet(), true, null));
+            new MigrateReplicasRequestBody(Set.of(liveNode), Collections.emptySet(), null));
     assertNotNull(
         "No error in response, when the request should have failed", response.get("error"));
     assertEquals(
