@@ -21,7 +21,11 @@ New Features
 
 * SOLR-17780: Add support for scalar quantized dense vectors (Kevin Liang via Alessandro Benedetti)
 
+* SOLR-17812: Add support for binary quantized dense vectors (Kevin Liang via Alessandro Benedetti)
+
 * SOLR-17023: Use Modern NLP Models from Apache OpenNLP with Solr (Jeff Zemerick, Eric Pugh)
+
+* SOLR-17814: Add support for PatienceKnnVectorQuery. (Ilaria Petreti via Alessandro Benedetti)
 
 Improvements
 ---------------------
@@ -276,6 +280,8 @@ Bug Fixes
 
 * SOLR-17837: PULL replica nodes could be marked as "preferredLeader" by BALANCESHARDUNIQUE despite never being able to be elected leader (Kevin Liang via Houston Putman)
 
+* SOLR-17869: Avoid creating grouping shard requests when timeAllowed has already run out. (Andrzej Bialecki, hossman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -302,6 +308,8 @@ Bug Fixes
 * SOLR-17876: Http2SolrClient: followRedirects=true: if Http2SolrClient was created with followRedirects=true,
   and then was used to create future clients (via builder.withHttpClient), then redirect processing was wrongly
   disabled on the shared instance. (David Smiley)
+
+* SOLR-3696: Fix for LB/Cloud SolrClients that could leak on close() if concurrent request failed and triggered zombie server logic. (hossman)
 
 Dependency Upgrades
 ---------------------
