@@ -72,6 +72,8 @@ Optimizations
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
  (David Smiley)
 
+* SOLR-17929: Remove obsolete overseer internal work queue. This queue was read-only since Solr 8. (Pierre Salagnac)
+
 Bug Fixes
 ---------------------
 * SOLR-17772: Tests for CLI examples were failing on Windows due to a legacy bug uncovered by fix in SOLR-7962.
