@@ -136,4 +136,13 @@ public interface ExtractingParams {
    * .*=&lt;defaultmypassword&gt; at the end
    */
   public static final String PASSWORD_MAP_FILE = "passwordsFile";
+
+  /** Backend selection parameter and */
+  public static final String EXTRACTION_BACKEND = "extraction.backend";
+
+  /** Fix metadata to match Tika 1.x */
+  public static final String BACK_COMPATIBILITY = "backCompatibility";
+
+  /** Enable recursive parsing of embedded documents */
+  String RECURSIVE = "recursive";
 }

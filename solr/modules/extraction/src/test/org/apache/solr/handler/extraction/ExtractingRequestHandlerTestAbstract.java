@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.extraction;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -24,7 +25,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -34,24 +34,18 @@ import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** */
-public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
+public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @SuppressWarnings("resource")
   @BeforeClass
   public static void beforeClass() throws Exception {
     // Is the JDK/env affected by a known bug?
     final String tzDisplayName =
         TimeZone.getDefault().getDisplayName(false, TimeZone.SHORT, Locale.US);
-    if (!tzDisplayName.matches("[A-Za-z]{3,}([+-]\\d\\d(:\\d\\d)?)?")) {
-      assertTrue(
-          "Is some other JVM affected?  Or bad regex? TzDisplayName: " + tzDisplayName,
-          EnvUtils.getProperty("java.version").startsWith("11"));
-      assumeTrue(
-          "SOLR-12759 JDK 11 (1st release) and Tika 1.x can result in extracting dates in a bad format.",
-          false);
-    }
-
     initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
   }
 
@@ -298,13 +292,13 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
         "uprefix",
         "t_",
         "capture",
-        "div",
-        "fmap.div",
+        "h1",
+        "fmap.h1",
         "foo_t",
         "commit",
         "true");
     assertQ(req("+id:capture1 +t_content:Solr"), "//*[@numFound='1']");
-    assertQ(req("+id:capture1 +foo_t:\"here is some text in a div\""), "//*[@numFound='1']");
+    assertQ(req("+id:capture1 +foo_t:\"here is some text in a h1\""), "//*[@numFound='1']");
 
     loadLocal(
         "extraction/simple.html",
@@ -314,18 +308,18 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
         "true",
         "defaultField",
         "text",
-        "fmap.div",
-        "div_t",
+        "fmap.h1",
+        "h1_t",
         "fmap.a",
         "anchor_t",
         "capture",
-        "div",
+        "h1",
         "capture",
         "a",
         "commit",
         "true");
     assertQ(req("+id:capture2 +text:Solr"), "//*[@numFound='1']");
-    assertQ(req("+id:capture2 +div_t:\"here is some text in a div\""), "//*[@numFound='1']");
+    assertQ(req("+id:capture2 +h1_t:\"here is some text in a h1\""), "//*[@numFound='1']");
     assertQ(req("+id:capture2 +anchor_t:http\\://www.apache.org"), "//*[@numFound='1']");
     assertQ(req("+id:capture2 +anchor_t:link"), "//*[@numFound='1']");
   }
@@ -341,20 +335,19 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       ignoreException("unknown field 'meta'"); // TODO: should this exception be happening?
       expectThrows(
           SolrException.class,
-          () -> {
-            loadLocal(
-                "extraction/simple.html",
-                "literal.id",
-                "simple2",
-                "lowernames",
-                "true",
-                "captureAttr",
-                "true",
-                // "fmap.content_type", "abcxyz",
-                "commit",
-                "true" // test immediate commit
-                );
-          });
+          () ->
+              loadLocal(
+                  "extraction/simple.html",
+                  "literal.id",
+                  "simple2",
+                  "lowernames",
+                  "true",
+                  "captureAttr",
+                  "true",
+                  // "fmap.content_type", "abcxyz",
+                  "commit",
+                  "true" // test immediate commit
+                  ));
     } finally {
       resetExceptionIgnores();
     }
@@ -465,6 +458,16 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
           "two",
           "fmap.X-Parsed-By",
           "ignored_parser",
+          "fmap.X-TIKA:Parsed-By",
+          "ignored_parser",
+          "fmap.X-TIKA:Parsed-By-Full-Set",
+          "ignored_parser",
+          "fmap.X-TIKA:content_handler",
+          "ignored_parser",
+          "fmap.X-TIKA:parse_time_millis",
+          "ignored_parser",
+          "fmap.X-TIKA:embedded_depth",
+          "ignored_parser",
           "fmap.Last-Modified",
           "extractedDate");
       // TODO: original author did not specify why an exception should be thrown... how to fix?
@@ -494,6 +497,16 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
         "literal.extractionLiteral",
         "one",
         "fmap.X-Parsed-By",
+        "ignored_parser",
+        "fmap.X-TIKA:Parsed-By",
+        "ignored_parser",
+        "fmap.X-TIKA:Parsed-By-Full-Set",
+        "ignored_parser",
+        "fmap.X-TIKA:content_handler",
+        "ignored_parser",
+        "fmap.X-TIKA:parse_time_millis",
+        "ignored_parser",
+        "fmap.X-TIKA:embedded_depth",
         "ignored_parser",
         "fmap.Last-Modified",
         "extractedDate");
@@ -601,6 +614,20 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
         "extractedLanguage",
         "fmap.X-Parsed-By",
         "ignored_parser",
+        "fmap.X-TIKA:Parsed-By",
+        "ignored_parser",
+        "fmap.X-TIKA:detectedEncoding",
+        "ignored_parser",
+        "fmap.X-TIKA:encodingDetector",
+        "ignored_parser",
+        "fmap.X-TIKA:Parsed-By-Full-Set",
+        "ignored_parser",
+        "fmap.X-TIKA:content_handler",
+        "ignored_parser",
+        "fmap.X-TIKA:parse_time_millis",
+        "ignored_parser",
+        "fmap.X-TIKA:embedded_depth",
+        "ignored_parser",
         "fmap.content",
         "extractedContent",
         ExtractingParams.STREAM_TYPE,
@@ -634,6 +661,20 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
         "fmap.language",
         "extractedLanguage",
         "fmap.X-Parsed-By",
+        "ignored_parser",
+        "fmap.X-TIKA:Parsed-By",
+        "ignored_parser",
+        "fmap.X-TIKA:detectedEncoding",
+        "ignored_parser",
+        "fmap.X-TIKA:encodingDetector",
+        "ignored_parser",
+        "fmap.X-TIKA:Parsed-By-Full-Set",
+        "ignored_parser",
+        "fmap.X-TIKA:content_handler",
+        "ignored_parser",
+        "fmap.X-TIKA:parse_time_millis",
+        "ignored_parser",
+        "fmap.X-TIKA:embedded_depth",
         "ignored_parser",
         "fmap.content",
         "extractedContent",
@@ -692,9 +733,12 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     NamedList<?> nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
     assertNotNull("nl is null and it shouldn't be", nl);
-    Object title = nl.get("title");
+    // TODO: Tika server v3.x has normalized metadata and do not return the 'title' key. Consider
+    // backcompat mode mapping dc:title to title???
+    Object title = nl.get("dc:title");
     assertNotNull("title is null and it shouldn't be", title);
-    assertTrue(extraction.contains("<?xml"));
+    // TODO: Tika Server return xhtml, without xml header, otherwise fairly similar
+    assertTrue(extraction.contains("<?xml") || extraction.contains("<html xmlns"));
 
     rsp =
         loadLocal(
@@ -713,7 +757,8 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
     assertNotNull("nl is null and it shouldn't be", nl);
-    title = nl.get("title");
+    // TODO: See above
+    title = nl.get("dc:title");
     assertNotNull("title is null and it shouldn't be", title);
   }
 
@@ -743,16 +788,16 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
         "defaultField",
         "text",
         "capture",
-        "div",
-        "fmap.div",
+        "h1",
+        "fmap.h1",
         "foo_t",
         "boost.foo_t",
         "3",
         "xpath",
-        "/xhtml:html/xhtml:body/xhtml:div//node()",
+        "/xhtml:html/xhtml:body/xhtml:cite//node()",
         "commit",
         "true");
-    assertQ(req("+id:example1 +foo_t:\"here is some text in a div\""), "//*[@numFound='1']");
+    assertQ(req("+id:example1 +foo_t:\"a h1 tag\""), "//*[@numFound='1']");
   }
 
   /** test arabic PDF extraction is functional */
@@ -787,83 +832,6 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("wdf_nocase:السلم"), "//result[@numFound=0]");
     assertU(commit());
     assertQ(req("wdf_nocase:السلم"), "//result[@numFound=1]");
-  }
-
-  @Test
-  public void testTikaExceptionHandling() throws Exception {
-    ExtractingRequestHandler handler =
-        (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertNotNull("handler is null and it shouldn't be", handler);
-
-    expectThrows(
-        Exception.class,
-        () -> {
-          loadLocal("extraction/password-is-solrcell.docx", "literal.id", "one");
-        });
-    assertU(commit());
-    assertQ(req("*:*"), "//result[@numFound=0]");
-
-    try {
-      loadLocal(
-          "extraction/password-is-solrcell.docx",
-          "fmap.created",
-          "extractedDate",
-          "fmap.producer",
-          "extractedProducer",
-          "fmap.creator",
-          "extractedCreator",
-          "fmap.Keywords",
-          "extractedKeywords",
-          "fmap.Creation-Date",
-          "extractedDate",
-          "uprefix",
-          "ignored_",
-          "fmap.Author",
-          "extractedAuthor",
-          "fmap.content",
-          "wdf_nocase",
-          "literal.id",
-          "one",
-          "ignoreTikaException",
-          "true", // set ignore flag
-          "fmap.Last-Modified",
-          "extractedDate");
-    } catch (Exception e) {
-      fail("TikaException should be ignored.");
-    }
-    assertU(commit());
-    assertQ(req("*:*"), "//result[@numFound=1]");
-  }
-
-  @Test
-  public void testWrongStreamType() throws Exception {
-    ExtractingRequestHandler handler =
-        (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertNotNull("handler is null and it shouldn't be", handler);
-
-    expectThrows(
-        Exception.class,
-        () -> {
-          // Load plain text specifying another mime type, should fail
-          loadLocal(
-              "extraction/version_control.txt",
-              "literal.id",
-              "one",
-              ExtractingParams.STREAM_TYPE,
-              "application/pdf");
-        });
-
-    expectThrows(
-        Exception.class,
-        () -> {
-          // Load plain text specifying non existing mimetype, should fail
-          loadLocal(
-              "extraction/version_control.txt",
-              "literal.id",
-              "one",
-              ExtractingParams.STREAM_TYPE,
-              "foo/bar");
-        });
   }
 
   public void testLiteralsOverride() throws Exception {
@@ -969,41 +937,6 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("title:wolf-man"), "//*[@numFound='1']");
     assertQ(
         req("extractedKeywords:(solr AND word AND pdf AND literalkeyword)"), "//*[@numFound='1']");
-  }
-
-  @Test
-  public void testPdfWithImages() throws Exception {
-    // Tests possibility to configure ParseContext (by example to extract embedded images from pdf)
-    loadLocal(
-        "extraction/pdf-with-image.pdf",
-        "fmap.created",
-        "extractedDate",
-        "fmap.producer",
-        "extractedProducer",
-        "fmap.creator",
-        "extractedCreator",
-        "fmap.Keywords",
-        "extractedKeywords",
-        "fmap.Creation-Date",
-        "extractedDate",
-        "uprefix",
-        "ignored_",
-        "fmap.Author",
-        "extractedAuthor",
-        "fmap.content",
-        "wdf_nocase",
-        "literal.id",
-        "pdfWithImage",
-        "resource.name",
-        "pdf-with-image.pdf",
-        "resource.password",
-        "solrRules",
-        "fmap.Last-Modified",
-        "extractedDate");
-
-    assertQ(req("wdf_nocase:\"embedded:image0.jpg\""), "//*[@numFound='0']");
-    assertU(commit());
-    assertQ(req("wdf_nocase:\"embedded:image0.jpg\""), "//*[@numFound='1']");
   }
 
   @Test
@@ -1129,16 +1062,42 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   SolrQueryResponse loadLocalFromHandler(String handler, String filename, String... args)
       throws Exception {
 
-    LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);
-    try {
+    try (LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args)) {
       // TODO: stop using locally defined streams once stream.file and
       // stream.body work everywhere
       List<ContentStream> cs = new ArrayList<>();
       cs.add(new ContentStreamBase.FileStream(getFile(filename)));
       req.setContentStreams(cs);
       return h.queryAndResponse(handler, req);
-    } finally {
-      req.close();
+    }
+  }
+
+  @Test
+  public void testDummyBackendExtractOnly() throws Exception {
+    ExtractingRequestHandler handler =
+        (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
+    assertNotNull("handler is null and it shouldn't be", handler);
+    SolrQueryResponse rsp =
+        loadLocal(
+            "extraction/version_control.txt",
+            ExtractingParams.EXTRACTION_BACKEND,
+            DummyExtractionBackend.NAME,
+            ExtractingParams.EXTRACT_ONLY,
+            "true",
+            ExtractingParams.EXTRACT_FORMAT,
+            ExtractingDocumentLoader.TEXT_FORMAT);
+    assertNotNull("rsp is null and it shouldn't be", rsp);
+    NamedList<?> list = rsp.getValues();
+    String extraction = (String) list.get("version_control.txt");
+    assertNotNull("extraction is null and it shouldn't be", extraction);
+    assertEquals("This is dummy extracted content", extraction);
+
+    NamedList<?> nl = (NamedList<?>) list.get("version_control.txt_metadata");
+    assertNotNull("metadata is null and it shouldn't be", nl);
+    Object dummyFlag = nl.get("Dummy-Backend");
+    assertNotNull("Dummy-Backend metadata missing", dummyFlag);
+    if (dummyFlag instanceof String[]) {
+      assertEquals("true", ((String[]) dummyFlag)[0]);
     }
   }
 
