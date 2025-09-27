@@ -996,18 +996,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
 
     /**
-     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
-     * to 4
-     *
-     * @deprecated Please use {@link #withMaxConnectionsPerHost(int)}
-     */
-    @Deprecated(since = "9.2")
-    public Http2SolrClient.Builder maxConnectionsPerHost(int max) {
-      withMaxConnectionsPerHost(max);
-      return this;
-    }
-
-    /**
      * Set the scanning interval to check for updates in the Key Store used by this client. If the
      * interval is unset, 0 or less, then the Key Store Scanner is not created, and the client will
      * not attempt to update key stores. The minimum value between checks is 1 second.
@@ -1021,37 +1009,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.keyStoreReloadIntervalSecs == 0 && interval > 0) {
         this.keyStoreReloadIntervalSecs = 1L;
       }
-      return this;
-    }
-
-    /**
-     * @deprecated Please use {@link #withIdleTimeout(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Http2SolrClient.Builder idleTimeout(int idleConnectionTimeout) {
-      withIdleTimeout(idleConnectionTimeout, TimeUnit.MILLISECONDS);
-      return this;
-    }
-
-    /**
-     * @deprecated Please use {@link #withConnectionTimeout(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Http2SolrClient.Builder connectionTimeout(int connectionTimeout) {
-      withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS);
-      return this;
-    }
-
-    /**
-     * Set a timeout in milliseconds for requests issued by this client.
-     *
-     * @param requestTimeout The timeout in milliseconds
-     * @return this Builder.
-     * @deprecated Please use {@link #withRequestTimeout(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Http2SolrClient.Builder requestTimeout(int requestTimeout) {
-      withRequestTimeout(requestTimeout, TimeUnit.MILLISECONDS);
       return this;
     }
 
