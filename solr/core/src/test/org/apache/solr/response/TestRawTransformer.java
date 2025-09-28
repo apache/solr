@@ -27,13 +27,14 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
@@ -184,8 +185,10 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"author:[xml],content_type:[xml]"},
                     "wt",
                     new String[] {"xml"})));
-    req.setResponseParser(XML_NOOP_RESPONSE_PARSER);
-    String strResponse = (String) CLIENT.request(req, "collection1").get("response");
+    req.setResponseParser(XML_STREAM_RESPONSE_PARSER);
+    NamedList<Object> rsp = CLIENT.request(req, "collection1");
+    String strResponse = getOutputFromInputStreamResponseParserResponse(rsp);
+
     assertTrue(
         "response does not contain raw XML encoding: " + strResponse,
         strResponse.contains(
@@ -207,8 +210,10 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"author,content_type"},
                     "wt",
                     new String[] {"xml"})));
-    req.setResponseParser(XML_NOOP_RESPONSE_PARSER);
-    strResponse = (String) CLIENT.request(req, "collection1").get("response");
+    req.setResponseParser(XML_STREAM_RESPONSE_PARSER);
+    rsp = CLIENT.request(req, "collection1");
+    strResponse = getOutputFromInputStreamResponseParserResponse(rsp);
+
     assertTrue(
         "response does not contain escaped XML encoding: " + strResponse,
         strResponse.contains("<str name=\"author\">&lt;root&gt;&lt;child1"));
@@ -228,8 +233,10 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"author:[xml],content_type:[xml]"},
                     "wt",
                     new String[] {"json"})));
-    req.setResponseParser(JSON_NOOP_RESPONSE_PARSER);
-    strResponse = (String) CLIENT.request(req, "collection1").get("response");
+    req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
+    rsp = CLIENT.request(req, "collection1");
+    strResponse = getOutputFromInputStreamResponseParserResponse(rsp);
+
     assertTrue(
         "unexpected serialization of XML field value in JSON response: " + strResponse,
         strResponse.contains("\"author\":\"<root><child1>some</child1>"));
@@ -251,8 +258,10 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"subject:[json],links:[json]"},
                     "wt",
                     new String[] {"json"})));
-    req.setResponseParser(JSON_NOOP_RESPONSE_PARSER);
-    String strResponse = (String) CLIENT.request(req, "collection1").get("response");
+    req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
+    NamedList<Object> rsp = CLIENT.request(req, "collection1");
+    String strResponse = getOutputFromInputStreamResponseParserResponse(rsp);
+
     assertTrue(
         "response does not contain right JSON encoding: " + strResponse,
         strResponse.contains("\"subject\":{poffL:[{offL:[{oGUID:\"7"));
@@ -272,8 +281,10 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"id", "subject,links"},
                     "wt",
                     new String[] {"json"})));
-    req.setResponseParser(JSON_NOOP_RESPONSE_PARSER);
-    strResponse = (String) CLIENT.request(req, "collection1").get("response");
+    req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
+    rsp = CLIENT.request(req, "collection1");
+    strResponse = getOutputFromInputStreamResponseParserResponse(rsp);
+
     assertTrue(
         "response does not contain right JSON encoding: " + strResponse,
         strResponse.contains("subject\":\""));
@@ -282,7 +293,8 @@ public class TestRawTransformer extends SolrCloudTestCase {
         strResponse.contains("\"links\":[\""));
   }
 
-  private static final NoOpResponseParser XML_NOOP_RESPONSE_PARSER = new NoOpResponseParser("xml");
-  private static final NoOpResponseParser JSON_NOOP_RESPONSE_PARSER =
-      new NoOpResponseParser("json");
+  private static final InputStreamResponseParser XML_STREAM_RESPONSE_PARSER =
+      new InputStreamResponseParser("xml");
+  private static final InputStreamResponseParser JSON_STREAM_RESPONSE_PARSER =
+      new InputStreamResponseParser("json");
 }
