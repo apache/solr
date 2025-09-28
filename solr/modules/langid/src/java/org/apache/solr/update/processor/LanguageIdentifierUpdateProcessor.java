@@ -113,7 +113,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       threshold = params.getDouble(THRESHOLD, DOCID_THRESHOLD_DEFAULT);
 
       HashSet<String> strings = langAllowlist;
-      for (String s : params.get(LANG_ALLOWLIST).split(",")) {
+      for (String s : params.get(LANG_ALLOWLIST, "").split(",")) {
         String lang = s.trim();
         if (!lang.isEmpty()) {
           strings.add(lang);
