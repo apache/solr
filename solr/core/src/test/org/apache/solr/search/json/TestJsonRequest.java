@@ -49,7 +49,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
+    systemSetPropertyEnableUrlAllowList(false);
     System.setProperty("solr.requests.streaming.body.enabled", "true");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
@@ -69,7 +69,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @Test
