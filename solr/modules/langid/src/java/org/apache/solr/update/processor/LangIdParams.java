@@ -31,10 +31,7 @@ public interface LangIdParams {
   String THRESHOLD = LANGUAGE_ID + ".threshold"; // Detection threshold
   String ENFORCE_SCHEMA =
       LANGUAGE_ID + ".enforceSchema"; // Enforces that output fields exist in schema
-
-  @Deprecated(since = "9.0.0")
-  String LANG_WHITELIST = LANGUAGE_ID + ".whitelist"; // Old property name for allowed languages
-
+  
   String LANG_ALLOWLIST = LANGUAGE_ID + ".allowlist"; // Allowed languages
   String LCMAP = LANGUAGE_ID + ".lcmap"; // Maps detected langcode to other value
   String MAP_ENABLE = LANGUAGE_ID + ".map"; // Turns on or off the field mapping
