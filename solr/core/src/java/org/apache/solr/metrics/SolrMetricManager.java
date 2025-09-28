@@ -98,7 +98,6 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.metrics.otel.MetricExporterFactory;
-import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -889,12 +888,11 @@ public class SolrMetricManager {
    */
   // NOCOMMIT: Remove this
   public void removeRegistry(String registry) {
-    meterProviderAndReaders.computeIfPresent(
-        enforcePrefix(registry),
-        (key, meterAndReader) -> {
-          IOUtils.closeQuietly(meterAndReader.sdkMeterProvider());
-          return null;
-        });
+    String key = enforcePrefix(registry);
+    MeterProviderAndReaders mpr = meterProviderAndReaders.remove(key);
+    if (mpr != null) {
+      IOUtils.closeQuietly(mpr.sdkMeterProvider());
+    }
   }
 
   /** Close all meter providers and their associated metric readers. */
@@ -1769,7 +1767,7 @@ public class SolrMetricManager {
   }
 
   private MetricExporter loadMetricExporter(SolrResourceLoader loader) {
-    if (!OTLP_EXPORTER_ENABLED) return new NoopMetricExporter();
+    if (!OTLP_EXPORTER_ENABLED) return null;
     try {
       MetricExporterFactory exporterFactory =
           loader.newInstance(
@@ -1778,7 +1776,7 @@ public class SolrMetricManager {
     } catch (SolrException e) {
       log.error(
           "Could not load OTLP exporter. Check that the Open Telemetry module is enabled.", e);
-      return new NoopMetricExporter();
+      return null;
     }
   }
 

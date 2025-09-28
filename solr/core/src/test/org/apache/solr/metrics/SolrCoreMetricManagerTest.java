@@ -79,7 +79,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random);
     SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
     try {
-      coreMetricManager.registerMetricProducer(scope, producer);
+      coreMetricManager.registerMetricProducer(producer, Attributes.empty());
       assertNotNull(scope);
       assertNotNull(category);
       assertRegistered(scope, metrics, coreMetricManager);
@@ -107,7 +107,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
         continue;
       }
       SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
-      coreMetricManager.registerMetricProducer(scope, producer);
+      coreMetricManager.registerMetricProducer(producer, Attributes.empty());
       registered.putAll(metrics);
       assertRegistered(scope, registered, coreMetricManager);
     }
@@ -189,8 +189,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     Map<String, Long> initialMetrics =
         SolrMetricTestUtils.getRandomPrometheusMetricsWithReplacements(random, new HashMap<>());
     var initialProducer = new SolrMetricTestUtils.TestSolrMetricProducer(coreName, initialMetrics);
-    coreMetricManager.registerMetricProducer(
-        SolrMetricTestUtils.getRandomScope(random, true), initialProducer);
+    coreMetricManager.registerMetricProducer(initialProducer, Attributes.empty());
 
     var labels = SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore()).build();
 

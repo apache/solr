@@ -1569,6 +1569,8 @@ public class CoreContainer {
       if (registerInZk) {
         zkSys.registerInZk(core, false, skipRecovery);
       }
+      // Register core metrics after closing the old core
+      core.getCoreMetricManager().reregisterCoreMetrics();
       return old;
     }
   }

@@ -1315,7 +1315,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       newUpdateHandler = createUpdateHandler(updateHandlerClass, updateHandler);
     }
     if (newUpdateHandler != null) {
-      coreMetricManager.registerMetricProducer("updateHandler", newUpdateHandler);
+      coreMetricManager.registerMetricProducer(newUpdateHandler, Attributes.empty());
     }
     infoRegistry.put("updateHandler", newUpdateHandler);
     return newUpdateHandler;
@@ -3255,7 +3255,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
       if (registry != null) registry.put(info.name, o);
       if (o instanceof SolrMetricProducer) {
         coreMetricManager.registerMetricProducer(
-            type.getSimpleName() + "." + info.name, (SolrMetricProducer) o);
+            (SolrMetricProducer) o,
+            Attributes.of(PLUGIN_NAME_ATTR, type.getSimpleName() + "." + info.name));
       }
       if (o instanceof CircuitBreaker) {
         if (o instanceof SolrCoreAware) {
@@ -3273,7 +3274,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   public void initDefaultPlugin(Object plugin, Class<?> type) {
     if (plugin instanceof SolrMetricProducer) {
       coreMetricManager.registerMetricProducer(
-          type.getSimpleName() + ".default", (SolrMetricProducer) plugin);
+          (SolrMetricProducer) plugin,
+          Attributes.of(PLUGIN_NAME_ATTR, type.getSimpleName() + ".default"));
     }
   }
 
@@ -3583,7 +3585,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
     infoRegistry.put(name, solrInfoBean);
 
     if (solrInfoBean != null) {
-      coreMetricManager.registerMetricProducer(name, solrInfoBean);
+      Attributes attributes =
+          (name.startsWith("/")) ? Attributes.of(HANDLER_ATTR, name) : Attributes.empty();
+      coreMetricManager.registerMetricProducer(solrInfoBean, attributes);
     }
   }
 

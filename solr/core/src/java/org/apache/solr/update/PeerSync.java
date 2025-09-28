@@ -134,8 +134,7 @@ public class PeerSync implements SolrMetricProducer {
     shardHandler = shardHandlerFactory.getShardHandler();
     this.updater = new Updater(msg(), core);
 
-    core.getCoreMetricManager()
-        .registerMetricProducer(SolrInfoBean.Category.REPLICATION.toString(), this);
+    core.getCoreMetricManager().registerMetricProducer(this, Attributes.empty());
   }
 
   public static final String METRIC_SCOPE = "peerSync";

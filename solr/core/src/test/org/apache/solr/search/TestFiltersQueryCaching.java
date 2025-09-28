@@ -79,7 +79,9 @@ public class TestFiltersQueryCaching extends SolrTestCaseJ4 {
     return (long) getFilterCacheHits(core).getValue();
   }
 
+  // NOCOMMIT: Core reload causing a flaky test for cache metrics
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testRecursiveFilter() throws Exception {
     final String termQuery = "{!term f=field_s v='d0'}";
     final String filterTermQuery = "filter(" + termQuery + ")";
