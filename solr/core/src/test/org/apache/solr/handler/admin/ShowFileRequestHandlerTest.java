@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
@@ -145,12 +146,13 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     assertEquals("application/xml", content.getContentType());
   }
 
-  public void testIllegalContentType() {
+  public void testIllegalContentType() throws SolrServerException, IOException {
     SolrClient client = getSolrClient();
     var request =
         createShowFileRequest(params("file", "managed-schema", "contentType", "not/known"));
-    request.setResponseParser(new NoOpResponseParser("xml"));
-    expectThrows(SolrException.class, () -> client.request(request));
+    request.setResponseParser(new InputStreamResponseParser("xml"));
+    NamedList<Object> response = client.request(request);
+    assertEquals(response.get("responseStatus"), 404);
   }
 
   public void testAbsoluteFilename() {
