@@ -145,18 +145,8 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
-      assertNotNull("null response from server", res);
+      String output = getOutputFromInputStreamResponseParserResponse(res);
 
-      // Create an InputStreamResponse to properly handle the stream
-      InputStreamResponse response = new InputStreamResponse();
-      response.setResponse(res);
-
-      String output;
-      try (InputStream responseStream = response.getResponseStreamIfSuccessful()) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        responseStream.transferTo(baos);
-        output = baos.toString(StandardCharsets.UTF_8);
-      }
       assertEquals(
           expectedCore,
           output
