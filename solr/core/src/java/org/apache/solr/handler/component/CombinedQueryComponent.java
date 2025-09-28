@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -265,6 +266,13 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
   @Override
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
     SortSpec ss = rb.getSortSpec();
+    Sort sort = ss.getSort();
+
+    SortField[] sortFields;
+    if (sort != null) sortFields = sort.getSort();
+    else {
+      sortFields = new SortField[] {SortField.FIELD_SCORE};
+    }
 
     Set<String> scoreDependentFields;
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0) {
@@ -298,7 +306,8 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       int failedShardCount = 0;
       long queryNumFound = 0;
       long queryApproximateTotalHits = 0;
-      Map<Object, ShardDoc> uniqueDoc = new HashMap<>();
+      final ShardDocQueue queuePerQuery =
+          newShardDocQueue(rb.req.getSearcher(), sortFields, ss.getOffset() + ss.getCount());
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
         NamedList<?> responseHeader;
@@ -392,13 +401,14 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
             shardDoc.scoreDependentFields = doc.getSubsetOfFields(scoreDependentFields);
           }
           shardDoc.sortFieldValues = unmarshalledSortFieldValues;
-          ShardDoc prevShard = uniqueDoc.put(id, shardDoc);
-          if (prevShard != null) {
-            queryNumFound--;
+          if (!queuePerQuery.push(shardDoc)) {
+            numFound--;
           }
         } // end for-each-doc-in-response
       } // end for-each-response
-      shardDocMap.put(queriesToCombineKeys[queryIndex], uniqueDoc.values().stream().toList());
+      List<ShardDoc> shardDocsPerQuery = new ArrayList<>(queuePerQuery.resultIds(0).values());
+      shardDocsPerQuery.sort(Comparator.comparingInt(a -> a.positionInResponse));
+      shardDocMap.put(queriesToCombineKeys[queryIndex], shardDocsPerQuery);
       numFound = max(numFound, queryNumFound);
       approximateTotalHits = max(approximateTotalHits, queryApproximateTotalHits);
     }
@@ -410,7 +420,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     responseDocs.setNumFoundExact(hitCountIsExact);
     responseDocs.setStart(ss.getOffset());
 
-    rb.resultIds = createShardResult(rb, shardDocMap, responseDocs);
+    rb.resultIds = createShardResult(rb, shardDocMap, responseDocs, sortFields);
     rb.setResponseDocs(responseDocs);
 
     populateNextCursorMarkFromMergedShards(rb);
@@ -547,11 +557,15 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
    * @param shardDocMap A map from shard addresses to the list of documents returned by each shard.
    * @param responseDocs The final response document list, which will be populated with null
    *     placeholders and have its max score set.
+   * @param sortFields An array of field for sorting to be applied.
    * @return A map from document IDs to the corresponding ShardDoc objects for the documents in the
    *     final sorted page of results.
    */
   protected Map<Object, ShardDoc> createShardResult(
-      ResponseBuilder rb, Map<String, List<ShardDoc>> shardDocMap, SolrDocumentList responseDocs) {
+      ResponseBuilder rb,
+      Map<String, List<ShardDoc>> shardDocMap,
+      SolrDocumentList responseDocs,
+      SortField[] sortFields) {
     String algorithm =
         rb.req.getParams().get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER);
     QueryAndResponseCombiner combinerStrategy =
@@ -570,13 +584,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
             shardDocs.forEach(shardDoc -> shardDocIdMap.put(shardDoc.id.toString(), shardDoc)));
     Map<Object, ShardDoc> resultIds = new HashMap<>();
     float maxScore = 0.0f;
-    Sort sort = rb.getSortSpec().getSort();
-    SortField[] sortFields;
-    if (sort != null) {
-      sortFields = sort.getSort();
-    } else {
-      sortFields = new SortField[] {SortField.FIELD_SCORE};
-    }
     final ShardFieldSortedHitQueue queue =
         new ShardFieldSortedHitQueue(
             sortFields,
