@@ -506,13 +506,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * When using a InputStreamResponseParser, the raw output is available under the key {@InputStreamResponseParser.STREAM_KEY}.
+   * When using a InputStreamResponseParser, the raw output is available under the key
+   * {@InputStreamResponseParser.STREAM_KEY}.
    */
-  public static String getOutputFromInputStreamResponseParserResponse(NamedList<Object> response) throws IOException {
+  public static String getOutputFromInputStreamResponseParserResponse(NamedList<Object> response)
+      throws IOException {
     assertNotNull("null response from server", response);
     String output;
     // Would be nice to validate the STREAM_KEY value is present
-    try (InputStream responseStream = (InputStream) response.get(InputStreamResponseParser.STREAM_KEY) ) {
+    try (InputStream responseStream =
+        (InputStream) response.get(InputStreamResponseParser.STREAM_KEY)) {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       responseStream.transferTo(baos);
       output = baos.toString(StandardCharsets.UTF_8);
