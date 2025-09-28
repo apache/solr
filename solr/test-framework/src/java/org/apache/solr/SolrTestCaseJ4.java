@@ -506,8 +506,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * When using a InputStreamResponseParser, the raw output is available under the key
-   * {@InputStreamResponseParser.STREAM_KEY}.
+   * When using a InputStreamResponseParser, the raw output is available in the response under the
+   * key STREAM_KEY.
    */
   public static String getOutputFromInputStreamResponseParserResponse(NamedList<Object> response)
       throws IOException {
