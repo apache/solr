@@ -25,7 +25,9 @@ import static org.hamcrest.core.StringContains.containsString;
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
@@ -87,6 +89,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
@@ -106,6 +109,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
@@ -499,6 +503,21 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       e = e.getCause();
     }
     return e;
+  }
+
+  /**
+   * When using a InputStreamResponseParser, the raw output is available under the key {@InputStreamResponseParser.STREAM_KEY}.
+   */
+  public static String getOutputFromInputStreamResponseParserResponse(NamedList<Object> response) throws IOException {
+    assertNotNull("null response from server", response);
+    String output;
+    // Would be nice to validate the STREAM_KEY value is present
+    try (InputStream responseStream = (InputStream) response.get(InputStreamResponseParser.STREAM_KEY) ) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      responseStream.transferTo(baos);
+      output = baos.toString(StandardCharsets.UTF_8);
+    }
+    return output;
   }
 
   @Override

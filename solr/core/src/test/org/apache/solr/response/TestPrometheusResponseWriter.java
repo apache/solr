@@ -32,9 +32,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.InputStreamResponse;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ExternalPaths;
@@ -83,12 +87,11 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("wt", "prometheus");
     var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
-    req.setResponseParser(new NoOpResponseParser("prometheus"));
+    req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
-      assertNotNull("null response from server", res);
-      String output = (String) res.get("response");
+      String output = getOutputFromInputStreamResponseParserResponse(res);
 
       Set<String> seenTypeInfo = new HashSet<>();
 
@@ -138,12 +141,22 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("wt", "prometheus");
     var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
-    req.setResponseParser(new NoOpResponseParser("prometheus"));
+    req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
-      String output = (String) res.get("response");
+
+      // Create an InputStreamResponse to properly handle the stream
+      InputStreamResponse response = new InputStreamResponse();
+      response.setResponse(res);
+
+      String output;
+      try (InputStream responseStream = response.getResponseStreamIfSuccessful()) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        responseStream.transferTo(baos);
+        output = baos.toString(StandardCharsets.UTF_8);
+      }
       assertEquals(
           expectedCore,
           output
