@@ -18,9 +18,9 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
@@ -40,7 +38,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Pair;
@@ -138,74 +135,95 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       String node, Collection<String> keys) {
     Map<String, Map<String, List<Replica>>> result =
         nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, o -> new HashMap<>());
-    if (!keys.isEmpty()) {
-      Map<String, Pair<String, Replica>> metricsKeyVsTagReplica = new HashMap<>();
-      forEachReplica(
-          result,
-          r -> {
-            for (String key : keys) {
-              if (r.getProperties().containsKey(key)) continue; // it's already collected
-              String perReplicaMetricsKey =
-                  "solr.core."
-                      + r.getCollection()
-                      + "."
-                      + r.getShard()
-                      + "."
-                      + Utils.parseMetricsReplicaName(r.getCollection(), r.getCoreName())
-                      + ":";
-              String perReplicaValue = key;
-              perReplicaMetricsKey += perReplicaValue;
-              metricsKeyVsTagReplica.put(perReplicaMetricsKey, new Pair<>(key, r));
-            }
-          });
 
-      if (!metricsKeyVsTagReplica.isEmpty()) {
-        Map<String, Object> tagValues = fetchReplicaMetrics(node, metricsKeyVsTagReplica);
-        tagValues.forEach(
-            (k, o) -> {
-              Pair<String, Replica> p = metricsKeyVsTagReplica.get(k);
-              if (p.second() != null) p.second().getProperties().put(p.first(), o);
-            });
+    if (keys.isEmpty()) {
+      return result;
+    }
+
+    // Build mapping from core name to (replica, metric) {coreName: <Replica, Prometheus Metric
+    // Name>}
+    Map<String, List<Pair<Replica, String>>> coreToReplicaProps = new HashMap<>();
+    Set<String> requestedMetricNames = new HashSet<>();
+
+    forEachReplica(
+        result,
+        replica -> {
+          for (String key : keys) {
+            if (replica.getProperties().containsKey(key)) continue;
+
+            // Build core name as the key to the replica and the metric it needs
+            String coreName =
+                replica.getCollection()
+                    + "_"
+                    + replica.getShard()
+                    + "_"
+                    + Utils.parseMetricsReplicaName(replica.getCollection(), replica.getCoreName());
+
+            coreToReplicaProps
+                .computeIfAbsent(coreName, k -> new ArrayList<>())
+                .add(new Pair<>(replica, key));
+            requestedMetricNames.add(key);
+          }
+        });
+
+    if (coreToReplicaProps.isEmpty()) {
+      return result;
+    }
+
+    RemoteCallCtx ctx = new RemoteCallCtx(node, solrClient);
+    String[] lines = fetchBatchedMetric(node, ctx, requestedMetricNames);
+
+    // Parse through prometheus metrics and map the metric with its corresponding replica properties
+    for (String line : lines) {
+      if (NodeValueFetcher.shouldSkipPrometheusLine(line)) continue;
+
+      String prometheusMetricName = NodeValueFetcher.extractMetricNameFromLine(line);
+
+      // Extract core name from prometheus line and the core label
+      String coreParam = NodeValueFetcher.extractLabelValueFromLine(line, "core");
+      if (coreParam == null) continue;
+
+      // Find the matching core and set the metric value to its corresponding replica properties
+      List<Pair<Replica, String>> replicaProps = coreToReplicaProps.get(coreParam);
+      if (replicaProps != null) {
+        Long value = NodeValueFetcher.Metrics.extractPrometheusValue(line);
+        replicaProps.stream()
+            .filter(pair -> pair.second().equals(prometheusMetricName))
+            .forEach(pair -> pair.first().getProperties().put(pair.second(), value));
       }
     }
+
     return result;
   }
 
-  protected Map<String, Object> fetchReplicaMetrics(
-      String node, Map<String, Pair<String, Replica>> metricsKeyVsTagReplica) {
-    Map<String, Set<Object>> collect =
-        metricsKeyVsTagReplica.entrySet().stream()
-            .collect(Collectors.toMap(e -> e.getKey(), e -> Set.of(e.getKey())));
-    RemoteCallCtx ctx = new RemoteCallCtx(null, solrClient);
-    fetchReplicaMetrics(node, ctx, collect);
-    return ctx.tags;
-  }
+  static String[] fetchBatchedMetric(String solrNode, RemoteCallCtx ctx, Set<String> metricNames) {
+    if (!ctx.isNodeAlive(solrNode))
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Solr node is not healthy. Cannot request metrics: " + solrNode);
 
-  // NOCOMMIT: We need to change the /admin/metrics call here to work with
-  // Prometheus/OTEL telemetry
-  static void fetchReplicaMetrics(
-      String solrNode, RemoteCallCtx ctx, Map<String, Set<Object>> metricsKeyVsTag) {
-    if (!ctx.isNodeAlive(solrNode)) return;
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("key", metricsKeyVsTag.keySet().toArray(new String[0]));
-    try {
-      SimpleSolrResponse rsp = ctx.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
-      metricsKeyVsTag.forEach(
-          (key, tags) -> {
-            Object v =
-                Utils.getObjectByPath(rsp.getResponse(), true, Arrays.asList("metrics", key));
-            for (Object tag : tags) {
-              if (tag instanceof Function) {
-                @SuppressWarnings({"unchecked"})
-                Pair<String, Object> p = (Pair<String, Object>) ((Function) tag).apply(v);
-                ctx.tags.put(p.first(), p.second());
-              } else {
-                if (v != null) ctx.tags.put(tag.toString(), v);
-              }
-            }
-          });
+    params.add("wt", "prometheus");
+    params.add("name", String.join(",", metricNames));
+
+    var req =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params);
+    req.setResponseParser(new InputStreamResponseParser("prometheus"));
+
+    String baseUrl =
+        ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
+    try (InputStream in =
+        (InputStream)
+            ctx.cloudSolrClient
+                .getHttpClient()
+                .requestWithBaseUrl(baseUrl, req::process)
+                .getResponse()
+                .get("stream")) {
+      return NodeValueFetcher.Metrics.parsePrometheusOutput(in);
     } catch (Exception e) {
-      log.warn("could not get tags from node {}", solrNode, e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Unable to read prometheus metrics output", e);
     }
   }
 

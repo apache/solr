@@ -29,7 +29,6 @@ import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 import org.apache.solr.cluster.placement.impl.ReplicaMetricImpl;
 import org.junit.Test;
 
@@ -85,17 +84,17 @@ public class BuildersTest extends SolrTestCaseJ4 {
     AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
     attributeFetcher
         .fetchFrom(cluster.getLiveNodes())
-        .requestNodeMetric(NodeMetricImpl.NUM_CORES)
-        .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB)
-        .requestNodeMetric(NodeMetricImpl.TOTAL_DISK_GB)
+        .requestNodeMetric(NodeMetric.NUM_CORES)
+        .requestNodeMetric(NodeMetric.FREE_DISK_GB)
+        .requestNodeMetric(NodeMetric.TOTAL_DISK_GB)
         .requestCollectionMetrics(collection, Set.of(ReplicaMetricImpl.INDEX_SIZE_GB));
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
     for (Node node : cluster.getLiveNodes()) {
-      Optional<Integer> coreCount = attributeValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES);
+      Optional<Integer> coreCount = attributeValues.getNodeMetric(node, NodeMetric.NUM_CORES);
       assertTrue("coreCount present", coreCount.isPresent());
-      Optional<Double> diskOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB);
+      Optional<Double> diskOpt = attributeValues.getNodeMetric(node, NodeMetric.FREE_DISK_GB);
       assertTrue("freeDisk", diskOpt.isPresent());
-      diskOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.TOTAL_DISK_GB);
+      diskOpt = attributeValues.getNodeMetric(node, NodeMetric.TOTAL_DISK_GB);
       assertTrue("totalDisk", diskOpt.isPresent());
     }
     Optional<CollectionMetrics> collectionMetricsOpt =

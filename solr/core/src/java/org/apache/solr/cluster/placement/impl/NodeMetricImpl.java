@@ -17,70 +17,31 @@
 
 package org.apache.solr.cluster.placement.impl;
 
-import java.util.Objects;
 import java.util.function.Function;
-import org.apache.solr.client.solrj.impl.NodeValueFetcher;
 import org.apache.solr.cluster.placement.NodeMetric;
 
-/**
- * Node metric identifier, corresponding to a node-level metric registry and the internal metric
- * name.
- */
+/** Node metric identifier, corresponding to a node-level metric name with labels */
 public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
 
-  /** Total disk space in GB. */
-  public static final NodeMetricImpl<Double> TOTAL_DISK_GB =
-      new NodeMetricImpl<>(
-          "totalDisk", Registry.SOLR_NODE, "CONTAINER.fs.totalSpace", BYTES_TO_GB_CONVERTER);
+  public NodeMetricImpl(String name, String internalName) {
+    this(name, internalName, null);
+  }
 
-  /** Free (usable) disk space in GB. */
-  public static final NodeMetricImpl<Double> FREE_DISK_GB =
-      new NodeMetricImpl<>(
-          "freeDisk", Registry.SOLR_NODE, "CONTAINER.fs.usableSpace", BYTES_TO_GB_CONVERTER);
-
-  /** Number of all cores. */
-  public static final NodeMetricImpl<Integer> NUM_CORES =
-      new NodeMetricImpl<>(NodeValueFetcher.CORES);
-
-  public static final NodeMetricImpl<Double> HEAP_USAGE =
-      new NodeMetricImpl<>(NodeValueFetcher.Tags.HEAPUSAGE.tagName);
-
-  /** System load average. */
-  public static final NodeMetricImpl<Double> SYSLOAD_AVG =
-      new NodeMetricImpl<>(
-          NodeValueFetcher.Tags.SYSLOADAVG.tagName,
-          Registry.SOLR_JVM,
-          NodeValueFetcher.Tags.SYSLOADAVG.prefix);
-
-  /** Number of available processors. */
-  public static final NodeMetricImpl<Integer> AVAILABLE_PROCESSORS =
-      new NodeMetricImpl<>("availableProcessors", Registry.SOLR_JVM, "os.availableProcessors");
-
-  private final Registry registry;
-
-  public NodeMetricImpl(String name, Registry registry, String internalName) {
-    this(name, registry, internalName, null);
+  public NodeMetricImpl(String name, String internalName, Function<Object, T> converter) {
+    super(name, internalName, converter);
   }
 
   public NodeMetricImpl(
-      String name, Registry registry, String internalName, Function<Object, T> converter) {
-    super(name, internalName, converter);
-    Objects.requireNonNull(registry);
-    this.registry = registry;
+      String name,
+      String internalName,
+      String labelKey,
+      String labelValue,
+      Function<Object, T> converter) {
+    super(name, internalName, converter, labelKey, labelValue);
   }
 
   public NodeMetricImpl(String key) {
-    this(key, null);
-  }
-
-  public NodeMetricImpl(String key, Function<Object, T> converter) {
-    super(key, key, converter);
-    this.registry = Registry.UNSPECIFIED;
-  }
-
-  @Override
-  public Registry getRegistry() {
-    return registry;
+    super(key, key);
   }
 
   @Override
@@ -88,37 +49,19 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof NodeMetricImpl<?> that)) {
+    if (!(o instanceof NodeMetricImpl<?>)) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
-    return registry == that.registry;
+    return super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), registry);
+    return super.hashCode();
   }
 
   @Override
   public String toString() {
-    if (registry != null) {
-      return "NodeMetricImpl{"
-          + "name='"
-          + name
-          + '\''
-          + ", internalName='"
-          + internalName
-          + '\''
-          + ", converter="
-          + converter
-          + ", registry="
-          + registry
-          + '}';
-    } else {
-      return "NodeMetricImpl{key=" + internalName + "}";
-    }
+    return "NodeMetricImpl{key=" + getInternalName() + "," + labelKey + "=" + labelValue + "}";
   }
 }

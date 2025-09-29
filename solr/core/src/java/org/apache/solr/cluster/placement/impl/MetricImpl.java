@@ -64,6 +64,8 @@ public abstract class MetricImpl<T> implements Metric<T> {
   protected final String name;
   protected final String internalName;
   protected final Function<Object, T> converter;
+  protected final String labelKey;
+  protected final String labelValue;
 
   /**
    * Create a metric attribute.
@@ -72,7 +74,7 @@ public abstract class MetricImpl<T> implements Metric<T> {
    * @param internalName internal name of a Solr metric.
    */
   public MetricImpl(String name, String internalName) {
-    this(name, internalName, null);
+    this(name, internalName, null, null, null);
   }
 
   /**
@@ -84,10 +86,31 @@ public abstract class MetricImpl<T> implements Metric<T> {
    *     used.
    */
   public MetricImpl(String name, String internalName, Function<Object, T> converter) {
+    this(name, internalName, converter, null, null);
+  }
+
+  /**
+   * Create a metric attribute with labels.
+   *
+   * @param name short-hand name that identifies this attribute.
+   * @param internalName internal name of a Solr metric.
+   * @param converter optional raw value converter. If null then {@link #IDENTITY_CONVERTER} will be
+   *     used.
+   * @param labelKey optional label key for Prometheus format labeled metrics.
+   * @param labelValue optional label value for Prometheus format labeled metrics.
+   */
+  public MetricImpl(
+      String name,
+      String internalName,
+      Function<Object, T> converter,
+      String labelKey,
+      String labelValue) {
     Objects.requireNonNull(name);
     Objects.requireNonNull(internalName);
     this.name = name;
     this.internalName = internalName;
+    this.labelKey = labelKey;
+    this.labelValue = labelValue;
     if (converter == null) {
       this.converter = IDENTITY_CONVERTER;
     } else {
@@ -106,6 +129,21 @@ public abstract class MetricImpl<T> implements Metric<T> {
   }
 
   @Override
+  public String getLabelKey() {
+    return labelKey;
+  }
+
+  @Override
+  public String getLabelValue() {
+    return labelValue;
+  }
+
+  @Override
+  public boolean hasLabels() {
+    return labelKey != null && labelValue != null;
+  }
+
+  @Override
   public T convert(Object value) {
     return converter.apply(value);
   }
@@ -120,22 +158,27 @@ public abstract class MetricImpl<T> implements Metric<T> {
     }
     return name.equals(that.getName())
         && internalName.equals(that.getInternalName())
-        && converter.equals(that.converter);
+        && converter.equals(that.converter)
+        && Objects.equals(labelKey, that.labelKey)
+        && Objects.equals(labelValue, that.labelValue);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, internalName, converter);
+    return Objects.hash(name, internalName, converter, labelKey, labelValue);
   }
 
   @Override
   public String toString() {
-    return getClass().getSimpleName()
-        + "{"
-        + "name="
-        + name
-        + ", internalName="
-        + internalName
-        + "}";
+    String result =
+        getClass().getSimpleName() + "{" + "name=" + name + ", internalName=" + internalName;
+    if (labelKey != null) {
+      result += ", labelKey='" + labelKey + '\'';
+    }
+    if (labelValue != null) {
+      result += ", labelValue='" + labelValue + '\'';
+    }
+    result += "}";
+    return result;
   }
 }

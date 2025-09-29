@@ -35,7 +35,6 @@ import org.apache.solr.cluster.placement.PlacementPlanFactory;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.impl.AttributeValuesImpl;
-import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 
 public class StubShardAffinityPlacementFactory extends AffinityPlacementFactory {
 
@@ -57,12 +56,12 @@ public class StubShardAffinityPlacementFactory extends AffinityPlacementFactory 
         final Map<String, CollectionMetrics> collectionMetrics = new HashMap<>();
 
         for (Node node : placementContext.getCluster().getLiveNodes()) {
-          metrics.computeIfAbsent(NodeMetricImpl.NUM_CORES, n -> new HashMap<>()).put(node, 1);
+          metrics.computeIfAbsent(NodeMetric.NUM_CORES, n -> new HashMap<>()).put(node, 1);
           metrics
-              .computeIfAbsent(NodeMetricImpl.FREE_DISK_GB, n -> new HashMap<>())
+              .computeIfAbsent(NodeMetric.FREE_DISK_GB, n -> new HashMap<>())
               .put(node, (double) 10);
           metrics
-              .computeIfAbsent(NodeMetricImpl.TOTAL_DISK_GB, n -> new HashMap<>())
+              .computeIfAbsent(NodeMetric.TOTAL_DISK_GB, n -> new HashMap<>())
               .put(node, (double) 100);
         }
         final PlacementContext wrappingContext;
