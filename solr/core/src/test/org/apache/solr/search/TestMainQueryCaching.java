@@ -24,7 +24,6 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -36,8 +35,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Verify caching interactions between main query and filterCache */
-// NOCOMMIT: Core reload causing a flaky test for cache metrics
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
 public class TestMainQueryCaching extends SolrTestCaseJ4 {
 
   private static final int MOST_DOCS = 100;

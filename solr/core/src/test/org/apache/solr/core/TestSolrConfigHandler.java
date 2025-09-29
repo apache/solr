@@ -53,7 +53,6 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
-import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.After;
@@ -1043,33 +1042,24 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   public void testSetPropertyEnableAndDisableCache() throws Exception {
     RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
+    // Enabling Cache
+    String payload = "{'set-property' : { 'query.documentCache.enabled': true} }";
+    runConfigCommand(restTestHarness, "/config", payload);
+    restTestHarness.setServerProvider(() -> getBaseUrl());
 
-    // We need a reference to the core because a reload from /config call closes the whole core thus
-    // closing metric registries
-    try (SolrCore core = solrClientTestRule.getCoreContainer().getCore("collection1")) {
-      // Enabling Cache
-      String payload = "{'set-property' : { 'query.documentCache.enabled': true} }";
-      runConfigCommand(restTestHarness, "/config", payload);
-      restTestHarness.setServerProvider(() -> getBaseUrl());
-      assertNotNull(
-          SolrMetricTestUtils.getCacheSearcherLookups(
-              core, SolrMetricTestUtils.DOCUMENT_CACHE, "hit"));
-    }
+    String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
+    assertTrue(prometheusMetrics.contains("name=\"documentCache\""));
 
-    // Reload created a new core, so we need a new reference again to not close the core and metrics
-    try (SolrCore core = solrClientTestRule.getCoreContainer().getCore("collection1")) {
-      // Disabling Cache
-      String payload = "{ 'set-property' : { 'query.documentCache.enabled': false } }";
-      restTestHarness.setServerProvider(oldProvider);
+    // Disabling Cache
+    payload = "{ 'set-property' : { 'query.documentCache.enabled': false } }";
+    restTestHarness.setServerProvider(oldProvider);
 
-      runConfigCommand(restTestHarness, "/config", payload);
-      restTestHarness.setServerProvider(() -> getBaseUrl());
+    runConfigCommand(restTestHarness, "/config", payload);
+    restTestHarness.setServerProvider(() -> getBaseUrl());
 
-      assertNull(
-          SolrMetricTestUtils.getCacheSearcherLookups(
-              core, SolrMetricTestUtils.DOCUMENT_CACHE, "hit"));
+    prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
+    assertFalse(prometheusMetrics.contains("name=\"documentCache\""));
 
-      restTestHarness.setServerProvider(oldProvider);
-    }
+    restTestHarness.setServerProvider(oldProvider);
   }
 }

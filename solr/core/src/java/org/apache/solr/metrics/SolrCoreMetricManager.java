@@ -187,9 +187,6 @@ public class SolrCoreMetricManager implements Closeable {
     }
     metricManager.unregisterGauges(
         solrMetricsContext.getRegistryName(), solrMetricsContext.getTag());
-
-    metricManager.removeRegistry(solrMetricsContext.getRegistryName());
-    registeredProducers.clear();
   }
 
   public SolrMetricsContext getSolrMetricsContext() {
