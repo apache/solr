@@ -386,7 +386,8 @@ public class DenseVectorField extends FloatPointField {
     switch (vectorEncoding) {
       case FLOAT32:
         SolrKnnFloatVectorQuery knnFloatVectorQuery =
-            new SolrKnnFloatVectorQuery(fieldName, vectorBuilder.getFloatVector(), topK, efSearch, filterQuery);
+            new SolrKnnFloatVectorQuery(
+                fieldName, vectorBuilder.getFloatVector(), topK, efSearch, filterQuery);
         if (earlyTermination.isEnabled()) {
           return (earlyTermination.getSaturationThreshold() != null
                   && earlyTermination.getPatience() != null)
@@ -399,7 +400,8 @@ public class DenseVectorField extends FloatPointField {
         return knnFloatVectorQuery;
       case BYTE:
         SolrKnnByteVectorQuery knnByteVectorQuery =
-            new SolrKnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), topK, efSearch, filterQuery);
+            new SolrKnnByteVectorQuery(
+                fieldName, vectorBuilder.getByteVector(), topK, efSearch, filterQuery);
         if (earlyTermination.isEnabled()) {
           return (earlyTermination.getSaturationThreshold() != null
                   && earlyTermination.getPatience() != null)

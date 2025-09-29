@@ -97,6 +97,11 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final int efSearch = localParams.getInt("ef-search", topK * 2);
 
     return denseVectorType.getKnnVectorQuery(
-        schemaField.getName(), vectorToSearch, topK, efSearch, getFilterQuery(), getEarlyTerminationParams());
+        schemaField.getName(),
+        vectorToSearch,
+        topK,
+        efSearch,
+        getFilterQuery(),
+        getEarlyTerminationParams());
   }
 }
