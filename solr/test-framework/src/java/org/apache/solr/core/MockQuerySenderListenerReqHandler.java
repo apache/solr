@@ -42,8 +42,12 @@ public class MockQuerySenderListenerReqHandler extends RequestHandlerBase {
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     super.initializeMetrics(parentContext, attributes, scope);
-    solrMetricsContext.gauge(
-        () -> initCounter.intValue(), true, "initCount", getCategory().toString(), scope);
+    solrMetricsContext.observableLongGauge(
+        "mock_request",
+        "mock",
+        (observableLongMeasurement) -> {
+          observableLongMeasurement.record(initCounter.intValue(), attributes);
+        });
   }
 
   @Override

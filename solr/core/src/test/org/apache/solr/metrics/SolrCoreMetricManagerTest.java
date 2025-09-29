@@ -92,28 +92,6 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRegisterMetricsWithReplacements() {
-    Random random = random();
-
-    Map<String, Counter> registered = new HashMap<>();
-    String scope = SolrMetricTestUtils.getRandomScope(random, true);
-    SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
-
-    int iterations = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
-    for (int i = 0; i < iterations; ++i) {
-      Map<String, Counter> metrics =
-          SolrMetricTestUtils.getRandomMetricsWithReplacements(random, registered);
-      if (metrics.isEmpty()) {
-        continue;
-      }
-      SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
-      coreMetricManager.registerMetricProducer(producer, Attributes.empty());
-      registered.putAll(metrics);
-      assertRegistered(scope, registered, coreMetricManager);
-    }
-  }
-
-  @Test
   public void testLoadReporter() throws Exception {
     Random random = random();
 
