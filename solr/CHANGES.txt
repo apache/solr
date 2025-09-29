@@ -27,6 +27,8 @@ New Features
 
 * SOLR-17814: Add support for PatienceKnnVectorQuery. (Ilaria Petreti via Alessandro Benedetti)
 
+* SOLR-17928: Add efSearch parameter to KNN query. (Puneet Ahuja)
+
 Improvements
 ---------------------
 
