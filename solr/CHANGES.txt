@@ -167,6 +167,8 @@ Deprecation Removals
  for that (which will be removed eventually), and many tests still use it.  Also, there were server metrics
  relating to HTTP client connection pools that no longer exist.  (David Smiley)
 
+* SOLR-17932: Remove transient Solr cores capability. (Eric Pugh, David Smiley)
+
 Dependency Upgrades
 ---------------------
 
