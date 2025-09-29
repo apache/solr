@@ -38,8 +38,6 @@ public class CreateCollectionRequestBody {
 
   @JsonProperty public Integer nrtReplicas;
 
-  @JsonProperty public Boolean waitForFinalState;
-
   @JsonProperty public Boolean perReplicaState;
 
   @JsonProperty public String alias;

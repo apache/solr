@@ -27,7 +27,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.hamcrest.Matchers.containsString;
 
 import java.util.List;
@@ -113,7 +112,6 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
     requestBody.pullReplicas = 789;
     requestBody.createReplicas = true;
     requestBody.nodeSet = List.of("node1", "node2");
-    requestBody.waitForFinalState = true;
     requestBody.followAliases = true;
     requestBody.async = "someAsyncId";
     requestBody.properties = Map.of("propName1", "propVal1", "propName2", "propVal2");
@@ -130,7 +128,6 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
     assertEquals(456, remoteMessage.get(TLOG_REPLICAS));
     assertEquals(789, remoteMessage.get(PULL_REPLICAS));
     assertEquals("node1,node2", remoteMessage.get(CREATE_NODE_SET_PARAM));
-    assertEquals(true, remoteMessage.get(WAIT_FOR_FINAL_STATE));
     assertEquals(true, remoteMessage.get(FOLLOW_ALIASES));
     assertEquals("someAsyncId", remoteMessage.get(ASYNC));
     assertEquals("propVal1", remoteMessage.get("property.propName1"));
@@ -147,7 +144,6 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
     v1Params.set(TLOG_REPLICAS, 456);
     v1Params.set(PULL_REPLICAS, 789);
     v1Params.add(CREATE_NODE_SET_PARAM, "node1,node2");
-    v1Params.set(WAIT_FOR_FINAL_STATE, true);
     v1Params.set(FOLLOW_ALIASES, true);
     v1Params.add(ASYNC, "someAsyncId");
     v1Params.add("property.propName1", "propVal1");
@@ -162,7 +158,6 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
     assertEquals(Integer.valueOf(789), requestBody.pullReplicas);
     assertNull(requestBody.createReplicas);
     assertEquals(List.of("node1", "node2"), requestBody.nodeSet);
-    assertEquals(Boolean.TRUE, requestBody.waitForFinalState);
     assertEquals(Boolean.TRUE, requestBody.followAliases);
     assertEquals("someAsyncId", requestBody.async);
     assertEquals("propVal1", requestBody.properties.get("propName1"));
