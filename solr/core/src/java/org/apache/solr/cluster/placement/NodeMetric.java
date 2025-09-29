@@ -50,7 +50,7 @@ public interface NodeMetric<T> extends Metric<T> {
   NodeMetricImpl<Double> SYSLOAD_AVG =
       new NodeMetricImpl<>("sysLoadAvg", "jvm_system_cpu_utilization_ratio");
 
-  //  /** Number of available processors. */
+  /** Number of available processors. */
   NodeMetricImpl<Integer> AVAILABLE_PROCESSORS =
       new NodeMetricImpl<>("availableProcessors", "jvm_cpu_count");
 }
