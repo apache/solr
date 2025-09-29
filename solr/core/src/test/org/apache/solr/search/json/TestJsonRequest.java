@@ -864,7 +864,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
   }
 
   private static void addDocs(Client client) throws Exception {
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY"), null);
     client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ"), null);
     client.add(sdoc("id", "3"), null);

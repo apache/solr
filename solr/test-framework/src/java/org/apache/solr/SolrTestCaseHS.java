@@ -306,15 +306,14 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
     }
 
-    public void deleteByQuery(String query, ModifiableSolrParams params)
-        throws IOException, SolrServerException {
+    public void deleteByQuery(String query) throws IOException, SolrServerException {
       if (local()) {
-        assertU(delQ(query)); // todo - handle extra params
+        assertU(delQ(query));
         return;
       }
 
       for (SolrClient client : provider.all()) {
-        client.deleteByQuery(query); // todo - handle extra params
+        client.deleteByQuery(query);
       }
     }
   }
