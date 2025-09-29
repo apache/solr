@@ -406,7 +406,7 @@ public class TextToVectorQParserTest extends TestLanguageModelBase {
     String expectedParsedQuery =
         String.format(
             Locale.US,
-            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnFloatVectorQuery:vector[1.0,...][5]})",
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][10]})",
             defaultSaturationThreshold,
             defaultPatience);
 

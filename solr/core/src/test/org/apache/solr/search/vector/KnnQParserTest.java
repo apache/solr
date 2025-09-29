@@ -975,7 +975,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testKnnFloatWithoutExplicitlyEarlyTermination_returnsKnnFloatVectorQuery() {
+  public void testKnnFloatWithoutExplicitlyEarlyTermination_returnsSolrKnnFloatVectorQuery() {
     // It verifies that when no early termination parameters are provided,
     // the default behavior is applied (early termination is disabled), and no special logic is
     // triggered.
@@ -990,11 +990,11 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "debugQuery",
             "true"),
         "//result[@numFound='5']",
-        "//str[@name='parsedquery'][.='KnnFloatVectorQuery(KnnFloatVectorQuery:vector[1.0,...][5])']");
+        "//str[@name='parsedquery'][.='SolrKnnFloatVectorQuery(SolrKnnFloatVectorQuery:vector[1.0,...][10])']");
   }
 
   @Test
-  public void testKnnFloatWithoutEarlyTermination_returnsKnnFloatVectorQuery() {
+  public void testKnnFloatWithoutEarlyTermination_returnsSolrKnnFloatVectorQuery() {
     // It verifies that when early termination is explicitly set to false, no special logic is
     // triggered.
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
@@ -1008,7 +1008,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "debugQuery",
             "true"),
         "//result[@numFound='5']",
-        "//str[@name='parsedquery'][.='KnnFloatVectorQuery(KnnFloatVectorQuery:vector[1.0,...][5])']");
+        "//str[@name='parsedquery'][.='SolrKnnFloatVectorQuery(SolrKnnFloatVectorQuery:vector[1.0,...][10])']");
   }
 
   @Test
@@ -1029,7 +1029,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String expectedParsedQuery =
         String.format(
             Locale.US,
-            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnFloatVectorQuery:vector[1.0,...][10]})",
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][20]})",
             defaultSaturationThreshold,
             defaultPatience);
 
@@ -1068,7 +1068,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String expectedParsedQuery =
         String.format(
             Locale.US,
-            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnFloatVectorQuery:vector[1.0,...][10]})",
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][20]})",
             explicitSaturationThreshold,
             explicitPatience);
 
@@ -1101,7 +1101,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String expectedParsedQuery =
         String.format(
             Locale.US,
-            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnByteVectorQuery:vector_byte_encoding[2,...][5]})",
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnByteVectorQuery:vector_byte_encoding[2,...][10]})",
             explicitSaturationThreshold,
             explicitPatience);
 
@@ -1133,7 +1133,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String expectedParsedQuery =
         String.format(
             Locale.US,
-            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnFloatVectorQuery:vector[1.0,...][10]})",
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][20]})",
             explicitSaturationThreshold,
             explicitPatience);
 

@@ -511,29 +511,40 @@ public class DenseVectorField extends FloatPointField {
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
 
-    final Query knnQuery =
-        switch (vectorEncoding) {
-          case FLOAT32 -> new SolrKnnFloatVectorQuery(
-              fieldName, vectorBuilder.getFloatVector(), topK, efSearch, filterQuery);
-          case BYTE -> new SolrKnnByteVectorQuery(
-              fieldName, vectorBuilder.getByteVector(), topK, efSearch, filterQuery);
-        };
-
-    final boolean seedEnabled = (seedQuery != null);
-    final boolean earlyTerminationEnabled =
-        (earlyTermination != null && earlyTermination.isEnabled());
-
-    int caseNumber = (seedEnabled ? 1 : 0) + (earlyTerminationEnabled ? 2 : 0);
-    return switch (caseNumber) {
-        // 0: no seed, no early termination -> knnQuery
-      default -> knnQuery;
-        // 1: only seed -> Seeded(knnQuery)
-      case 1 -> getSeededQuery(knnQuery, seedQuery);
-        // 2: only early termination -> Patience(knnQuery)
-      case 2 -> getEarlyTerminationQuery(knnQuery, earlyTermination);
-        // 3: seed + early termination -> Patience(Seeded(knnQuery))
-      case 3 -> getEarlyTerminationQuery(getSeededQuery(knnQuery, seedQuery), earlyTermination);
-    };
+    switch (vectorEncoding) {
+      case FLOAT32:
+        SolrKnnFloatVectorQuery knnFloatVectorQuery =
+            new SolrKnnFloatVectorQuery(
+                fieldName, vectorBuilder.getFloatVector(), topK, efSearch, filterQuery);
+        if (earlyTermination.isEnabled()) {
+          return (earlyTermination.getSaturationThreshold() != null
+                  && earlyTermination.getPatience() != null)
+              ? PatienceKnnVectorQuery.fromFloatQuery(
+                  knnFloatVectorQuery,
+                  earlyTermination.getSaturationThreshold(),
+                  earlyTermination.getPatience())
+              : PatienceKnnVectorQuery.fromFloatQuery(knnFloatVectorQuery);
+        }
+        return knnFloatVectorQuery;
+      case BYTE:
+        SolrKnnByteVectorQuery knnByteVectorQuery =
+            new SolrKnnByteVectorQuery(
+                fieldName, vectorBuilder.getByteVector(), topK, efSearch, filterQuery);
+        if (earlyTermination.isEnabled()) {
+          return (earlyTermination.getSaturationThreshold() != null
+                  && earlyTermination.getPatience() != null)
+              ? PatienceKnnVectorQuery.fromByteQuery(
+                  knnByteVectorQuery,
+                  earlyTermination.getSaturationThreshold(),
+                  earlyTermination.getPatience())
+              : PatienceKnnVectorQuery.fromByteQuery(knnByteVectorQuery);
+        }
+        return knnByteVectorQuery;
+      default:
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Unexpected state. Vector Encoding: " + vectorEncoding);
+    }
   }
 
   /**
