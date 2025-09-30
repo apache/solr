@@ -111,7 +111,20 @@ public class TestQueryLimits extends SolrCloudTestCase {
   public void testAdjustShardRequestLimits() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
     String timeAllowed = "500"; // ms
-    ModifiableSolrParams params = params("q", "id:*", "cache", "false", "group", "true", "group.field", "val_i", "timeAllowed", timeAllowed, "sleep", "100");
+    ModifiableSolrParams params =
+        params(
+            "q",
+            "id:*",
+            "cache",
+            "false",
+            "group",
+            "true",
+            "group.field",
+            "val_i",
+            "timeAllowed",
+            timeAllowed,
+            "sleep",
+            "100");
     QueryResponse rsp = solrClient.query(COLLECTION, params);
     assertNull("should have full results: " + rsp.jsonStr(), rsp.getHeader().get("partialResults"));
 
@@ -122,14 +135,24 @@ public class TestQueryLimits extends SolrCloudTestCase {
     // set a high skew to trigger skipping shard requests
     params.set(TimeAllowedLimit.INFLIGHT_PARAM, "50");
     QueryResponse rsp1 = solrClient.query(COLLECTION, params);
-    assertNotNull("should have partial results: " + rsp1.jsonStr(), rsp1.getHeader().get("partialResults"));
-    assertEquals("partialResults should be true", "true", rsp1.getHeader().get("partialResults").toString());
-    assertTrue("partialResultsDetails should contain 'skipped':" + rsp1.jsonStr(), rsp1.getHeader().get("partialResultsDetails").toString().contains("skipped"));
+    assertNotNull(
+        "should have partial results: " + rsp1.jsonStr(), rsp1.getHeader().get("partialResults"));
+    assertEquals(
+        "partialResults should be true", "true", rsp1.getHeader().get("partialResults").toString());
+    assertTrue(
+        "partialResultsDetails should contain 'skipped':" + rsp1.jsonStr(),
+        rsp1.getHeader().get("partialResultsDetails").toString().contains("skipped"));
 
     params.set(CommonParams.PARTIAL_RESULTS, false);
     QueryResponse rsp2 = solrClient.query(COLLECTION, params);
-    assertNotNull("should have partial results: " + rsp2.jsonStr(), rsp2.getHeader().get("partialResults"));
-    assertEquals("partialResults should be omitted: " + rsp2.jsonStr(), "omitted", rsp2.getHeader().get("partialResults").toString());
-    assertTrue("partialResultsDetails should contain 'skipped': " + rsp2.jsonStr(), rsp2.getHeader().get("partialResultsDetails").toString().contains("skipped"));
+    assertNotNull(
+        "should have partial results: " + rsp2.jsonStr(), rsp2.getHeader().get("partialResults"));
+    assertEquals(
+        "partialResults should be omitted: " + rsp2.jsonStr(),
+        "omitted",
+        rsp2.getHeader().get("partialResults").toString());
+    assertTrue(
+        "partialResultsDetails should contain 'skipped': " + rsp2.jsonStr(),
+        rsp2.getHeader().get("partialResultsDetails").toString().contains("skipped"));
   }
 }

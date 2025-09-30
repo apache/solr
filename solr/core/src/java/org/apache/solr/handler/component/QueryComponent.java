@@ -758,7 +758,8 @@ public class QueryComponent extends SearchComponent {
   protected void regularFinishStage(ResponseBuilder rb) {
     // We may not have been able to retrieve all the docs due to an
     // index change.  Remove any null documents.
-    SolrDocumentList responseDocs = rb.getResponseDocs() != null ? rb.getResponseDocs() : new SolrDocumentList();
+    SolrDocumentList responseDocs =
+        rb.getResponseDocs() != null ? rb.getResponseDocs() : new SolrDocumentList();
     for (Iterator<SolrDocument> iter = responseDocs.iterator(); iter.hasNext(); ) {
       if (iter.next() == null) {
         iter.remove();

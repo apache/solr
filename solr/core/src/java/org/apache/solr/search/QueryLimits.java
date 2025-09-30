@@ -203,13 +203,17 @@ public final class QueryLimits implements QueryTimeout {
 
   /**
    * Allow each limit to adjust the shard request parameters if needed. This is useful for
-   * timeAllowed, cpu, or memory limits that need to be propagated to shards with potentially modified values.
+   * timeAllowed, cpu, or memory limits that need to be propagated to shards with potentially
+   * modified values.
    *
-   * @return true if the shard request should be skipped because one or more limits would be tripped after sending, during execution.
-   * @throws QueryLimitsExceededException if {@link #allowPartialResults} is false and limits would have
-   *     been tripped by the shard request.
+   * @return true if the shard request should be skipped because one or more limits would be tripped
+   *     after sending, during execution.
+   * @throws QueryLimitsExceededException if {@link #allowPartialResults} is false and limits would
+   *     have been tripped by the shard request.
    */
-  public boolean adjustShardRequestLimits(ShardRequest sreq, String shard, ModifiableSolrParams params, ResponseBuilder rb) throws QueryLimitsExceededException {
+  public boolean adjustShardRequestLimits(
+      ShardRequest sreq, String shard, ModifiableSolrParams params, ResponseBuilder rb)
+      throws QueryLimitsExceededException {
     boolean result = false;
     for (QueryLimit limit : limits) {
       boolean shouldSkip = limit.adjustShardRequestLimit(sreq, shard, params);
@@ -226,7 +230,8 @@ public final class QueryLimits implements QueryTimeout {
           rsp.addPartialResponseDetail(formatShardLimitExceptionMessage(label, shard, limit));
         }
         if (!allowPartialResults) {
-          throw new QueryLimitsExceededException(formatShardLimitExceptionMessage(label, shard, limit));
+          throw new QueryLimitsExceededException(
+              formatShardLimitExceptionMessage(label, shard, limit));
         }
       }
       result = result || shouldSkip;

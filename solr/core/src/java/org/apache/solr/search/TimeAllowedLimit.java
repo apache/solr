@@ -33,9 +33,11 @@ import org.slf4j.LoggerFactory;
  * <strong><em>local</em></strong> processing of sub-queries in cases where the parent query already
  * has {@code timeAllowed} set. Essentially only one timeAllowed can be specified for any thread
  * executing a query. This is to ensure that subqueries don't escape from the intended limit.
- * <p>Distributed requests will approximately track the original starting point of the parent request.
- * Shard requests may be skipped if the limit would run out shortly after they are sent - this in-flight
- * allowance is determined by {@link #INFLIGHT_PARAM} in milliseconds, with the default value of {@link #DEFAULT_INFLIGHT_MS}.</p>
+ *
+ * <p>Distributed requests will approximately track the original starting point of the parent
+ * request. Shard requests may be skipped if the limit would run out shortly after they are sent -
+ * this in-flight allowance is determined by {@link #INFLIGHT_PARAM} in milliseconds, with the
+ * default value of {@link #DEFAULT_INFLIGHT_MS}.
  */
 public class TimeAllowedLimit implements QueryLimit {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -86,7 +88,8 @@ public class TimeAllowedLimit implements QueryLimit {
   }
 
   @Override
-  public boolean adjustShardRequestLimit(ShardRequest sreq, String shard, ModifiableSolrParams params) {
+  public boolean adjustShardRequestLimit(
+      ShardRequest sreq, String shard, ModifiableSolrParams params) {
     long usedTimeAllowedMs = TimeUnit.NANOSECONDS.toMillis(nanoTime() - timingSince);
     // increase by the expected in-flight time
     usedTimeAllowedMs += reqInflightMs;
