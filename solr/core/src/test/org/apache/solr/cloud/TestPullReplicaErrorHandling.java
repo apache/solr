@@ -73,7 +73,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.zkclienttimeout", "20000");
+    System.setProperty("solr.zookeeper.client.timeout", "20000");
 
     configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
     // Add proxies

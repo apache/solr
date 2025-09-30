@@ -16,11 +16,13 @@
  */
 package org.apache.solr.search;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
@@ -49,6 +51,19 @@ public class TestFiltersQueryCaching extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
+  /** Reload the core to reset non-cumulative cache metrics. */
+  private void reloadAndWait() throws Exception {
+    h.reload();
+
+    // Make sure the new searcher (after reload) is fully initialized. This is to avoid races
+    // between queries submitted by the test and cache metrics warmup of the new searcher.
+    // Another option could be to not reload the core and use cumulative metrics, but the test
+    // would be harder to understand.
+    Future<?>[] waitSearcher = (Future<?>[]) Array.newInstance(Future.class, 1);
+    h.getCore().getSearcher(true, false, waitSearcher, true);
+    waitSearcher[0].get();
+  }
+
   private static Map<String, Object> lookupFilterCacheMetrics(SolrCore core) {
     return ((MetricsMap)
             ((SolrMetricManager.GaugeWrapper<?>)
@@ -61,16 +76,7 @@ public class TestFiltersQueryCaching extends SolrTestCaseJ4 {
   }
 
   private static long lookupFilterCacheInserts(SolrCore core) {
-    return (long)
-        ((MetricsMap)
-                ((SolrMetricManager.GaugeWrapper<?>)
-                        core.getCoreMetricManager()
-                            .getRegistry()
-                            .getMetrics()
-                            .get("CACHE.searcher.filterCache"))
-                    .getGauge())
-            .getValue()
-            .get("inserts");
+    return (long) lookupFilterCacheMetrics(core).get("inserts");
   }
 
   @Test
@@ -80,45 +86,45 @@ public class TestFiltersQueryCaching extends SolrTestCaseJ4 {
     final int expectNumFound = 1;
     final String expectNumFoundXPath = "/response/numFound==" + expectNumFound;
 
-    h.reload();
+    reloadAndWait();
     assertJQ(req("q", termQuery, "indent", "true"), expectNumFoundXPath);
     assertEquals(0, lookupFilterCacheInserts(h.getCore()));
 
-    h.reload();
+    reloadAndWait();
     assertJQ(req("q", filterTermQuery, "indent", "true"), expectNumFoundXPath);
     assertEquals(1, lookupFilterCacheInserts(h.getCore()));
 
-    h.reload();
+    reloadAndWait();
     assertJQ(
         req("q", "*:*", "indent", "true", "fq", "{!cache=false}field_s:d0"), expectNumFoundXPath);
     assertEquals(0, lookupFilterCacheInserts(h.getCore()));
 
-    h.reload();
+    reloadAndWait();
     assertJQ(
         req("q", "*:*", "indent", "true", "fq", "{!cache=true}field_s:d0"), expectNumFoundXPath);
     assertEquals(1, lookupFilterCacheInserts(h.getCore()));
 
-    h.reload();
+    reloadAndWait();
     assertJQ(
         req("q", "*:*", "indent", "true", "fq", "{!cache=false}filter(field_s:d0)"),
         expectNumFoundXPath);
     assertEquals(1, lookupFilterCacheInserts(h.getCore()));
 
-    h.reload();
+    reloadAndWait();
     assertJQ(
         req("q", "*:*", "indent", "true", "fq", "{!cache=true}filter(field_s:d0)"),
         expectNumFoundXPath);
     assertEquals(1, lookupFilterCacheInserts(h.getCore()));
 
-    h.reload();
+    reloadAndWait();
     assertJQ(req("q", "*:*", "indent", "true", "fq", termQuery), expectNumFoundXPath);
     assertEquals(1, lookupFilterCacheInserts(h.getCore()));
 
-    h.reload();
+    reloadAndWait();
     assertJQ(req("q", "*:*", "indent", "true", "fq", filterTermQuery), expectNumFoundXPath);
     assertEquals(1, lookupFilterCacheInserts(h.getCore()));
 
-    h.reload();
+    reloadAndWait();
     SolrCore core = h.getCore();
     Map<String, Object> filterCacheMetrics;
     final String termQuery2 = "{!term f=field_s v='d1'}";

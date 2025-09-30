@@ -38,7 +38,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.common.ConfigNode;
@@ -384,10 +384,6 @@ public class SolrXmlConfig {
               case "indexSearcherExecutorThreads":
                 builder.setIndexSearcherExecutorThreads(it.intVal(-1));
                 break;
-              case "transientCacheSize":
-                log.warn("solr.xml transientCacheSize -- transient cores is deprecated");
-                builder.setTransientCacheSize(it.intVal(-1));
-                break;
               case "allowUrls":
                 builder.setAllowUrls(separateStrings(it.txt()));
                 break;
@@ -435,10 +431,10 @@ public class SolrXmlConfig {
 
     boolean defined = false;
 
-    int maxUpdateConnections = HttpClientUtil.DEFAULT_MAXCONNECTIONS;
-    int maxUpdateConnectionsPerHost = HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST;
-    int distributedSocketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
-    int distributedConnectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+    int maxUpdateConnections = SolrHttpConstants.DEFAULT_MAXCONNECTIONS;
+    int maxUpdateConnectionsPerHost = SolrHttpConstants.DEFAULT_MAXCONNECTIONSPERHOST;
+    int distributedSocketTimeout = SolrHttpConstants.DEFAULT_SO_TIMEOUT;
+    int distributedConnectionTimeout = SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT;
     String metricNameStrategy = UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY;
     int maxRecoveryThreads = UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS;
 
@@ -564,18 +560,13 @@ public class SolrXmlConfig {
         case "pkiHandlerPublicKeyPath":
           builder.setPkiHandlerPublicKeyPath(value);
           break;
-        case "distributedClusterStateUpdates":
-          builder.setUseDistributedClusterStateUpdates(Boolean.parseBoolean(value));
-          break;
-        case "distributedCollectionConfigSetExecution":
-          builder.setUseDistributedCollectionConfigSetExecution(Boolean.parseBoolean(value));
-          break;
         case "minStateByteLenForCompression":
           builder.setMinStateByteLenForCompression(parseInt(name, value));
           break;
         case "stateCompressor":
           builder.setStateCompressorClass(value);
           break;
+
         default:
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,

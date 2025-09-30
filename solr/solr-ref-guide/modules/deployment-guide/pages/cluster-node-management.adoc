@@ -274,7 +274,7 @@ curl -X DELETE http://localhost:8983/api/cluster/properties/urlScheme
 |===
 +
 The name of the property.  Appears in the path of v2 requests.
-Supported properties names are `location`, `maxCoresPerNode`, `urlScheme`, and `defaultShardPreferences`.
+Supported properties names are `location`, `maxCoresPerNode`, `overseerEnabled`, `urlScheme`, and `defaultShardPreferences`.
 +
 Other properties can be set (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`.
 Unknown properties that don't begin with `ext.` will be rejected.

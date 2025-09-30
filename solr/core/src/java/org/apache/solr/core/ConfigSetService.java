@@ -85,17 +85,16 @@ public abstract class ConfigSetService {
   }
 
   private void bootstrapConfigSet(CoreContainer coreContainer) {
-    // bootstrap _default conf and solr.configset.bootstrap.confdir if specified.
+    // bootstrap _default conf and solr.configset.bootstrap.confdir if provided via system property
     try {
       // _default conf
       bootstrapDefaultConf();
 
-      // solr.configset.bootstrap.confdir
+      // bootstrap_confdir
       String confDir = EnvUtils.getProperty("solr.configset.bootstrap.confdir");
       if (confDir != null) {
         bootstrapConfDir(confDir);
       }
-
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Config couldn't be uploaded ", e);
@@ -109,7 +108,7 @@ public abstract class ConfigSetService {
         log.warn(
             "The _default configset could not be uploaded. Please provide 'solr.configset.default.confdir' parameter that points to a configset {} {}",
             "intended to be the default. Current 'solr.configset.default.confdir' value:",
-            EnvUtils.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE));
+            System.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
         this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
       }
@@ -117,14 +116,14 @@ public abstract class ConfigSetService {
   }
 
   private void bootstrapConfDir(String confDir) throws IOException {
-    Path configPath = resolvePathWithSolrInstallDir(confDir);
-
+    Path configPath = Path.of(confDir);
     if (!Files.isDirectory(configPath)) {
       throw new IllegalArgumentException(
-          "solr.configset.bootstrap.confdir must be a directory of configuration files, configPath: "
+          "bootstrap_confdir must be a directory of configuration files, configPath: "
               + configPath);
     }
-    String confName = EnvUtils.getProperty("solr.collection.config.name", "configuration1");
+    String confName =
+        EnvUtils.getProperty("solr.configset.bootstrap.config.name", "configuration1");
     this.uploadConfig(confName, configPath);
   }
 
@@ -133,50 +132,29 @@ public abstract class ConfigSetService {
    * sysprop "solr.configset.default.confdir". If not found, tries to find the _default dir relative
    * to the sysprop "solr.install.dir". Returns null if not found anywhere.
    *
+   * @lucene.internal
    * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
    */
   public static Path getDefaultConfigDirPath() {
     String confDir =
-        EnvUtils.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE);
+        System.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE);
     if (confDir != null) {
-      Path path = resolvePathWithSolrInstallDir(confDir);
+      Path path = Path.of(confDir);
       if (Files.exists(path)) {
         return path;
       }
     }
 
-    String installDir = EnvUtils.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    String installDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
     if (installDir != null) {
-      Path installPath = resolvePathWithSolrInstallDir(installDir);
       Path subPath = Path.of("server", "solr", "configsets", "_default", "conf");
-      Path path = installPath.resolve(subPath);
+      Path path = Path.of(installDir).resolve(subPath);
       if (Files.exists(path)) {
         return path;
       }
     }
 
     return null;
-  }
-
-  /**
-   * Resolves a path string into a Path object, handling both absolute and relative paths. If the
-   * path is relative then it resolves it against Solr installation directory by looking up the
-   * solr.install.dir system property.
-   *
-   * @param pathStr The path of the directory to resolve
-   * @return The resolved Path object
-   * @see SolrDispatchFilter#SOLR_INSTALL_DIR_ATTRIBUTE
-   */
-  public static Path resolvePathWithSolrInstallDir(String pathStr) {
-    Path path = Path.of(pathStr);
-
-    // Convert to absolute path if it's relative
-    if (!path.isAbsolute()) {
-      String installDir = EnvUtils.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
-      path = Path.of(installDir).resolve(path).normalize();
-    }
-
-    return path;
   }
 
   // Order is important here since "confDir" may be

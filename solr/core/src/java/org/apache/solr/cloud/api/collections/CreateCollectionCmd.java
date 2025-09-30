@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -96,7 +95,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CollectionCommandContext ccc;
 
-  public static final String PRS_DEFAULT_PROP = "solr.prs.default";
+  public static final String PRS_DEFAULT_PROP = "solr.cloud.prs.enabled";
 
   public CreateCollectionCmd(CollectionCommandContext ccc) {
     this.ccc = ccc;
@@ -117,8 +116,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, prsDefault);
     if (log.isInfoEnabled()) {
       log.info(
-          "solr.prs.default : {} and collection prs : {}, isPRS : {}",
-          System.getProperty("solr.prs.default", null),
+          "solr.cloud.prs.enabled : {} and collection prs : {}, isPRS : {}",
+          prsDefault,
           message.getStr(CollectionStateProps.PER_REPLICA_STATE),
           isPRS);
     }
@@ -682,29 +681,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
               getConfName(
                   stateManager, collection, collectionPath, collectionProps, configSetService);
             }
-
-          } else if (System.getProperty("solr.configset.bootstrap.confdir") != null) {
-            String defaultConfigName =
-                System.getProperty(
-                    ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP,
-                    collection);
-
-            // if we are bootstrapping a collection, default the config for
-            // a new collection to the collection we are bootstrapping
-            log.info("Setting config for collection: {} to {}", collection, defaultConfigName);
-
-            Properties sysProps = System.getProperties();
-            for (String sprop : System.getProperties().stringPropertyNames()) {
-              if (sprop.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
-                collectionProps.put(
-                    sprop.substring(ZkController.COLLECTION_PARAM_PREFIX.length()),
-                    sysProps.getProperty(sprop));
-              }
-            }
-
-            // if the config name wasn't passed in, use the default
-            if (!collectionProps.containsKey(ZkController.CONFIGNAME_PROP))
-              collectionProps.put(ZkController.CONFIGNAME_PROP, defaultConfigName);
 
           } else {
             getConfName(

@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
+import java.lang.reflect.Array;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
@@ -86,6 +87,12 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     // testing caching, it's far simpler to just reload the core every time to prevent
     // subsequent requests from affecting each other
     h.reload();
+
+    // Make sure the new searcher (after reload) is fully initialized. This is to avoid races
+    // between queries submitted by the test and metrics warmup of the new searcher.
+    Future<?>[] waitSearcher = (Future<?>[]) Array.newInstance(Future.class, 1);
+    h.getCore().getSearcher(true, false, waitSearcher, true);
+    waitSearcher[0].get();
   }
 
   private static long coreToInserts(SolrCore core, String cacheName) {

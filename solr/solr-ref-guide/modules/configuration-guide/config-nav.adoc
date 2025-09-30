@@ -21,6 +21,7 @@
 * xref:property-substitution.adoc[]
 * xref:core-discovery.adoc[]
 * xref:configuring-solr-xml.adoc[]
+* xref:solr-properties.adoc[]
 
 * xref:configuring-solrconfig-xml.adoc[]
 ** xref:index-location-format.adoc[]

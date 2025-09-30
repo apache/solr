@@ -104,7 +104,8 @@ public class EnvUtilsTest extends SolrTestCase {
   public void testDeprecated() {
     var env = Map.of("SOLR_OVERWRITE", "overwritten");
     Properties defaultProps = new Properties();
-    defaultProps.setProperty("solrConfigSetForbiddenFileTypes", "xml,json,jar");
+    // Use the already converted version, not the original camelCase.
+    defaultProps.setProperty("solr.config.set.forbidden.file.types", "xml,json,jar");
 
     EnvUtils.init(false, env, defaultProps);
     assertEquals("xml,json,jar", EnvUtils.getProperty("solr.configset.forbidden.file.types"));

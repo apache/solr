@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 public abstract class TracerConfigurator implements NamedListInitializedPlugin {
 
   public static final boolean TRACE_ID_GEN_ENABLED =
-      Boolean.parseBoolean(EnvUtils.getProperty("solr.alwaysOnTraceId", "true"));
+      EnvUtils.getPropertyAsBool("solr.tracing.always.on.enabled", true);
 
   private static final String DEFAULT_CLASS_NAME =
       EnvUtils.getProperty(

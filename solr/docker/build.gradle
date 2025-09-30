@@ -33,7 +33,7 @@ def dockerImageTagSuffix = "${ -> propertyOrEnvOrDefault("solr.docker.imageTagSu
 def dockerImageRepo = "${ -> propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr") }"
 def dockerImageTag = "${ -> propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", project.version + dockerImageDistSuffix) }"
 def dockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}${dockerImageTagSuffix}") }"
-def baseDockerImage = "${ -> propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:' + javaVersion + '-jre-jammy') }"
+def baseDockerImage = "${ -> propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:' + javaVersion + '-jre-noble') }"
 def officialDockerImageName = {String dist -> "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}${distToSuffix(dist)}${dockerImageTagSuffix}") }" }
 
 def releaseGpgFingerprint = "${ -> propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId','')) }"
@@ -277,9 +277,9 @@ task createBodySnippetDockerfile(type: Copy) {
   outputs.file("$buildDir/snippets/Dockerfile.body.snippet")
   rename { name -> name.replace("template","snippet") }
   filteringCharset 'UTF-8'
-  
+
   // NOTE: The only "templating" the Dockerfile.body supports is removing comments.
-  // 
+  //
   // Any situation where it feel appropriate to add variable substitution should be reconsidered, and probably
   // implemented as either a build-arg or as a variable expanded in the header snippets (or both)
   filter( commentFilter )
@@ -289,14 +289,14 @@ ext {
   // NOTE: 'props' are variables that will be replaced in the respective templates,
   // and they must consist solely of characters matching the regex '(_|\\p{Upper})+'.
   // They may only be used in ARG and FROM lines, via the syntax: '_REPLACE_FOO_'
-  // where 'FOO' is the key used in 'props' (NOTE the leading and trailing literal '_' characters) 
+  // where 'FOO' is the key used in 'props' (NOTE the leading and trailing literal '_' characters)
   dfLocalDetails = [
     name: 'Local',
     template: 'local',
     desc: 'Dockerfile used to create local Solr docker images directly from Solr release tgz file',
 
     // NOTE: There should be no reason for Dockerfile.local to include unique values
-    // 
+    //
     // Values identical in both Dockerfiles should use consistent names in both templates and
     // be defined in the task creation.
     props: [:]
@@ -576,7 +576,7 @@ abstract class TestDockerImageTask extends DefaultTask {
 
   @Input
   SetProperty<String> testCasesExclude = project.objects.setProperty(String)
-  
+
   @OutputDirectory
   abstract public DirectoryProperty getOutputDir()
 

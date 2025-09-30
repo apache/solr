@@ -277,8 +277,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(1, values.size());
     assertNotNull(values.get("solr.node"));
     values = (NamedList<?>) values.get("solr.node");
-    assertEquals(15, values.size());
-    assertNotNull(values.get("CONTAINER.cores.lazy")); // this is a gauge node
+    assertEquals(14, values.size());
+    assertNotNull(values.get("CONTAINER.cores.loaded")); // this is a gauge node
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
 
     resp = new SolrQueryResponse();
@@ -300,7 +300,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = (NamedList<?>) values.get("metrics");
     assertNotNull(values.get("solr.node"));
     values = (NamedList<?>) values.get("solr.node");
-    assertEquals(5, values.size());
+    assertEquals(4, values.size());
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
 
     resp = new SolrQueryResponse();
@@ -852,21 +852,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
                 "completed"));
     assertEquals(0, actualCounterDataPoint.getValue(), 0);
 
-    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_node_connections");
-    GaugeSnapshot.GaugeDataPointSnapshot actualGaugeDataPoint =
-        getGaugeDatapointSnapshot(
-            actualSnapshot,
-            Labels.of(
-                "category",
-                "UPDATE",
-                "handler",
-                "updateShardHandler",
-                "item",
-                "availableConnections"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
-
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_node_core_root_fs_bytes");
-    actualGaugeDataPoint =
+    var actualGaugeDataPoint =
         getGaugeDatapointSnapshot(
             actualSnapshot, Labels.of("category", "CONTAINER", "item", "totalSpace"));
     assertNotNull(actualGaugeDataPoint);
@@ -874,8 +861,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_node_cores");
     actualGaugeDataPoint =
         getGaugeDatapointSnapshot(
-            actualSnapshot, Labels.of("category", "CONTAINER", "item", "lazy"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+            actualSnapshot, Labels.of("category", "CONTAINER", "item", "loaded"));
+    assertEquals(1, actualGaugeDataPoint.getValue(), 0);
 
     handler.close();
   }
