@@ -27,4 +27,9 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 public interface HttpClientBuilderPlugin {
 
   public default void setup(Http2SolrClient client) {}
+
+  /** TODO: Ideally, we only pass the builder here. */
+  public default void setup(Http2SolrClient.Builder builder, Http2SolrClient client) {
+    setup(client);
+  }
 }

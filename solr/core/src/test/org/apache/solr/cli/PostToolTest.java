@@ -73,6 +73,7 @@ public class PostToolTest extends SolrCloudTestCase {
 
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);
+    waitForState("creating", collection, activeClusterShape(1, 1));
 
     Path jsonDoc = Files.createTempFile("temp", ".json");
 

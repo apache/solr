@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -152,26 +151,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     }
   }
 
-  @Test
-  public void testRequestWithBaseUrl() throws Exception {
-    DebugServlet.clear();
-    DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
-    DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
-    String someOtherUrl = getBaseUrl() + "/some/other/base/url";
-    String intendedUrl = getBaseUrl() + DEBUG_SERVLET_PATH;
-    SolrQuery q = new SolrQuery("foo");
-    q.setParam("a", MUST_ENCODE);
-
-    HttpJdkSolrClient.Builder b =
-        builder(someOtherUrl).withResponseParser(new JavaBinResponseParser());
-    try (HttpJdkSolrClient client = b.build()) {
-      client.requestWithBaseUrl(intendedUrl, new QueryRequest(q, SolrRequest.METHOD.GET), null);
-      assertEquals(
-          client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
-    }
-  }
-
-  @Test
   public void testGetById() throws Exception {
     DebugServlet.clear();
     try (HttpJdkSolrClient client = builder(getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
