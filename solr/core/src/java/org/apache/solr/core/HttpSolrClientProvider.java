@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.util.IOUtils;
@@ -36,24 +37,22 @@ final class HttpSolrClientProvider implements AutoCloseable {
 
   private final Http2SolrClient httpSolrClient;
 
-  private final Http2SolrClient.Builder httpSolrClientBuilder;
-
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
 
   HttpSolrClientProvider(UpdateShardHandlerConfig cfg, SolrMetricsContext parentContext) {
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
     initializeMetrics(parentContext);
 
-    this.httpSolrClientBuilder =
-        new Http2SolrClient.Builder().addListenerFactory(trackHttpSolrMetrics);
+    Http2SolrClient.Builder httpClientBuilder =
+        new Http2SolrClient.Builder().withListenerFactory(List.of(trackHttpSolrMetrics));
 
     if (cfg != null) {
-      httpSolrClientBuilder
+      httpClientBuilder
           .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
           .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
           .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
-    httpSolrClient = httpSolrClientBuilder.build();
+    httpSolrClient = httpClientBuilder.build();
   }
 
   private InstrumentedHttpListenerFactory.NameStrategy getNameStrategy(
@@ -77,7 +76,7 @@ final class HttpSolrClientProvider implements AutoCloseable {
   }
 
   void setSecurityBuilder(HttpClientBuilderPlugin builder) {
-    builder.setup(httpSolrClientBuilder, httpSolrClient);
+    builder.setup(httpSolrClient);
   }
 
   @Override
