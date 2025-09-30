@@ -349,6 +349,7 @@ public class ZkController implements Closeable {
             .withTimeout(clientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
             .withAclProvider(zkACLProvider)
+            .withZkCredentialsProvider(zkCredentialsProvider)
             .withClosedCheck(cc::isShutDown)
             .withCompressor(compressor)
             .build();
