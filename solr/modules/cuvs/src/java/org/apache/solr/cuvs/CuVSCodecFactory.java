@@ -19,6 +19,7 @@ package org.apache.solr.cuvs;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene101.Lucene101Codec;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CodecFactory;
 import org.apache.solr.core.SchemaCodecFactory;
 import org.apache.solr.core.SolrCore;
@@ -50,6 +51,15 @@ public class CuVSCodecFactory extends CodecFactory implements SolrCoreAware {
     fallback.inform(solrCore);
     this.core = solrCore;
     GpuMetricsService.getInstance().initialize(solrCore);
+
+    // Register a close hook to properly shut down the GPU metrics service
+    solrCore.addCloseHook(
+        new CloseHook() {
+          @Override
+          public void preClose(SolrCore core) {
+            GpuMetricsService.getInstance().shutdown();
+          }
+        });
   }
 
   @Override

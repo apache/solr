@@ -21,6 +21,8 @@ description = 'cuVS plugin'
 
 dependencies {
   implementation libs.cuvs.lucene
+  implementation libs.cuvs.java
+  implementation libs.dropwizard.metrics.core
   implementation project(':solr:core')
   implementation project(':solr:solrj')
   implementation libs.apache.lucene.core
