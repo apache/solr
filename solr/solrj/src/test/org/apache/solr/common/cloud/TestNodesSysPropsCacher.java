@@ -28,9 +28,6 @@ import org.junit.Test;
 public class TestNodesSysPropsCacher extends SolrCloudTestCase {
 
   @Test
-  // NOCOMMIT: These metrics were system properties that must be retrieved somewhere else that isn't
-  // the /admin/metrics endpoint
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testSysProps() throws Exception {
     System.setProperty("metricsEnabled", "true");
     MiniSolrCloudCluster cluster =

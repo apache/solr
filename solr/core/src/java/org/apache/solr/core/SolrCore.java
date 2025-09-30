@@ -1441,21 +1441,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
             observableLongMeasurement.record(getSegmentCount(), baseGaugeCoreAttributes);
         }));
 
-    // NOCOMMIT: Do we need these start_time metrics? I think at minimum it should be optional
-    // otherwise we fall into metric bloat for something people may not care about.
-    observables.add(
-        parentContext.observableLongGauge(
-            "solr_core_start_time",
-            "Start time of a Solr core",
-            (observableLongMeasurement -> {
-              observableLongMeasurement.record(
-                  startTime.getTime(),
-                  Attributes.builder()
-                      .putAll(baseGaugeCoreAttributes)
-                      .put(TYPE_ATTR, "start_time")
-                      .build());
-            })));
-
     if (coreContainer.isZooKeeperAware())
       observables.add(
           parentContext.observableLongGauge(
@@ -1468,13 +1453,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
               })));
 
     this.toClose = Collections.unmodifiableList(observables);
-
-    // NOCOMMIT: Temporary to see metrics
-    newSearcherCounter.inc();
-    newSearcherMaxReachedCounter.inc();
-    newSearcherOtherErrorsCounter.inc();
-    newSearcherTimer.start().stop();
-    newSearcherWarmupTimer.start().stop();
   }
 
   public String getMetricTag() {

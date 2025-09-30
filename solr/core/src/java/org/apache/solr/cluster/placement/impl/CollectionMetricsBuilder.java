@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Builder class for constructing instances of {@link CollectionMetrics}. */
-// NOCOMMIT: Need to migrate this to an OTEL collection Metrics builder
 public class CollectionMetricsBuilder {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

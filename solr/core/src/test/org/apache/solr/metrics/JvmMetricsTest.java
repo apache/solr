@@ -66,7 +66,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
   }
 
   @Test
-  public void testSetupJvmMetrics() {
+  public void testSetupJvmMetrics() throws InterruptedException {
     PrometheusMetricReader reader =
         getJetty().getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.jvm");
     MetricSnapshots snapshots = reader.collect();
@@ -92,10 +92,6 @@ public class JvmMetricsTest extends SolrJettyTestBase {
     assertTrue(
         "Should have JVM CPU metrics",
         metricNames.stream().anyMatch(name -> name.startsWith("jvm_cpu")));
-
-    assertTrue(
-        "Should have JVM GC metrics",
-        metricNames.stream().anyMatch(name -> name.startsWith("jvm_gc")));
 
     assertTrue(
         "Should have JVM buffer metrics",

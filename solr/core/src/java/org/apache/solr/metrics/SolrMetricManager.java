@@ -171,6 +171,7 @@ public class SolrMetricManager {
       new ConcurrentHashMap<>();
 
   private final MetricExporter metricExporter;
+  private OtelRuntimeJvmMetrics otelRuntimeJvmMetrics;
 
   private static final List<Double> SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES =
       List.of(
@@ -206,6 +207,9 @@ public class SolrMetricManager {
     timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());
     histogramSupplier =
         MetricSuppliers.histogramSupplier(loader, metricsConfig.getHistogramSupplier());
+    this.otelRuntimeJvmMetrics =
+        new OtelRuntimeJvmMetrics()
+            .initialize(this, SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm));
   }
 
   public LongCounter longCounter(
@@ -906,6 +910,9 @@ public class SolrMetricManager {
               IOUtils.closeQuietly(meterAndReader.sdkMeterProvider);
             });
     meterProviderAndReaders.clear();
+    if (otelRuntimeJvmMetrics != null) {
+      otelRuntimeJvmMetrics.close();
+    }
   }
 
   /**
