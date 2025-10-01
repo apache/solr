@@ -21,7 +21,6 @@ import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.metrics.otel.MetricExporterFactory;
-import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +29,6 @@ import org.slf4j.LoggerFactory;
  *
  * @see io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter
  * @see io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter
- * @see NoopMetricExporter
  */
 public class OtlpExporterFactory implements MetricExporterFactory {
 
@@ -39,18 +37,17 @@ public class OtlpExporterFactory implements MetricExporterFactory {
   public MetricExporter getExporter() {
     if (!OTLP_EXPORTER_ENABLED) {
       log.info("OTLP metric exporter is disabled.");
-      return new NoopMetricExporter();
+      return null;
     }
 
     return switch (OTLP_EXPORTER_PROTOCOL) {
       case "grpc" -> OtlpGrpcMetricExporter.getDefault();
       case "http" -> OtlpHttpMetricExporter.getDefault();
-      case "none" -> new NoopMetricExporter();
+      case "none" -> null;
       default -> {
         log.warn(
-            "Unknown OTLP exporter type: {}. Defaulting to NO-OP exporter.",
-            OTLP_EXPORTER_PROTOCOL);
-        yield new NoopMetricExporter();
+            "Unknown OTLP exporter type: {}. Disabling metric exporter", OTLP_EXPORTER_PROTOCOL);
+        yield null;
       }
     };
   }

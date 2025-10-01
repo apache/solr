@@ -453,8 +453,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             getTlogDir(),
             id);
       }
-      core.getCoreMetricManager()
-          .registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+      core.getCoreMetricManager().registerMetricProducer(this, Attributes.empty());
 
       String reResolved = resolveDataDir(core);
       if (dataDir == null || !dataDir.equals(reResolved)) {
@@ -500,7 +499,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         trackDeleteByQuery(q, version);
       }
     }
-    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+    core.getCoreMetricManager().registerMetricProducer(this, Attributes.empty());
   }
 
   protected final void maybeClearLog(SolrCore core) {
