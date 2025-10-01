@@ -17,7 +17,12 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.client.solrj.impl.InputStreamResponseParser.STREAM_KEY;
+
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -55,18 +60,14 @@ public class NodeValueFetcher {
     CORES("cores", "solr_cores_loaded") {
       @Override
       public Object extractResult(NamedList<Object> root) {
-        Object metrics = root.get("stream");
+        Object metrics = root.get(STREAM_KEY);
         if (metrics == null || metricName == null) return null;
 
         try (InputStream in = (InputStream) metrics) {
-          String[] lines = parsePrometheusOutput(in);
-          int count = 0;
-
-          for (String line : lines) {
-            if (shouldSkipPrometheusLine(line) || !line.startsWith(metricName)) continue;
-            count += (int) extractPrometheusValue(line);
-          }
-          return count;
+          return prometheusMetricStream(in)
+              .filter(line -> line.startsWith(metricName))
+              .mapToInt((value) -> extractPrometheusValue(value).intValue())
+              .sum();
         } catch (Exception e) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR, "Unable to read prometheus metrics output", e);
@@ -99,53 +100,66 @@ public class NodeValueFetcher {
      * Extract metric value from Prometheus response, optionally filtering by label. This
      * consolidated method handles both labeled and unlabeled metrics.
      */
-    private static Long extractFromPrometheusResponse(
+    private static Double extractFromPrometheusResponse(
         NamedList<Object> root, String metricName, String labelKey, String labelValue) {
-      Object metrics = root.get("stream");
+      Object metrics = root.get(STREAM_KEY);
 
       if (metrics == null || metricName == null) {
         return null;
       }
 
       try (InputStream in = (InputStream) metrics) {
-        String[] lines = parsePrometheusOutput(in);
-
-        for (String line : lines) {
-          if (shouldSkipPrometheusLine(line) || !line.startsWith(metricName)) continue;
-
-          // If metric with specific labels were requested, then return the metric with that label
-          // and skip others
-          if (labelKey != null && labelValue != null) {
-            String expectedLabel = labelKey + "=\"" + labelValue + "\"";
-            if (!line.contains(expectedLabel)) {
-              continue;
-            }
-          }
-
-          return extractPrometheusValue(line);
-        }
+        return prometheusMetricStream(in)
+            .filter(line -> line.startsWith(metricName))
+            .filter(
+                line -> {
+                  // If metric with specific labels were requested, filter by those labels
+                  if (labelKey != null && labelValue != null) {
+                    String expectedLabel = labelKey + "=\"" + labelValue + "\"";
+                    return line.contains(expectedLabel);
+                  }
+                  return true;
+                })
+            .findFirst()
+            .map(Metrics::extractPrometheusValue)
+            .orElse(null);
       } catch (Exception e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Unable to read prometheus metrics output", e);
       }
-
-      return null;
     }
 
-    public static long extractPrometheusValue(String line) {
-      line = line.trim();
-      String actualValue;
-      if (line.contains("}")) {
-        actualValue = line.substring(line.lastIndexOf("} ") + 1);
-      } else {
-        actualValue = line.split(" ")[1];
-      }
-      return (long) Double.parseDouble(actualValue);
+    public static Double extractPrometheusValue(String line) {
+      String s = line.trim();
+
+      // Get the position after the labels if they exist.
+      int afterLabelsPos = s.indexOf('}');
+      String tail = (afterLabelsPos >= 0) ? s.substring(afterLabelsPos + 1).trim() : s;
+
+      // Get the metric value after the first white space and chop off anything after such as
+      // exemplars from Open Metrics Format
+      int whiteSpacePos = tail.indexOf(' ');
+      String firstToken = (whiteSpacePos >= 0) ? tail.substring(0, whiteSpacePos) : tail;
+
+      return Double.parseDouble(firstToken);
     }
 
-    public static String[] parsePrometheusOutput(InputStream inputStream) throws Exception {
-      String output = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-      return output.split("\n");
+    /** Returns a Stream of Prometheus lines for processing with filtered out comment lines */
+    public static java.util.stream.Stream<String> prometheusMetricStream(InputStream inputStream) {
+      BufferedReader reader =
+          new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+
+      return reader
+          .lines()
+          .filter(line -> !isPrometheusCommentLine(line))
+          .onClose(
+              () -> {
+                try {
+                  reader.close();
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              });
     }
   }
 
@@ -265,66 +279,68 @@ public class NodeValueFetcher {
       Set<String> requestedTagNames, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
     Set<MetricRequest> metricRequests = new HashSet<>();
     Set<String> requestedMetricNames = new HashSet<>();
-    Set<String> labelsFilter = new HashSet<>();
 
     // Parse metric tags into structured MetricRequest objects
     for (String tag : requestedTagNames) {
-      try {
-        MetricRequest request = MetricRequest.fromTag(tag);
-        metricRequests.add(request);
-        requestedMetricNames.add(request.metricName());
+      MetricRequest request = MetricRequest.fromTag(tag);
+      metricRequests.add(request);
+      requestedMetricNames.add(request.metricName());
 
-        if (request.hasLabelFilter()) {
-          labelsFilter.add(request.kvLabel());
-        }
-
-        // Pre-populate the map tag key to match its corresponding prometheus metrics
-        ctx.tags.put(tag, null);
-      } catch (IllegalArgumentException e) {
-        // Skip invalid metric tags
-        continue;
-      }
+      // Pre-populate the map tag key to match its corresponding prometheus metrics
+      ctx.tags.put(tag, null);
     }
 
     if (requestedMetricNames.isEmpty()) {
       return;
     }
 
-    // Fetch all prometheus metrics from requested prometheus metric names
-    String[] lines =
-        SolrClientNodeStateProvider.fetchBatchedMetric(ctx.getNode(), ctx, requestedMetricNames);
+    // Process prometheus stream response using structured MetricRequest objects
+    try (java.util.stream.Stream<String> stream =
+        SolrClientNodeStateProvider.fetchMetricStream(ctx.getNode(), ctx, requestedMetricNames)) {
 
-    // Process prometheus response using structured MetricRequest objects
-    for (String line : lines) {
-      if (shouldSkipPrometheusLine(line)) continue;
+      stream.forEach(
+          line -> {
+            String lineMetricName = extractMetricNameFromLine(line);
+            Double value = Metrics.extractPrometheusValue(line);
 
-      String lineMetricName = extractMetricNameFromLine(line);
-      Long value = Metrics.extractPrometheusValue(line);
+            // Find matching MetricRequest(s) for this line
+            for (MetricRequest request : metricRequests) {
+              if (!request.metricName().equals(lineMetricName)) {
+                continue; // Metric name doesn't match
+              }
 
-      // Find matching MetricRequest(s) for this line
-      for (MetricRequest request : metricRequests) {
-        if (!request.metricName().equals(lineMetricName)) {
-          continue; // Metric name doesn't match
-        }
+              // Skip metric if it does not contain requested label
+              if (request.hasLabelFilter() && !line.contains(request.kvLabel())) {
+                continue;
+              }
 
-        // Skip metric if it does not contain requested label
-        if (request.hasLabelFilter() && !line.contains(request.kvLabel())) {
-          continue;
-        }
-
-        // Found a match - store the value using the original tag
-        ctx.tags.put(request.originalTag(), value);
-        break; // Move to next line since we found our match
-      }
+              // Found a match - store the value using the original tag
+              ctx.tags.put(request.originalTag(), value);
+              break; // Move to next line since we found our match
+            }
+          });
     }
   }
 
+  /**
+   * Extracts the metric name from a prometheus formatted metric:
+   *
+   * <p>With labels: solr_metrics_core_requests_total{core="demo",...}
+   *
+   * <p>Without labels: solr_metrics_core_requests_total 123
+   */
   public static String extractMetricNameFromLine(String line) {
-    if (line.contains("{")) {
-      return line.substring(0, line.indexOf("{"));
+    int brace = line.indexOf('{');
+    int space = line.indexOf(' ');
+    int end;
+    if (brace >= 0) {
+      // Labels present in metric
+      end = brace;
     } else {
-      return line.split(" ")[0];
+      // No labels in metric
+      end = space;
     }
+    return line.substring(0, end);
   }
 
   public static String extractLabelValueFromLine(String line, String labelKey) {
@@ -337,7 +353,7 @@ public class NodeValueFetcher {
   }
 
   /** Helper method to check if a Prometheus line should be skipped (comments or empty lines). */
-  public static boolean shouldSkipPrometheusLine(String line) {
+  public static boolean isPrometheusCommentLine(String line) {
     return line.startsWith("#") || line.trim().isEmpty();
   }
 

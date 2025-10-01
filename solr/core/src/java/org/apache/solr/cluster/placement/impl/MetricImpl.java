@@ -158,7 +158,6 @@ public abstract class MetricImpl<T> implements Metric<T> {
     }
     return name.equals(that.getName())
         && internalName.equals(that.getInternalName())
-        && converter.equals(that.converter)
         && Objects.equals(labelKey, that.labelKey)
         && Objects.equals(labelValue, that.labelValue);
   }

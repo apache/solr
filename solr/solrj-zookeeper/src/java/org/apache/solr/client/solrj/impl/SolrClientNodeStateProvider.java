@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.client.solrj.impl.InputStreamResponseParser.STREAM_KEY;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -171,36 +173,35 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
 
     RemoteCallCtx ctx = new RemoteCallCtx(node, solrClient);
-    String[] lines = fetchBatchedMetric(node, ctx, requestedMetricNames);
+    try (java.util.stream.Stream<String> metrics =
+        fetchMetricStream(node, ctx, requestedMetricNames)) {
+      metrics.forEach(
+          line -> {
+            String prometheusMetricName = NodeValueFetcher.extractMetricNameFromLine(line);
 
-    // Parse through prometheus metrics and map the metric with its corresponding replica properties
-    for (String line : lines) {
-      if (NodeValueFetcher.shouldSkipPrometheusLine(line)) continue;
+            // Extract core name from prometheus line and the core label
+            String coreParam = NodeValueFetcher.extractLabelValueFromLine(line, "core");
+            if (coreParam == null) return;
 
-      String prometheusMetricName = NodeValueFetcher.extractMetricNameFromLine(line);
-
-      // Extract core name from prometheus line and the core label
-      String coreParam = NodeValueFetcher.extractLabelValueFromLine(line, "core");
-      if (coreParam == null) continue;
-
-      // Find the matching core and set the metric value to its corresponding replica properties
-      List<Pair<Replica, String>> replicaProps = coreToReplicaProps.get(coreParam);
-      if (replicaProps != null) {
-        Long value = NodeValueFetcher.Metrics.extractPrometheusValue(line);
-        replicaProps.stream()
-            .filter(pair -> pair.second().equals(prometheusMetricName))
-            .forEach(pair -> pair.first().getProperties().put(pair.second(), value));
-      }
+            // Find the matching core and set the metric value to its corresponding replica
+            // properties
+            List<Pair<Replica, String>> replicaProps = coreToReplicaProps.get(coreParam);
+            if (replicaProps != null) {
+              Double value = NodeValueFetcher.Metrics.extractPrometheusValue(line);
+              replicaProps.stream()
+                  .filter(pair -> pair.second().equals(prometheusMetricName))
+                  .forEach(pair -> pair.first().getProperties().put(pair.second(), value));
+            }
+          });
     }
 
     return result;
   }
 
-  static String[] fetchBatchedMetric(String solrNode, RemoteCallCtx ctx, Set<String> metricNames) {
-    if (!ctx.isNodeAlive(solrNode))
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Solr node is not healthy. Cannot request metrics: " + solrNode);
+  /** Returns a stream of prometheus metrics lines for processing. */
+  static java.util.stream.Stream<String> fetchMetricStream(
+      String solrNode, RemoteCallCtx ctx, Set<String> metricNames) {
+    if (!ctx.isNodeAlive(solrNode)) return java.util.stream.Stream.empty();
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("wt", "prometheus");
@@ -213,14 +214,17 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
     String baseUrl =
         ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
-    try (InputStream in =
-        (InputStream)
-            ctx.cloudSolrClient
-                .getHttpClient()
-                .requestWithBaseUrl(baseUrl, req::process)
-                .getResponse()
-                .get("stream")) {
-      return NodeValueFetcher.Metrics.parsePrometheusOutput(in);
+
+    try {
+      InputStream in =
+          (InputStream)
+              ctx.cloudSolrClient
+                  .getHttpClient()
+                  .requestWithBaseUrl(baseUrl, req::process)
+                  .getResponse()
+                  .get(STREAM_KEY);
+
+      return NodeValueFetcher.Metrics.prometheusMetricStream(in);
     } catch (Exception e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Unable to read prometheus metrics output", e);
