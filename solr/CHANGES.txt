@@ -24,6 +24,9 @@ Bug Fixes
 
 * SOLR-3696: Fix for LB/Cloud SolrClients that could leak on close() if concurrent request failed and triggered zombie server logic. (hossman)
 
+* SOLR-17883: SolrCLI tools such as "bin/solr zk" can now access jars located in `<install_dir>/lib`.
+
+
 Dependency Upgrades
 ---------------------
 (No changes)
