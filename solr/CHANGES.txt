@@ -270,6 +270,8 @@ Improvements
 * SOLR-17921: SolrJ CloudSolrClient configured with a Solr URL (not ZK) now refreshes liveNodes in the background.
   This will reduce spikes in request latency when the cached liveNodes have expired. (Houston Putman, David Smiley)
 
+* SOLR-17883: SolrCLI tools such as "bin/solr zk" can now access jars located in `<install_dir>/lib`.
+
 Optimizations
 ---------------------
 (No changes)
