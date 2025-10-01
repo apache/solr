@@ -16,10 +16,9 @@
  */
 package org.apache.solr.metrics;
 
-import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
-
 import com.codahale.metrics.MetricRegistry;
 import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -57,7 +56,7 @@ public class SolrCoreMetricManager implements Closeable {
   // rename
   private final List<MetricProducerInfo> registeredProducers = new ArrayList<>();
 
-  private record MetricProducerInfo(SolrMetricProducer producer, String scope) {}
+  private record MetricProducerInfo(SolrMetricProducer producer, Attributes attributes) {}
 
   /**
    * Constructs a metric manager.
@@ -132,11 +131,10 @@ public class SolrCoreMetricManager implements Closeable {
 
     registeredProducers.forEach(
         metricProducer -> {
-          var producerAttributes = core.getCoreAttributes().toBuilder();
-          if (metricProducer.scope().startsWith("/"))
-            producerAttributes.put(HANDLER_ATTR, metricProducer.scope);
           metricProducer.producer.initializeMetrics(
-              solrMetricsContext, producerAttributes.build(), metricProducer.scope);
+              solrMetricsContext,
+              metricProducer.attributes.toBuilder().putAll(core.getCoreAttributes()).build(),
+              "");
         });
   }
 
@@ -145,29 +143,28 @@ public class SolrCoreMetricManager implements Closeable {
    * set of attributes for core level metrics. All metric producers are tracked for re-registering
    * in the case of core swapping/renaming
    *
-   * @param scope the scope of the metrics to be registered (e.g. `/admin/ping`)
    * @param producer producer of metrics to be registered
+   * @param attributes
    */
-  public void registerMetricProducer(String scope, SolrMetricProducer producer) {
-    if (scope == null || producer == null) {
+  public void registerMetricProducer(SolrMetricProducer producer, Attributes attributes) {
+    if (attributes == null || producer == null) {
       throw new IllegalArgumentException(
           "registerMetricProducer() called with illegal arguments: "
-              + "scope = "
-              + scope
+              + "attributes = "
+              + attributes
               + ", producer = "
               + producer);
     }
 
     // Track this producer for potential re-initialization during core rename
-    registeredProducers.add(new MetricProducerInfo(producer, scope));
+    registeredProducers.add(new MetricProducerInfo(producer, attributes));
 
     // TODO: We initialize metrics with attributes of the core. This happens again in
     // reregisterCoreMetrics
     // There is some possible improvement that can be done here to not have to duplicate code in
     // reregisterCoreMetrics
-    var attributesBuilder = core.getCoreAttributes().toBuilder();
-    if (scope.startsWith("/")) attributesBuilder.put(HANDLER_ATTR, scope);
-    producer.initializeMetrics(solrMetricsContext, attributesBuilder.build(), scope);
+    producer.initializeMetrics(
+        solrMetricsContext, attributes.toBuilder().putAll(core.getCoreAttributes()).build(), "");
   }
 
   /** Return the registry used by this SolrCore. */
@@ -190,9 +187,6 @@ public class SolrCoreMetricManager implements Closeable {
     }
     metricManager.unregisterGauges(
         solrMetricsContext.getRegistryName(), solrMetricsContext.getTag());
-
-    metricManager.removeRegistry(solrMetricsContext.getRegistryName());
-    registeredProducers.clear();
   }
 
   public SolrMetricsContext getSolrMetricsContext() {
