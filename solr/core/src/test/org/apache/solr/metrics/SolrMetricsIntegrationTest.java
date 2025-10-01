@@ -17,16 +17,13 @@
 
 package org.apache.solr.metrics;
 
-import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
-
-import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot.GaugeDataPointSnapshot;
-import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import io.prometheus.metrics.model.snapshots.Labels;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.SolrTestCaseJ4;
@@ -82,38 +79,22 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCoreContainerMetrics() {
-    MetricSnapshots metrics =
-        new MetricSnapshots(
-             metricManager.getPrometheusMetricReaders().entrySet().stream()
-                .flatMap(
-                    entry ->
-                        entry.getValue().collect().stream()
-                            .filter(m -> !m.getMetadata().getPrometheusName().startsWith("target")))
-                .toList());
+    var reader = metricManager.getPrometheusMetricReader("solr.node");
 
-    GaugeSnapshot coresLoaded =
-        SolrMetricTestUtils.getMetricSnapshot(GaugeSnapshot.class, metrics, "solr_cores_loaded");
-    assertTrue(getGaugeOpt(coresLoaded, "permanent").isPresent());
-    assertTrue(getGaugeOpt(coresLoaded, "transient").isPresent());
-    assertTrue(getGaugeOpt(coresLoaded, "unloaded").isPresent());
+    assertNotNull(getGaugeOpt(reader, "solr_cores_loaded", "permanent"));
+    assertNotNull(getGaugeOpt(reader, "solr_cores_loaded", "transient"));
+    assertNotNull(getGaugeOpt(reader, "solr_cores_loaded", "unloaded"));
 
-    GaugeSnapshot fsDiskSpace =
-        SolrMetricTestUtils.getMetricSnapshot(
-            GaugeSnapshot.class, metrics, "solr_cores_filesystem_disk_space_bytes");
-    assertTrue(getGaugeOpt(fsDiskSpace, "total_space").isPresent());
-    assertTrue(getGaugeOpt(fsDiskSpace, "usable_space").isPresent());
-
-    GaugeSnapshot rootDiskSpace =
-        SolrMetricTestUtils.getMetricSnapshot(
-            GaugeSnapshot.class, metrics, "solr_cores_root_disk_space_bytes");
-    assertTrue(getGaugeOpt(rootDiskSpace, "total_space").isPresent());
-    assertTrue(getGaugeOpt(rootDiskSpace, "usable_space").isPresent());
+    assertNotNull(getGaugeOpt(reader, "solr_disk_space_bytes", "total_space"));
+    assertNotNull(getGaugeOpt(reader, "solr_disk_space_bytes", "usable_space"));
   }
 
-  private static Optional<GaugeDataPointSnapshot> getGaugeOpt(GaugeSnapshot gauges, String type) {
-    return gauges.getDataPoints().stream()
-        .filter(g -> g.getLabels().get(TYPE_ATTR.toString()).equals(type))
-        .findFirst();
+  private static GaugeDataPointSnapshot getGaugeOpt(
+      PrometheusMetricReader reader, String metricName, String type) {
+    return SolrMetricTestUtils.getGaugeDatapoint(
+        reader,
+        metricName,
+        Labels.of("category", "CONTAINER", "otel_scope_name", "org.apache.solr", "type", type));
   }
 
   @Test

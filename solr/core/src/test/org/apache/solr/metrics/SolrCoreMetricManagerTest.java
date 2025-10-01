@@ -78,7 +78,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random);
     SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
     try {
-      coreMetricManager.registerMetricProducer(scope, producer);
+      coreMetricManager.registerMetricProducer(producer, Attributes.empty());
       assertNotNull(scope);
       assertNotNull(category);
       assertRegistered(scope, metrics, coreMetricManager);
@@ -87,28 +87,6 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
           "expected at least one null but got: scope=" + scope + ", category=" + category,
           (scope == null || category == null));
       assertRegistered(scope, new HashMap<>(), coreMetricManager);
-    }
-  }
-
-  @Test
-  public void testRegisterMetricsWithReplacements() {
-    Random random = random();
-
-    Map<String, Counter> registered = new HashMap<>();
-    String scope = SolrMetricTestUtils.getRandomScope(random, true);
-    SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
-
-    int iterations = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
-    for (int i = 0; i < iterations; ++i) {
-      Map<String, Counter> metrics =
-          SolrMetricTestUtils.getRandomMetricsWithReplacements(random, registered);
-      if (metrics.isEmpty()) {
-        continue;
-      }
-      SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
-      coreMetricManager.registerMetricProducer(scope, producer);
-      registered.putAll(metrics);
-      assertRegistered(scope, registered, coreMetricManager);
     }
   }
 
@@ -188,8 +166,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     Map<String, Long> initialMetrics =
         SolrMetricTestUtils.getRandomPrometheusMetricsWithReplacements(random, new HashMap<>());
     var initialProducer = new SolrMetricTestUtils.TestSolrMetricProducer(coreName, initialMetrics);
-    coreMetricManager.registerMetricProducer(
-        SolrMetricTestUtils.getRandomScope(random, true), initialProducer);
+    coreMetricManager.registerMetricProducer(initialProducer, Attributes.empty());
 
     var labels = SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore()).build();
 

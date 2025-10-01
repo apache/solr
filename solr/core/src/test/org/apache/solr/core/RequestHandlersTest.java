@@ -16,9 +16,7 @@
  */
 package org.apache.solr.core;
 
-import com.codahale.metrics.Gauge;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.BeforeClass;
@@ -32,12 +30,14 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testInitCount() {
-    String registry = h.getCore().getCoreMetricManager().getRegistryName();
-    SolrMetricManager manager = h.getCoreContainer().getMetricManager();
-    @SuppressWarnings({"unchecked"})
-    Gauge<Number> g =
-        (Gauge<Number>) manager.registry(registry).getMetrics().get("QUERY./mock.initCount");
-    assertEquals("Incorrect init count", 1, g.getValue().intValue());
+    var datapoint =
+        SolrMetricTestUtils.getGaugeDatapoint(
+            h.getCore(),
+            "mock_request",
+            SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
+                .label("handler", "/mock")
+                .build());
+    assertEquals(1.0, datapoint.getValue(), 0.0);
   }
 
   @Test

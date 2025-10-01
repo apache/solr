@@ -89,8 +89,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
     this.updater = new PeerSync.Updater(msg(), core);
 
-    core.getCoreMetricManager()
-        .registerMetricProducer(SolrInfoBean.Category.REPLICATION.toString(), this);
+    core.getCoreMetricManager().registerMetricProducer(this, Attributes.empty());
   }
 
   public static final String METRIC_SCOPE = "peerSync";
