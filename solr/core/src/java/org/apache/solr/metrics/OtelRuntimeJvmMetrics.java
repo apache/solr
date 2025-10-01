@@ -37,10 +37,8 @@ public class OtelRuntimeJvmMetrics {
 
   public OtelRuntimeJvmMetrics initialize(
       SolrMetricManager solrMetricManager, String registryName) {
-    if (!isJvmMetricsEnabled()) {
-      log.info("JVM metrics collection is disabled");
-      return this;
-    }
+    if (!isJvmMetricsEnabled()) return this;
+
     this.runtimeMetrics =
         RuntimeMetrics.builder(
                 OpenTelemetrySdk.builder()
