@@ -56,6 +56,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     System.setProperty("filterCache.enabled", "false");
     System.setProperty("queryResultCache.enabled", "false");
     System.setProperty("documentCache.enabled", "true");
+    System.setProperty("solr.metrics.jvm.enabled", "true");
     System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
 
     initCore("solrconfig-pluggable-circuitbreaker.xml", "schema.xml");

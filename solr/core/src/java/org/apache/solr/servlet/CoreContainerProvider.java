@@ -53,10 +53,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean.Group;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.metrics.OtelRuntimeJvmMetrics;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.servlet.RateLimitManager.Builder;
 import org.apache.solr.util.StartupLoggingUtils;
@@ -73,9 +70,7 @@ public class CoreContainerProvider implements ServletContextListener {
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private CoreContainer cores;
   private Properties extraProperties;
-  private SolrMetricManager metricManager;
   private RateLimitManager rateLimitManager;
-  private OtelRuntimeJvmMetrics otelRuntimeJvmMetrics;
 
   /**
    * Acquires an instance from the context. Never null.
@@ -142,11 +137,9 @@ public class CoreContainerProvider implements ServletContextListener {
     //    }
 
     cores = null;
-    if (otelRuntimeJvmMetrics != null) otelRuntimeJvmMetrics.close();
     if (cc != null) {
       cc.shutdown();
     }
-    metricManager = null;
   }
 
   private void init(ServletContext servletContext) {
@@ -195,7 +188,6 @@ public class CoreContainerProvider implements ServletContextListener {
               });
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
-      setupJvmMetrics(coresInit);
 
       SolrZkClient zkClient = null;
       ZkController zkController = coresInit.getZkController();
@@ -373,13 +365,6 @@ public class CoreContainerProvider implements ServletContextListener {
     final CoreContainer coreContainer = new CoreContainer(nodeConfig, true);
     coreContainer.load();
     return coreContainer;
-  }
-
-  private void setupJvmMetrics(CoreContainer coresInit) {
-    this.metricManager = coresInit.getMetricManager();
-    this.otelRuntimeJvmMetrics =
-        new OtelRuntimeJvmMetrics()
-            .initialize(metricManager, SolrMetricManager.getRegistryName(Group.jvm));
   }
 
   public RateLimitManager getRateLimitManager() {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -326,18 +327,21 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       // verify that getting metrics from an unloaded core doesn't cause exceptions (SOLR-12541)
       try (SolrCore core1 = cc.getCore("collection1");
           MetricsHandler handler = new MetricsHandler(h.getCoreContainer())) {
-
         SolrQueryResponse resp = new SolrQueryResponse();
-        handler.handleRequest(makeReq(core1, CommonParams.QT, "/admin/metrics"), resp);
+        handler.handleRequest(
+            makeReq(core1, CommonParams.QT, "/admin/metrics", "wt", "prometheus"), resp);
         NamedList<?> values = resp.getValues();
-        assertNotNull(values.get("metrics"));
-        values = (NamedList<?>) values.get("metrics");
-        NamedList<?> nl = (NamedList<?>) values.get("solr.core.collection2");
-        assertNotNull(nl);
-        Object o = nl.get("REPLICATION./replication.indexPath");
-        assertNotNull(o);
+        MetricSnapshots snapshots = (MetricSnapshots) values.get("metrics");
+        assertNotNull(snapshots);
+        assertTrue(
+            snapshots.stream()
+                .anyMatch(
+                    (snapshot) ->
+                        snapshot
+                            .getMetadata()
+                            .getPrometheusName()
+                            .equals("solr_replication_index_size_bytes")));
       }
-
     } finally {
       cc.shutdown();
     }

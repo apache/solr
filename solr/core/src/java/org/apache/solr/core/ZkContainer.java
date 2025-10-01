@@ -204,7 +204,7 @@ public class ZkContainer {
                         "solr_zk_written",
                         "Total bytes written to ZooKeeper",
                         measurement -> {
-                          measurement.record(metricsListener.getBytesWritten());
+                          measurement.record(metricsListener.getBytesWritten(), attributes);
                         },
                         OtelUnit.BYTES));
 
@@ -213,7 +213,7 @@ public class ZkContainer {
                         "solr_zk_cumulative_multi_ops_total",
                         "Total cumulative multi-operations count",
                         measurement -> {
-                          measurement.record(metricsListener.getCumulativeMultiOps());
+                          measurement.record(metricsListener.getCumulativeMultiOps(), attributes);
                         }));
 
                 observables.add(
@@ -221,7 +221,7 @@ public class ZkContainer {
                         "solr_zk_child_fetches",
                         "Total number of ZooKeeper child node fetches",
                         measurement -> {
-                          measurement.record(metricsListener.getChildFetches());
+                          measurement.record(metricsListener.getChildFetches(), attributes);
                         }));
 
                 observables.add(
@@ -229,7 +229,8 @@ public class ZkContainer {
                         "solr_zk_cumulative_children_fetched",
                         "Total cumulative children fetched count",
                         measurement -> {
-                          measurement.record(metricsListener.getCumulativeChildrenFetched());
+                          measurement.record(
+                              metricsListener.getCumulativeChildrenFetched(), attributes);
                         }));
                 toClose = Collections.unmodifiableList(observables);
               }

@@ -74,28 +74,20 @@ public class NodesSysPropsCacher implements NodesSysProps, AutoCloseable {
     return result;
   }
 
-  // NOCOMMIT: These properties were fetched from the /admin/metrics endpoint. These properties were
-  // stored as strings instead of numeric values. This is not possible in OTEL metrics.
-  // Use /admin/info/properties to fetch system properties.
   private Map<String, Object> fetchProps(String nodeName, Collection<String> tags) {
     ModifiableSolrParams msp = new ModifiableSolrParams();
     msp.add(CommonParams.OMIT_HEADER, "true");
-    LinkedHashMap<String, String> keys = new LinkedHashMap<>();
-    for (String tag : tags) {
-      String metricsKey = "solr.jvm:system.properties:" + tag;
-      keys.put(tag, metricsKey);
-      msp.add("key", metricsKey);
-    }
 
-    GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", msp);
+    GenericSolrRequest req =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/properties", msp);
     try {
       LinkedHashMap<String, Object> result = new LinkedHashMap<>();
       NavigableObject response =
           solrClient
               .requestWithBaseUrl(zkStateReader.getBaseUrlForNodeName(nodeName), null, req)
               .getResponse();
-      var metrics = NavigableObject.wrap(response._get("metrics"));
-      keys.forEach((tag, key) -> result.put(tag, metrics._get(key)));
+      var metrics = NavigableObject.wrap(response._get("system.properties"));
+      tags.forEach((tag) -> result.put(tag, metrics._get(tag)));
       return result;
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);

@@ -318,9 +318,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
                   baseAttributes.toBuilder().put(TYPE_ATTR, "soft_auto_commits").build());
             })));
 
-    // NOCOMMIT: This might not need to be an obseravableLongGauge, but a simple long gauge. Seems
-    // like a waste to constantly call this callback to get the latest value if the upper bounds
-    // rarely change.
     observables.add(
         solrMetricsContext.observableLongGauge(
             "solr_core_update_commit_stats",

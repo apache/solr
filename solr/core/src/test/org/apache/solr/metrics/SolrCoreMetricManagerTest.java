@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -224,8 +223,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     SolrCore core = cc.create("to-unload", Map.of("configSet", "minimal"));
     coreRegistryName = core.getSolrMetricsContext().getRegistryName();
 
-    Set<String> names = metricManager.registryNames();
-    assertTrue("missing registry", names.contains(coreRegistryName));
+    assertNotNull("missing registry", metricManager.getPrometheusMetricReader(coreRegistryName));
 
     // Commit and wait for searcher to ensure the searcher is created. This is required to make sure
     // the core inner thread does not create it *after* we asked the container to unload the core.

@@ -90,6 +90,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
     args.add("solr.data.home", "/solrdata/");
     df.init(args);
     assertDataHome("/solrdata/inst_dir/data", "inst_dir", df, cc);
+    cc.shutdown();
 
     // solr.data.home set with System property, and relative path
     System.setProperty("solr.data.home", "solrdata");
@@ -108,6 +109,8 @@ public class DirectoryFactoryTest extends SolrTestCase {
         cc,
         "dataDir",
         "mydata");
+    cc.shutdown();
+
     // solr.data.home set but also solrDataHome set in solr.xml, which should override the former
     System.setProperty("test.solr.data.home", "/foo");
     config = loadNodeConfig("/solr/solr-solrDataHome.xml");
@@ -116,6 +119,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
     df.initCoreContainer(cc);
     df.init(new NamedList<>());
     assertDataHome("/foo/inst_dir/data", "inst_dir", df, cc);
+    cc.shutdown();
   }
 
   private void assertDataHome(
