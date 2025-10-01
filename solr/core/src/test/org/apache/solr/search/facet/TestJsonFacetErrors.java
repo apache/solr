@@ -63,7 +63,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   }
 
   public void indexSimple(Client client) throws Exception {
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     client.add(
         sdoc(
             "id",
@@ -130,7 +130,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   }
 
   public void doTestErrors(Client client) throws Exception {
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
 
     SolrException e =
         assertThrows(
@@ -150,7 +150,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   @Test
   public void testDomainErrors() throws Exception {
     Client client = Client.localClient();
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     indexSimple(client);
 
     // using assertQEx so that, status code and error message can be asserted
@@ -215,7 +215,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   @Test
   public void testRangeFacetsErrorCases() throws Exception {
     Client client = Client.localClient();
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     indexSimple(client);
 
     SolrParams params = params("q", "*:*", "rows", "0");
@@ -403,7 +403,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   @Test
   public void testOtherErrorCases() throws Exception {
     Client client = Client.localClient();
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     indexSimple(client);
 
     // test for sort
