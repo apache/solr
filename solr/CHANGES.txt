@@ -86,6 +86,8 @@ Bug Fixes
 * SOLR-17772: Tests for CLI examples were failing on Windows due to a legacy bug uncovered by fix in SOLR-7962.
   Additionally achieves simplification of CLI tests (Rahul Goswami via Eric Pugh)
 
+* SOLR-17940: Fix DelegatingCollector to prevent the delegate from calling setMinCompetitiveScore if the scoreMode is not TOP_SCORES (hossman)
+
 Deprecation Removals
 ----------------------
 
