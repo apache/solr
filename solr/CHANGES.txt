@@ -326,6 +326,8 @@ Bug Fixes
 
 * SOLR-17883: SolrCLI tools such as "bin/solr zk" can now access jars located in `<install_dir>/lib`.
 
+* SOLR-17939: Solr now uses correct resource-loader to load ZkCredentialsProvider/ZkCredentialsInjector, preventing errant ClassNotFoundExceptions (Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 (No changes)
