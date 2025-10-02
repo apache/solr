@@ -170,6 +170,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * BlobHandler and the `.system` collection have been removed in favour of FileStore API.  (SOLR-17851).
 
+* The deprecated transient Solr cores capability has been removed.  (SOLR-17932)
+
 
 === Security
 

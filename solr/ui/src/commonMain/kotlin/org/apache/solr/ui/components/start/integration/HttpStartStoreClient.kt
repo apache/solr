@@ -64,7 +64,7 @@ class HttpStartStoreClient(
                         methods = methods,
                         message =
                         if (methods.isEmpty()) {
-                            "Unauthorized response received with missing or unsupported auth method."
+                            "Unauthorized response received with missing auth methods."
                         } else {
                             null
                         },
@@ -83,15 +83,38 @@ class HttpStartStoreClient(
      * @param headers The headers to use for extracting the information.
      */
     private fun getAuthMethodsFromHeader(headers: Headers): List<AuthMethod> {
-        val authHeader = headers["Www-Authenticate"]
-        val parts = authHeader?.split(" ", limit = 2)
-        val scheme = parts?.firstOrNull()
+        // Note that on JVM headers.getAll() may return multiple values, whereas in WebAssembly/JS
+        // it may merge multiple headers and separate them by comma
+        val authHeaders = headers.getAll("Www-Authenticate") ?: emptyList()
 
-        // TODO Get realm from header value
+        return authHeaders
+            // Split by comma, as there is the chance that headers will be merged and separated by
+            // comma (e.g. on web target)
+            .flatMap { header -> header.split(",") }
+            .map { authHeader ->
+                val (scheme, params) = parseWwwAuthenticate(authHeader)
 
-        return when (scheme) {
-            "Basic" -> listOf(AuthMethod.BasicAuthMethod(realm = "solr"))
-            else -> emptyList()
-        }
+                when (scheme.lowercase()) {
+                    "basic", "xbasic" -> AuthMethod.BasicAuthMethod(realm = params["realm"])
+                    else -> AuthMethod.Unknown
+                }
+            }
+    }
+
+    private fun parseWwwAuthenticate(headerValue: String): Pair<String, Map<String, String>> {
+        val parts = headerValue.split(" ", limit = 2)
+        val scheme = parts[0]
+
+        // The below mapping is not supporting commas or spaces in the parameter values, nor
+        // parameters separated by commas (only spaces)
+        val params = parts.getOrNull(1)
+            ?.split(" ")
+            ?.map(String::trim)
+            ?.associate {
+                val (k, v) = it.split("=", limit = 2)
+                k to v.trim('"')
+            }
+            ?: emptyMap()
+        return scheme to params
     }
 }
