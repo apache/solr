@@ -199,7 +199,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
   /** Process a stream of prometheus metrics lines */
   static void processMetricStream(
-      String solrNode, RemoteCallCtx ctx, Set<String> metricNames, Consumer<String> processor) {
+      String solrNode, RemoteCallCtx ctx, Set<String> metricNames, Consumer<String> lineProcessor) {
     if (!ctx.isNodeAlive(solrNode)) return;
 
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -222,7 +222,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
                 .getResponse()
                 .get(STREAM_KEY)) {
 
-      NodeValueFetcher.Metrics.prometheusMetricStream(in).forEach(processor);
+      NodeValueFetcher.Metrics.prometheusMetricStream(in).forEach(lineProcessor);
     } catch (Exception e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Unable to read prometheus metrics output", e);

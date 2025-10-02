@@ -66,12 +66,6 @@ public class NodeValueFetcher {
         try (InputStream in = (InputStream) metrics) {
           return prometheusMetricStream(in)
               .filter(line -> extractMetricNameFromLine(line).equals(metricName))
-              .filter(
-                  line -> {
-                    return line.contains("type=\"permanent\"")
-                        || line.contains("type=\"transient\"")
-                        || line.contains("type=\"unloaded\"");
-                  })
               .mapToInt((value) -> extractPrometheusValue(value).intValue())
               .sum();
         } catch (Exception e) {
