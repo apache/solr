@@ -71,6 +71,11 @@ Improvements
 
 * SOLR-17926: Improve tracking of time already spent to discount the limit for sub-requests when `timeAllowed` is used. (Andrzej Bialecki, hossman)
 
+* SOLR-17930: MultiAuthPlugin now looks up for auth plugins configured with "xBasic" as scheme if
+  "Basic" authentication used and no plugin with "Basic" scheme found. This allows the new UI to
+  authenticate in browser without a credentials prompt being displayed. The MultiAuthPlugin can now
+  also be configured with a single plugin.
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -80,6 +85,8 @@ Bug Fixes
 ---------------------
 * SOLR-17772: Tests for CLI examples were failing on Windows due to a legacy bug uncovered by fix in SOLR-7962.
   Additionally achieves simplification of CLI tests (Rahul Goswami via Eric Pugh)
+
+* SOLR-17940: Fix DelegatingCollector to prevent the delegate from calling setMinCompetitiveScore if the scoreMode is not TOP_SCORES (hossman)
 
 Deprecation Removals
 ----------------------
@@ -316,6 +323,8 @@ Bug Fixes
   disabled on the shared instance. (David Smiley)
 
 * SOLR-3696: Fix for LB/Cloud SolrClients that could leak on close() if concurrent request failed and triggered zombie server logic. (hossman)
+
+* SOLR-17883: SolrCLI tools such as "bin/solr zk" can now access jars located in `<install_dir>/lib`.
 
 Dependency Upgrades
 ---------------------

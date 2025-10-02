@@ -512,7 +512,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     final SolrClient c0 = clients.get(0);
     final SolrClient c1 = clients.get(1);
 
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     int id = 0;
 
     // client 0 // shard1: A=1,B=1,C=2 ...
@@ -620,7 +620,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     final SolrClient c0 = clients.get(0);
     final SolrClient c1 = clients.get(1);
 
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     int id = 0;
 
     // all_ss is only used for sub-faceting...
@@ -951,7 +951,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     final SolrClient c0 = clients.get(0);
     final SolrClient c1 = clients.get(1);
 
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     int id = 0;
 
     c0.add(sdoc("id", id++, "cat_s", "Ax"));
@@ -1022,7 +1022,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     final SolrClient c0 = clients.get(0);
     final SolrClient c1 = clients.get(1);
 
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     int id = 0;
 
     // client 0 // shard1
@@ -1237,7 +1237,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3);
 
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
 
     String cat_s = p.get("cat_s");
     String cat_i = p.get("cat_i"); // just like cat_s, but a number
@@ -1998,7 +1998,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     final SolrClient c1 = clients.get(1);
     final SolrClient c2 = clients.get(2);
 
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     int id = 0;
 
     c0.add(sdoc("id", id++, "cat_s", "Z", "price_i", 10));
