@@ -76,6 +76,11 @@ Improvements
   authenticate in browser without a credentials prompt being displayed. The MultiAuthPlugin can now
   also be configured with a single plugin.
 
+* SOLR-17541: `LBHttp2SolrClient` now maintains a separate internal/delegate client per Solr Base URL.  Both `LBHttp2SolrClient` and `CloudHttp2SolrClient`
+  always create and manage these internal clients.  The ability for callers to provide a pre-built client is removed.  Callers may specify the internal client
+  details by providing an instance of either `Http2SolrClient.Builder` or `HttpJdkSolrClient.Builder`. (James Dyer)
+
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
