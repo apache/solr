@@ -357,7 +357,7 @@ public class NodeValueFetcher {
 
   /** Helper method to check if a Prometheus line should be skipped (comments or empty lines). */
   public static boolean isPrometheusCommentLine(String line) {
-    return line.startsWith("#") || line.trim().isEmpty();
+    return line.startsWith("#") || line.isBlank();
   }
 
   /**
