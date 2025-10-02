@@ -98,7 +98,7 @@ public class NodeValueFetcher {
 
     /**
      * Extract metric value from Prometheus response, optionally filtering by label. This
-     * consolidated method handles both labeled and unlabeled metrics. This method assumes 1 metirc,
+     * consolidated method handles both labeled and unlabeled metrics. This method assumes 1 metric,
      * so will get the first metricName it sees with associated label and value.
      */
     private static Double extractFromPrometheusResponse(
