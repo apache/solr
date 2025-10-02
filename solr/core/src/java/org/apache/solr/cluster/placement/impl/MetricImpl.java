@@ -164,7 +164,7 @@ public abstract class MetricImpl<T> implements Metric<T> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, internalName, converter, labelKey, labelValue);
+    return Objects.hash(name, internalName, labelKey, labelValue);
   }
 
   @Override

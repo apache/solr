@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.impl;
 import static org.apache.solr.client.solrj.impl.InputStreamResponseParser.STREAM_KEY;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -29,6 +28,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -65,7 +65,13 @@ public class NodeValueFetcher {
 
         try (InputStream in = (InputStream) metrics) {
           return prometheusMetricStream(in)
-              .filter(line -> line.startsWith(metricName))
+              .filter(line -> extractMetricNameFromLine(line).equals(metricName))
+              .filter(
+                  line -> {
+                    return line.contains("type=\"permanent\"")
+                        || line.contains("type=\"transient\"")
+                        || line.contains("type=\"unloaded\"");
+                  })
               .mapToInt((value) -> extractPrometheusValue(value).intValue())
               .sum();
         } catch (Exception e) {
@@ -98,7 +104,8 @@ public class NodeValueFetcher {
 
     /**
      * Extract metric value from Prometheus response, optionally filtering by label. This
-     * consolidated method handles both labeled and unlabeled metrics.
+     * consolidated method handles both labeled and unlabeled metrics. This method assumes 1 metirc,
+     * so will get the first metricName it sees with associated label and value.
      */
     private static Double extractFromPrometheusResponse(
         NamedList<Object> root, String metricName, String labelKey, String labelValue) {
@@ -129,6 +136,12 @@ public class NodeValueFetcher {
       }
     }
 
+    /**
+     * Extracts the numeric value from a Prometheus metric line. Sample inputs: - With labels:
+     * solr_metrics_core_requests_total{core="demo",...} 123.0 - Without labels:
+     * solr_metrics_core_requests_total 123.0 - With exemplars:
+     * solr_metrics_core_requests_total{core="demo"} 123.0 # {trace_id="abc123"} 2.0 1234567890
+     */
     public static Double extractPrometheusValue(String line) {
       String s = line.trim();
 
@@ -145,21 +158,11 @@ public class NodeValueFetcher {
     }
 
     /** Returns a Stream of Prometheus lines for processing with filtered out comment lines */
-    public static java.util.stream.Stream<String> prometheusMetricStream(InputStream inputStream) {
+    public static Stream<String> prometheusMetricStream(InputStream inputStream) {
       BufferedReader reader =
           new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
-      return reader
-          .lines()
-          .filter(line -> !isPrometheusCommentLine(line))
-          .onClose(
-              () -> {
-                try {
-                  reader.close();
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
-                }
-              });
+      return reader.lines().filter(line -> !isPrometheusCommentLine(line));
     }
   }
 
@@ -272,8 +275,8 @@ public class NodeValueFetcher {
    * Retrieve values that match metrics. Metrics names are structured like below:
    *
    * <p>"metrics:solr_cores_filesystem_disk_space_bytes:type=usable_space" or
-   * "metrics:jvm_cpu_count". Metrics are fetched from /admin/metrics and parsed using shared utility
-   * methods.
+   * "metrics:jvm_cpu_count". Metrics are fetched from /admin/metrics and parsed using shared
+   * utility methods.
    */
   private void getRemoteMetrics(
       Set<String> requestedTagNames, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
@@ -295,39 +298,39 @@ public class NodeValueFetcher {
     }
 
     // Process prometheus stream response using structured MetricRequest objects
-    try (java.util.stream.Stream<String> stream =
-        SolrClientNodeStateProvider.fetchMetricStream(ctx.getNode(), ctx, requestedMetricNames)) {
+    SolrClientNodeStateProvider.processMetricStream(
+        ctx.getNode(),
+        ctx,
+        requestedMetricNames,
+        (line) -> {
+          String lineMetricName = extractMetricNameFromLine(line);
+          Double value = Metrics.extractPrometheusValue(line);
 
-      stream.forEach(
-          line -> {
-            String lineMetricName = extractMetricNameFromLine(line);
-            Double value = Metrics.extractPrometheusValue(line);
-
-            // Find matching MetricRequest(s) for this line
-            for (MetricRequest request : metricRequests) {
-              if (!request.metricName().equals(lineMetricName)) {
-                continue; // Metric name doesn't match
-              }
-
-              // Skip metric if it does not contain requested label
-              if (request.hasLabelFilter() && !line.contains(request.kvLabel())) {
-                continue;
-              }
-
-              // Found a match - store the value using the original tag
-              ctx.tags.put(request.originalTag(), value);
-              break; // Move to next line since we found our match
+          // Find matching MetricRequest(s) for this line
+          for (MetricRequest request : metricRequests) {
+            if (!request.metricName().equals(lineMetricName)) {
+              continue; // Metric name doesn't match
             }
-          });
-    }
+
+            // Skip metric if it does not contain requested label
+            if (request.hasLabelFilter() && !line.contains(request.kvLabel())) {
+              continue;
+            }
+
+            // Found a match - store the value using the original tag
+            ctx.tags.put(request.originalTag(), value);
+            break; // Move to next line since we found our match
+          }
+        });
   }
 
   /**
    * Extracts the metric name from a prometheus formatted metric:
    *
-   * <p>With labels: solr_metrics_core_requests_total{core="demo",...}
-   *
-   * <p>Without labels: solr_metrics_core_requests_total 123
+   * <p>- With labels: solr_metrics_core_requests_total{core="demo",...} 123.0 - Without labels:
+   * solr_metrics_core_requests_total 123.0 - With exemplars:
+   * solr_metrics_core_requests_total{core="demo"} 123.0 # {trace_id="abc123"} 2.0 1234567890 The
+   * sample inputs would return solr_metrics_core_requests_total
    */
   public static String extractMetricNameFromLine(String line) {
     int brace = line.indexOf('{');

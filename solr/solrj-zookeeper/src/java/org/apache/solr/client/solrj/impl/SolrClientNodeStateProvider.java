@@ -173,35 +173,34 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
 
     RemoteCallCtx ctx = new RemoteCallCtx(node, solrClient);
-    try (java.util.stream.Stream<String> metrics =
-        fetchMetricStream(node, ctx, requestedMetricNames)) {
-      metrics.forEach(
-          line -> {
-            String prometheusMetricName = NodeValueFetcher.extractMetricNameFromLine(line);
+    processMetricStream(
+        node,
+        ctx,
+        requestedMetricNames,
+        (line) -> {
+          String prometheusMetricName = NodeValueFetcher.extractMetricNameFromLine(line);
 
-            // Extract core name from prometheus line and the core label
-            String coreParam = NodeValueFetcher.extractLabelValueFromLine(line, "core");
-            if (coreParam == null) return;
+          // Extract core name from prometheus line and the core label
+          String coreParam = NodeValueFetcher.extractLabelValueFromLine(line, "core");
+          if (coreParam == null) return;
 
-            // Find the matching core and set the metric value to its corresponding replica
-            // properties
-            List<Pair<Replica, String>> replicaProps = coreToReplicaProps.get(coreParam);
-            if (replicaProps != null) {
-              Double value = NodeValueFetcher.Metrics.extractPrometheusValue(line);
-              replicaProps.stream()
-                  .filter(pair -> pair.second().equals(prometheusMetricName))
-                  .forEach(pair -> pair.first().getProperties().put(pair.second(), value));
-            }
-          });
-    }
-
+          // Find the matching core and set the metric value to its corresponding replica
+          // properties
+          List<Pair<Replica, String>> replicaProps = coreToReplicaProps.get(coreParam);
+          if (replicaProps != null) {
+            Double value = NodeValueFetcher.Metrics.extractPrometheusValue(line);
+            replicaProps.stream()
+                .filter(pair -> pair.second().equals(prometheusMetricName))
+                .forEach(pair -> pair.first().getProperties().put(pair.second(), value));
+          }
+        });
     return result;
   }
 
-  /** Returns a stream of prometheus metrics lines for processing. */
-  static java.util.stream.Stream<String> fetchMetricStream(
-      String solrNode, RemoteCallCtx ctx, Set<String> metricNames) {
-    if (!ctx.isNodeAlive(solrNode)) return java.util.stream.Stream.empty();
+  /** Process a stream of prometheus metrics lines */
+  static void processMetricStream(
+      String solrNode, RemoteCallCtx ctx, Set<String> metricNames, Consumer<String> processor) {
+    if (!ctx.isNodeAlive(solrNode)) return;
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("wt", "prometheus");
@@ -215,16 +214,15 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     String baseUrl =
         ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
-    try {
-      InputStream in =
-          (InputStream)
-              ctx.cloudSolrClient
-                  .getHttpClient()
-                  .requestWithBaseUrl(baseUrl, req::process)
-                  .getResponse()
-                  .get(STREAM_KEY);
+    try (InputStream in =
+        (InputStream)
+            ctx.cloudSolrClient
+                .getHttpClient()
+                .requestWithBaseUrl(baseUrl, req::process)
+                .getResponse()
+                .get(STREAM_KEY)) {
 
-      return NodeValueFetcher.Metrics.prometheusMetricStream(in);
+      NodeValueFetcher.Metrics.prometheusMetricStream(in).forEach(processor);
     } catch (Exception e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Unable to read prometheus metrics output", e);
