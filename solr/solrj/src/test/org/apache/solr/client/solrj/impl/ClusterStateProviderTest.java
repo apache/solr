@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -45,8 +46,32 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClusterStateProviderTest extends SolrCloudTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  static class UserAgentChangingJdkClient extends HttpJdkSolrClient {
+
+    final String userAgent;
+
+    protected UserAgentChangingJdkClient(Builder builder, String userAgent) {
+      super(null, builder);
+      this.userAgent = userAgent;
+    }
+
+    @Override
+    protected PreparedRequest prepareRequest(
+        SolrRequest<?> solrRequest, String collection, String overrideBaseUrl)
+        throws SolrServerException, IOException {
+      var pr = super.prepareRequest(solrRequest, collection, overrideBaseUrl);
+      pr.reqb.header("User-Agent", userAgent);
+      return pr;
+    }
+  }
+
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -78,17 +103,30 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
 
   private static Http2ClusterStateProvider<?> http2ClusterStateProvider(String userAgent) {
     try {
+      var useJdkProvider = random().nextBoolean();
+      HttpSolrClientBase client;
+
+      if (userAgent != null) {
+        if (useJdkProvider) {
+          client = new UserAgentChangingJdkClient(new HttpJdkSolrClient.Builder().withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT), userAgent);
+        } else {
+          var http2SolrClient = new Http2SolrClient.Builder().build();
+          http2SolrClient.getHttpClient()
+              .setUserAgentField(
+                  new HttpField(
+                      HttpHeader.USER_AGENT, userAgent));
+          client = http2SolrClient;
+        }
+      } else {
+         client = useJdkProvider ? new HttpJdkSolrClient.Builder().withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT).build() : new Http2SolrClient.Builder().build();
+      }
+
+      log.info("Using Http client implementaton: {}", client.getClass().getName());
+
       var csp =  new Http2ClusterStateProvider<>(
           List.of(
               cluster.getJettySolrRunner(0).getBaseUrl().toString(),
-              cluster.getJettySolrRunner(1).getBaseUrl().toString()),
-          new Http2SolrClient.Builder().build());
-      if(userAgent != null) {
-        csp.getHttpClient().getHttpClient()
-            .setUserAgentField(
-                new HttpField(
-                    HttpHeader.USER_AGENT, userAgent));
-      }
+              cluster.getJettySolrRunner(1).getBaseUrl().toString()), client);
       return csp;
     } catch (Exception e) {
       throw new RuntimeException(e);

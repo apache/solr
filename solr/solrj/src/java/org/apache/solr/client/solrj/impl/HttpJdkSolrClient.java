@@ -205,7 +205,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return requestWithBaseUrl(null, solrRequest, collection);
   }
 
-  private PreparedRequest prepareRequest(
+  protected PreparedRequest prepareRequest(
       SolrRequest<?> solrRequest, String collection, String overrideBaseUrl)
       throws SolrServerException, IOException {
     checkClosed();
@@ -342,7 +342,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return new PreparedRequest(reqb, contentWritingFuture);
   }
 
-  private static class PreparedRequest {
+  protected static class PreparedRequest {
     Future<?> contentWritingFuture;
     HttpRequest.Builder reqb;
 
@@ -568,6 +568,9 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       super.withHttpClient(httpSolrClient);
       if (this.executor == null) {
         this.executor = httpSolrClient.executor;
+      }
+      if (this.sslContext == null) {
+        this.sslContext = httpSolrClient.httpClient.sslContext();
       }
       return this;
     }
