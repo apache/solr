@@ -25,7 +25,7 @@ import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.zookeeper.client.ConnectStringParser;
 
 public class SolrClientFactory {
@@ -77,7 +77,7 @@ public class SolrClientFactory {
     CloudSolrClient client =
         new CloudHttp2SolrClient.Builder(zkHosts, Optional.ofNullable(parser.getChrootPath()))
             .withInternalClientBuilder(newHttp2SolrClientBuilder(null, settings, configuration))
-            .withResponseParser(new NoOpResponseParser("json"))
+            .withResponseParser(new InputStreamResponseParser("json"))
             .build();
 
     client.connect();
