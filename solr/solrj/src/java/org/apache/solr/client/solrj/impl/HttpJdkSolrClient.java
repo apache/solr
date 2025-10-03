@@ -597,6 +597,5 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       this.cookieHandler = cookieHandler;
       return this;
     }
-
   }
 }

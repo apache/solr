@@ -19,17 +19,16 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.util.List;
-import org.apache.solr.client.solrj.SolrClient;
 
-public class Http2ClusterStateProvider<C extends HttpSolrClientBase> extends BaseHttpClusterStateProvider {
+public class Http2ClusterStateProvider<C extends HttpSolrClientBase>
+    extends BaseHttpClusterStateProvider {
   final C httpClient;
 
-  public Http2ClusterStateProvider(List<String> solrUrls, C httpClient)
-      throws Exception {
-    if(httpClient == null) {
+  public Http2ClusterStateProvider(List<String> solrUrls, C httpClient) throws Exception {
+    if (httpClient == null) {
       throw new IllegalArgumentException("You must provide an Http client.");
     }
-    this.httpClient =  httpClient;
+    this.httpClient = httpClient;
     initConfiguredNodes(solrUrls);
   }
 

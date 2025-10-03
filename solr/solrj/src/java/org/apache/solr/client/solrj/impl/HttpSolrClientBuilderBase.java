@@ -48,8 +48,8 @@ public abstract class HttpSolrClientBuilderBase<
   public abstract C build();
 
   /**
-   * Provide a seed HttpSolrClient for the builder values, values can still be overridden by
-   * using builder methods
+   * Provide a seed HttpSolrClient for the builder values, values can still be overridden by using
+   * builder methods
    */
   @SuppressWarnings("unchecked")
   public B withHttpClient(C httpSolrClient) {

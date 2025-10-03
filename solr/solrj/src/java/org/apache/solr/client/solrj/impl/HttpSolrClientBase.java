@@ -394,5 +394,5 @@ public abstract class HttpSolrClientBase extends SolrClient {
    *
    * @return a Builder
    */
-  public abstract HttpSolrClientBuilderBase<?,?> builder() ;
+  public abstract HttpSolrClientBuilderBase<?, ?> builder();
 }
