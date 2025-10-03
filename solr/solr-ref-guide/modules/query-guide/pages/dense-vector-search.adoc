@@ -432,7 +432,7 @@ Here's an example of a `knn` search using the early termination with input param
 [source,text]
 ?q={!knn f=vector topK=10 earlyTermination=true saturationThreshold=0.989 patience=10}[1.0, 2.0, 3.0, 4.0]
 
-`seed`::
+`seedQuery`::
 +
 [%autowidth,frame=none]
 |===
@@ -441,13 +441,12 @@ Here's an example of a `knn` search using the early termination with input param
 +
 A query seed to initiate the vector search, i.e. entry points in the HNSW graph exploration. Solr relies on the Lucene’s implementation of SeededKnnVectorQuery based on https://arxiv.org/pdf/2307.16779[Lexically-Accelerated Dense Retrieval (2023)].
 +
-The seed can be any valid Solr query, letting traditional query logic guide the vector search in a hybrid-like way.
+The seedQuery is primarily intended to be a lexical query, guiding the vector search in a hybrid-like way through traditional query logic. Although a knn query can also be used as a seed — which might make sense in specific scenarios and has been verified by a dedicated test — this approach is not considered a best practice.
 
-
-Here is an example of a `knn` search using a `seed` query:
+Here is an example of a `knn` search using a `seedQuery`:
 
 [source,text]
-?q={!knn f=vector topK=10 seed='id:(1 4 10)'}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=10 seedQuery='id:(1 4 10)'}[1.0, 2.0, 3.0, 4.0]
 
 The search results retrieved are the k=10 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`. Documents matching the query `id:(1 4 10)` are used as entry points for the ANN search. If no documents match the seed, Solr falls back to a regular knn search without seeding, starting instead from random entry points.
 

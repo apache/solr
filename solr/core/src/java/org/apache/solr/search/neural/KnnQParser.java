@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.neural;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -26,24 +25,20 @@ import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class KnnQParser extends AbstractVectorQParserBase {
 
   // retrieve the top K results based on the distance similarity function
   protected static final String TOP_K = "topK";
   protected static final int DEFAULT_TOP_K = 10;
-  protected static final String SEED = "seed";
+  protected static final String SEED_QUERY = "seedQuery";
 
   // parameters for PatienceKnnVectorQuery, a version of knn vector query that exits early when HNSW
-  // queue
-  // saturates over a {@code #saturationThreshold} for more than {@code #patience} times.
+  // queue saturates over a {@code #saturationThreshold} for more than {@code #patience} times.
   protected static final String EARLY_TERMINATION = "earlyTermination";
   protected static final boolean DEFAULT_EARLY_TERMINATION = false;
   protected static final String SATURATION_THRESHOLD = "saturationThreshold";
   protected static final String PATIENCE = "patience";
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public KnnQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
@@ -95,11 +90,12 @@ public class KnnQParser extends AbstractVectorQParserBase {
   }
 
   protected Query getSeedQuery() throws SolrException, SyntaxError {
-    String seed = localParams.get(SEED);
+    String seed = localParams.get(SEED_QUERY);
     if (seed == null) return null;
     if (seed.isBlank()) {
-      log.warn("Seed query is blank, defaulting to null");
-      return null;
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "'seedQuery' parameter is present but is blank: please provide a valid query");
     }
     final QParser seedParser = subQuery(seed, null);
     return seedParser.getQuery();
