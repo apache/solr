@@ -76,7 +76,7 @@ public abstract class FeatureExtractor {
         featureVectorCache = request.getSearcher().getFeatureVectorCache();
       }
       if (featureVectorCache != null) {
-        int fvCacheKey = computeFeatureVectorCacheKey(traversalScorer.docID());
+        int fvCacheKey = computeFeatureVectorCacheKey(traversalScorer.getSolrDocID());
         featureVector = featureVectorCache.get(fvCacheKey);
         if (featureVector == null) {
           featureVector = extractFeatureVector();

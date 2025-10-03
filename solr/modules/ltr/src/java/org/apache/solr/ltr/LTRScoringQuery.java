@@ -552,6 +552,10 @@ public class LTRScoringQuery extends Query implements Accountable {
       public void fillFeaturesInfo() throws IOException {
         featureTraversalScorer.fillFeaturesInfo();
       }
+
+      public void setSolrDocID(int solrDocID) throws IOException {
+        featureTraversalScorer.setSolrDocID(solrDocID);
+      }
     }
   }
 }

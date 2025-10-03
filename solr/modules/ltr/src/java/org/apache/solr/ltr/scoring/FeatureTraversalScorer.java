@@ -35,6 +35,10 @@ public abstract class FeatureTraversalScorer extends Scorer {
 
   public abstract int getTargetDoc();
 
+  public abstract int getSolrDocID();
+
+  public abstract void setSolrDocID(int solrDocID);
+
   public void reset() {
     for (int i = 0; i < extractedFeatureWeights.length; ++i) {
       int featId = extractedFeatureWeights[i].getIndex();

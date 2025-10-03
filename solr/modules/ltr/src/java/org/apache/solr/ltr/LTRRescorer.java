@@ -208,6 +208,7 @@ public class LTRRescorer extends Rescorer {
     scorer.iterator().advance(targetDoc);
 
     scorer.getDocInfo().setOriginalDocScore(hit.score);
+    scorer.setSolrDocID(docID);
     hit.score = scorer.score();
     if (QueryLimits.getCurrentLimits()
         .maybeExitWithPartialResults(

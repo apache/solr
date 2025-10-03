@@ -33,6 +33,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class SingleFeatureScorer extends FeatureTraversalScorer {
   private int targetDoc = -1;
   private int activeDoc = -1;
+  private int solrDocID = -1;
   private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
 
   public SingleFeatureScorer(
@@ -67,6 +68,16 @@ public class SingleFeatureScorer extends FeatureTraversalScorer {
   @Override
   public int getTargetDoc() {
     return targetDoc;
+  }
+
+  @Override
+  public int getSolrDocID() {
+    return solrDocID;
+  }
+
+  @Override
+  public void setSolrDocID(int solrDocID) {
+    this.solrDocID = solrDocID;
   }
 
   @Override
