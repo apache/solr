@@ -257,7 +257,7 @@ IF "%1"=="auth" goto set_script_cmd
 REM Handle all other commands by simply running SolrCLI
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI %*
 if errorlevel 1 (
    exit /b 1
@@ -746,7 +746,7 @@ IF NOT "%EXAMPLE%"=="" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -Dsolr.install.symDir="%SOLR_TIP%" ^
-    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+    -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.cli.SolrCLI run_example --script "%SDIR%\solr.cmd" -e %EXAMPLE% --server-dir "%SOLR_SERVER_DIR%" --jvm-opts "%SOLR_ADDL_ARGS%" ^
     --url-scheme !SOLR_URL_SCHEME! !PASS_TO_RUN_EXAMPLE!
 
@@ -1140,7 +1140,7 @@ IF "%FG%"=="1" (
   REM now wait to see Solr come online ...
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+    -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.cli.SolrCLI status --max-wait-secs !SOLR_START_WAIT!
   IF NOT "!ERRORLEVEL!"=="0" (
       set "SCRIPT_ERROR=Solr did not start or was not reachable. Check the logs for errors."
@@ -1188,7 +1188,7 @@ IF NOT EXIST "%SOLR_HOME%\" (
 
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+    -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.cli.SolrCLI auth %AUTH_PARAMS% --solr-include-file "%SOLR_INCLUDE%" --auth-conf-dir "%SOLR_HOME%"
 goto done
 

@@ -308,16 +308,6 @@ This attribute, when set to `true`, ensures that the multiple cores pointing to 
 Sharing the IndexSchema Object makes loading the core faster.
 If you use this feature, make sure that no core-specific property is used in your Schema file.
 
-`transientCacheSize`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-*Deprecated as of 9.2.*
-Defines how many Solr cores with `transient=true` that can be loaded before unloading an unused core for one that is needed.
-
 `configSetBaseDir`::
 +
 [%autowidth,frame=none]

@@ -59,7 +59,6 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     v1Params.add("configSet", "someConfigset");
     v1Params.add("shard", "shard1");
     v1Params.add("loadOnStartup", "true");
-    v1Params.add("transient", "true");
     v1Params.add("coreNodeName", "someNodeName");
     v1Params.add("newCollection", "true");
     v1Params.add("async", "someAsyncId");
@@ -81,7 +80,6 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     assertEquals("someCollection", createRequestBody.collection);
     assertEquals("shard1", createRequestBody.shard);
     assertEquals(Boolean.TRUE, createRequestBody.loadOnStartup);
-    assertEquals(Boolean.TRUE, createRequestBody.isTransient);
     assertEquals(Boolean.TRUE, createRequestBody.newCollection);
     assertEquals("someNodeName", createRequestBody.coreNodeName);
     assertNotNull(createRequestBody.properties);

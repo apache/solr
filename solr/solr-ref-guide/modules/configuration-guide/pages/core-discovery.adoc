@@ -146,17 +146,6 @@ The name of a defined configset, if desired, to use to configure the core (see t
 The name of the properties file for this core.
 The value can be an absolute pathname or a path relative to the value of `instanceDir`.
 
-`transient`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `false`
-|===
-+
-When `true`, the core can be unloaded if Solr reaches the `transientCacheSize`.
-Cores are unloaded in order of least recently used first.
-_Setting this to `true` is not recommended in SolrCloud mode._
-
 `loadOnStartup`::
 +
 [%autowidth,frame=none]
