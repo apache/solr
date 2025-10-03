@@ -187,8 +187,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"xml"})));
     req.setResponseParser(XML_STREAM_RESPONSE_PARSER);
     NamedList<Object> rsp = CLIENT.request(req, "collection1");
-    String strResponse =
-        InputStreamResponseParser.getOutputFromInputStreamResponseParserResponse(rsp);
+    String strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
 
     assertTrue(
         "response does not contain raw XML encoding: " + strResponse,
@@ -213,7 +212,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"xml"})));
     req.setResponseParser(XML_STREAM_RESPONSE_PARSER);
     rsp = CLIENT.request(req, "collection1");
-    strResponse = InputStreamResponseParser.getOutputFromInputStreamResponseParserResponse(rsp);
+    strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
 
     assertTrue(
         "response does not contain escaped XML encoding: " + strResponse,
@@ -236,7 +235,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"json"})));
     req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
     rsp = CLIENT.request(req, "collection1");
-    strResponse = InputStreamResponseParser.getOutputFromInputStreamResponseParserResponse(rsp);
+    strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
 
     assertTrue(
         "unexpected serialization of XML field value in JSON response: " + strResponse,
@@ -261,8 +260,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"json"})));
     req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
     NamedList<Object> rsp = CLIENT.request(req, "collection1");
-    String strResponse =
-        InputStreamResponseParser.getOutputFromInputStreamResponseParserResponse(rsp);
+    String strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
 
     assertTrue(
         "response does not contain right JSON encoding: " + strResponse,
@@ -285,7 +283,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"json"})));
     req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
     rsp = CLIENT.request(req, "collection1");
-    strResponse = InputStreamResponseParser.getOutputFromInputStreamResponseParserResponse(rsp);
+    strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
 
     assertTrue(
         "response does not contain right JSON encoding: " + strResponse,

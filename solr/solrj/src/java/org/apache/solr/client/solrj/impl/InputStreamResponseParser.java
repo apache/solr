@@ -47,8 +47,7 @@ public class InputStreamResponseParser extends ResponseParser {
    * When using a {@link InputStreamResponseParser}, the raw output is available in the response
    * under the key {@link #STREAM_KEY}.
    */
-  public static String getOutputFromInputStreamResponseParserResponse(NamedList<Object> response)
-      throws IOException {
+  public static String consumeResponseToString(NamedList<Object> response) throws IOException {
     assert response != null;
     String output;
     // Would be nice to validate the STREAM_KEY value is present

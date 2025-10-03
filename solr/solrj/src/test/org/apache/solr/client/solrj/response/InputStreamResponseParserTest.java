@@ -71,8 +71,7 @@ public class InputStreamResponseParserTest extends SolrJettyTestBase {
       SolrQuery query = new SolrQuery("id:1234");
       QueryRequest req = new QueryRequest(query);
       NamedList<Object> resp = client.request(req);
-      String responseString =
-          InputStreamResponseParser.getOutputFromInputStreamResponseParserResponse(resp);
+      String responseString = InputStreamResponseParser.consumeResponseToString(resp);
       assertResponse(responseString);
     }
   }

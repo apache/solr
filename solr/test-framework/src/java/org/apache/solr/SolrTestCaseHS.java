@@ -238,7 +238,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     } else {
       query.setResponseParser(new InputStreamResponseParser(wt));
       NamedList<Object> rsp = client.request(query);
-      return InputStreamResponseParser.getOutputFromInputStreamResponseParserResponse(rsp);
+      return InputStreamResponseParser.consumeResponseToString(rsp);
     }
   }
 

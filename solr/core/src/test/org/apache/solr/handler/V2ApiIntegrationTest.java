@@ -119,8 +119,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     // TODO: If possible do this in a better way
     request.setResponseParser(new InputStreamResponseParser("bleh"));
     NamedList<Object> res = cluster.getSolrClient().request(request);
-    String respString =
-        InputStreamResponseParser.getOutputFromInputStreamResponseParserResponse(res);
+    String respString = InputStreamResponseParser.consumeResponseToString(res);
 
     assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
     assertFalse(respString.contains("500"));
