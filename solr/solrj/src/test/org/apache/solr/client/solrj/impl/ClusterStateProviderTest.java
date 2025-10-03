@@ -290,7 +290,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
     }
 
     try (var cspZk = zkClientClusterStateProvider();
-        // Even older SolrJ versionsg for non streamed response
+        // Even older SolrJ versions for non streamed response
         var cspHttp =
             http2ClusterStateProvider(
                 "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + "2.0")) {
