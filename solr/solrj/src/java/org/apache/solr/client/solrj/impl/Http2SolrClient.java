@@ -643,6 +643,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
   }
 
+  @Override
+  public HttpSolrClientBuilderBase<?, ?> builder() {
+    return new Http2SolrClient.Builder().withHttpClient(this);
+  }
+  
   private NamedList<Object> processErrorsAndResponse(
       SolrRequest<?> solrRequest, Response response, InputStream is, String urlExceptionMessage)
       throws SolrServerException {

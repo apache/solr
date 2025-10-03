@@ -71,6 +71,13 @@ public abstract class HttpSolrClientBuilderBase<
     return (B) (this);
   }
 
+  /** Provides the Base Solr Url. */
+  @SuppressWarnings("unchecked")
+  public B withBaseSolrUrl(String baseSolrUrl) {
+    this.baseSolrUrl = baseSolrUrl;
+    return (B) this;
+  }
+
   /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
   @SuppressWarnings("unchecked")
   public B withRequestWriter(RequestWriter requestWriter) {

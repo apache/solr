@@ -537,6 +537,11 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
         .collect(Collectors.joining(", "));
   }
 
+  @Override
+  public HttpSolrClientBuilderBase<?, ?> builder() {
+    return new HttpJdkSolrClient.Builder().withHttpClient(this);
+  }
+
   public static class Builder
       extends HttpSolrClientBuilderBase<HttpJdkSolrClient.Builder, HttpJdkSolrClient> {
 
@@ -589,5 +594,6 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       this.cookieHandler = cookieHandler;
       return this;
     }
+
   }
 }
