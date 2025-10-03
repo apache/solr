@@ -128,7 +128,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
                 : new Http2SolrClient.Builder().build();
       }
       var clientClassName = client.getClass().getName();
-      log.info("Using Http client implementaton: {}", clientClassName);
+      log.info("Using Http client implementation: {}", clientClassName);
 
       var csp =
           new Http2ClusterStateProvider<>(
