@@ -16,7 +16,10 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.util.NamedList;
@@ -36,6 +39,23 @@ public class InputStreamResponseParser extends ResponseParser {
 
   public InputStreamResponseParser(String writerType) {
     this.writerType = writerType;
+  }
+
+  /**
+   * When using a InputStreamResponseParser, the raw output is available in the response under the
+   * key STREAM_KEY.
+   */
+  public static String getOutputFromInputStreamResponseParserResponse(NamedList<Object> response)
+      throws IOException {
+    assert response != null;
+    String output;
+    // Would be nice to validate the STREAM_KEY value is present
+    try (InputStream responseStream = (InputStream) response.get(STREAM_KEY)) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      responseStream.transferTo(baos);
+      output = baos.toString(StandardCharsets.UTF_8);
+    }
+    return output;
   }
 
   @Override
