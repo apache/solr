@@ -17,6 +17,7 @@
 package org.apache.solr.update;
 
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
+import static org.apache.solr.update.SolrIndexWriter.MERGE_OP_ATTR;
 import static org.apache.solr.update.SolrIndexWriter.MERGE_STATE_ATTR;
 import static org.apache.solr.update.SolrIndexWriter.MERGE_TYPE_ATTR;
 
@@ -129,11 +130,12 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var minorMergeDocs =
           SolrMetricTestUtils.getCounterDatapoint(
               core,
-              "solr_indexwriter_docs_merged",
+              "solr_indexwriter_merge_docs",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "minor")
-                  .label(MERGE_STATE_ATTR.toString(), "finished")
+                  .label(MERGE_OP_ATTR.toString(), "merge")
+                  .label(MERGE_STATE_ATTR.toString(), "completed")
                   .build());
       assertEquals(
           "minorMergeDocs should be 600, got: " + minorMergeDocs.getValue(),
@@ -142,11 +144,12 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var majorMergeDocs =
           SolrMetricTestUtils.getCounterDatapoint(
               core,
-              "solr_indexwriter_docs_merged",
+              "solr_indexwriter_merge_docs",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "major")
-                  .label(MERGE_STATE_ATTR.toString(), "finished")
+                  .label(MERGE_OP_ATTR.toString(), "merge")
+                  .label(MERGE_STATE_ATTR.toString(), "completed")
                   .build());
       assertEquals(
           "majorMergeDocs should be 500, got: " + majorMergeDocs.getValue(),
@@ -157,11 +160,11 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var minorSegmentsMergeMetric =
           SolrMetricTestUtils.getCounterDatapoint(
               core,
-              "solr_indexwriter_segments_merged",
+              "solr_indexwriter_merge_segments",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "minor")
-                  .label(MERGE_STATE_ATTR.toString(), "finished")
+                  .label(MERGE_STATE_ATTR.toString(), "completed")
                   .build());
       assertNotNull("minor segment merges metric should exist", minorSegmentsMergeMetric);
       assertEquals(
@@ -172,11 +175,11 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var majorSegmentsMergeMetric =
           SolrMetricTestUtils.getCounterDatapoint(
               core,
-              "solr_indexwriter_segments_merged",
+              "solr_indexwriter_merge_segments",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "major")
-                  .label(MERGE_STATE_ATTR.toString(), "finished")
+                  .label(MERGE_STATE_ATTR.toString(), "completed")
                   .build());
       assertNotNull("major segment merges metric should exist", majorSegmentsMergeMetric);
       assertEquals(
