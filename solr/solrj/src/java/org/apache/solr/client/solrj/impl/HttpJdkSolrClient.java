@@ -558,6 +558,15 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       return new HttpJdkSolrClient(baseSolrUrl, this);
     }
 
+    @Override
+    public Builder withHttpClient(HttpJdkSolrClient httpSolrClient) {
+      super.withHttpClient(httpSolrClient);
+      if (this.executor == null) {
+        this.executor = httpSolrClient.executor;
+      }
+      return this;
+    }
+
     /**
      * Use the provided SSLContext. See {@link
      * java.net.http.HttpClient.Builder#sslContext(SSLContext)}.

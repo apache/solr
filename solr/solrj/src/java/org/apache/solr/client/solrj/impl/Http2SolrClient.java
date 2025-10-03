@@ -1102,30 +1102,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
       return new Http2SolrClient(baseSolrUrl, this);
     }
 
-    /**
-     * Provide a seed Http2SolrClient for the builder values, values can still be overridden by
-     * using builder methods
-     */
     public Builder withHttpClient(Http2SolrClient http2SolrClient) {
+      super.withHttpClient(http2SolrClient);
       this.httpClient = http2SolrClient.httpClient;
 
-      if (this.basicAuthAuthorizationStr == null) {
-        this.basicAuthAuthorizationStr = http2SolrClient.basicAuthAuthorizationStr;
-      }
       if (this.idleTimeoutMillis == null) {
         this.idleTimeoutMillis = http2SolrClient.idleTimeoutMillis;
-      }
-      if (this.requestTimeoutMillis == null) {
-        this.requestTimeoutMillis = http2SolrClient.requestTimeoutMillis;
-      }
-      if (this.requestWriter == null) {
-        this.requestWriter = http2SolrClient.requestWriter;
-      }
-      if (this.responseParser == null) {
-        this.responseParser = http2SolrClient.parser;
-      }
-      if (this.urlParamNames == null) {
-        this.urlParamNames = http2SolrClient.urlParamNames;
       }
       if (this.listenerFactories == null) {
         this.listenerFactories = http2SolrClient.listenerFactory;

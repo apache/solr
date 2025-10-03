@@ -47,6 +47,30 @@ public abstract class HttpSolrClientBuilderBase<
 
   public abstract C build();
 
+  /**
+   * Provide a seed HttpSolrClient for the builder values, values can still be overridden by
+   * using builder methods
+   */
+  @SuppressWarnings("unchecked")
+  public B withHttpClient(C httpSolrClient) {
+    if (this.basicAuthAuthorizationStr == null) {
+      this.basicAuthAuthorizationStr = httpSolrClient.basicAuthAuthorizationStr;
+    }
+    if (this.requestTimeoutMillis == null) {
+      this.requestTimeoutMillis = httpSolrClient.requestTimeoutMillis;
+    }
+    if (this.requestWriter == null) {
+      this.requestWriter = httpSolrClient.requestWriter;
+    }
+    if (this.responseParser == null) {
+      this.responseParser = httpSolrClient.parser;
+    }
+    if (this.urlParamNames == null) {
+      this.urlParamNames = httpSolrClient.urlParamNames;
+    }
+    return (B) (this);
+  }
+
   /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
   @SuppressWarnings("unchecked")
   public B withRequestWriter(RequestWriter requestWriter) {
