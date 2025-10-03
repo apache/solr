@@ -667,7 +667,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       request.setResponseParser(new InputStreamResponseParser("json"));
       NamedList<Object> res = client.request(request);
-      String actualResponse = getOutputFromInputStreamResponseParserResponse(res);
+      String actualResponse =
+          InputStreamResponseParser.getOutputFromInputStreamResponseParserResponse(res);
 
       Map<String, Object> result = mapper.readValue(actualResponse, Map.class);
 

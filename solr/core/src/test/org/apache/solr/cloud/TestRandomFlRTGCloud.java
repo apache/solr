@@ -528,7 +528,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       final NamedList<Object> nlRsp = client.request(new QueryRequest(params));
       assertNotNull(params.toString(), nlRsp);
       rsp = nlRsp;
-      final String textResult = getOutputFromInputStreamResponseParserResponse(nlRsp);
+      final String textResult =
+          InputStreamResponseParser.getOutputFromInputStreamResponseParserResponse(nlRsp);
       switch (wt) {
         case "json":
           docs = getDocsFromJsonResponse(askForList, textResult);

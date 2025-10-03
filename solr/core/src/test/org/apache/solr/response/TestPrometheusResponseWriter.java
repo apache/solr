@@ -87,7 +87,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
-      String output = getOutputFromInputStreamResponseParserResponse(res);
+      String output = InputStreamResponseParser.getOutputFromInputStreamResponseParserResponse(res);
 
       Set<String> seenTypeInfo = new HashSet<>();
 
@@ -141,7 +141,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
-      String output = getOutputFromInputStreamResponseParserResponse(res);
+      String output = InputStreamResponseParser.getOutputFromInputStreamResponseParserResponse(res);
 
       assertEquals(
           expectedCore,
