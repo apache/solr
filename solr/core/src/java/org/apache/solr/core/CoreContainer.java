@@ -930,27 +930,6 @@ public class CoreContainer {
     // initialize gauges for reporting the number of cores and disk total/free
     solrCores.initializeMetrics(solrMetricsContext, containerAttrs, "");
 
-    // NOCOMMIT: Can't remove these without impacting node state reporting
-    // until NodeValueFetcher and SolrClientNodeStateProvider are patched
-    solrMetricsContext.gauge(
-        solrCores::getNumLoadedPermanentCores,
-        true,
-        "loaded",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "cores");
-    solrMetricsContext.gauge(
-        solrCores::getNumLoadedTransientCores,
-        true,
-        "lazy",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "cores");
-    solrMetricsContext.gauge(
-        solrCores::getNumUnloadedCores,
-        true,
-        "unloaded",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "cores");
-
     Path dataHome =
         cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
 
@@ -975,95 +954,6 @@ public class CoreContainer {
         },
         OtelUnit.BYTES);
 
-    // NOCOMMIT: Can't remove these without impacting node state reporting
-    // until NodeValueFetcher and SolrClientNodeStateProvider are patched
-    solrMetricsContext.gauge(
-        () -> {
-          try {
-            return Files.getFileStore(dataHome).getTotalSpace();
-          } catch (IOException e) {
-            throw new SolrException(
-                ErrorCode.SERVER_ERROR,
-                "Error retrieving total space for data home directory" + dataHome,
-                e);
-          }
-        },
-        true,
-        "totalSpace",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "fs");
-
-    solrMetricsContext.gauge(
-        () -> {
-          try {
-            return Files.getFileStore(dataHome).getUsableSpace();
-          } catch (IOException e) {
-            throw new SolrException(
-                ErrorCode.SERVER_ERROR,
-                "Error retrieving usable space for data home directory" + dataHome,
-                e);
-          }
-        },
-        true,
-        "usableSpace",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "fs");
-    solrMetricsContext.gauge(
-        dataHome::toString, true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    solrMetricsContext.gauge(
-        () -> {
-          try {
-            return Files.getFileStore(cfg.getCoreRootDirectory()).getTotalSpace();
-          } catch (IOException e) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Error retrieving total space for core root directory: "
-                    + cfg.getCoreRootDirectory(),
-                e);
-          }
-        },
-        true,
-        "totalSpace",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "fs",
-        "coreRoot");
-    solrMetricsContext.gauge(
-        () -> {
-          try {
-            return Files.getFileStore(cfg.getCoreRootDirectory()).getUsableSpace();
-          } catch (IOException e) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Error retrieving usable space for core root directory: "
-                    + cfg.getCoreRootDirectory(),
-                e);
-          }
-        },
-        true,
-        "usableSpace",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "fs",
-        "coreRoot");
-    solrMetricsContext.gauge(
-        () -> cfg.getCoreRootDirectory().toString(),
-        true,
-        "path",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "fs",
-        "coreRoot");
-    // add version information
-    solrMetricsContext.gauge(
-        () -> this.getClass().getPackage().getSpecificationVersion(),
-        true,
-        "specification",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "version");
-    solrMetricsContext.gauge(
-        () -> this.getClass().getPackage().getImplementationVersion(),
-        true,
-        "implementation",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "version");
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
     fieldCacheBean.initializeMetrics(
         solrMetricsContext,

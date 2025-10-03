@@ -42,7 +42,7 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Set<String> PROM_SUFFIXES =
-      Set.of("_total", "_sum", "_count", "_bucket", "_gcount", "_gsum", "_created", "_info");
+      Set.of("_total", "_sum", "_bucket", "_created", "_info");
 
   public FilterablePrometheusMetricReader(
       boolean otelScopeEnabled, Predicate<String> allowedResourceAttributesFilter) {
