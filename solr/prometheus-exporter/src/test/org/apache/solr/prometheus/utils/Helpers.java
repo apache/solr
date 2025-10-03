@@ -18,6 +18,8 @@
 package org.apache.solr.prometheus.utils;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -25,7 +27,10 @@ import java.util.stream.Stream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.prometheus.PrometheusExporterTestBase;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
@@ -46,12 +51,35 @@ public class Helpers {
                 ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
                 try {
                   req.addFile(xml, "application/xml");
-                  client.request(req, PrometheusExporterTestBase.COLLECTION);
+                  NamedList<Object> response =
+                      client.request(req, PrometheusExporterTestBase.COLLECTION);
+                  // If the client is configured with an InputStreamResponseParser the response will
+                  // contain the raw InputStream under the STREAM_KEY. Make sure we consume and
+                  // close it so ObjectReleaseTracker doesn't report leaks.
+                  try (InputStream is =
+                      response == null
+                          ? null
+                          : (InputStream) response.get(InputStreamResponseParser.STREAM_KEY)) {
+                    if (is != null) {
+                      // fully consume the stream to avoid leaving unread data on the connection
+                      is.transferTo(OutputStream.nullOutputStream());
+                    }
+                  }
                 } catch (Exception e) {
                   throw new RuntimeException(e);
                 }
               });
-      client.commit(PrometheusExporterTestBase.COLLECTION);
+      UpdateResponse commitResponse = client.commit(PrometheusExporterTestBase.COLLECTION);
+      NamedList<Object> commitNamedList =
+          commitResponse == null ? null : commitResponse.getResponse();
+      try (InputStream is =
+          commitNamedList == null
+              ? null
+              : (InputStream) commitNamedList.get(InputStreamResponseParser.STREAM_KEY)) {
+        if (is != null) {
+          is.transferTo(OutputStream.nullOutputStream());
+        }
+      }
     }
   }
 
