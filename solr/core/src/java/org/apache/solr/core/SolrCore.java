@@ -176,6 +176,7 @@ import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -2964,6 +2965,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   /** Put status, QTime, and possibly request handler and params, in the response header */
   public static void postDecorateResponse(
       SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
+    TraceUtils.ifNotNoop(req.getSpan(), span -> TraceUtils.postDecorate(span, req, rsp));
     // TODO should check that responseHeader has not been replaced by handler
     NamedList<Object> responseHeader = rsp.getResponseHeader();
     if (responseHeader == null) return;

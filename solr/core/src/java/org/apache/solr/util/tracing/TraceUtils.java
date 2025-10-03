@@ -28,14 +28,18 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.eclipse.jetty.client.Request;
 
 /** Utilities for distributed tracing. */
 public class TraceUtils {
 
+  private static final Set<String> SKIP_REQLOG = Set.of("webapp", "params", "path");
   private static final String REQ_ATTR_TRACING_SPAN = Span.class.getName();
   private static final String REQ_ATTR_TRACING_TRACER = Tracer.class.getName();
 
@@ -184,5 +188,43 @@ public class TraceUtils {
     SpanBuilder spanBuilder =
         tracer.spanBuilder(name).setSpanKind(kind).setAttribute(TAG_DB, collection);
     return spanBuilder.startSpan();
+  }
+
+  public static void postDecorate(Span span, SolrQueryRequest req, SolrQueryResponse rsp) {
+    // assume we are "recording"
+
+    // TODO perf: add overloaded setAttribute(String, Object)
+
+    // Add a very human readable params; one param per line with no URL encoding.
+    //   This is somewhat redundant with http.params but that one's sometimes too hard to use.
+    StringBuilder sb = new StringBuilder(256);
+    req.getParams()
+        .forEach(
+            (entry) -> {
+              // nocommit remember CommonParams.LOG_PARAMS_LIST
+              for (String v : entry.getValue()) {
+                sb.append(entry.getKey()).append('=').append(v).append('\n');
+              }
+            });
+    span.setAttribute("solr.request.params", sb.toString());
+
+    // Add an attribute for each rsp.getToLog
+    rsp.getToLog()
+        .forEach(
+            (k, v) -> {
+              if (!SKIP_REQLOG.contains(k)) {
+                span.setAttribute("solr.reqlog." + k, String.valueOf(v));
+              }
+            });
+
+    // Add an attribute for each Solr response header
+    // TODO filter out how?
+    NamedList<Object> responseHeader = rsp.getResponseHeader();
+    if (responseHeader != null) {
+      responseHeader.forEach(
+          (k, v) -> {
+            span.setAttribute("solr.response." + k, String.valueOf(v));
+          });
+    }
   }
 }
