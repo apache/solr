@@ -45,7 +45,7 @@ public class SolrClientFactory {
         new Http2SolrClient.Builder(solrHost)
             .withIdleTimeout(settings.getHttpReadTimeout(), TimeUnit.MILLISECONDS)
             .withConnectionTimeout(settings.getHttpConnectionTimeout(), TimeUnit.MILLISECONDS)
-            .withResponseParser(new NoOpResponseParser("json"));
+            .withResponseParser(new InputStreamResponseParser("json"));
     if (configuration.getBasicAuthUser() != null) {
       builder.withBasicAuthCredentials(
           configuration.getBasicAuthUser(), configuration.getBasicAuthPwd());
