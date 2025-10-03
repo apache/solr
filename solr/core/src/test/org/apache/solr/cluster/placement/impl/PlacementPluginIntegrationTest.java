@@ -45,7 +45,6 @@ import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.CollectionMetrics;
-import org.apache.solr.cluster.placement.NodeMetric;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.ReplicaMetrics;
@@ -453,32 +452,33 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     String sysprop = "user.name";
     attributeFetcher
         .fetchFrom(cluster.getLiveNodes())
-        .requestNodeMetric(NodeMetric.SYSLOAD_AVG)
-        .requestNodeMetric(NodeMetric.NUM_CORES)
-        .requestNodeMetric(NodeMetric.FREE_DISK_GB)
-        .requestNodeMetric(NodeMetric.TOTAL_DISK_GB)
-        .requestNodeMetric(NodeMetric.AVAILABLE_PROCESSORS)
+        .requestNodeMetric(NodeMetricImpl.SYSLOAD_AVG)
+        .requestNodeMetric(NodeMetricImpl.NUM_CORES)
+        .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB)
+        .requestNodeMetric(NodeMetricImpl.TOTAL_DISK_GB)
+        .requestNodeMetric(NodeMetricImpl.AVAILABLE_PROCESSORS)
         .requestNodeSystemProperty(sysprop)
         .requestCollectionMetrics(collection, Set.of(ReplicaMetricImpl.INDEX_SIZE_GB));
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
     String userName = System.getProperty("user.name");
     // node metrics
     for (Node node : cluster.getLiveNodes()) {
-      Optional<Double> doubleOpt = attributeValues.getNodeMetric(node, NodeMetric.TOTAL_DISK_GB);
+      Optional<Double> doubleOpt =
+          attributeValues.getNodeMetric(node, NodeMetricImpl.TOTAL_DISK_GB);
       assertTrue("total disk", doubleOpt.isPresent());
       assertTrue("total disk should be > 0 but was " + doubleOpt, doubleOpt.get() > 0);
-      doubleOpt = attributeValues.getNodeMetric(node, NodeMetric.FREE_DISK_GB);
+      doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB);
       assertTrue("free disk", doubleOpt.isPresent());
       assertTrue("free disk should be > 0 but was " + doubleOpt, doubleOpt.get() > 0);
-      Optional<Integer> intOpt = attributeValues.getNodeMetric(node, NodeMetric.NUM_CORES);
+      Optional<Integer> intOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES);
       assertTrue("cores", intOpt.isPresent());
       assertTrue("cores should be > 0", intOpt.get() > 0);
       assertTrue(
           "systemLoadAverage 2",
-          attributeValues.getNodeMetric(node, NodeMetric.SYSLOAD_AVG).isPresent());
+          attributeValues.getNodeMetric(node, NodeMetricImpl.SYSLOAD_AVG).isPresent());
       assertTrue(
           "availableProcessors",
-          attributeValues.getNodeMetric(node, NodeMetric.AVAILABLE_PROCESSORS).isPresent());
+          attributeValues.getNodeMetric(node, NodeMetricImpl.AVAILABLE_PROCESSORS).isPresent());
       Optional<String> syspropOpt = attributeValues.getSystemProperty(node, sysprop);
       assertTrue("sysprop", syspropOpt.isPresent());
       assertEquals("user.name sysprop", userName, syspropOpt.get());

@@ -59,19 +59,11 @@ public class NodeValueFetcher {
     TOTALDISK("totaldisk", "solr_cores_filesystem_disk_space", "type", "total_space"),
     CORES("cores", "solr_cores_loaded") {
       @Override
-      public Object extractResult(NamedList<Object> root) {
-        Object metrics = root.get(STREAM_KEY);
-        if (metrics == null || metricName == null) return null;
-
-        try (InputStream in = (InputStream) metrics) {
-          return prometheusMetricStream(in)
-              .filter(line -> extractMetricNameFromLine(line).equals(metricName))
-              .mapToInt((value) -> extractPrometheusValue(value).intValue())
-              .sum();
-        } catch (Exception e) {
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR, "Unable to read prometheus metrics output", e);
-        }
+      public Object extractFromPrometheus(InputStream prometheusResponseStream) {
+        return prometheusMetricStream(prometheusResponseStream)
+            .filter(line -> extractMetricNameFromLine(line).equals(metricName))
+            .mapToInt((value) -> extractPrometheusValue(value).intValue())
+            .sum();
       }
     },
     SYSLOADAVG("sysLoadAvg", "jvm_system_cpu_utilization_ratio");
@@ -92,42 +84,26 @@ public class NodeValueFetcher {
       this.labelValue = labelValue;
     }
 
-    public Object extractResult(NamedList<Object> root) {
-      return extractFromPrometheusResponse(root, metricName, labelKey, labelValue);
-    }
-
     /**
      * Extract metric value from Prometheus response, optionally filtering by label. This
      * consolidated method handles both labeled and unlabeled metrics. This method assumes 1 metric,
      * so will get the first metricName it sees with associated label and value.
      */
-    private static Double extractFromPrometheusResponse(
-        NamedList<Object> root, String metricName, String labelKey, String labelValue) {
-      Object metrics = root.get(STREAM_KEY);
-
-      if (metrics == null || metricName == null) {
-        return null;
-      }
-
-      try (InputStream in = (InputStream) metrics) {
-        return prometheusMetricStream(in)
-            .filter(line -> line.startsWith(metricName))
-            .filter(
-                line -> {
-                  // If metric with specific labels were requested, filter by those labels
-                  if (labelKey != null && labelValue != null) {
-                    String expectedLabel = labelKey + "=\"" + labelValue + "\"";
-                    return line.contains(expectedLabel);
-                  }
-                  return true;
-                })
-            .findFirst()
-            .map(Metrics::extractPrometheusValue)
-            .orElse(null);
-      } catch (Exception e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Unable to read prometheus metrics output", e);
-      }
+    public Object extractFromPrometheus(InputStream prometheusResponseStream) {
+      return prometheusMetricStream(prometheusResponseStream)
+          .filter(line -> line.startsWith(metricName))
+          .filter(
+              line -> {
+                // If metric with specific labels were requested, filter by those labels
+                if (labelKey != null && labelValue != null) {
+                  String expectedLabel = labelKey + "=\"" + labelValue + "\"";
+                  return line.contains(expectedLabel);
+                }
+                return true;
+              })
+          .findFirst()
+          .map(Metrics::extractPrometheusValue)
+          .orElse(null);
     }
 
     /**
@@ -197,10 +173,12 @@ public class NodeValueFetcher {
       SimpleSolrResponse rsp =
           ctx.cloudSolrClient.getHttpClient().requestWithBaseUrl(baseUrl, req::process);
 
-      for (Metrics t : requestedMetricNames) {
-        Object value = t.extractResult(rsp.getResponse());
-        if (value != null) {
-          ctx.tags.put(t.tagName, value);
+      try (InputStream prometheusStream = (InputStream) rsp.getResponse().get(STREAM_KEY)) {
+        for (Metrics t : requestedMetricNames) {
+          Object value = t.extractFromPrometheus(prometheusStream);
+          if (value != null) {
+            ctx.tags.put(t.tagName, value);
+          }
         }
       }
     } catch (Exception e) {

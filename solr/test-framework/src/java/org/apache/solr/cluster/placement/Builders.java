@@ -33,6 +33,7 @@ import org.apache.solr.cluster.placement.impl.AttributeFetcherImpl;
 import org.apache.solr.cluster.placement.impl.AttributeValuesImpl;
 import org.apache.solr.cluster.placement.impl.BalancePlanFactoryImpl;
 import org.apache.solr.cluster.placement.impl.CollectionMetricsBuilder;
+import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 import org.apache.solr.cluster.placement.impl.PlacementPlanFactoryImpl;
 import org.apache.solr.cluster.placement.impl.ReplicaMetricImpl;
 import org.apache.solr.common.util.Pair;
@@ -151,17 +152,17 @@ public class Builders {
 
         if (nodeBuilder.getCoreCount() != null) {
           metrics
-              .computeIfAbsent(NodeMetric.NUM_CORES, n -> new HashMap<>())
+              .computeIfAbsent(NodeMetricImpl.NUM_CORES, n -> new HashMap<>())
               .put(node, nodeBuilder.getCoreCount());
         }
         if (nodeBuilder.getFreeDiskGB() != null) {
           metrics
-              .computeIfAbsent(NodeMetric.FREE_DISK_GB, n -> new HashMap<>())
+              .computeIfAbsent(NodeMetricImpl.FREE_DISK_GB, n -> new HashMap<>())
               .put(node, nodeBuilder.getFreeDiskGB());
         }
         if (nodeBuilder.getTotalDiskGB() != null) {
           metrics
-              .computeIfAbsent(NodeMetric.TOTAL_DISK_GB, n -> new HashMap<>())
+              .computeIfAbsent(NodeMetricImpl.TOTAL_DISK_GB, n -> new HashMap<>())
               .put(node, nodeBuilder.getTotalDiskGB());
         }
         if (nodeBuilder.getSysprops() != null) {
@@ -184,9 +185,9 @@ public class Builders {
 
       if (!collectionBuilders.isEmpty()) {
         Map<Node, Object> nodeToCoreCount =
-            metrics.computeIfAbsent(NodeMetric.NUM_CORES, n -> new HashMap<>());
+            metrics.computeIfAbsent(NodeMetricImpl.NUM_CORES, n -> new HashMap<>());
         Map<Node, Object> nodeToFreeDisk =
-            metrics.computeIfAbsent(NodeMetric.FREE_DISK_GB, n -> new HashMap<>());
+            metrics.computeIfAbsent(NodeMetricImpl.FREE_DISK_GB, n -> new HashMap<>());
         collectionBuilders.forEach(
             builder -> {
               CollectionMetrics thisCollMetrics = builder.collectionMetricsBuilder.build();

@@ -18,10 +18,33 @@
 package org.apache.solr.cluster.placement.impl;
 
 import java.util.function.Function;
+import org.apache.solr.client.solrj.impl.NodeValueFetcher;
 import org.apache.solr.cluster.placement.NodeMetric;
 
 /** Node metric identifier, corresponding to a node-level metric name with labels */
 public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
+
+  /** Total disk space in GB. */
+  public static final NodeMetricImpl<Double> TOTAL_DISK_GB =
+      new NodeMetricImpl<>(
+          "totalDisk", "solr_disk_space_bytes", "type", "total_space", BYTES_TO_GB_CONVERTER);
+
+  /** Free (usable) disk space in GB. */
+  public static final NodeMetricImpl<Double> FREE_DISK_GB =
+      new NodeMetricImpl<>(
+          "freeDisk", "solr_disk_space_bytes", "type", "usable_space", BYTES_TO_GB_CONVERTER);
+
+  /** Number of all cores. */
+  public static final NodeMetricImpl<Integer> NUM_CORES =
+      new NodeMetricImpl<>(NodeValueFetcher.CORES);
+
+  /** System load average. */
+  public static final NodeMetricImpl<Double> SYSLOAD_AVG =
+      new NodeMetricImpl<>("sysLoadAvg", "jvm_system_cpu_utilization_ratio");
+
+  /** Number of available processors. */
+  public static final NodeMetricImpl<Integer> AVAILABLE_PROCESSORS =
+      new NodeMetricImpl<>("availableProcessors", "jvm_cpu_count");
 
   public NodeMetricImpl(String name, String internalName) {
     this(name, internalName, null);
