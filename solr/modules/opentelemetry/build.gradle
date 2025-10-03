@@ -50,3 +50,27 @@ dependencies {
   testImplementation libs.opentelemetry.sdktrace
   testImplementation libs.opentelemetry.sdktesting
 }
+
+// Configuration for downloading the OpenTelemetry Java Agent
+configurations {
+  otelAgent
+}
+
+dependencies {
+  otelAgent "io.opentelemetry.javaagent:opentelemetry-javaagent:[2.0,3.0)"
+}
+
+task downloadOtelAgent(type: Copy) {
+  description = 'Downloads the OpenTelemetry Java Agent JAR for use with IntelliJ run configurations'
+  group = 'build setup'
+
+  from configurations.otelAgent
+  into layout.buildDirectory.dir('agent')
+  rename { filename ->
+    'opentelemetry-javaagent.jar'
+  }
+
+  doLast {
+    logger.lifecycle("OpenTelemetry Java Agent downloaded to: ${layout.buildDirectory.get()}/agent/opentelemetry-javaagent.jar")
+  }
+}
