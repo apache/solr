@@ -78,7 +78,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
 
   private static Http2ClusterStateProvider<?> http2ClusterStateProvider(String userAgent) {
     try {
-      var csp =  new Http2ClusterStateProvider<Http2SolrClient>(
+      var csp =  new Http2ClusterStateProvider<>(
           List.of(
               cluster.getJettySolrRunner(0).getBaseUrl().toString(),
               cluster.getJettySolrRunner(1).getBaseUrl().toString()),
