@@ -31,6 +31,8 @@ import org.apache.solr.request.SolrQueryRequest;
 
 /** This class is responsible for extracting a single feature and using it to score the document. */
 public class SingleFeatureScorer extends FeatureTraversalScorer {
+  private int targetDoc = -1;
+  private int activeDoc = -1;
   private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
 
   public SingleFeatureScorer(
@@ -55,6 +57,16 @@ public class SingleFeatureScorer extends FeatureTraversalScorer {
             efi,
             featureScorers);
     this.modelWeight = modelWeight;
+  }
+
+  @Override
+  public int getActiveDoc() {
+    return activeDoc;
+  }
+
+  @Override
+  public int getTargetDoc() {
+    return targetDoc;
   }
 
   @Override

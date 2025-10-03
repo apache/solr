@@ -25,21 +25,15 @@ import org.apache.solr.ltr.model.LTRScoringModel;
 
 /** This class is responsible for extracting features and using them to score the document. */
 public abstract class FeatureTraversalScorer extends Scorer {
-  protected int targetDoc = -1;
-  protected int activeDoc = -1;
   protected FeatureExtractor featureExtractor;
   protected LTRScoringQuery.FeatureInfo[] allFeaturesInStore;
   protected LTRScoringModel ltrScoringModel;
   protected Feature.FeatureWeight[] extractedFeatureWeights;
   protected LTRScoringQuery.ModelWeight modelWeight;
 
-  public int getTargetDoc() {
-    return targetDoc;
-  }
+  public abstract int getActiveDoc();
 
-  public int getActiveDoc() {
-    return activeDoc;
-  }
+  public abstract int getTargetDoc();
 
   public void reset() {
     for (int i = 0; i < extractedFeatureWeights.length; ++i) {

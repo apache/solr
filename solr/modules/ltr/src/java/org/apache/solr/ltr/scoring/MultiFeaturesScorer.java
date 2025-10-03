@@ -36,6 +36,8 @@ import org.apache.solr.request.SolrQueryRequest;
  * document.
  */
 public class MultiFeaturesScorer extends FeatureTraversalScorer {
+  private int targetDoc = -1;
+  private int activeDoc = -1;
   private final DisiPriorityQueue subScorers;
   private final List<DisiWrapper> wrappers;
   private final MultiFeaturesIterator multiFeaturesIteratorIterator;
@@ -73,6 +75,16 @@ public class MultiFeaturesScorer extends FeatureTraversalScorer {
             efi,
             subScorers);
     this.modelWeight = modelWeight;
+  }
+
+  @Override
+  public int getActiveDoc() {
+    return activeDoc;
+  }
+
+  @Override
+  public int getTargetDoc() {
+    return targetDoc;
   }
 
   @Override
