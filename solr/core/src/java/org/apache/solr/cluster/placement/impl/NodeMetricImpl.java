@@ -26,13 +26,11 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
 
   /** Total disk space in GB. */
   public static final NodeMetricImpl<Double> TOTAL_DISK_GB =
-      new NodeMetricImpl<>(
-          "totalDisk", "solr_disk_space_bytes", "type", "total_space", BYTES_TO_GB_CONVERTER);
+      new NodeMetricImpl<>("totaldisk", BYTES_TO_GB_CONVERTER);
 
   /** Free (usable) disk space in GB. */
   public static final NodeMetricImpl<Double> FREE_DISK_GB =
-      new NodeMetricImpl<>(
-          "freeDisk", "solr_disk_space_bytes", "type", "usable_space", BYTES_TO_GB_CONVERTER);
+      new NodeMetricImpl<>("freedisk", BYTES_TO_GB_CONVERTER);
 
   /** Number of all cores. */
   public static final NodeMetricImpl<Integer> NUM_CORES =
@@ -54,13 +52,17 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
     super(name, internalName, converter);
   }
 
+  public NodeMetricImpl(String key, Function<Object, T> converter) {
+    super(key, key, null, null, converter);
+  }
+
   public NodeMetricImpl(
       String name,
       String internalName,
       String labelKey,
       String labelValue,
       Function<Object, T> converter) {
-    super(name, internalName, converter, labelKey, labelValue);
+    super(name, internalName, labelKey, labelValue, converter);
   }
 
   public NodeMetricImpl(String key) {

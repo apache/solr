@@ -86,7 +86,7 @@ public abstract class MetricImpl<T> implements Metric<T> {
    *     used.
    */
   public MetricImpl(String name, String internalName, Function<Object, T> converter) {
-    this(name, internalName, converter, null, null);
+    this(name, internalName, null, null, converter);
   }
 
   /**
@@ -94,17 +94,17 @@ public abstract class MetricImpl<T> implements Metric<T> {
    *
    * @param name short-hand name that identifies this attribute.
    * @param internalName internal name of a Solr metric.
-   * @param converter optional raw value converter. If null then {@link #IDENTITY_CONVERTER} will be
-   *     used.
    * @param labelKey optional label key for Prometheus format labeled metrics.
    * @param labelValue optional label value for Prometheus format labeled metrics.
+   * @param converter optional raw value converter. If null then {@link #IDENTITY_CONVERTER} will be
+   *     used.
    */
   public MetricImpl(
       String name,
       String internalName,
-      Function<Object, T> converter,
       String labelKey,
-      String labelValue) {
+      String labelValue,
+      Function<Object, T> converter) {
     Objects.requireNonNull(name);
     Objects.requireNonNull(internalName);
     this.name = name;

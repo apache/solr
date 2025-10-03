@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,18 +50,27 @@ public class NodeValueFetcher {
   public static final String HOST = "host";
   public static final String CORES = "cores";
   public static final String SYSPROP = "sysprop.";
-  public static final Set<String> tags = Set.of(NODE, PORT, HOST, CORES);
+  public static final Set<String> tags =
+      Set.of(
+          NODE,
+          PORT,
+          HOST,
+          CORES,
+          Metrics.FREEDISK.tagName,
+          Metrics.TOTALDISK.tagName,
+          Metrics.SYSLOADAVG.tagName);
   public static final Pattern hostAndPortPattern = Pattern.compile("(?:https?://)?([^:]+):(\\d+)");
   public static final String METRICS_PREFIX = "metrics:";
 
   /** Various well known tags that can be fetched from a node */
   public enum Metrics {
-    FREEDISK("freedisk", "solr_cores_filesystem_disk_space", "type", "usable_space"),
-    TOTALDISK("totaldisk", "solr_cores_filesystem_disk_space", "type", "total_space"),
+    FREEDISK("freedisk", "solr_disk_space_bytes", "type", "usable_space"),
+    TOTALDISK("totaldisk", "solr_disk_space_bytes", "type", "total_space"),
     CORES("cores", "solr_cores_loaded") {
       @Override
-      public Object extractFromPrometheus(InputStream prometheusResponseStream) {
-        return prometheusMetricStream(prometheusResponseStream)
+      public Object extractFromPrometheus(List<String> prometheusLines) {
+        return prometheusLines.stream()
+            .filter(line -> !isPrometheusCommentLine(line))
             .filter(line -> extractMetricNameFromLine(line).equals(metricName))
             .mapToInt((value) -> extractPrometheusValue(value).intValue())
             .sum();
@@ -85,12 +95,13 @@ public class NodeValueFetcher {
     }
 
     /**
-     * Extract metric value from Prometheus response, optionally filtering by label. This
+     * Extract metric value from Prometheus response lines, optionally filtering by label. This
      * consolidated method handles both labeled and unlabeled metrics. This method assumes 1 metric,
      * so will get the first metricName it sees with associated label and value.
      */
-    public Object extractFromPrometheus(InputStream prometheusResponseStream) {
-      return prometheusMetricStream(prometheusResponseStream)
+    public Object extractFromPrometheus(List<String> prometheusLines) {
+      return prometheusLines.stream()
+          .filter(line -> !isPrometheusCommentLine(line))
           .filter(line -> line.startsWith(metricName))
           .filter(
               line -> {
@@ -173,9 +184,11 @@ public class NodeValueFetcher {
       SimpleSolrResponse rsp =
           ctx.cloudSolrClient.getHttpClient().requestWithBaseUrl(baseUrl, req::process);
 
+      // TODO come up with a better solution to stream this response instead of loading in memory
       try (InputStream prometheusStream = (InputStream) rsp.getResponse().get(STREAM_KEY)) {
+        List<String> prometheusLines = Metrics.prometheusMetricStream(prometheusStream).toList();
         for (Metrics t : requestedMetricNames) {
-          Object value = t.extractFromPrometheus(prometheusStream);
+          Object value = t.extractFromPrometheus(prometheusLines);
           if (value != null) {
             ctx.tags.put(t.tagName, value);
           }
