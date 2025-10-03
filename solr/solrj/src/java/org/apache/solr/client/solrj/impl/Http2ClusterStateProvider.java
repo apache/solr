@@ -34,7 +34,9 @@ public class Http2ClusterStateProvider<C extends HttpSolrClientBase>
 
   @Override
   public void close() throws IOException {
-    httpClient.close();
+    if (httpClient != null) {
+      httpClient.close();
+    }
     super.close();
   }
 
