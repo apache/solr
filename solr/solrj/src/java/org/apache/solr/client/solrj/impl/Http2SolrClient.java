@@ -1107,6 +1107,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       return new Http2SolrClient(baseSolrUrl, this);
     }
 
+    @Override
     public Builder withHttpClient(Http2SolrClient http2SolrClient) {
       super.withHttpClient(http2SolrClient);
       this.httpClient = http2SolrClient.httpClient;
