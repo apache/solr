@@ -28,6 +28,8 @@ import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
+import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
+import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 import static org.apache.solr.search.SolrIndexSearcher.EXECUTOR_MAX_CPU_THREADS;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
@@ -140,12 +142,14 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.CacheConfig;
+import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -871,8 +875,12 @@ public class CoreContainer {
       for (Map.Entry<String, CacheConfig> e : cachesConfig.entrySet()) {
         SolrCache<?, ?> c = e.getValue().newInstance();
         String cacheName = e.getKey();
-        // NOCOMMIT SOLR-17458: Add Otel
-        c.initializeMetrics(solrMetricsContext, Attributes.empty(), "nodeLevelCache/" + cacheName);
+        if (c instanceof CaffeineCache<?, ?> caffeineCache) {
+          caffeineCache.initializeMetrics(
+              solrMetricsContext,
+              Attributes.builder().put(NAME_ATTR, cacheName).build(),
+              "solr_node_cache");
+        }
         m.put(cacheName, c);
       }
       this.caches = Collections.unmodifiableMap(m);
@@ -998,8 +1006,14 @@ public class CoreContainer {
 
     containerProperties.putAll(cfg.getSolrProperties());
 
-    // initialize gauges for reporting the number of cores and disk total/free
+    Attributes containerAttrs =
+        Attributes.builder().put(CATEGORY_ATTR, SolrInfoBean.Category.CONTAINER.toString()).build();
 
+    // initialize gauges for reporting the number of cores and disk total/free
+    solrCores.initializeMetrics(solrMetricsContext, containerAttrs, "");
+
+    // NOCOMMIT: Can't remove these without impacting node state reporting
+    // until NodeValueFetcher and SolrClientNodeStateProvider are patched
     solrMetricsContext.gauge(
         solrCores::getNumLoadedPermanentCores,
         true,
@@ -1018,8 +1032,33 @@ public class CoreContainer {
         "unloaded",
         SolrInfoBean.Category.CONTAINER.toString(),
         "cores");
+
     Path dataHome =
         cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
+
+    solrMetricsContext.observableLongGauge(
+        "solr_disk_space",
+        String.format("Disk metrics for Solr's data home directory (%s)", dataHome.toString()),
+        measurement -> {
+          try {
+            var fileStore = Files.getFileStore(dataHome);
+            measurement.record(
+                fileStore.getTotalSpace(),
+                containerAttrs.toBuilder().put(TYPE_ATTR, "total_space").build());
+            measurement.record(
+                fileStore.getUsableSpace(),
+                containerAttrs.toBuilder().put(TYPE_ATTR, "usable_space").build());
+          } catch (IOException e) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving disk space information for data home directory" + dataHome,
+                e);
+          }
+        },
+        OtelUnit.BYTES);
+
+    // NOCOMMIT: Can't remove these without impacting node state reporting
+    // until NodeValueFetcher and SolrClientNodeStateProvider are patched
     solrMetricsContext.gauge(
         () -> {
           try {
@@ -1107,10 +1146,11 @@ public class CoreContainer {
         "implementation",
         SolrInfoBean.Category.CONTAINER.toString(),
         "version");
-
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
-    // NOCOMMIT SOLR-17458: Otel migration
-    fieldCacheBean.initializeMetrics(solrMetricsContext, Attributes.empty(), "");
+    fieldCacheBean.initializeMetrics(
+        solrMetricsContext,
+        Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()),
+        "");
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
@@ -1445,6 +1485,9 @@ public class CoreContainer {
             SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm), metricTag);
         metricManager.unregisterGauges(
             SolrMetricManager.getRegistryName(SolrInfoBean.Group.jetty), metricTag);
+
+        // Close all OTEL meter providers and metrics
+        metricManager.closeAllRegistries();
       }
 
       if (isZooKeeperAware()) {

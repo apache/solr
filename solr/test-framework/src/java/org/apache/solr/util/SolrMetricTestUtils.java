@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -44,6 +43,12 @@ public final class SolrMetricTestUtils {
 
   private static final int MAX_ITERATIONS = 100;
   private static final SolrInfoBean.Category CATEGORIES[] = SolrInfoBean.Category.values();
+
+  // Cache name constants
+  public static final String QUERY_RESULT_CACHE = "queryResultCache";
+  public static final String FILTER_CACHE = "filterCache";
+  public static final String DOCUMENT_CACHE = "documentCache";
+  public static final String PER_SEG_FILTER_CACHE = "perSegFilter";
 
   public static String getRandomScope(Random random) {
     return getRandomScope(random, random.nextBoolean());
@@ -187,9 +192,8 @@ public final class SolrMetricTestUtils {
         .label("shard", core.getCoreDescriptor().getCloudDescriptor().getShardId())
         .label("core", core.getName())
         .label(
-            "replica",
-            Utils.parseMetricsReplicaName(
-                core.getCoreDescriptor().getCollectionName(), core.getName()))
+            "replica_type",
+            core.getCoreDescriptor().getCloudDescriptor().getReplicaType().toString())
         .label("otel_scope_name", "org.apache.solr");
   }
 
@@ -244,6 +248,11 @@ public final class SolrMetricTestUtils {
   public static CounterSnapshot.CounterDataPointSnapshot getCounterDatapoint(
       PrometheusMetricReader reader, String metricName, Labels labels) {
     return getDataPoint(reader, metricName, labels, CounterSnapshot.CounterDataPointSnapshot.class);
+  }
+
+  public static GaugeSnapshot.GaugeDataPointSnapshot getGaugeDatapoint(
+      PrometheusMetricReader reader, String metricName, Labels labels) {
+    return getDataPoint(reader, metricName, labels, GaugeSnapshot.GaugeDataPointSnapshot.class);
   }
 
   public static HistogramSnapshot.HistogramDataPointSnapshot getHistogramDatapoint(
@@ -302,6 +311,47 @@ public final class SolrMetricTestUtils {
             .label("handler", "/update")
             .label("category", "UPDATE")
             .build());
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOps(
+      SolrCore core, String cacheName, String operation) {
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core,
+        "solr_searcher_cache_ops",
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("category", "CACHE")
+            .label("ops", operation)
+            .label("name", cacheName)
+            .build());
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherLookups(
+      SolrCore core, String cacheName, String result) {
+    var builder =
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("category", "CACHE")
+            .label("name", cacheName)
+            .label("result", result);
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core, "solr_searcher_cache_lookups", builder.build());
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOpsHits(
+      SolrCore core, String cacheName) {
+    return SolrMetricTestUtils.getCacheSearcherLookups(core, cacheName, "hit");
+  }
+
+  public static double getCacheSearcherTotalLookups(SolrCore core, String cacheName) {
+    // Calculate lookup total as hits + misses
+    var hitDatapoint = SolrMetricTestUtils.getCacheSearcherOpsHits(core, cacheName);
+    var missDatapoint = SolrMetricTestUtils.getCacheSearcherLookups(core, cacheName, "miss");
+
+    return hitDatapoint.getValue() + missDatapoint.getValue();
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOpsInserts(
+      SolrCore core, String cacheName) {
+    return SolrMetricTestUtils.getCacheSearcherOps(core, cacheName, "inserts");
   }
 
   public static class TestSolrMetricProducer implements SolrMetricProducer {

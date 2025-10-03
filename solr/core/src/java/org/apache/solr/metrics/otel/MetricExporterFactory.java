@@ -14,6 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.metrics.otel;
 
-/** Send the raw requests to Solr endpoints. */
-package org.apache.solr.prometheus.scraper;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
+import org.apache.solr.common.util.EnvUtils;
+
+public interface MetricExporterFactory {
+
+  public static final Boolean OTLP_EXPORTER_ENABLED =
+      Boolean.parseBoolean(EnvUtils.getProperty("solr.metrics.otlpExporterEnabled", "false"));
+
+  public static final String OTLP_EXPORTER_PROTOCOL =
+      EnvUtils.getProperty("solr.metrics.otlpExporterProtocol", "grpc");
+
+  public static final int OTLP_EXPORTER_INTERVAL =
+      Integer.parseInt(EnvUtils.getProperty("solr.metrics.otlpExporterInterval", "60000"));
+
+  MetricExporter getExporter();
+}

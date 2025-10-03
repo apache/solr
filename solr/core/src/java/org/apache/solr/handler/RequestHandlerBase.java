@@ -37,7 +37,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -193,11 +192,7 @@ public abstract class RequestHandlerBase
   public static class HandlerMetrics {
     public static final HandlerMetrics NO_OP =
         new HandlerMetrics(
-            new SolrMetricsContext(
-                new SolrMetricManager(
-                    null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build()),
-                "NO_OP",
-                "NO_OP"),
+            new SolrMetricsContext(new SolrMetricManager(null), "NO_OP", "NO_OP"),
             Attributes.empty());
 
     public AttributedLongCounter requests;
@@ -207,7 +202,6 @@ public abstract class RequestHandlerBase
     public AttributedLongTimer requestTimes;
 
     public HandlerMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
-
       LongCounter requestMetric;
       LongCounter errorRequestMetric;
       LongCounter timeoutRequestMetric;

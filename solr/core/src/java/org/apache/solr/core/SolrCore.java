@@ -21,6 +21,7 @@ import static org.apache.solr.handler.admin.MetricsHandler.OPEN_METRICS_WT;
 import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
 import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_TYPE_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -259,6 +260,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   private volatile boolean newSearcherReady = false;
 
+  private Attributes coreAttributes;
   private AttributedLongCounter newSearcherCounter;
   private AttributedLongCounter newSearcherMaxReachedCounter;
   private AttributedLongCounter newSearcherOtherErrorsCounter;
@@ -555,6 +557,25 @@ public class SolrCore implements SolrInfoBean, Closeable {
     assert this.name != null;
     assert coreDescriptor.getCloudDescriptor() == null : "Cores are not renamed in SolrCloud";
     this.name = Objects.requireNonNull(v);
+    initCoreAttributes();
+  }
+
+  public Attributes getCoreAttributes() {
+    return coreAttributes;
+  }
+
+  private void initCoreAttributes() {
+    this.coreAttributes =
+        (coreContainer.isZooKeeperAware())
+            ? Attributes.builder()
+                .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
+                .put(CORE_ATTR, getName())
+                .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
+                .put(
+                    REPLICA_TYPE_ATTR,
+                    coreDescriptor.getCloudDescriptor().getReplicaType().toString())
+                .build()
+            : Attributes.builder().put(CORE_ATTR, getName()).build();
   }
 
   /**
@@ -1108,22 +1129,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
       setLatestSchema(schema);
 
+      initCoreAttributes();
+
       // initialize core metrics
-      if (coreContainer.isZooKeeperAware()) {
-        initializeMetrics(
-            solrMetricsContext,
-            Attributes.builder()
-                .put(COLLECTION_ATTR, coreDescriptor.getCollectionName())
-                .put(CORE_ATTR, coreDescriptor.getName())
-                .put(SHARD_ATTR, coreDescriptor.getCloudDescriptor().getShardId())
-                .build(),
-            "");
-      } else {
-        initializeMetrics(
-            solrMetricsContext,
-            Attributes.builder().put(CORE_ATTR, coreDescriptor.getName()).build(),
-            "");
-      }
+      initializeMetrics(solrMetricsContext, coreAttributes, "");
 
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
@@ -1131,8 +1140,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
       // also register it here for back-compat
-      // NOCOMMIT SOLR-17458: Add Otel
-      solrFieldCacheBean.initializeMetrics(solrMetricsContext, Attributes.empty(), "core");
+      solrFieldCacheBean.initializeMetrics(
+          solrMetricsContext,
+          coreAttributes.toBuilder().put(CATEGORY_ATTR, Category.CACHE.toString()).build(),
+          "");
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
@@ -1701,6 +1712,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       }
       cache = new LocalStatsCache();
     }
+    cache.initializeMetrics(solrMetricsContext, coreAttributes, null);
     return cache;
   }
 

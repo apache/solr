@@ -34,7 +34,7 @@ public class TransientSolrCores extends SolrCores {
   }
 
   @Override
-  protected void close() {
+  public void close() {
     super.close();
     transientSolrCoreCache.close();
   }
