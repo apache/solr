@@ -22,8 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Simple metadata bean */
+/** Holder of metadata for extracted content */
 public class ExtractionMetadata {
+  public static final String RESOURCE_NAME_KEY = "resourceName";
+
   private final Map<String, List<String>> map = new LinkedHashMap<>();
 
   public void add(String name, String value) {
