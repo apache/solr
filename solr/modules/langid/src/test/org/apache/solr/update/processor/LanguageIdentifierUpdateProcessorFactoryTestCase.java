@@ -474,19 +474,6 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertEquals(Set.of("no", "en", "sv"), liProcessor.langAllowlist);
   }
 
-  @Test
-  public void testAllowlistBackwardsCompatabilityWithLegacyAllowlist() throws Exception {
-    // The "legacy allowlist" is "langid.whitelist"
-    ModifiableSolrParams parameters = new ModifiableSolrParams();
-    parameters.add("langid.fl", "name,subject");
-    parameters.add("langid.langField", "language_s");
-    parameters.add("langid.whitelist", "no,en ,, ,sv, sv");
-    liProcessor = createLangIdProcessor(parameters);
-
-    // Make sure that empty language codes have been filtered out and others trimmed.
-    assertEquals(Set.of("no", "en", "sv"), liProcessor.langAllowlist);
-  }
-
   // Various utility methods
 
   private SolrInputDocument englishDoc() {
