@@ -1126,7 +1126,6 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
     "QTime":33},
   "leader":"127.0.1.1:8983_solr",
   "overseer_queue_size":0,
-  "overseer_work_queue_size":0,
   "overseer_collection_queue_size":2,
   "overseer_operations":[
     "createcollection",{
