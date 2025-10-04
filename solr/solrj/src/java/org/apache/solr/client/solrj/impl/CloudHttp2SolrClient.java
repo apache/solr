@@ -115,7 +115,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   private ClusterStateProvider createHttp2ClusterStateProvider(
       List<String> solrUrls, Http2SolrClient httpClient) {
     try {
-      return new Http2ClusterStateProvider(solrUrls, httpClient);
+      return new Http2ClusterStateProvider<>(solrUrls, httpClient);
     } catch (Exception e) {
       closeMyClientIfNeeded();
       throw new RuntimeException(
