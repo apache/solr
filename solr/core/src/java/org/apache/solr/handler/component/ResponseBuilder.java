@@ -335,6 +335,9 @@ public class ResponseBuilder {
   }
 
   public NamedList<Object> getDebugInfo() {
+    if (debugInfo == null) {
+      debugInfo = new SimpleOrderedMap<>();
+    }
     return debugInfo;
   }
 
