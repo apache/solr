@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -37,7 +39,7 @@ import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.HttpHeaders;
 import org.apache.tika.metadata.Metadata;
-import org.apache.tika.metadata.TikaMetadataKeys;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.DefaultParser;
@@ -58,13 +60,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
-/**
- * The class responsible for loading extracted content into Solr.
- *
- * @deprecated Will be replaced with something similar that calls out to a separate Tika Server
- *     process running in its own JVM.
- */
-@Deprecated(since = "9.10.0")
+/** The class responsible for loading extracted content into Solr. */
 public class ExtractingDocumentLoader extends ContentStreamLoader {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -147,7 +143,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       // then Tika can make use of it in guessing the appropriate MIME type:
       String resourceName = req.getParams().get(ExtractingParams.RESOURCE_NAME, null);
       if (resourceName != null) {
-        metadata.add(TikaMetadataKeys.RESOURCE_NAME_KEY, resourceName);
+        metadata.add(TikaCoreProperties.RESOURCE_NAME_KEY, resourceName);
       }
       // Provide stream's content type as hint for auto detection
       if (stream.getContentType() != null) {
@@ -269,14 +265,19 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   public static class MostlyPassthroughHtmlMapper implements HtmlMapper {
     public static final HtmlMapper INSTANCE = new MostlyPassthroughHtmlMapper();
 
-    /**
-     * Keep all elements and their content.
-     *
-     * <p>Apparently &lt;SCRIPT&gt; and &lt;STYLE&gt; elements are blocked elsewhere
-     */
+    /** Elements that are not relevant and can be discarded. */
+    private static final Set<String> DISCARDABLE_ELEMENTS =
+        new HashSet<>() {
+          {
+            add("STYLE");
+            add("SCRIPT");
+          }
+        };
+
+    /** Discard &lt;STYLE&gt; and &lt;SCRIPT&gt; elements. */
     @Override
     public boolean isDiscardElement(String name) {
-      return false;
+      return DISCARDABLE_ELEMENTS.contains(name);
     }
 
     /** Lowercases the attribute name */

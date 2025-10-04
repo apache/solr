@@ -31,7 +31,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.tika.metadata.Metadata;
-import org.apache.tika.metadata.TikaMetadataKeys;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
@@ -200,7 +200,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       sf = schema.getFieldOrNull(name);
     } else if (sf == null
         && defaultField.length() > 0
-        && name.equals(TikaMetadataKeys.RESOURCE_NAME_KEY)
+        && name.equals(TikaCoreProperties.RESOURCE_NAME_KEY)
             == false /*let the fall through below handle this*/) {
       name = defaultField;
       sf = schema.getFieldOrNull(name);
@@ -213,7 +213,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     // you?
     if (sf == null
         && unknownFieldPrefix.length() == 0
-        && Objects.equals(name, TikaMetadataKeys.RESOURCE_NAME_KEY)) {
+        && Objects.equals(name, TikaCoreProperties.RESOURCE_NAME_KEY)) {
       return;
     }
 
