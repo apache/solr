@@ -86,6 +86,7 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
       }
     } else {
       Path configFile = Path.of(tikaConfigLoc);
+      core.getCoreContainer().assertPathAllowed(configFile);
       if (configFile.isAbsolute()) {
         cfg = new TikaConfig(configFile);
       } else { // in conf/
@@ -129,12 +130,12 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
     ParseContext context = parseContextConfig.create();
     context.set(Parser.class, parser);
     context.set(HtmlMapper.class, MostlyPassthroughHtmlMapper.INSTANCE);
-    PasswordProvider pwd = new RegexRulesPasswordProvider();
-    if (request.resourcePassword != null && pwd instanceof RegexRulesPasswordProvider) {
-      ((RegexRulesPasswordProvider) pwd).setExplicitPassword(request.resourcePassword);
+    RegexRulesPasswordProvider pwd = new RegexRulesPasswordProvider();
+    if (request.resourcePassword != null) {
+      pwd.setExplicitPassword(request.resourcePassword);
     }
-    if (request.passwordsMap != null && pwd instanceof RegexRulesPasswordProvider) {
-      ((RegexRulesPasswordProvider) pwd).setPasswordMap(request.passwordsMap);
+    if (request.passwordsMap != null) {
+      pwd.setPasswordMap(request.passwordsMap);
     }
     context.set(PasswordProvider.class, pwd);
     return context;
