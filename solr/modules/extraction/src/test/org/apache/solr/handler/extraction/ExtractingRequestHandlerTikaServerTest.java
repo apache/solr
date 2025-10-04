@@ -29,12 +29,8 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
-/**
- * Generic tests, randomized between local and tikaserver backends TODO: This test still has thread
- * leaks.
- */
+/** Generic tests, randomized between local and tikaserver backends */
 @ThreadLeakFilters(
-    defaultFilters = true,
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
@@ -58,9 +54,10 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
     }
   }
 
+  @SuppressWarnings("resource")
   @BeforeClass
-  public static void beforeClassTika() throws Exception {
-    String baseUrl = null;
+  public static void beforeClassTika() {
+    String baseUrl;
     tika =
         new GenericContainer<>("apache/tika:3.2.3.0-full")
             .withExposedPorts(9998)
@@ -81,8 +78,7 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
   }
 
   @AfterClass
-  public static void afterClassTika() throws Exception {
-    // Stop and dispose of the Tika container if it was started
+  public static void afterClassTika() {
     if (tika != null) {
       try {
         tika.stop();
