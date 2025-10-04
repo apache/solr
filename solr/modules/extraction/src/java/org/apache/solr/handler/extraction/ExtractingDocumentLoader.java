@@ -35,6 +35,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.tika.sax.ToTextContentHandler;
+import org.apache.tika.sax.ToXMLContentHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.helpers.DefaultHandler;
@@ -112,7 +114,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       String extractFormat =
           params.get(ExtractingParams.EXTRACT_FORMAT, extractOnly ? XML_FORMAT : TEXT_FORMAT);
 
-      // Parse optional passwords file into a map (keeps Tika usages out of this class)
+      // Parse optional passwords file into a map
       LinkedHashMap<Pattern, String> pwMap = null;
       String passwordsFile = params.get("passwordsFile");
       if (passwordsFile != null) {
@@ -152,31 +154,13 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           String content;
           if (ExtractingDocumentLoader.TEXT_FORMAT.equals(extractionRequest.extractFormat)
               || xpathExpr != null) {
-            org.apache.tika.sax.ToTextContentHandler textHandler =
-                new org.apache.tika.sax.ToTextContentHandler();
-            DefaultHandler ch = textHandler;
-            if (xpathExpr != null) {
-              org.apache.tika.sax.xpath.XPathParser xparser =
-                  new org.apache.tika.sax.xpath.XPathParser(
-                      "xhtml", org.apache.tika.sax.XHTMLContentHandler.XHTML);
-              org.apache.tika.sax.xpath.Matcher matcher = xparser.parse(xpathExpr);
-              ch = new org.apache.tika.sax.xpath.MatchingContentHandler(textHandler, matcher);
-            }
-            backend.extractWithSaxHandler(inputStream, extractionRequest, md, ch);
-            content = textHandler.toString();
+            content =
+                extractWithHandler(
+                    inputStream, xpathExpr, extractionRequest, md, new ToTextContentHandler());
           } else { // XML format
-            org.apache.tika.sax.ToXMLContentHandler toXml =
-                new org.apache.tika.sax.ToXMLContentHandler();
-            DefaultHandler ch = toXml;
-            if (xpathExpr != null) {
-              org.apache.tika.sax.xpath.XPathParser xparser =
-                  new org.apache.tika.sax.xpath.XPathParser(
-                      "xhtml", org.apache.tika.sax.XHTMLContentHandler.XHTML);
-              org.apache.tika.sax.xpath.Matcher matcher = xparser.parse(xpathExpr);
-              ch = new org.apache.tika.sax.xpath.MatchingContentHandler(toXml, matcher);
-            }
-            backend.extractWithSaxHandler(inputStream, extractionRequest, md, ch);
-            content = toXml.toString();
+            content =
+                extractWithHandler(
+                    inputStream, xpathExpr, extractionRequest, md, new ToXMLContentHandler());
             if (!content.startsWith("<?xml")) {
               content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + content;
             }
@@ -262,6 +246,24 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       handler.appendToContent(content);
       addDoc(handler);
     }
+  }
+
+  private String extractWithHandler(
+      InputStream inputStream,
+      String xpathExpr,
+      ExtractionRequest extractionRequest,
+      ExtractionMetadata md,
+      DefaultHandler ch)
+      throws Exception {
+    if (xpathExpr != null) {
+      org.apache.tika.sax.xpath.XPathParser xparser =
+          new org.apache.tika.sax.xpath.XPathParser(
+              "xhtml", org.apache.tika.sax.XHTMLContentHandler.XHTML);
+      org.apache.tika.sax.xpath.Matcher matcher = xparser.parse(xpathExpr);
+      ch = new org.apache.tika.sax.xpath.MatchingContentHandler(ch, matcher);
+    }
+    backend.extractWithSaxHandler(inputStream, extractionRequest, md, ch);
+    return ch.toString();
   }
 
   private final Map<String, String> fieldMappings = new LinkedHashMap<>();
