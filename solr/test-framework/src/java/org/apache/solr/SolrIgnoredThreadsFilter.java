@@ -83,6 +83,20 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-    return threadName.startsWith("closeThreadPool");
+    if (threadName.startsWith("closeThreadPool")) {
+      return true;
+    }
+
+    // TestContainers
+    if (threadName.startsWith("testcontainers-ryuk")
+        || threadName.startsWith("testcontainers-wait-")
+        || threadName.startsWith("testcontainers-pull-watchdog-")
+        || threadName.equals("JNA Cleaner")
+        || threadName.startsWith("HttpClient-")
+        || threadName.startsWith("HttpClient-TestContainers")) {
+      return true;
+    }
+
+    return false;
   }
 }

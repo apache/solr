@@ -55,6 +55,17 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
     return null;
   }
 
+  public String getPassword(ExtractionMetadata extractionMetadata) {
+    if (getExplicitPassword() != null) {
+      return getExplicitPassword();
+    }
+
+    if (passwordMap.size() > 0)
+      return lookupPasswordFromMap(extractionMetadata.get(TikaMetadataKeys.RESOURCE_NAME_KEY));
+
+    return null;
+  }
+
   private String lookupPasswordFromMap(String fileName) {
     if (fileName != null && fileName.length() > 0) {
       for (Entry<Pattern, String> e : passwordMap.entrySet()) {
