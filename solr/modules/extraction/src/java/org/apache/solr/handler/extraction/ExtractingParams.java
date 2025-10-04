@@ -141,8 +141,11 @@ public interface ExtractingParams {
   public static final String EXTRACTION_BACKEND = "extraction.backend";
 
   /** Fix metadata to match Tika 1.x */
-  public static final String BACK_COMPATIBILITY = "backCompatibility";
+  public static final String BACK_COMPATIBILITY = "extraction.metadataBackCompat";
 
-  /** Enable recursive parsing of embedded documents */
-  String RECURSIVE = "recursive";
+  /**
+   * Enable recursive parsing of embedded documents when using TikaServer. This is experimental,
+   * uses /rmeta endpoint, uses more RAM and is disabled by default.
+   */
+  public static final String RECURSIVE = "extraction.tikaserver.recursive";
 }
