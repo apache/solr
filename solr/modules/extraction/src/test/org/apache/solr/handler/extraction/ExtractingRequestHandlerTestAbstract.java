@@ -1067,35 +1067,6 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
     }
   }
 
-  @Test
-  public void testDummyBackendExtractOnly() throws Exception {
-    ExtractingRequestHandler handler =
-        (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertNotNull("handler is null and it shouldn't be", handler);
-    SolrQueryResponse rsp =
-        loadLocal(
-            "extraction/version_control.txt",
-            ExtractingParams.EXTRACTION_BACKEND,
-            DummyExtractionBackend.NAME,
-            ExtractingParams.EXTRACT_ONLY,
-            "true",
-            ExtractingParams.EXTRACT_FORMAT,
-            ExtractingDocumentLoader.TEXT_FORMAT);
-    assertNotNull("rsp is null and it shouldn't be", rsp);
-    NamedList<?> list = rsp.getValues();
-    String extraction = (String) list.get("version_control.txt");
-    assertNotNull("extraction is null and it shouldn't be", extraction);
-    assertEquals("This is dummy extracted content", extraction);
-
-    NamedList<?> nl = (NamedList<?>) list.get("version_control.txt_metadata");
-    assertNotNull("metadata is null and it shouldn't be", nl);
-    Object dummyFlag = nl.get("Dummy-Backend");
-    assertNotNull("Dummy-Backend metadata missing", dummyFlag);
-    if (dummyFlag instanceof String[]) {
-      assertEquals("true", ((String[]) dummyFlag)[0]);
-    }
-  }
-
   SolrQueryResponse loadLocal(String filename, String... args) throws Exception {
     return loadLocalFromHandler("/update/extract", filename, args);
   }

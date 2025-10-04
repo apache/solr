@@ -53,6 +53,6 @@ public interface ExtractionBackend {
     return md;
   }
 
-  /** A short name for debugging/config, e.g., "local" or "dummy". */
+  /** A short name for debugging/config, e.g., "local" or "tikaserver". */
   String name();
 }

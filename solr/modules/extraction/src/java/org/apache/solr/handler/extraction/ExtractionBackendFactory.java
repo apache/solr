@@ -24,7 +24,7 @@ import org.apache.solr.core.SolrCore;
 
 /**
  * Factory for ExtractionBackend instances. Lazily constructs backends by short name (e.g., "local",
- * "dummy") and caches them for reuse.
+ * "tikaserver") and caches them for reuse.
  */
 public class ExtractionBackendFactory {
   private final SolrCore core;
@@ -69,7 +69,6 @@ public class ExtractionBackendFactory {
   /** Creates a new backend instance for the given normalized name. */
   protected ExtractionBackend create(String normalizedName) throws Exception {
     return switch (normalizedName) {
-      case DummyExtractionBackend.NAME -> new DummyExtractionBackend();
       case TikaServerExtractionBackend.NAME -> new TikaServerExtractionBackend(
           tikaServerUrl != null ? tikaServerUrl : "http://localhost:9998");
       case LocalTikaExtractionBackend.NAME -> new LocalTikaExtractionBackend(
