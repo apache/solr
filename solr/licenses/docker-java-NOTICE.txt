@@ -1,6 +1,6 @@
 This product includes software developed by the docker-java project.
 
-Copyright (c) 2013-2025, docker-java project contributors
+Copyright (c) 2013, docker-java project contributors
 
 Project: https://github.com/docker-java/docker-java
 
