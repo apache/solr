@@ -21,17 +21,17 @@ import org.apache.tika.metadata.HttpHeaders;
 import org.apache.tika.metadata.TikaMetadataKeys;
 import org.xml.sax.helpers.DefaultHandler;
 
-/** Strategy interface for content extraction backends. */
+/** Content extraction backends must implement this interface */
 public interface ExtractionBackend {
   /**
    * Extract plain text and metadata from the inputStream. Implementations should not close the
-   * inputStream. This API is backend-neutral and does not expose SAX or XML-specific types.
+   * inputStream.
    */
   ExtractionResult extract(InputStream inputStream, ExtractionRequest request) throws Exception;
 
   /**
-   * Perform extraction of text from input stream with SAX handler. Sax handler can be
-   * SolrContentHandler, ToTextContentHandler, ToXMLContentHandler, MatchingContentHandler etc
+   * Perform extraction of text from inputStream with SAX handler. Examples of SAX handlers are
+   * SolrContentHandler, ToTextContentHandler, ToXMLContentHandler and MatchingContentHandler.
    */
   void extractWithSaxHandler(
       InputStream inputStream,
