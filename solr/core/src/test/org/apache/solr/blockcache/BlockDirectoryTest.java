@@ -265,7 +265,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   /** Verify the configuration options for the block cache are handled appropriately. */
   @Test
   public void ensureCacheConfigurable() throws Exception {
-    IOContext mergeContext = new IOContext(new MergeInfo(1, 1, false, 1));
+    IOContext mergeContext = IOContext.merge(new MergeInfo(1, 1, false, 1));
 
     BlockDirectory d = directory;
     assertTrue(d.useReadCache("", IOContext.DEFAULT));

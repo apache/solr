@@ -91,7 +91,7 @@ public class TestCuVSCodecSupportIT extends SolrTestCaseJ4 {
         "Unexpected solrconfig codec factory",
         "org.apache.solr.cuvs.CuVSCodecFactory",
         codecFactory);
-    assertEquals("Unexpected core codec", "Lucene101", solrCore.getCodec().getName());
+    assertEquals("Unexpected core codec", "Lucene103", solrCore.getCodec().getName());
 
     // Index documents
     for (int i = 0; i < DATASET_SIZE; i++) {
