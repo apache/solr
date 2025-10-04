@@ -225,11 +225,9 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
       appendBackCompatTikaMetadata(metadata);
 
-      String content = result.getContent();
-
       SolrContentHandler handler =
           factory.createSolrContentHandler(metadata, params, req.getSchema());
-      handler.appendToContent(content);
+      handler.appendToContent(result.getContent());
       addDoc(handler);
     }
   }
