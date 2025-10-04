@@ -34,8 +34,8 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -177,9 +177,9 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       NamedList<Object> rsp = client.request(query);
       return Utils.toJSONString(rsp);
     } else {
-      query.setResponseParser(new NoOpResponseParser(wt));
+      query.setResponseParser(new InputStreamResponseParser(wt));
       NamedList<Object> rsp = client.request(query);
-      return (String) rsp.get("response");
+      return InputStreamResponseParser.consumeResponseToString(rsp);
     }
   }
 

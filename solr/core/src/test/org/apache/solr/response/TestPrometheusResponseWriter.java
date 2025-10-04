@@ -32,7 +32,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -83,12 +83,11 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("wt", "prometheus");
     var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
-    req.setResponseParser(new NoOpResponseParser("prometheus"));
+    req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
-      assertNotNull("null response from server", res);
-      String output = (String) res.get("response");
+      String output = InputStreamResponseParser.consumeResponseToString(res);
 
       Set<String> seenTypeInfo = new HashSet<>();
 
@@ -138,12 +137,12 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("wt", "prometheus");
     var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
-    req.setResponseParser(new NoOpResponseParser("prometheus"));
+    req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
-      assertNotNull("null response from server", res);
-      String output = (String) res.get("response");
+      String output = InputStreamResponseParser.consumeResponseToString(res);
+
       assertEquals(
           expectedCore,
           output
