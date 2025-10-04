@@ -41,7 +41,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.helpers.DefaultHandler;
 
-/** The class responsible for loading extracted content into Solr. */
+/**
+ * The class responsible for loading extracted content into Solr. It will delegate parsing to a
+ * {@link ExtractionBackend} and then load the resulting SolrInputDocument into Solr.
+ */
 public class ExtractingDocumentLoader extends ContentStreamLoader {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -140,7 +143,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
       boolean captureAttr = params.getBool(ExtractingParams.CAPTURE_ATTRIBUTES, false);
       String[] captureElems = params.getParams(ExtractingParams.CAPTURE_ELEMENTS);
-      boolean needLegacySax =
+      boolean needsSaxParsing =
           extractOnly
               || xpathExpr != null
               || captureAttr
@@ -168,19 +171,12 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
           appendBackCompatTikaMetadata(md);
 
-          // Write content
           rsp.add(stream.getName(), content);
-          // Write metadata
           NamedList<String[]> metadataNL = new NamedList<>();
           for (String name : md.names()) {
             metadataNL.add(name, md.getValues(name));
           }
           rsp.add(stream.getName() + "_metadata", metadataNL);
-        } catch (UnsupportedOperationException uoe) {
-          // For backends that don't support xpath
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "XPath filtering is not supported by backend '" + backend.name() + "'.");
         } catch (Exception e) {
           if (ignoreTikaException) {
             if (log.isWarnEnabled())
@@ -192,21 +188,12 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         return;
       }
 
-      if (needLegacySax) {
-        // Indexing with capture/xpath/etc: delegate SAX parse to backend
+      if (needsSaxParsing) {
         ExtractionMetadata metadata = backend.buildMetadataFromRequest(extractionRequest);
         SolrContentHandler handler =
             factory.createSolrContentHandler(metadata, params, req.getSchema());
         try {
           backend.extractWithSaxHandler(inputStream, extractionRequest, metadata, handler);
-        } catch (UnsupportedOperationException uoe) {
-          // For backends that don't support parseToSolrContentHandler
-          if (log.isWarnEnabled()) {
-            log.warn("skip extracting text since tika backend does not yet support this option");
-          }
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "The requested operation is not supported by backend '" + backend.name() + "'.");
         } catch (Exception e) {
           if (ignoreTikaException) {
             if (log.isWarnEnabled()) {
@@ -222,7 +209,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         return;
       }
 
-      // Default simple backend-neutral path
       ExtractionResult result;
       try {
         result = backend.extract(inputStream, extractionRequest);
@@ -248,6 +234,11 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     }
   }
 
+  /*
+   * Extracts content from the given input stream using an optional XPath expression
+   * and a SAX content handler. The extraction process may filter content based on
+   * the XPath expression, if provided.
+   */
   private String extractWithHandler(
       InputStream inputStream,
       String xpathExpr,
@@ -268,6 +259,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
   private final Map<String, String> fieldMappings = new LinkedHashMap<>();
 
+  // TODO: Improve backward compatibility by adding more mappings
   {
     fieldMappings.put("dc:title", "title");
     fieldMappings.put("dc:creator", "author");
@@ -284,6 +276,12 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     fieldMappings.put("pdf:docinfo:keywords", "Keywords");
   }
 
+  /*
+   * Appends back-compatible metadata into the given {@code ExtractionMetadata} instance by mapping
+   * source fields to target fields, provided that backward compatibility is enabled. If a source
+   * field exists and the target field is not yet populated, the values from the source field will
+   * be added to the target field.
+   */
   private void appendBackCompatTikaMetadata(ExtractionMetadata md) {
     if (!backCompat) {
       return;
