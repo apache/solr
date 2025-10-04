@@ -19,8 +19,6 @@ package org.apache.solr.handler.extraction;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.TimeZone;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
@@ -43,9 +41,6 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
   @SuppressWarnings("resource")
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // Is the JDK/env affected by a known bug?
-    final String tzDisplayName =
-        TimeZone.getDefault().getDisplayName(false, TimeZone.SHORT, Locale.US);
     initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
   }
 

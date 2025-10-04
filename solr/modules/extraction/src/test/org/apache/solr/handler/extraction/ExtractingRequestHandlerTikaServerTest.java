@@ -71,7 +71,6 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
       System.setProperty("solr.test.tikaserver.url", baseUrl);
       System.setProperty("solr.test.extraction.backend", "tikaserver");
       log.info("Using extraction backend 'tikaserver'. Tika server running on {}", baseUrl);
-      ExtractingRequestHandlerTestAbstract.beforeClass();
     } catch (Throwable t) {
       // Best-effort cleanup to avoid leaking resources if class initialization fails
       System.clearProperty("solr.test.tikaserver.url");
@@ -83,8 +82,6 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
 
   @AfterClass
   public static void afterClassTika() throws Exception {
-    // TODO: There are still thread leaks after these tests, probably due to failing tests
-    deleteCore();
     // Stop and dispose of the Tika container if it was started
     if (tika != null) {
       try {
