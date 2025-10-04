@@ -18,6 +18,7 @@
 package org.apache.solr.ui.views.navigation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,8 +45,13 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -124,6 +130,9 @@ private fun MenuElement(
     onClick: () -> Unit = {},
 ) {
     val alpha = if (enabled) 1f else 0.38f
+    var borderAlpha by remember {
+        mutableFloatStateOf(0f)
+    }
     Tab(
         modifier = modifier.background(
             if (selected) {
@@ -131,7 +140,11 @@ private fun MenuElement(
             } else {
                 Color.Unspecified
             },
-        ),
+        ).border(
+            width = 2.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = borderAlpha)
+        ).onFocusChanged {
+            borderAlpha = if (it.isFocused) 1f else 0f
+        },
         selected = selected,
         enabled = enabled,
         selectedContentColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = alpha),
