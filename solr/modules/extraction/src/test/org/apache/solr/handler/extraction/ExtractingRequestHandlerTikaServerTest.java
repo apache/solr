@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.extraction;
 
-import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
@@ -34,8 +33,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 @ThreadLeakFilters(
     filters = {
       SolrIgnoredThreadsFilter.class,
-      QuickPatchThreadsFilter.class,
-      ExtractingRequestHandlerTikaServerTest.TestcontainersThreadsFilter.class
+      QuickPatchThreadsFilter.class
     })
 public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHandlerTestAbstract {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -46,22 +44,6 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
       new GenericContainer<>("apache/tika:3.2.3.0-full")
           .withExposedPorts(9998)
           .waitingFor(Wait.forListeningPort());
-
-  // Ignore known non-daemon threads spawned by Testcontainers and Java HttpClient in this test
-  @SuppressWarnings("NewClassNamingConvention")
-  public static class TestcontainersThreadsFilter implements ThreadFilter {
-    @Override
-    public boolean reject(Thread t) {
-      if (t == null || t.getName() == null) return false;
-      String n = t.getName();
-      return n.startsWith("testcontainers-ryuk")
-          || n.startsWith("testcontainers-wait-")
-          || n.startsWith("testcontainers-pull-watchdog-")
-          || n.equals("JNA Cleaner")
-          || n.startsWith("HttpClient-")
-          || n.startsWith("HttpClient-TestContainers");
-    }
-  }
 
   @BeforeClass
   public static void beforeClassTika() {
