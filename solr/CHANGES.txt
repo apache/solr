@@ -21,6 +21,8 @@ New Features
 
 * SOLR-17780: Add support for scalar quantized dense vectors (Kevin Liang via Alessandro Benedetti)
 
+* SOLR-17892: Add support for cuVS-Lucene as a pluggable codec in Solr (Vivek Narang, Ishan Chattopadhyaya)
+
 * SOLR-17812: Add support for binary quantized dense vectors (Kevin Liang via Alessandro Benedetti)
 
 * SOLR-17023: Use Modern NLP Models from Apache OpenNLP with Solr (Jeff Zemerick, Eric Pugh)
@@ -67,6 +69,18 @@ Improvements
 
 * GITHUB#3666: Removing redundant check if field exists in TextToVectorUpdateProcessorFactory (Renato Haeberli via Alessandro Benedetti)
 
+* SOLR-17926: Improve tracking of time already spent to discount the limit for sub-requests when `timeAllowed` is used. (Andrzej Bialecki, hossman)
+
+* SOLR-17930: MultiAuthPlugin now looks up for auth plugins configured with "xBasic" as scheme if
+  "Basic" authentication used and no plugin with "Basic" scheme found. This allows the new UI to
+  authenticate in browser without a credentials prompt being displayed. The MultiAuthPlugin can now
+  also be configured with a single plugin.
+
+* SOLR-17541: `LBHttp2SolrClient` now maintains a separate internal/delegate client per Solr Base URL.  Both `LBHttp2SolrClient` and `CloudHttp2SolrClient`
+  always create and manage these internal clients.  The ability for callers to provide a pre-built client is removed.  Callers may specify the internal client
+  details by providing an instance of either `Http2SolrClient.Builder` or `HttpJdkSolrClient.Builder`. (James Dyer)
+
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -76,6 +90,8 @@ Bug Fixes
 ---------------------
 * SOLR-17772: Tests for CLI examples were failing on Windows due to a legacy bug uncovered by fix in SOLR-7962.
   Additionally achieves simplification of CLI tests (Rahul Goswami via Eric Pugh)
+
+* SOLR-17940: Fix DelegatingCollector to prevent the delegate from calling setMinCompetitiveScore if the scoreMode is not TOP_SCORES (hossman)
 
 Deprecation Removals
 ----------------------
@@ -164,6 +180,8 @@ Deprecation Removals
 * SOLR-17872: Solr no longer uses Apache HttpClient.  Nonetheless SolrJ still includes deprecated SolrClient implementations
  for that (which will be removed eventually), and many tests still use it.  Also, there were server metrics
  relating to HTTP client connection pools that no longer exist.  (David Smiley)
+
+* SOLR-17932: Remove transient Solr cores capability. (Eric Pugh, David Smiley)
 
 Dependency Upgrades
 ---------------------
@@ -310,6 +328,8 @@ Bug Fixes
   disabled on the shared instance. (David Smiley)
 
 * SOLR-3696: Fix for LB/Cloud SolrClients that could leak on close() if concurrent request failed and triggered zombie server logic. (hossman)
+
+* SOLR-17883: SolrCLI tools such as "bin/solr zk" can now access jars located in `<install_dir>/lib`.
 
 Dependency Upgrades
 ---------------------

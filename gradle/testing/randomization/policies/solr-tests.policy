@@ -279,4 +279,6 @@ grant {
   permission java.io.FilePermission "${lucene-dev-path.dir}${/}-", "read";
   // Allow testing effects of customized or bug-fixed dependencies locally (also need to add mavenLocal() to build)
   permission java.io.FilePermission "${user.home}${/}.m2${/}repository${/}-", "read";
+
+  permission java.lang.RuntimePermission "loadLibrary.cudart";
 };
