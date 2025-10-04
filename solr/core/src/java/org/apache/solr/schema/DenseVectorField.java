@@ -37,8 +37,6 @@ import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ByteKnnVectorFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatKnnVectorFieldSource;
-import org.apache.lucene.search.KnnByteVectorQuery;
-import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -47,6 +45,8 @@ import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.neural.KnnQParser.EarlyTerminationParams;
+import org.apache.solr.search.neural.SolrKnnByteVectorQuery;
+import org.apache.solr.search.neural.SolrKnnFloatVectorQuery;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
 import org.apache.solr.util.vector.DenseVectorParser;
@@ -376,6 +376,7 @@ public class DenseVectorField extends FloatPointField {
       String fieldName,
       String vectorToSearch,
       int topK,
+      int efSearch,
       Query filterQuery,
       EarlyTerminationParams earlyTermination) {
 
@@ -384,8 +385,9 @@ public class DenseVectorField extends FloatPointField {
 
     switch (vectorEncoding) {
       case FLOAT32:
-        KnnFloatVectorQuery knnFloatVectorQuery =
-            new KnnFloatVectorQuery(fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
+        SolrKnnFloatVectorQuery knnFloatVectorQuery =
+            new SolrKnnFloatVectorQuery(
+                fieldName, vectorBuilder.getFloatVector(), topK, efSearch, filterQuery);
         if (earlyTermination.isEnabled()) {
           return (earlyTermination.getSaturationThreshold() != null
                   && earlyTermination.getPatience() != null)
@@ -397,8 +399,9 @@ public class DenseVectorField extends FloatPointField {
         }
         return knnFloatVectorQuery;
       case BYTE:
-        KnnByteVectorQuery knnByteVectorQuery =
-            new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
+        SolrKnnByteVectorQuery knnByteVectorQuery =
+            new SolrKnnByteVectorQuery(
+                fieldName, vectorBuilder.getByteVector(), topK, efSearch, filterQuery);
         if (earlyTermination.isEnabled()) {
           return (earlyTermination.getSaturationThreshold() != null
                   && earlyTermination.getPatience() != null)
