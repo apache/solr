@@ -17,84 +17,40 @@
 package org.apache.solr.handler.extraction;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
-/** Holder of metadata for extracted content */
-public class ExtractionMetadata {
+/** A map of metadata name/value pairs. */
+public class ExtractionMetadata extends LinkedHashMap<String, List<String>> {
   public static final String RESOURCE_NAME_KEY = "resourceName";
 
-  private final Map<String, List<String>> map = new LinkedHashMap<>();
-
+  /**
+   * Add a metadata value. If the name already exists, the value will be appended to the existing
+   * list.
+   */
   public void add(String name, String value) {
     if (name == null || value == null) return;
-    map.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
+    computeIfAbsent(name, k -> new ArrayList<>()).add(value);
   }
 
-  public void addValues(String name, String[] values) {
-    if (name == null || values == null || values.length == 0) return;
-    map.computeIfAbsent(name, k -> new ArrayList<>()).addAll(List.of(values));
+  /** Add multiple metadata values. */
+  public void add(String name, Collection<String> values) {
+    if (name == null || values == null || values.isEmpty()) return;
+    computeIfAbsent(name, k -> new ArrayList<>()).addAll(values);
   }
 
-  public void addIfNotNull(String resourceNameKey, String resourceName) {
-    if (resourceName != null) {
-      add(resourceNameKey, resourceName);
-    }
+  /** Gets all metadata values for the given name. */
+  public List<String> get(String name) {
+    List<String> vals = super.get(name);
+    return (vals == null) ? Collections.emptyList() : vals;
   }
 
-  public void putAll(Map<String, List<String>> map) {
-    this.map.putAll(map);
-  }
-
-  public String[] getValues(String name) {
-    List<String> vals = map.get(name);
-    if (vals == null) return new String[0];
-    return vals.toArray(new String[0]);
-  }
-
-  public String get(String name) {
-    List<String> vals = map.get(name);
+  /** Gets the first metadata value for the given name or null if not set. */
+  public String getFirst(String name) {
+    List<String> vals = super.get(name);
     if (vals == null || vals.isEmpty()) return null;
-    return vals.get(0);
-  }
-
-  public String[] names() {
-    return map.keySet().toArray(new String[0]);
-  }
-
-  public void remove(String name) {
-    map.remove(name);
-  }
-
-  public Map<String, List<String>> asMap() {
-    return map;
-  }
-
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder("ExtractionMetadata{");
-    boolean first = true;
-    for (Map.Entry<String, List<String>> e : map.entrySet()) {
-      if (!first) sb.append(", ");
-      first = false;
-      sb.append(e.getKey()).append('=').append(e.getValue());
-    }
-    sb.append('}');
-    return sb.toString();
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!(obj instanceof ExtractionMetadata)) return false;
-    ExtractionMetadata that = (ExtractionMetadata) obj;
-    return Objects.equals(this.map, that.map);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(map);
+    return vals.getFirst();
   }
 }

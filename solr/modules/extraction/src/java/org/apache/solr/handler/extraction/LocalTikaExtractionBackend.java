@@ -18,6 +18,7 @@ package org.apache.solr.handler.extraction;
 
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.DeprecationLog;
@@ -119,8 +120,8 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
   private Metadata buildMetadata(ExtractionRequest request) {
     ExtractionMetadata extractionMetadata = buildMetadataFromRequest(request);
     Metadata md = new Metadata();
-    for (String name : extractionMetadata.names()) {
-      String[] vals = extractionMetadata.getValues(name);
+    for (String name : extractionMetadata.keySet()) {
+      List<String> vals = extractionMetadata.get(name);
       if (vals != null) for (String v : vals) md.add(name, v);
     }
     return md;

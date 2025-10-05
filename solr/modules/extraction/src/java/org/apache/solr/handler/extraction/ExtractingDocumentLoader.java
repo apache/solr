@@ -173,8 +173,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
           rsp.add(stream.getName(), content);
           NamedList<String[]> metadataNL = new NamedList<>();
-          for (String name : md.names()) {
-            metadataNL.add(name, md.getValues(name));
+          for (String name : md.keySet()) {
+            metadataNL.add(name, md.get(name).toArray(new String[0]));
           }
           rsp.add(stream.getName() + "_metadata", metadataNL);
         } catch (Exception e) {
@@ -288,8 +288,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     for (Map.Entry<String, String> mapping : fieldMappings.entrySet()) {
       String sourceField = mapping.getKey();
       String targetField = mapping.getValue();
-      if (md.get(sourceField) != null && md.get(targetField) == null) {
-        md.addValues(targetField, md.getValues(sourceField));
+      if (md.getFirst(sourceField) != null && md.getFirst(targetField) == null) {
+        md.add(targetField, md.get(sourceField));
       }
     }
   }

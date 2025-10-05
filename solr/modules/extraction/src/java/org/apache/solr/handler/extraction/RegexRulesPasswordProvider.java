@@ -61,7 +61,7 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
     }
 
     if (passwordMap.size() > 0)
-      return lookupPasswordFromMap(extractionMetadata.get(TikaMetadataKeys.RESOURCE_NAME_KEY));
+      return lookupPasswordFromMap(extractionMetadata.getFirst(TikaMetadataKeys.RESOURCE_NAME_KEY));
 
     return null;
   }

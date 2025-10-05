@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
@@ -137,11 +138,11 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
       assertNotNull(res.getContent());
       assertTrue(res.getContent().contains("Hello TestContainers"));
       assertNotNull(res.getMetadata());
-      String[] cts = res.getMetadata().getValues("Content-Type");
+      List<String> cts = res.getMetadata().get("Content-Type");
       assertNotNull(cts);
-      assertTrue(cts.length >= 1);
+      assertFalse(cts.isEmpty());
       // Tika may append charset; be flexible
-      assertTrue(cts[0].startsWith("text/plain"));
+      assertTrue(cts.getFirst().startsWith("text/plain"));
     }
   }
 
@@ -187,11 +188,12 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
       assertNotNull(c);
       assertTrue(c.contains("Puppet Apply"));
       assertTrue(c.contains("embedded:image0.jpg"));
-      assertEquals("org.apache.tika.parser.DefaultParser", md.get("X-TIKA:Parsed-By-Full-Set"));
+      assertEquals(
+          "org.apache.tika.parser.DefaultParser", md.getFirst("X-TIKA:Parsed-By-Full-Set"));
     }
   }
 
-  private ExtractionRequest newRequest(String file, String contentType, String xml) {
-    return newRequest(file, contentType, xml, false, Collections.emptyMap());
+  private ExtractionRequest newRequest(String file, String contentType, String content) {
+    return newRequest(file, contentType, content, false, Collections.emptyMap());
   }
 }
