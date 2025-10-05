@@ -185,7 +185,8 @@ public abstract class RequestHandlerBase
     public static final HandlerMetrics NO_OP =
         new HandlerMetrics(
             new SolrMetricsContext(new SolrMetricManager(null), "NO_OP", "NO_OP"),
-            Attributes.empty());
+            Attributes.empty(),
+            false);
 
     public AttributedLongCounter requests;
     public AttributedLongCounter numServerErrors;
