@@ -31,9 +31,6 @@ grant {
   permission java.io.FilePermission "${java.io.tmpdir}", "read,write";
   permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read,write,delete";
 
-  // Allow Testcontainers to read user-level configuration
-  permission java.io.FilePermission "${user.home}${/}.testcontainers.properties", "read";
-
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
   // DirectoryFactoryTest messes with these (wtf?)
   permission java.io.FilePermission "/tmp/inst1/conf/solrcore.properties", "read";

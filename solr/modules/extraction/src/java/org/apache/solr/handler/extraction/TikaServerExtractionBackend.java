@@ -87,10 +87,11 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   }
 
   /**
-   * Call the Tika Server to extract text and metadata. Depending on <code>request.recursive</code>, will either
-   * return XML (false) or JSON array (true)
+   * Call the Tika Server to extract text and metadata. Depending on <code>request.recursive</code>,
+   * will either return XML (false) or JSON array (true)
    *
-   * @return InputStream of the response body, either XML or json depending on <code>request.recursive</code>
+   * @return InputStream of the response body, either XML or json depending on <code>
+   *     request.recursive</code>
    */
   InputStream callTikaServer(InputStream inputStream, ExtractionRequest request)
       throws IOException, InterruptedException {
