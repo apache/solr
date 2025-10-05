@@ -19,16 +19,13 @@ package org.apache.solr.handler.extraction;
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.ByteArrayInputStream;
-import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.tika.sax.ToXMLContentHandler;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -40,7 +37,6 @@ import org.testcontainers.containers.GenericContainer;
  * Integration tests for TikaServerExtractionBackend using a real Tika Server via Testcontainers.
  */
 @ThreadLeakFilters(
-    defaultFilters = true,
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
@@ -49,6 +45,7 @@ import org.testcontainers.containers.GenericContainer;
 public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   // Ignore known non-daemon threads spawned by Testcontainers and Java HttpClient in this test
+  @SuppressWarnings("NewClassNamingConvention")
   public static class TestcontainersThreadsFilter implements ThreadFilter {
     @Override
     public boolean reject(Thread t) {
@@ -63,21 +60,11 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   private static GenericContainer<?> tika;
   private static String baseUrl;
-  private static ExecutorService httpExec;
-  private static HttpClient client;
 
+  @SuppressWarnings("resource")
   @BeforeClass
   public static void startTikaServer() {
     try {
-      httpExec =
-          ExecutorUtil.newMDCAwareFixedThreadPool(
-              2,
-              r -> {
-                Thread t = new Thread(r, "HttpClient-TestContainers");
-                t.setDaemon(true);
-                return t;
-              });
-      client = HttpClient.newBuilder().executor(httpExec).build();
       tika = new GenericContainer<>("apache/tika:3.2.3.0-full").withExposedPorts(9998);
       tika.start();
       baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);
@@ -96,14 +83,6 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
       }
       tika = null;
     }
-    if (httpExec != null) {
-      try {
-        httpExec.shutdownNow();
-      } catch (Throwable ignore) {
-      }
-      httpExec = null;
-    }
-    client = null;
   }
 
   private static ExtractionRequest newRequest(
@@ -130,66 +109,69 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   @Test
   public void testExtractTextAndMetadata() throws Exception {
     Assume.assumeTrue("Tika server container not started", tika != null);
-    TikaServerExtractionBackend backend = new TikaServerExtractionBackend(client, baseUrl);
-    byte[] data = "Hello TestContainers".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-    try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
-      ExtractionResult res = backend.extract(in, newRequest("test.txt", "text/plain", "text"));
-      assertNotNull(res);
-      assertNotNull(res.getContent());
-      assertTrue(res.getContent().contains("Hello TestContainers"));
-      assertNotNull(res.getMetadata());
-      List<String> cts = res.getMetadata().get("Content-Type");
-      assertNotNull(cts);
-      assertFalse(cts.isEmpty());
-      // Tika may append charset; be flexible
-      assertTrue(cts.getFirst().startsWith("text/plain"));
+    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+      byte[] data = "Hello TestContainers".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        ExtractionResult res = backend.extract(in, newRequest("test.txt", "text/plain", "text"));
+        assertNotNull(res);
+        assertNotNull(res.getContent());
+        assertTrue(res.getContent().contains("Hello TestContainers"));
+        assertNotNull(res.getMetadata());
+        List<String> cts = res.getMetadata().get("Content-Type");
+        assertNotNull(cts);
+        assertFalse(cts.isEmpty());
+        // Tika may append charset; be flexible
+        assertTrue(cts.getFirst().startsWith("text/plain"));
+      }
     }
   }
 
   @Test
   public void testExtractWithSaxHandlerXml() throws Exception {
     Assume.assumeTrue("Tika server container not started", tika != null);
-    TikaServerExtractionBackend backend = new TikaServerExtractionBackend(client, baseUrl);
-    byte[] data = "Hello XML".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-    ExtractionRequest request = newRequest("test.txt", "text/plain", "xml");
-    try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
-      ToXMLContentHandler xmlHandler = new ToXMLContentHandler();
-      ExtractionMetadata md = backend.buildMetadataFromRequest(request);
-      backend.extractWithSaxHandler(in, request, md, xmlHandler);
-      String c = xmlHandler.toString();
-      assertNotNull(c);
-      // Tika Server may return XHTML without XML declaration; be flexible
-      assertTrue(
-          c.contains("<?xml")
-              || c.toLowerCase(java.util.Locale.ROOT).contains("<html")
-              || c.toLowerCase(java.util.Locale.ROOT).contains("<xhtml"));
-      assertTrue(c.contains("Hello XML"));
+    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+      byte[] data = "Hello XML".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      ExtractionRequest request = newRequest("test.txt", "text/plain", "xml");
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        ToXMLContentHandler xmlHandler = new ToXMLContentHandler();
+        ExtractionMetadata md = backend.buildMetadataFromRequest(request);
+        backend.extractWithSaxHandler(in, request, md, xmlHandler);
+        String c = xmlHandler.toString();
+        assertNotNull(c);
+        // Tika Server may return XHTML without XML declaration; be flexible
+        assertTrue(
+            c.contains("<?xml")
+                || c.toLowerCase(java.util.Locale.ROOT).contains("<html")
+                || c.toLowerCase(java.util.Locale.ROOT).contains("<xhtml"));
+        assertTrue(c.contains("Hello XML"));
+      }
     }
   }
 
   @Test
   public void testPdfWithImageRecursive() throws Exception {
     Assume.assumeTrue("Tika server container not started", tika != null);
-    TikaServerExtractionBackend backend = new TikaServerExtractionBackend(client, baseUrl);
-    byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf"));
-    // Enable recursive extraction and set header to extract images from PDF
-    ExtractionRequest request =
-        newRequest(
-            "pdf-with-image.pdf",
-            "application/pdf",
-            "xml",
-            true,
-            Map.of("X-Tika-PDFextractInlineImages", "true"));
-    try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
-      ToXMLContentHandler xmlHandler = new ToXMLContentHandler();
-      ExtractionMetadata md = backend.buildMetadataFromRequest(request);
-      backend.extractWithSaxHandler(in, request, md, xmlHandler);
-      String c = xmlHandler.toString();
-      assertNotNull(c);
-      assertTrue(c.contains("Puppet Apply"));
-      assertTrue(c.contains("embedded:image0.jpg"));
-      assertEquals(
-          "org.apache.tika.parser.DefaultParser", md.getFirst("X-TIKA:Parsed-By-Full-Set"));
+    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+      byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf"));
+      // Enable recursive extraction and set header to extract images from PDF
+      ExtractionRequest request =
+          newRequest(
+              "pdf-with-image.pdf",
+              "application/pdf",
+              "xml",
+              true,
+              Map.of("X-Tika-PDFextractInlineImages", "true"));
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        ToXMLContentHandler xmlHandler = new ToXMLContentHandler();
+        ExtractionMetadata md = backend.buildMetadataFromRequest(request);
+        backend.extractWithSaxHandler(in, request, md, xmlHandler);
+        String c = xmlHandler.toString();
+        assertNotNull(c);
+        assertTrue(c.contains("Puppet Apply"));
+        assertTrue(c.contains("embedded:image0.jpg"));
+        assertEquals(
+            "org.apache.tika.parser.DefaultParser", md.getFirst("X-TIKA:Parsed-By-Full-Set"));
+      }
     }
   }
 

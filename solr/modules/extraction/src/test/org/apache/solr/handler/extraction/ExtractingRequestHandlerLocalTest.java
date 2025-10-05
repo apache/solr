@@ -16,9 +16,15 @@
  */
 package org.apache.solr.handler.extraction;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ExtractingRequestHandlerLocalTest extends ExtractingRequestHandlerTestAbstract {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
+  }
+
   @Test
   public void testPdfWithImages() throws Exception {
     // This test moved from abstract class since TikaServer with Tika3 does not extract images by

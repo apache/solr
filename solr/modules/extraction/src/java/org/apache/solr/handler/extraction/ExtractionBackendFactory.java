@@ -16,17 +16,22 @@
  */
 package org.apache.solr.handler.extraction;
 
-import java.util.Locale;
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Factory for ExtractionBackend instances. Lazily constructs backends by short name (e.g., "local",
  * "tikaserver") and caches them for reuse.
  */
-public class ExtractionBackendFactory {
+public class ExtractionBackendFactory implements Closeable {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrCore core;
   private final String tikaConfigLoc;
   private final ParseContextConfig parseContextConfig;
@@ -46,9 +51,8 @@ public class ExtractionBackendFactory {
 
   /** Returns a backend instance for the given name, creating it if necessary. */
   public ExtractionBackend getBackend(String name) {
-    String key = normalize(name);
     return cache.computeIfAbsent(
-        key,
+        name,
         k -> {
           try {
             return create(k);
@@ -61,20 +65,23 @@ public class ExtractionBackendFactory {
         });
   }
 
-  private String normalize(String name) {
-    if (name == null || name.trim().isEmpty()) return LocalTikaExtractionBackend.NAME;
-    return name.trim().toLowerCase(Locale.ROOT);
-  }
-
-  /** Creates a new backend instance for the given normalized name. */
-  protected ExtractionBackend create(String normalizedName) throws Exception {
-    return switch (normalizedName) {
+  /** Creates a new backend instance */
+  protected ExtractionBackend create(String name) throws Exception {
+    return switch (name) {
       case TikaServerExtractionBackend.NAME -> new TikaServerExtractionBackend(
           tikaServerUrl != null ? tikaServerUrl : "http://localhost:9998");
       case LocalTikaExtractionBackend.NAME -> new LocalTikaExtractionBackend(
           core, tikaConfigLoc, parseContextConfig);
       default -> throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Unknown extraction backend: " + normalizedName);
+          SolrException.ErrorCode.BAD_REQUEST, "Unknown extraction backend: " + name);
     };
+  }
+
+  @Override
+  public void close() throws IOException {
+    for (Map.Entry<String, ExtractionBackend> entry : cache.entrySet()) {
+      log.info("Closing backend {}", entry.getKey());
+      entry.getValue().close();
+    }
   }
 }

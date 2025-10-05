@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.extraction;
 
+import java.io.IOException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrCore;
@@ -100,5 +101,11 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
   @Override
   public String getDescription() {
     return "Add/Update Rich document";
+  }
+
+  @Override
+  public void close() throws IOException {
+    super.close();
+    backendFactory.close();
   }
 }

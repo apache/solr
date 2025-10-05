@@ -16,36 +16,40 @@
  */
 package org.apache.solr.handler.extraction;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.tika.sax.BodyContentHandler;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.InputStreamRequestContent;
+import org.eclipse.jetty.client.InputStreamResponseListener;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.xml.sax.helpers.DefaultHandler;
 
-/** Extraction backend using the Tika Server. */
+/** Extraction backend using the Tika Server. It uses a shared Jetty HttpClient. */
 public class TikaServerExtractionBackend implements ExtractionBackend {
-  private final HttpClient httpClient;
+  private static volatile HttpClient SHARED_CLIENT;
+  private static volatile ExecutorService SHARED_EXECUTOR;
+  private static final Object INIT_LOCK = new Object();
+  private static volatile boolean INITIALIZED = false;
+  private static volatile boolean SHUTDOWN = false;
   private final String baseUrl; // e.g., http://localhost:9998
-  private final Duration timeout = Duration.ofSeconds(30);
+  private final Duration timeout = Duration.ofMinutes(3);
   private final TikaServerParser tikaServerResponseParser = new TikaServerParser();
 
   public TikaServerExtractionBackend(String baseUrl) {
-    this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build(), baseUrl);
-  }
-
-  // Visible for tests
-  TikaServerExtractionBackend(HttpClient httpClient, String baseUrl) {
     if (baseUrl.endsWith("/")) {
       this.baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
     } else {
       this.baseUrl = baseUrl;
     }
-    this.httpClient = httpClient;
   }
 
   public static final String NAME = "tikaserver";
@@ -90,23 +94,35 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
    * Call the Tika Server to extract text and metadata. Depending on <code>request.recursive</code>,
    * will either return XML (false) or JSON array (true)
    *
-   * @return InputStream of the response body, either XML or json depending on <code>
+   * @return InputStream of the response body, either XML or JSON depending on <code>
    *     request.recursive</code>
    */
-  InputStream callTikaServer(InputStream inputStream, ExtractionRequest request)
-      throws IOException, InterruptedException {
+  InputStream callTikaServer(InputStream inputStream, ExtractionRequest request) throws Exception {
     String url = baseUrl + (request.recursive ? "/rmeta" : "/tika");
-    HttpRequest.Builder b =
-        HttpRequest.newBuilder(URI.create(url))
-            .timeout(timeout)
-            .header("Accept", (request.recursive ? "application/json" : "text/xml"));
+
+    ensureClientInitialized();
+    HttpClient client = SHARED_CLIENT;
+
+    Request req = client.newRequest(url).method("PUT");
+    // Overall per-request timeout
+    req.timeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
+
+    // Headers
+    String accept = (request.recursive ? "application/json" : "text/xml");
+    req.headers(h -> h.add("Accept", accept));
     String contentType = (request.streamType != null) ? request.streamType : request.contentType;
     if (contentType != null) {
-      b.header("Content-Type", contentType);
+      req.headers(h -> h.add("Content-Type", contentType));
     }
     if (!request.tikaRequestHeaders.isEmpty()) {
-      request.tikaRequestHeaders.forEach(b::header);
+      req.headers(
+          h ->
+              request.tikaRequestHeaders.forEach(
+                  (k, v) -> {
+                    if (k != null && v != null) h.add(k, v);
+                  }));
     }
+
     ExtractionMetadata md = buildMetadataFromRequest(request);
     if (request.resourcePassword != null || request.passwordsMap != null) {
       RegexRulesPasswordProvider passwordProvider = new RegexRulesPasswordProvider();
@@ -116,26 +132,89 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       if (request.passwordsMap != null) {
         passwordProvider.setPasswordMap(request.passwordsMap);
       }
-
       String pwd = passwordProvider.getPassword(md);
       if (pwd != null) {
-        //noinspection UastIncorrectHttpHeaderInspection
-        b.header("Password", pwd);
+        req.headers(h -> h.add("Password", pwd)); // Tika Server expects this header if provided
       }
     }
     if (request.resourceName != null) {
-      b.header("Content-Disposition", "attachment; filename=\"" + request.resourceName + "\"");
+      req.headers(
+          h ->
+              h.add(
+                  "Content-Disposition", "attachment; filename=\"" + request.resourceName + "\""));
     }
-    b.PUT(HttpRequest.BodyPublishers.ofInputStream(() -> inputStream));
 
-    HttpResponse<InputStream> resp =
-        httpClient.send(b.build(), HttpResponse.BodyHandlers.ofInputStream());
-    int code = resp.statusCode();
+    // Body
+    if (contentType != null) {
+      req.body(new InputStreamRequestContent(contentType, inputStream));
+    } else {
+      req.body(new InputStreamRequestContent(inputStream));
+    }
+
+    // Use an InputStreamResponseListener to stream the response back
+    InputStreamResponseListener listener = new InputStreamResponseListener();
+    req.send(listener);
+
+    Response response = listener.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+    int code = response.getStatus();
     if (code < 200 || code >= 300) {
       throw new SolrException(
           SolrException.ErrorCode.getErrorCode(code),
           "TikaServer " + url + " returned status " + code);
     }
-    return resp.body();
+
+    return listener.getInputStream();
+  }
+
+  private static void ensureClientInitialized() {
+    if (INITIALIZED) return;
+    synchronized (INIT_LOCK) {
+      if (INITIALIZED) return;
+      ThreadFactory tf = new SolrNamedThreadFactory("TikaServerHttpClient");
+      ExecutorService exec = ExecutorUtil.newMDCAwareCachedThreadPool(tf);
+      HttpClient client = new HttpClient();
+      client.setExecutor(exec);
+      client.setScheduler(new ScheduledExecutorScheduler("TikaServerHttpClient-scheduler", true));
+      try {
+        client.start();
+      } catch (Exception e) {
+        try {
+          exec.shutdownNow();
+        } catch (Throwable ignore) {
+        }
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Failed to start shared Jetty HttpClient", e);
+      }
+      SHARED_EXECUTOR = exec;
+      SHARED_CLIENT = client;
+      INITIALIZED = true;
+      SHUTDOWN = false;
+    }
+  }
+
+  @Override
+  public void close() {
+    if (SHUTDOWN) return;
+    synchronized (INIT_LOCK) {
+      if (SHUTDOWN) return;
+      HttpClient client = SHARED_CLIENT;
+      ExecutorService exec = SHARED_EXECUTOR;
+      SHARED_CLIENT = null;
+      SHARED_EXECUTOR = null;
+      INITIALIZED = false;
+      SHUTDOWN = true;
+      if (client != null) {
+        try {
+          client.stop();
+        } catch (Throwable ignore) {
+        }
+      }
+      if (exec != null) {
+        try {
+          exec.shutdownNow();
+        } catch (Throwable ignore) {
+        }
+      }
+    }
   }
 }

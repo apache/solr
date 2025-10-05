@@ -49,6 +49,7 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
       System.setProperty("solr.test.tikaserver.url", baseUrl);
       System.setProperty("solr.test.extraction.backend", "tikaserver");
       log.info("Using extraction backend 'tikaserver'. Tika server running on {}", baseUrl);
+      initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
     } catch (Throwable t) {
       // Skip tests if Docker/Testcontainers are not available in the environment
       Assume.assumeNoException("Docker/Testcontainers not available; skipping test", t);

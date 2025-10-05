@@ -41,6 +41,8 @@ dependencies {
     exclude group: 'xml-apis', module: 'xml-apis'
   })
 
+  implementation libs.eclipse.jetty.client
+
   testImplementation project(':solr:test-framework')
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.junit.junit
