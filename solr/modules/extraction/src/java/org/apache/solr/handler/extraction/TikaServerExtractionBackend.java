@@ -27,13 +27,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.tika.sax.BodyContentHandler;
 import org.xml.sax.helpers.DefaultHandler;
 
-/**
- * Extraction backend that delegates parsing to a remote Apache Tika Server.
- *
- * <p>This backend uses Java 11 HttpClient to call Tika Server endpoints. It supports
- * backend-neutral extract() and extractOnly() operations. Legacy SAX-based parsing is not supported
- * and will throw UnsupportedOperationException.
- */
+/** Extraction backend using the Tika Server. */
 public class TikaServerExtractionBackend implements ExtractionBackend {
   private final HttpClient httpClient;
   private final String baseUrl; // e.g., http://localhost:9998
@@ -92,24 +86,20 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     }
   }
 
-  private static String firstNonNull(String a, String b) {
-    return a != null ? a : b;
-  }
-
   /**
-   * Call the Tika Server to extract text and metadata. Depending on request.recursive, will either
+   * Call the Tika Server to extract text and metadata. Depending on <code>request.recursive</code>, will either
    * return XML (false) or JSON array (true)
    *
-   * @return InputStream of the response body, either XML or json depending on request.recursive
+   * @return InputStream of the response body, either XML or json depending on <code>request.recursive</code>
    */
-  private InputStream callTikaServer(InputStream inputStream, ExtractionRequest request)
+  InputStream callTikaServer(InputStream inputStream, ExtractionRequest request)
       throws IOException, InterruptedException {
     String url = baseUrl + (request.recursive ? "/rmeta" : "/tika");
     HttpRequest.Builder b =
         HttpRequest.newBuilder(URI.create(url))
             .timeout(timeout)
             .header("Accept", (request.recursive ? "application/json" : "text/xml"));
-    String contentType = firstNonNull(request.streamType, request.contentType);
+    String contentType = (request.streamType != null) ? request.streamType : request.contentType;
     if (contentType != null) {
       b.header("Content-Type", contentType);
     }
@@ -128,6 +118,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
 
       String pwd = passwordProvider.getPassword(md);
       if (pwd != null) {
+        //noinspection UastIncorrectHttpHeaderInspection
         b.header("Password", pwd);
       }
     }
