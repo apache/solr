@@ -49,7 +49,7 @@ public class NodeValueFetcher {
   public static final String PORT = "port";
   public static final String HOST = "host";
   public static final String CORES = "cores";
-  public static final String SYSPROP = "sysprop.";
+  public static final String SYSPROP_PREFIX = "sysprop.";
   public static final Set<String> tags =
       Set.of(
           NODE,
@@ -70,7 +70,6 @@ public class NodeValueFetcher {
       @Override
       public Object extractFromPrometheus(List<String> prometheusLines) {
         return prometheusLines.stream()
-            .filter(line -> !isPrometheusCommentLine(line))
             .filter(line -> extractMetricNameFromLine(line).equals(metricName))
             .mapToInt((value) -> extractPrometheusValue(value).intValue())
             .sum();
@@ -101,7 +100,6 @@ public class NodeValueFetcher {
      */
     public Object extractFromPrometheus(List<String> prometheusLines) {
       return prometheusLines.stream()
-          .filter(line -> !isPrometheusCommentLine(line))
           .filter(line -> line.startsWith(metricName))
           .filter(
               line -> {
@@ -143,7 +141,8 @@ public class NodeValueFetcher {
       BufferedReader reader =
           new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
-      return reader.lines().filter(line -> !isPrometheusCommentLine(line));
+      // Prometheus comment or empty lines are filtered out
+      return reader.lines().filter(line -> !line.startsWith("#") || line.isBlank());
     }
   }
 
@@ -223,7 +222,7 @@ public class NodeValueFetcher {
       // Categorize requested system properties or metrics
       requestedTags.forEach(
           tag -> {
-            if (tag.startsWith(SYSPROP)) {
+            if (tag.startsWith(SYSPROP_PREFIX)) {
               requestsProperties.add(tag);
             } else if (tag.startsWith(METRICS_PREFIX)) {
               requestedMetrics.add(tag);
@@ -248,7 +247,7 @@ public class NodeValueFetcher {
       SimpleSolrResponse rsp = ctx.invokeWithRetry(ctx.getNode(), "/admin/info/properties", params);
       NamedList<?> systemPropsRsp = (NamedList<?>) rsp.getResponse().get("system.properties");
       for (String requestedProperty : requestedTagNames) {
-        Object property = systemPropsRsp.get(requestedProperty.substring(SYSPROP.length()));
+        Object property = systemPropsRsp.get(requestedProperty.substring(SYSPROP_PREFIX.length()));
         if (property != null) ctx.tags.put(requestedProperty, property.toString());
       }
     } catch (Exception e) {
@@ -338,11 +337,6 @@ public class NodeValueFetcher {
     int startIdx = line.indexOf(labelPattern) + labelPattern.length();
     int endIdx = line.indexOf("\"", startIdx);
     return endIdx > startIdx ? line.substring(startIdx, endIdx) : null;
-  }
-
-  /** Helper method to check if a Prometheus line should be skipped (comments or empty lines). */
-  public static boolean isPrometheusCommentLine(String line) {
-    return line.startsWith("#") || line.isBlank();
   }
 
   /**

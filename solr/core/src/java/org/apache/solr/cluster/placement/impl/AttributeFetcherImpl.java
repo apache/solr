@@ -271,6 +271,6 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   }
 
   public static String getSystemPropertySnitchTag(String name) {
-    return NodeValueFetcher.SYSPROP + name;
+    return NodeValueFetcher.SYSPROP_PREFIX + name;
   }
 }
