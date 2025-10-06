@@ -99,6 +99,8 @@ public abstract class HttpSolrClientBase extends SolrClient {
     }
   }
 
+  public abstract HttpSolrClientBuilderBase<?, ?> builder();
+
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
     return ClientUtils.buildRequestUrl(solrRequest, serverBaseUrl, collection);
@@ -388,11 +390,4 @@ public abstract class HttpSolrClientBase extends SolrClient {
   public Set<String> getUrlParamNames() {
     return urlParamNames;
   }
-
-  /**
-   * Obtain a Builder that can be used to create new clients based on the setting of this client.
-   *
-   * @return a Builder
-   */
-  public abstract HttpSolrClientBuilderBase<?, ?> builder();
 }

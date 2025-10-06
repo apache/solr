@@ -100,6 +100,22 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
         new String[] {"http2ClusterStateProvider"}, new String[] {"zkClientClusterStateProvider"});
   }
 
+  static class ClosingHttp2ClusterStateProvider extends Http2ClusterStateProvider<HttpSolrClientBase> {
+    public ClosingHttp2ClusterStateProvider(List<String> solrUrls, HttpSolrClientBase httpClient) throws Exception {
+      super(solrUrls, httpClient);
+    }
+
+    @Override
+    public void close() throws IOException {
+      super.close();
+      try {
+        httpClient.close();
+      } catch(IOException e) {
+        log.error("error closing the client.", e);
+      }
+    }
+  }
+
   private static Http2ClusterStateProvider<?> http2ClusterStateProvider(String userAgent) {
     try {
       var useJdkProvider = random().nextBoolean();
@@ -131,7 +147,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       log.info("Using Http client implementation: {}", clientClassName);
 
       var csp =
-          new Http2ClusterStateProvider<>(
+          new ClosingHttp2ClusterStateProvider(
               List.of(
                   cluster.getJettySolrRunner(0).getBaseUrl().toString(),
                   cluster.getJettySolrRunner(1).getBaseUrl().toString()),

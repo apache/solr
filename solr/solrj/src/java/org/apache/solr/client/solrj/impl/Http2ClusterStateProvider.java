@@ -24,6 +24,14 @@ public class Http2ClusterStateProvider<C extends HttpSolrClientBase>
     extends BaseHttpClusterStateProvider {
   final C httpClient;
 
+  /**
+   * Provide the solr urls and a solr http client for this cluster state provider to use.  It
+   * is the caller's responsibiity to close the client.
+   *
+   * @param solrUrls root path solr urls
+   * @param httpClient an intance of HttpSolrClientBase
+   * @throws Exception
+   */
   public Http2ClusterStateProvider(List<String> solrUrls, C httpClient) throws Exception {
     if (httpClient == null) {
       throw new IllegalArgumentException("You must provide an Http client.");
@@ -34,9 +42,6 @@ public class Http2ClusterStateProvider<C extends HttpSolrClientBase>
 
   @Override
   public void close() throws IOException {
-    if (httpClient != null) {
-      httpClient.close();
-    }
     super.close();
   }
 
