@@ -721,12 +721,9 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
 
     NamedList<?> nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
     assertNotNull("nl is null and it shouldn't be", nl);
-    // TODO: Tika server v3.x has normalized metadata and do not return the 'title' key. Consider
-    // backcompat mode mapping dc:title to title???
-    Object title = nl.get("dc:title");
+    Object title = nl.get("title");
     assertNotNull("title is null and it shouldn't be", title);
-    // TODO: Tika Server return xhtml, without xml header, otherwise fairly similar
-    assertTrue(extraction.contains("<?xml") || extraction.contains("<html xmlns"));
+    assertTrue(extraction.contains("<?xml"));
 
     rsp =
         loadLocal(
@@ -745,8 +742,7 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
 
     nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
     assertNotNull("nl is null and it shouldn't be", nl);
-    // TODO: See above
-    title = nl.get("dc:title");
+    title = nl.get("title");
     assertNotNull("title is null and it shouldn't be", title);
   }
 
