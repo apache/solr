@@ -132,7 +132,6 @@ grant {
   permission javax.management.MBeanServerPermission "releaseMBeanServer";
   permission javax.management.MBeanTrustPermission "register";
 
-
   // needed by crossdc
   permission javax.security.auth.AuthPermission "getLoginConfiguration";
   permission javax.security.auth.AuthPermission "setLoginConfiguration";
@@ -219,6 +218,7 @@ grant {
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";
 };
 
+// Permissions for OTEL Runtime Java 17 telemetry and metrics
 grant {
-    permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
+  permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
 };
