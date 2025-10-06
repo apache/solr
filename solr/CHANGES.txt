@@ -185,6 +185,10 @@ Deprecation Removals
 
 * SOLR-17932: Remove transient Solr cores capability. (Eric Pugh, David Smiley)
 
+* SOLR-17925: Remove obsolete QueryCommand.timeAllowed replaced by QueryLimits. (Andrzej Bialecki)
+
+* SOLR-17935: Remove deprecated NoOpResponseParser. (Eric Pugh, David Smiley)
+
 Dependency Upgrades
 ---------------------
 

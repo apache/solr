@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.IOUtils;
@@ -93,7 +94,9 @@ public class SolrStandaloneScraper extends SolrScraper {
     }
 
     JsonNode statusJsonNode =
-        OBJECT_MAPPER.readTree((String) coreAdminResponse.get("response")).get("status");
+        OBJECT_MAPPER
+            .readTree(InputStreamResponseParser.consumeResponseToString(coreAdminResponse))
+            .get("status");
 
     for (JsonNode jsonNode : statusJsonNode) {
       cores.add(jsonNode.get("name").textValue());
