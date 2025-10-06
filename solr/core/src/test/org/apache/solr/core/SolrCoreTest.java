@@ -97,11 +97,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount;
       assertEquals(pathToClassMap.get("/admin/luke"), "solr.LukeRequestHandler");
       ++ihCount;
-      assertEquals(pathToClassMap.get("/admin/mbeans"), "solr.SolrInfoMBeanHandler");
-      ++ihCount;
       assertEquals(pathToClassMap.get("/admin/ping"), "solr.PingRequestHandler");
-      ++ihCount;
-      assertEquals(pathToClassMap.get("/admin/plugins"), "solr.PluginInfoHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/admin/segments"), "solr.SegmentsInfoRequestHandler");
       ++ihCount;
