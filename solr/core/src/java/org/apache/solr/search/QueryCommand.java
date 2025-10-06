@@ -38,7 +38,6 @@ public class QueryCommand {
   private int supersetMaxDoc;
   private int flags;
   private boolean multiThreaded = false;
-  private long timeAllowed = -1;
   private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
   private boolean distribStatsDisabled;
@@ -161,15 +160,6 @@ public class QueryCommand {
 
   public QueryCommand setMultiThreaded(boolean multiThreaded) {
     this.multiThreaded = multiThreaded;
-    return this;
-  }
-
-  public long getTimeAllowed() {
-    return timeAllowed;
-  }
-
-  public QueryCommand setTimeAllowed(long timeAllowed) {
-    this.timeAllowed = timeAllowed;
     return this;
   }
 
