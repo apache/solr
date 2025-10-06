@@ -24,8 +24,6 @@ import java.util.List;
 
 /** A map of metadata name/value pairs. */
 public class ExtractionMetadata extends LinkedHashMap<String, List<String>> {
-  public static final String RESOURCE_NAME_KEY = "resourceName";
-
   /**
    * Add a metadata value. If the name already exists, the value will be appended to the existing
    * list.

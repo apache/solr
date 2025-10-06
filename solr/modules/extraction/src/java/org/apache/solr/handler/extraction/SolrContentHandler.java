@@ -206,7 +206,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       sf = schema.getFieldOrNull(name);
     } else if (sf == null
         && defaultField.length() > 0
-        && name.equals(ExtractionMetadata.RESOURCE_NAME_KEY)
+        && name.equals(ExtractingMetadataConstants.RESOURCE_NAME_KEY)
             == false /*let the fall through below handle this*/) {
       name = defaultField;
       sf = schema.getFieldOrNull(name);
@@ -219,7 +219,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     // you?
     if (sf == null
         && unknownFieldPrefix.length() == 0
-        && Objects.equals(name, ExtractionMetadata.RESOURCE_NAME_KEY)) {
+        && Objects.equals(name, ExtractingMetadataConstants.RESOURCE_NAME_KEY)) {
       return;
     }
 

@@ -19,8 +19,6 @@ package org.apache.solr.handler.extraction;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import org.apache.tika.metadata.HttpHeaders;
-import org.apache.tika.metadata.TikaMetadataKeys;
 import org.xml.sax.helpers.DefaultHandler;
 
 /** Content extraction backends must implement this interface */
@@ -45,13 +43,13 @@ public interface ExtractionBackend extends Closeable {
   /** Build ExtractionMetadata from the request context */
   default ExtractionMetadata buildMetadataFromRequest(ExtractionRequest request) {
     ExtractionMetadata md = new ExtractionMetadata();
-    md.add(TikaMetadataKeys.RESOURCE_NAME_KEY, request.resourceName);
-    md.add(HttpHeaders.CONTENT_TYPE, request.contentType);
+    md.add(ExtractingMetadataConstants.RESOURCE_NAME_KEY, request.resourceName);
+    md.add(ExtractingMetadataConstants.HTTP_HEADER_CONTENT_TYPE, request.contentType);
     md.add(ExtractingMetadataConstants.STREAM_NAME, request.streamName);
     md.add(ExtractingMetadataConstants.STREAM_SOURCE_INFO, request.streamSourceInfo);
     md.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(request.streamSize));
     md.add(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, request.contentType);
-    md.add(HttpHeaders.CONTENT_ENCODING, request.charset);
+    md.add(ExtractingMetadataConstants.HTTP_HEADER_CONTENT_ENCODING, request.charset);
     return md;
   }
 
