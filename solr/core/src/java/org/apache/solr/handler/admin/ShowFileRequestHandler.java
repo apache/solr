@@ -306,7 +306,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     String fname = fnameIn.toUpperCase(Locale.ROOT);
     if (hiddenFiles.contains(fname) || hiddenFiles.contains("*")) {
       if (reportError) {
-        log.error("Cannot access {}", fname);
         rsp.setException(
             new SolrException(SolrException.ErrorCode.FORBIDDEN, "Can not access: " + fnameIn));
       }
@@ -317,7 +316,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     // the effort though to fix it to handle all possibilities though.
     if (fname.contains("..") || fname.startsWith(".")) {
       if (reportError) {
-        log.error("Invalid path: {}", fname);
         rsp.setException(
             new SolrException(SolrException.ErrorCode.FORBIDDEN, "Invalid path: " + fnameIn));
       }
@@ -356,7 +354,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
 
     // Make sure the file exists, is readable and is not a hidden file
     if (!zkClient.exists(adminFile, true)) {
-      log.error("Can not find: {}", adminFile);
       rsp.setException(
           new SolrException(SolrException.ErrorCode.NOT_FOUND, "Can not find: " + adminFile));
       return null;
@@ -377,7 +374,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       try {
         URL configUrl = loader.getClassLoader().getResource(loader.getConfigPath().toString());
         if (configUrl == null) {
-          log.error("Configuration directory resource not found: {}", loader.getConfigPath());
           rsp.setException(
               new SolrException(
                   SolrException.ErrorCode.FORBIDDEN,
@@ -387,7 +383,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
         }
         configDir = Path.of(configUrl.toURI());
       } catch (URISyntaxException e) {
-        log.error("Can not access configuration directory!");
         rsp.setException(
             new SolrException(
                 SolrException.ErrorCode.FORBIDDEN, "Can not access configuration directory!", e));
@@ -401,7 +396,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
 
     fname = fname.replace('\\', '/'); // normalize slashes
     if (hiddenFiles.contains(fname.toUpperCase(Locale.ROOT))) {
-      log.error("Can not access: {}", fname);
       rsp.setException(
           new SolrException(SolrException.ErrorCode.FORBIDDEN, "Can not access: " + fname));
       return null;
@@ -410,7 +404,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     Path filePath = configDir.resolve(fname.startsWith("/") ? fname.substring(1) : fname);
     req.getCoreContainer().assertPathAllowed(filePath);
     if (!filePath.normalize().startsWith(configDir.normalize())) {
-      log.error("Path must be inside core config directory");
       rsp.setException(
           new SolrException(ErrorCode.BAD_REQUEST, "Path must be inside core config directory"));
       return null;
