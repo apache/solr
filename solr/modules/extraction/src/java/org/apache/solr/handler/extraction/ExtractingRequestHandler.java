@@ -43,8 +43,9 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
   protected ParseContextConfig parseContextConfig;
 
   protected SolrContentHandlerFactory factory;
-  protected ExtractionBackendFactory backendFactory;
   protected String defaultBackendName;
+  protected LocalTikaExtractionBackend localBackend;
+  protected TikaServerExtractionBackend tikaServerBackend; // may be null if not configured
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
@@ -65,17 +66,27 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
             new ParseContextConfig(core.getResourceLoader(), parseContextConfigLoc);
       }
 
-      // Initialize backend factory once; backends are created lazily on demand
-      String tikaServerUrl = (String) initArgs.get(TIKASERVER_URL);
-      backendFactory =
-          new ExtractionBackendFactory(core, tikaConfigLoc, parseContextConfig, tikaServerUrl);
+      // Always create local backend
+      this.localBackend = new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);
 
-      // Choose default backend name (do not instantiate yet)
+      // Optionally create Tika Server backend if URL configured
+      String tikaServerUrl = (String) initArgs.get(TIKASERVER_URL);
+      if (tikaServerUrl != null) {
+        this.tikaServerBackend = new TikaServerExtractionBackend(tikaServerUrl);
+      }
+
+      // Choose default backend name
       String backendName = (String) initArgs.get(ExtractingParams.EXTRACTION_BACKEND);
-      defaultBackendName =
+      this.defaultBackendName =
           (backendName == null || backendName.trim().isEmpty())
               ? LocalTikaExtractionBackend.NAME
               : backendName;
+
+      // If the default is tikaserver but no URL configured, fall back to local
+      if (TikaServerExtractionBackend.NAME.equals(this.defaultBackendName)
+          && this.tikaServerBackend == null) {
+        this.defaultBackendName = LocalTikaExtractionBackend.NAME;
+      }
 
     } catch (Exception e) {
       throw new SolrException(
@@ -93,7 +104,21 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
         (backendParam != null && !backendParam.trim().isEmpty())
             ? backendParam
             : defaultBackendName;
-    ExtractionBackend extractionBackend = backendFactory.getBackend(nameToUse);
+
+    ExtractionBackend extractionBackend;
+    if (LocalTikaExtractionBackend.NAME.equals(nameToUse)) {
+      extractionBackend = localBackend;
+    } else if (TikaServerExtractionBackend.NAME.equals(nameToUse)) {
+      if (tikaServerBackend == null) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "Tika Server backend requested but '" + TIKASERVER_URL + "' is not configured");
+      }
+      extractionBackend = tikaServerBackend;
+    } else {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown extraction backend: " + nameToUse);
+    }
+
     return new ExtractingDocumentLoader(req, processor, factory, extractionBackend);
   }
 
@@ -105,7 +130,19 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
 
   @Override
   public void close() throws IOException {
-    super.close();
-    backendFactory.close();
+    // Close our backends to release any shared resources (e.g., Jetty HttpClient)
+    try {
+      if (tikaServerBackend != null) {
+        tikaServerBackend.close();
+      }
+    } finally {
+      try {
+        if (localBackend != null) {
+          localBackend.close();
+        }
+      } finally {
+        super.close();
+      }
+    }
   }
 }
