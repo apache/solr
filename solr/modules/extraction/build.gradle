@@ -32,6 +32,7 @@ dependencies {
   implementation libs.apache.lucene.core
   implementation libs.slf4j.api
 
+  // For 'local' Tika backend
   implementation libs.apache.poi.poi
   implementation libs.apache.poi.ooxml
   implementation libs.apache.tika.core
@@ -41,7 +42,10 @@ dependencies {
     exclude group: 'xml-apis', module: 'xml-apis'
   })
 
+  // For 'tikaserver' backend
   implementation libs.eclipse.jetty.client
+  permitUsedUndeclared libs.eclipse.jetty.http
+  permitUsedUndeclared libs.eclipse.jetty.util
 
   testImplementation project(':solr:test-framework')
   testImplementation libs.apache.lucene.testframework
