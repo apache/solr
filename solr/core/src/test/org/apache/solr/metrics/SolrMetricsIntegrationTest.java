@@ -23,7 +23,6 @@ import io.prometheus.metrics.model.snapshots.Labels;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.http.client.HttpClient;
@@ -40,7 +39,6 @@ import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestHarness;
-import org.hamcrest.number.OrderingComparison;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -99,9 +97,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
         Labels.of("category", "CONTAINER", "otel_scope_name", "org.apache.solr", "type", type));
   }
 
-  // NOCOMMIT: Comeback and fix this test after merging the SolrZKClient metrics migration
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testZkMetrics() throws Exception {
     System.setProperty("metricsEnabled", "true");
     MiniSolrCloudCluster cluster =
@@ -109,61 +105,69 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
             .addConfig("conf", configset("conf2"))
             .configure();
     System.clearProperty("metricsEnabled");
-    try {
-      JettySolrRunner j = cluster.getRandomJetty(random());
-      String url = j.getBaseUrl() + "/admin/metrics?key=solr.node:CONTAINER.zkClient&wt=json";
-      try (SolrClient solrClient = j.newClient()) {
-        HttpClient httpClient = ((HttpSolrClient) solrClient).getHttpClient();
-        @SuppressWarnings("unchecked")
-        Map<String, Object> zkMmetrics =
-            (Map<String, Object>)
-                Utils.getObjectByPath(
-                    HttpClientUtil.executeGET(httpClient, url, Utils.JSONCONSUMER),
-                    false,
-                    List.of("metrics", "solr.node:CONTAINER.zkClient"));
+    JettySolrRunner j = cluster.getRandomJetty(random());
+    var builder =
+        Labels.builder().label("category", "CONTAINER").label("otel_scope_name", "org.apache.solr");
+    var baseLabels = builder.build();
 
-        Set<String> allKeys =
-            Set.of(
-                "watchesFired",
-                "reads",
-                "writes",
-                "bytesRead",
-                "bytesWritten",
-                "multiOps",
-                "cumulativeMultiOps",
-                "childFetches",
-                "cumulativeChildrenFetched",
-                "existsChecks",
-                "deletes");
+    var reader = j.getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.node");
 
-        for (String k : allKeys) {
-          assertNotNull(zkMmetrics.get(k));
-        }
-        HttpClientUtil.executeGET(
-            httpClient,
-            j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes",
-            Utils.JSONCONSUMER);
-        @SuppressWarnings("unchecked")
-        Map<String, Object> zkMmetricsNew =
-            (Map<String, Object>)
-                Utils.getObjectByPath(
-                    HttpClientUtil.executeGET(httpClient, url, Utils.JSONCONSUMER),
-                    false,
-                    List.of("metrics", "solr.node:CONTAINER.zkClient"));
+    assertNotNull(
+        SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_watches_fired", baseLabels));
+    assertNotNull(
+        SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_read_bytes", baseLabels));
+    assertNotNull(
+        SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_written_bytes", baseLabels));
+    assertNotNull(
+        SolrMetricTestUtils.getCounterDatapoint(
+            reader, "solr_zk_cumulative_multi_ops", baseLabels));
 
-        assertThat(
-            findDelta(zkMmetrics, zkMmetricsNew, "childFetches"),
-            OrderingComparison.greaterThanOrEqualTo(1L));
-        assertThat(
-            findDelta(zkMmetrics, zkMmetricsNew, "cumulativeChildrenFetched"),
-            OrderingComparison.greaterThanOrEqualTo(3L));
-        assertThat(
-            findDelta(zkMmetrics, zkMmetricsNew, "existsChecks"),
-            OrderingComparison.greaterThanOrEqualTo(4L));
-      }
-    } finally {
-      cluster.shutdown();
+    Set<String> types = Set.of("delete", "exists", "multi", "read", "write");
+
+    for (String type : types) {
+      assertNotNull(
+          SolrMetricTestUtils.getCounterDatapoint(
+              reader, "solr_zk_ops", baseLabels.merge(Labels.of("ops", type))));
     }
+
+    try (SolrClient solrClient = j.newClient()) {
+      HttpClient httpClient = ((HttpSolrClient) solrClient).getHttpClient();
+      var initialChildrenFetched =
+          SolrMetricTestUtils.getCounterDatapoint(
+                  reader, "solr_zk_cumulative_children_fetched", baseLabels)
+              .getValue();
+      var initialChildFetches =
+          SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_child_fetches", baseLabels)
+              .getValue();
+      var initialExistsOp =
+          SolrMetricTestUtils.getCounterDatapoint(
+                  reader, "solr_zk_ops", baseLabels.merge(Labels.of("ops", "exists")))
+              .getValue();
+
+      // Send GET request to trigger some metrics
+      HttpClientUtil.executeGET(
+          httpClient,
+          j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes",
+          Utils.JSONCONSUMER);
+
+      var childrenFetched =
+          SolrMetricTestUtils.getCounterDatapoint(
+                  reader, "solr_zk_cumulative_children_fetched", baseLabels)
+              .getValue();
+      var childFetches =
+          SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_child_fetches", baseLabels)
+              .getValue();
+      var existsOp =
+          SolrMetricTestUtils.getCounterDatapoint(
+                  reader, "solr_zk_ops", builder.label("ops", "exists").build())
+              .getValue();
+
+      assertTrue(childrenFetched - initialChildrenFetched >= 3.0);
+      assertTrue(childFetches - initialChildFetches >= 1.0);
+      assertTrue(existsOp - initialExistsOp >= 4.0);
+    }
+
+    cluster.shutdown();
   }
 
   @Test

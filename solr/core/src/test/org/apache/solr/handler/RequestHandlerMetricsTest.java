@@ -54,10 +54,9 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
     System.clearProperty("metricsEnabled");
   }
 
-  // NOCOMMIT: Need to fix aggregateNodeLevelMetricsEnabled for OTEL. Delegate registries currently
-  // do not play nice with OTEL instrumentation
+  // TODO: Migrate aggregateNodeLevelMetricsEnabled for OTEL metrics
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17865")
   @SuppressWarnings({"unchecked"})
   public void testAggregateNodeLevelMetrics() throws SolrServerException, IOException {
     String collection1 = "testRequestHandlerMetrics1";

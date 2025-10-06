@@ -248,10 +248,12 @@ public class TestRecovery extends SolrTestCaseJ4 {
               .build();
 
       // check metrics
-      // NOCOMMIT: Need to decide if we are keeping this state metric or not
-      //      @SuppressWarnings({"unchecked"})
-      //      Gauge<Integer> state = (Gauge<Integer>) metrics.get("TLOG.state");
-      //      assertEquals(UpdateLog.State.REPLAYING.ordinal(), state.getValue().intValue());
+      assertEquals(
+          UpdateLog.State.REPLAYING.ordinal(),
+          SolrMetricTestUtils.getGaugeDatapoint(
+                  h.getCore(), "solr_core_update_log_state", attributes)
+              .getValue(),
+          0.0);
 
       var actualReplayingLogs =
           SolrMetricTestUtils.getGaugeDatapoint(
@@ -283,8 +285,12 @@ public class TestRecovery extends SolrTestCaseJ4 {
               .getValue();
       assertEquals(7.0, actualReplayOps, 0.0);
 
-      // NOCOMMIT: Need to decide if we are keeping this state metric or not
-      //      assertEquals(UpdateLog.State.ACTIVE.ordinal(), state.getValue().intValue());
+      assertEquals(
+          UpdateLog.State.ACTIVE.ordinal(),
+          SolrMetricTestUtils.getGaugeDatapoint(
+                  h.getCore(), "solr_core_update_log_state", attributes)
+              .getValue(),
+          0.0);
 
       // make sure we can still access versions after recovery
       assertJQ(req("qt", "/get", "getVersions", "" + versions.size()), "/versions==" + versions);
@@ -662,8 +668,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       clearIndex();
       assertU(commit());
 
-      Map<String, Metric> metrics = getMetrics();
-
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
@@ -680,10 +684,12 @@ public class TestRecovery extends SolrTestCaseJ4 {
               .label("category", "TLOG")
               .build();
 
-      // NOCOMMIT: Need to decide if we are keeping this state metric or not
-      //      @SuppressWarnings({"unchecked"})
-      //      Gauge<Integer> state = (Gauge<Integer>) metrics.get("TLOG.state");
-      //      assertEquals(UpdateLog.State.BUFFERING.ordinal(), state.getValue().intValue());
+      assertEquals(
+          UpdateLog.State.BUFFERING.ordinal(),
+          SolrMetricTestUtils.getGaugeDatapoint(
+                  h.getCore(), "solr_core_update_log_state", attributes)
+              .getValue(),
+          0.0);
 
       String v3 = getNextVersion();
       String v940_del = "-" + getNextVersion();

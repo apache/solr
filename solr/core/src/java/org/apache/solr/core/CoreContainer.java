@@ -786,14 +786,12 @@ public class CoreContainer {
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
     if (shardHandlerFactory instanceof SolrMetricProducer metricProducer) {
-      // NOCOMMIT SOLR-17458: Add Otel
       metricProducer.initializeMetrics(solrMetricsContext, Attributes.empty(), "httpShardHandler");
     }
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
     solrClientProvider =
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
-    // NOCOMMIT SOLR-17458: Add Otel
     updateShardHandler.initializeMetrics(
         solrMetricsContext, Attributes.empty(), "updateShardHandler");
     solrClientCache = new SolrClientCache(solrClientProvider.getSolrClient());
@@ -836,7 +834,6 @@ public class CoreContainer {
               this,
               zkSys.getZkController().getNodeName(),
               (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
-      // NOCOMMIT SOLR-17458: AuthenticationPlugin.java
       pkiAuthenticationSecurityBuilder.initializeMetrics(
           solrMetricsContext,
           Attributes.builder().put(HANDLER_ATTR, "/authentication/pki").build(),
@@ -2287,7 +2284,6 @@ public class CoreContainer {
     }
     if (handler instanceof SolrMetricProducer) {
       ((SolrMetricProducer) handler)
-          // NOCOMMIT SOLR-17458: Add Otel
           .initializeMetrics(
               solrMetricsContext, Attributes.builder().put(HANDLER_ATTR, path).build(), path);
     }

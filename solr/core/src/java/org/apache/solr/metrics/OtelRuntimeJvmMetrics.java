@@ -27,18 +27,18 @@ import org.slf4j.LoggerFactory;
 public class OtelRuntimeJvmMetrics {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // Main feature flag to enable/disable all JVM metrics
-  private static final String JVM_METRICS_ENABLED = "solr.metrics.jvm.enabled";
-
   private RuntimeMetrics runtimeMetrics;
   private boolean isInitialized = false;
 
+  // Main feature flag to enable/disable all JVM metrics
+  public static boolean isJvmMetricsEnabled() {
+    return EnvUtils.getPropertyAsBool("solr.metrics.jvm.enabled", true);
+  }
+
   public OtelRuntimeJvmMetrics initialize(
       SolrMetricManager solrMetricManager, String registryName) {
-    if (!EnvUtils.getPropertyAsBool(JVM_METRICS_ENABLED, true)) {
-      log.info("JVM metrics collection is disabled");
-      return this;
-    }
+    if (!isJvmMetricsEnabled()) return this;
+
     this.runtimeMetrics =
         RuntimeMetrics.builder(
                 OpenTelemetrySdk.builder()
