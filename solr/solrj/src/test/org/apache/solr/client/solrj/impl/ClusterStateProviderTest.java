@@ -100,8 +100,10 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
         new String[] {"http2ClusterStateProvider"}, new String[] {"zkClientClusterStateProvider"});
   }
 
-  static class ClosingHttp2ClusterStateProvider extends Http2ClusterStateProvider<HttpSolrClientBase> {
-    public ClosingHttp2ClusterStateProvider(List<String> solrUrls, HttpSolrClientBase httpClient) throws Exception {
+  static class ClosingHttp2ClusterStateProvider
+      extends Http2ClusterStateProvider<HttpSolrClientBase> {
+    public ClosingHttp2ClusterStateProvider(List<String> solrUrls, HttpSolrClientBase httpClient)
+        throws Exception {
       super(solrUrls, httpClient);
     }
 
@@ -110,7 +112,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       super.close();
       try {
         httpClient.close();
-      } catch(IOException e) {
+      } catch (IOException e) {
         log.error("error closing the client.", e);
       }
     }

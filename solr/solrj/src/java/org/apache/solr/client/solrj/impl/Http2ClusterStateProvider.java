@@ -25,8 +25,8 @@ public class Http2ClusterStateProvider<C extends HttpSolrClientBase>
   final C httpClient;
 
   /**
-   * Provide the solr urls and a solr http client for this cluster state provider to use.  It
-   * is the caller's responsibiity to close the client.
+   * Provide the solr urls and a solr http client for this cluster state provider to use. It is the
+   * caller's responsibiity to close the client.
    *
    * @param solrUrls root path solr urls
    * @param httpClient an intance of HttpSolrClientBase
