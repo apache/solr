@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
-/** Generic tests, randomized between local and tikaserver backends */
 @ThreadLeakFilters(filters = {SolrIgnoredThreadsFilter.class, QuickPatchThreadsFilter.class})
 public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHandlerTestAbstract {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
