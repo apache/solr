@@ -112,13 +112,10 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       langAllowlist = new HashSet<>();
       threshold = params.getDouble(THRESHOLD, DOCID_THRESHOLD_DEFAULT);
 
-      HashSet<String> strings = langAllowlist;
-      for (String s : params.get(LANG_ALLOWLIST, "").split(",")) {
-        String lang = s.trim();
-        if (!lang.isEmpty()) {
-          strings.add(lang);
-        }
-      }
+      Arrays.stream(params.get(LANG_ALLOWLIST, "").split(","))
+          .map(String::trim)
+          .filter(lang -> !lang.isEmpty())
+          .forEach(langAllowlist::add);
 
       // Mapping params (field centric)
       enableMapping = params.getBool(MAP_ENABLE, false);
