@@ -761,11 +761,11 @@ public class TestPullReplica extends SolrCloudTestCase {
         numDocsAdded,
         getCollectionState(collectionName).getReplicas(EnumSet.of(Replica.Type.PULL)));
 
-    // Add yetanother PULL replica while the leader is down.
-    // This new replica will immediately stall going into recoveery, since the leader is down.
+    // Add yet another PULL replica while the leader is down.
+    // This new replica will immediately stall going into recovery, since the leader is down.
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL)
         .setCreateNodeSet(pullFollowerJetty.getNodeName())
-        .process(cluster.getSolrClient());
+        .processAsync(cluster.getSolrClient());
     waitForState(
         "3rd PULL replica should be down",
         collectionName,
