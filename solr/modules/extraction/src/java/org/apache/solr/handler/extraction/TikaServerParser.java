@@ -56,15 +56,22 @@ public class TikaServerParser {
    */
   public void parseXml(InputStream inputStream, ContentHandler handler, ExtractionMetadata metadata)
       throws IOException, SAXException {
-    DefaultHandler myHandler = new TikaXmlResponseSaxContentHandler(handler, metadata);
+    DefaultHandler xmlHandler = new TikaXmlResponseSaxContentHandler(handler, metadata);
     InputStream sanitizedStream = XmlSanitizingReader.sanitize(inputStream);
-    saxParser.parse(sanitizedStream, myHandler);
+    saxParser.parse(sanitizedStream, xmlHandler);
   }
 
-  // TODO: Warning, this method 100% AI generated, not reviewed
+  /**
+   * Parses response in JSON format from Tika Server /rmeta endpoint. The result is that the
+   * metadata object is populated, and the content handler is called with extracted text.
+   *
+   * @param jsonStream - JSON stream to parse
+   * @param handler - SAX content handler to call with extracted text
+   * @param md - metadata object to populate
+   */
   @SuppressWarnings({"unchecked", "rawtypes"})
   void parseRmetaJson(InputStream jsonStream, DefaultHandler handler, ExtractionMetadata md)
-      throws Exception {
+      throws IOException, SAXException {
     Object parsed = Utils.fromJSON(jsonStream);
     if (!(parsed instanceof List)) {
       throw new SolrException(

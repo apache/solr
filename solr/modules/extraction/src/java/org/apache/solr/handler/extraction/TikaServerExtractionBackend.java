@@ -64,13 +64,13 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       throws Exception {
     try (InputStream tikaResponse = callTikaServer(inputStream, request)) {
       ExtractionMetadata md = buildMetadataFromRequest(request);
-      BodyContentHandler textHandler = new BodyContentHandler(-1);
+      BodyContentHandler bodyContentHandler = new BodyContentHandler(-1);
       if (request.recursive) {
-        tikaServerResponseParser.parseRmetaJson(tikaResponse, textHandler, md);
+        tikaServerResponseParser.parseRmetaJson(tikaResponse, bodyContentHandler, md);
       } else {
-        tikaServerResponseParser.parseXml(tikaResponse, textHandler, md);
+        tikaServerResponseParser.parseXml(tikaResponse, bodyContentHandler, md);
       }
-      return new ExtractionResult(textHandler.toString(), md);
+      return new ExtractionResult(bodyContentHandler.toString(), md);
     }
   }
 
@@ -92,7 +92,8 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
 
   /**
    * Call the Tika Server to extract text and metadata. Depending on <code>request.recursive</code>,
-   * will either return XML (false) or JSON array (true)
+   * will either return XML (false) or JSON array (true). <b>The recursive mode consumes more memory
+   * both on the TikaServer side and on the Solr side</b>
    *
    * @return InputStream of the response body, either XML or JSON depending on <code>
    *     request.recursive</code>
