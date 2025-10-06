@@ -211,7 +211,6 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     MetricRegistry registry = cc.getMetricManager().registry(registryName);
     Map<String, Metric> metrics = registry.getMetrics();
     assertTrue(metrics.containsKey("CONTAINER.cores.loaded"));
-    assertTrue(metrics.containsKey("CONTAINER.cores.lazy"));
     assertTrue(metrics.containsKey("CONTAINER.cores.unloaded"));
     assertTrue(metrics.containsKey("CONTAINER.fs.totalSpace"));
     assertTrue(metrics.containsKey("CONTAINER.fs.usableSpace"));

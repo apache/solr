@@ -16,7 +16,12 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.util.NamedList;
@@ -38,14 +43,35 @@ public class InputStreamResponseParser extends ResponseParser {
     this.writerType = writerType;
   }
 
+  /**
+   * When using a {@link InputStreamResponseParser}, the raw output is available in the response
+   * under the key {@link #STREAM_KEY}.
+   */
+  public static String consumeResponseToString(NamedList<Object> response) throws IOException {
+    assert response != null;
+    String output;
+    // Would be nice to validate the STREAM_KEY value is present
+    try (InputStream responseStream = (InputStream) response.get(STREAM_KEY)) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      responseStream.transferTo(baos);
+      output = baos.toString(StandardCharsets.UTF_8);
+    }
+    return output;
+  }
+
   @Override
   public String getWriterType() {
     return writerType;
   }
 
   @Override
-  public NamedList<Object> processResponse(InputStream body, String encoding) {
-    throw new UnsupportedOperationException();
+  public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
+    StringWriter writer = new StringWriter();
+    new InputStreamReader(body, encoding == null ? "UTF-8" : encoding).transferTo(writer);
+    String output = writer.toString();
+    NamedList<Object> list = new NamedList<>();
+    list.add("response", output);
+    return list;
   }
 
   @Override

@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.prometheus.collector.MetricSamples;
@@ -166,7 +167,8 @@ public abstract class SolrScraper implements Closeable {
       return samples;
     }
 
-    JsonNode jsonNode = OBJECT_MAPPER.readTree((String) response.get("response"));
+    JsonNode jsonNode =
+        OBJECT_MAPPER.readTree(InputStreamResponseParser.consumeResponseToString(response));
 
     for (JsonQuery jsonQuery : query.getJsonQueries()) {
       try {

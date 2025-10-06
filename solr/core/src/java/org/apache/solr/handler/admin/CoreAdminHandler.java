@@ -267,7 +267,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
           Map.entry(CoreAdminParams.ULOG_DIR, CoreDescriptor.CORE_ULOGDIR),
           Map.entry(CoreAdminParams.CONFIGSET, CoreDescriptor.CORE_CONFIGSET),
           Map.entry(CoreAdminParams.LOAD_ON_STARTUP, CoreDescriptor.CORE_LOADONSTARTUP),
-          Map.entry(CoreAdminParams.TRANSIENT, CoreDescriptor.CORE_TRANSIENT),
           Map.entry(CoreAdminParams.SHARD, CoreDescriptor.CORE_SHARD),
           Map.entry(CoreAdminParams.COLLECTION, CoreDescriptor.CORE_COLLECTION),
           Map.entry(CoreAdminParams.CORE_NODE_NAME, CoreDescriptor.CORE_NODE_NAME),
