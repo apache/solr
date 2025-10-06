@@ -19,6 +19,8 @@ package org.apache.solr.handler.extraction;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,7 @@ import javax.xml.parsers.SAXParserFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.xml.sax.ContentHandler;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -57,8 +60,10 @@ public class TikaServerParser {
   public void parseXml(InputStream inputStream, ContentHandler handler, ExtractionMetadata metadata)
       throws IOException, SAXException {
     DefaultHandler xmlHandler = new TikaXmlResponseSaxContentHandler(handler, metadata);
-    InputStream sanitizedStream = XmlSanitizingReader.sanitize(inputStream);
-    saxParser.parse(sanitizedStream, xmlHandler);
+    try (Reader reader =
+        new XmlSanitizingReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+      saxParser.parse(new InputSource(reader), xmlHandler);
+    }
   }
 
   /**
@@ -69,7 +74,7 @@ public class TikaServerParser {
    * @param handler - SAX content handler to call with extracted text
    * @param md - metadata object to populate
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes", "PatternVariableCanBeUsed"})
   void parseRmetaJson(InputStream jsonStream, DefaultHandler handler, ExtractionMetadata md)
       throws IOException, SAXException {
     Object parsed = Utils.fromJSON(jsonStream);
@@ -103,8 +108,10 @@ public class TikaServerParser {
         if (!xhtml.isEmpty() && handler != null) {
           InputStream inputStream =
               new ByteArrayInputStream(xhtml.getBytes(StandardCharsets.UTF_8));
-          InputStream sanitizedStream = XmlSanitizingReader.sanitize(inputStream);
-          saxParser.parse(sanitizedStream, handler);
+          try (Reader reader =
+              new XmlSanitizingReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            saxParser.parse(new InputSource(reader), handler);
+          }
         }
       }
     }

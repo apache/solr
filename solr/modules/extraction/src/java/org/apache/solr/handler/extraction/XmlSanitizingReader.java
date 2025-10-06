@@ -17,171 +17,171 @@
 package org.apache.solr.handler.extraction;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.io.Reader;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 
 /**
- * Make sure the XHTML input is valid XML. Pipe text through this reader before passing it to an XML
- * parser. TODO: Warning: Most of this class is AI generated. Can be a lot smaller, only sanitize
- * '0x0'?
+ * Minimal reader that drops only null numeric character entities from the stream.
+ *
+ * <p>Recognizes decimal and hexadecimal numeric entities that resolve to code point 0 (e.g. "&#0;",
+ * "&#00;", "&#x0;", "&#x0000;") and removes them. If a null entity is unterminated (no ';'), it is
+ * still removed when a non-entity character terminates the sequence. Everything else is passed
+ * through unchanged.
  */
-final class XmlSanitizingReader extends java.io.Reader {
-  private final java.io.Reader in;
-  private final StringBuilder entityBuf = new StringBuilder();
-  private boolean inEntity = false; // after reading '&'
+final class XmlSanitizingReader extends Reader {
+  private final Reader in;
+  // pushback buffer (stack) for lookahead and emitting literals
+  private StringBuilder pushbackBuf = null;
 
-  // For surrogate tracking to evaluate XML validity by code point
-  private int pendingHighSurrogate = -1;
-
-  public XmlSanitizingReader(java.io.Reader in) {
+  XmlSanitizingReader(Reader in) {
     this.in = in;
   }
 
   @Override
-  public int read(char[] cbuf, int off, int len) throws java.io.IOException {
+  public int read(char[] cbuf, int off, int len) throws IOException {
+    if (len == 0) return 0;
     int written = 0;
     while (written < len) {
-      int ci = in.read();
-      if (ci == -1) break;
-      char ch = (char) ci;
-
-      // Handle numeric entity stripping for &#0; and &#x0; variants
-      if (!inEntity) {
-        if (ch == '&') {
-          inEntity = true;
-          entityBuf.setLength(0);
-          entityBuf.append(ch);
-          continue; // don't write yet
-        }
-      } else {
-        entityBuf.append(ch);
-        // stop conditions for entity buffering
-        if (ch == ';' || entityBuf.length() > 12) { // entities are short; cap length defensively
-          String ent = entityBuf.toString();
-          boolean drop = isNullNumericEntity(ent);
-          inEntity = false;
-          if (!drop) {
-            // flush buffered entity to output
-            for (int i = 0; i < ent.length() && written < len; i++) {
-              cbuf[off + written++] = ent.charAt(i);
-            }
-          }
-          continue;
-        }
-        // Keep buffering alphanumerics and '#', 'x'
-        continue;
-      }
-
-      // Filter invalid XML 1.0 characters by code point
-      if (Character.isHighSurrogate(ch)) {
-        pendingHighSurrogate = ch;
-        continue; // need next char to form code point
-      }
-      if (Character.isLowSurrogate(ch) && pendingHighSurrogate != -1) {
-        int cp = Character.toCodePoint((char) pendingHighSurrogate, ch);
-        pendingHighSurrogate = -1;
-        if (isAllowedXmlChar(cp)) {
-          // encode back as surrogate pair
-          cbuf[off + written++] = Character.highSurrogate(cp);
-          if (written < len) {
-            cbuf[off + written++] = Character.lowSurrogate(cp);
-          } else {
-            // If no space for low surrogate, keep it pending (edge, unlikely with reasonable len)
-            // Fallback: buffer low surrogate into a small one-char pushback by using a field
-            // For simplicity, write only if space available; otherwise, return and next read
-            // continues
-            // But to avoid corruption, store it
-            pushbackChar = Character.lowSurrogate(cp);
-          }
-        }
-        continue;
-      } else {
-        // previous high surrogate without low surrogate -> invalid; drop it
-        pendingHighSurrogate = -1;
-      }
-
-      int cp = ch;
-      if (!Character.isSurrogate(ch) && isAllowedXmlChar(cp)) {
-        cbuf[off + written++] = ch;
-      }
+      int ch = read();
+      if (ch == -1) break;
+      cbuf[off + written++] = (char) ch;
     }
     return (written == 0) ? -1 : written;
   }
 
-  private Character pushbackChar = null;
-
   @Override
-  public boolean ready() throws java.io.IOException {
-    return in.ready();
-  }
+  public int read() throws IOException {
+    int c = nextChar();
+    if (c == -1) return -1;
+    if (c != '&') return c;
 
-  @Override
-  public void close() throws java.io.IOException {
-    in.close();
-  }
+    // Possible entity
+    int c2 = nextChar();
+    if (c2 == -1) return '&';
+    if (c2 != '#') {
+      // Not numeric entity
+      pushBackChar(c2);
+      return '&';
+    }
 
-  private static boolean isNullNumericEntity(String ent) {
-    // Accept patterns like '&#0;', '&#00;', '&#x0;', '&#x0000;' (case-insensitive)
-    if (ent == null) return false;
-    if (!ent.startsWith("&#") || !ent.endsWith(";")) return false;
-    String mid = ent.substring(2, ent.length() - 1);
-    if (mid.isEmpty()) return false;
-    if (mid.charAt(0) == 'x' || mid.charAt(0) == 'X') {
-      // hex
-      for (int i = 1; i < mid.length(); i++) {
-        char c = mid.charAt(i);
-        if (c != '0') return false;
-      }
-      return mid.length() > 1; // at least one zero after x
+    // Start numeric entity: collect and decide if it's null
+    int c3 = nextChar();
+    if (c3 == -1) {
+      // literal "&#" at EOF -> treat as '&' followed by EOF
+      return '&';
+    }
+
+    boolean hex;
+    boolean sawDigit = false;
+    boolean nonZeroSeen = false;
+    StringBuilder buf = new StringBuilder(8);
+    buf.append("&#");
+
+    if (c3 == 'x' || c3 == 'X') {
+      hex = true;
+      buf.append((char) c3);
+    } else if (isDecDigit(c3)) {
+      hex = false;
+      sawDigit = true;
+      if (c3 != '0') nonZeroSeen = true;
+      buf.append((char) c3);
     } else {
-      // decimal
-      for (int i = 0; i < mid.length(); i++) {
-        char c = mid.charAt(i);
-        if (c != '0') return false;
+      // Not a numeric entity actually, emit literal and push back c3
+      pushBackChar(c3);
+      return '&';
+    }
+
+    // Consume digits
+    while (true) {
+      int d = nextChar();
+      if (d == -1) {
+        // EOF terminates entity lexeme; if it's a null entity, drop it, else flush literal
+        if (sawDigit && !nonZeroSeen) {
+          return -1; // dropped; caller will get EOF next
+        } else {
+          // flush literal collected so far by returning first char and pushing back the rest
+          return flushLiteral(buf);
+        }
       }
-      return true; // one or more zeros
+      if (d == ';') {
+        // Properly terminated entity
+        buf.append(';');
+        boolean isNull = sawDigit && !nonZeroSeen;
+        if (isNull) {
+          // drop the entire entity and continue reading next char
+          return read();
+        } else {
+          // emit '&' and pushback the rest so that the sequence passes through unchanged
+          return flushLiteral(buf);
+        }
+      }
+
+      boolean validDigit = hex ? isHexDigit(d) : isDecDigit(d);
+      if (validDigit) {
+        sawDigit = true;
+        if (d != '0') nonZeroSeen = true;
+        buf.append((char) d);
+        if (buf.length() > 16) {
+          // cap buffering; treat as literal
+          return flushLiteral(buf);
+        }
+        continue;
+      }
+
+      // Non-digit terminates the entity without semicolon
+      boolean isNull = sawDigit && !nonZeroSeen;
+      if (isNull) {
+        // drop collected entity and push back the terminator
+        pushBackChar(d);
+        return read();
+      } else {
+        // Not a null entity; emit literal and then the terminator on next read
+        pushBackChar(d);
+        return flushLiteral(buf);
+      }
     }
   }
 
-  private static boolean isAllowedXmlChar(int cp) {
-    return cp == 0x9
-        || cp == 0xA
-        || cp == 0xD
-        || (cp >= 0x20 && cp <= 0xD7FF)
-        || (cp >= 0xE000 && cp <= 0xFFFD)
-        || (cp >= 0x10000 && cp <= 0x10FFFF);
+  private int nextChar() throws IOException {
+    if (pushbackBuf != null && !pushbackBuf.isEmpty()) {
+      int lastIdx = pushbackBuf.length() - 1;
+      char c = pushbackBuf.charAt(lastIdx);
+      pushbackBuf.deleteCharAt(lastIdx);
+      return c;
+    }
+    return in.read();
   }
 
-  public static InputStream sanitize(InputStream in) throws IOException {
-    PipedOutputStream out = new PipedOutputStream();
-    PipedInputStream pipedIn = new PipedInputStream(out);
+  private void pushBackChar(int ch) {
+    if (ch == -1) return;
+    if (pushbackBuf == null) pushbackBuf = new StringBuilder();
+    pushbackBuf.append((char) ch);
+  }
 
-    Reader reader = new XmlSanitizingReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-    Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+  private void pushBackString(String s, int startIndex) {
+    if (s == null) return;
+    if (pushbackBuf == null) pushbackBuf = new StringBuilder();
+    for (int i = s.length() - 1; i >= startIndex; i--) {
+      pushbackBuf.append(s.charAt(i));
+    }
+  }
 
-    Thread worker =
-        new Thread(
-            () -> {
-              try (reader;
-                  writer) {
-                reader.transferTo(writer);
-              } catch (IOException e) {
-                try {
-                  pipedIn.close();
-                } catch (IOException ignored) {
-                }
-              }
-            },
-            "XmlSanitizingReaderWorker");
-    worker.setDaemon(true);
-    worker.start();
+  private static boolean isDecDigit(int c) {
+    return c >= '0' && c <= '9';
+  }
 
-    return pipedIn;
+  private static boolean isHexDigit(int c) {
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+  }
+
+  // Emit the buffered literal sequence by returning '&' and pushing back the rest in reverse order
+  private int flushLiteral(StringBuilder buf) {
+    // push back all but the first char so subsequent reads emit them
+    pushBackString(buf.toString(), 1);
+    return buf.charAt(0);
+  }
+
+  @Override
+  public void close() throws IOException {
+    in.close();
   }
 }
