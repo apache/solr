@@ -29,8 +29,8 @@ public class Http2ClusterStateProvider<C extends HttpSolrClientBase>
    * caller's responsibiity to close the client.
    *
    * @param solrUrls root path solr urls
-   * @param httpClient an intance of HttpSolrClientBase
-   * @throws Exception
+   * @param httpClient an instance of HttpSolrClientBase
+   * @throws Exception if a problem with initialization occurs
    */
   public Http2ClusterStateProvider(List<String> solrUrls, C httpClient) throws Exception {
     if (httpClient == null) {
