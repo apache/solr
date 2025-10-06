@@ -18,11 +18,9 @@
 
 If the documents you need to index are in a binary format, such as Word, Excel, PDFs, etc., Solr includes a request handler which uses http://tika.apache.org/[Apache Tika] to extract text for indexing to Solr.
 
-There are two backends for this module. The `local` backend uses code from the Tika project to provide a framework for incorporating many different file-format parsers such as http://pdfbox.apache.org/[Apache PDFBox] and http://poi.apache.org/index.html[Apache POI] into Solr itself. The `tikaserver` backend uses an external Tika server process to do the extraction.
+Apache Tika incorporates many different file-format parsers such as http://pdfbox.apache.org/[Apache PDFBox] and http://poi.apache.org/index.html[Apache POI] to extract the text content and metadata from files.
 
-Working with this framework, Solr's `ExtractingRequestHandler` uses Tika to support uploading binary files
-for data extraction and indexing.
-Downloading Tika is not required to use Solr Cell.
+Solr's `ExtractingRequestHandler` uses Tika, either in-process or a remote Tika server, to support extracting text and metadata from binary files.
 
 When this framework was under development, it was called the Solr _Content Extraction Library_, or _CEL_; from that abbreviation came this framework's name: Solr Cell.
 The names Solr Cell and `ExtractingRequestHandler` are used
@@ -35,21 +33,32 @@ When using the Solr Cell framework, it is helpful to keep the following in mind:
 * Tika will automatically attempt to determine the input document type (e.g., Word, PDF, HTML) and extract the content appropriately.
 If you like, you can explicitly specify a MIME type for Tika with the `stream.type` parameter.
 See http://tika.apache.org/{dep-version-tika}/formats.html for the file types supported.
-* Briefly, Tika internally works by synthesizing an XHTML document from the core content of the parsed document which is passed to a configured http://www.saxproject.org/quickstart.html[SAX] ContentHandler provided by Solr Cell.
-Solr responds to Tika's SAX events to create one or more text fields from the content.
+* Briefly, Tika internally works by synthesizing an XHTML document from the core content of the parsed document, which is passed to a configured http://www.saxproject.org/quickstart.html[SAX] ContentHandler provided by Solr Cell.
+Solr responds to SAX events to create one or more text fields from the content.
 Tika exposes document metadata as well (apart from the XHTML).
-* Tika produces metadata such as Title, Subject, and Author according to specifications such as the DublinCore.
-The metadata available is highly dependent on the file types and what they in turn contain.
+* Tika produces metadata such as `dc:title`, `dc:subject`, and `dc:author` according to specifications such as the DublinCore.
+The metadata available is highly dependent on the file types and what they, in turn, contain.
 Some of the general metadata created is described in the section <<Metadata Created by Tika>> below.
 Solr Cell supplies some metadata of its own too.
 * Solr Cell concatenates text from the internal XHTML into a `content` field.
 You can configure which elements should be included/ignored, and which should map to another field.
 * Solr Cell maps each piece of metadata onto a field.
-By default it maps to the same name but several parameters control how this is done.
+By default, it maps to the same name, but several parameters control how this is done.
 * When Solr Cell finishes creating the internal `SolrInputDocument`, the rest of the indexing stack takes over.
 The next step after any update handler is the xref:configuration-guide:update-request-processors.adoc[Update Request Processor] chain.
 
-== Tika Server
+== Module
+
+This is provided via the `extraction` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
+The "techproducts" example included with Solr is pre-configured to have Solr Cell configured.
+If you are not using the example, you will want to pay attention to the section <<solrconfig.xml Configuration>> below.
+
+== Tika Extraction Backends
+
+There are two backends for this module. The `local` backend embeds Tika inside Solr's own process, while the `tikaserver` backend uses an external Tika server process to do the extraction.
+
+=== Tika Server
 
 The `tikaserver` backend lets Solr delegate content extraction to an external Apache Tika Server process instead of running Tika parsers inside the Solr JVM. This can improve operational isolation (crashes or heavy parsing won’t impact Solr), simplify dependency management, and allow you to scale Tika independently of Solr.
 
@@ -61,13 +70,13 @@ Example handler configuration:
   <lst name="defaults">
     <!-- Select the tikaserver backend by default for this handler -->
     <str name="extraction.backend">tikaserver</str>
+    <!-- Point Solr to your Tika Server -->
+    <str name="tikaserver.url">http://localhost:9998</str>
   </lst>
-  <!-- Point Solr to your Tika Server -->
-  <str name="tikaserver.url">http://localhost:9998</str>
 </requestHandler>
 ----
 
-=== Starting Tika Server with Docker
+==== Starting Tika Server with Docker
 
 The quickest way to run Tika Server for development is using Docker. The examples below expose Tika on port 9998 on localhost, matching the default value when `tikaserver.url` is not explicitly set.
 
@@ -78,24 +87,17 @@ docker run --rm -p 9998:9998 apache/tika:3.2.3.0-full
 
 NOTE: If Solr runs in Docker too, ensure both containers share a network and use the Tika container name as the host in `tikaserver.url`.
 
-=== Limitations
-Currently, the `tikaserver` option lacks some features and will return HTTP 400 in these cases:
-
-- `capture` and `captureAttr`: Selecting specific XHTML elements/attributes during indexing requires Solr’s SAX ContentHandler and is not supported by the `tikaserver` backend.
-- `xpath`: Server-side XPath filtering of the XHTML is not supported.
-- `passwordsFile` and `resource.password` for the indexing path: these options trigger the legacy SAX path in Solr and are not currently supported.
+==== Limitations
 
 Metadata produced by Tika Server can differ slightly from local Tika, particularly in key names and the presence/absence of certain fields. Adjust your `fmap.*` mappings accordingly.
 
-== Module
+=== Local in-process
 
-This is provided via the `extraction` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+The `local` backend is identical to Solr Cell's behavior in previous Solr versions.
 
-The "techproducts" example included with Solr is pre-configured to have Solr Cell configured.
-If you are not using the example, you will want to pay attention to the section <<solrconfig.xml Configuration>> below.
+IMPORTANT: This backend is deprecated in 9.x and gone in Solr 10.0.
 
-
-=== Solr Cell Performance Implications (local mode)
+==== Performance Implications
 
 Rich document formats are frequently not well documented, and even in cases where there is documentation for the format, not everyone who creates documents will follow the specifications faithfully.
 
@@ -111,13 +113,7 @@ Indexing can also consume all available Solr resources, particularly with large 
 that have a lot of rich media embedded in them.
 
 For these reasons, Solr Cell with `local` backend is not recommended for use in a production system. Prefer the
-`tikaserver` backend, which is more robust and isolates failures from Solr itself.
-
-It is a best practice to use Solr Cell as a proof-of-concept tool during development and then run Tika as an external
-process that sends the extracted documents to Solr (via xref:deployment-guide:solrj.adoc[]) for indexing.
-This way, any extraction failures that occur are isolated from Solr itself and can be handled gracefully.
-
-For a few examples of how this could be done, see this blog post by Erick Erickson, https://lucidworks.com/2012/02/14/indexing-with-solrj/[Indexing with SolrJ].
+`tikaserver` backend, which is more robust and isolates failures from Solr itself. Or alternatively, roll your own extraction pipeline in your application before sending anything to Solr.
 
 == Trying out Solr Cell
 
@@ -129,11 +125,19 @@ This command will start Solr, create a core/collection named `gettingstarted` wi
 ----
 bin/solr start -e schemaless -Dsolr.modules=extraction
 
+# Optionally start Tika Server if using `tikaserver` backend below
+docker run --rm -p 9998:9998 apache/tika:3.2.3.0-full
+
 curl -X POST -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/update/extract",
     "class": "solr.extraction.ExtractingRequestHandler",
-    "defaults":{ "lowernames": "true", "captureAttr":"true"}
+    "defaults":{
+      "lowernames": "true",
+      "captureAttr":"true",
+      "extraction.backend": "tikaserver",
+      "tikaserver.url": "http://localhost:9998"
+    }
   }
 }' 'http://localhost:8983/solr/gettingstarted/config'
 ----
@@ -193,8 +197,8 @@ $ bin/solr post -c gettingstarted example/exampledocs/solr-word.pdf --params "li
 ====
 The above example won't work as expected if you run it after you've already indexed the document one or more times.
 
-Previously we added the document without these parameters so all fields were added to the index at that time.
-The `uprefix` parameter only applies to fields that are _undefined_, so these won't be prefixed if the document is reindexed later.
+Previously we added the document without these parameters, so all fields were added to the index at that time.
+The `uprefix` parameter only applies to fields that are _undefined_, so these won't be prefixed if the document is re-indexed later.
 However, you would see the new `last_modified_dt` field.
 
 The easiest way to try out the `uprefix` parameter is to start over with a fresh collection.
@@ -207,32 +211,6 @@ The easiest way to try out the `uprefix` parameter is to start over with a fresh
 The following parameters are accepted by the `ExtractingRequestHandler`.
 
 These parameters can be set for each indexing request (as request parameters), or they can be set for all requests to the request handler by defining them in <<solrconfig.xml Configuration,`solrconfig.xml`>>.
-
-`extraction.backend`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: local
-|===
-+
-Choose the backend to use for extraction. The options are `local` or `tikaserver`.
-The `local` backend uses Tika libraries included with Solr to do the extraction, and is the default in Solr 9.x.
-The `tikaserver` backend uses an external Tika server process to do the extraction.
-**The `local` backend is deprecated and will be removed in a future release.**
-+
-Example: In `solrconfig.xml`: `<str name="extraction.backend">tikaserver</str>`.
-
-`tikaserver.url`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Specifies the URL of the Tika server to use when the `extraction.backend` parameter is set to `tikaserver`.
-This parameter is required when using the `tikaserver` backend. Defaults to `http://localhost:9998` if not specified.
-+
-Example: In `solrconfig.xml`: `<str name="tikaserver.url">http://localhost:9998</str>`.
 
 `capture`::
 +
@@ -287,6 +265,29 @@ Example: `commitWithin=10000` (10 seconds)
 A default field to use if the `uprefix` parameter is not specified and a field cannot otherwise be determined.
 +
 Example: `defaultField=\_text_`
+
+`extraction.backend`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: local
+|===
++
+Choose the backend to use for extraction. The options are `local` or `tikaserver`.
+The `local` backend uses Tika libraries included with Solr to do the extraction, and is the default in Solr 9.x.
+The `tikaserver` backend uses an external Tika server process to do the extraction.
+**The `local` backend is deprecated and will be removed in a future release.**
++
+Example: In `solrconfig.xml`: `<str name="extraction.backend">tikaserver</str>`.
+
+`extraction.metadataBackCompat`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: true
+|===
++
+When enabled, Solr Cell tries to map some common metadata to other common names, e.g. `dc:author` is mapped also to `Author`. This can be useful if switching from `local` to `tikaserver` backend, since `tikaserver` use more industry standard name-spaced metadata keys.
 
 `extractOnly`::
 +
@@ -419,6 +420,15 @@ See the section <<Indexing Encrypted Documents>> for more information about usin
 +
 Example: `passwordsFile=/path/to/passwords.txt`
 
+`recursive`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+**Only applicable for the `tikaserver` backend`.** For `local` backend parsing is always recursive, i.e. extracts text from embedded documents. For `tikaserver` you have to enable it explicitly, since it is currently experimental.
+
 `resource.name`::
 +
 [%autowidth,frame=none]
@@ -454,6 +464,18 @@ Defines a file path and name to a custom Tika configuration file.
 This is only required if you have customized your Tika implementation.
 +
 Example: `tika.config=/path/to/tika.config`
+
+`tikaserver.url`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Specifies the URL of the Tika server to use when the `extraction.backend` parameter is set to `tikaserver`.
+This parameter is required when using the `tikaserver` backend. Defaults to `http://localhost:9998` if not specified. This parameter can only be configured in the configuration, not per request.
++
+Example: In `solrconfig.xml`: `<str name="tikaserver.url">http://localhost:9998</str>`.
 
 `uprefix`::
 +
@@ -528,14 +550,14 @@ For example:
 </requestHandler>
 ----
 
-The above suggested list was taken from the list of URPs that run as a part of schemaless mode and provide much of its functionality.
+The above-suggested list was taken from the list of URPs that run as a part of schemaless mode and provide much of its functionality.
 However, one major part of the schemaless functionality is missing from the suggested list, `add-unknown-fields-to-the-schema`, which is the part that adds fields to the schema.
 So you can use the other URPs without worrying about unexpected field additions.
 ====
 
 === Parser-Specific Properties
 
-NOTE: This setting applies to `local` backend only.
+NOTE: This setting currently applies to the `local` backend only. When using `tikaserver` you can configure similar settings on the Tika Server side.
 
 Parsers used by Tika may have specific properties to govern how data is extracted.
 These can be passed through Solr for special parsing situations.
@@ -584,7 +606,7 @@ If you want to supply your own `ContentHandler` for Solr to use, you can extend 
 This factory is responsible for constructing the `SolrContentHandler` that interacts with Tika, and allows literals to override Tika-parsed values.
 Set the parameter `literalsOverride`, which normally defaults to `true`, to `false` to append Tika-parsed values to literal values.
 
-==  Solr Cell Internals
+== Solr Cell Internals
 
 === Metadata Created by Tika
 
@@ -622,11 +644,11 @@ If `literalsOverride=false`, literals will be appended as multi-value to the Tik
 
 === Using capture and Mapping Fields
 
-The command below captures `<div>` tags separately (`capture=div`), and then maps all the instances of that field to a dynamic field named `foo_t` (`fmap.div=foo_t`).
+The command below captures `<h1>` tags separately (`capture=h1`), and then maps all the instances of that field to a dynamic field named `foo_t` (`fmap.h1=foo_t`).
 
 [,console]
 ----
-$ bin/solr post -c gettingstarted example/exampledocs/sample.html --params "literal.id=doc2&captureAttr=true&defaultField=_text_&fmap.div=foo_t&capture=div"
+$ bin/solr post -c gettingstarted example/exampledocs/sample.html --params "literal.id=doc2&captureAttr=true&defaultField=_text_&fmap.h1=foo_t&capture=h1"
 ----
 
 === Using Literals to Define Custom Metadata
@@ -647,7 +669,7 @@ The example below passes in an XPath expression to restrict the XHTML returned b
 
 [,console]
 ----
-$ bin/solr post -c gettingstarted --params "literal.id=doc5&captureAttr=true&defaultField=text&capture=div&fmap.div=foo_t&xpath=/xhtml:html/xhtml:body/xhtml:div//node()" example/exampledocs/sample.html
+$ bin/solr post -c gettingstarted --params "literal.id=doc5&captureAttr=true&defaultField=text&capture=h1&fmap.h1=foo_t&xpath=/xhtml:html/xhtml:body/xhtml:h1//node()" example/exampledocs/sample.html
 ----
 
 === Extracting Data without Indexing
