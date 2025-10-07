@@ -28,6 +28,7 @@ import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -71,6 +72,12 @@ public class JsonFaceting {
     @Param("4")
     int numShards;
 
+    @Param({"false", "true"})
+    boolean useTimeLimit;
+
+    @Param({"false", "true"})
+    boolean useExitableDirectoryReader;
+
     // DV,  // DocValues, collect into ordinal array
     // UIF, // UnInvertedField, collect into ordinal array
     // DVHASH, // DocValues, collect into hash
@@ -101,6 +108,11 @@ public class JsonFaceting {
 
       System.setProperty("maxMergeAtOnce", "30");
       System.setProperty("segmentsPerTier", "30");
+      if (useExitableDirectoryReader) {
+        System.setProperty(SolrIndexSearcher.EXITABLE_READER_PROPERTY, "true");
+      } else {
+        System.setProperty(SolrIndexSearcher.EXITABLE_READER_PROPERTY, "false");
+      }
 
       miniClusterState.startMiniCluster(nodeCount);
 
@@ -157,6 +169,11 @@ public class JsonFaceting {
               + " , f7:{type:terms, field:'facet_s', limit:2, sort:'x desc', facet:{x:'missing(int4_i_dv)'}  } "
               + " , f8:{type:terms, field:'facet_s', limit:2, sort:'x desc', facet:{x:'countvals(int4_i_dv)'}  } "
               + '}');
+
+      if (useTimeLimit) {
+        // high enough to return all results, but still affecting the performance
+        params.set("timeAllowed", "1000");
+      }
 
       // MiniClusterState.log("params: " + params + "\n");
     }

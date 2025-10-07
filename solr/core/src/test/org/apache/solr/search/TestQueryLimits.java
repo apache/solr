@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 
 import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -79,7 +81,7 @@ public class TestQueryLimits extends SolrCloudTestCase {
           "FacetComponent.process:2"
         };
     for (String matchingExpr : matchingExprTests) {
-      CallerSpecificQueryLimit limit = new CallerSpecificQueryLimit(matchingExpr);
+      CallerSpecificQueryLimit limit = new CallerSpecificQueryLimit(Set.of(matchingExpr));
       TestInjection.queryTimeout = limit;
       rsp =
           solrClient.query(
@@ -98,11 +100,11 @@ public class TestQueryLimits extends SolrCloudTestCase {
       assertNotNull(
           "should have partial results for expr " + matchingExpr,
           rsp.getHeader().get("partialResults"));
-      assertFalse("should have trippedBy info", limit.getTrippedBy().isEmpty());
+      assertFalse("should have trippedBy info", limit.getCallerMatcher().getTrippedBy().isEmpty());
       assertTrue(
-          "expected result to start with " + matchingExpr + " but was " + limit.getTrippedBy(),
-          limit.getTrippedBy().iterator().next().startsWith(matchingExpr));
-      Map<String, Integer> callCounts = limit.getCallCounts();
+          "expected result to start with " + matchingExpr + " but was " + limit.getCallerMatcher().getTrippedBy(),
+          limit.getCallerMatcher().getTrippedBy().iterator().next().startsWith(matchingExpr));
+      Map<String, Integer> callCounts = limit.getCallerMatcher().getCallCounts();
       assertTrue("call count should be > 0", callCounts.get(matchingExpr) > 0);
     }
   }
