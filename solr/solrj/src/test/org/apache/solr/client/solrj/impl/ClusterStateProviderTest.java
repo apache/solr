@@ -90,7 +90,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void clearSystemPrperty() {
+  public static void clearSystemProperty() {
     System.clearProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS);
   }
 
