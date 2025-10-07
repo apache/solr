@@ -148,4 +148,7 @@ public interface ExtractingParams {
    * uses /rmeta endpoint, uses more RAM and is disabled by default.
    */
   public static final String RECURSIVE = "extraction.tikaserver.recursive";
+
+  /** Default or per-request timeout in seconds for TikaServer HTTP calls. */
+  public static final String TIKASERVER_TIMEOUT_SECS = "tikaserver.timeoutSeconds";
 }

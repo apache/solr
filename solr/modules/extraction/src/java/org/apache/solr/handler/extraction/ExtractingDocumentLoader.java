@@ -126,6 +126,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         }
       }
 
+      Integer tikaTimeoutSecs = params.getInt(ExtractingParams.TIKASERVER_TIMEOUT_SECS);
       ExtractionRequest extractionRequest =
           new ExtractionRequest(
               streamType,
@@ -139,6 +140,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               pwMap,
               extractFormat,
               recursive,
+              tikaTimeoutSecs,
               Collections.emptyMap());
 
       boolean captureAttr = params.getBool(ExtractingParams.CAPTURE_ATTRIBUTES, false);

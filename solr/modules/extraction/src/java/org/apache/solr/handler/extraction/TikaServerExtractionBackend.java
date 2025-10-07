@@ -47,15 +47,22 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   private static volatile boolean INITIALIZED = false;
   private static volatile boolean SHUTDOWN = false;
   private final String baseUrl; // e.g., http://localhost:9998
-  private final Duration timeout = Duration.ofMinutes(3);
+  private static final int DEFAULT_TIMEOUT_SECONDS = 3 * 60;
+  private final Duration defaultTimeout;
   private final TikaServerParser tikaServerResponseParser = new TikaServerParser();
 
   public TikaServerExtractionBackend(String baseUrl) {
+    this(baseUrl, DEFAULT_TIMEOUT_SECONDS);
+  }
+
+  public TikaServerExtractionBackend(String baseUrl, int timeoutSeconds) {
     if (baseUrl.endsWith("/")) {
       this.baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
     } else {
       this.baseUrl = baseUrl;
     }
+    this.defaultTimeout =
+        Duration.ofSeconds(timeoutSeconds > 0 ? timeoutSeconds : DEFAULT_TIMEOUT_SECONDS);
   }
 
   public static final String NAME = "tikaserver";
@@ -111,7 +118,11 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     HttpClient client = SHARED_CLIENT;
 
     Request req = client.newRequest(url).method("PUT");
-    req.timeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
+    Duration effectiveTimeout =
+        (request.tikaServerTimeoutSeconds != null && request.tikaServerTimeoutSeconds > 0)
+            ? Duration.ofSeconds(request.tikaServerTimeoutSeconds)
+            : defaultTimeout;
+    req.timeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
 
     // Headers
     String accept = (request.tikaServerRecursive ? "application/json" : "text/xml");
@@ -161,12 +172,12 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
 
     final Response response;
     try {
-      response = listener.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+      response = listener.get(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
     } catch (TimeoutException te) {
       throw new SolrException(
           SolrException.ErrorCode.GATEWAY_TIMEOUT,
           "Timeout after "
-              + timeout.toMillis()
+              + effectiveTimeout.toMillis()
               + " ms while waiting for response from TikaServer "
               + url,
           te);

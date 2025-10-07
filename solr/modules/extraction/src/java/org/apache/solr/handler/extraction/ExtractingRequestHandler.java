@@ -72,7 +72,26 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
       // Optionally create Tika Server backend if URL configured
       String tikaServerUrl = (String) initArgs.get(TIKASERVER_URL);
       if (tikaServerUrl != null) {
-        this.tikaServerBackend = new TikaServerExtractionBackend(tikaServerUrl);
+        Integer timeoutSecs = null;
+        Object initTimeout = initArgs.get(ExtractingParams.TIKASERVER_TIMEOUT_SECS);
+        if (initTimeout != null) {
+          try {
+            timeoutSecs = Integer.parseInt(String.valueOf(initTimeout));
+          } catch (NumberFormatException nfe) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Invalid value for '"
+                    + ExtractingParams.TIKASERVER_TIMEOUT_SECS
+                    + "': "
+                    + initTimeout,
+                nfe);
+          }
+        }
+        if (timeoutSecs != null) {
+          this.tikaServerBackend = new TikaServerExtractionBackend(tikaServerUrl, timeoutSecs);
+        } else {
+          this.tikaServerBackend = new TikaServerExtractionBackend(tikaServerUrl);
+        }
       }
 
       // Choose default backend name

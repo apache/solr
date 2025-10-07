@@ -34,6 +34,7 @@ public class ExtractionRequest {
 
   // Below variables are only used by TikaServerExtractionBackend
   public final boolean tikaServerRecursive;
+  public final Integer tikaServerTimeoutSeconds; // optional per-request override
   public final Map<String, String> tikaServerRequestHeaders = new HashMap<>();
 
   /**
@@ -67,6 +68,7 @@ public class ExtractionRequest {
       java.util.LinkedHashMap<java.util.regex.Pattern, String> passwordsMap,
       String extractFormat,
       boolean tikaServerRecursive,
+      Integer tikaServerTimeoutSeconds,
       Map<String, String> tikaServerRequestHeaders) {
     this.streamType = streamType;
     this.resourceName = resourceName;
@@ -79,6 +81,7 @@ public class ExtractionRequest {
     this.passwordsMap = passwordsMap;
     this.extractFormat = extractFormat;
     this.tikaServerRecursive = tikaServerRecursive;
+    this.tikaServerTimeoutSeconds = tikaServerTimeoutSeconds;
     if (tikaServerRequestHeaders != null) {
       this.tikaServerRequestHeaders.putAll(tikaServerRequestHeaders);
     }

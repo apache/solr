@@ -103,6 +103,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         null, // passwordsMap
         extractFormat, // extraction format xml or text
         recursive,
+        null, // timeoutSeconds
         tikaRequestHeaders);
   }
 

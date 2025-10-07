@@ -463,6 +463,21 @@ This is only required if you have customized your Tika implementation.
 +
 Example: `tika.config=/path/to/tika.config`
 
+`tikaserver.timeoutSeconds`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `180` seconds
+|===
++
+Sets the HTTP timeout when communicating with Tika Server, in seconds. Can be set per request as a parameter or as a default in the request handler configuration. If set on the request it overrides the handler default for that call only.
++
+Examples:
++
+- Per request: `tikaserver.timeoutSeconds=60`
+- In `solrconfig.xml`: `<int name="tikaserver.timeoutSeconds">60</int>`
+
+
 `tikaserver.url`::
 +
 [%autowidth,frame=none]

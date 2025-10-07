@@ -71,6 +71,7 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
         null,
         returnType,
         recursive,
+        null,
         tikaRequestHeaders);
   }
 
