@@ -17,10 +17,15 @@
 package org.apache.solr.handler.extraction;
 
 import java.io.InputStream;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -30,6 +35,7 @@ import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -105,7 +111,6 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     HttpClient client = SHARED_CLIENT;
 
     Request req = client.newRequest(url).method("PUT");
-    // Overall per-request timeout
     req.timeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
 
     // Headers
@@ -145,23 +150,65 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
                   "Content-Disposition", "attachment; filename=\"" + request.resourceName + "\""));
     }
 
-    // Body
     if (contentType != null) {
       req.body(new InputStreamRequestContent(contentType, inputStream));
     } else {
       req.body(new InputStreamRequestContent(inputStream));
     }
 
-    // Use an InputStreamResponseListener to stream the response back
     InputStreamResponseListener listener = new InputStreamResponseListener();
     req.send(listener);
 
-    Response response = listener.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+    final Response response;
+    try {
+      response = listener.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+    } catch (TimeoutException te) {
+      throw new SolrException(
+          SolrException.ErrorCode.GATEWAY_TIMEOUT,
+          "Timeout after "
+              + timeout.toMillis()
+              + " ms while waiting for response from TikaServer "
+              + url,
+          te);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Interrupted while waiting for response from TikaServer " + url,
+          ie);
+    } catch (ExecutionException ee) {
+      Throwable cause = ee.getCause();
+      if (cause instanceof ConnectException
+          || cause instanceof SocketTimeoutException
+          || cause instanceof EofException
+          || cause instanceof ClosedChannelException) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+            "Error communicating with TikaServer "
+                + url
+                + ": "
+                + cause.getClass().getSimpleName()
+                + ": "
+                + cause.getMessage(),
+            cause);
+      }
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Unexpected error while calling TikaServer " + url,
+          ee);
+    }
+
     int code = response.getStatus();
     if (code < 200 || code >= 300) {
-      throw new SolrException(
-          SolrException.ErrorCode.getErrorCode(code),
-          "TikaServer " + url + " returned status " + code);
+      SolrException.ErrorCode errorCode = SolrException.ErrorCode.getErrorCode(code);
+      String reason = response.getReason();
+      String msg =
+          "TikaServer "
+              + url
+              + " returned status "
+              + code
+              + (reason != null ? " (" + reason + ")" : "");
+      throw new SolrException(errorCode, msg);
     }
 
     return listener.getInputStream();

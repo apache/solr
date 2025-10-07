@@ -46,6 +46,7 @@ dependencies {
   implementation libs.eclipse.jetty.client
   permitUsedUndeclared libs.eclipse.jetty.http
   permitUsedUndeclared libs.eclipse.jetty.util
+  permitUsedUndeclared libs.eclipse.jetty.io
 
   testImplementation project(':solr:test-framework')
   testImplementation libs.apache.lucene.testframework
