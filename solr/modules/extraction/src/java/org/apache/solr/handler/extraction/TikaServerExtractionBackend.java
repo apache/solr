@@ -65,7 +65,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     try (InputStream tikaResponse = callTikaServer(inputStream, request)) {
       ExtractionMetadata md = buildMetadataFromRequest(request);
       BodyContentHandler bodyContentHandler = new BodyContentHandler(-1);
-      if (request.recursive) {
+      if (request.tikaServerRecursive) {
         tikaServerResponseParser.parseRmetaJson(tikaResponse, bodyContentHandler, md);
       } else {
         tikaServerResponseParser.parseXml(tikaResponse, bodyContentHandler, md);
@@ -82,7 +82,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       DefaultHandler saxContentHandler)
       throws Exception {
     try (InputStream tikaResponse = callTikaServer(inputStream, request)) {
-      if (request.recursive) {
+      if (request.tikaServerRecursive) {
         tikaServerResponseParser.parseRmetaJson(tikaResponse, saxContentHandler, md);
       } else {
         tikaServerResponseParser.parseXml(tikaResponse, saxContentHandler, md);
@@ -99,7 +99,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
    *     request.recursive</code>
    */
   InputStream callTikaServer(InputStream inputStream, ExtractionRequest request) throws Exception {
-    String url = baseUrl + (request.recursive ? "/rmeta" : "/tika");
+    String url = baseUrl + (request.tikaServerRecursive ? "/rmeta" : "/tika");
 
     ensureClientInitialized();
     HttpClient client = SHARED_CLIENT;
@@ -109,16 +109,16 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     req.timeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
 
     // Headers
-    String accept = (request.recursive ? "application/json" : "text/xml");
+    String accept = (request.tikaServerRecursive ? "application/json" : "text/xml");
     req.headers(h -> h.add("Accept", accept));
     String contentType = (request.streamType != null) ? request.streamType : request.contentType;
     if (contentType != null) {
       req.headers(h -> h.add("Content-Type", contentType));
     }
-    if (!request.tikaRequestHeaders.isEmpty()) {
+    if (!request.tikaServerRequestHeaders.isEmpty()) {
       req.headers(
           h ->
-              request.tikaRequestHeaders.forEach(
+              request.tikaServerRequestHeaders.forEach(
                   (k, v) -> {
                     if (k != null && v != null) h.add(k, v);
                   }));

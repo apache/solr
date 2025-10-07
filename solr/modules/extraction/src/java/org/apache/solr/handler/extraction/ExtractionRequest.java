@@ -31,10 +31,10 @@ public class ExtractionRequest {
   public final String resourcePassword;
   public final java.util.LinkedHashMap<java.util.regex.Pattern, String> passwordsMap;
   public final String extractFormat;
-  // TODO: This is only used by TikaServerExtractionBackend.
-  public final boolean recursive;
-  // TODO: This is only used by TikaServerExtractionBackend, change to `features` map?
-  public final Map<String, String> tikaRequestHeaders = new HashMap<>();
+
+  // Below variables are only used by TikaServerExtractionBackend
+  public final boolean tikaServerRecursive;
+  public final Map<String, String> tikaServerRequestHeaders = new HashMap<>();
 
   /**
    * Constructs an ExtractionRequest object containing metadata and configurations for extraction
@@ -50,8 +50,9 @@ public class ExtractionRequest {
    * @param resourcePassword an optional password used for encrypted documents
    * @param passwordsMap an optional map of regex patterns to passwords for encrypted content
    * @param extractFormat the desired format for extraction output
-   * @param recursive a flag indicating whether extraction should be recursive. TikaServer only
-   * @param tikaRequestHeaders optional headers to be included in requests to the extraction
+   * @param tikaServerRecursive a flag indicating whether extraction should be recursive. TikaServer
+   *     only
+   * @param tikaServerRequestHeaders optional headers to be included in requests to the extraction
    *     service. TikaServer only
    */
   public ExtractionRequest(
@@ -65,8 +66,8 @@ public class ExtractionRequest {
       String resourcePassword,
       java.util.LinkedHashMap<java.util.regex.Pattern, String> passwordsMap,
       String extractFormat,
-      boolean recursive,
-      Map<String, String> tikaRequestHeaders) {
+      boolean tikaServerRecursive,
+      Map<String, String> tikaServerRequestHeaders) {
     this.streamType = streamType;
     this.resourceName = resourceName;
     this.contentType = contentType;
@@ -77,9 +78,9 @@ public class ExtractionRequest {
     this.resourcePassword = resourcePassword;
     this.passwordsMap = passwordsMap;
     this.extractFormat = extractFormat;
-    this.recursive = recursive;
-    if (tikaRequestHeaders != null) {
-      this.tikaRequestHeaders.putAll(tikaRequestHeaders);
+    this.tikaServerRecursive = tikaServerRecursive;
+    if (tikaServerRequestHeaders != null) {
+      this.tikaServerRequestHeaders.putAll(tikaServerRequestHeaders);
     }
   }
 }
