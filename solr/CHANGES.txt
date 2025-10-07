@@ -83,6 +83,9 @@ Improvements
   always create and manage these internal clients.  The ability for callers to provide a pre-built client is removed.  Callers may specify the internal client
   details by providing an instance of either `Http2SolrClient.Builder` or `HttpJdkSolrClient.Builder`. (James Dyer)
 
+* SOLR-17943: `Http2ClusterStateProvider` now also can work with `HttpJdkSolrClient`. (James Dyer)
+
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
