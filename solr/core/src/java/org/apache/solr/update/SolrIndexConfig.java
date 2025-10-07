@@ -20,6 +20,7 @@ import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
@@ -360,7 +361,7 @@ public class SolrIndexConfig implements MapSerializable {
   @SuppressForbidden(reason = "Need to override Lucene's 2GB per-thread limit for large datasets")
   private static void setPerThreadRAMLimitViaReflection(IndexWriterConfig config, int limitMB) {
     try {
-      java.lang.reflect.Field field = null;
+      Field field = null;
       Class<?> currentClass = config.getClass();
 
       while (currentClass != null && field == null) {
