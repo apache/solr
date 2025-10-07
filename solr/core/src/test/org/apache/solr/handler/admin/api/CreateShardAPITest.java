@@ -119,7 +119,7 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
     final var remoteMessage =
         CreateShard.createRemoteMessage("someCollectionName", requestBody).getProperties();
 
-    assertEquals(13, remoteMessage.size());
+    assertEquals(12, remoteMessage.size());
     assertEquals("createshard", remoteMessage.get(QUEUE_OPERATION));
     assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
     assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));

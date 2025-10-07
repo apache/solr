@@ -112,7 +112,7 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
         CreateReplica.createRemoteMessage("someCollectionName", "someShardName", requestBody)
             .getProperties();
 
-    assertEquals(20, remoteMessage.size());
+    assertEquals(19, remoteMessage.size());
     assertEquals("addreplica", remoteMessage.get(QUEUE_OPERATION));
     assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
     assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));

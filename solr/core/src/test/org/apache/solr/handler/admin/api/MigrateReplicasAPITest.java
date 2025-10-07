@@ -87,7 +87,7 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
-    assertEquals(5, createdMessageProps.size());
+    assertEquals(4, createdMessageProps.size());
     assertEquals(Set.of("demoSourceNode"), createdMessageProps.get("sourceNodes"));
     assertEquals(Set.of("demoTargetNode"), createdMessageProps.get("targetNodes"));
     assertEquals("async", createdMessageProps.get("async"));

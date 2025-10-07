@@ -83,7 +83,7 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
-    assertEquals(5, createdMessageProps.size());
+    assertEquals(4, createdMessageProps.size());
     assertEquals("demoSourceNode", createdMessageProps.get("sourceNode"));
     assertEquals("demoTargetNode", createdMessageProps.get("targetNode"));
     assertEquals("async", createdMessageProps.get("async"));
