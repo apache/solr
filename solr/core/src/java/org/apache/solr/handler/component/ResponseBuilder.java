@@ -137,6 +137,25 @@ public class ResponseBuilder {
     return this.stage;
   }
 
+  public String getStageName() {
+    switch (this.stage) {
+      case STAGE_START:
+        return "START";
+      case STAGE_PARSE_QUERY:
+        return "PARSE_QUERY";
+      case STAGE_TOP_GROUPS:
+        return "TOP_GROUPS";
+      case STAGE_EXECUTE_QUERY:
+        return "EXECUTE_QUERY";
+      case STAGE_GET_FIELDS:
+        return "GET_FIELDS";
+      case STAGE_DONE:
+        return "DONE";
+      default:
+        return Integer.toString(this.stage);
+    }
+  }
+
   public void setStage(int stage) {
     this.stage = stage;
   }

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -966,5 +967,235 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[2]/str[@name='id'][.='2']",
         "//result/doc[3]/str[@name='id'][.='3']",
         "//result/doc[4]/str[@name='id'][.='9']");
+  }
+
+  @Test
+  public void testKnnFloatWithoutExplicitlyEarlyTermination_returnsKnnFloatVectorQuery() {
+    // It verifies that when no early termination parameters are provided,
+    // the default behavior is applied (early termination is disabled), and no special logic is
+    // triggered.
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=5}" + vectorToSearch,
+            "fl",
+            "id",
+            "debugQuery",
+            "true"),
+        "//result[@numFound='5']",
+        "//str[@name='parsedquery'][.='KnnFloatVectorQuery(KnnFloatVectorQuery:vector[1.0,...][5])']");
+  }
+
+  @Test
+  public void testKnnFloatWithoutEarlyTermination_returnsKnnFloatVectorQuery() {
+    // It verifies that when early termination is explicitly set to false, no special logic is
+    // triggered.
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=5 earlyTermination=false}" + vectorToSearch,
+            "fl",
+            "id",
+            "debugQuery",
+            "true"),
+        "//result[@numFound='5']",
+        "//str[@name='parsedquery'][.='KnnFloatVectorQuery(KnnFloatVectorQuery:vector[1.0,...][5])']");
+  }
+
+  @Test
+  public void testKnnFloatWithEarlyTerminationDefaultParams_returnsPatienceKnnVectorQuery() {
+    // It verifies that when early termination is explicitly set to true but no other parameters are
+    // provided, the PatienceKnnVectorQuery is executed using the default values for
+    // saturationThreshold and
+    // patience.
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    // IMPORTANT: The default values for `saturationThreshold` and `patience` are hardcoded here
+    // because they are currently private in Lucene's PatienceKnnVectorQuery implementation.
+    // If Lucene changes these defaults in a future release, this test will break and must be
+    // updated accordingly.
+    double defaultSaturationThreshold = 0.995;
+    int defaultPatience = 7;
+
+    String expectedParsedQuery =
+        String.format(
+            Locale.US,
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnFloatVectorQuery:vector[1.0,...][10]})",
+            defaultSaturationThreshold,
+            defaultPatience);
+
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=10 earlyTermination=true}" + vectorToSearch,
+            "fl",
+            "id",
+            "debugQuery",
+            "true"),
+        "//result[@numFound='10']",
+        "//str[@name='parsedquery'][.='" + expectedParsedQuery + "']");
+  }
+
+  @Test
+  public void
+      testKnnFloatWithEarlyTerminationExplicitParams_returnsPatienceKnnVectorQueryExplicitParams() {
+    // It verifies that when early termination is explicitly set to true and both
+    // saturationThreshold and patience
+    // parameters are provided, the PatienceKnnVectorQuery is executed using the specified input
+    // values.
+    String vectorToSearch = "[1.0, 2.0 ,3.0, 4.0]";
+
+    double explicitSaturationThreshold = 0.989;
+    int explicitPatience = 10;
+
+    String query =
+        String.format(
+            Locale.US,
+            "{!knn f=vector topK=10 earlyTermination=true saturationThreshold=%.3f patience=%d}"
+                + vectorToSearch,
+            explicitSaturationThreshold,
+            explicitPatience);
+
+    String expectedParsedQuery =
+        String.format(
+            Locale.US,
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnFloatVectorQuery:vector[1.0,...][10]})",
+            explicitSaturationThreshold,
+            explicitPatience);
+
+    assertQ(
+        req(CommonParams.Q, query, "fl", "id", "debugQuery", "true"),
+        "//result[@numFound='10']",
+        "//str[@name='parsedquery'][.='" + expectedParsedQuery + "']");
+  }
+
+  @Test
+  public void
+      testKnnByteWithEarlyTerminationExplicitParams_returnsPatienceKnnVectorQueryExplicitParams() {
+    // It verifies that when early termination is explicitly set to true and both
+    // saturationThreshold and patience
+    // parameters are provided, the PatienceKnnVectorQuery is executed using the specified input
+    // values.
+    String vectorToSearch = "[2, 2, 1, 3]";
+
+    double explicitSaturationThreshold = 0.989;
+    int explicitPatience = 10;
+
+    String query =
+        String.format(
+            Locale.US,
+            "{!knn f=vector_byte_encoding topK=5 earlyTermination=true saturationThreshold=%.3f patience=%d}"
+                + vectorToSearch,
+            explicitSaturationThreshold,
+            explicitPatience);
+
+    String expectedParsedQuery =
+        String.format(
+            Locale.US,
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnByteVectorQuery:vector_byte_encoding[2,...][5]})",
+            explicitSaturationThreshold,
+            explicitPatience);
+
+    assertQ(
+        req(CommonParams.Q, query, "fl", "id", "debugQuery", "true"),
+        "//result[@numFound='5']",
+        "//str[@name='parsedquery'][.='" + expectedParsedQuery + "']");
+  }
+
+  @Test
+  public void
+      testKnnFloatWithEarlyTerminationOnlyExplicitParams_returnsPatienceKnnVectorQueryExplicitParams() {
+    // It verifies that when early termination is NOT explicitly passed but both saturationThreshold
+    // and patience
+    // parameters are provided, the PatienceKnnVectorQuery is executed using the specified input
+    // values.
+    String vectorToSearch = "[1.0, 2.0 ,3.0, 4.0]";
+
+    double explicitSaturationThreshold = 0.989;
+    int explicitPatience = 10;
+
+    String query =
+        String.format(
+            Locale.US,
+            "{!knn f=vector topK=10 saturationThreshold=%.3f patience=%d}" + vectorToSearch,
+            explicitSaturationThreshold,
+            explicitPatience);
+
+    String expectedParsedQuery =
+        String.format(
+            Locale.US,
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnFloatVectorQuery:vector[1.0,...][10]})",
+            explicitSaturationThreshold,
+            explicitPatience);
+
+    assertQ(
+        req(CommonParams.Q, query, "fl", "id", "debugQuery", "true"),
+        "//result[@numFound='10']",
+        "//str[@name='parsedquery'][.='" + expectedParsedQuery + "']");
+  }
+
+  @Test(expected = NumberFormatException.class)
+  public void incorrectSaturationThresholdValue_shouldThrowNumberFormatException()
+      throws Exception {
+    // It verifies that when an invalid saturationThreshold value, e.g. 95%, is provided in the
+    // query, Solr throws an exception.
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    String saturationThreshold = "95%";
+    int patience = 10;
+
+    String query =
+        String.format(
+            Locale.ROOT,
+            "{!knn f=vector topK=10 saturationThreshold=%s patience=%d}%s",
+            saturationThreshold,
+            patience,
+            vectorToSearch);
+
+    h.query(req(CommonParams.Q, query));
+  }
+
+  @Test(expected = NumberFormatException.class)
+  public void incorrectPatienceValue_shouldThrowNumberFormatException() throws Exception {
+    // It verifies that when an invalid Patience value
+    // is provided in the query, Solr throws an exception.
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    double saturationThreshold = 0.995;
+    double patience = 7.9; // double instead of int
+
+    String query =
+        String.format(
+            Locale.ROOT,
+            "{!knn f=vector topK=10 saturationThreshold=%.3f patience=%.3f}%s",
+            saturationThreshold,
+            patience,
+            vectorToSearch);
+
+    h.query(req(CommonParams.Q, query));
+  }
+
+  @Test
+  public void onlyOneInputParam_shouldThrowException() {
+    // It verifies that when only one input param is provided in the query,
+    // Solr throws a BAD_REQUEST exception with the expected message.
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    double saturationThreshold = 0.995;
+
+    assertQEx(
+        "Parameters 'saturationThreshold' and 'patience' must both be provided, or neither.",
+        req(
+            CommonParams.Q,
+            String.format(
+                Locale.ROOT,
+                "{!knn f=vector topK=10 saturationThreshold=%.3f}%s",
+                saturationThreshold,
+                vectorToSearch)),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 }

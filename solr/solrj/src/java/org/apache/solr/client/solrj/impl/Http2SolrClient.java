@@ -113,7 +113,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private final long idleTimeoutMillis;
 
-  private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
+  private List<HttpListenerFactory> listenerFactory;
   protected AsyncTracker asyncTracker = new AsyncTracker();
 
   private final boolean closeClient;
@@ -154,9 +154,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
     // note: do not manipulate httpClient below this point; it could be a shared instance
 
-    if (builder.listenerFactory != null) {
-      this.listenerFactory.addAll(builder.listenerFactory);
+    if (builder.listenerFactories != null) {
+      this.listenerFactory = builder.listenerFactories;
+    } else {
+      this.listenerFactory = new ArrayList<>(0);
     }
+
     updateDefaultMimeTypeForParser();
     this.idleTimeoutMillis = builder.getIdleTimeoutMillis();
 
@@ -640,6 +643,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
   }
 
+  @Override
+  public HttpSolrClientBuilderBase<?, ?> builder() {
+    return new Http2SolrClient.Builder().withHttpClient(this);
+  }
+
   private NamedList<Object> processErrorsAndResponse(
       SolrRequest<?> solrRequest, Response response, InputStream is, String urlExceptionMessage)
       throws SolrServerException {
@@ -958,7 +966,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     protected Long keyStoreReloadIntervalSecs;
 
-    private List<HttpListenerFactory> listenerFactory;
+    private List<HttpListenerFactory> listenerFactories;
 
     public Builder() {
       super();
@@ -984,8 +992,29 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.baseSolrUrl = baseSolrUrl;
     }
 
-    public Http2SolrClient.Builder withListenerFactory(List<HttpListenerFactory> listenerFactory) {
-      this.listenerFactory = listenerFactory;
+    /**
+     * specify a listener factory, which will be appended to any existing values.
+     *
+     * @param listenerFactory a HttpListenerFactory
+     * @return This Builder
+     */
+    public Http2SolrClient.Builder addListenerFactory(HttpListenerFactory listenerFactory) {
+      if (this.listenerFactories == null) {
+        this.listenerFactories = new ArrayList<>(1);
+      }
+      this.listenerFactories.add(listenerFactory);
+      return this;
+    }
+
+    /**
+     * Specify listener factories, which will replace any existing values.
+     *
+     * @param listenerFactories a list of HttpListenerFactory instances
+     * @return This Builder
+     */
+    public Http2SolrClient.Builder withListenerFactories(
+        List<HttpListenerFactory> listenerFactories) {
+      this.listenerFactories = listenerFactories;
       return this;
     }
 
@@ -1078,33 +1107,16 @@ public class Http2SolrClient extends HttpSolrClientBase {
       return new Http2SolrClient(baseSolrUrl, this);
     }
 
-    /**
-     * Provide a seed Http2SolrClient for the builder values, values can still be overridden by
-     * using builder methods
-     */
+    @Override
     public Builder withHttpClient(Http2SolrClient http2SolrClient) {
+      super.withHttpClient(http2SolrClient);
       this.httpClient = http2SolrClient.httpClient;
 
-      if (this.basicAuthAuthorizationStr == null) {
-        this.basicAuthAuthorizationStr = http2SolrClient.basicAuthAuthorizationStr;
-      }
       if (this.idleTimeoutMillis == null) {
         this.idleTimeoutMillis = http2SolrClient.idleTimeoutMillis;
       }
-      if (this.requestTimeoutMillis == null) {
-        this.requestTimeoutMillis = http2SolrClient.requestTimeoutMillis;
-      }
-      if (this.requestWriter == null) {
-        this.requestWriter = http2SolrClient.requestWriter;
-      }
-      if (this.responseParser == null) {
-        this.responseParser = http2SolrClient.parser;
-      }
-      if (this.urlParamNames == null) {
-        this.urlParamNames = http2SolrClient.urlParamNames;
-      }
-      if (this.listenerFactory == null) {
-        this.listenerFactory = new ArrayList<>(http2SolrClient.listenerFactory);
+      if (this.listenerFactories == null) {
+        this.listenerFactories = http2SolrClient.listenerFactory;
       }
       if (this.executor == null) {
         this.executor = http2SolrClient.executor;

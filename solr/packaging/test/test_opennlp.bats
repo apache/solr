@@ -60,7 +60,7 @@ teardown() {
     # Can't figure out magic policy stuff to allow loading ONNX, so disable security manager.
   export SOLR_SECURITY_MANAGER_ENABLED=false
 
-  solr start -m 4g -Dsolr.modules=analysis-extras -Denable.packages=true
+  solr start -m 4g -Dsolr.modules=analysis-extras -Dsolr.packages.enabled=true
   solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
 
   run solr create -c COLL_NAME
