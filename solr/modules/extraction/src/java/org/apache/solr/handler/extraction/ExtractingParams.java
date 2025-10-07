@@ -147,7 +147,7 @@ public interface ExtractingParams {
    * Enable recursive parsing of embedded documents when using TikaServer. This is experimental,
    * uses /rmeta endpoint, uses more RAM and is disabled by default.
    */
-  public static final String RECURSIVE = "extraction.tikaserver.recursive";
+  public static final String TIKASERVER_RECURSIVE = "tikaserver.recursive";
 
   /** Default or per-request timeout in seconds for TikaServer HTTP calls. */
   public static final String TIKASERVER_TIMEOUT_SECS = "tikaserver.timeoutSeconds";

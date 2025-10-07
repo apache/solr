@@ -418,14 +418,14 @@ See the section <<Indexing Encrypted Documents>> for more information about usin
 +
 Example: `passwordsFile=/path/to/passwords.txt`
 
-`recursive`::
+`tikaserver.recursive`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: false
 |===
 +
-**Only applicable for the `tikaserver` backend`.** For `local` backend parsing is always recursive, i.e. extracts text from embedded documents. For `tikaserver` you have to enable it explicitly, since it is currently experimental.
+**Only applicable for the `tikaserver` backend`.** For `local` backend parsing is always recursive, i.e. extracts text from embedded documents. For `tikaserver` you have to enable it explicitly.
 
 `resource.name`::
 +

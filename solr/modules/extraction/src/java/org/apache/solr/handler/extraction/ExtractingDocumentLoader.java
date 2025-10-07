@@ -112,13 +112,14 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
       String xpathExpr = params.get(ExtractingParams.XPATH_EXPRESSION);
       boolean extractOnly = params.getBool(ExtractingParams.EXTRACT_ONLY, false);
-      boolean recursive = params.getBool(ExtractingParams.RECURSIVE, false);
+      // Prefer new parameter name; fall back to legacy name for backward compatibility
+      boolean tikaserverRecursive = params.getBool(ExtractingParams.TIKASERVER_RECURSIVE, false);
       String extractFormat =
           params.get(ExtractingParams.EXTRACT_FORMAT, extractOnly ? XML_FORMAT : TEXT_FORMAT);
 
       // Parse optional passwords file into a map
       LinkedHashMap<Pattern, String> pwMap = null;
-      String passwordsFile = params.get("passwordsFile");
+      String passwordsFile = params.get(ExtractingParams.PASSWORD_MAP_FILE);
       if (passwordsFile != null) {
         try (java.io.InputStream is = core.getResourceLoader().openResource(passwordsFile)) {
           pwMap = RegexRulesPasswordProvider.parseRulesFile(is);
@@ -138,7 +139,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               params.get(ExtractingParams.RESOURCE_PASSWORD, null),
               pwMap,
               extractFormat,
-              recursive,
+              tikaserverRecursive,
               tikaTimeoutSecs,
               Collections.emptyMap());
 

@@ -109,7 +109,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
    * both on the TikaServer side and on the Solr side</b>
    *
    * @return InputStream of the response body, either XML or JSON depending on <code>
-   *     request.recursive</code>
+   *     request.tikaserverRecursive</code>
    */
   InputStream callTikaServer(InputStream inputStream, ExtractionRequest request) throws Exception {
     String url = baseUrl + (request.tikaServerRecursive ? "/rmeta" : "/tika");

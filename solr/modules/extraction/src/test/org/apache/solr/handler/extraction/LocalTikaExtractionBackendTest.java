@@ -57,8 +57,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
       Long streamSize,
       String resourcePassword,
       String returnType,
-      boolean recursive,
-      Map<String, String> tikaRequestHeaders) {
+      boolean tikaserverRecursive,
+      Map<String, String> tikaserverRequestHeaders) {
     return new ExtractionRequest(
         streamType,
         resourceName,
@@ -70,9 +70,9 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
         resourcePassword,
         null,
         returnType,
-        recursive,
+        tikaserverRecursive,
         null,
-        tikaRequestHeaders);
+        tikaserverRequestHeaders);
   }
 
   @Test
