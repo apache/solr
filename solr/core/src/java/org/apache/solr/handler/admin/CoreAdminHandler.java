@@ -210,13 +210,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       final String action = req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT);
       CoreAdminOp op = opMap.get(action);
       if (op == null) {
-        log.warn(
-            "action '{}' not found, calling custom action handler. "
-                + "If original intention was to target some custom behaviour "
-                + "use custom actions defined in 'solr.xml' instead",
-            action);
-        handleCustomAction(req, rsp);
-        return;
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Unsupported operation: " + action);
       }
 
       final CallInfo callInfo = new CallInfo(this, req, rsp, op);
