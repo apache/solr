@@ -20,6 +20,7 @@ import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.update.SolrIndexWriter.MERGE_OP_ATTR;
 import static org.apache.solr.update.SolrIndexWriter.MERGE_STATE_ATTR;
 import static org.apache.solr.update.SolrIndexWriter.MERGE_TYPE_ATTR;
+import static org.apache.solr.update.SolrIndexWriter.RESULT_ATTR;
 
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import org.apache.solr.SolrTestCaseJ4;
@@ -136,6 +137,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(MERGE_TYPE_ATTR.toString(), "minor")
                   .label(MERGE_OP_ATTR.toString(), "merge")
                   .label(MERGE_STATE_ATTR.toString(), "completed")
+                  .label(RESULT_ATTR.toString(), "success")
                   .build());
       assertEquals(
           "minorMergeDocs should be 600, got: " + minorMergeDocs.getValue(),
@@ -150,6 +152,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(MERGE_TYPE_ATTR.toString(), "major")
                   .label(MERGE_OP_ATTR.toString(), "merge")
                   .label(MERGE_STATE_ATTR.toString(), "completed")
+                  .label(RESULT_ATTR.toString(), "success")
                   .build());
       assertEquals(
           "majorMergeDocs should be 500, got: " + majorMergeDocs.getValue(),
@@ -165,6 +168,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "minor")
                   .label(MERGE_STATE_ATTR.toString(), "completed")
+                  .label(RESULT_ATTR.toString(), "success")
                   .build());
       assertNotNull("minor segment merges metric should exist", minorSegmentsMergeMetric);
       assertEquals(
@@ -180,6 +184,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "major")
                   .label(MERGE_STATE_ATTR.toString(), "completed")
+                  .label(RESULT_ATTR.toString(), "success")
                   .build());
       assertNotNull("major segment merges metric should exist", majorSegmentsMergeMetric);
       assertEquals(

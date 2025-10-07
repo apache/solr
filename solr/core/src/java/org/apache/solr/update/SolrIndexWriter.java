@@ -67,9 +67,14 @@ public class SolrIndexWriter extends IndexWriter {
 
   public static final String COMMIT_COMMAND_VERSION = "commitCommandVer";
 
+  // TODO: we should eventually explore moving to a histogram distribution style of classifying
+  // merges instead of just setting an (arbitrary) document count threshold for major/minor (see
+  // discussion on SOLR-17799). This has its own considerations as well, given that the most
+  // commonly used tiered merge policy results in merges to get exponentially larger.
   public static final AttributeKey<String> MERGE_TYPE_ATTR = AttributeKey.stringKey("merge_type");
   public static final AttributeKey<String> MERGE_STATE_ATTR = AttributeKey.stringKey("merge_state");
   public static final AttributeKey<String> MERGE_OP_ATTR = AttributeKey.stringKey("merge_op");
+  public static final AttributeKey<String> RESULT_ATTR = AttributeKey.stringKey("result");
 
   private final Object CLOSE_LOCK = new Object();
 
@@ -217,7 +222,7 @@ public class SolrIndexWriter extends IndexWriter {
       if (timer != null) {
         timer.stop();
       }
-      updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, false, true, timer);
+      updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, true, true, timer);
       throw t;
     } finally {
       runningMerges.remove(segString);
@@ -256,20 +261,38 @@ public class SolrIndexWriter extends IndexWriter {
     baseAttributes = baseAttributesBuilder.build();
 
     mergesCounter =
-        solrMetricsContext.longCounter("solr_indexwriter_merges", "Number of merge operations");
+        solrMetricsContext.longCounter(
+            "solr_indexwriter_merges",
+            "Number of total merge operations, "
+                + " where \"major\" merges involve more than "
+                + majorMergeDocs
+                + " documents, otherwise merge classified as minor.");
     mergeDocsCounter =
         solrMetricsContext.longCounter(
-            "solr_indexwriter_merge_docs", "Number of documents involved in merge");
+            "solr_indexwriter_merge_docs",
+            "Number of documents involved in merge, "
+                + " where \"major\" merges involve more than "
+                + majorMergeDocs
+                + " documents, otherwise merge classified as minor.");
     mergeSegmentsCounter =
         solrMetricsContext.longCounter(
-            "solr_indexwriter_merge_segments", "Number of segments involved in merge");
+            "solr_indexwriter_merge_segments",
+            "Number of segments involved in merge, "
+                + " where \"major\" merges involve more than "
+                + majorMergeDocs
+                + " documents, otherwise merge classified as minor.");
     flushesCounter =
         solrMetricsContext.longCounter(
             "solr_indexwriter_flushes", "Number of flush to disk operations triggered");
 
     var mergesTimerBase =
         solrMetricsContext.longHistogram(
-            "solr_indexwriter_merge_time", "Time spent merging segments", OtelUnit.MILLISECONDS);
+            "solr_indexwriter_merge_time",
+            "Time spent merging segments, "
+                + " where \"major\" merges involve more than "
+                + majorMergeDocs
+                + " documents, otherwise merge classified as minor.",
+            OtelUnit.MILLISECONDS);
     majorMergeTimer =
         new AttributedLongTimer(
             mergesTimerBase, baseAttributes.toBuilder().put(MERGE_TYPE_ATTR, "major").build());
@@ -304,25 +327,25 @@ public class SolrIndexWriter extends IndexWriter {
     var attributes = baseAttributes.toBuilder();
     attributes.put(MERGE_TYPE_ATTR, isMajorMerge ? "major" : "minor");
     Attributes mergeAttr;
-    if (mergeFailed || mergeCompleted) { // merge operation terminating
+    if (mergeCompleted) { // merge operation terminating
       if (metricTimer != null) {
         metricTimer.stop();
       }
-      attributes.put(MERGE_STATE_ATTR, mergeFailed ? "failed" : "completed");
-      mergeAttr = attributes.build();
+      attributes.put(MERGE_STATE_ATTR, "completed");
+      attributes.put(RESULT_ATTR, mergeFailed ? "error" : "success");
 
     } else { // merge operation starting
       metricTimer = isMajorMerge ? majorMergeTimer.start() : minorMergeTimer.start();
       attributes.put(MERGE_STATE_ATTR, "started");
-      mergeAttr = attributes.build();
     }
+    mergeAttr = attributes.build();
     mergesCounter.add(1L, mergeAttr);
     mergeSegmentsCounter.add(numSegments, mergeAttr);
 
     mergeDocsCounter.add(
         numDocs, mergeAttr.toBuilder().put(MERGE_OP_ATTR, "merge").build()); // docs merged
     mergeDocsCounter.add(
-        numDeletedDocs, mergeAttr.toBuilder().put(MERGE_OP_ATTR, "deleted").build());
+        numDeletedDocs, mergeAttr.toBuilder().put(MERGE_OP_ATTR, "delete").build());
 
     return metricTimer;
   }

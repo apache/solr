@@ -657,9 +657,11 @@ Metrics can be aggregated across cores using Shard and Cluster reporters.
 
 These metrics are collected in respective registries for each core (e.g., `solr.core.collection1....`), under the `INDEX` category.
 
-Metrics collection for index merges can be configured in the `<metrics>` section of `solrconfig.xml`:
+For merge metrics, metrics are tracked with the distinction of "minor" and "major" merges (as merges with fewer documents will be typically more frequent).
+This is indicated by the `merge_type` label for the metric. The threshold for when a merge becomes large enough to be considered major is configurable, but
+defaults to 524k documents.
 
-Basic metrics:
+Metrics collection for index merges can be configured in the `<metrics>` section of `solrconfig.xml` as shown below:
 
 [source,xml]
 ----
@@ -675,28 +677,6 @@ Basic metrics:
 </config>
 ----
 
-For merge metrics, metrics are tracked with the distinction of "minor" and "major" merges. This is indicated by the
-`merge_type` label for the metric. The threshold for when a merge becomes large enough to be major is configurable, but
-defaults to 512k documents.
-
-The following merge metrics are collected:
-
-* 'solr_indexwriter_merge_time_milliseconds' - timer for total duration of merge operations
-
-The following metrics, in addition to the above labels for "minor"/"major" `merge_type` also have a label for `merge_state`.
-This label can have a value of "started", "finished", or "failed" indicating when the value was reported ("started" when a merge
-is being prepared, "finished" when a merge is successfully concluded, otherwise "failed").
-These metrics are monotonically increasing, and so the values for specific merge operations can be calculated by taking
-the diff of the values between times or between `started` / `finished` types.
-
-* 'solr_indexwriter_merges' - counter for total number of merge operations
-* 'solr_indexwriter_merge_docs' - counter for total number of documents included in the merge
-    * This metric further has a label specific to it called `merge_op`, which can be "merge" (for documents merged) or "delete" (for documents deleted)
-* 'solr_indexwriter_merge_segments' - counter for total number of segments merged
-
-And finally, we have some metrics that are static for the core (collected irrespective of merge type/state)
-
-* 'solr_indexwriter_flushes' - counter for total number of flushes to disk
 
 == Metrics API
 
