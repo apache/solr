@@ -67,12 +67,10 @@ Example handler configuration:
 [source,xml]
 ----
 <requestHandler name="/update/extract" class="solr.extraction.ExtractingRequestHandler">
-  <lst name="defaults">
     <!-- Select the tikaserver backend by default for this handler -->
     <str name="extraction.backend">tikaserver</str>
     <!-- Point Solr to your Tika Server -->
     <str name="tikaserver.url">http://localhost:9998</str>
-  </lst>
 </requestHandler>
 ----
 
@@ -132,11 +130,11 @@ curl -X POST -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/update/extract",
     "class": "solr.extraction.ExtractingRequestHandler",
+    "extraction.backend": "tikaserver",
+    "tikaserver.url": "http://localhost:9998",
     "defaults":{
       "lowernames": "true",
-      "captureAttr":"true",
-      "extraction.backend": "tikaserver",
-      "tikaserver.url": "http://localhost:9998"
+      "captureAttr":"true"
     }
   }
 }' 'http://localhost:8983/solr/gettingstarted/config'
