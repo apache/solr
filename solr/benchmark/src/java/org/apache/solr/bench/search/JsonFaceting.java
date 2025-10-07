@@ -44,6 +44,7 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Timeout;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.BenchmarkParams;
+import org.openjdk.jmh.infra.Blackhole;
 
 /** A benchmark to experiment with the performance of json faceting. */
 @BenchmarkMode(Mode.Throughput)
@@ -106,8 +107,8 @@ public class JsonFaceting {
         BenchmarkParams benchmarkParams, MiniClusterState.MiniClusterBenchState miniClusterState)
         throws Exception {
 
-      System.setProperty("maxMergeAtOnce", "30");
-      System.setProperty("segmentsPerTier", "30");
+      System.setProperty("maxMergeAtOnce", "50");
+      System.setProperty("segmentsPerTier", "50");
       if (useExitableDirectoryReader) {
         System.setProperty(SolrIndexSearcher.EXITABLE_READER_PROPERTY, "true");
       } else {
@@ -172,7 +173,7 @@ public class JsonFaceting {
 
       if (useTimeLimit) {
         // high enough to return all results, but still affecting the performance
-        params.set("timeAllowed", "1000");
+        params.set("timeAllowed", "5000");
       }
 
       // MiniClusterState.log("params: " + params + "\n");
@@ -192,10 +193,11 @@ public class JsonFaceting {
 
   @Benchmark
   @Timeout(time = 500, timeUnit = TimeUnit.SECONDS)
-  public Object jsonFacet(
+  public void jsonFacet(
       MiniClusterState.MiniClusterBenchState miniClusterState,
       BenchState state,
-      BenchState.ThreadState threadState)
+      BenchState.ThreadState threadState,
+      Blackhole bh)
       throws Exception {
     final var url = miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount));
     QueryRequest queryRequest = new QueryRequest(state.params);
@@ -207,6 +209,6 @@ public class JsonFaceting {
 
     // MiniClusterState.log("result: " + result);
 
-    return result;
+    bh.consume(result);
   }
 }
