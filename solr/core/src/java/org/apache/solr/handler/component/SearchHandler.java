@@ -72,6 +72,7 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.security.AuthorizationContext;
@@ -524,7 +525,7 @@ public class SearchHandler extends RequestHandlerBase
           }
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
-        log.warn("Query: {}; ", req.getParamString(), ex);
+        log.warn("Query terminated: {}; ", req.getParamString(), ex);
         shortCircuitedResults(req, rb);
       }
     } else {
@@ -538,7 +539,7 @@ public class SearchHandler extends RequestHandlerBase
       int nextStage = 0;
       long totalShardCpuTime = 0L;
       do {
-        rb.stage = nextStage;
+        rb.setStage(nextStage);
         nextStage = ResponseBuilder.STAGE_DONE;
 
         // call all components
@@ -563,6 +564,8 @@ public class SearchHandler extends RequestHandlerBase
             // presume we'll get a response from each shard we send to
             sreq.responses = new ArrayList<>(sreq.actualShards.length);
 
+            QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {
               ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
@@ -585,6 +588,18 @@ public class SearchHandler extends RequestHandlerBase
                 if (!"/select".equals(reqPath)) {
                   params.set(CommonParams.QT, reqPath);
                 } // else if path is /select, then the qt gets passed thru if set
+              }
+              if (queryLimits.isLimitsEnabled()) {
+                if (queryLimits.adjustShardRequestLimits(sreq, shard, params, rb)) {
+                  // Skip this shard since one or more limits will be tripped
+                  if (log.isDebugEnabled()) {
+                    log.debug(
+                        "Skipping request to shard '{}' due to query limits, params {}",
+                        shard,
+                        params);
+                  }
+                  continue;
+                }
               }
               shardHandler1.submit(sreq, shard, params);
             }

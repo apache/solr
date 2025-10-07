@@ -27,6 +27,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.UNSUPPORTED_SOLR_XML;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
+import io.opentelemetry.api.internal.StringUtils;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -310,38 +311,29 @@ public class ZkController implements Closeable {
     MDCLoggingContext.setNode(nodeName);
     this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
-
-    String zkCredentialsInjectorClass = cloudConfig.getZkCredentialsInjectorClass();
-    ZkCredentialsInjector zkCredentialsInjector =
-        StrUtils.isNullOrEmpty(zkCredentialsInjectorClass)
-            ? new DefaultZkCredentialsInjector()
-            : cc.getResourceLoader()
-                .newInstance(zkCredentialsInjectorClass, ZkCredentialsInjector.class);
-
     this.clientTimeout = cloudConfig.getZkClientTimeout();
 
-    String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
-    ZkACLProvider zkACLProvider =
-        StrUtils.isNullOrEmpty(zkACLProviderClass)
-            ? new DefaultZkACLProvider()
-            : cc.getResourceLoader().newInstance(zkACLProviderClass, ZkACLProvider.class);
+    final var zkCredentialsInjector =
+        loadPluginOrDefault(
+            ZkCredentialsInjector.class,
+            cloudConfig.getZkCredentialsInjectorClass(),
+            new DefaultZkCredentialsInjector());
+    final var zkACLProvider =
+        loadPluginOrDefault(
+            ZkACLProvider.class, cloudConfig.getZkACLProviderClass(), new DefaultZkACLProvider());
     zkACLProvider.setZkCredentialsInjector(zkCredentialsInjector);
-
-    String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
-    ZkCredentialsProvider zkCredentialsProvider =
-        StrUtils.isNullOrEmpty(zkCredentialsProviderClass)
-            ? new DefaultZkCredentialsProvider()
-            : cc.getResourceLoader()
-                .newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class);
-
+    final var zkCredentialsProvider =
+        loadPluginOrDefault(
+            ZkCredentialsProvider.class,
+            cloudConfig.getZkCredentialsProviderClass(),
+            new DefaultZkCredentialsProvider());
     zkCredentialsProvider.setZkCredentialsInjector(zkCredentialsInjector);
+
     addOnReconnectListener(getConfigDirListener());
 
-    String stateCompressionProviderClass = cloudConfig.getStateCompressorClass();
-    Compressor compressor =
-        StrUtils.isNullOrEmpty(stateCompressionProviderClass)
-            ? new ZLibCompressor()
-            : cc.getResourceLoader().newInstance(stateCompressionProviderClass, Compressor.class);
+    final var compressor =
+        loadPluginOrDefault(
+            Compressor.class, cloudConfig.getStateCompressorClass(), new ZLibCompressor());
 
     zkClient =
         new SolrZkClient.Builder()
@@ -349,6 +341,7 @@ public class ZkController implements Closeable {
             .withTimeout(clientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
             .withAclProvider(zkACLProvider)
+            .withZkCredentialsProvider(zkCredentialsProvider)
             .withClosedCheck(cc::isShutDown)
             .withCompressor(compressor)
             .build();
@@ -438,6 +431,15 @@ public class ZkController implements Closeable {
       descriptor.getCloudDescriptor().setLeader(false);
       descriptor.getCloudDescriptor().setHasRegistered(false);
     }
+  }
+
+  private <T> T loadPluginOrDefault(
+      Class<T> basePluginType, String concretePluginClassName, T defaultPluginInstance) {
+    if (StringUtils.isNullOrEmpty(concretePluginClassName)) {
+      return defaultPluginInstance;
+    }
+
+    return cc.getResourceLoader().newInstance(concretePluginClassName, basePluginType);
   }
 
   private void onReconnect() {

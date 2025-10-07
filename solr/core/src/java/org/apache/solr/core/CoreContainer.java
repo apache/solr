@@ -239,7 +239,6 @@ public class CoreContainer {
 
   protected volatile LogWatcher<?> logging = null;
 
-  private volatile CloserThread backgroundCloser = null;
   protected final NodeConfig cfg;
   protected final SolrResourceLoader loader;
 
@@ -895,12 +894,6 @@ public class CoreContainer {
         SolrInfoBean.Category.CONTAINER.toString(),
         "cores");
     solrMetricsContext.gauge(
-        solrCores::getNumLoadedTransientCores,
-        true,
-        "lazy",
-        SolrInfoBean.Category.CONTAINER.toString(),
-        "cores");
-    solrMetricsContext.gauge(
         solrCores::getNumUnloadedCores,
         true,
         "unloaded",
@@ -1028,7 +1021,7 @@ public class CoreContainer {
       status |= CORE_DISCOVERY_COMPLETE;
 
       for (final CoreDescriptor cd : cds) {
-        if (cd.isTransient() || !cd.isLoadOnStartup()) {
+        if (!cd.isLoadOnStartup()) {
           solrCores.addCoreDescriptor(cd);
         } else if (asyncSolrCoreLoad) {
           solrCores.markCoreAsLoading(cd);
@@ -1068,10 +1061,6 @@ public class CoreContainer {
               });
         }
       }
-
-      // Start the background thread
-      backgroundCloser = new CloserThread(this, solrCores, cfg);
-      backgroundCloser.start();
 
     } finally {
       coreLoadExecutor.shutdown(); // doesn't block
@@ -1259,31 +1248,6 @@ public class CoreContainer {
 
       ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor); // actually already shutdown
 
-      // First wake up the closer thread, it'll terminate almost immediately since it checks
-      // isShutDown.
-      synchronized (solrCores.getModifyLock()) {
-        solrCores.getModifyLock().notifyAll(); // wake up anyone waiting
-      }
-      if (backgroundCloser
-          != null) { // Doesn't seem right, but tests get in here without initializing the core.
-        try {
-          while (true) {
-            backgroundCloser.join(15000);
-            if (backgroundCloser.isAlive()) {
-              synchronized (solrCores.getModifyLock()) {
-                solrCores.getModifyLock().notifyAll(); // there is a race we have to protect against
-              }
-            } else {
-              break;
-            }
-          }
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          if (log.isDebugEnabled()) {
-            log.debug("backgroundCloser thread was interrupted before finishing");
-          }
-        }
-      }
       // Now clear all the cores that are being operated upon.
       solrCores.close();
 
@@ -1877,13 +1841,8 @@ public class CoreContainer {
   }
 
   /**
-   * Gets the permanent and transient cores that are currently loaded, i.e. cores that have 1:
-   * loadOnStartup=true and are either not-transient or, if transient, have been loaded and have not
-   * been aged out 2: loadOnStartup=false and have been loaded but are either non-transient or have
-   * not been aged out.
-   *
-   * <p>Put another way, this will not return any names of cores that are lazily loaded but have not
-   * been called for yet or are transient and either not loaded or have been swapped out.
+   * Gets the cores that are currently loaded, i.e. cores that have 1: loadOnStartup=true and have
+   * been loaded and 2: loadOnStartup=false and have been subsequently loaded.
    *
    * <p>For efficiency, prefer to check {@link #isLoaded(String)} instead of {@link
    * #getLoadedCoreNames()}.contains(coreName).
@@ -1896,8 +1855,7 @@ public class CoreContainer {
   }
 
   /**
-   * Gets a collection of all the cores, permanent and transient, that are currently known, whether
-   * they are loaded or not.
+   * Gets a collection of all the cores that are currently known, whether they are loaded or not.
    *
    * <p>For efficiency, prefer to check {@link #getCoreDescriptor(String)} != null instead of {@link
    * #getAllCoreNames()}.contains(coreName).
@@ -1910,8 +1868,8 @@ public class CoreContainer {
   }
 
   /**
-   * Gets the total number of cores, including permanent and transient cores, loaded and unloaded
-   * cores. Faster equivalent for {@link #getAllCoreNames()}.size().
+   * Gets the total number of cores, including both loaded and unloaded cores. Faster equivalent to
+   * {@link #getAllCoreNames()}.size().
    */
   public int getNumAllCores() {
     return solrCores.getNumAllCores();
@@ -2143,16 +2101,11 @@ public class CoreContainer {
           ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
     }
 
-    boolean close = solrCores.isLoadedNotPendingClose(name);
+    boolean close = solrCores.isLoaded(name);
     SolrCore core = solrCores.remove(name);
 
     solrCores.removeCoreDescriptor(cd);
     coresLocator.delete(this, cd);
-    if (core == null) {
-      // transient core
-      SolrCore.deleteUnloadedCore(cd, deleteDataDir, deleteInstanceDir);
-      return;
-    }
 
     // delete metrics specific to this core
     metricManager.removeRegistry(core.getCoreMetricManager().getRegistryName());
@@ -2264,16 +2217,13 @@ public class CoreContainer {
     // if there was an error initializing this core, throw a 500
     // error with the details for clients attempting to access it.
     CoreLoadFailure loadFailure = getCoreInitFailures().get(name);
-    if (null != loadFailure) {
+    if (loadFailure != null) {
       throw new SolrCoreInitializationException(name, loadFailure.exception);
     }
-    // This is a bit of awkwardness where SolrCloud and transient cores don't play nice together.
-    // For transient cores, we have to allow them to be created at any time there hasn't been a core
-    // load failure (use reload to cure that). But for
-    // TestConfigSetsAPI.testUploadWithScriptUpdateProcessor, this needs to _not_ try to load the
-    // core if the core is null and there was an error. If you change this, be sure to run both
-    // TestConfigSetsAPI and TestLazyCores
-    if (desc == null || zkSys.getZkController() != null) return null;
+
+    if (desc == null || zkSys.getZkController() != null) {
+      return null;
+    }
 
     // This will put an entry in pending core ops if the core isn't loaded. Here's where moving the
     // waitAddPendingCoreOps to createFromDescriptor would introduce a race condition.
@@ -2572,47 +2522,5 @@ public class CoreContainer {
             }
           }
         });
-  }
-}
-
-class CloserThread extends Thread {
-  CoreContainer container;
-  SolrCores solrCores;
-  NodeConfig cfg;
-
-  CloserThread(CoreContainer container, SolrCores solrCores, NodeConfig cfg) {
-    super("CloserThread");
-    this.container = container;
-    this.solrCores = solrCores;
-    this.cfg = cfg;
-  }
-
-  // It's important that this be the _only_ thread removing things from pendingDynamicCloses!
-  // This is single-threaded, but I tried a multithreaded approach and didn't see any performance
-  // gains, so there's no good justification for the complexity. I suspect that the locking on
-  // things like DefaultSolrCoreState essentially create a single-threaded process anyway.
-  @Override
-  public void run() {
-    while (!container.isShutDown()) {
-      synchronized (solrCores.getModifyLock()) { // need this so we can wait and be awoken.
-        try {
-          solrCores.getModifyLock().wait();
-        } catch (InterruptedException e) {
-          // Well, if we've been told to stop, we will. Otherwise, continue on and check to see if
-          // there are any cores to close.
-        }
-      }
-
-      SolrCore core;
-      while (!container.isShutDown() && (core = solrCores.getCoreToClose()) != null) {
-        assert core.getOpenCount() == 1;
-        try {
-          MDCLoggingContext.setCore(core);
-          core.close(); // will clear MDC
-        } finally {
-          solrCores.removeFromPendingOps(core.getName());
-        }
-      }
-    }
   }
 }

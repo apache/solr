@@ -605,24 +605,24 @@ public class QueryComponent extends SearchComponent {
     int nextStage = ResponseBuilder.STAGE_DONE;
     ShardRequestFactory shardRequestFactory = null;
 
-    if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_PARSE_QUERY) {
       nextStage = ResponseBuilder.STAGE_PARSE_QUERY;
-    } else if (rb.stage == ResponseBuilder.STAGE_PARSE_QUERY) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_PARSE_QUERY) {
       createDistributedStats(rb);
       nextStage = ResponseBuilder.STAGE_TOP_GROUPS;
-    } else if (rb.stage < ResponseBuilder.STAGE_TOP_GROUPS) {
+    } else if (rb.getStage() < ResponseBuilder.STAGE_TOP_GROUPS) {
       nextStage = ResponseBuilder.STAGE_TOP_GROUPS;
-    } else if (rb.stage == ResponseBuilder.STAGE_TOP_GROUPS) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_TOP_GROUPS) {
       shardRequestFactory = new SearchGroupsRequestFactory();
       nextStage = ResponseBuilder.STAGE_EXECUTE_QUERY;
-    } else if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    } else if (rb.getStage() < ResponseBuilder.STAGE_EXECUTE_QUERY) {
       nextStage = ResponseBuilder.STAGE_EXECUTE_QUERY;
-    } else if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_EXECUTE_QUERY) {
       shardRequestFactory = new TopGroupsShardRequestFactory();
       nextStage = ResponseBuilder.STAGE_GET_FIELDS;
-    } else if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
+    } else if (rb.getStage() < ResponseBuilder.STAGE_GET_FIELDS) {
       nextStage = ResponseBuilder.STAGE_GET_FIELDS;
-    } else if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
       shardRequestFactory = new StoredFieldsShardRequestFactory();
       nextStage = ResponseBuilder.STAGE_DONE;
     }
@@ -636,24 +636,24 @@ public class QueryComponent extends SearchComponent {
   }
 
   protected int regularDistributedProcess(ResponseBuilder rb) {
-    if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_PARSE_QUERY) {
       return ResponseBuilder.STAGE_PARSE_QUERY;
     }
-    if (rb.stage == ResponseBuilder.STAGE_PARSE_QUERY) {
+    if (rb.getStage() == ResponseBuilder.STAGE_PARSE_QUERY) {
       createDistributedStats(rb);
       return ResponseBuilder.STAGE_EXECUTE_QUERY;
     }
-    if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_EXECUTE_QUERY) {
       return ResponseBuilder.STAGE_EXECUTE_QUERY;
     }
-    if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() == ResponseBuilder.STAGE_EXECUTE_QUERY) {
       createMainQuery(rb);
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
-    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() < ResponseBuilder.STAGE_GET_FIELDS) {
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
-    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS && !rb.onePassDistributedQuery) {
+    if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS && !rb.onePassDistributedQuery) {
       createRetrieveDocs(rb);
       return ResponseBuilder.STAGE_DONE;
     }
@@ -700,7 +700,7 @@ public class QueryComponent extends SearchComponent {
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) {
       return;
     }
 
@@ -758,14 +758,16 @@ public class QueryComponent extends SearchComponent {
   protected void regularFinishStage(ResponseBuilder rb) {
     // We may not have been able to retrieve all the docs due to an
     // index change.  Remove any null documents.
-    for (Iterator<SolrDocument> iter = rb.getResponseDocs().iterator(); iter.hasNext(); ) {
+    SolrDocumentList responseDocs =
+        rb.getResponseDocs() != null ? rb.getResponseDocs() : new SolrDocumentList();
+    for (Iterator<SolrDocument> iter = responseDocs.iterator(); iter.hasNext(); ) {
       if (iter.next() == null) {
         iter.remove();
-        rb.getResponseDocs().setNumFound(rb.getResponseDocs().getNumFound() - 1);
+        rb.getResponseDocs().setNumFound(responseDocs.getNumFound() - 1);
       }
     }
 
-    rb.rsp.addResponse(rb.getResponseDocs());
+    rb.rsp.addResponse(responseDocs);
     if (null != rb.getNextCursorMark()) {
       rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, rb.getNextCursorMark().getSerializedTotem());
     }
@@ -1339,6 +1341,9 @@ public class QueryComponent extends SearchComponent {
 
     // for each shard, collect the documents for that shard.
     HashMap<String, Collection<ShardDoc>> shardMap = new HashMap<>();
+    if (rb.resultIds == null) {
+      rb.resultIds = new HashMap<>();
+    }
     for (ShardDoc sdoc : rb.resultIds.values()) {
       Collection<ShardDoc> shardDocs = shardMap.get(sdoc.shard);
       if (shardDocs == null) {

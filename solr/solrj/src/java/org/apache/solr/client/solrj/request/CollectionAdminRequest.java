@@ -1864,7 +1864,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       long finishTime = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
       RequestStatusState state = RequestStatusState.NOT_FOUND;
       while (System.nanoTime() < finishTime) {
-        state = this.process(client).getRequestStatus();
+        RequestStatusResponse response = this.process(client);
+        state = response.getRequestStatus();
         if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
           propagateBasicAuthCreds(deleteAsyncId(requestId)).process(client);
           return state;

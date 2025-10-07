@@ -289,7 +289,7 @@ The login screen's purpose is cosmetic only - Admin UI-triggered Solr requests w
 In SolrCloud mode this allow-list is automatically configured to contain all live nodes.
 
 In a user-managed cluster or a single-node installation the allow-list is empty by default.
-Upgrading users who use the `shards` parameter in these installations can set this value by setting the `shardsWhitelist` property in any `shardHandler` configurations in their `solrconfig.xml` file.
+Upgrading users who use the `shards` parameter in these installations can set this value by setting the `allowUrls` property in any `shardHandler` configurations in their `solrconfig.xml` file.
 +
 For more information, see the xref:deployment-guide:solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory[Distributed Request] documentation.
 
