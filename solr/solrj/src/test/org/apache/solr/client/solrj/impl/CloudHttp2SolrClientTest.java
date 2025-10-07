@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider.SYS_PROP_CACHE_TIMEOUT_SECONDS;
 import static org.apache.solr.client.solrj.impl.CloudSolrClient.RouteResponse;
 
 import java.io.IOException;
@@ -256,47 +257,51 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @Test
   @LogLevel("org.apache.solr.servlet.HttpSolrCall=DEBUG")
   public void testHttpCspPerf() throws Exception {
+    try {
+      System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "" + Integer.MAX_VALUE);
+      String collectionName = "HTTPCSPTEST";
+      CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(collectionName, 2, 2);
 
-    String collectionName = "HTTPCSPTEST";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
-        .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, 2, 2);
+      try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
+          CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient();) {
+        solrClient.getClusterStateProvider().getLiveNodes(); // talks to Solr
 
-    try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
-        CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
-      solrClient.getClusterStateProvider().getLiveNodes(); // talks to Solr
+        assertEquals(1, adminLogs.getCount());
+        assertTrue(
+            adminLogs
+                .pollMessage()
+                .contains(
+                    "path=/admin/collections params={prs=true&liveNodes=true&action"
+                        + "=CLUSTERSTATUS&includeAll=false"));
 
-      assertEquals(1, adminLogs.getCount());
-      assertTrue(
-          adminLogs
-              .pollMessage()
-              .contains(
-                  "path=/admin/collections params={prs=true&liveNodes=true&action"
-                      + "=CLUSTERSTATUS&includeAll=false"));
+        SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
+        solrClient.add(collectionName, doc);
 
-      SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
-      solrClient.add(collectionName, doc);
+        // getCount seems to return a cumulative count, but add() results in only 1 additional admin
+        // request to fetch CLUSTERSTATUS for the collection
+        assertEquals(2, adminLogs.getCount());
+        assertTrue(
+            adminLogs
+                .pollMessage()
+                .contains(
+                    "path=/admin/collections "
+                        + "params={prs=true&action=CLUSTERSTATUS&includeAll=false"));
 
-      // getCount seems to return a cumulative count, but add() results in only 1 additional admin
-      // request to fetch CLUSTERSTATUS for the collection
-      assertEquals(2, adminLogs.getCount());
-      assertTrue(
-          adminLogs
-              .pollMessage()
-              .contains(
-                  "path=/admin/collections "
-                      + "params={prs=true&action=CLUSTERSTATUS&includeAll=false"));
-
-      solrClient.commit(collectionName);
-      // No additional admin requests sent
-      assertEquals(2, adminLogs.getCount());
-
-      for (int i = 0; i < 3; i++) {
-        assertEquals(
-            1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
+        solrClient.commit(collectionName);
         // No additional admin requests sent
         assertEquals(2, adminLogs.getCount());
+
+        for (int i = 0; i < 3; i++) {
+          assertEquals(
+              1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
+          // No additional admin requests sent
+          assertEquals(2, adminLogs.getCount());
+        }
       }
+    } finally {
+      System.clearProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS);
     }
   }
 

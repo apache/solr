@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider.SYS_PROP_CACHE_TIMEOUT_SECONDS;
 import static org.apache.solr.common.util.URLUtil.getNodeNameForBaseUrl;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -84,7 +86,12 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
                 .resolve("conf"))
         .configure();
     cluster.waitForAllNodes(30);
-    System.setProperty("solr.solrj.cache.timeout.sec", "1");
+    System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "1");
+  }
+
+  @AfterClass
+  public static void clearSystemPrperty() {
+    System.clearProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS);
   }
 
   @After
