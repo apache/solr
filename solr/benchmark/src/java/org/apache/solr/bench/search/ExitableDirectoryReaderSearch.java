@@ -1,5 +1,11 @@
 package org.apache.solr.bench.search;
 
+import static org.apache.solr.bench.generators.SourceDSL.integers;
+import static org.apache.solr.bench.generators.SourceDSL.strings;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -25,13 +31,6 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
-
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import static org.apache.solr.bench.generators.SourceDSL.integers;
-import static org.apache.solr.bench.generators.SourceDSL.strings;
 
 @Fork(value = 1)
 @BenchmarkMode(Mode.AverageTime)
@@ -67,18 +66,27 @@ public class ExitableDirectoryReaderSearch {
       System.out.println("######### Creating index ...");
       miniClusterState.createCollection(COLLECTION, 1, 1);
       // create a lot of large-ish fields to scan positions
-      Docs docs = Docs.docs(1234567890L)
-          .field("id", integers().incrementing())
-          .field("f1_ts", strings().alpha().maxCardinality(WORDS).ofLengthBetween(3, 10))
-          .field("f2_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
-          .field("f3_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
-          .field("f4_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
-          .field("f5_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
-          .field("f6_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
-          .field("f7_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
-          .field("f8_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
-          .field("f9_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
-          ;
+      Docs docs =
+          Docs.docs(1234567890L)
+              .field("id", integers().incrementing())
+              .field("f1_ts", strings().alpha().maxCardinality(WORDS).ofLengthBetween(3, 10))
+              .field(
+                  "f2_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+              .field(
+                  "f3_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+              .field(
+                  "f4_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+              .field(
+                  "f5_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+              .field(
+                  "f6_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+              .field(
+                  "f7_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+              .field(
+                  "f8_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+              .field(
+                  "f9_ts",
+                  strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10));
       miniClusterState.index(COLLECTION, docs, NUM_DOCS, true);
       miniClusterState.forceMerge(COLLECTION, 200);
       miniClusterState.dumpCoreInfo();
@@ -93,6 +101,7 @@ public class ExitableDirectoryReaderSearch {
     boolean verifyEDRInUse = true;
 
     private static final String matchExpression = "ExitableTermsEnum:-1";
+
     @Setup(Level.Iteration)
     public void setupQueries(MiniClusterState.MiniClusterBenchState state) throws Exception {
       System.setProperty(SolrIndexSearcher.EXITABLE_READER_PROPERTY, String.valueOf(useEDR));
@@ -103,10 +112,12 @@ public class ExitableDirectoryReaderSearch {
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
       state.client.request(reload);
 
-      queryFields = Docs.docs(1234567890L)
-          .field("id", integers().incrementing())
-          .field("f1_ts", strings().alpha().maxCardinality(WORDS).ofLengthBetween(3, 10))
-          .field("f2_ts", strings().alpha().maxCardinality(WORDS).multi(5).ofLengthBetween(3, 10));
+      queryFields =
+          Docs.docs(1234567890L)
+              .field("id", integers().incrementing())
+              .field("f1_ts", strings().alpha().maxCardinality(WORDS).ofLengthBetween(3, 10))
+              .field(
+                  "f2_ts", strings().alpha().maxCardinality(WORDS).multi(5).ofLengthBetween(3, 10));
     }
 
     @TearDown(Level.Iteration)
@@ -130,12 +141,15 @@ public class ExitableDirectoryReaderSearch {
   }
 
   private static ModifiableSolrParams createInitialParams() {
-    ModifiableSolrParams params = MiniClusterState.params("rows", "100", "timeAllowed", "1000", "fl", "*");
+    ModifiableSolrParams params =
+        MiniClusterState.params("rows", "100", "timeAllowed", "1000", "fl", "*");
     return params;
   }
 
   @Benchmark
-  public void testShortQuery(MiniClusterState.MiniClusterBenchState miniClusterState, Blackhole bh, BenchState state) throws Exception {
+  public void testShortQuery(
+      MiniClusterState.MiniClusterBenchState miniClusterState, Blackhole bh, BenchState state)
+      throws Exception {
     SolrInputDocument queryDoc = state.queryFields.inputDocument();
     ModifiableSolrParams params = createInitialParams();
     params.set("q", "f1_ts:" + queryDoc.getFieldValue("f1_ts").toString());
@@ -145,7 +159,9 @@ public class ExitableDirectoryReaderSearch {
   }
 
   @Benchmark
-  public void testLongQuery(MiniClusterState.MiniClusterBenchState miniClusterState, Blackhole bh, BenchState state) throws Exception {
+  public void testLongQuery(
+      MiniClusterState.MiniClusterBenchState miniClusterState, Blackhole bh, BenchState state)
+      throws Exception {
     SolrInputDocument queryDoc = state.queryFields.inputDocument();
     ModifiableSolrParams params = createInitialParams();
     StringBuilder query = new StringBuilder();

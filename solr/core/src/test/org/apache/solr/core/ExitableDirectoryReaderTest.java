@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.search.CallerSpecificQueryLimit;
 import org.apache.solr.search.SolrIndexSearcher;

@@ -16,9 +16,6 @@
  */
 package org.apache.solr.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,27 +27,30 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Helper class to collect interesting callers at specific points. These calling points are identified by the calling class' simple name
- * and optionally a method name and the optional maximum count, e.g. <code>MoreLikeThisComponent
+ * Helper class to collect interesting callers at specific points. These calling points are
+ * identified by the calling class' simple name and optionally a method name and the optional
+ * maximum count, e.g. <code>MoreLikeThisComponent
  * </code> or <code>
- * ClusteringComponent.finishStage</code>, <code>ClusteringComponent.finishStage:100</code>. A single
- * wildcard name <code>*</code> may be used to mean "any class", which may be useful to e.g. collect all
- * callers using an expression <code>*:-1</code>.
+ * ClusteringComponent.finishStage</code>, <code>ClusteringComponent.finishStage:100</code>. A
+ * single wildcard name <code>*</code> may be used to mean "any class", which may be useful to e.g.
+ * collect all callers using an expression <code>*:-1</code>.
  *
- * <p>Within your caller you should invoke {@link #checkCaller()} to count any matching frames in the current stack, and check if
- * any of the count limits has been reached. Each invocation will increase the call count of the matching
- * expression(s). For one invocation multiple matching expression counts can be affected because all current stack
- * frames are examined against the matching expressions.</p>
+ * <p>Within your caller you should invoke {@link #checkCaller()} to count any matching frames in
+ * the current stack, and check if any of the count limits has been reached. Each invocation will
+ * increase the call count of the matching expression(s). For one invocation multiple matching
+ * expression counts can be affected because all current stack frames are examined against the
+ * matching expressions.
  *
- * <p>NOTE: implementation details cause the expression <code>simpleName[:NNN]</code> to be disabled when
- * also any <code>simpleName.anyMethod[:NNN]</code> expression is used for the same class name.
+ * <p>NOTE: implementation details cause the expression <code>simpleName[:NNN]</code> to be disabled
+ * when also any <code>simpleName.anyMethod[:NNN]</code> expression is used for the same class name.
  *
  * <p>NOTE 2: when maximum count is a negative number e.g. <code>simpleName[.someMethod]:-1</code>
  * then only the number of calls to {@link #checkCaller()} for the matching expression will be
  * reported but {@link #checkCaller()} will never return this expression.
- *
  */
 public class CallerMatcher {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -72,8 +72,8 @@ public class CallerMatcher {
    * Create an instance that reacts to the specified caller expressions.
    *
    * @param callerExprs list of expressions in the format of <code>
-   *     ( simpleClassName[.methodName] | * )[:NNN]</code>. If the list is empty or null then the first call
-   *     to {@link #checkCaller()} ()} from any caller will match.
+   *     ( simpleClassName[.methodName] | * )[:NNN]</code>. If the list is empty or null then the
+   *     first call to {@link #checkCaller()} ()} from any caller will match.
    */
   public CallerMatcher(Collection<String> callerExprs, Collection<String> excludeExprs) {
     for (String callerExpr : callerExprs) {
@@ -85,8 +85,7 @@ public class CallerMatcher {
       if (clazzMethod.length > 2) {
         throw new RuntimeException("Invalid method in callerExpr: " + callerExpr);
       }
-      Set<String> methods =
-          exactCallers.computeIfAbsent(clazzMethod[0], c -> new HashSet<>());
+      Set<String> methods = exactCallers.computeIfAbsent(clazzMethod[0], c -> new HashSet<>());
       if (clazzMethod.length > 1) {
         methods.add(clazzMethod[1]);
       }
@@ -105,17 +104,17 @@ public class CallerMatcher {
       if (clazzMethod.length > 2) {
         throw new RuntimeException("Invalid method in excludeExpr: " + excludeExpr);
       }
-      Set<String> methods =
-          excludeCallers.computeIfAbsent(clazzMethod[0], c -> new HashSet<>());
+      Set<String> methods = excludeCallers.computeIfAbsent(clazzMethod[0], c -> new HashSet<>());
       if (clazzMethod.length > 1) {
         methods.add(clazzMethod[1]);
       }
     }
   }
 
-  /** Returns the set of caller expressions that were tripped (reached their count limit).
-   * This method can be called after {@link #checkCaller()} returns a matching expression to obtain
-   * all expressions that exceeded their count limits.
+  /**
+   * Returns the set of caller expressions that were tripped (reached their count limit). This
+   * method can be called after {@link #checkCaller()} returns a matching expression to obtain all
+   * expressions that exceeded their count limits.
    */
   public Set<String> getTrippedBy() {
     return Collections.unmodifiableSet(trippedBy);
@@ -135,124 +134,124 @@ public class CallerMatcher {
   }
 
   /**
-   * Returns the matching caller expression when its count limit was reached, or empty if no caller or
-   * no count limit was reached.
-   * Each invocation increases the call count of the matching caller, if any. It's up to the caller to decide
-   * whether to continue processing after this count limit is reached. The matching expression returned by this call
-   * will be also present in {@link #getTrippedBy()}.
+   * Returns the matching caller expression when its count limit was reached, or empty if no caller
+   * or no count limit was reached. Each invocation increases the call count of the matching caller,
+   * if any. It's up to the caller to decide whether to continue processing after this count limit
+   * is reached. The matching expression returned by this call will be also present in {@link
+   * #getTrippedBy()}.
    */
   public Optional<String> checkCaller() {
     return stackWalker.walk(
-            s ->
-                s.filter(
-                        frame -> {
-                          Class<?> declaring = frame.getDeclaringClass();
-                          String method = frame.getMethodName();
+        s ->
+            s.filter(
+                    frame -> {
+                      Class<?> declaring = frame.getDeclaringClass();
+                      String method = frame.getMethodName();
 
-                          // handle exclusions first
+                      // handle exclusions first
 
-                          // always skip myself
-                          if (declaring == this.getClass()) {
+                      // always skip myself
+                      if (declaring == this.getClass()) {
+                        return false;
+                      }
+                      // skip exclusions, if any
+                      Set<String> excludeMethods = excludeCallers.get(declaring.getSimpleName());
+                      if (excludeMethods != null) {
+                        // skip any method
+                        if (excludeMethods.isEmpty()) {
+                          return false;
+                        } else {
+                          // or only the matching method
+                          if (excludeMethods.contains(method)) {
                             return false;
                           }
-                          // skip exclusions, if any
-                          Set<String> excludeMethods = excludeCallers.get(declaring.getSimpleName());
-                          if (excludeMethods != null) {
-                            // skip any method
-                            if (excludeMethods.isEmpty()) {
-                              return false;
-                            } else {
-                              // or only the matching method
-                              if (excludeMethods.contains(method)) {
-                                return false;
-                              }
-                            }
-                          }
+                        }
+                      }
 
-                          // now handle the matching expressions
+                      // now handle the matching expressions
 
-                          if (exactCallers.isEmpty()) {
-                            // any caller is an offending caller
-                            String expr = declaring.getSimpleName() + "." + method;
-                            if (log.isInfoEnabled()) {
-                              log.info("++++ Tripped by any first caller: {} ++++", expr);
-                            }
-                            trippedBy.add(expr);
+                      if (exactCallers.isEmpty()) {
+                        // any caller is an offending caller
+                        String expr = declaring.getSimpleName() + "." + method;
+                        if (log.isInfoEnabled()) {
+                          log.info("++++ Tripped by any first caller: {} ++++", expr);
+                        }
+                        trippedBy.add(expr);
+                        callCounts
+                            .computeIfAbsent(expr, k -> new AtomicInteger())
+                            .incrementAndGet();
+                        return true;
+                      }
+                      Set<String> methods = exactCallers.get(declaring.getSimpleName());
+                      boolean wildcardMatch = false;
+                      if (methods == null) {
+                        // check for wildcard
+                        methods = exactCallers.get(WILDCARD);
+                        if (methods == null) {
+                          // no class and no methods specified for this class, so skip
+                          return false;
+                        } else {
+                          wildcardMatch = true;
+                        }
+                      }
+                      // MATCH. Class name was specified, possibly with methods.
+                      // If methods is empty then all methods match, otherwise only the
+                      // specified methods match.
+                      if (methods.isEmpty() || methods.contains(method)) {
+                        String expr = wildcardMatch ? WILDCARD : declaring.getSimpleName();
+                        if (methods.contains(method)) {
+                          expr = expr + "." + method;
+                        } else {
+                          // even though we don't match/enforce at the method level, still
+                          // record the method counts to give better insight into the callers
+                          callCounts
+                              .computeIfAbsent(
+                                  declaring.getSimpleName() + "." + method,
+                                  k -> new AtomicInteger(0))
+                              .incrementAndGet();
+                        }
+                        int currentCount =
                             callCounts
-                                .computeIfAbsent(expr, k -> new AtomicInteger())
+                                .computeIfAbsent(expr, k -> new AtomicInteger(0))
                                 .incrementAndGet();
+                        // check if we have a max count for this expression
+                        if (maxCounts.containsKey(expr)) {
+                          int maxCount = maxCounts.get(expr);
+                          // if max count is negative then just report the call count
+                          if (maxCount < 0) {
+                            maxCount = Integer.MAX_VALUE;
+                          }
+                          if (currentCount > maxCount) {
+                            if (log.isInfoEnabled()) {
+                              log.info(
+                                  "++++ Tripped by caller: {}, current count: {}, max: {} ++++",
+                                  expr,
+                                  currentCount,
+                                  maxCounts.get(expr));
+                            }
+                            trippedBy.add(expr + ":" + maxCounts.get(expr));
                             return true;
-                          }
-                          Set<String> methods = exactCallers.get(declaring.getSimpleName());
-                          boolean wildcardMatch = false;
-                          if (methods == null) {
-                            // check for wildcard
-                            methods = exactCallers.get(WILDCARD);
-                            if (methods == null) {
-                              // no class and no methods specified for this class, so skip
-                              return false;
-                            } else {
-                              wildcardMatch = true;
-                            }
-                          }
-                          // MATCH. Class name was specified, possibly with methods.
-                          // If methods is empty then all methods match, otherwise only the
-                          // specified methods match.
-                          if (methods.isEmpty() || methods.contains(method)) {
-                            String expr = wildcardMatch ? WILDCARD : declaring.getSimpleName();
-                            if (methods.contains(method)) {
-                              expr = expr + "." + method;
-                            } else {
-                              // even though we don't match/enforce at the method level, still
-                              // record the method counts to give better insight into the callers
-                              callCounts
-                                  .computeIfAbsent(
-                                      declaring.getSimpleName() + "." + method,
-                                      k -> new AtomicInteger(0))
-                                  .incrementAndGet();
-                            }
-                            int currentCount =
-                                callCounts
-                                    .computeIfAbsent(expr, k -> new AtomicInteger(0))
-                                    .incrementAndGet();
-                            // check if we have a max count for this expression
-                            if (maxCounts.containsKey(expr)) {
-                              int maxCount = maxCounts.get(expr);
-                              // if max count is negative then just report the call count
-                              if (maxCount < 0) {
-                                maxCount = Integer.MAX_VALUE;
-                              }
-                              if (currentCount > maxCount) {
-                                if (log.isInfoEnabled()) {
-                                  log.info(
-                                      "++++ Tripped by caller: {}, current count: {}, max: {} ++++",
-                                      expr,
-                                      currentCount,
-                                      maxCounts.get(expr));
-                                }
-                                trippedBy.add(expr + ":" + maxCounts.get(expr));
-                                return true;
-                              } else {
-                                return false; // max count not reached, not tripped yet
-                              }
-                            } else {
-                              trippedBy.add(expr);
-                              if (log.isInfoEnabled()) {
-                                log.info("++++ Tripped by caller: {} ++++", expr);
-                              }
-                              return true; // no max count, so tripped on first call
-                            }
                           } else {
-                            return false;
+                            return false; // max count not reached, not tripped yet
                           }
-                        })
-                    .map(
-                        frame ->
-                            (frame.getDeclaringClass().getSimpleName().isBlank()
-                                    ? frame.getClassName()
-                                    : frame.getDeclaringClass().getSimpleName())
-                                + "."
-                                + frame.getMethodName())
-                    .findFirst());
+                        } else {
+                          trippedBy.add(expr);
+                          if (log.isInfoEnabled()) {
+                            log.info("++++ Tripped by caller: {} ++++", expr);
+                          }
+                          return true; // no max count, so tripped on first call
+                        }
+                      } else {
+                        return false;
+                      }
+                    })
+                .map(
+                    frame ->
+                        (frame.getDeclaringClass().getSimpleName().isBlank()
+                                ? frame.getClassName()
+                                : frame.getDeclaringClass().getSimpleName())
+                            + "."
+                            + frame.getMethodName())
+                .findFirst());
   }
 }
