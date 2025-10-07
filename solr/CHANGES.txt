@@ -29,6 +29,8 @@ New Features
 
 * SOLR-17814: Add support for PatienceKnnVectorQuery. (Ilaria Petreti via Alessandro Benedetti)
 
+* SOLR-17942: Raising the per ramPerThreadHardLimit to be configurable >2GB
+
 Improvements
 ---------------------
 
