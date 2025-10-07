@@ -29,6 +29,8 @@ New Features
 
 * SOLR-17814: Add support for PatienceKnnVectorQuery. (Ilaria Petreti via Alessandro Benedetti)
 
+* SOLR-17937: Adding GPU details to the Admin UI (Puneet Ahuja)
+
 Improvements
 ---------------------
 
