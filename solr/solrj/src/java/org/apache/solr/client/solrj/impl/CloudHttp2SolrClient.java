@@ -115,7 +115,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   private ClusterStateProvider createHttp2ClusterStateProvider(
       List<String> solrUrls, Http2SolrClient httpClient) {
     try {
-      return new Http2ClusterStateProvider(solrUrls, httpClient);
+      return new Http2ClusterStateProvider<>(solrUrls, httpClient);
     } catch (Exception e) {
       closeMyClientIfNeeded();
       throw new RuntimeException(
@@ -336,34 +336,9 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * number of locks.
      *
      * <p>Defaults to 3.
-     *
-     * @deprecated Please use {@link #withParallelCacheRefreshes(int)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder setParallelCacheRefreshes(int parallelCacheRefreshesLocks) {
-      this.withParallelCacheRefreshes(parallelCacheRefreshesLocks);
-      return this;
-    }
-
-    /**
-     * When caches are expired then they are refreshed after acquiring a lock. Use this to set the
-     * number of locks.
-     *
-     * <p>Defaults to 3.
      */
     public Builder withParallelCacheRefreshes(int parallelCacheRefreshesLocks) {
       this.parallelCacheRefreshesLocks = parallelCacheRefreshesLocks;
-      return this;
-    }
-
-    /**
-     * This is the time to wait to re-fetch the state after getting the same state version from ZK
-     *
-     * @deprecated Please use {@link #withRetryExpiryTime(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder setRetryExpiryTime(int secs) {
-      this.withRetryExpiryTime(secs, TimeUnit.SECONDS);
       return this;
     }
 
@@ -378,18 +353,6 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     /** Sets the default collection for request. */
     public Builder withDefaultCollection(String defaultCollection) {
       this.defaultCollection = defaultCollection;
-      return this;
-    }
-
-    /**
-     * Sets the cache ttl for DocCollection Objects cached.
-     *
-     * @param timeToLiveSeconds ttl value in seconds
-     * @deprecated Please use {@link #withCollectionCacheTtl(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder withCollectionCacheTtl(int timeToLiveSeconds) {
-      withCollectionCacheTtl(timeToLiveSeconds, TimeUnit.SECONDS);
       return this;
     }
 
