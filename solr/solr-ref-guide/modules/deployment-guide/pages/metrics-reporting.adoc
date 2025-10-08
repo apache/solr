@@ -655,7 +655,7 @@ Metrics can be aggregated across cores using Shard and Cluster reporters.
 
 === Index Merge Metrics
 
-These metrics are collected in respective registries for each core (e.g., `solr.core.collection1....`), under the `INDEX` category.
+These metrics are collected under the `INDEX` category and track flush operations (documents being written to disk) and merge operations (segments on disk being merged).
 
 For merge metrics, metrics are tracked with the distinction of "minor" and "major" merges (as merges with fewer documents will be typically more frequent).
 This is indicated by the `merge_type` label for the metric. The threshold for when a merge becomes large enough to be considered major is configurable, but
