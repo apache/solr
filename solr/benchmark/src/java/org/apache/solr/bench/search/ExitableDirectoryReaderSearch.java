@@ -1,5 +1,6 @@
 package org.apache.solr.bench.search;
 
+import static org.apache.solr.bench.BaseBenchState.log;
 import static org.apache.solr.bench.generators.SourceDSL.integers;
 import static org.apache.solr.bench.generators.SourceDSL.strings;
 
@@ -63,7 +64,7 @@ public class ExitableDirectoryReaderSearch {
       System.setProperty("maxBufferedDocs", "100");
 
       miniClusterState.startMiniCluster(1);
-      System.out.println("######### Creating index ...");
+      log("######### Creating index ...");
       miniClusterState.createCollection(COLLECTION, 1, 1);
       // create a lot of large-ish fields to scan positions
       Docs docs =
@@ -128,8 +129,8 @@ public class ExitableDirectoryReaderSearch {
           throw new RuntimeException("Missing setup!");
         }
         Map<String, Integer> callCounts = queryLimit.getCallerMatcher().getCallCounts();
-        System.out.println("######### Caller specific stats:");
-        System.out.println("Call counts: " + callCounts);
+        log("######### Caller specific stats:");
+        log("Call counts: " + callCounts);
         if (callCounts.get(matchExpression) == null) {
           throw new RuntimeException("Missing call counts!");
         }
