@@ -16,6 +16,9 @@
  */
 package org.apache.solr.update;
 
+import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 
 import io.opentelemetry.api.common.AttributeKey;
@@ -246,18 +249,9 @@ public class SolrIndexWriter extends IndexWriter {
       solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
     }
 
-    var coreName = core.getName();
     var baseAttributesBuilder =
         Attributes.builder()
-            .put(CATEGORY_ATTR, SolrInfoBean.Category.INDEX.toString())
-            .put(CORE_ATTR, coreName);
-    if (core.getCoreContainer().isZooKeeperAware()) {
-      String collectionName = core.getCoreDescriptor().getCollectionName();
-      baseAttributesBuilder
-          .put(COLLECTION_ATTR, collectionName)
-          .put(SHARD_ATTR, core.getCoreDescriptor().getCloudDescriptor().getShardId())
-          .put(REPLICA_ATTR, Utils.parseMetricsReplicaName(collectionName, coreName));
-    }
+            .put(CATEGORY_ATTR, SolrInfoBean.Category.INDEX.toString());
     baseAttributes = baseAttributesBuilder.build();
 
     mergesCounter =
