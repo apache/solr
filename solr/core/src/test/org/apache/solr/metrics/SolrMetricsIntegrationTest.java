@@ -85,7 +85,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   public void testCoreContainerMetrics() {
     MetricSnapshots metrics =
         new MetricSnapshots(
-             metricManager.getPrometheusMetricReaders().entrySet().stream()
+            metricManager.getPrometheusMetricReaders().entrySet().stream()
                 .flatMap(
                     entry ->
                         entry.getValue().collect().stream()

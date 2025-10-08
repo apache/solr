@@ -16,9 +16,6 @@
  */
 package org.apache.solr.update;
 
-import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 
 import io.opentelemetry.api.common.AttributeKey;
@@ -250,8 +247,7 @@ public class SolrIndexWriter extends IndexWriter {
     }
 
     var baseAttributesBuilder =
-        Attributes.builder()
-            .put(CATEGORY_ATTR, SolrInfoBean.Category.INDEX.toString());
+        Attributes.builder().put(CATEGORY_ATTR, SolrInfoBean.Category.INDEX.toString());
     baseAttributes = baseAttributesBuilder.build();
 
     mergesCounter =
