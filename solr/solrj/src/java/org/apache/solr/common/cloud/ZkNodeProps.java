@@ -65,14 +65,6 @@ public class ZkNodeProps implements MapWriter {
     this(Utils.makeMap((Object[]) keyVals));
   }
 
-  /**
-   * @deprecated use {@link ZkNodeProps#ZkNodeProps(String...)}
-   */
-  @Deprecated(since = "9.0.0")
-  public static ZkNodeProps fromKeyVals(Object... keyVals) {
-    return new ZkNodeProps(Utils.makeMap(keyVals));
-  }
-
   /** Get property keys. */
   public Set<String> keySet() {
     return propMap.keySet();
