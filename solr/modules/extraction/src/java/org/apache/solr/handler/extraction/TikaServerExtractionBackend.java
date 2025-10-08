@@ -46,7 +46,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   private static final Object INIT_LOCK = new Object();
   private static volatile boolean INITIALIZED = false;
   private static volatile boolean SHUTDOWN = false;
-  private final String baseUrl; // e.g., http://localhost:9998
+  private final String baseUrl;
   private static final int DEFAULT_TIMEOUT_SECONDS = 3 * 60;
   private final Duration defaultTimeout;
   private final TikaServerParser tikaServerResponseParser = new TikaServerParser();

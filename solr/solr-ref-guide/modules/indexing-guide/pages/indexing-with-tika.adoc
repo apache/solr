@@ -486,7 +486,7 @@ Examples:
 |===
 +
 Specifies the URL of the Tika server to use when the `extraction.backend` parameter is set to `tikaserver`.
-This parameter is required when using the `tikaserver` backend. Defaults to `http://localhost:9998` if not specified. This parameter can only be configured in the configuration, not per request.
+This parameter is required when using the `tikaserver` backend. This parameter can only be configured in the configuration, not per request.
 +
 Example: In `solrconfig.xml`: `<str name="tikaserver.url">http://localhost:9998</str>`.
 
