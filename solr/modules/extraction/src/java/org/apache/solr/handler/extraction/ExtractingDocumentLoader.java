@@ -79,7 +79,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     templateAdd = new AddUpdateCommand(req);
     templateAdd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
     templateAdd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
-    templateAdd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
 
     this.factory = factory;
     this.backend = backend;
