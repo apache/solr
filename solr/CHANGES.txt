@@ -76,6 +76,13 @@ Improvements
   authenticate in browser without a credentials prompt being displayed. The MultiAuthPlugin can now
   also be configured with a single plugin.
 
+* SOLR-17541: `LBHttp2SolrClient` now maintains a separate internal/delegate client per Solr Base URL.  Both `LBHttp2SolrClient` and `CloudHttp2SolrClient`
+  always create and manage these internal clients.  The ability for callers to provide a pre-built client is removed.  Callers may specify the internal client
+  details by providing an instance of either `Http2SolrClient.Builder` or `HttpJdkSolrClient.Builder`. (James Dyer)
+
+* SOLR-17943: `Http2ClusterStateProvider` now also can work with `HttpJdkSolrClient`. (James Dyer)
+
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -177,6 +184,10 @@ Deprecation Removals
  relating to HTTP client connection pools that no longer exist.  (David Smiley)
 
 * SOLR-17932: Remove transient Solr cores capability. (Eric Pugh, David Smiley)
+
+* SOLR-17925: Remove obsolete QueryCommand.timeAllowed replaced by QueryLimits. (Andrzej Bialecki)
+
+* SOLR-17935: Remove deprecated NoOpResponseParser. (Eric Pugh, David Smiley)
 
 Dependency Upgrades
 ---------------------

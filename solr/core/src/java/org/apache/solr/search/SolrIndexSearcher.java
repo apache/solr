@@ -306,11 +306,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       collector = new EarlyTerminatingCollector(collector, cmd.getMaxHitsAllowed());
     }
 
-    /*    final long timeAllowed = cmd.getTimeAllowed();
-    if (timeAllowed > 0) {
-      setTimeout(new QueryTimeoutImpl(timeAllowed));
-    }*/
-
     if (postFilter != null) {
       postFilter.setLastDelegate(collector);
       collector = postFilter;
