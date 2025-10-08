@@ -30,11 +30,13 @@ dependencies {
   implementation libs.apache.poi.poi
   implementation libs.apache.poi.ooxml
   implementation libs.apache.tika.core
-  implementation (libs.apache.tika.parsers, {
+  implementation (libs.apache.tika.parsers.standard.package, {
     exclude group: 'org.apache.cxf', module: 'cxf-rt-rs-client'
     exclude group: 'org.quartz-scheduler', module: 'quartz'
     exclude group: 'xml-apis', module: 'xml-apis'
   })
+  permitUnusedDeclared libs.apache.tika.parsers.standard.package
+  implementation libs.apache.tika.parser.html.module
   implementation (libs.xerces.impl, {
     exclude group: 'xml-apis', module: 'xml-apis'
   })

@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.tika.language.LanguageIdentifier;
+import org.apache.tika.langdetect.tika.LanguageIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
