@@ -210,13 +210,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       final String action = req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT);
       CoreAdminOp op = opMap.get(action);
       if (op == null) {
-        log.warn(
-            "action '{}' not found, calling custom action handler. "
-                + "If original intention was to target some custom behaviour "
-                + "use custom actions defined in 'solr.xml' instead",
-            action);
-        handleCustomAction(req, rsp);
-        return;
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Unsupported operation: " + action);
       }
 
       final CallInfo callInfo = new CallInfo(this, req, rsp, op);
@@ -241,22 +236,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     } finally {
       rsp.setHttpCaching(false);
     }
-  }
-
-  /**
-   * Handle Custom Action.
-   *
-   * <p>This method could be overridden by derived classes to handle custom actions. <br>
-   * By default - this method throws a solr exception. Derived classes are free to write their
-   * derivation if necessary.
-   *
-   * @deprecated Use actions defined via {@code solr.xml} instead.
-   */
-  @Deprecated
-  protected void handleCustomAction(SolrQueryRequest req, SolrQueryResponse rsp) {
-    throw new SolrException(
-        SolrException.ErrorCode.BAD_REQUEST,
-        "Unsupported operation: " + req.getParams().get(ACTION));
   }
 
   public static Map<String, String> paramToProp =

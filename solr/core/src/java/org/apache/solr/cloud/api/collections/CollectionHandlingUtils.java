@@ -588,12 +588,6 @@ public class CollectionHandlingUtils {
   }
 
   public static class ShardRequestTracker {
-    /*
-     * backward compatibility reasons, add the response with the async ID as top level.
-     * This can be removed in Solr 9
-     */
-    @Deprecated static boolean INCLUDE_TOP_LEVEL_RESPONSE = true;
-
     private final String asyncId;
     private final String adminPath;
     private final ZkStateReader zkStateReader;
@@ -730,9 +724,6 @@ public class CollectionHandlingUtils {
         NamedList<Object> reqResult =
             waitForCoreAdminAsyncCallToComplete(
                 shardHandlerFactory, adminPath, zkStateReader, node, shardAsyncId);
-        if (INCLUDE_TOP_LEVEL_RESPONSE) {
-          results.add(shardAsyncId, reqResult);
-        }
         if ("failed".equalsIgnoreCase(((String) reqResult.get("STATUS")))) {
           log.error("Error from shard {}: {}", node, reqResult);
           addFailure(results, node, reqResult);
