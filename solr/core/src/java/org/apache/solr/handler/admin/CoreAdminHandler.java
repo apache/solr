@@ -238,22 +238,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     }
   }
 
-  /**
-   * Handle Custom Action.
-   *
-   * <p>This method could be overridden by derived classes to handle custom actions. <br>
-   * By default - this method throws a solr exception. Derived classes are free to write their
-   * derivation if necessary.
-   *
-   * @deprecated Use actions defined via {@code solr.xml} instead.
-   */
-  @Deprecated
-  protected void handleCustomAction(SolrQueryRequest req, SolrQueryResponse rsp) {
-    throw new SolrException(
-        SolrException.ErrorCode.BAD_REQUEST,
-        "Unsupported operation: " + req.getParams().get(ACTION));
-  }
-
   public static Map<String, String> paramToProp =
       Map.ofEntries(
           Map.entry(CoreAdminParams.CONFIG, CoreDescriptor.CORE_CONFIG),
