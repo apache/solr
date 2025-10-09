@@ -101,7 +101,7 @@ public interface CollectionParams {
     ADDROLE(true, LockLevel.NONE),
     REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),
-    COLLECTIONPROP(true, LockLevel.COLLECTION), // nocommit no lock?  discuss
+    COLLECTIONPROP(true, LockLevel.COLLECTION), // no commit no lock?  discuss
     REQUESTSTATUS(false, LockLevel.NONE),
     DELETESTATUS(false, LockLevel.NONE),
     ADDREPLICA(true, LockLevel.SHARD),
@@ -111,8 +111,8 @@ public interface CollectionParams {
     DISTRIBUTEDAPIPROCESSING(false, LockLevel.NONE),
     LIST(false, LockLevel.NONE),
     CLUSTERSTATUS(false, LockLevel.NONE),
-    ADDREPLICAPROP(true, LockLevel.NONE), // nocommit discuss
-    DELETEREPLICAPROP(true, LockLevel.NONE), // nocommit discuss
+    ADDREPLICAPROP(true, LockLevel.NONE), // no commit discuss
+    DELETEREPLICAPROP(true, LockLevel.NONE), // no commit discuss
     BALANCESHARDUNIQUE(true, LockLevel.COLLECTION),
     REBALANCELEADERS(true, LockLevel.COLLECTION),
     MODIFYCOLLECTION(true, LockLevel.COLLECTION),
