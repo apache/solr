@@ -23,7 +23,6 @@
 ** xref:system-requirements.adoc[]
 ** xref:installing-solr.adoc[]
 ** xref:taking-solr-to-production.adoc[]
-** xref:optimize-extreme-use-cases.adoc[]
 ** xref:jvm-settings.adoc[]
 ** xref:upgrading-a-solr-cluster.adoc[]
 ** xref:backup-restore.adoc[]
@@ -55,7 +54,6 @@
 ** User-Managed Clusters
 *** xref:user-managed-index-replication.adoc[]
 *** xref:user-managed-distributed-search.adoc[]
-** xref:optimize-extreme-use-cases.adoc[]
 
 * Monitoring Solr
 ** xref:configuring-logging.adoc[]
