@@ -33,6 +33,7 @@ public class DualRegistryAttributedLongTimer extends AttributedLongTimer {
       LongHistogram nodeHistogram,
       Attributes nodeAttributes) {
     super(coreHistogram, coreAttributes);
+    assert coreHistogram != nodeHistogram;
     this.nodeTimer = new AttributedLongTimer(nodeHistogram, nodeAttributes);
   }
 

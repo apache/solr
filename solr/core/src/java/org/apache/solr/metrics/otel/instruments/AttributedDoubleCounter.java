@@ -29,8 +29,8 @@ public class AttributedDoubleCounter {
     this.attributes = attributes;
   }
 
-  public void inc() {
-    counter.add(1.0, attributes);
+  public final void inc() {
+    add(1.0);
   }
 
   public void add(Double value) {

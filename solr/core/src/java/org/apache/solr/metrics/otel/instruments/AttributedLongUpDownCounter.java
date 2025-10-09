@@ -29,12 +29,12 @@ public class AttributedLongUpDownCounter {
     this.attributes = attributes;
   }
 
-  public void inc() {
-    upDownCounter.add(1L, attributes);
+  public final void inc() {
+    add(1L);
   }
 
-  public void dec() {
-    upDownCounter.add(-1L, attributes);
+  public final void dec() {
+    add(-1L);
   }
 
   public void add(Long value) {

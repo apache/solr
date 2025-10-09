@@ -89,11 +89,29 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
         SolrMetricTestUtils.newCloudSelectRequestsDatapoint(core2);
     CounterSnapshot.CounterDataPointSnapshot actualCore2Updates =
         SolrMetricTestUtils.newCloudUpdateRequestsDatapoint(core2);
+    CounterSnapshot.CounterDataPointSnapshot actualCore1SubmittedOps =
+        SolrMetricTestUtils.getCounterDatapoint(
+            core1,
+            "solr_core_update_submitted_ops",
+            SolrMetricTestUtils.newCloudLabelsBuilder(core1)
+                .label("category", "UPDATE")
+                .label("ops", "adds")
+                .build());
+    CounterSnapshot.CounterDataPointSnapshot actualCore2SubmittedOps =
+        SolrMetricTestUtils.getCounterDatapoint(
+            core2,
+            "solr_core_update_submitted_ops",
+            SolrMetricTestUtils.newCloudLabelsBuilder(core2)
+                .label("category", "UPDATE")
+                .label("ops", "adds")
+                .build());
 
     assertEquals(1.0, actualCore1Selects.getValue(), 0.0);
     assertEquals(1.0, actualCore1Updates.getValue(), 0.0);
     assertEquals(1.0, actualCore2Updates.getValue(), 0.0);
     assertEquals(1.0, actualCore2Selects.getValue(), 0.0);
+    assertEquals(1.0, actualCore1SubmittedOps.getValue(), 0.0);
+    assertEquals(1.0, actualCore2SubmittedOps.getValue(), 0.0);
 
     // Get node metrics and the select/update requests should be the sum of both cores requests
     var nodeReader = SolrMetricTestUtils.getPrometheusMetricReader(coreContainer, "solr.node");
@@ -118,11 +136,23 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
                     .label("handler", "/update")
                     .label("otel_scope_name", "org.apache.solr")
                     .build());
+    CounterSnapshot.CounterDataPointSnapshot nodeSubmittedOps =
+        (CounterSnapshot.CounterDataPointSnapshot)
+            SolrMetricTestUtils.getDataPointSnapshot(
+                nodeReader,
+                "solr_node_update_submitted_ops",
+                Labels.builder()
+                    .label("category", "UPDATE")
+                    .label("ops", "adds")
+                    .label("otel_scope_name", "org.apache.solr")
+                    .build());
 
     assertNotNull("Node select requests should be recorded", nodeSelectRequests);
     assertNotNull("Node update requests should be recorded", nodeUpdateRequests);
+    assertNotNull("Node submitted update operations should be recorded", nodeUpdateRequests);
     assertEquals(2.0, nodeSelectRequests.getValue(), 0.0);
     assertEquals(2.0, nodeUpdateRequests.getValue(), 0.0);
+    assertEquals(2.0, nodeSubmittedOps.getValue(), 0.0);
 
     core1.close();
     core2.close();

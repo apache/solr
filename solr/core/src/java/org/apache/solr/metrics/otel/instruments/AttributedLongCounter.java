@@ -29,8 +29,8 @@ public class AttributedLongCounter {
     this.attributes = attributes;
   }
 
-  public void inc() {
-    baseCounter.add(1L, attributes);
+  public final void inc() {
+    add(1L);
   }
 
   public void add(Long value) {

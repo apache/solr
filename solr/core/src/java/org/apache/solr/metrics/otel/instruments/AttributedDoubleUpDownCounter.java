@@ -29,12 +29,12 @@ public class AttributedDoubleUpDownCounter {
     this.attributes = attributes;
   }
 
-  public void inc() {
-    upDownCounter.add(1.0, attributes);
+  public final void inc() {
+    add(1.0);
   }
 
-  public void dec() {
-    upDownCounter.add(-1.0, attributes);
+  public final void dec() {
+    add(-1.0);
   }
 
   public void add(Double value) {

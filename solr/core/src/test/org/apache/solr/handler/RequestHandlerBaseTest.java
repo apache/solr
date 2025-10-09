@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler;
 
+import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -196,8 +197,6 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
     when(metricsContext.longHistogram(any(), any())).thenReturn(mockLongHistogram);
 
     return new RequestHandlerBase.HandlerMetrics(
-        metricsContext,
-        Attributes.of(AttributeKey.stringKey("/handler"), "/someBaseMetricPath"),
-        false);
+        metricsContext, Attributes.of(HANDLER_ATTR, "/someBaseMetricPath"), false);
   }
 }
