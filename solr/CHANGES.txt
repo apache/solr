@@ -80,6 +80,8 @@ Improvements
   always create and manage these internal clients.  The ability for callers to provide a pre-built client is removed.  Callers may specify the internal client
   details by providing an instance of either `Http2SolrClient.Builder` or `HttpJdkSolrClient.Builder`. (James Dyer)
 
+* SOLR-17943: `Http2ClusterStateProvider` now also can work with `HttpJdkSolrClient`. (James Dyer)
+
 
 Optimizations
 ---------------------
@@ -185,6 +187,8 @@ Deprecation Removals
 
 * SOLR-17925: Remove obsolete QueryCommand.timeAllowed replaced by QueryLimits. (Andrzej Bialecki)
 
+* SOLR-17935: Remove deprecated NoOpResponseParser. (Eric Pugh, David Smiley)
+
 Dependency Upgrades
 ---------------------
 
@@ -259,6 +263,8 @@ Other Changes
   `distributedCollectionConfigSetExecution`).  Those are now removed.  In their place is a new
   overseerEnabled cluster property and an env var SOLR_CLOUD_OVERSEER_ENABLED.  Read more in the
   upgrade guide.  (David Smiley)
+
+* SOLR-17929: Remove obsolete overseer internal work queue. This queue was read-only since Solr 8. (Pierre Salagnac)
 
 ==================  9.10.0 ==================
 New Features
