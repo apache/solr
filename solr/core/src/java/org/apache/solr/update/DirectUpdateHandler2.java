@@ -245,7 +245,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
         new AttributedInstrumentFactory(
             solrMetricsContext, baseAttributes, aggregateToNodeRegistry);
 
-    String corePrefix = "solr_core_update";
+    String corePrefix = "solr_core_update_";
     String nodePrefix = "solr_node_update_";
 
     addCommandsCumulative =
