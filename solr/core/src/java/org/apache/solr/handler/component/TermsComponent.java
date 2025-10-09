@@ -358,7 +358,7 @@ public class TermsComponent extends SearchComponent {
       return ResponseBuilder.STAGE_DONE;
     }
 
-    if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() == ResponseBuilder.STAGE_EXECUTE_QUERY) {
       TermsHelper th = rb._termsHelper;
       if (th == null) {
         th = rb._termsHelper = new TermsHelper();
@@ -368,7 +368,7 @@ public class TermsComponent extends SearchComponent {
       rb.addRequest(this, sreq);
     }
 
-    if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_EXECUTE_QUERY) {
       return ResponseBuilder.STAGE_EXECUTE_QUERY;
     } else {
       return ResponseBuilder.STAGE_DONE;
@@ -403,7 +403,7 @@ public class TermsComponent extends SearchComponent {
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (!rb.doTerms || rb.stage != ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (!rb.doTerms || rb.getStage() != ResponseBuilder.STAGE_EXECUTE_QUERY) {
       return;
     }
 

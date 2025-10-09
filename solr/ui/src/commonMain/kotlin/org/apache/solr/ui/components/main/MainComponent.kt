@@ -19,10 +19,14 @@ package org.apache.solr.ui.components.main
 
 import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.value.Value
+import org.apache.solr.ui.components.cluster.ClusterComponent
+import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.logging.LoggingComponent
 import org.apache.solr.ui.components.navigation.NavigationComponent
+import org.apache.solr.ui.components.navigation.TabNavigationComponent
 import org.apache.solr.ui.views.navigation.MainMenu
+import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 /**
  * Main component of the application that is used as base for users with access.
@@ -60,14 +64,12 @@ interface MainComponent : NavigationComponent {
         // TODO Uncomment once MetricsComponent available
         // data class Metrics(val component: MetricsComponent): Child
 
-        // TODO Uncomment once ClusterComponent available
-        // data class Cluster(val component: ClusterComponent): Child
+        data class Cluster(val component: ClusterComponent) : Child
 
         // TODO Uncomment once SecurityComponent available
         // data class Security(val component: SecurityComponent): Child
 
-        // TODO Uncomment once ConfigsetsComponent available
-        // data class Configsets(val component: ConfigsetsComponent): Child
+        data class Configsets(val component: ConfigsetsComponent) : Child
 
         // TODO Uncomment once MetricsComponent available
         // data class Collections(val component: CollectionsComponent): Child
