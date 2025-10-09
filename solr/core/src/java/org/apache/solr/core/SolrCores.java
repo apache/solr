@@ -145,8 +145,6 @@ class SolrCores {
    *     <p>A core may be non-transient but still lazily loaded. If it is "permanent" and lazy-load
    *     _and_ not yet loaded it will _not_ be returned by this call.
    *     <p>This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
-   *     <p>Note: This is one of the places where SolrCloud is incompatible with Transient Cores.
-   *     This call is used in cancelRecoveries, transient cores don't participate.
    */
   @Deprecated
   public List<SolrCore> getCores() {
