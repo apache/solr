@@ -167,6 +167,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return asyncId;
     }
 
+    @Deprecated(since = "10.0")
     public void setWaitForFinalState(boolean waitForFinalState) {
       this.waitForFinalState = waitForFinalState;
     }
