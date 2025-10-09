@@ -41,7 +41,7 @@ public class SolrLogAuditLoggerPluginTest extends SolrTestCaseJ4 {
     config = new HashMap<>();
     config.put("async", false);
     SolrMetricsContext mockSolrMetricsContext = MockSolrMetricsContextFactory.create();
-    plugin.initializeMetrics(mockSolrMetricsContext, Attributes.empty(), "solr.test");
+    plugin.initializeMetrics(mockSolrMetricsContext, Attributes.empty());
   }
 
   @Test(expected = SolrException.class)

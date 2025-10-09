@@ -27,7 +27,6 @@ import static org.apache.solr.security.AuditEvent.RequestType.ADMIN;
 import static org.apache.solr.security.AuditEvent.RequestType.SEARCH;
 import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
-import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
@@ -437,20 +436,6 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     } catch (AssertionError ae) {
       throw new AssertionError(formatter.formatEvent(e) + " => " + ae.getMessage(), ae);
     }
-  }
-
-  private ArrayList<MetricRegistry> getMetricsRegistries(MiniSolrCloudCluster cluster) {
-    ArrayList<MetricRegistry> registries = new ArrayList<>();
-    cluster
-        .getJettySolrRunners()
-        .forEach(
-            r -> {
-              MetricRegistry registry =
-                  r.getCoreContainer().getMetricManager().registry("solr.node");
-              assertNotNull(registry);
-              registries.add(registry);
-            });
-    return registries;
   }
 
   /**

@@ -24,7 +24,6 @@ import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchTrace;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.codahale.metrics.Metered;
-import com.codahale.metrics.MetricRegistry;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -34,7 +33,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.MiniSolrCloudCluster.JettySolrRunnerWithMetrics;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -98,27 +96,11 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
             (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
 
     fiveHundredsByNode = new LinkedHashMap<>();
-    long httpOk = 0;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      MetricRegistry metricRegistry = ((JettySolrRunnerWithMetrics) jetty).getMetricRegistry();
-
-      httpOk +=
-          ((Metered)
-                  metricRegistry
-                      .getMetrics()
-                      .get("org.eclipse.jetty.ee10.servlet.ServletContextHandler.2xx-responses"))
-              .getCount();
-
-      Metered old =
-          fiveHundredsByNode.put(
-              jetty.getNodeName(),
-              (Metered)
-                  metricRegistry
-                      .getMetrics()
-                      .get("org.eclipse.jetty.ee10.servlet.ServletContextHandler.5xx-responses"));
-      assertNull("expecting uniq nodenames", old);
+      var reader =
+          jetty.getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.node");
+      assertTrue(reader.collect().size() > 0);
     }
-    assertTrue("expecting some http activity during collection creation", httpOk > 0);
     indexDocs();
   }
 

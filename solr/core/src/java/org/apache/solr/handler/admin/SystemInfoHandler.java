@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import com.codahale.metrics.Gauge;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
@@ -55,7 +54,6 @@ import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
 import org.apache.solr.util.RTimer;
-import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -217,17 +215,6 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
     info.add(NAME, os.getName()); // add at least this one
-    // add remaining ones dynamically using Java Beans API
-    // also those from JVM implementation-specific classes
-    MetricUtils.addMXBeanMetrics(
-        os,
-        MetricUtils.OS_MXBEAN_CLASSES,
-        null,
-        (name, metric) -> {
-          if (info.get(name) == null) {
-            info.add(name, ((Gauge) metric).getValue());
-          }
-        });
 
     return info;
   }

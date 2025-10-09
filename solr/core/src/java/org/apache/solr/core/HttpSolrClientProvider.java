@@ -69,8 +69,7 @@ final class HttpSolrClientProvider implements AutoCloseable {
     var solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope =
         SolrMetricManager.mkName(METRIC_SCOPE_NAME, SolrInfoBean.Category.HTTP.name());
-    // TODO SOLR-17458: Add Otel
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty(), expandedScope);
+    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty());
   }
 
   Http2SolrClient getSolrClient() {

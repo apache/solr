@@ -262,8 +262,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, final String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
     String className = this.getClass().getSimpleName();
     log.debug("Initializing metrics for {}", className);

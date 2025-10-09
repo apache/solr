@@ -688,7 +688,8 @@ public class JettySolrRunner {
 
       Set<String> registryNames = metricsManager.registryNames();
       for (String registryName : registryNames) {
-        MetricRegistry metricsRegisty = metricsManager.registry(registryName);
+        MetricRegistry metricsRegisty = new MetricRegistry();
+        ;
         try (PrintStream ps =
             outputDirectory == null
                 ? new PrintStream(OutputStream.nullOutputStream(), false, StandardCharsets.UTF_8)

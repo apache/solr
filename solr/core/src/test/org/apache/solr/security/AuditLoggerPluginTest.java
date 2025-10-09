@@ -136,7 +136,7 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
     config.put("async", false);
     plugin.init(config);
     SolrMetricsContext mockSolrMetricsContext = MockSolrMetricsContextFactory.create();
-    plugin.initializeMetrics(mockSolrMetricsContext, Attributes.empty(), "solr.test");
+    plugin.initializeMetrics(mockSolrMetricsContext, Attributes.empty());
   }
 
   @Override

@@ -26,6 +26,7 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
+import static org.apache.solr.metrics.SolrMetricManager.NODE_REGISTRY;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
@@ -521,9 +522,7 @@ public class CoreContainer {
 
       newAuditloggerPlugin.plugin.init(auditConf);
       newAuditloggerPlugin.plugin.initializeMetrics(
-          solrMetricsContext,
-          Attributes.builder().put(HANDLER_ATTR, "/auditlogging").build(),
-          "/auditlogging");
+          solrMetricsContext, Attributes.builder().put(HANDLER_ATTR, "/auditlogging").build());
     } else {
       log.debug("Security conf doesn't exist. Skipping setup for audit logging module.");
     }
@@ -589,9 +588,7 @@ public class CoreContainer {
       authenticationPlugin.plugin.init(authenticationConfig);
       setupHttpClientForAuthPlugin(authenticationPlugin.plugin);
       authenticationPlugin.plugin.initializeMetrics(
-          solrMetricsContext,
-          Attributes.builder().put(HANDLER_ATTR, "/authentication").build(),
-          "/authentication");
+          solrMetricsContext, Attributes.builder().put(HANDLER_ATTR, "/authentication").build());
     }
     this.authenticationPlugin = authenticationPlugin;
     try {
@@ -779,21 +776,18 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());
 
-    solrMetricsContext =
-        new SolrMetricsContext(
-            metricManager, SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag);
+    solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
     if (shardHandlerFactory instanceof SolrMetricProducer metricProducer) {
-      metricProducer.initializeMetrics(solrMetricsContext, Attributes.empty(), "httpShardHandler");
+      metricProducer.initializeMetrics(solrMetricsContext, Attributes.empty());
     }
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
     solrClientProvider =
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
-    updateShardHandler.initializeMetrics(
-        solrMetricsContext, Attributes.empty(), "updateShardHandler");
+    updateShardHandler.initializeMetrics(solrMetricsContext, Attributes.empty());
     solrClientCache = new SolrClientCache(solrClientProvider.getSolrClient());
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
@@ -827,8 +821,7 @@ public class CoreContainer {
           .getZkMetricsProducer()
           .initializeMetrics(
               solrMetricsContext,
-              Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CONTAINER.toString()),
-              "zkClient");
+              Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CONTAINER.toString()));
       pkiAuthenticationSecurityBuilder =
           new PKIAuthenticationPlugin(
               this,
@@ -836,8 +829,7 @@ public class CoreContainer {
               (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       pkiAuthenticationSecurityBuilder.initializeMetrics(
           solrMetricsContext,
-          Attributes.builder().put(HANDLER_ATTR, "/authentication/pki").build(),
-          "/authentication/pki");
+          Attributes.builder().put(HANDLER_ATTR, "/authentication/pki").build());
 
       fileStore = new DistribFileStore(this);
       registerV2ApiIfEnabled(ClusterFileStore.class);
@@ -901,23 +893,15 @@ public class CoreContainer {
 
     metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
-    // TODO SOLR-17458: Add Otel
     metricsHandler.initializeMetrics(
-        solrMetricsContext,
-        Attributes.builder().put(HANDLER_ATTR, METRICS_PATH).build(),
-        METRICS_PATH);
+        solrMetricsContext, Attributes.builder().put(HANDLER_ATTR, METRICS_PATH).build());
 
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
-    // TODO SOLR-17458: Add Otel
     securityConfHandler.initializeMetrics(
-        solrMetricsContext, Attributes.builder().put(HANDLER_ATTR, AUTHZ_PATH).build(), AUTHZ_PATH);
+        solrMetricsContext, Attributes.builder().put(HANDLER_ATTR, AUTHZ_PATH).build());
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
 
     PluginInfo[] metricReporters = cfg.getMetricsConfig().getMetricReporters();
-    metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.node);
-    metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jvm);
-    metricManager.loadReporters(
-        metricReporters, loader, this, null, null, SolrInfoBean.Group.jetty);
 
     containerProperties.putAll(cfg.getSolrProperties());
 
@@ -925,7 +909,7 @@ public class CoreContainer {
         Attributes.builder().put(CATEGORY_ATTR, SolrInfoBean.Category.CONTAINER.toString()).build();
 
     // initialize gauges for reporting the number of cores and disk total/free
-    solrCores.initializeMetrics(solrMetricsContext, containerAttrs, "");
+    solrCores.initializeMetrics(solrMetricsContext, containerAttrs);
 
     Path dataHome =
         cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
@@ -953,13 +937,7 @@ public class CoreContainer {
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
     fieldCacheBean.initializeMetrics(
-        solrMetricsContext,
-        Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()),
-        "");
-
-    if (isZooKeeperAware()) {
-      metricManager.loadClusterReporters(metricReporters, this);
-    }
+        solrMetricsContext, Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()));
 
     // setup executor to load cores in parallel
     coreLoadExecutor =
@@ -1271,28 +1249,12 @@ public class CoreContainer {
       customThreadPool.execute(replayUpdatesExecutor::shutdownAndAwaitTermination);
 
       if (metricManager != null) {
-        metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
-        metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm));
-        metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jetty));
-
-        metricManager.unregisterGauges(
-            SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag);
-        metricManager.unregisterGauges(
-            SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm), metricTag);
-        metricManager.unregisterGauges(
-            SolrMetricManager.getRegistryName(SolrInfoBean.Group.jetty), metricTag);
-
         // Close all OTEL meter providers and metrics
         metricManager.closeAllRegistries();
       }
 
       if (isZooKeeperAware()) {
         cancelCoreRecoveries();
-
-        if (metricManager != null) {
-          metricManager.closeReporters(
-              SolrMetricManager.getRegistryName(SolrInfoBean.Group.cluster));
-        }
       }
 
       try {
@@ -1796,8 +1758,7 @@ public class CoreContainer {
   private void resetIndexDirectory(CoreDescriptor dcore, ConfigSet coreConfig) {
     SolrConfig config = coreConfig.getSolrConfig();
 
-    String registryName =
-        SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, dcore.getName());
+    String registryName = SolrMetricManager.enforcePrefix(dcore.getName());
     DirectoryFactory df = DirectoryFactory.loadDirectoryFactory(config, this, registryName);
     String dataDir = SolrCore.findDataDir(df, null, config, dcore);
 
@@ -2285,7 +2246,7 @@ public class CoreContainer {
     if (handler instanceof SolrMetricProducer) {
       ((SolrMetricProducer) handler)
           .initializeMetrics(
-              solrMetricsContext, Attributes.builder().put(HANDLER_ATTR, path).build(), path);
+              solrMetricsContext, Attributes.builder().put(HANDLER_ATTR, path).build());
     }
     return handler;
   }

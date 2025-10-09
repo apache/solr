@@ -88,14 +88,11 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
   private FieldCacheMetrics getFieldCacheMetrics() {
     String registryName = TestUtil.randomSimpleString(random(), 1, 10);
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
-    SolrMetricsContext solrMetricsContext =
-        new SolrMetricsContext(metricManager, registryName, "foo");
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registryName);
 
     try (SolrFieldCacheBean mbean = new SolrFieldCacheBean()) {
       mbean.initializeMetrics(
-          solrMetricsContext,
-          Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()),
-          null);
+          solrMetricsContext, Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()));
 
       var metrics = metricManager.getPrometheusMetricReader(registryName).collect();
 

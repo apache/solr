@@ -19,7 +19,6 @@ package org.apache.solr.util.stats;
 
 import static org.apache.solr.metrics.SolrMetricManager.mkName;
 
-import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import java.util.Locale;
@@ -29,6 +28,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Result;
@@ -77,6 +78,7 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
   protected SolrMetricsContext solrMetricsContext;
   protected String scope;
   protected NameStrategy nameStrategy;
+  private AttributedLongTimer requestTimer;
 
   public InstrumentedHttpListenerFactory(NameStrategy nameStrategy) {
     this.nameStrategy = nameStrategy;
@@ -89,7 +91,7 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
   @Override
   public RequestResponseListener get() {
     return new RequestResponseListener() {
-      Timer.Context timerContext;
+      AttributedLongTimer.MetricTimer timerContext;
       Span span = Span.getInvalid();
 
       @Override
@@ -101,8 +103,8 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
 
       @Override
       public void onBegin(Request request) {
-        if (solrMetricsContext != null) {
-          timerContext = timer(request).time();
+        if (requestTimer != null) {
+          timerContext = requestTimer.start();
         }
         if (span.isRecording()) {
           span.addEvent("Client Send"); // perhaps delayed a bit after the span started in enqueue
@@ -121,16 +123,16 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
     };
   }
 
-  private Timer timer(Request request) {
-    return solrMetricsContext.timer(nameStrategy.getNameFor(scope, request));
-  }
-
-  // TODO SOLR-17458: Add Otel
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     this.solrMetricsContext = parentContext;
-    this.scope = scope;
+    this.requestTimer =
+        new AttributedLongTimer(
+            solrMetricsContext.longHistogram(
+                "http_client_request_duration",
+                "HTTP client request duration",
+                OtelUnit.MILLISECONDS),
+            attributes);
   }
 
   @Override

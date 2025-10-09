@@ -463,9 +463,6 @@ public class SolrIndexWriter extends IndexWriter {
         directoryFactory.release(directory);
       }
       IOUtils.closeQuietly(mergeStats);
-      if (solrMetricsContext != null) {
-        solrMetricsContext.unregister();
-      }
     }
   }
 }

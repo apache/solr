@@ -320,11 +320,7 @@ cybozulabs-langdetect = { module = "com.cybozu.labs:langdetect", version.ref = "
 decompose-decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }
 decompose-extensions-compose = { module = "com.arkivanov.decompose:extensions-compose", version.ref = "decompose" }
 dropwizard-metrics-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-graphite = { module = "io.dropwizard.metrics:metrics-graphite", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-jetty12 = { module = "io.dropwizard.metrics:metrics-jetty12", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-jetty12-ee10 = { module = "io.dropwizard.metrics:metrics-jetty12-ee10", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-jmx = { module = "io.dropwizard.metrics:metrics-jmx", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-jvm = { module = "io.dropwizard.metrics:metrics-jvm", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-servlets = { module = "io.dropwizard.metrics:metrics-jakarta-servlets", version.ref = "dropwizard-metrics" }
 eclipse-jdt-ecj = { module = "org.eclipse.jdt:ecj", version.ref = "eclipse-ecj" }
 eclipse-jetty-alpnjavaclient = { module = "org.eclipse.jetty:jetty-alpn-java-client", version.ref = "eclipse-jetty" }

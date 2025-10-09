@@ -152,8 +152,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
     thisNode = MDCLoggingContext.getNodeName();
 
     this.overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
-    initializeMetrics(
-        solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()), "");
+    initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
   }
 
   @Override
@@ -407,8 +406,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     this.toClose =
         parentContext.observableLongGauge(
             "solr_overseer_collection_work_queue_size",
