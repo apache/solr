@@ -27,7 +27,7 @@ The site https://magjac.com/graphviz-visual-editor/ allows you to play with thos
 This section embodies the Solr community's thoughts on best practices for deploying Solr depending on your needs.
 
 == Overview
-There is a logical progression of toplogies for scaling Solr based on the number of nodes you anticipate needing.  
+There is a logical progression of topologies for scaling Solr based on the number of nodes you anticipate needing.  
 
 [graphviz]
 ....
@@ -80,7 +80,7 @@ Use this approach when:
 
 === Introducing Fail Over
 
-The next most common setup after a single node is having two seperate nodes running on seperate machines, with one as the xref:cluster-types.adoc#leaders[Leader] and the other as the Follower.  
+The next most common setup after a single node is having two separate nodes running on separate machines, with one as the xref:cluster-types.adoc#leaders[Leader] and the other as the Follower.  
 
 NOTE: This needs Jason's https://github.com/apache/solr/pull/2391 to get to done done and be able to recommend this!  Or, you start one solr with zk and the other connects.  that is today.
 
@@ -103,16 +103,16 @@ graph simple_embedded_zk_ensemble {
 Use this approach when:
 
 * You have only two Solr nodes and they are close to each other in network terms.
-* This approach is for when you want failover, but you aren't worried about high availability.  You have a load balancer in front of the two Solr nodes and it notices one goes away and balances traffic to the other one for querying. 
-* You will deal with the fall out to indexing if one of the nodes goes away.
+* This approach is for when you want failover, but you aren't worried about high availability. You have a load balancer in front of the two Solr nodes that detects when one goes down and redirects traffic to the remaining node for querying.
+* You are prepared to handle the consequences for indexing operations if one of the nodes goes down.
 
 === Moving to High Availability
 
-NOTE: What is the difference between failover and high availability?  Fail over, in this two node situation, means that you can still issue queries and keep your application running, but you no longer can index data because ZooKeeper can't form a quorum.  Often known as Split Brain.  High Availability means that your service continues un interruped in the event of any node going down.
+NOTE: What is the difference between failover and high availability? Failover, in this two-node situation, means that you can still issue queries and keep your application running, but you can no longer index data because ZooKeeper can't form a quorum. This is often referred to as a Split Brain situation. High Availability means that your service continues uninterrupted in the event of any node going down.
 
-You can then scale beyond two nodes by running either three or five Solr's:
+You can then scale beyond two nodes by running either three or five Solr nodes:
 
-NOTE: We specify three or five Solr nodes because ZooKeeper is running on each node, and requires a odd number of nodes to prevent Split Brain issues.
+NOTE: We specify three or five Solr nodes because ZooKeeper is running on each node, and requires an odd number of nodes to prevent Split Brain issues.
 
 [graphviz]
 ....
@@ -135,20 +135,20 @@ graph simple_embedded_zk_ensemble {
 
 Use these approaches when:
 
-* You want to be able to split your logical Collection across multiple Shards.  You want to be able to distribute Replicas around the cluster.
-* You don't want to go through the effort of deploying a seperate ZK ensemble independently.  And honestly, you don't need to either.
+* You want to be able to split your logical Collection across multiple Shards and distribute Replicas around the cluster.
+* You don't want to go through the effort of deploying a separate ZK ensemble independently. And honestly, you don't need to either.
 
 
-Some con's to this approach are:
+Some cons to this approach are:
 
-* Having five ZKs all updating each other is fine, but it starts to break down if you went to 9 or 11 ZooKeeper forming the Quorum.
-* We currently don't have any flexible resizing of the quorum.   You kind of just have to pick it.
+* Having five ZooKeeper instances all updating each other is fine, but it starts to break down if you expand to 9 or 11 ZooKeeper instances forming the Quorum.
+* We currently don't have any flexible resizing of the quorum. You need to select the appropriate size when setting up your cluster.
 
 === Moving Beyond the Basic Cluster
 
 NOTE: This isn't yet fleshed out as to how it works!
 
-Solr has a concept of node xref:deployment-guide:node-roles.adoc#roles[Roles] that could be leveraged to establish a set of Solr nodes that run embedded ZooKeeper, and then a larger set of Solr nodes that connect to those ZooKeepers.  We currently have the concept of "data" nodes that host shards and replicas, we can introduce a "zookeeper" node that also runs the embedded ZooKeeper process.   
+Solr has a concept of node xref:deployment-guide:node-roles.adoc#roles[Roles] that can be leveraged to establish a set of Solr nodes that run embedded ZooKeeper, and then a larger set of Solr nodes that connect to those ZooKeepers. We currently have the concept of "data" nodes that host shards and replicas, and we can introduce a "zookeeper" node that also runs the embedded ZooKeeper process.   
 
 This will work well as you grow from six to 12 nodes in your cluster.
 
@@ -186,7 +186,7 @@ graph simple_embedded_zk_ensemble {
 }
 ....
 
-=== Seperating out ZooKeeper workload
+=== Separating out ZooKeeper workload
 
 As your load in the cluster goes up, sharing ZooKeeper workloads with Solr workloads may become a bottleneck.
 
@@ -225,13 +225,13 @@ graph dedicate_zk_ensemble {
 Use this approach when:
 
 * You go beyond 12 Solr nodes up to 25 Solr nodes.
-* You are leveraging all the features of SolrCloud to support multiple collections and different types of query and load characteritics, especially tuning shard and replica counts.
+* You are leveraging all the features of SolrCloud to support multiple collections and different types of query and load characteristics, especially tuning shard and replica counts.
 * You may need to move to five ZooKeepers.
 
-Some con's to this approach are:
+Some cons to this approach are:
 
-* You are responsible for configuring the external ZooKeeper ensemble.
-* If you have any issues with the ZooKeeper ensemble then you need to define how you will handle failover/HA.
+* You are responsible for configuring and maintaining the external ZooKeeper ensemble.
+* You need to define how you will handle failover/HA for the ZooKeeper ensemble itself.
 
 === Going massive means going Kubernetes
 
@@ -299,20 +299,22 @@ graph kubernetes_setup {
 }
 ....
 
-Use this approaches when:
+Use this approach when:
 
-* You go beyond 25 Solr nodes.
-* You have the maturity to manage massive data sets.
-* You may adopt this earlier if you are already a Kubernetes savvy organization.
+* You need to deploy more than 25 Solr nodes.
+* You have the operational maturity to manage massive data sets.
+* You want a standardized approach to deployment, scaling, and management.
+* You may adopt this earlier if you are already a Kubernetes-savvy organization.
 
 Some con's to this approach are:
 
-* Kubernetes is much like traveling on the Oregon Trail, take a friend.
+* Kubernetes has a steep learning curve; it's advisable to have experienced team members or consultants.
+* Managing stateful applications like Solr in Kubernetes requires careful planning for persistence and recovery.
 
 == What about User Managed Solr?
 
-The User Managed mode is no longer recommended, and historically was mostly used because running embedded ZooKeeper was viewed as difficult.  
-These days, running embedded ZooKeeper is just fine, and that eliminates the main reason for User Managed.  User Managed also doesn't support all the features and APIs that SolrCloud supports.
+The User Managed mode is no longer recommended. Historically, it was primarily used because running embedded ZooKeeper was viewed as difficult.  
+These days, running embedded ZooKeeper is straightforward, eliminating the main reason for User Managed deployments. Additionally, User Managed mode doesn't support all the features and APIs that SolrCloud provides.
 
 == What about Embedding Solr in my Java Application?
 
@@ -322,8 +324,8 @@ YMMV.
 
 == What about [YOUR SPECIFIC NEED]
 
-There are Solr use cases that require extreme scaling on certain specific axis, wehter that is a massive multi-tenant use case, extreme query load, or extreme ingestion performance.
+There are Solr use cases that require extreme scaling on certain specific axes, whether that is a massive multi-tenant use case, extreme query load, or extreme ingestion performance.
 
-Each of these requirements will bring it's own specific best practices that you will need to embrace, and have their own impact on how you deploy Solr.
+Each of these requirements will bring its own specific best practices that you will need to embrace, and have their own impact on how you deploy Solr.
 
 Learn more on xref:optimize-extreme-use-cases.adoc[Optimizing for Extreme Use Cases] page.
