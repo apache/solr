@@ -777,7 +777,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     ur.add(doc);
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    new JavaBinUpdateRequestCodec().marshal(ur, bos);
+    JavaBinUpdateRequestCodec codec = new JavaBinUpdateRequestCodec();
+    codec.marshal(ur, bos);
+
     byte[] payload = bos.toByteArray();
 
     ContentStreamBase.ByteArrayStream cs =
