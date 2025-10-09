@@ -174,10 +174,6 @@ public abstract class RequestHandlerBase
             solrMetricsContext,
             attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build(),
             aggregateNodeLevelMetricsEnabled);
-
-    // NOCOMMIT: I don't see value in this metric
-    solrMetricsContext.gauge(
-        () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
 
   /** Metrics for this handler. */

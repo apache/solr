@@ -21,7 +21,6 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 
 import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
@@ -633,13 +632,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     final List<AutoCloseable> observables = new ArrayList<>();
     solrMetricsContext = parentContext.getChildContext(this);
 
-    // NOCOMMIT: We do not need a scope attribute
-    // Will need to fix up SolrCoreMetricManager instead of directly removing it from builder.
     var baseAttributes =
-        attributes.toBuilder()
-            .remove(AttributeKey.stringKey("scope"))
-            .put(CATEGORY_ATTR, SolrInfoBean.Category.TLOG.toString())
-            .build();
+        attributes.toBuilder().put(CATEGORY_ATTR, SolrInfoBean.Category.TLOG.toString()).build();
 
     observables.add(
         solrMetricsContext.observableLongGauge(
@@ -667,11 +661,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     toClose = Collections.unmodifiableList(observables);
 
-    // NOCOMMIT: Do we want to keep this? Metric was just state with the numeric enum value.
-    // Without context this doesn't mean anything and can be very confusing. Maybe keep the numeric
-    // value and put the value meaning in the
-    // description?
-    //    solrMetricsContext.gauge(() -> state.getValue(), true, "state", scope);
+    solrMetricsContext.gauge(() -> state.getValue(), true, "state", scope);
+    observables.add(
+        solrMetricsContext.observableLongGauge(
+            "solr_core_update_log_state",
+            "The current state of the update log. Replaying (0), buffering (1), applying buffered (2), active (3)",
+            (observableLongMeasurement -> {
+              observableLongMeasurement.record(state.getValue(), baseAttributes);
+            })));
 
     applyingBufferedOpsCounter =
         new AttributedLongCounter(

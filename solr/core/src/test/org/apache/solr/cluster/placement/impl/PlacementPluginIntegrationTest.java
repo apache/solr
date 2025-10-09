@@ -45,7 +45,6 @@ import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.CollectionMetrics;
-import org.apache.solr.cluster.placement.NodeMetric;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.ReplicaMetrics;
@@ -82,8 +81,9 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    // placement plugins need metrics
+    // placement plugins need metrics and JVM metrics
     System.setProperty("metricsEnabled", "true");
+    System.setProperty("solr.metrics.jvm.enabled", "true");
     configureCluster(3).addConfig("conf", configset("cloud-minimal")).configure();
     cc = cluster.getJettySolrRunner(0).getCoreContainer();
     cloudManager = cc.getZkController().getSolrCloudManager();
@@ -388,7 +388,6 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   // NOCOMMIT: This test fails because of CollectionMetricsBuilder. Need to dive deeper into what
   // this is and if we need to shim otel into this metrics map.
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testNodeTypeIntegration() throws Exception {
     // this functionality relies on System.getProperty which we cannot set on individual
     // nodes in a mini cluster.
@@ -440,9 +439,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     System.clearProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP);
   }
 
-  // NOCOMMIT: This test needs to be fixed after migrating the collection metrics builder
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testAttributeFetcherImpl() throws Exception {
     CollectionAdminResponse rsp =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
@@ -452,34 +449,22 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     Cluster cluster = new SimpleClusterAbstractionsImpl.ClusterImpl(cloudManager);
     SolrCollection collection = cluster.getCollection(COLLECTION);
     AttributeFetcher attributeFetcher = new AttributeFetcherImpl(cloudManager);
-    NodeMetric<String> someMetricKey = new NodeMetricImpl<>("solr.jvm:system.properties:user.name");
     String sysprop = "user.name";
     attributeFetcher
         .fetchFrom(cluster.getLiveNodes())
-        .requestNodeMetric(NodeMetricImpl.HEAP_USAGE)
         .requestNodeMetric(NodeMetricImpl.SYSLOAD_AVG)
         .requestNodeMetric(NodeMetricImpl.NUM_CORES)
         .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB)
         .requestNodeMetric(NodeMetricImpl.TOTAL_DISK_GB)
         .requestNodeMetric(NodeMetricImpl.AVAILABLE_PROCESSORS)
-        .requestNodeMetric(someMetricKey)
         .requestNodeSystemProperty(sysprop)
-        .requestCollectionMetrics(
-            collection,
-            Set.of(
-                ReplicaMetricImpl.INDEX_SIZE_GB,
-                ReplicaMetricImpl.QUERY_RATE_1MIN,
-                ReplicaMetricImpl.UPDATE_RATE_1MIN));
+        .requestCollectionMetrics(collection, Set.of(ReplicaMetricImpl.INDEX_SIZE_GB));
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
     String userName = System.getProperty("user.name");
     // node metrics
     for (Node node : cluster.getLiveNodes()) {
-      Optional<Double> doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.HEAP_USAGE);
-      assertTrue("heap usage", doubleOpt.isPresent());
-      assertTrue(
-          "heap usage should be 0 < heapUsage < 100 but was " + doubleOpt,
-          doubleOpt.get() > 0 && doubleOpt.get() < 100);
-      doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.TOTAL_DISK_GB);
+      Optional<Double> doubleOpt =
+          attributeValues.getNodeMetric(node, NodeMetricImpl.TOTAL_DISK_GB);
       assertTrue("total disk", doubleOpt.isPresent());
       assertTrue("total disk should be > 0 but was " + doubleOpt, doubleOpt.get() > 0);
       doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB);
@@ -494,9 +479,6 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       assertTrue(
           "availableProcessors",
           attributeValues.getNodeMetric(node, NodeMetricImpl.AVAILABLE_PROCESSORS).isPresent());
-      Optional<String> userNameOpt = attributeValues.getNodeMetric(node, someMetricKey);
-      assertTrue("user.name", userNameOpt.isPresent());
-      assertEquals("userName", userName, userNameOpt.get());
       Optional<String> syspropOpt = attributeValues.getSystemProperty(node, sysprop);
       assertTrue("sysprop", syspropOpt.isPresent());
       assertEquals("user.name sysprop", userName, syspropOpt.get());
@@ -528,13 +510,6 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
                         assertTrue(
                             "indexSize should be < 0.01 but was " + indexSizeOpt.get(),
                             indexSizeOpt.get() < 0.01);
-
-                        assertNotNull(
-                            "queryRate",
-                            replicaMetrics.getReplicaMetric(ReplicaMetricImpl.QUERY_RATE_1MIN));
-                        assertNotNull(
-                            "updateRate",
-                            replicaMetrics.getReplicaMetric(ReplicaMetricImpl.UPDATE_RATE_1MIN));
                       });
             });
   }

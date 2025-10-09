@@ -21,7 +21,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -35,10 +34,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import javax.management.ObjectName;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.SolrClient;
@@ -64,7 +59,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -390,9 +384,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     }
   }
 
-  // NOCOMMIT: Failing from JMX reporter
   @Test
-  @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testCollectionsAPI() throws Exception {
 
     // create new collections rapid fire
@@ -585,28 +577,17 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
   private void checkNoTwoShardsUseTheSameIndexDir() {
     Map<String, Set<String>> indexDirToShardNamesMap = new HashMap<>();
 
-    List<MBeanServer> servers = new ArrayList<>();
-    servers.add(ManagementFactory.getPlatformMBeanServer());
-    servers.addAll(MBeanServerFactory.findMBeanServer(null));
-    for (final MBeanServer server : servers) {
-      Set<ObjectName> mbeans = new HashSet<>(server.queryNames(null, null));
-      for (final ObjectName mbean : mbeans) {
-        try {
-          Map<String, String> props = mbean.getKeyPropertyList();
-          String category = props.get("category");
-          String name = props.get("name");
-          if ((category != null && category.equals(Category.CORE.toString()))
-              && (name != null && name.equals("indexDir"))) {
-            String indexDir = server.getAttribute(mbean, "Value").toString();
-            String key = props.get("dom2") + "." + props.get("dom3") + "." + props.get("dom4");
-            if (!indexDirToShardNamesMap.containsKey(indexDir)) {
-              indexDirToShardNamesMap.put(indexDir, new HashSet<>());
-            }
-            indexDirToShardNamesMap.get(indexDir).add(key);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      CoreContainer coreContainer = jetty.getCoreContainer();
+      List<String> coreNames = coreContainer.getAllCoreNames();
+      for (String coreName : coreNames) {
+        try (SolrCore core = coreContainer.getCore(coreName)) {
+          String indexDir = core.getIndexDir();
+          String shardKey = jetty.getNodeName() + "." + coreName;
+          if (!indexDirToShardNamesMap.containsKey(indexDir)) {
+            indexDirToShardNamesMap.put(indexDir, new HashSet<>());
           }
-        } catch (Exception e) {
-          // ignore, just continue - probably a "Value" attribute
-          // not found
+          indexDirToShardNamesMap.get(indexDir).add(shardKey);
         }
       }
     }
@@ -617,7 +598,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             + " : "
             + indexDirToShardNamesMap,
         indexDirToShardNamesMap.size() > 0);
-    for (Entry<String, Set<String>> entry : indexDirToShardNamesMap.entrySet()) {
+
+    for (Map.Entry<String, Set<String>> entry : indexDirToShardNamesMap.entrySet()) {
       if (entry.getValue().size() > 1) {
         fail(
             "We have shards using the same indexDir. E.g. shards "

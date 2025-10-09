@@ -17,13 +17,12 @@
 
 package org.apache.solr.util.circuitbreaker;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.OtelRuntimeJvmMetrics;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,23 +109,22 @@ public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
    * @return Percent CPU usage of -1 if value could not be obtained.
    */
   protected double calculateLiveCPUUsage() {
-    // TODO: Use Codahale Meter to calculate the value
-    Metric metric =
-        this.cc.getMetricManager().registry("solr.jvm").getMetrics().get("os.systemCpuLoad");
-
-    if (metric == null) {
-      return -1.0;
+    if (!OtelRuntimeJvmMetrics.isJvmMetricsEnabled()) {
+      throw new IllegalStateException("JVM metrics disabled. Cannot calculate CPU usage");
     }
 
-    if (metric instanceof Gauge<?> gauge) {
-      // unwrap if needed
-      if (gauge instanceof SolrMetricManager.GaugeWrapper) {
-        gauge = ((SolrMetricManager.GaugeWrapper) gauge).getGauge();
-      }
-      return (Double) gauge.getValue() * 100;
-    }
-
-    return -1.0; // Unable to unpack metric
+    return this.cc
+        .getMetricManager()
+        .getPrometheusMetricReader("solr.jvm")
+        .collect(name -> name.contains("jvm_system_cpu_utilization_ratio"))
+        .stream()
+        .filter(GaugeSnapshot.class::isInstance)
+        .map(GaugeSnapshot.class::cast)
+        .map(GaugeSnapshot::getDataPoints)
+        .flatMap(java.util.Collection::stream)
+        .findFirst()
+        .map(dp -> dp.getValue() * 100)
+        .orElse(-1.0); // Unable to unpack metric
   }
 
   @Override
