@@ -34,7 +34,6 @@
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
     <updateLog class="${solr.ulog:solr.UpdateLog}"></updateLog>
-    <bool name="aggregateNodeLevelMetricsEnabled">true</bool>
   </updateHandler>
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler">
