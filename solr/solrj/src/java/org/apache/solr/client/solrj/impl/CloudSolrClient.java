@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
+
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 import static org.apache.solr.common.params.CommonParams.ID;
 
@@ -120,7 +121,7 @@ public abstract class CloudSolrClient extends SolrClient {
           // UpdateParams.ROLLBACK
           );
 
-  protected volatile Object[] locks = objectList(3);
+  protected volatile ReentrantLock[] locks = objectList(3);
 
   /** Constructs {@link CloudSolrClient} instances from provided configuration. */
   public static class Builder extends CloudHttp2SolrClient.Builder {
@@ -194,13 +195,6 @@ public abstract class CloudSolrClient extends SolrClient {
     public ExpiringCachedDocCollection get(Object key) {
       ExpiringCachedDocCollection val = super.get(key);
       if (val == null) {
-        // a new collection is likely to be added now.
-        // check if there are stale items and remove them
-        evictStale();
-        return null;
-      }
-      if (val.isExpired(timeToLiveMs)) {
-        super.remove(key);
         return null;
       }
       hits.incrementAndGet();
@@ -213,18 +207,6 @@ public abstract class CloudSolrClient extends SolrClient {
       return super.put(key, value);
     }
 
-    void evictStale() {
-      if (!evictLock.tryLock()) return;
-      try {
-        for (Entry<String, ExpiringCachedDocCollection> e : entrySet()) {
-          if (e.getValue().isExpired(timeToLiveMs)) {
-            super.remove(e.getKey());
-          }
-        }
-      } finally {
-        evictLock.unlock();
-      }
-    }
   }
 
   protected final StateCache collectionStateCache = new StateCache();
@@ -427,7 +409,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
     final NamedList<Throwable> exceptions = new NamedList<>();
     final NamedList<NamedList<?>> shardResponses =
-        new NamedList<>(routes.size() + 1); // +1 for deleteQuery
+      new NamedList<>(routes.size() + 1); // +1 for deleteQuery
 
     long start = System.nanoTime();
 
@@ -651,7 +633,7 @@ public abstract class CloudSolrClient extends SolrClient {
         Object obj = shardResponse.get(updateType);
         if (obj instanceof NamedList<?> nl) {
           NamedList<Object> versionsList =
-              versions.containsKey(updateType) ? versions.get(updateType) : new NamedList<>();
+            versions.containsKey(updateType) ? versions.get(updateType) : new NamedList<>();
           versionsList.addAll(nl);
           versions.put(updateType, versionsList);
         }
@@ -801,8 +783,8 @@ public abstract class CloudSolrClient extends SolrClient {
     }
     boolean isAdmin = ADMIN_PATHS.contains(request.getPath());
     if (!inputCollections.isEmpty()
-        && !isAdmin
-        && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
+      && !isAdmin
+      && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
       Set<String> requestedCollectionNames = resolveAliases(inputCollections);
 
       StringBuilder stateVerParamBuilder = null;
@@ -811,7 +793,7 @@ public abstract class CloudSolrClient extends SolrClient {
         DocCollection coll = getDocCollection(requestedCollection, null);
         if (coll == null) {
           throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
+            SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
         }
         int collVer = coll.getZNodeVersion();
         if (requestedCollections == null)
@@ -900,7 +882,9 @@ public abstract class CloudSolrClient extends SolrClient {
         if (requestedCollections != null) {
           for (DocCollection ext : requestedCollections) {
             ExpiringCachedDocCollection cacheEntry = collectionStateCache.get(ext.getName());
-            if (cacheEntry == null) continue;
+            if (cacheEntry == null) {
+              continue;
+            }
             cacheEntry.maybeStale = true;
           }
         }
@@ -995,7 +979,7 @@ public abstract class CloudSolrClient extends SolrClient {
   }
 
   protected NamedList<Object> sendRequest(SolrRequest<?> request, List<String> inputCollections)
-      throws SolrServerException, IOException {
+    throws SolrServerException, IOException {
     connect();
 
     boolean sendToLeaders = false;
@@ -1099,8 +1083,8 @@ public abstract class CloudSolrClient extends SolrClient {
         for (Replica replica : slice.getReplicas()) {
           String node = replica.getNodeName();
           if (!liveNodes.contains(node) // Must be a live node to continue
-              || replica.getState()
-                  != Replica.State.ACTIVE) { // Must be an ACTIVE replica to continue
+            || replica.getState()
+            != Replica.State.ACTIVE) { // Must be an ACTIVE replica to continue
             continue;
           }
           if (sendToLeaders && replica.equals(leader)) {
@@ -1201,52 +1185,61 @@ public abstract class CloudSolrClient extends SolrClient {
     return directUpdatesToLeadersOnly;
   }
 
-  protected static Object[] objectList(int n) {
-    Object[] l = new Object[n];
+  protected static ReentrantLock[] objectList(int n) {
+    ReentrantLock[] l = new ReentrantLock[n];
     for (int i = 0; i < n; i++) {
-      l[i] = new Object();
+      l[i] = new ReentrantLock();
     }
     return l;
   }
 
   protected DocCollection getDocCollection(String collection, Integer expectedVersion)
-      throws SolrException {
-    if (expectedVersion == null) expectedVersion = -1;
-    if (collection == null) return null;
+    throws SolrException {
+    if (expectedVersion == null) {
+      expectedVersion = -1;
+    }
+    if (collection == null) {
+      return null;
+    }
     ExpiringCachedDocCollection cacheEntry = collectionStateCache.get(collection);
     DocCollection col = cacheEntry == null ? null : cacheEntry.cached;
     if (col != null) {
-      if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
+      if (expectedVersion > col.getZNodeVersion()) {
+        col = null;
+      }
     }
 
-    Object[] locks = this.locks;
-    int lockId =
+    boolean shouldRefresh =
+      col ==null ||cacheEntry.isExpired(collectionStateCache.timeToLiveMs) || cacheEntry.shouldRetry();
+
+    if(shouldRefresh) {
+      ReentrantLock[] locks = this.locks;
+      int lockId =
         Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.length);
-    final Object lock = locks[lockId];
-    synchronized (lock) {
-      /*we have waited for some time just check once again*/
-      cacheEntry = collectionStateCache.get(collection);
-      col = cacheEntry == null ? null : cacheEntry.cached;
-      if (col != null) {
-        if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
+      final ReentrantLock lock = locks[lockId];
+
+      if (lock.tryLock()) {
+        ClusterState.CollectionRef ref = getCollectionRef(collection);
+        if (ref == null) {
+          // no such collection exists
+          return null;
+        }
+        // We are going to fetch a new version
+        // we MUST try to get a new version
+        DocCollection fetchedCol = ref.get(); // this is a call to ZK
+        if (fetchedCol == null) {
+          return null; // this collection no more exists
+        }
+        if (col != null && fetchedCol.getZNodeVersion() == col.getZNodeVersion()) {
+          cacheEntry.setRetriedAt(); // we retried and found that it is the same version
+          cacheEntry.maybeStale = false;
+        } else {
+          collectionStateCache.replace(collection, new ExpiringCachedDocCollection(fetchedCol));
+        }
+        return fetchedCol;
       }
-      ClusterState.CollectionRef ref = getCollectionRef(collection);
-      if (ref == null) {
-        // no such collection exists
-        return null;
-      }
-      // We are going to fetch a new version
-      // we MUST try to get a new version
-      DocCollection fetchedCol = ref.get(); // this is a call to ZK
-      if (fetchedCol == null) return null; // this collection no more exists
-      if (col != null && fetchedCol.getZNodeVersion() == col.getZNodeVersion()) {
-        cacheEntry.setRetriedAt(); // we retried and found that it is the same version
-        cacheEntry.maybeStale = false;
-      } else {
-        collectionStateCache.put(collection, new ExpiringCachedDocCollection(fetchedCol));
-      }
-      return fetchedCol;
     }
+    return col;
   }
 
   ClusterState.CollectionRef getCollectionRef(String collection) {
