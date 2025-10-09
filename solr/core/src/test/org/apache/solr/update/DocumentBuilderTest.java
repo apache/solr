@@ -420,7 +420,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertThat(
         thrown.getMessage(),
         is(
-            "ERROR: [doc=0] Error adding field 'vector3'='[1.1, 2.1, 3.1, 4.1]' msg=The copy field destination must be a DenseVectorField: vector_f_p"));
+            "ERROR: [doc=0] Error adding field 'vector3' msg=The copy field destination must be a DenseVectorField: vector_f_p"));
   }
 
   @Test

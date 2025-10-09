@@ -2070,6 +2070,8 @@ Bug Fixes
 
 * SOLR-10918: Fix IntPointField hashing for HLL (Houston Putman)
 
+* SOLR-16155: DocumentBuilder should not include field values in error messages (janhoy)
+
 * SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
 
 * SOLR-16528: Jaegertracer module must include okhttp3 dependency (janhoy)
