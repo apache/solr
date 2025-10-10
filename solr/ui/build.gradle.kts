@@ -132,6 +132,11 @@ compose.desktop {
     application {
         mainClass = "org.apache.solr.ui.MainKt"
 
+        buildTypes.release.proguard {
+            version.set("7.6.0")
+            configurationFiles.from("proguard.pro")
+        }
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
 
