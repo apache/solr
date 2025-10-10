@@ -25,7 +25,13 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.path
+import io.ktor.utils.io.charsets.Charsets
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlinx.io.bytestring.decodeToByteString
+import kotlinx.serialization.json.Json
 import org.apache.solr.ui.components.start.store.StartStoreProvider
+import org.apache.solr.ui.data.SolrAuthData
 import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.errors.UnauthorizedException
 import org.apache.solr.ui.errors.UnknownResponseException
@@ -47,6 +53,7 @@ class HttpStartStoreClient(
         val url = URLBuilder(url).apply {
             // Try getting system data for checking if Solr host exists,
             // since there is no explicit endpoint for the connection establishment.
+            // TODO Consider http://127.0.0.1:8983/api/admin/authentication
             path("api/node/system")
         }.build()
 
@@ -96,6 +103,12 @@ class HttpStartStoreClient(
 
                 when (scheme.lowercase()) {
                     "basic", "xbasic" -> AuthMethod.BasicAuthMethod(realm = params["realm"])
+                    "bearer" -> {
+                        val rawAuthData = Base64.decode(headers["X-Solr-Authdata"] ?: "")
+                        val jsonAuthData = Json.decodeFromString<SolrAuthData>(rawAuthData.decodeToString())
+
+                        AuthMethod.OAuthMethod(data = jsonAuthData.toOAuthData(), realm = params["realm"])
+                    }
                     else -> AuthMethod.Unknown
                 }
             }
