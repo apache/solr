@@ -15,30 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.domain
+package org.apache.solr.ui.data
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/**
- * The authentication method is used for determining what methods of authenticating are available.
- * These methods hold information for displaying and trying to authenticate.
- *
- * @see AuthOption
- */
 @Serializable
-sealed interface AuthMethod {
-
-    /**
-     * Basic authentication method that uses username and password for
-     * authenticating.
-     *
-     * @property realm The realm of the basic auth.
-     */
-    @Serializable
-    data class BasicAuthMethod(val realm: String? = null) : AuthMethod
-
-    @Serializable
-    data class OAuthMethod(val data: OAuthData, val realm: String? = null) : AuthMethod
-
-    data object Unknown : AuthMethod
-}
+data class AuthorizationResponse(
+    @SerialName("access_token")
+    val accessToken: String = "",
+    @SerialName("expires_in")
+    val expiresIn: Long = 0,
+    @SerialName("refresh_expires_in")
+    val refreshExpiresIn: Long = 0,
+    @SerialName("refresh_token")
+    val refreshToken: String = "",
+    @SerialName("token_type")
+    val tokenType: String = "",
+    @SerialName("id_token")
+    val idToken: String? = null,
+    @SerialName("not-before-policy")
+    val notBeforePolicy: Int = -1,
+    @SerialName("session_state")
+    val sessionState: String = "",
+    val scope: String = "",
+)

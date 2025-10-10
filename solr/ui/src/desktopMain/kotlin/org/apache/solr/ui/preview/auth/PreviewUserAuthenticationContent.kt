@@ -26,7 +26,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.auth.AuthenticationComponent
 import org.apache.solr.ui.components.auth.AuthenticationComponent.BasicAuthConfiguration
+import org.apache.solr.ui.components.auth.AuthenticationComponent.OAuthConfiguration
 import org.apache.solr.ui.components.auth.BasicAuthComponent
+import org.apache.solr.ui.components.auth.OAuthComponent
 import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.preview.PreviewContainer
 import org.apache.solr.ui.views.auth.UserAuthenticationContent
@@ -54,6 +56,9 @@ private data object PreviewAuthenticationComponentWithBasicAuth : Authentication
                 ),
             ),
         )
+
+    override val oAuthSlot: Value<ChildSlot<OAuthConfiguration, OAuthComponent>> =
+        MutableValue(TODO())
 
     override fun onAbort() = Unit
 }

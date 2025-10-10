@@ -15,30 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.domain
+package org.apache.solr.ui.views.auth
 
-import kotlinx.serialization.Serializable
+import io.ktor.http.Url
+import org.apache.solr.ui.domain.AuthorizationFlow
+import org.apache.solr.ui.domain.OAuthData
 
-/**
- * The authentication method is used for determining what methods of authenticating are available.
- * These methods hold information for displaying and trying to authenticate.
- *
- * @see AuthOption
- */
-@Serializable
-sealed interface AuthMethod {
-
-    /**
-     * Basic authentication method that uses username and password for
-     * authenticating.
-     *
-     * @property realm The realm of the basic auth.
-     */
-    @Serializable
-    data class BasicAuthMethod(val realm: String? = null) : AuthMethod
-
-    @Serializable
-    data class OAuthMethod(val data: OAuthData, val realm: String? = null) : AuthMethod
-
-    data object Unknown : AuthMethod
-}
+internal val TestOAuthData = OAuthData(
+    clientId = "client-id",
+    authorizationFlow = AuthorizationFlow.CodePKCE,
+    scope = "openid solr",
+    redirectUris = listOf(Url("http://127.0.0.1:8088")),
+    authorizationEndpoint = Url("http://127.0.0.1:3000/auth"),
+    tokenEndpoint = Url("http://127.0.0.1:3000/token"),
+)

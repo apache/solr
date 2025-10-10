@@ -115,6 +115,16 @@ fun UserAuthenticationContent(
                 )
             }
 
+            val oauthState by component.oAuthSlot.subscribeAsState()
+
+            oauthState.child?.let { oAuth ->
+                OAuthContent(
+                    modifier = Modifier.testTag("basic_auth_content"),
+                    component = oAuth.instance,
+                    isAuthenticating = model.isAuthenticating,
+                )
+            }
+
             model.error?.let { error ->
                 Text(
                     modifier = Modifier.testTag("error_text"),
