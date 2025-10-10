@@ -488,6 +488,8 @@ Examples:
 Specifies the URL of the Tika server to use when the `extraction.backend` parameter is set to `tikaserver`.
 This parameter is required when using the `tikaserver` backend. This parameter can only be configured in the configuration, not per request.
 +
+If your TikaServer is using HTTPS, it needs to use a verifiable SSL certificate. If using self-signed or custom Certificate Authority, you will need to add those to Solr's Truststore. The `tikaserver` backend currently does not have support for configuring custom certificates for Tika alone.
++
 Example: In `solrconfig.xml`: `<str name="tikaserver.url">http://localhost:9998</str>`.
 
 `uprefix`::
