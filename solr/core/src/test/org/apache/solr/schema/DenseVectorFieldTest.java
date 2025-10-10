@@ -829,6 +829,11 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
       assertJQ(
           req("q", "id:" + id, "fl", "vector"), "/response/docs/[0]/vector==[1.1,2.2,3.3,4.4]");
+
+      assertJQ(
+          req("q", "{!knn f=vector topK=1}[1.1,2.2,3.3,4.4]", "fl", "id"),
+          "/response/numFound==1",
+          "/response/docs/[0]/id==\"" + id + "\"");
     } finally {
       deleteCore();
     }
