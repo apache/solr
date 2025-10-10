@@ -798,38 +798,37 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void indexing_floatPrimitiveArray_viaJavaBin_shouldIndexAndReturnStored()
-      throws Exception {
+  public void testIndexingViaJavaBin() throws Exception {
     try {
       initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
+      int variant = random().nextInt(3);
+      Object vector;
+      String id;
+
+      switch (variant) {
+        case 0:
+          vector = new float[] {1.1f, 2.2f, 3.3f, 4.4f};
+          id = "pf_jb";
+          break;
+        case 1:
+          vector = new double[] {1.1d, 2.2d, 3.3d, 4.4d};
+          id = "pd_jb";
+          break;
+        default:
+          vector = Arrays.asList(1.1f, 2.2f, 3.3f, 4.4f);
+          id = "lf_jb";
+          break;
+      }
+
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", "pf_jb");
-      doc.addField("vector", new float[] {1.1f, 2.2f, 3.3f, 4.4f});
+      doc.addField("id", id);
+      doc.addField("vector", vector);
 
       addDocWithJavaBin(doc);
 
       assertJQ(
-          req("q", "id:pf_jb", "fl", "vector"), "/response/docs/[0]/vector==[1.1,2.2,3.3,4.4]");
-    } finally {
-      deleteCore();
-    }
-  }
-
-  @Test
-  public void indexing_doublePrimitiveArray_viaJavaBin_shouldIndexAndReturnStored()
-      throws Exception {
-    try {
-      initCore("solrconfig-basic.xml", "schema-densevector.xml");
-
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", "pd_jb");
-      doc.addField("vector", new double[] {1.1d, 2.2d, 3.3d, 4.4d});
-
-      addDocWithJavaBin(doc);
-
-      assertJQ(
-          req("q", "id:pd_jb", "fl", "vector"), "/response/docs/[0]/vector==[1.1,2.2,3.3,4.4]");
+          req("q", "id:" + id, "fl", "vector"), "/response/docs/[0]/vector==[1.1,2.2,3.3,4.4]");
     } finally {
       deleteCore();
     }
