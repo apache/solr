@@ -245,113 +245,97 @@ public class DirectUpdateHandler2 extends UpdateHandler
         new AttributedInstrumentFactory(
             solrMetricsContext, baseAttributes, aggregateToNodeRegistry);
 
-    String corePrefix = "solr_core_update_";
-    String nodePrefix = "solr_node_update_";
-
     addCommandsCumulative =
         factory.attributedLongUpDownCounter(
-            AttributedInstrumentFactory.standardNameProvider(
-                corePrefix, nodePrefix, "cumulative_ops"),
+            "solr_core_update_cumulative_ops",
             "Cumulative number of update commands processed. Cumulative can decrease from rollback command",
             Attributes.of(OPERATION_ATTR, "adds"));
 
     deleteByIdCommandsCumulative =
         factory.attributedLongUpDownCounter(
-            AttributedInstrumentFactory.standardNameProvider(
-                corePrefix, nodePrefix, "cumulative_ops"),
+            "solr_core_update_cumulative_ops",
             "Cumulative number of update commands processed. Cumulative can decrease from rollback command",
             Attributes.of(OPERATION_ATTR, "deletes_by_id"));
 
     deleteByQueryCommandsCumulative =
         factory.attributedLongUpDownCounter(
-            AttributedInstrumentFactory.standardNameProvider(
-                corePrefix, nodePrefix, "cumulative_ops"),
+            "solr_core_update_cumulative_ops",
             "Cumulative number of update commands processed. Cumulative can decrease from rollback command",
             Attributes.of(OPERATION_ATTR, "deletes_by_query"));
 
     commitCommands =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(corePrefix, nodePrefix, "commit_ops"),
+            "solr_core_update_commit_ops",
             "Total number of commit operations",
             Attributes.of(OPERATION_ATTR, "commits"));
 
     optimizeCommands =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(corePrefix, nodePrefix, "commit_ops"),
+            "solr_core_update_commit_ops",
             "Total number of commit operations",
             Attributes.of(OPERATION_ATTR, "optimize"));
 
     mergeIndexesCommands =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(corePrefix, nodePrefix, "commit_ops"),
+            "solr_core_update_commit_ops",
             "Total number of commit operations",
             Attributes.of(OPERATION_ATTR, "merge_indexes"));
 
     expungeDeleteCommands =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(corePrefix, nodePrefix, "commit_ops"),
+            "solr_core_update_commit_ops",
             "Total number of commit operations",
             Attributes.of(OPERATION_ATTR, "expunge_deletes"));
 
     rollbackCommands =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(
-                corePrefix, nodePrefix, "maintenance_ops"),
+            "solr_core_update_maintenance_ops",
             "Total number of maintenance operations",
             Attributes.of(OPERATION_ATTR, "rollback"));
 
     splitCommands =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(
-                corePrefix, nodePrefix, "maintenance_ops"),
+            "solr_core_update_maintenance_ops",
             "Total number of maintenance operations",
             Attributes.of(OPERATION_ATTR, "split"));
 
     numErrorsCumulative =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(corePrefix, nodePrefix, "errors"),
-            "Total number of update errors",
-            Attributes.empty());
+            "solr_core_update_errors", "Total number of update errors", Attributes.empty());
 
     submittedAdds =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(
-                corePrefix, nodePrefix, "submitted_ops"),
+            "solr_core_update_submitted_ops",
             "Total number of submitted update operations",
             Attributes.of(OPERATION_ATTR, "adds"));
 
     submittedDeleteById =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(
-                corePrefix, nodePrefix, "submitted_ops"),
+            "solr_core_update_submitted_ops",
             "Total number of submitted update operations",
             Attributes.of(OPERATION_ATTR, "deletes_by_id"));
 
     submittedDeleteByQuery =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(
-                corePrefix, nodePrefix, "submitted_ops"),
+            "solr_core_update_submitted_ops",
             "Total number of submitted update operations",
             Attributes.of(OPERATION_ATTR, "deletes_by_query"));
 
     committedAdds =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(
-                corePrefix, nodePrefix, "committed_ops"),
+            "solr_core_update_committed_ops",
             "Total number of committed update operations",
             Attributes.of(OPERATION_ATTR, "adds"));
 
     committedDeleteById =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(
-                corePrefix, nodePrefix, "committed_ops"),
+            "solr_core_update_committed_ops",
             "Total number of committed update operations",
             Attributes.of(OPERATION_ATTR, "deletes_by_id"));
 
     committedDeleteByQuery =
         factory.attributedLongCounter(
-            AttributedInstrumentFactory.standardNameProvider(
-                corePrefix, nodePrefix, "committed_ops"),
+            "solr_core_update_committed_ops",
             "Total number of committed update operations",
             Attributes.of(OPERATION_ATTR, "deletes_by_query"));
 

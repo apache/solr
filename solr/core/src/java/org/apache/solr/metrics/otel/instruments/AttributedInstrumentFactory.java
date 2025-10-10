@@ -16,13 +16,18 @@
  */
 package org.apache.solr.metrics.otel.instruments;
 
-import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
-import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
+import static org.apache.solr.handler.component.SearchHandler.INTERNAL_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_TYPE_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
+import java.util.Set;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -34,6 +39,8 @@ import org.apache.solr.metrics.otel.OtelUnit;
  */
 public class AttributedInstrumentFactory {
 
+  private static final Set<AttributeKey<?>> FILTER_ATTRS_SET =
+      Set.of(COLLECTION_ATTR, CORE_ATTR, SHARD_ATTR, REPLICA_TYPE_ATTR, INTERNAL_ATTR);
   private final SolrMetricsContext primaryMetricsContext;
   private final Attributes primaryAttributes;
   private final boolean aggregateToNodeRegistry;
@@ -68,117 +75,86 @@ public class AttributedInstrumentFactory {
   }
 
   public AttributedLongCounter attributedLongCounter(
-      MetricNameProvider metricNameProvider, String description, Attributes additionalAttributes) {
+      String metricName, String description, Attributes additionalAttributes) {
     Attributes finalPrimaryAttrs = appendAttributes(primaryAttributes, additionalAttributes);
 
     if (aggregateToNodeRegistry && nodeMetricsContext != null) {
       Attributes finalNodeAttrs = appendAttributes(nodeAttributes, additionalAttributes);
 
-      LongCounter primaryCounter =
-          primaryMetricsContext.longCounter(metricNameProvider.getPrimaryMetricName(), description);
+      LongCounter primaryCounter = primaryMetricsContext.longCounter(metricName, description);
       LongCounter nodeCounter =
-          nodeMetricsContext.longCounter(metricNameProvider.getNodeMetricName(), description);
+          nodeMetricsContext.longCounter(toNodeMetricName(metricName), description);
       return new DualRegistryAttributedLongCounter(
           primaryCounter, finalPrimaryAttrs, nodeCounter, finalNodeAttrs);
     } else {
-      String metricName =
-          primaryIsNodeRegistry
-              ? metricNameProvider.getNodeMetricName()
-              : metricNameProvider.getPrimaryMetricName();
-
-      LongCounter counter = primaryMetricsContext.longCounter(metricName, description);
+      String finalMetricName = primaryIsNodeRegistry ? toNodeMetricName(metricName) : metricName;
+      LongCounter counter = primaryMetricsContext.longCounter(finalMetricName, description);
       return new AttributedLongCounter(counter, finalPrimaryAttrs);
     }
   }
 
   public AttributedLongUpDownCounter attributedLongUpDownCounter(
-      MetricNameProvider metricNameProvider, String description, Attributes additionalAttributes) {
+      String metricName, String description, Attributes additionalAttributes) {
     Attributes finalPrimaryAttrs = appendAttributes(primaryAttributes, additionalAttributes);
 
     if (aggregateToNodeRegistry && nodeMetricsContext != null) {
       Attributes finalNodeAttrs = appendAttributes(nodeAttributes, additionalAttributes);
 
       LongUpDownCounter primaryCounter =
-          primaryMetricsContext.longUpDownCounter(
-              metricNameProvider.getPrimaryMetricName(), description);
+          primaryMetricsContext.longUpDownCounter(metricName, description);
       LongUpDownCounter nodeCounter =
-          nodeMetricsContext.longUpDownCounter(metricNameProvider.getNodeMetricName(), description);
-
+          nodeMetricsContext.longUpDownCounter(toNodeMetricName(metricName), description);
       return new DualRegistryAttributedLongUpDownCounter(
           primaryCounter, finalPrimaryAttrs, nodeCounter, finalNodeAttrs);
     } else {
-      String metricName =
-          primaryIsNodeRegistry
-              ? metricNameProvider.getNodeMetricName()
-              : metricNameProvider.getPrimaryMetricName();
-
-      LongUpDownCounter counter = primaryMetricsContext.longUpDownCounter(metricName, description);
+      String finalMetricName = primaryIsNodeRegistry ? toNodeMetricName(metricName) : metricName;
+      LongUpDownCounter counter =
+          primaryMetricsContext.longUpDownCounter(finalMetricName, description);
       return new AttributedLongUpDownCounter(counter, finalPrimaryAttrs);
     }
   }
 
   public AttributedLongTimer attributedLongTimer(
-      MetricNameProvider metricNameProvider,
-      String description,
-      OtelUnit unit,
-      Attributes additionalAttributes) {
+      String metricName, String description, OtelUnit unit, Attributes additionalAttributes) {
     Attributes finalPrimaryAttrs = appendAttributes(primaryAttributes, additionalAttributes);
 
-    if (aggregateToNodeRegistry) {
+    if (aggregateToNodeRegistry && nodeMetricsContext != null) {
       Attributes finalNodeAttrs = appendAttributes(nodeAttributes, additionalAttributes);
-      LongHistogram coreHistogram =
-          primaryMetricsContext.longHistogram(
-              metricNameProvider.getPrimaryMetricName(), description, unit);
+      LongHistogram primaryHistogram =
+          primaryMetricsContext.longHistogram(metricName, description, unit);
       LongHistogram nodeHistogram =
-          nodeMetricsContext.longHistogram(
-              metricNameProvider.getNodeMetricName(), description, unit);
+          nodeMetricsContext.longHistogram(toNodeMetricName(metricName), description, unit);
       return new DualRegistryAttributedLongTimer(
-          coreHistogram, finalPrimaryAttrs, nodeHistogram, finalNodeAttrs);
+          primaryHistogram, finalPrimaryAttrs, nodeHistogram, finalNodeAttrs);
     } else {
-      String metricName =
-          primaryIsNodeRegistry
-              ? metricNameProvider.getNodeMetricName()
-              : metricNameProvider.getPrimaryMetricName();
-
-      LongHistogram histogram = primaryMetricsContext.longHistogram(metricName, description, unit);
+      String finalMetricName = primaryIsNodeRegistry ? toNodeMetricName(metricName) : metricName;
+      LongHistogram histogram =
+          primaryMetricsContext.longHistogram(finalMetricName, description, unit);
       return new AttributedLongTimer(histogram, finalPrimaryAttrs);
     }
   }
 
-  // Filter out core attributes and keep only category and handler if they exist
+  // Replace core metric name prefix to node prefix
+  private String toNodeMetricName(String coreMetricName) {
+    return coreMetricName.replace("solr_core", "solr_node");
+  }
+
+  // Filter out core attributes and keep all others for node-level metrics
+  @SuppressWarnings("unchecked")
   private Attributes createNodeAttributes(Attributes coreAttributes) {
     var builder = Attributes.builder();
 
-    if (coreAttributes.get(CATEGORY_ATTR) != null)
-      builder.put(CATEGORY_ATTR, coreAttributes.get(CATEGORY_ATTR));
-    if (coreAttributes.get(HANDLER_ATTR) != null)
-      builder.put(HANDLER_ATTR, coreAttributes.get(HANDLER_ATTR));
+    coreAttributes.forEach(
+        (key, value) -> {
+          if (!FILTER_ATTRS_SET.contains(key)) {
+            builder.put((AttributeKey<Object>) key, value);
+          }
+        });
 
     return builder.build();
   }
 
   private Attributes appendAttributes(Attributes base, Attributes additional) {
     return base.toBuilder().putAll(additional).build();
-  }
-
-  public interface MetricNameProvider {
-    String getPrimaryMetricName();
-
-    String getNodeMetricName();
-  }
-
-  public static MetricNameProvider standardNameProvider(
-      String corePrefix, String nodePrefix, String metricSuffix) {
-    return new MetricNameProvider() {
-      @Override
-      public String getPrimaryMetricName() {
-        return corePrefix + metricSuffix;
-      }
-
-      @Override
-      public String getNodeMetricName() {
-        return nodePrefix + metricSuffix;
-      }
-    };
   }
 }

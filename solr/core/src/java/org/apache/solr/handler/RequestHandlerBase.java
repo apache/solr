@@ -197,40 +197,29 @@ public abstract class RequestHandlerBase
           new AttributedInstrumentFactory(
               solrMetricsContext, coreAttributes, aggregateNodeLevelMetricsEnabled);
 
-      String corePrefix = "solr_core_";
-      String nodePrefix = "solr_node_";
-
       requests =
           factory.attributedLongCounter(
-              AttributedInstrumentFactory.standardNameProvider(corePrefix, nodePrefix, "requests"),
-              "HTTP Solr requests",
-              Attributes.empty());
+              "solr_core_requests", "HTTP Solr requests", Attributes.empty());
 
       numServerErrors =
           factory.attributedLongCounter(
-              AttributedInstrumentFactory.standardNameProvider(
-                  corePrefix, nodePrefix, "requests_errors"),
+              "solr_core_requests_errors",
               "HTTP Solr request errors",
               Attributes.of(SOURCE_ATTR, "server"));
 
       numClientErrors =
           factory.attributedLongCounter(
-              AttributedInstrumentFactory.standardNameProvider(
-                  corePrefix, nodePrefix, "requests_errors"),
+              "solr_core_requests_errors",
               "HTTP Solr request errors",
               Attributes.of(SOURCE_ATTR, "client"));
 
       numTimeouts =
           factory.attributedLongCounter(
-              AttributedInstrumentFactory.standardNameProvider(
-                  corePrefix, nodePrefix, "requests_timeout"),
-              "HTTP Solr request timeouts",
-              Attributes.empty());
+              "solr_core_requests_timeout", "HTTP Solr request timeouts", Attributes.empty());
 
       requestTimes =
           factory.attributedLongTimer(
-              AttributedInstrumentFactory.standardNameProvider(
-                  "solr_core_", nodePrefix, "requests_times"),
+              "solr_core_requests_times",
               "HTTP Solr request times",
               OtelUnit.MILLISECONDS,
               Attributes.empty());
