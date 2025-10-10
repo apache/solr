@@ -120,7 +120,8 @@ class SimpleRootComponent(
                 componentContext,
                 configuration.url,
                 configuration.methods,
-            ) { output -> authenticationOutput(output) },
+                ::authenticationOutput,
+            ),
         )
     }
 
