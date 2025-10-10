@@ -492,8 +492,7 @@ public class SolrCores implements SolrInfoBean {
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     parentContext.observableLongGauge(
         "solr_cores_loaded",
         "Number of Solr cores loaded by CoreContainer",

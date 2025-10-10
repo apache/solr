@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import com.codahale.metrics.Counter;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
@@ -27,7 +26,6 @@ import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,32 +59,7 @@ public final class SolrMetricTestUtils {
   }
 
   public static SolrInfoBean.Category getRandomCategory(Random random) {
-    return getRandomCategory(random, random.nextBoolean());
-  }
-
-  public static SolrInfoBean.Category getRandomCategory(
-      Random random, boolean shouldDefineCategory) {
-    return shouldDefineCategory
-        ? CATEGORIES[TestUtil.nextInt(random, 0, CATEGORIES.length - 1)]
-        : null;
-  }
-
-  public static Map<String, Counter> getRandomMetrics(Random random) {
-    return getRandomMetrics(random, random.nextBoolean());
-  }
-
-  public static Map<String, Counter> getRandomMetrics(Random random, boolean shouldDefineMetrics) {
-    return shouldDefineMetrics ? getRandomMetricsWithReplacements(random, new HashMap<>()) : null;
-  }
-
-  /**
-   * Generate random OpenTelemetry metric names for testing Prometheus metrics. Returns a map of
-   * metric names to their expected increment values.
-   */
-  public static Map<String, Long> getRandomPrometheusMetrics(Random random) {
-    return random.nextBoolean()
-        ? getRandomPrometheusMetricsWithReplacements(random, new HashMap<>())
-        : null;
+    return CATEGORIES[TestUtil.nextInt(random, 0, CATEGORIES.length - 1)];
   }
 
   public static Map<String, Long> getRandomPrometheusMetricsWithReplacements(
@@ -111,68 +84,6 @@ public final class SolrMetricTestUtils {
   }
 
   public static final String SUFFIX = "_testing";
-
-  // NOCOMMIT: This will get replaced by getRandomPrometheusMetricsWithReplacements
-  public static Map<String, Counter> getRandomMetricsWithReplacements(
-      Random random, Map<String, Counter> existing) {
-    HashMap<String, Counter> metrics = new HashMap<>();
-    ArrayList<String> existingKeys = new ArrayList<>(existing.keySet());
-
-    int numMetrics = TestUtil.nextInt(random, 1, MAX_ITERATIONS);
-    for (int i = 0; i < numMetrics; ++i) {
-      boolean shouldReplaceMetric = !existing.isEmpty() && random.nextBoolean();
-      String name =
-          shouldReplaceMetric
-              ? existingKeys.get(TestUtil.nextInt(random, 0, existingKeys.size() - 1))
-              : TestUtil.randomSimpleString(random, 5, 10)
-                  + SUFFIX; // must be simple string for JMX publishing
-
-      Counter counter = new Counter();
-      counter.inc(random.nextLong());
-      metrics.put(name, counter);
-    }
-
-    return metrics;
-  }
-
-  public static SolrMetricProducer getProducerOf(
-      SolrInfoBean.Category category, String scope, Map<String, Counter> metrics) {
-    return new SolrMetricProducer() {
-      SolrMetricsContext solrMetricsContext;
-
-      @Override
-      public void initializeMetrics(
-          SolrMetricsContext parentContext, Attributes attributes, String scope) {
-        this.solrMetricsContext = parentContext.getChildContext(this);
-        if (category == null) {
-          throw new IllegalArgumentException("null category");
-        }
-        if (metrics == null || metrics.isEmpty()) {
-          return;
-        }
-        for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-          solrMetricsContext.counter(entry.getKey(), category.toString(), scope);
-        }
-      }
-
-      @Override
-      public SolrMetricsContext getSolrMetricsContext() {
-        return solrMetricsContext;
-      }
-
-      @Override
-      public String toString() {
-        return "SolrMetricProducer.of{"
-            + "\ncategory="
-            + category
-            + "\nscope="
-            + scope
-            + "\nmetrics="
-            + metrics
-            + "\n}";
-      }
-    };
-  }
 
   public static DataPointSnapshot getDataPointSnapshot(
       PrometheusMetricReader reader, String metricName, Labels labels) {
@@ -366,9 +277,8 @@ public final class SolrMetricTestUtils {
     }
 
     @Override
-    public void initializeMetrics(
-        SolrMetricsContext parentContext, Attributes attributes, String scope) {
-      this.solrMetricsContext = parentContext.getChildContext(this);
+    public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+      this.solrMetricsContext = parentContext;
       for (Map.Entry<String, Long> entry : metrics.entrySet()) {
         String metricName = entry.getKey();
         Long incrementValue = entry.getValue();

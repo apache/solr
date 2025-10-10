@@ -41,9 +41,7 @@ import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
@@ -165,15 +163,15 @@ public abstract class RequestHandlerBase
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     if (aggregateNodeLevelMetricsEnabled) {
-      this.solrMetricsContext =
-          new SolrDelegateRegistryMetricsContext(
-              parentContext.getMetricManager(),
-              parentContext.getRegistryName(),
-              SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
-              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+      //       NOCOMMIT: SOLR-17865
+      //      this.solrMetricsContext =
+      //          new SolrDelegateRegistryMetricsContext(
+      //              parentContext.getMetricManager(),
+      //              parentContext.getRegistryName(),
+      //              SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
+      //              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
     } else {
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
@@ -188,8 +186,7 @@ public abstract class RequestHandlerBase
   public static class HandlerMetrics {
     public static final HandlerMetrics NO_OP =
         new HandlerMetrics(
-            new SolrMetricsContext(new SolrMetricManager(null), "NO_OP", "NO_OP"),
-            Attributes.empty());
+            new SolrMetricsContext(new SolrMetricManager(null), "NO_OP"), Attributes.empty());
 
     public AttributedLongCounter requests;
     public AttributedLongCounter numServerErrors;

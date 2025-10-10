@@ -16,7 +16,6 @@
  */
 package org.apache.solr.response;
 
-import com.codahale.metrics.SharedMetricRegistries;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -50,8 +49,6 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    SharedMetricRegistries.clear();
-
     solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
     solrClientTestRule
         .newCollection("core1")

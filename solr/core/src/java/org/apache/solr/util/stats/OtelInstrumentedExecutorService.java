@@ -43,8 +43,8 @@ import org.apache.solr.metrics.otel.instruments.AttributedLongTimer.MetricTimer;
 import org.apache.solr.metrics.otel.instruments.AttributedLongUpDownCounter;
 
 /**
- * OTEL instrumentation wrapper around {@link ExecutorService}. Based on {@link
- * com.codahale.metrics.InstrumentedExecutorService}.
+ * OTEL instrumentation wrapper around {@link ExecutorService}. Based on
+ * com.codahale.metrics.InstrumentedExecutorService.
  */
 public class OtelInstrumentedExecutorService implements ExecutorService {
   public static final AttributeKey<String> EXECUTOR_NAME_ATTR =

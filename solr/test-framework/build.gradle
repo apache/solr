@@ -91,4 +91,9 @@ dependencies {
   implementation libs.carrotsearch.randomizedtesting.runner
   implementation libs.junit.junit
   implementation libs.hamcrest.hamcrest
+
+  implementation(libs.prometheus.metrics.expositionformats, {
+    exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
+    exclude group: "io.prometheus", module: "prometheus-metrics-config"
+  })
 }

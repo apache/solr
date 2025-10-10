@@ -51,12 +51,7 @@ dependencies {
   api project(':solr:solrj-zookeeper')
   api project(':solr:solrj-streaming')
 
-  api libs.dropwizard.metrics.core
-  implementation (libs.dropwizard.metrics.graphite, {
-    exclude group: "com.rabbitmq", module: "amqp-client"
-  })
-  implementation libs.dropwizard.metrics.jmx
-  implementation libs.dropwizard.metrics.jvm
+  implementation libs.dropwizard.metrics.core
 
   implementation(libs.jersey.containers.jettyhttp, {
     exclude group: "org.eclipse.jetty", module: "jetty-continuation"
@@ -224,4 +219,5 @@ dependencies {
   testImplementation libs.apache.httpcomponents.httpcore
 
   testImplementation libs.opentelemetry.sdktesting
+  testImplementation libs.dropwizard.metrics.core
 }

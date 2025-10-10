@@ -50,16 +50,18 @@ public interface SolrMetricProducer extends AutoCloseable {
   }
 
   /**
-   * NOCOMMIT SOLR-17458: The Scope parameter will be removed with Dropwizard
+   * Implementation should initialize all metrics to a {@link SolrMetricsContext}
+   * Registry/MeterProvider with {@link Attributes} as the common set of attributes that will be
+   * attached to every metric that is initialized for that class/component
    *
-   * <p>{@link Attributes} passed is the base or common set of attributes that should be attached to
-   * every metric that will be initialized
+   * @param parentContext The registry that the component will initialize metrics to
+   * @param attributes Base set of attributes that will be bound to all metrics for that component
    */
-  void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes, String scope);
+  void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes);
 
   /**
    * Implementations should return the context used in {@link #initializeMetrics(SolrMetricsContext,
-   * Attributes, String)} to ensure proper cleanup of metrics at the end of the life-cycle of this
+   * Attributes)} to ensure proper cleanup of metrics at the end of the life-cycle of this
    * component. This should be the child context if one was created, or null if the parent context
    * was used.
    */
@@ -78,9 +80,7 @@ public interface SolrMetricProducer extends AutoCloseable {
   @Override
   default void close() throws IOException {
     SolrMetricsContext context = getSolrMetricsContext();
-    if (context == null) {
-      return;
-    } else {
+    if (context != null) {
       context.unregister();
     }
   }

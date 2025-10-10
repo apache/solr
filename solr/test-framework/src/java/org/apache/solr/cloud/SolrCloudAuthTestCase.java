@@ -19,11 +19,6 @@ package org.apache.solr.cloud;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
@@ -168,35 +163,6 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
         errors);
   }
 
-  /**
-   * Common test method to be able to check security from any authentication plugin
-   *
-   * @param cluster the MiniSolrCloudCluster to fetch metrics from
-   * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and
-   *     "SECURITY./authentication/pki." for PKI
-   * @param keys what keys to examine
-   */
-  Map<String, Long> countSecurityMetrics(
-      MiniSolrCloudCluster cluster, String prefix, List<String> keys) {
-    List<Map<String, Metric>> metrics = new ArrayList<>();
-    cluster
-        .getJettySolrRunners()
-        .forEach(
-            r -> {
-              MetricRegistry registry =
-                  r.getCoreContainer().getMetricManager().registry("solr.node");
-              assertNotNull(registry);
-              metrics.add(registry.getMetrics());
-            });
-
-    Map<String, Long> counts = new HashMap<>();
-    keys.forEach(
-        k -> {
-          counts.put(k, sumCount(prefix, k, metrics));
-        });
-    return counts;
-  }
-
   /** Common test method to be able to check auth metrics from any authentication plugin */
   void assertAuthMetricsMinimumsPrometheus(
       String handler,
@@ -335,22 +301,6 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       }
     }
     return metrics;
-  }
-
-  // Have to sum the metrics from all three shards/nodes
-  private long sumCount(String prefix, String key, List<Map<String, Metric>> metrics) {
-    assertTrue(
-        "Metric " + prefix + key + " does not exist", metrics.get(0).containsKey(prefix + key));
-    if (AUTH_METRICS_METER_KEYS.contains(key))
-      return metrics.stream().mapToLong(l -> ((Meter) l.get(prefix + key)).getCount()).sum();
-    else if (AUTH_METRICS_TIMER_KEYS.contains(key))
-      return (long)
-          ((long) 1000
-              * metrics.stream()
-                  .mapToDouble(l -> ((Timer) l.get(prefix + key)).getMeanRate())
-                  .average()
-                  .orElse(0.0d));
-    else return metrics.stream().mapToLong(l -> ((Counter) l.get(prefix + key)).getCount()).sum();
   }
 
   public static void verifySecurityStatus(

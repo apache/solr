@@ -20,8 +20,6 @@ import static org.apache.solr.search.TestRecovery.VersionProvider.getNextVersion
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 import static org.apache.solr.util.SolrMatchers.subListMatches;
 
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
 import java.io.RandomAccessFile;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -43,7 +41,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.UpdateHandler;
@@ -98,13 +95,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
     }
 
     deleteCore();
-  }
-
-  private Map<String, Metric> getMetrics() {
-    SolrMetricManager manager = h.getCoreContainer().getMetricManager();
-    MetricRegistry registry =
-        manager.registry(h.getCore().getCoreMetricManager().getRegistryName());
-    return registry.getMetrics();
   }
 
   @Test

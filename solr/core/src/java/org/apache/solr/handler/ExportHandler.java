@@ -85,12 +85,11 @@ public class ExportHandler extends SearchHandler {
     }
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    super.initializeMetrics(parentContext, attributes, scope);
-    this.writerMetricsPath = SolrMetricManager.mkName("writer", getCategory().toString(), scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    super.initializeMetrics(parentContext, attributes);
+    this.writerMetricsPath =
+        SolrMetricManager.mkName("writer", getCategory().toString(), "/export");
   }
 
   @Override

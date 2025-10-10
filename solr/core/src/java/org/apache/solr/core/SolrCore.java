@@ -1107,7 +1107,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
       this.solrMetricsContext = coreMetricManager.getSolrMetricsContext();
-      this.coreMetricManager.loadReporters();
 
       if (updateHandler == null) {
         directoryFactory = initDirectoryFactory();
@@ -1132,7 +1131,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       initCoreAttributes();
 
       // initialize core metrics
-      initializeMetrics(solrMetricsContext, coreAttributes, "");
+      initializeMetrics(solrMetricsContext, coreAttributes);
 
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
@@ -1142,8 +1141,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // also register it here for back-compat
       solrFieldCacheBean.initializeMetrics(
           solrMetricsContext,
-          coreAttributes.toBuilder().put(CATEGORY_ATTR, Category.CACHE.toString()).build(),
-          "");
+          coreAttributes.toBuilder().put(CATEGORY_ATTR, Category.CACHE.toString()).build());
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
@@ -1220,8 +1218,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
         ((SolrMetricProducer) directoryFactory)
-            // TODO SOLR-17458: Add Otel
-            .initializeMetrics(solrMetricsContext, Attributes.empty(), "directoryFactory");
+            .initializeMetrics(solrMetricsContext, Attributes.empty());
       }
 
       bufferUpdatesIfConstructing(coreDescriptor);
@@ -1334,8 +1331,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     final List<AutoCloseable> observables = new ArrayList<>();
 
     Attributes baseSearcherAttributes =
@@ -1690,7 +1686,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       }
       cache = new LocalStatsCache();
     }
-    cache.initializeMetrics(solrMetricsContext, coreAttributes, null);
+    cache.initializeMetrics(solrMetricsContext, coreAttributes);
     return cache;
   }
 

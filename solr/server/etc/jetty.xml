@@ -29,16 +29,6 @@
   <!-- Consult the javadoc of o.e.j.util.thread.QueuedThreadPool   -->
   <!-- for all configuration that may be set here.                 -->
   <!-- =========================================================== -->
-  <Arg name="threadPool">
-    <New id="threadPool" class="io.dropwizard.metrics.jetty12.InstrumentedQueuedThreadPool">
-      <Arg name="registry">
-        <Call id="solrJettyMetricRegistry" name="getOrCreate" class="com.codahale.metrics.SharedMetricRegistries">
-          <Arg>solr.jetty</Arg>
-        </Call>
-      </Arg>
-    </New>
-  </Arg>
-
   <Get name="ThreadPool">
     <Set name="minThreads" type="int"><Property name="solr.jetty.threads.min" default="10"/></Set>
     <Set name="maxThreads" type="int"><Property name="solr.jetty.threads.max" default="10000"/></Set>
@@ -178,14 +168,6 @@
                    </Set>
                  </New>
                </Item>
-               <Item>
-                 <New id="InstrumentedHandler" class="io.dropwizard.metrics.jetty12.ee10.InstrumentedEE10Handler">
-                   <Arg><Ref refid="solrJettyMetricRegistry"/></Arg>
-                   <Set name="handler">
-                     <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
-                   </Set>
-                 </New>
-               </Item>
              </Array>
            </Set>
          </New>
@@ -221,9 +203,9 @@
               </New>
             </Arg>
           </Call>
-          
+
           <!-- Add a customize step to the deployment lifecycle -->
-          <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class 
+          <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class
           <Call name="insertLifeCycleNode">
             <Arg>deployed</Arg>
             <Arg>starting</Arg>
@@ -237,9 +219,9 @@
             </Arg>
           </Call>
           -->
-          
+
         </New>
       </Arg>
     </Call>
-    
+
 </Configure>

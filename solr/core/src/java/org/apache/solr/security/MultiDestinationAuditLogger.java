@@ -130,10 +130,9 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    super.initializeMetrics(parentContext, attributes, scope);
-    plugins.forEach(p -> p.initializeMetrics(parentContext, Attributes.empty(), scope));
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    super.initializeMetrics(parentContext, attributes);
+    plugins.forEach(p -> p.initializeMetrics(parentContext, Attributes.empty()));
   }
 
   @Override

@@ -26,9 +26,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
@@ -188,9 +185,6 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
     final SolrMetricsContext metricsContext = mock(SolrMetricsContext.class);
 
     when(metricsContext.getRegistryName()).thenReturn("solr.core");
-    when(metricsContext.timer(any(), any())).thenReturn(mock(Timer.class));
-    when(metricsContext.meter(any(), any())).then(invocation -> mock(Meter.class));
-    when(metricsContext.counter(any(), any())).thenReturn(mock(Counter.class));
 
     when(metricsContext.longCounter(any(), any())).thenReturn(mockLongCounter);
     when(metricsContext.longHistogram(any(), any())).thenReturn(mockLongHistogram);

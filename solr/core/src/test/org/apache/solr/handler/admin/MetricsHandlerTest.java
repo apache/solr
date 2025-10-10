@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -277,11 +276,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void initializeMetrics(
-        SolrMetricsContext parentContext, Attributes attributes, String scope) {
-      super.initializeMetrics(parentContext, attributes, scope);
-      MetricsMap metrics = new MetricsMap(map -> gaugevals.forEach((k, v) -> map.putNoEx(k, v)));
-      solrMetricsContext.gauge(metrics, true, "dumphandlergauge", getCategory().toString(), scope);
+    public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+      super.initializeMetrics(parentContext, attributes);
     }
 
     @Override

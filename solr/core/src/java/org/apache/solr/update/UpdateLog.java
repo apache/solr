@@ -627,8 +627,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     final List<AutoCloseable> observables = new ArrayList<>();
     solrMetricsContext = parentContext.getChildContext(this);
 
@@ -661,7 +660,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     toClose = Collections.unmodifiableList(observables);
 
-    solrMetricsContext.gauge(() -> state.getValue(), true, "state", scope);
     observables.add(
         solrMetricsContext.observableLongGauge(
             "solr_core_update_log_state",

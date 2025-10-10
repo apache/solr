@@ -144,8 +144,7 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     Attributes attrsWithCategory =
         Attributes.builder()

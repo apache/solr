@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.SearchComponent;
@@ -59,14 +58,12 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4 {
     int checked = 0;
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     String registry = h.getCore().getCoreMetricManager().getRegistryName();
-    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
-    String scope = TestUtil.randomSimpleString(random(), 2, 10);
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry);
     for (Class<?> clazz : classes) {
       if (SolrInfoBean.class.isAssignableFrom(clazz)) {
         try {
           SolrInfoBean info = clazz.asSubclass(SolrInfoBean.class).getConstructor().newInstance();
-          // TODO SOLR-17458: Fix test later
-          info.initializeMetrics(solrMetricsContext, Attributes.empty(), scope);
+          info.initializeMetrics(solrMetricsContext, Attributes.empty());
 
           // System.out.println( info.getClass() );
           assertNotNull(info.getClass().getCanonicalName(), info.getName());

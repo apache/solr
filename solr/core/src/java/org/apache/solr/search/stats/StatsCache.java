@@ -328,8 +328,7 @@ public abstract class StatsCache implements PluginInfoInitialized, SolrInfoBean 
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext solrMetricsContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
     this.solrMetricsContext = solrMetricsContext;
     var cacheBaseAttribute =
         attributes.toBuilder()

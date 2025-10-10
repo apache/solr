@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
@@ -27,12 +26,6 @@ public final class MockSolrMetricsContextFactory {
     Timer mockTimer = mock(Timer.class);
     Timer.Context mockTimerContext = mock(Timer.Context.class);
     when(mockTimer.time()).thenReturn(mockTimerContext);
-    when(mockChildContext.timer(anyString(), anyString(), anyString(), anyString()))
-        .thenReturn(mockTimer);
-
-    Counter mockCounter = mock(Counter.class);
-    when(mockChildContext.counter(anyString(), anyString(), anyString(), anyString()))
-        .thenReturn(mockCounter);
 
     LongHistogram mockLongHistogram = mock(LongHistogram.class);
     when(mockChildContext.longHistogram(anyString(), anyString(), any(OtelUnit.class)))

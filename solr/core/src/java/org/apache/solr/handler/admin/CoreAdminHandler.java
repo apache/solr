@@ -128,9 +128,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    super.initializeMetrics(parentContext, attributes, scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    super.initializeMetrics(parentContext, attributes);
     coreAdminAsyncTracker.standardExecutor =
         MetricUtils.instrumentedExecutorService(
             coreAdminAsyncTracker.standardExecutor,

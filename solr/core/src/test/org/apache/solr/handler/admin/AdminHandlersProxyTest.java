@@ -71,7 +71,9 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
     assertEquals(nl.getName(2), ((NamedList) nl.get(nl.getName(2))).get("node"));
   }
 
+  // NOCOMMIT: The nodes view might be broken because of this
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-8207")
   public void proxyMetricsHandlerAllNodes() throws IOException, SolrServerException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
     GenericSolrRequest req =

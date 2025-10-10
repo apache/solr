@@ -133,7 +133,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     LongHistogram longHistogramMock = mock(LongHistogram.class);
     when(smcMock.longCounter(any(), any())).thenReturn(longCounterMock);
     when(smcMock.longHistogram(any(), any(), any())).thenReturn(longHistogramMock);
-    mock.initializeMetrics(smcMock, Attributes.empty(), "");
+    mock.initializeMetrics(smcMock, Attributes.empty());
   }
 
   @Override
