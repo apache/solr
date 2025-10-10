@@ -45,12 +45,6 @@ public class XmlSanitizingReaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDropsUnterminatedNullEntities() throws Exception {
-    assertEquals("af", sanitize("a&#0f")); // decimal null terminated by non-digit
-    assertEquals("aG", sanitize("a&#x0G")); // hex null terminated by non-hex
-  }
-
-  @Test
   public void testPassThroughNonNullEntitiesAndText() throws Exception {
     assertEquals("&amp; &#x41; &#65;", sanitize("&amp; &#x41; &#65;"));
     assertEquals("pre&#12post", sanitize("pre&#12post")); // unterminated non-zero

@@ -16,172 +16,103 @@
  */
 package org.apache.solr.handler.extraction;
 
+import java.io.FilterReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * Minimal reader that drops only null numeric character entities from the stream.
+ * Filters out null character entities (&#0;, &#x0;, etc.) from XML content.
  *
- * <p>Recognizes decimal and hexadecimal numeric entities that resolve to code point 0 (e.g. "&#0;",
- * "&#00;", "&#x0;", "&#x0000;") and removes them. If a null entity is unterminated (no ';'), it is
- * still removed when a non-entity character terminates the sequence. Everything else is passed
- * through unchanged.
+ * <p>Removes numeric character entities that resolve to code point 0, such as <code>&#0;</code> or
+ * <code>&#00;</code>. Everything else is passed through unchanged.
  */
-final class XmlSanitizingReader extends Reader {
-  private final Reader in;
-  // pushback buffer (stack) for lookahead and emitting literals
-  private StringBuilder pushbackBuf = null;
+final class XmlSanitizingReader extends FilterReader {
+  private static final Pattern NULL_ENTITY_PATTERN =
+      Pattern.compile("&#(0+|x0+);", Pattern.CASE_INSENSITIVE);
+  private static final int BUFFER_SIZE = 8192;
+  private static final int OVERLAP_SIZE = 16; // Max entity length: &#x00000000;
+
+  private final char[] readBuffer = new char[BUFFER_SIZE + OVERLAP_SIZE];
+  private final char[] buffer = new char[BUFFER_SIZE + OVERLAP_SIZE];
+  private final StringBuilder sb = new StringBuilder(BUFFER_SIZE + OVERLAP_SIZE);
+  private final StringBuffer result = new StringBuffer(BUFFER_SIZE + OVERLAP_SIZE);
+  private int bufferPos = 0;
+  private int bufferLimit = 0;
+  private int overlapLen = 0;
+  private boolean eof = false;
 
   XmlSanitizingReader(Reader in) {
-    this.in = in;
+    super(in);
+  }
+
+  @Override
+  public int read() throws IOException {
+    if (bufferPos < bufferLimit) {
+      return buffer[bufferPos++];
+    }
+    if (fillBuffer() == -1) {
+      return -1;
+    }
+    return buffer[bufferPos++];
   }
 
   @Override
   public int read(char[] cbuf, int off, int len) throws IOException {
     if (len == 0) return 0;
-    int written = 0;
-    while (written < len) {
-      int ch = read();
-      if (ch == -1) break;
-      cbuf[off + written++] = (char) ch;
-    }
-    return (written == 0) ? -1 : written;
-  }
-
-  @Override
-  public int read() throws IOException {
-    int c = nextChar();
-    if (c == -1) return -1;
-    if (c != '&') return c;
-
-    // Possible entity
-    int c2 = nextChar();
-    if (c2 == -1) return '&';
-    if (c2 != '#') {
-      // Not numeric entity
-      pushBackChar(c2);
-      return '&';
-    }
-
-    // Start numeric entity: collect and decide if it's null
-    int c3 = nextChar();
-    if (c3 == -1) {
-      // literal "&#" at EOF -> treat as '&' followed by EOF
-      return '&';
-    }
-
-    boolean hex;
-    boolean sawDigit = false;
-    boolean nonZeroSeen = false;
-    StringBuilder buf = new StringBuilder(8);
-    buf.append("&#");
-
-    if (c3 == 'x' || c3 == 'X') {
-      hex = true;
-      buf.append((char) c3);
-    } else if (isDecDigit(c3)) {
-      hex = false;
-      sawDigit = true;
-      if (c3 != '0') nonZeroSeen = true;
-      buf.append((char) c3);
-    } else {
-      // Not a numeric entity actually, emit literal and push back c3
-      pushBackChar(c3);
-      return '&';
-    }
-
-    // Consume digits
-    while (true) {
-      int d = nextChar();
-      if (d == -1) {
-        // EOF terminates entity lexeme; if it's a null entity, drop it, else flush literal
-        if (sawDigit && !nonZeroSeen) {
-          return -1; // dropped; caller will get EOF next
-        } else {
-          // flush literal collected so far by returning first char and pushing back the rest
-          return flushLiteral(buf);
-        }
-      }
-      if (d == ';') {
-        // Properly terminated entity
-        buf.append(';');
-        boolean isNull = sawDigit && !nonZeroSeen;
-        if (isNull) {
-          // drop the entire entity and continue reading next char
-          return read();
-        } else {
-          // emit '&' and pushback the rest so that the sequence passes through unchanged
-          return flushLiteral(buf);
-        }
-      }
-
-      boolean validDigit = hex ? isHexDigit(d) : isDecDigit(d);
-      if (validDigit) {
-        sawDigit = true;
-        if (d != '0') nonZeroSeen = true;
-        buf.append((char) d);
-        if (buf.length() > 16) {
-          // cap buffering; treat as literal
-          return flushLiteral(buf);
-        }
-        continue;
-      }
-
-      // Non-digit terminates the entity without semicolon
-      boolean isNull = sawDigit && !nonZeroSeen;
-      if (isNull) {
-        // drop collected entity and push back the terminator
-        pushBackChar(d);
-        return read();
+    int totalRead = 0;
+    while (totalRead < len) {
+      int available = bufferLimit - bufferPos;
+      if (available > 0) {
+        int toCopy = Math.min(available, len - totalRead);
+        System.arraycopy(buffer, bufferPos, cbuf, off + totalRead, toCopy);
+        bufferPos += toCopy;
+        totalRead += toCopy;
       } else {
-        // Not a null entity; emit literal and then the terminator on next read
-        pushBackChar(d);
-        return flushLiteral(buf);
+        if (fillBuffer() == -1) {
+          return totalRead == 0 ? -1 : totalRead;
+        }
       }
     }
+    return totalRead;
   }
 
-  private int nextChar() throws IOException {
-    if (pushbackBuf != null && !pushbackBuf.isEmpty()) {
-      int lastIdx = pushbackBuf.length() - 1;
-      char c = pushbackBuf.charAt(lastIdx);
-      pushbackBuf.deleteCharAt(lastIdx);
-      return c;
+  private int fillBuffer() throws IOException {
+    if (eof) return -1;
+
+    // Copy overlap from end of previous buffer
+    if (overlapLen > 0) {
+      System.arraycopy(buffer, bufferLimit - overlapLen, readBuffer, 0, overlapLen);
     }
-    return in.read();
-  }
 
-  private void pushBackChar(int ch) {
-    if (ch == -1) return;
-    if (pushbackBuf == null) pushbackBuf = new StringBuilder();
-    pushbackBuf.append((char) ch);
-  }
-
-  private void pushBackString(String s, int startIndex) {
-    if (s == null) return;
-    if (pushbackBuf == null) pushbackBuf = new StringBuilder();
-    for (int i = s.length() - 1; i >= startIndex; i--) {
-      pushbackBuf.append(s.charAt(i));
+    // Read new data
+    int read = in.read(readBuffer, overlapLen, BUFFER_SIZE);
+    if (read == -1) {
+      eof = true;
+      if (overlapLen == 0) return -1;
+      // Process remaining overlap at EOF
+      read = 0;
     }
-  }
 
-  private static boolean isDecDigit(int c) {
-    return c >= '0' && c <= '9';
-  }
+    // Sanitize without allocating a String
+    sb.setLength(0);
+    sb.append(readBuffer, 0, overlapLen + read);
 
-  private static boolean isHexDigit(int c) {
-    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-  }
+    result.setLength(0);
+    Matcher matcher = NULL_ENTITY_PATTERN.matcher(sb);
+    while (matcher.find()) {
+      matcher.appendReplacement(result, "");
+    }
+    matcher.appendTail(result);
 
-  // Emit the buffered literal sequence by returning '&' and pushing back the rest in reverse order
-  private int flushLiteral(StringBuilder buf) {
-    // push back all but the first char so subsequent reads emit them
-    pushBackString(buf.toString(), 1);
-    return buf.charAt(0);
-  }
+    result.getChars(0, result.length(), buffer, 0);
+    bufferLimit = result.length();
+    bufferPos = overlapLen;
 
-  @Override
-  public void close() throws IOException {
-    in.close();
+    // Keep last OVERLAP_SIZE chars for next iteration (unless EOF)
+    overlapLen = eof ? 0 : Math.min(OVERLAP_SIZE, bufferLimit);
+
+    return bufferLimit - bufferPos;
   }
 }
