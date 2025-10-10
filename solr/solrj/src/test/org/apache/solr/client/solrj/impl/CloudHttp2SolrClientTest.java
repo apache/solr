@@ -260,55 +260,52 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     // This ensures CH2SC is caching cluster status by counting the number of logged calls to the
     // admin endpoint. Too many calls to CLUSTERSTATUS might mean insufficient caching and
     // performance regressions!
-    try {
-      // BaseHttpClusterStateProvider has a background job that pre-fetches data from CLUSTERSTATUS
-      // on timed intervals.  This can pollute this test, so we set the interval very high to
-      // prevent it from running.
-      System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "" + Integer.MAX_VALUE);
 
-      String collectionName = "HTTPCSPTEST";
-      CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
-          .process(cluster.getSolrClient());
-      cluster.waitForActiveCollection(collectionName, 2, 2);
+    // BaseHttpClusterStateProvider has a background job that pre-fetches data from CLUSTERSTATUS
+    // on timed intervals.  This can pollute this test, so we set the interval very high to
+    // prevent it from running.
+    System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "" + Integer.MAX_VALUE);
 
-      try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
-          CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
-        solrClient.getClusterStateProvider().getLiveNodes(); // talks to Solr
+    String collectionName = "HTTPCSPTEST";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 2, 2);
 
-        assertEquals(1, adminLogs.getCount());
-        assertTrue(
-            adminLogs
-                .pollMessage()
-                .contains(
-                    "path=/admin/collections params={prs=true&liveNodes=true&action"
-                        + "=CLUSTERSTATUS&includeAll=false"));
+    try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
+        CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
+      solrClient.getClusterStateProvider().getLiveNodes(); // talks to Solr
 
-        SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
-        solrClient.add(collectionName, doc);
+      assertEquals(1, adminLogs.getCount());
+      assertTrue(
+          adminLogs
+              .pollMessage()
+              .contains(
+                  "path=/admin/collections params={prs=true&liveNodes=true&action"
+                      + "=CLUSTERSTATUS&includeAll=false"));
 
-        // getCount seems to return a cumulative count, but add() results in only 1 additional admin
-        // request to fetch CLUSTERSTATUS for the collection
-        assertEquals(2, adminLogs.getCount());
-        assertTrue(
-            adminLogs
-                .pollMessage()
-                .contains(
-                    "path=/admin/collections "
-                        + "params={prs=true&action=CLUSTERSTATUS&includeAll=false"));
+      SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
+      solrClient.add(collectionName, doc);
 
-        solrClient.commit(collectionName);
+      // getCount seems to return a cumulative count, but add() results in only 1 additional admin
+      // request to fetch CLUSTERSTATUS for the collection
+      assertEquals(2, adminLogs.getCount());
+      assertTrue(
+          adminLogs
+              .pollMessage()
+              .contains(
+                  "path=/admin/collections "
+                      + "params={prs=true&action=CLUSTERSTATUS&includeAll=false"));
+
+      solrClient.commit(collectionName);
+      // No additional admin requests sent
+      assertEquals(2, adminLogs.getCount());
+
+      for (int i = 0; i < 3; i++) {
+        assertEquals(
+            1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
         // No additional admin requests sent
         assertEquals(2, adminLogs.getCount());
-
-        for (int i = 0; i < 3; i++) {
-          assertEquals(
-              1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
-          // No additional admin requests sent
-          assertEquals(2, adminLogs.getCount());
-        }
       }
-    } finally {
-      System.clearProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS);
     }
   }
 

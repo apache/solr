@@ -45,7 +45,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -87,11 +86,6 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
         .configure();
     cluster.waitForAllNodes(30);
     System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "1");
-  }
-
-  @AfterClass
-  public static void clearSystemProperty() {
-    System.clearProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS);
   }
 
   @After
