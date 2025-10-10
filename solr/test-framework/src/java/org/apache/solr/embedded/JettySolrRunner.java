@@ -16,9 +16,7 @@
  */
 package org.apache.solr.embedded;
 
-import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
+import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -40,7 +38,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -688,22 +686,15 @@ public class JettySolrRunner {
 
       Set<String> registryNames = metricsManager.registryNames();
       for (String registryName : registryNames) {
-        MetricRegistry metricsRegisty = new MetricRegistry();
-        ;
-        try (PrintStream ps =
-            outputDirectory == null
-                ? new PrintStream(OutputStream.nullOutputStream(), false, StandardCharsets.UTF_8)
-                : new PrintStream(
-                    outputDirectory.resolve(registryName + "_" + fileName).toString(),
-                    StandardCharsets.UTF_8)) {
-          ConsoleReporter reporter =
-              ConsoleReporter.forRegistry(metricsRegisty)
-                  .convertRatesTo(TimeUnit.SECONDS)
-                  .convertDurationsTo(TimeUnit.MILLISECONDS)
-                  .filter(MetricFilter.ALL)
-                  .outputTo(ps)
-                  .build();
-          reporter.report();
+        var prometheusReader = metricsManager.getPrometheusMetricReader(registryName);
+        if (prometheusReader != null) {
+          try (OutputStream os =
+              outputDirectory == null
+                  ? OutputStream.nullOutputStream()
+                  : Files.newOutputStream(
+                      outputDirectory.resolve(registryName + "_" + fileName))) {
+            new PrometheusTextFormatWriter(false).write(os, prometheusReader.collect());
+          }
         }
       }
 
