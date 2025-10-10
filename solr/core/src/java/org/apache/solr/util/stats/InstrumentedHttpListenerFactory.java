@@ -129,7 +129,7 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
     this.requestTimer =
         new AttributedLongTimer(
             solrMetricsContext.longHistogram(
-                "http_client_request_duration",
+                "solr_client_request_duration",
                 "HTTP client request duration",
                 OtelUnit.MILLISECONDS),
             attributes);

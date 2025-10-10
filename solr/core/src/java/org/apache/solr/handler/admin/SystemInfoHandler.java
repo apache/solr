@@ -54,6 +54,7 @@ import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -215,6 +216,17 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
     info.add(NAME, os.getName()); // add at least this one
+
+    // add remaining ones dynamically using Java Beans API
+    // also those from JVM implementation-specific classes
+    MetricUtils.addMXBeanMetrics(
+        os,
+        MetricUtils.OS_MXBEAN_CLASSES,
+        (name, value) -> {
+          if (info.get(name) == null) {
+            info.add(name, value);
+          }
+        });
 
     return info;
   }

@@ -38,7 +38,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -691,8 +690,7 @@ public class JettySolrRunner {
           try (OutputStream os =
               outputDirectory == null
                   ? OutputStream.nullOutputStream()
-                  : Files.newOutputStream(
-                      outputDirectory.resolve(registryName + "_" + fileName))) {
+                  : Files.newOutputStream(outputDirectory.resolve(registryName + "_" + fileName))) {
             new PrometheusTextFormatWriter(false).write(os, prometheusReader.collect());
           }
         }

@@ -19,11 +19,18 @@ package org.apache.solr.util.stats;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.lang.invoke.MethodHandles;
+import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.PlatformManagedObject;
+import java.lang.reflect.Method;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
@@ -108,6 +115,65 @@ public class MetricUtils {
     lst.add("999thPcRequestTime", nsToMs(snapshot.get999thPercentile()));
   }
 
+  /**
+   * Creates a set of metrics (gauges) that correspond to available bean properties for the provided
+   * MXBean.
+   *
+   * @param obj an instance of MXBean
+   * @param intf MXBean interface, one of {@link PlatformManagedObject}-s
+   * @param consumer consumer for created names and metrics
+   * @param <T> formal type
+   */
+  public static <T extends PlatformManagedObject> void addMXBeanMetrics(
+      T obj, Class<? extends T> intf, BiConsumer<String, Object> consumer) {
+    if (intf.isInstance(obj)) {
+      BeanInfo beanInfo =
+          beanInfos.computeIfAbsent(
+              intf,
+              clazz -> {
+                try {
+                  return Introspector.getBeanInfo(
+                      clazz, clazz.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
+
+                } catch (IntrospectionException e) {
+                  log.warn("Unable to fetch properties of MXBean {}", obj.getClass().getName());
+                  return null;
+                }
+              });
+
+      // if BeanInfo retrieval failed, return early
+      if (beanInfo == null) {
+        return;
+      }
+      for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
+        try {
+          Method readMethod = desc.getReadMethod();
+          if (readMethod == null) {
+            continue; // skip properties without a read method
+          }
+
+          final String name = desc.getName();
+          Object value = readMethod.invoke(obj);
+          consumer.accept(name, value);
+        } catch (Exception e) {
+          // didn't work, skip it...
+        }
+      }
+    }
+  }
+
+  /**
+   * These are well-known implementations of {@link java.lang.management.OperatingSystemMXBean}.
+   * Some of them provide additional useful properties beyond those declared by the interface.
+   */
+  public static String[] OS_MXBEAN_CLASSES =
+      new String[] {
+        OperatingSystemMXBean.class.getName(),
+        "com.sun.management.OperatingSystemMXBean",
+        "com.sun.management.UnixOperatingSystemMXBean",
+        "com.ibm.lang.management.OperatingSystemMXBean"
+      };
+
   /** Returns an instrumented wrapper over the given executor service. */
   public static ExecutorService instrumentedExecutorService(
       ExecutorService delegate,
@@ -115,5 +181,28 @@ public class MetricUtils {
       SolrInfoBean.Category category,
       String name) {
     return new OtelInstrumentedExecutorService(delegate, ctx, category, name);
+  }
+
+  /**
+   * Creates a set of metrics (gauges) that correspond to available bean properties for the provided
+   * MXBean.
+   *
+   * @param obj an instance of MXBean
+   * @param interfaces interfaces that it may implement. Each interface will be tried in turn, and
+   *     only if it exists and if it contains unique properties then they will be added as metrics.
+   * @param consumer consumer for created names and metrics
+   * @param <T> formal type
+   */
+  public static <T extends PlatformManagedObject> void addMXBeanMetrics(
+      T obj, String[] interfaces, BiConsumer<String, Object> consumer) {
+    for (String clazz : interfaces) {
+      try {
+        final Class<? extends PlatformManagedObject> intf =
+            Class.forName(clazz).asSubclass(PlatformManagedObject.class);
+        MetricUtils.addMXBeanMetrics(obj, intf, consumer);
+      } catch (ClassNotFoundException e) {
+        // ignore
+      }
+    }
   }
 }

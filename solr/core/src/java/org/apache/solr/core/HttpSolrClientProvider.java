@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -67,8 +66,6 @@ final class HttpSolrClientProvider implements AutoCloseable {
 
   private void initializeMetrics(SolrMetricsContext parentContext) {
     var solrMetricsContext = parentContext.getChildContext(this);
-    String expandedScope =
-        SolrMetricManager.mkName(METRIC_SCOPE_NAME, SolrInfoBean.Category.HTTP.name());
     trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty());
   }
 
