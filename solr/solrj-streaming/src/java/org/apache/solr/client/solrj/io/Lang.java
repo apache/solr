@@ -272,6 +272,7 @@ import org.apache.solr.client.solrj.io.stream.Facet2DStream;
 import org.apache.solr.client.solrj.io.stream.FacetStream;
 import org.apache.solr.client.solrj.io.stream.FeaturesSelectionStream;
 import org.apache.solr.client.solrj.io.stream.FetchStream;
+import org.apache.solr.client.solrj.io.stream.FullOuterJoinStream;
 import org.apache.solr.client.solrj.io.stream.GetStream;
 import org.apache.solr.client.solrj.io.stream.HashJoinStream;
 import org.apache.solr.client.solrj.io.stream.HashRollupStream;
@@ -355,6 +356,7 @@ public class Lang {
         .withFunctionName("stats", StatsStream.class)
         .withFunctionName("innerJoin", InnerJoinStream.class)
         .withFunctionName("leftOuterJoin", LeftOuterJoinStream.class)
+        .withFunctionName("fullOuterJoin", FullOuterJoinStream.class)
         .withFunctionName("hashJoin", HashJoinStream.class)
         .withFunctionName("outerHashJoin", OuterHashJoinStream.class)
         .withFunctionName("intersect", IntersectStream.class)
