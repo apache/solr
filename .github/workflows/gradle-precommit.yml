@@ -25,4 +25,4 @@ jobs:
       run: ./gradlew check -x test -Ptask.times=true --continue
 
     - name: Validate Gradle wrapper
-      uses: gradle/actions/wrapper-validation@v4
+      uses: gradle/actions/wrapper-validation@v5
