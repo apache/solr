@@ -45,6 +45,7 @@ public class SolrException extends RuntimeException {
     TOO_MANY_REQUESTS(429),
     SERVER_ERROR(500),
     SERVICE_UNAVAILABLE(503),
+    GATEWAY_TIMEOUT(504),
     INVALID_STATE(510),
     UNKNOWN(0);
     public final int code;
