@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider.SYS_PROP_CACHE_TIMEOUT_SECONDS;
 import static org.apache.solr.client.solrj.impl.CloudSolrClient.RouteResponse;
 
 import java.io.IOException;
@@ -39,6 +40,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -255,6 +257,14 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @Test
   @LogLevel("org.apache.solr.servlet.HttpSolrCall=DEBUG")
   public void testHttpCspPerf() throws Exception {
+    // This ensures CH2SC is caching cluster status by counting the number of logged calls to the
+    // admin endpoint. Too many calls to CLUSTERSTATUS might mean insufficient caching and
+    // performance regressions!
+
+    // BaseHttpClusterStateProvider has a background job that pre-fetches data from CLUSTERSTATUS
+    // on timed intervals.  This can pollute this test, so we set the interval very high to
+    // prevent it from running.
+    System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "" + Integer.MAX_VALUE);
 
     String collectionName = "HTTPCSPTEST";
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
@@ -664,12 +674,14 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("qt", "/admin/mbeans");
       params.set("stats", "true");
       params.set("key", key);
       params.set("cat", category);
       // use generic request to avoid extra processing of queries
-      QueryRequest req = new QueryRequest(params);
+      var req =
+          new GenericSolrRequest(
+                  SolrRequest.METHOD.GET, "/admin/mbeans", SolrRequestType.ADMIN, params)
+              .setRequiresCollection(true);
       resp = client.request(req);
     }
     String name;
@@ -734,7 +746,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.set("action", "foobar"); // this should cause an error
-          params.set("qt", adminPath);
 
           var request =
               new GenericSolrRequest(METHOD.GET, adminPath, SolrRequestType.ADMIN, params);

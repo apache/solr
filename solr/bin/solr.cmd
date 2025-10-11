@@ -90,7 +90,10 @@ IF NOT DEFINED SOLR_SSL_RELOAD_ENABLED (
   set "SOLR_SSL_RELOAD_ENABLED=true"
 )
 
-REM Enable java security manager by default (limiting filesystem access and other things)
+REM Enable java security manager by default for Java 23 and before (limiting filesystem access and other things)
+IF !JAVA_MAJOR_VERSION! GEQ 24 (
+  set SOLR_SECURITY_MANAGER_ENABLED=false
+)
 IF NOT DEFINED SOLR_SECURITY_MANAGER_ENABLED (
   set SOLR_SECURITY_MANAGER_ENABLED=true
 )
@@ -254,7 +257,7 @@ IF "%1"=="auth" goto set_script_cmd
 REM Handle all other commands by simply running SolrCLI
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI %*
 if errorlevel 1 (
    exit /b 1
@@ -743,7 +746,7 @@ IF NOT "%EXAMPLE%"=="" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -Dsolr.install.symDir="%SOLR_TIP%" ^
-    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+    -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.cli.SolrCLI run_example --script "%SDIR%\solr.cmd" -e %EXAMPLE% --server-dir "%SOLR_SERVER_DIR%" --jvm-opts "%SOLR_ADDL_ARGS%" ^
     --url-scheme !SOLR_URL_SCHEME! !PASS_TO_RUN_EXAMPLE!
 
@@ -878,10 +881,6 @@ IF DEFINED SOLR_JETTY_HOST (
   set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.jetty.host=%SOLR_JETTY_HOST%"
 )
 
-IF DEFINED SOLR_ZK_EMBEDDED_HOST (
-  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.zk.embedded.host=%SOLR_ZK_EMBEDDED_HOST%"
-)
-
 REM Make sure Solr is not running using netstat
 For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
   IF NOT "%%k"=="0" (
@@ -915,7 +914,7 @@ IF "%SOLR_MODE%"=="" set SOLR_MODE=solrcloud
 IF "%SOLR_MODE%"=="solrcloud" (
   IF "%ZK_CLIENT_TIMEOUT%"=="" set "ZK_CLIENT_TIMEOUT=30000"
 
-  set "CLOUD_MODE_OPTS=-DzkClientTimeout=!ZK_CLIENT_TIMEOUT!"
+  set "CLOUD_MODE_OPTS=-Dsolr.zookeeper.client.timeout=!ZK_CLIENT_TIMEOUT!"
 
   IF NOT "%ZK_HOST%"=="" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
@@ -924,8 +923,8 @@ IF "%SOLR_MODE%"=="solrcloud" (
       set "SCRIPT_ERROR=ZK_HOST is not set and Solr port is %SOLR_PORT%, which would result in an invalid embedded Zookeeper port!"
       goto err
     )
-    IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun
-    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkRun"
+    IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded Zookeeper using -Dsolr.zookeeper.server.enabled
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dsolr.zookeeper.server.enabled=true"
   )
 
   IF NOT "%ZK_CREATE_CHROOT%"=="" (
@@ -1141,7 +1140,7 @@ IF "%FG%"=="1" (
   REM now wait to see Solr come online ...
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+    -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.cli.SolrCLI status --max-wait-secs !SOLR_START_WAIT!
   IF NOT "!ERRORLEVEL!"=="0" (
       set "SCRIPT_ERROR=Solr did not start or was not reachable. Check the logs for errors."
@@ -1189,7 +1188,7 @@ IF NOT EXIST "%SOLR_HOME%\" (
 
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+    -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.cli.SolrCLI auth %AUTH_PARAMS% --solr-include-file "%SOLR_INCLUDE%" --auth-conf-dir "%SOLR_HOME%"
 goto done
 

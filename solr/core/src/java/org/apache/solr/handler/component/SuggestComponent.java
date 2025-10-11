@@ -216,8 +216,9 @@ public class SuggestComponent extends SearchComponent
   public int distributedProcess(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     log.info("SuggestComponent distributedProcess with : {}", params);
-    if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) return ResponseBuilder.STAGE_EXECUTE_QUERY;
-    if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_EXECUTE_QUERY)
+      return ResponseBuilder.STAGE_EXECUTE_QUERY;
+    if (rb.getStage() == ResponseBuilder.STAGE_EXECUTE_QUERY) {
       ShardRequest sreq = new ShardRequest();
       sreq.purpose = ShardRequest.PURPOSE_GET_TOP_IDS;
       sreq.params = new ModifiableSolrParams(rb.req.getParams());
@@ -296,7 +297,7 @@ public class SuggestComponent extends SearchComponent
   public void finishStage(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     log.info("SuggestComponent finishStage with : {}", params);
-    if (!params.getBool(COMPONENT_NAME, false) || rb.stage != ResponseBuilder.STAGE_GET_FIELDS)
+    if (!params.getBool(COMPONENT_NAME, false) || rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS)
       return;
     int count = params.getInt(SUGGEST_COUNT, 1);
 

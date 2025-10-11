@@ -25,39 +25,34 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
-import java.util.Set;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.TestHarness;
-import org.noggit.JSONUtil;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,15 +61,6 @@ import org.slf4j.LoggerFactory;
 public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @SafeVarargs
-  public static <T> Set<T> set(T... a) {
-    LinkedHashSet<T> s = new LinkedHashSet<>();
-    for (T t : a) {
-      s.add(t);
-    }
-    return s;
-  }
 
   @SuppressWarnings({"unchecked"})
   public static <T> T rand(T... vals) {
@@ -102,45 +88,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
     }
     return result;
-  }
-
-  @SuppressWarnings({"unchecked"})
-  public static Object createDocObjects(
-      @SuppressWarnings({"rawtypes"}) Map<Comparable, Doc> fullModel,
-      @SuppressWarnings({"rawtypes"}) Comparator sort,
-      int rows,
-      Collection<String> fieldNames) {
-    List<Doc> docList = new ArrayList<>(fullModel.values());
-    docList.sort(sort);
-    @SuppressWarnings({"rawtypes"})
-    List sortedDocs = new ArrayList(rows);
-    for (Doc doc : docList) {
-      if (sortedDocs.size() >= rows) break;
-      Map<String, Object> odoc = toObject(doc, h.getCore().getLatestSchema(), fieldNames);
-      sortedDocs.add(toObject(doc, h.getCore().getLatestSchema(), fieldNames));
-    }
-    return sortedDocs;
-  }
-
-  public static void compare(
-      SolrQueryRequest req,
-      String path,
-      Object model,
-      @SuppressWarnings({"rawtypes"}) Map<Comparable, Doc> fullModel)
-      throws Exception {
-    String strResponse = h.query(req);
-
-    Object realResponse = ObjectBuilder.fromJSON(strResponse);
-    String err = JSONTestUtil.matchObj(path, realResponse, model);
-    if (err != null) {
-      String msg = "RESPONSE MISMATCH: {}\n\trequest={}\n\tresult={}\n\texpected={}\n\tmodel={}";
-      log.error(msg, err, req, strResponse, JSONUtil.toJSON(model), fullModel);
-
-      // re-execute the request... good for putting a breakpoint here for debugging
-      String rsp = h.query(req);
-
-      fail(err);
-    }
   }
 
   /** Pass "null" for the client to query the local server */
@@ -209,12 +156,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     }
   }
 
-  public static void clearQueryCache() {
-    SolrQueryRequest req = req();
-    req.getSearcher();
-    req.close();
-  }
-
   public static String getQueryResponse(SolrClient client, String wt, SolrParams params)
       throws Exception {
     if (client == null) {
@@ -236,9 +177,9 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       NamedList<Object> rsp = client.request(query);
       return Utils.toJSONString(rsp);
     } else {
-      query.setResponseParser(new NoOpResponseParser(wt));
+      query.setResponseParser(new InputStreamResponseParser(wt));
       NamedList<Object> rsp = client.request(query);
-      return (String) rsp.get("response");
+      return InputStreamResponseParser.consumeResponseToString(rsp);
     }
   }
 
@@ -366,15 +307,14 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
     }
 
-    public void deleteByQuery(String query, ModifiableSolrParams params)
-        throws IOException, SolrServerException {
+    public void deleteByQuery(String query) throws IOException, SolrServerException {
       if (local()) {
-        assertU(delQ(query)); // todo - handle extra params
+        assertU(delQ(query));
         return;
       }
 
       for (SolrClient client : provider.all()) {
-        client.deleteByQuery(query); // todo - handle extra params
+        client.deleteByQuery(query);
       }
     }
   }
@@ -514,8 +454,8 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
       // If we want to run with allowlist, this must be explicitly set to true for the test
       // otherwise we disable the check
-      if (System.getProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST) == null) {
-        systemSetPropertySolrDisableUrlAllowList("true");
+      if (EnvUtils.getPropertyAsBool(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, null)) {
+        systemSetPropertyEnableUrlAllowList(false);
       }
 
       jetty.start();
@@ -539,14 +479,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       Path subHome = dstRoot.resolve(destCollection).resolve("conf");
       Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
       Files.copy(top.resolve(file), subHome.resolve(file));
-    }
-
-    public void copyConfigFile(Path dstRoot, String destCollection, String file) throws Exception {
-      if (!homeCreated) {
-        createHome();
-      }
-
-      SolrInstance.copyConfFile(dstRoot, destCollection, file);
     }
   }
 

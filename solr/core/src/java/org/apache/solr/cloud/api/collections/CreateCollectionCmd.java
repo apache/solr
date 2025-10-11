@@ -95,7 +95,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CollectionCommandContext ccc;
 
-  public static final String PRS_DEFAULT_PROP = "solr.prs.default";
+  public static final String PRS_DEFAULT_PROP = "solr.cloud.prs.enabled";
 
   public CreateCollectionCmd(CollectionCommandContext ccc) {
     this.ccc = ccc;
@@ -116,8 +116,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, prsDefault);
     if (log.isInfoEnabled()) {
       log.info(
-          "solr.prs.default : {} and collection prs : {}, isPRS : {}",
-          System.getProperty("solr.prs.default", null),
+          "solr.cloud.prs.enabled : {} and collection prs : {}, isPRS : {}",
+          prsDefault,
           message.getStr(CollectionStateProps.PER_REPLICA_STATE),
           isPRS);
     }

@@ -66,7 +66,7 @@ public class ZkCoreNodeProps {
 
   public static String getCoreUrl(String baseUrl, String coreName) {
     Objects.requireNonNull(baseUrl, "baseUrl must not be null");
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(baseUrl.length() + coreName.length() + 2);
     sb.append(baseUrl);
     if (!baseUrl.endsWith("/")) sb.append("/");
     sb.append(coreName != null ? coreName : "");

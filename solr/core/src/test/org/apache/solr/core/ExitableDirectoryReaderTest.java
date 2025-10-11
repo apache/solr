@@ -17,6 +17,7 @@
 package org.apache.solr.core;
 
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.search.CallerSpecificQueryLimit;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -69,11 +70,11 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     // create a limit that will not trip but will report calls to shouldExit()
     // NOTE: we need to use the inner class name to capture the calls
     String callerExpr = "ExitableTermsEnum:-1";
-    CallerSpecificQueryLimit queryLimit = new CallerSpecificQueryLimit(callerExpr);
+    CallerSpecificQueryLimit queryLimit = new CallerSpecificQueryLimit(Set.of(callerExpr));
     TestInjection.queryTimeout = queryLimit;
     String q = "name:a*";
     assertJQ(req("q", q), assertionString);
-    Map<String, Integer> callCounts = queryLimit.getCallCounts();
+    Map<String, Integer> callCounts = queryLimit.getCallerMatcher().getCallCounts();
     if (withExitableDirectoryReader) {
       assertTrue(
           "there should be some calls from ExitableTermsEnum: " + callCounts,
@@ -86,7 +87,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     // check that the limits are tripped in ExitableDirectoryReader if it's in use
     int maxCount = random().nextInt(10) + 1;
     callerExpr = "ExitableTermsEnum:" + maxCount;
-    queryLimit = new CallerSpecificQueryLimit(callerExpr);
+    queryLimit = new CallerSpecificQueryLimit(Set.of(callerExpr));
     TestInjection.queryTimeout = queryLimit;
     // avoid using the cache
     q = "name:b*";
@@ -95,7 +96,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     } else {
       assertJQ(req("q", q), assertionString);
     }
-    callCounts = queryLimit.getCallCounts();
+    callCounts = queryLimit.getCallerMatcher().getCallCounts();
     if (withExitableDirectoryReader) {
       assertTrue(
           "there should be at least " + maxCount + " calls from ExitableTermsEnum: " + callCounts,
