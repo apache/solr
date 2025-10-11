@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.search.CallerSpecificQueryLimit;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.TestInjection;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -109,9 +108,6 @@ public class ExitableDirectoryReaderSearch {
       miniClusterState.dumpCoreInfo();
     }
 
-    @Param({"false", "true"})
-    boolean useEDR;
-
     // this adds significant processing time to the checking of query limits
     // both to verify that it's actually used and to illustrate the impact of limit checking
     @Param({"false", "true"})
@@ -121,7 +117,6 @@ public class ExitableDirectoryReaderSearch {
 
     @Setup(Level.Iteration)
     public void setupQueries(MiniClusterState.MiniClusterBenchState state) throws Exception {
-      System.setProperty(SolrIndexSearcher.EXITABLE_READER_PROPERTY, String.valueOf(useEDR));
       if (verifyEDRInUse) {
         TestInjection.queryTimeout = new CallerSpecificQueryLimit(Set.of(matchExpression));
       }
@@ -139,7 +134,7 @@ public class ExitableDirectoryReaderSearch {
 
     @TearDown(Level.Iteration)
     public void tearDownTrial() throws Exception {
-      if (useEDR && verifyEDRInUse) {
+      if (verifyEDRInUse) {
         CallerSpecificQueryLimit queryLimit = (CallerSpecificQueryLimit) TestInjection.queryTimeout;
         if (queryLimit == null) {
           throw new RuntimeException("Missing setup!");
