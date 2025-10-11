@@ -18,15 +18,26 @@ package org.apache.solr.schema;
 
 import static org.hamcrest.core.Is.is;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.AbstractBadConfigTestBase;
+import org.apache.solr.handler.loader.JavabinLoader;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.vector.DenseVectorParser;
 import org.junit.Before;
 import org.junit.Test;
@@ -756,6 +767,73 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
           thrown.getCause().getCause().getMessage(),
           is(
               "incorrect vector element: '14.3'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
+    } finally {
+      deleteCore();
+    }
+  }
+
+  private void addDocWithJavaBin(SolrInputDocument doc) throws Exception {
+    UpdateRequest ur = new UpdateRequest();
+    ur.add(doc);
+
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    JavaBinUpdateRequestCodec codec = new JavaBinUpdateRequestCodec();
+    codec.marshal(ur, bos);
+
+    byte[] payload = bos.toByteArray();
+
+    ContentStreamBase.ByteArrayStream cs =
+        new ContentStreamBase.ByteArrayStream(payload, "application/javabin");
+
+    try (SolrQueryRequest sreq = req()) {
+      SolrQueryResponse srsp = new SolrQueryResponse();
+      UpdateRequestProcessorChain chain =
+          h.getCore().getUpdateProcessorChain(new ModifiableSolrParams());
+      try (UpdateRequestProcessor proc = chain.createProcessor(sreq, srsp)) {
+        new JavabinLoader().load(sreq, srsp, cs, proc);
+        proc.finish();
+      }
+      h.getCore().getUpdateHandler().commit(new CommitUpdateCommand(sreq, false));
+    }
+  }
+
+  @Test
+  public void testIndexingViaJavaBin() throws Exception {
+    try {
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+
+      int variant = random().nextInt(3);
+      Object vector;
+      String id;
+
+      switch (variant) {
+        case 0:
+          vector = new float[] {1.1f, 2.2f, 3.3f, 4.4f};
+          id = "pf_jb";
+          break;
+        case 1:
+          vector = new double[] {1.1d, 2.2d, 3.3d, 4.4d};
+          id = "pd_jb";
+          break;
+        default:
+          vector = Arrays.asList(1.1f, 2.2f, 3.3f, 4.4f);
+          id = "lf_jb";
+          break;
+      }
+
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", id);
+      doc.addField("vector", vector);
+
+      addDocWithJavaBin(doc);
+
+      assertJQ(
+          req("q", "id:" + id, "fl", "vector"), "/response/docs/[0]/vector==[1.1,2.2,3.3,4.4]");
+
+      assertJQ(
+          req("q", "{!knn f=vector topK=1}[1.1,2.2,3.3,4.4]", "fl", "id"),
+          "/response/numFound==1",
+          "/response/docs/[0]/id==\"" + id + "\"");
     } finally {
       deleteCore();
     }
