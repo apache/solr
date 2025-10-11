@@ -10,5 +10,12 @@
   "prConcurrentLimit": 100,
   "prHourlyLimit": 10,
   "branchPrefix": "renovate-9x/",
-  "commitMessageSuffix": " (branch_9x)"
+  "commitMessageSuffix": " (branch_9x)",
+  "packageRules": [
+    {
+      "description": "Skip errorprone upgrades since newer versions require JDK17",
+      "matchPackagePrefixes": ["com.google.errorprone"],
+      "enabled": false
+    }
+  ]
 }
