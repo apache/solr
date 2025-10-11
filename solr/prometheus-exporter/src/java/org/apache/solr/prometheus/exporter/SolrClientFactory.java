@@ -76,7 +76,7 @@ public class SolrClientFactory {
             .collect(Collectors.toList());
     CloudSolrClient client =
         new CloudHttp2SolrClient.Builder(zkHosts, Optional.ofNullable(parser.getChrootPath()))
-            .withInternalClientBuilder(newHttp2SolrClientBuilder(null, settings, configuration))
+            .withHttpClientBuilder(newHttp2SolrClientBuilder(null, settings, configuration))
             .withResponseParser(new InputStreamResponseParser("json"))
             .build();
 
