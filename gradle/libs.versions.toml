@@ -81,7 +81,7 @@ decompose = "3.3.0"
 diffplug-spotless = "7.2.1"
 dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.39.0"
-eclipse-jetty = "12.0.19"
+eclipse-jetty = "12.0.27"
 eclipse-jettytoolchain = "5.0.2"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.3.0.202506031305-r"
