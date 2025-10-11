@@ -1198,4 +1198,111 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
                 vectorToSearch)),
         SolrException.ErrorCode.BAD_REQUEST);
   }
+
+  @Test
+  public void knnQueryWithSeedQuery_shouldPerformSeededKnnVectorQuery() {
+    // Test to verify that when the seedQuery parameter is provided, the SeededKnnVectorQuery is
+    // executed
+    // (float).
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=4 seedQuery='id:(1 4 7 8 9)'}" + vectorToSearch,
+            "fl",
+            "id",
+            "debugQuery",
+            "true"),
+        "//result[@numFound='4']",
+        "//str[@name='parsedquery'][.='SeededKnnVectorQuery(SeededKnnVectorQuery{seed=id:1 id:4 id:7 id:8 id:9, seedWeight=null, delegate=KnnFloatVectorQuery:vector[1.0,...][4]})']");
+  }
+
+  @Test
+  public void byteKnnQueryWithSeedQuery_shouldPerformSeededKnnVectorQuery() {
+    // Test to verify that when the seedQuery parameter is provided, the SeededKnnVectorQuery is
+    // executed
+    // (byte).
+
+    String vectorToSearch = "[2, 2, 1, 3]";
+
+    // BooleanQuery
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!knn f=vector_byte_encoding topK=4 seedQuery='id:(1 4 7 8 9)'}" + vectorToSearch,
+            "fl",
+            "id",
+            "debugQuery",
+            "true"),
+        "//result[@numFound='4']",
+        "//str[@name='parsedquery'][.='SeededKnnVectorQuery(SeededKnnVectorQuery{seed=id:1 id:4 id:7 id:8 id:9, seedWeight=null, delegate=KnnByteVectorQuery:vector_byte_encoding[2,...][4]})']");
+  }
+
+  @Test
+  public void knnQueryWithBlankSeed_shouldThrowException() {
+    // Test to verify that when the seedQuery parameter is provided but blank, Solr throws a
+    // BAD_REQUEST exception.
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    assertQEx(
+        "Blank seed query should throw Exception",
+        "'seedQuery' parameter is present but is blank: please provide a valid query",
+        req(CommonParams.Q, "{!knn f=vector topK=4 seedQuery=''}" + vectorToSearch),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void knnQueryWithInvalidSeedQuery_shouldThrowException() {
+    // Test to verify that when the seedQuery parameter is provided with an invalid value, Solr
+    // throws a
+    // BAD_REQUEST exception.
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    assertQEx(
+        "Invalid seed query should throw Exception",
+        "Cannot parse 'id:'",
+        req(CommonParams.Q, "{!knn f=vector topK=4 seedQuery='id:'}" + vectorToSearch),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void knnQueryWithKnnSeedQuery_shouldPerformSeededKnnVectorQuery() {
+    // Test to verify that when the seedQuery parameter itself is a knn query, it is correctly
+    // parsed and applied as the seed for the main knn query.
+    String mainVectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    String seedVectorToSearch = "[0.1, 0.2, 0.3, 0.4]";
+
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=4 seedQuery=$seedQuery}" + mainVectorToSearch,
+            "seedQuery",
+            "{!knn f=vector topK=4}" + seedVectorToSearch,
+            "fl",
+            "id",
+            "debugQuery",
+            "true"),
+        "//result[@numFound='4']",
+        "//str[@name='parsedquery'][.='SeededKnnVectorQuery(SeededKnnVectorQuery{seed=KnnFloatVectorQuery:vector[0.1,...][4], seedWeight=null, delegate=KnnFloatVectorQuery:vector[1.0,...][4]})']");
+  }
+
+  // NOTE: This test will need to be updated once Solr upgrades to a Lucene version that includes
+  // the fix for issue #14688
+  @Test
+  public void knnQueryWithBothSeedAndEarlyTermination_shouldThrowException() {
+    // Test to verify that when both the seedQuery and the early termination parameters are
+    // provided,
+    // Solr throws a BAD_REQUEST exception.
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    assertQEx(
+        "Currently seed and earlyTermination parameters cannot be used together",
+        "Seeded queries and early termination cannot be used together. This limitation is due to Lucene issue #14688, which is not yet included in the current version.",
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=4 seedQuery='id:(1 4 7 8 9)' earlyTermination=true}"
+                + vectorToSearch),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
 }
