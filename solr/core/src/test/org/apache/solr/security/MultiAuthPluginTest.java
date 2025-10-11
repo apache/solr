@@ -270,11 +270,246 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testMultiAuthXBasicLookup() throws Exception {
+    final String user = "admin";
+    final String pass = "SolrRocks";
+
+    HttpClient httpClient = null;
+    SolrClient solrClient = null;
+    try {
+      httpClient = HttpClientUtil.createClient(null);
+      String baseUrl = buildUrl(jetty.getLocalPort());
+      solrClient = getHttpSolrClient(baseUrl);
+
+      verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
+
+      // Initialize security.json with multiple xbasic auth and other configured
+      String multiAuthPluginSecurityJson =
+          Files.readString(
+              TEST_PATH()
+                  .resolve("security")
+                  .resolve("multi_auth_plugin_with_xbasic_security.json"),
+              StandardCharsets.UTF_8);
+      securityConfHandler.persistConf(
+          new SecurityConfHandler.SecurityConfig()
+              .setData(Utils.fromJSONString(multiAuthPluginSecurityJson)));
+      securityConfHandler.securityConfEdited();
+
+      // verify "WWW-Authenticate" headers are returned
+      verifyWWWAuthenticateHeaders(httpClient, baseUrl);
+
+      // Command that does not update anything in the current config
+      String command = "{ 'set-property': { 'xbasic': { 'blockUnknown': true } } }";
+
+      // verify that clients can still use "Basic" scheme with xBasic scheme configured in MultiAuth
+      doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 200);
+    } finally {
+      if (httpClient != null) {
+        HttpClientUtil.close(httpClient);
+      }
+      if (solrClient != null) {
+        solrClient.close();
+      }
+    }
+  }
+
+  @Test
+  public void testMultiAuthWithBasicAndXBasic() throws Exception {
+    final String user = "admin";
+    final String xUser = "xadmin";
+    final String pass = "SolrRocks";
+
+    HttpClient httpClient = null;
+    SolrClient solrClient = null;
+    try {
+      httpClient = HttpClientUtil.createClient(null);
+      String baseUrl = buildUrl(jetty.getLocalPort());
+      solrClient = getHttpSolrClient(baseUrl);
+
+      verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
+
+      // Initialize security.json with basic and xbasic scheme
+      String multiAuthPluginSecurityJson =
+          Files.readString(
+              TEST_PATH()
+                  .resolve("security")
+                  .resolve("multi_auth_plugin_with_basic_and_xbasic_security.json"),
+              StandardCharsets.UTF_8);
+      securityConfHandler.persistConf(
+          new SecurityConfHandler.SecurityConfig()
+              .setData(Utils.fromJSONString(multiAuthPluginSecurityJson)));
+      securityConfHandler.securityConfEdited();
+
+      // verify "WWW-Authenticate" headers are returned
+      verifyWWWAuthenticateHeaders(httpClient, baseUrl);
+
+      // Command that does not update anything in the current config
+      String command = "{ 'set-property': { 'basic': { 'blockUnknown': true } } }";
+
+      // verify that basic takes precedence over xbasic when both present
+      doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 200);
+
+      // Since both are present, xbasic will never be looked up if client does not send XBasic
+      // as auth scheme, and using xBasic won't work with BasicAuthPlugin, so this security
+      // configuration should return 401 as it resolves with the plugin that uses "basic" as scheme
+      doHttpPost(httpClient, baseUrl + authcPrefix, command, xUser, pass, 401);
+    } finally {
+      if (httpClient != null) {
+        HttpClientUtil.close(httpClient);
+      }
+      if (solrClient != null) {
+        solrClient.close();
+      }
+    }
+  }
+
+  @Test
+  public void testMultiAuthWithSinglePlugin() throws Exception {
+    final String user = "admin";
+    final String pass = "SolrRocks";
+
+    HttpClient httpClient = null;
+    SolrClient solrClient = null;
+    try {
+      httpClient = HttpClientUtil.createClient(null);
+      String baseUrl = buildUrl(jetty.getLocalPort());
+      solrClient = getHttpSolrClient(baseUrl);
+
+      verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
+
+      // Initialize security.json with a single plugin configured
+      String multiAuthPluginSecurityJson =
+          Files.readString(
+              TEST_PATH()
+                  .resolve("security")
+                  .resolve("multi_auth_plugin_with_basic_only_security.json"),
+              StandardCharsets.UTF_8);
+      securityConfHandler.persistConf(
+          new SecurityConfHandler.SecurityConfig()
+              .setData(Utils.fromJSONString(multiAuthPluginSecurityJson)));
+      securityConfHandler.securityConfEdited();
+
+      // verify "WWW-Authenticate" headers are returned
+      verifyWWWAuthenticateHeaders(httpClient, baseUrl);
+
+      // Command that does not update anything in the current config
+      String command = "{ 'set-property': { 'basic': { 'blockUnknown': true } } }";
+
+      // verify that a single plugin configuration is allowed and works
+      doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 200);
+    } finally {
+      if (httpClient != null) {
+        HttpClientUtil.close(httpClient);
+      }
+      if (solrClient != null) {
+        solrClient.close();
+      }
+    }
+  }
+
+  @Test
+  public void testMultiAuthWithBasicAndMockPlugin() throws Exception {
+    final String user = "admin";
+    final String pass = "SolrRocks";
+
+    HttpClient httpClient = null;
+    SolrClient solrClient = null;
+    try {
+      httpClient = HttpClientUtil.createClient(null);
+      String baseUrl = buildUrl(jetty.getLocalPort());
+      solrClient = getHttpSolrClient(baseUrl);
+
+      verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
+
+      // Initialize security.json with a single plugin configured
+      String multiAuthPluginSecurityJson =
+          Files.readString(
+              TEST_PATH()
+                  .resolve("security")
+                  .resolve("multi_auth_plugin_with_mock_and_basic_security.json"),
+              StandardCharsets.UTF_8);
+      securityConfHandler.persistConf(
+          new SecurityConfHandler.SecurityConfig()
+              .setData(Utils.fromJSONString(multiAuthPluginSecurityJson)));
+      securityConfHandler.securityConfEdited();
+
+      // verify "WWW-Authenticate" headers are returned
+      verifyWWWAuthenticateHeaders(httpClient, baseUrl);
+
+      // Command that does not update anything in the current config
+      String command = "{ 'set-property': { 'basic': { 'blockUnknown': true } } }";
+
+      // verify that the basic auth plugin works and is looked up as expected
+      doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 200);
+    } finally {
+      if (httpClient != null) {
+        HttpClientUtil.close(httpClient);
+      }
+      if (solrClient != null) {
+        solrClient.close();
+      }
+    }
+  }
+
+  @Test
+  public void testMultiAuthWithBasicPluginAndAjax() throws Exception {
+    HttpClient httpClient = null;
+    SolrClient solrClient = null;
+    try {
+      httpClient = HttpClientUtil.createClient(null);
+      String baseUrl = buildUrl(jetty.getLocalPort());
+      solrClient = getHttpSolrClient(baseUrl);
+
+      verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
+
+      // Initialize security.json with a single plugin configured
+      String multiAuthPluginSecurityJson =
+          Files.readString(
+              TEST_PATH().resolve("security").resolve("multi_auth_plugin_security.json"),
+              StandardCharsets.UTF_8);
+      securityConfHandler.persistConf(
+          new SecurityConfHandler.SecurityConfig()
+              .setData(Utils.fromJSONString(multiAuthPluginSecurityJson)));
+      securityConfHandler.securityConfEdited();
+
+      // Pretend to send unauthorized AJAX request
+      HttpGet httpGet = new HttpGet(baseUrl + "/admin/info/system");
+      httpGet.addHeader(new BasicHeader("X-Requested-With", "XMLHttpRequest"));
+
+      HttpResponse response = httpClient.execute(httpGet);
+      assertEquals(
+          "Unauthorized response was expected", 401, response.getStatusLine().getStatusCode());
+
+      // Only first plugin is expected as response, which is also xBasic if BasicAuthPlugin
+      Header[] headers = response.getHeaders(HttpHeaders.WWW_AUTHENTICATE);
+      List<String> actualSchemes = Arrays.stream(headers).map(Header::getValue).toList();
+
+      // Only the first scheme is expected for AJAX-Requests
+      assertEquals("Only one scheme was expected", 1, actualSchemes.size());
+
+      // In case of BasicAuthPlugin, xBasic should be returned if AJAX request sent and handled by
+      // BasicAuthPlugin
+      String expectedScheme = "xBasic realm=\"solr\"";
+      assertEquals(
+          "Mapped xBasic challenge expected from first plugin which is BasicAuthPlugin",
+          expectedScheme,
+          actualSchemes.getFirst());
+    } finally {
+      if (httpClient != null) {
+        HttpClientUtil.close(httpClient);
+      }
+      if (solrClient != null) {
+        solrClient.close();
+      }
+    }
+  }
+
   private int doHttpGetAnonymous(HttpClient cl, String url) throws IOException {
     HttpGet httpPost = new HttpGet(url);
     HttpResponse r = cl.execute(httpPost);
     int statusCode = r.getStatusLine().getStatusCode();
-    Utils.consumeFully(r.getEntity());
+    HttpClientUtil.consumeFully(r.getEntity());
     return statusCode;
   }
 

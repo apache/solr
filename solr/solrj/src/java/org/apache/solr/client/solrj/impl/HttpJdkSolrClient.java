@@ -205,7 +205,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return requestWithBaseUrl(null, solrRequest, collection);
   }
 
-  private PreparedRequest prepareRequest(
+  protected PreparedRequest prepareRequest(
       SolrRequest<?> solrRequest, String collection, String overrideBaseUrl)
       throws SolrServerException, IOException {
     checkClosed();
@@ -342,7 +342,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return new PreparedRequest(reqb, contentWritingFuture);
   }
 
-  private static class PreparedRequest {
+  protected static class PreparedRequest {
     Future<?> contentWritingFuture;
     HttpRequest.Builder reqb;
 
@@ -537,6 +537,11 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
         .collect(Collectors.joining(", "));
   }
 
+  @Override
+  public HttpSolrClientBuilderBase<?, ?> builder() {
+    return new HttpJdkSolrClient.Builder().withHttpClient(this);
+  }
+
   public static class Builder
       extends HttpSolrClientBuilderBase<HttpJdkSolrClient.Builder, HttpJdkSolrClient> {
 
@@ -556,6 +561,18 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     @Override
     public HttpJdkSolrClient build() {
       return new HttpJdkSolrClient(baseSolrUrl, this);
+    }
+
+    @Override
+    public Builder withHttpClient(HttpJdkSolrClient httpSolrClient) {
+      super.withHttpClient(httpSolrClient);
+      if (this.executor == null) {
+        this.executor = httpSolrClient.executor;
+      }
+      if (this.sslContext == null) {
+        this.sslContext = httpSolrClient.httpClient.sslContext();
+      }
+      return this;
     }
 
     /**

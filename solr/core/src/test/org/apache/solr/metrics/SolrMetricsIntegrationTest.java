@@ -32,6 +32,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.util.Utils;
@@ -210,7 +211,6 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     MetricRegistry registry = cc.getMetricManager().registry(registryName);
     Map<String, Metric> metrics = registry.getMetrics();
     assertTrue(metrics.containsKey("CONTAINER.cores.loaded"));
-    assertTrue(metrics.containsKey("CONTAINER.cores.lazy"));
     assertTrue(metrics.containsKey("CONTAINER.cores.unloaded"));
     assertTrue(metrics.containsKey("CONTAINER.fs.totalSpace"));
     assertTrue(metrics.containsKey("CONTAINER.fs.usableSpace"));
@@ -241,7 +241,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
         Map<String, Object> zkMmetrics =
             (Map<String, Object>)
                 Utils.getObjectByPath(
-                    Utils.executeGET(httpClient, url, Utils.JSONCONSUMER),
+                    HttpClientUtil.executeGET(httpClient, url, Utils.JSONCONSUMER),
                     false,
                     List.of("metrics", "solr.node:CONTAINER.zkClient"));
 
@@ -262,7 +262,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
         for (String k : allKeys) {
           assertNotNull(zkMmetrics.get(k));
         }
-        Utils.executeGET(
+        HttpClientUtil.executeGET(
             httpClient,
             j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes",
             Utils.JSONCONSUMER);
@@ -270,7 +270,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
         Map<String, Object> zkMmetricsNew =
             (Map<String, Object>)
                 Utils.getObjectByPath(
-                    Utils.executeGET(httpClient, url, Utils.JSONCONSUMER),
+                    HttpClientUtil.executeGET(httpClient, url, Utils.JSONCONSUMER),
                     false,
                     List.of("metrics", "solr.node:CONTAINER.zkClient"));
 

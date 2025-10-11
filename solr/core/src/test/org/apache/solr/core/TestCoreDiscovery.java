@@ -35,11 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.RetryUtil;
 import org.junit.After;
 import org.junit.AssumptionViolatedException;
 import org.junit.BeforeClass;
@@ -72,13 +70,11 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp(null);
   }
 
-  private Properties makeCoreProperties(
-      String name, boolean isTransient, boolean loadOnStartup, String... extraProps) {
+  private Properties makeCoreProperties(String name, boolean loadOnStartup, String... extraProps) {
     Properties props = new Properties();
     props.put(CoreDescriptor.CORE_NAME, name);
     props.put(CoreDescriptor.CORE_SCHEMA, "schema-tiny.xml");
     props.put(CoreDescriptor.CORE_CONFIG, "solrconfig-minimal.xml");
-    props.put(CoreDescriptor.CORE_TRANSIENT, Boolean.toString(isTransient));
     props.put(CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(loadOnStartup));
     props.put(CoreDescriptor.CORE_DATADIR, "${core.dataDir:stuffandnonsense}");
 
@@ -155,24 +151,19 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   public void testDiscovery() throws Exception {
     setMeUp();
 
-    // name, isLazy, loadOnStartup
-    addCoreWithProps("core1", makeCoreProperties("core1", false, true, "dataDir=core1"));
-    addCoreWithProps("core2", makeCoreProperties("core2", false, false, "dataDir=core2"));
-
-    // I suspect what we're adding in here is a "configset" rather than a schema or solrconfig.
-    //
-    addCoreWithProps("lazy1", makeCoreProperties("lazy1", true, false, "dataDir=lazy1"));
+    // name, loadOnStartup
+    addCoreWithProps("core1", makeCoreProperties("core1", true, "dataDir=core1"));
+    addCoreWithProps("core2", makeCoreProperties("core2", false, "dataDir=core2"));
 
     CoreContainer cc = init();
     try {
 
       TestLazyCores.checkLoadedCores(cc, "core1");
-      TestLazyCores.checkCoresNotLoaded(cc, "lazy1", "core2");
+      TestLazyCores.checkCoresNotLoaded(cc, "core2");
 
-      // force loading of core2 and lazy1 by getting them from the CoreContainer
+      // force loading of core2 by getting it from the CoreContainer
       try (SolrCore core1 = cc.getCore("core1");
-          SolrCore core2 = cc.getCore("core2");
-          SolrCore lazy1 = cc.getCore("lazy1")) {
+          SolrCore core2 = cc.getCore("core2"); ) {
 
         // Let's assert we did the right thing for implicit properties too.
         CoreDescriptor desc = core1.getCoreDescriptor();
@@ -185,7 +176,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         assertEquals("solrconfig-minimal.xml", desc.getConfigName());
         assertEquals("schema-tiny.xml", desc.getSchemaName());
 
-        TestLazyCores.checkLoadedCores(cc, "core1", "core2", "lazy1");
+        TestLazyCores.checkLoadedCores(cc, "core1", "core2");
         // Can we persist an existing core's properties?
 
         // Insure we can persist a new properties file if we want.
@@ -232,12 +223,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp();
 
     // Test that an existing core.properties file is _not_ deleted if the core fails to load.
-    Properties badProps = makeCoreProperties("corep1", false, true);
+    Properties badProps = makeCoreProperties("corep1", true);
     badProps.setProperty(CoreDescriptor.CORE_SCHEMA, "not-there.xml");
 
     addCoreWithProps("corep1", badProps);
     // Sanity check that a core did get loaded
-    addCoreWithProps("corep2", makeCoreProperties("corep2", false, true));
+    addCoreWithProps("corep2", makeCoreProperties("corep2", true));
 
     Path coreP1PropFile = solrHomeDirectory.resolve("corep1").resolve("core.properties");
     assertTrue(
@@ -275,7 +266,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
                         CoreDescriptor.CORE_NAME, "corep4",
                         CoreDescriptor.CORE_SCHEMA, "not-there.xml",
                         CoreDescriptor.CORE_CONFIG, "solrconfig-minimal.xml",
-                        CoreDescriptor.CORE_TRANSIENT, "false",
                         CoreDescriptor.CORE_LOADONSTARTUP, "true"));
               });
       assertTrue(thrown.getMessage().contains("Can't find resource"));
@@ -298,88 +288,13 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     }
   }
 
-  // Ensure that if the number of transient cores that are loaded on startup is greater than the
-  // cache size that Solr "does the right thing". Which means
-  // 1> stop loading cores after transient cache size is reached, in this case that magic number is
-  // 3 one non-transient and two transient.
-  // 2> still loads cores as time passes.
-  //
-  // This seems like a silly test, but it hangs forever on 4.10 so let's guard against it in the
-  // future.
-  // The behavior has gone away with the removal of the complexity around the old-style solr.xml
-  // files.
-  //
-  // NOTE: The order that cores are loaded depends upon how the core discovery is traversed. I don't
-  // think we can make the test depend on that order, so after load just ensure that the cores
-  // counts are correct.
-
-  @Test
-  public void testTooManyTransientCores() throws Exception {
-
-    setMeUp();
-
-    // name, isLazy, loadOnStartup
-    addCoreWithProps("coreLOS", makeCoreProperties("coreLOS", false, true, "dataDir=coreLOS"));
-    addCoreWithProps("coreT1", makeCoreProperties("coreT1", true, true, "dataDir=coreT1"));
-    addCoreWithProps("coreT2", makeCoreProperties("coreT2", true, true, "dataDir=coreT2"));
-    addCoreWithProps("coreT3", makeCoreProperties("coreT3", true, true, "dataDir=coreT3"));
-    addCoreWithProps("coreT4", makeCoreProperties("coreT4", true, true, "dataDir=coreT4"));
-    addCoreWithProps("coreT5", makeCoreProperties("coreT5", true, true, "dataDir=coreT5"));
-    addCoreWithProps("coreT6", makeCoreProperties("coreT6", true, true, "dataDir=coreT6"));
-
-    // Do this specially since we need to search.
-    final CoreContainer cc = new CoreContainer(solrHomeDirectory, new Properties());
-    try {
-      cc.load();
-      // Just check that the proper number of cores are loaded since making the test depend on order
-      // would be fragile
-      RetryUtil.retryUntil(
-          "There should only be 3 cores loaded, coreLOS and two coreT# cores",
-          20,
-          200,
-          TimeUnit.MILLISECONDS,
-          () -> {
-            // See SOLR-16104 about this flakiness
-            final var loadedCoreNames = cc.getLoadedCoreNames();
-            if (3 == loadedCoreNames.size() || 4 == loadedCoreNames.size()) {
-              // 4 sometimes... Caffeine or background threads makes it hard to be deterministic?
-              return true;
-            }
-            log.warn("Waiting for 3|4 loaded cores but got: {}", loadedCoreNames);
-            return false;
-          });
-
-      SolrCore c1 = cc.getCore("coreT1");
-      assertNotNull("Core T1 should NOT BE NULL", c1);
-      SolrCore c2 = cc.getCore("coreT2");
-      assertNotNull("Core T2 should NOT BE NULL", c2);
-      SolrCore c3 = cc.getCore("coreT3");
-      assertNotNull("Core T3 should NOT BE NULL", c3);
-      SolrCore c4 = cc.getCore("coreT4");
-      assertNotNull("Core T4 should NOT BE NULL", c4);
-      SolrCore c5 = cc.getCore("coreT5");
-      assertNotNull("Core T5 should NOT BE NULL", c5);
-      SolrCore c6 = cc.getCore("coreT6");
-      assertNotNull("Core T6 should NOT BE NULL", c6);
-
-      c1.close();
-      c2.close();
-      c3.close();
-      c4.close();
-      c5.close();
-      c6.close();
-    } finally {
-      cc.shutdown();
-    }
-  }
-
   @Test
   public void testDuplicateNames() throws Exception {
     setMeUp();
 
     // name, isLazy, loadOnStartup
-    addCoreWithProps("core1", makeCoreProperties("core1", false, true));
-    addCoreWithProps("core2", makeCoreProperties("core2", false, false, "name=core1"));
+    addCoreWithProps("core1", makeCoreProperties("core1", true));
+    addCoreWithProps("core2", makeCoreProperties("core2", false, "name=core1"));
     SolrException thrown =
         expectThrows(
             SolrException.class,
@@ -414,10 +329,10 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     setMeUp(alt.toAbsolutePath().toString());
     addCoreWithProps(
-        makeCoreProperties("core1", false, true, "dataDir=core1"),
+        makeCoreProperties("core1", true, "dataDir=core1"),
         alt.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
     addCoreWithProps(
-        makeCoreProperties("core2", false, false, "dataDir=core2"),
+        makeCoreProperties("core2", false, "dataDir=core2"),
         alt.resolve("core2").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
@@ -437,20 +352,20 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp(relative);
     // two cores under the relative directory
     addCoreWithProps(
-        makeCoreProperties("core1", false, true, "dataDir=core1"),
+        makeCoreProperties("core1", true, "dataDir=core1"),
         solrHomeDirectory
             .resolve(relative)
             .resolve("core1")
             .resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
     addCoreWithProps(
-        makeCoreProperties("core2", false, false, "dataDir=core2"),
+        makeCoreProperties("core2", false, "dataDir=core2"),
         solrHomeDirectory
             .resolve(relative)
             .resolve("core2")
             .resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
     // one core *not* under the relative directory
     addCoreWithProps(
-        makeCoreProperties("core0", false, true, "datadir=core0"),
+        makeCoreProperties("core0", true, "datadir=core0"),
         solrHomeDirectory.resolve("core0").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
     CoreContainer cc = init();
@@ -474,10 +389,10 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     Path noCoreDir = createTempDir();
     setMeUp(noCoreDir.toAbsolutePath().toString());
     addCoreWithProps(
-        makeCoreProperties("core1", false, true),
+        makeCoreProperties("core1", true),
         noCoreDir.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
     addCoreWithProps(
-        makeCoreProperties("core2", false, false),
+        makeCoreProperties("core2", false),
         noCoreDir.resolve("core2").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
@@ -494,12 +409,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     Path coreDir = solrHomeDirectory;
     setMeUp(coreDir.toAbsolutePath().toString());
     addCoreWithProps(
-        makeCoreProperties("core1", false, true),
+        makeCoreProperties("core1", true),
         coreDir.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
     // Ensure that another core is opened successfully
     addCoreWithProps(
-        makeCoreProperties("core2", false, false, "dataDir=core2"),
+        makeCoreProperties("core2", false, "dataDir=core2"),
         coreDir.resolve("core2").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
     Path toSet = coreDir.resolve("core1");
@@ -535,11 +450,11 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     Path coreDir = solrHomeDirectory;
     setMeUp(coreDir.toAbsolutePath().toString());
     addCoreWithProps(
-        makeCoreProperties("core1", false, true),
+        makeCoreProperties("core1", true),
         coreDir.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
     addCoreWithProps(
-        makeCoreProperties("core2", false, false, "dataDir=core2"),
+        makeCoreProperties("core2", false, "dataDir=core2"),
         coreDir.resolve("core2").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
     Path toSet = solrHomeDirectory.resolve("cantReadDir");
@@ -582,7 +497,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     Path coreDir = solrHomeDirectory;
     setMeUp(coreDir.toAbsolutePath().toString());
     addCoreWithProps(
-        makeCoreProperties("core1", false, true),
+        makeCoreProperties("core1", true),
         coreDir.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
     Path toSet = solrHomeDirectory.resolve("cantReadFile");
@@ -621,8 +536,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testSolrHomeDoesntExist() throws Exception {
-    Path homeDir = solrHomeDirectory;
-    IOUtils.rm(homeDir);
+    IOUtils.rm(solrHomeDirectory);
     CoreContainer cc = null;
     try {
       cc = init();
@@ -642,7 +556,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     Path homeDir = solrHomeDirectory;
     setMeUp(homeDir.toAbsolutePath().toString());
     addCoreWithProps(
-        makeCoreProperties("core1", false, true),
+        makeCoreProperties("core1", true),
         homeDir.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
     try {
@@ -680,7 +594,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   // For testing whether finding a solr.xml overrides looking at solr.properties
   private static final String SOLR_XML =
       "<solr> "
-          + "<int name=\"transientCacheSize\">2</int> "
           + "<str name=\"configSetBaseDir\">"
           + TEST_HOME().resolve("configsets")
           + "</str>"

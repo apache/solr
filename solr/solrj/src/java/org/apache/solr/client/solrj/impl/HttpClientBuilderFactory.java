@@ -21,7 +21,7 @@ import java.io.Closeable;
 /**
  * A config hook for post-configuration of a {@linkplain Http2SolrClient} by its builder.
  *
- * @see HttpClientUtil#SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY
+ * @see SolrHttpConstants#SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY
  * @lucene.experimental
  */
 public interface HttpClientBuilderFactory extends Closeable {

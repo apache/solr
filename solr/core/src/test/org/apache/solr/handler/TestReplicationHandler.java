@@ -48,13 +48,15 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.ReplicationApi;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -105,7 +107,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    systemSetPropertySolrDisableUrlAllowList("true");
+    systemSetPropertyEnableUrlAllowList(false);
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
     // useFactory(null); // force an FS factory.
@@ -138,7 +140,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
     if (null != leaderJetty) {
       leaderJetty.stop();
       leaderJetty = null;
@@ -201,8 +203,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command", "details");
     params.set("_trace", "getDetails");
-    params.set("qt", ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
+    var req =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, ReplicationHandler.PATH, SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
 
     NamedList<Object> res = s.request(req);
     assertReplicationResponseSucceeded(res);
@@ -215,18 +219,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return details;
   }
 
-  private NamedList<Object> getIndexVersion(SolrClient s) throws Exception {
+  private IndexVersionResponse getIndexVersion(SolrClient s, String coreName) throws Exception {
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("command", "indexversion");
-    params.set("_trace", "getIndexVersion");
-    params.set("qt", ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
-
-    NamedList<Object> res = s.request(req);
-    assertReplicationResponseSucceeded(res);
-
-    return res;
+    final var req = new ReplicationApi.FetchIndexVersion(coreName);
+    final var response = req.process(s);
+    assertReplicationResponseSucceeded(response);
+    return response;
   }
 
   private void reloadCore(JettySolrRunner jettySolrRunner, String core) throws Exception {
@@ -234,8 +232,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", "reload");
     params.set("core", core);
-    params.set("qt", "/admin/cores");
-    QueryRequest req = new QueryRequest(params);
+    var req =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.POST, "/admin/cores", SolrRequestType.ADMIN, params);
 
     try (SolrClient adminClient = adminClient(jettySolrRunner)) {
       NamedList<Object> res = adminClient.request(req);
@@ -256,7 +255,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void testUrlAllowList() throws Exception {
     // Run another test with URL allow-list enabled and allow-list is empty.
     // Expect an exception because the leader URL is not allowed.
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
     SolrException e = expectThrows(SolrException.class, this::doTestDetails);
     assertTrue(
         e.getMessage()
@@ -1278,11 +1277,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
     assertNull(cmp);
 
-    Object version = getIndexVersion(leaderClient).get("indexversion");
+    Long version = getIndexVersion(leaderClient, DEFAULT_TEST_CORENAME).indexVersion;
 
     reloadCore(leaderJetty, DEFAULT_TEST_COLLECTION_NAME);
 
-    assertEquals(version, getIndexVersion(leaderClient).get("indexversion"));
+    assertEquals(version, getIndexVersion(leaderClient, DEFAULT_TEST_CORENAME).indexVersion);
 
     index(leaderClient, "id", docs + 10, "name", "name = 1");
     index(leaderClient, "id", docs + 20, "name", "name = 2");
@@ -1833,5 +1832,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertNotNull("null response from server", response);
     assertNotNull("Expected replication response to have 'status' field", response.get("status"));
     assertEquals("OK", response.get("status"));
+  }
+
+  private void assertReplicationResponseSucceeded(IndexVersionResponse response) {
+    assertNotNull("null response from server", response);
+    assertNotNull("Expected replication response to have 'status' field", response.status);
+    assertEquals("OK", response.status);
   }
 }

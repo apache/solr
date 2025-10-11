@@ -682,6 +682,96 @@ public class ZkControllerTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testOverseerEnabledClusterPropertyRespected() throws Exception {
+    // Do not use MiniSolrCloudCluster
+    Path zkDir = createTempDir("testOverseerEnabledClusterPropertyRespected");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+
+      // Create cluster ZK nodes and set the overseerEnabled cluster property to false BEFORE
+      // ZkController starts
+      try (SolrZkClient client =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+
+        ZkController.createClusterZkNodes(client);
+        ClusterProperties cp = new ClusterProperties(client);
+        cp.setClusterProperty(ZkStateReader.OVERSEER_ENABLED, "false");
+      }
+
+      // Now create a ZkController - it should respect the cluster property and have overseer
+      // disabled
+      CoreContainer cc = getCoreContainer();
+      try {
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
+        try (ZkController zkController =
+            new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig)) {
+
+          // The overseer should be disabled due to the cluster property, meaning distributed state
+          // updates should be enabled
+          // Since overseerEnabled=false in cluster properties, !overseerEnabled should be true, so
+          // isDistributedStateUpdate() should return true
+          assertTrue(
+              "Overseer should be disabled when overseerEnabled cluster property is false, meaning distributed state updates should be enabled",
+              zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate());
+        }
+      } finally {
+        cc.shutdown();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testOverseerEnabledClusterPropertyTrue() throws Exception {
+    // Do not use MiniSolrCloudCluster
+    Path zkDir = createTempDir("testOverseerEnabledClusterPropertyTrue");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+
+      // Create cluster ZK nodes and set the overseerEnabled cluster property to true BEFORE
+      // ZkController starts
+      try (SolrZkClient client =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+
+        ZkController.createClusterZkNodes(client);
+        ClusterProperties cp = new ClusterProperties(client);
+        cp.setClusterProperty(ZkStateReader.OVERSEER_ENABLED, "true");
+      }
+
+      // Now create a ZkController - it should respect the cluster property and have overseer
+      // enabled
+      CoreContainer cc = getCoreContainer();
+      try {
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
+        try (ZkController zkController =
+            new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig)) {
+
+          // The overseer should be enabled due to the cluster property, meaning distributed state
+          // updates should be disabled
+          // Since overseerEnabled=true in cluster properties, !overseerEnabled should be false, so
+          // isDistributedStateUpdate() should return false
+          assertFalse(
+              "Overseer should be enabled when overseerEnabled cluster property is true, meaning distributed state updates should be disabled",
+              zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate());
+        }
+      } finally {
+        cc.shutdown();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
   private CoreContainer getCoreContainer() {
     return new MockCoreContainer();
   }

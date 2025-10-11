@@ -86,6 +86,7 @@ public abstract class LBSolrClient extends SolrClient {
   private volatile EndpointWrapper[] aliveServerList = new EndpointWrapper[0];
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
+  private volatile boolean isClosed = false;
 
   protected long aliveCheckIntervalMillis =
       TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
@@ -574,11 +575,16 @@ public abstract class LBSolrClient extends SolrClient {
     // if it's not null.
     if (aliveCheckExecutor == null) {
       synchronized (this) {
+        if (isClosed) {
+          // must check inside sync block
+          return;
+        }
         if (aliveCheckExecutor == null) {
           log.debug("Starting aliveCheckExecutor for {}", this);
           aliveCheckExecutor =
               Executors.newSingleThreadScheduledExecutor(
                   new SolrNamedThreadFactory("aliveCheckExecutor"));
+          ObjectReleaseTracker.track(aliveCheckExecutor);
           aliveCheckExecutor.scheduleAtFixedRate(
               getAliveCheckRunner(new WeakReference<>(this)),
               this.aliveCheckIntervalMillis,
@@ -825,8 +831,10 @@ public abstract class LBSolrClient extends SolrClient {
   @Override
   public void close() {
     synchronized (this) {
+      isClosed = true;
       if (aliveCheckExecutor != null) {
         ExecutorUtil.shutdownNowAndAwaitTermination(aliveCheckExecutor);
+        ObjectReleaseTracker.release(aliveCheckExecutor);
       }
     }
     ObjectReleaseTracker.release(this);
