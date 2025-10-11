@@ -20,6 +20,7 @@ import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
@@ -34,6 +35,7 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -251,7 +253,11 @@ public class SolrIndexConfig implements MapSerializable {
     if (ramBufferSizeMB != -1) iwc.setRAMBufferSizeMB(ramBufferSizeMB);
 
     if (ramPerThreadHardLimitMB != -1) {
-      iwc.setRAMPerThreadHardLimitMB(ramPerThreadHardLimitMB);
+      if (ramPerThreadHardLimitMB > 2048) {
+        setPerThreadRAMLimitViaReflection(iwc, ramPerThreadHardLimitMB);
+      } else {
+        iwc.setRAMPerThreadHardLimitMB(ramPerThreadHardLimitMB);
+      }
     }
 
     if (maxCommitMergeWaitMillis > 0) {
@@ -350,5 +356,31 @@ public class SolrIndexConfig implements MapSerializable {
     }
 
     return scheduler;
+  }
+
+  @SuppressForbidden(reason = "Need to override Lucene's 2GB per-thread limit for large datasets")
+  private static void setPerThreadRAMLimitViaReflection(IndexWriterConfig config, int limitMB) {
+    try {
+      Field field = null;
+      Class<?> currentClass = config.getClass();
+
+      while (currentClass != null && field == null) {
+        try {
+          field = currentClass.getDeclaredField("perThreadHardLimitMB");
+        } catch (NoSuchFieldException e) {
+          currentClass = currentClass.getSuperclass();
+        }
+      }
+
+      if (field != null) {
+        field.setAccessible(true);
+        field.setInt(config, limitMB);
+        log.info("Set perThreadHardLimitMB to {} MB via reflection", limitMB);
+      } else {
+        log.error("Could not find perThreadHardLimitMB field");
+      }
+    } catch (Exception e) {
+      log.error("Failed to set per-thread RAM limit via reflection", e);
+    }
   }
 }
