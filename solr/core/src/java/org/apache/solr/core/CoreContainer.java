@@ -765,6 +765,8 @@ public class CoreContainer {
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
 
+    initGpuMetricsService();
+
     tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
 
     shardHandlerFactory =
@@ -1212,6 +1214,38 @@ public class CoreContainer {
     }
   }
 
+  private void initGpuMetricsService() {
+    try {
+      Class<?> gpuMetricsServiceClass = Class.forName("org.apache.solr.cuvs.GpuMetricsService");
+      Object service = gpuMetricsServiceClass.getMethod("getInstance").invoke(null);
+      gpuMetricsServiceClass.getMethod("initialize", CoreContainer.class).invoke(service, this);
+      if (log.isInfoEnabled()) {
+        log.info("GPU metrics service initialized");
+      }
+    } catch (ClassNotFoundException e) {
+      if (log.isDebugEnabled()) {
+        log.debug("cuVS module not available, GPU metrics will not be collected");
+      }
+    } catch (Exception e) {
+      log.warn("Failed to initialize GPU metrics service", e);
+    }
+  }
+
+  private void shutdownGpuMetricsService() {
+    try {
+      Class<?> gpuMetricsServiceClass = Class.forName("org.apache.solr.cuvs.GpuMetricsService");
+      Object service = gpuMetricsServiceClass.getMethod("getInstance").invoke(null);
+      gpuMetricsServiceClass.getMethod("shutdown").invoke(service);
+      if (log.isInfoEnabled()) {
+        log.info("GPU metrics service shut down");
+      }
+    } catch (ClassNotFoundException e) {
+      // Expected when cuvs module is not available
+    } catch (Exception e) {
+      log.warn("Failed to shutdown GPU metrics service", e);
+    }
+  }
+
   private volatile boolean isShutDown = false;
 
   public boolean isShutDown() {
@@ -1276,6 +1310,9 @@ public class CoreContainer {
       }
 
       customThreadPool.execute(replayUpdatesExecutor::shutdownAndAwaitTermination);
+
+      // Shutdown GPU metrics service if it was initialized
+      shutdownGpuMetricsService();
 
       if (metricManager != null) {
         metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
