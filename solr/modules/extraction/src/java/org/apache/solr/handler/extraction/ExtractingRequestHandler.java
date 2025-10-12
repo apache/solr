@@ -37,7 +37,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
 
   public static final String PARSE_CONTEXT_CONFIG = "parseContext.config";
   public static final String CONFIG_LOCATION = "tika.config";
-  public static final String TIKASERVER_URL = "tikaserver.url";
 
   protected String tikaConfigLoc;
   protected ParseContextConfig parseContextConfig;
@@ -70,9 +69,9 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
       this.localBackend = new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);
 
       // Optionally create Tika Server backend if URL configured
-      String tikaServerUrl = (String) initArgs.get(TIKASERVER_URL);
+      String tikaServerUrl = (String) initArgs.get(ExtractingParams.TIKASERVER_URL);
       if (tikaServerUrl != null) {
-        Integer timeoutSecs = null;
+        int timeoutSecs = 0;
         Object initTimeout = initArgs.get(ExtractingParams.TIKASERVER_TIMEOUT_SECS);
         if (initTimeout != null) {
           try {
@@ -87,11 +86,8 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
                 nfe);
           }
         }
-        if (timeoutSecs != null) {
-          this.tikaServerBackend = new TikaServerExtractionBackend(tikaServerUrl, timeoutSecs);
-        } else {
-          this.tikaServerBackend = new TikaServerExtractionBackend(tikaServerUrl);
-        }
+        this.tikaServerBackend =
+            new TikaServerExtractionBackend(tikaServerUrl, timeoutSecs, initArgs);
       }
 
       // Choose default backend name
@@ -131,7 +127,9 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
       if (tikaServerBackend == null) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
-            "Tika Server backend requested but '" + TIKASERVER_URL + "' is not configured");
+            "Tika Server backend requested but '"
+                + ExtractingParams.TIKASERVER_URL
+                + "' is not configured");
       }
       extractionBackend = tikaServerBackend;
     } else {

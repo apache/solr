@@ -47,6 +47,7 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
       baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);
       System.setProperty("solr.test.tikaserver.url", baseUrl);
       System.setProperty("solr.test.extraction.backend", "tikaserver");
+      System.setProperty("solr.test.tikaserver.metadata.compatibility", "true");
       log.info("Using extraction backend 'tikaserver'. Tika server running on {}", baseUrl);
       initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
     } catch (Throwable t) {
@@ -68,5 +69,6 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
     }
     System.clearProperty("solr.test.tikaserver.url");
     System.clearProperty("solr.test.extraction.backend");
+    System.clearProperty("solr.test.tikaserver.metadata.compatibility");
   }
 }

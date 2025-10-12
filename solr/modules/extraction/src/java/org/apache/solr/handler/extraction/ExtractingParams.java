@@ -140,8 +140,12 @@ public interface ExtractingParams {
   /** Backend selection, either `local` or `tikaserver`. */
   public static final String EXTRACTION_BACKEND = "extraction.backend";
 
-  /** Fix metadata to match Tika 1.x */
-  public static final String BACK_COMPATIBILITY = "extraction.metadataBackCompat";
+  /** Preferred: Fix/normalize metadata naming for Tika Server compatibility */
+  public static final String TIKASERVER_METADATA_COMPATIBILITY =
+      "tikaserver.metadata.compatibility";
+
+  /** URL of Tika Server instance. */
+  public static final String TIKASERVER_URL = "tikaserver.url";
 
   /**
    * Enable recursive parsing of embedded documents when using TikaServer. This is experimental,

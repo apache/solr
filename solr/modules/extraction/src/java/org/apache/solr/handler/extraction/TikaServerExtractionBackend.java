@@ -21,6 +21,9 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -28,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.tika.sax.BodyContentHandler;
 import org.eclipse.jetty.client.HttpClient;
@@ -50,12 +54,24 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   private static final int DEFAULT_TIMEOUT_SECONDS = 3 * 60;
   private final Duration defaultTimeout;
   private final TikaServerParser tikaServerResponseParser = new TikaServerParser();
+  private boolean tikaMetadataCompatibility;
+  private HashMap<String, Object> initArgsMap = new HashMap<>();
 
   public TikaServerExtractionBackend(String baseUrl) {
-    this(baseUrl, DEFAULT_TIMEOUT_SECONDS);
+    this(baseUrl, DEFAULT_TIMEOUT_SECONDS, null);
   }
 
-  public TikaServerExtractionBackend(String baseUrl, int timeoutSeconds) {
+  public TikaServerExtractionBackend(String baseUrl, int timeoutSeconds, NamedList<?> initArgs) {
+    if (initArgs != null) {
+      initArgs.toMap(this.initArgsMap);
+    }
+    Object metaCompatObh = this.initArgsMap.get(ExtractingParams.TIKASERVER_METADATA_COMPATIBILITY);
+    if (metaCompatObh != null) {
+      this.tikaMetadataCompatibility = Boolean.parseBoolean(metaCompatObh.toString());
+    }
+    if (timeoutSeconds <= 0) {
+      timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
+    }
     if (baseUrl.endsWith("/")) {
       this.baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
     } else {
@@ -83,6 +99,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       } else {
         tikaServerResponseParser.parseXml(tikaResponse, bodyContentHandler, md);
       }
+      if (tikaMetadataCompatibility) {
+        appendBackCompatTikaMetadata(md);
+      }
       return new ExtractionResult(bodyContentHandler.toString(), md);
     }
   }
@@ -99,6 +118,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
         tikaServerResponseParser.parseRmetaJson(tikaResponse, saxContentHandler, md);
       } else {
         tikaServerResponseParser.parseXml(tikaResponse, saxContentHandler, md);
+      }
+      if (tikaMetadataCompatibility) {
+        appendBackCompatTikaMetadata(md);
       }
     }
   }
@@ -248,6 +270,41 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       SHARED_CLIENT = client;
       INITIALIZED = true;
       SHUTDOWN = false;
+    }
+  }
+
+  private final Map<String, String> fieldMappings = new LinkedHashMap<>();
+
+  // TODO: Improve backward compatibility by adding more mappings
+  {
+    fieldMappings.put("dc:title", "title");
+    fieldMappings.put("dc:creator", "author");
+    fieldMappings.put("dc:description", "description");
+    fieldMappings.put("dc:subject", "subject");
+    fieldMappings.put("dc:language", "language");
+    fieldMappings.put("dc:publisher", "publisher");
+    fieldMappings.put("dcterms:created", "created");
+    fieldMappings.put("dcterms:modified", "modified");
+    fieldMappings.put("meta:author", "Author");
+    fieldMappings.put("meta:creation-date", "Creation-Date");
+    fieldMappings.put("meta:save-date", "Last-Save-Date");
+    fieldMappings.put("meta:keyword", "Keywords");
+    fieldMappings.put("pdf:docinfo:keywords", "Keywords");
+  }
+
+  /*
+   * Appends back-compatible metadata into the given {@code ExtractionMetadata} instance by mapping
+   * source fields to target fields, provided that backward compatibility is enabled. If a source
+   * field exists and the target field is not yet populated, the values from the source field will
+   * be added to the target field.
+   */
+  private void appendBackCompatTikaMetadata(ExtractionMetadata md) {
+    for (Map.Entry<String, String> mapping : fieldMappings.entrySet()) {
+      String sourceField = mapping.getKey();
+      String targetField = mapping.getValue();
+      if (md.getFirst(sourceField) != null && md.getFirst(targetField) == null) {
+        md.add(targetField, md.get(sourceField));
+      }
     }
   }
 

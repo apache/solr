@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -56,10 +55,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   public static final String XML_FORMAT = "xml";
 
   final SolrCore core;
-  final SolrParams params;
   final UpdateRequestProcessor processor;
   final boolean ignoreTikaException;
-  final boolean backCompat;
 
   private final AddUpdateCommand templateAdd;
 
@@ -71,10 +68,9 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       UpdateRequestProcessor processor,
       SolrContentHandlerFactory factory,
       ExtractionBackend backend) {
-    this.params = req.getParams();
+    SolrParams params = req.getParams();
     this.core = req.getCore();
     this.processor = processor;
-    this.backCompat = params.getBool(ExtractingParams.BACK_COMPATIBILITY, true);
 
     templateAdd = new AddUpdateCommand(req);
     templateAdd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
@@ -104,8 +100,9 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       ContentStream stream,
       UpdateRequestProcessor processor)
       throws Exception {
-    String streamType = req.getParams().get(ExtractingParams.STREAM_TYPE, null);
-    String resourceName = req.getParams().get(ExtractingParams.RESOURCE_NAME, null);
+    SolrParams params = req.getParams();
+    String streamType = params.get(ExtractingParams.STREAM_TYPE, null);
+    String resourceName = params.get(ExtractingParams.RESOURCE_NAME, null);
 
     try (InputStream inputStream = stream.getStream()) {
       String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
@@ -171,8 +168,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
             }
           }
 
-          appendBackCompatTikaMetadata(md);
-
           rsp.add(stream.getName(), content);
           NamedList<String[]> metadataNL = new NamedList<>();
           for (String name : md.keySet()) {
@@ -205,7 +200,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           }
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
-        appendBackCompatTikaMetadata(handler.metadata);
 
         addDoc(handler);
         return;
@@ -224,8 +218,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       }
 
       ExtractionMetadata metadata = result.getMetadata();
-
-      appendBackCompatTikaMetadata(metadata);
 
       SolrContentHandler handler =
           factory.createSolrContentHandler(metadata, params, req.getSchema());
@@ -255,44 +247,5 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     }
     backend.extractWithSaxHandler(inputStream, extractionRequest, md, ch);
     return ch.toString();
-  }
-
-  private final Map<String, String> fieldMappings = new LinkedHashMap<>();
-
-  // TODO: Improve backward compatibility by adding more mappings
-  {
-    fieldMappings.put("dc:title", "title");
-    fieldMappings.put("dc:creator", "author");
-    fieldMappings.put("dc:description", "description");
-    fieldMappings.put("dc:subject", "subject");
-    fieldMappings.put("dc:language", "language");
-    fieldMappings.put("dc:publisher", "publisher");
-    fieldMappings.put("dcterms:created", "created");
-    fieldMappings.put("dcterms:modified", "modified");
-    fieldMappings.put("meta:author", "Author");
-    fieldMappings.put("meta:creation-date", "Creation-Date");
-    fieldMappings.put("meta:save-date", "Last-Save-Date");
-    fieldMappings.put("meta:keyword", "Keywords");
-    fieldMappings.put("pdf:docinfo:keywords", "Keywords");
-  }
-
-  /*
-   * Appends back-compatible metadata into the given {@code ExtractionMetadata} instance by mapping
-   * source fields to target fields, provided that backward compatibility is enabled. If a source
-   * field exists and the target field is not yet populated, the values from the source field will
-   * be added to the target field.
-   */
-  private void appendBackCompatTikaMetadata(ExtractionMetadata md) {
-    if (!backCompat) {
-      return;
-    }
-
-    for (Map.Entry<String, String> mapping : fieldMappings.entrySet()) {
-      String sourceField = mapping.getKey();
-      String targetField = mapping.getValue();
-      if (md.getFirst(sourceField) != null && md.getFirst(targetField) == null) {
-        md.add(targetField, md.get(sourceField));
-      }
-    }
   }
 }
