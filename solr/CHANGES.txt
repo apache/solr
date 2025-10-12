@@ -194,7 +194,7 @@ Dependency Upgrades
 
 * SOLR-16984: Upgraded Jetty to 12 (Jakarta EE 10 namespace). Updated related dependencies including amazon-awssdk to 2.28.11. (Sanjay Dutt, David Smiley, Kevin Risden)
 
-* SOLR-17631: Upgrade to Lucene 10.2.1 (Ishan Chattopadhyaya, noble, Jason Gerlowski, Eric Pugh, janhoy, Christine Poerschke)
+* SOLR-17631, SOLR-17917: Upgrade to Lucene 10.3.1 (Ishan Chattopadhyaya, noble, Jason Gerlowski, Eric Pugh, janhoy, Christine Poerschke, hossman)
 
 * SOLR-17445: The base docker image has been upgraded from Ubuntu 22 (Jammy) to Ubuntu 24 (Noble). (Jan Høydahl)
 
@@ -263,6 +263,8 @@ Other Changes
   `distributedCollectionConfigSetExecution`).  Those are now removed.  In their place is a new
   overseerEnabled cluster property and an env var SOLR_CLOUD_OVERSEER_ENABLED.  Read more in the
   upgrade guide.  (David Smiley)
+
+* SOLR-17929: Remove obsolete overseer internal work queue. This queue was read-only since Solr 8. (Pierre Salagnac)
 
 ==================  9.10.0 ==================
 New Features

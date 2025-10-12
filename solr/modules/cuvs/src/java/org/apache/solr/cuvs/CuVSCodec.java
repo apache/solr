@@ -20,7 +20,7 @@ import com.nvidia.cuvs.lucene.Lucene99AcceleratedHNSWVectorsFormat;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.KnnVectorsFormat;
-import org.apache.lucene.codecs.lucene101.Lucene101Codec;
+import org.apache.lucene.codecs.lucene103.Lucene103Codec;
 import org.apache.lucene.codecs.perfield.PerFieldKnnVectorsFormat;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -48,13 +48,13 @@ public class CuVSCodec extends FilterCodec {
   private static final int DEFAULT_BEAM_WIDTH = 100;
 
   private static final String CAGRA_HNSW = "cagra_hnsw";
-  private static final String FALLBACK_CODEC = "Lucene101";
+  private static final String FALLBACK_CODEC = "Lucene103";
 
   private final SolrCore core;
-  private final Lucene101Codec fallbackCodec;
+  private final Lucene103Codec fallbackCodec;
   private final Lucene99AcceleratedHNSWVectorsFormat cuvsHNSWVectorsFormat;
 
-  public CuVSCodec(SolrCore core, Lucene101Codec fallback, NamedList<?> args) {
+  public CuVSCodec(SolrCore core, Lucene103Codec fallback, NamedList<?> args) {
     super(FALLBACK_CODEC, fallback);
     this.core = core;
     this.fallbackCodec = fallback;
