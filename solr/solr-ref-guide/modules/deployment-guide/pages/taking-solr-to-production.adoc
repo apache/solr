@@ -265,7 +265,9 @@ ZK_HOST=zk1,zk2,zk3
 
 When the `ZK_HOST` variable is set, Solr will launch and connect to the defined ZooKeepers instead of starting an embedded ZooKeeper.
 
-See xref:zookeeper-ensemble[ZooKeeper Ensemble Configuration] for more on setting up ZooKeeper.
+See xref:zookeeper-ensemble.adoc[Zookeeper Ensemble] for more on setting up ZooKeeper.
+
+See xref:deployment-topology-overview.adoc[Deployment Topology Overview] for more details on different approaches for deployment.
 
 ==== ZooKeeper chroot
 
