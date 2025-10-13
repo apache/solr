@@ -74,8 +74,8 @@
       <AppenderRef ref="SlowLogFile"/>
     </AsyncLogger>
     <AsyncLogger name="org.eclipse.jetty.deploy" level="warn"/>
-    <AsyncLogger name="org.eclipse.jetty.webapp" level="warn"/>
-    <AsyncLogger name="org.eclipse.jetty.server.session" level="warn"/>
+    <AsyncLogger name="org.eclipse.jetty.ee" level="warn"/>
+    <AsyncLogger name="org.eclipse.jetty.session" level="warn"/>
 
     <AsyncRoot level="info">
       <AppenderRef ref="MainLogFile"/>
