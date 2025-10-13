@@ -409,16 +409,17 @@ See the section <<Indexing Encrypted Documents>> for more information about usin
 +
 Example: `passwordsFile=/path/to/passwords.txt`
 
-`tikaserver.metadata.compatibility`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: false
-|===
-+
-When enabled, Solr Cell tries to map some common metadata to other common names, e.g. `dc:author` is mapped also to `Author`. This can be useful if switching from `local` to `tikaserver` backend, since `tikaserver` uses more industry standard name-spaced metadata keys.
-+
-Only applicable for `tikaserver` backend. Can only be set in `solrconfig.xml`, not per request.
+// TODO: Feature exists but keep undocumented for now
+// `tikaserver.metadata.compatibility`::
+// +
+// [%autowidth,frame=none]
+// |===
+// |Optional |Default: false
+// |===
+// +
+// When enabled, Solr Cell tries to map some common metadata to other common names, e.g. `dc:author` is mapped also to `Author`. This can be useful if switching from `local` to `tikaserver` backend, since `tikaserver` uses more industry standard name-spaced metadata keys.
+// +
+// Only applicable for `tikaserver` backend. Can only be set in `solrconfig.xml`, not per request.
 
 `tikaserver.recursive`::
 +
