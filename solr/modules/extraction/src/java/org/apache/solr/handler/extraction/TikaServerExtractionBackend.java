@@ -46,6 +46,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 /** Extraction backend using the Tika Server. It uses a shared Jetty HttpClient. */
 public class TikaServerExtractionBackend implements ExtractionBackend {
+  public static final long DEFAULT_MAXCHARS_LIMIT = 100 * 1024 * 1024;
   private static volatile HttpClient SHARED_CLIENT;
   private static volatile ExecutorService SHARED_EXECUTOR;
   private static final Object INIT_LOCK = new Object();
@@ -60,7 +61,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   private final long maxCharsLimit;
 
   public TikaServerExtractionBackend(String baseUrl) {
-    this(baseUrl, DEFAULT_TIMEOUT_SECONDS, null, 100 * 1024 * 1024);
+    this(baseUrl, DEFAULT_TIMEOUT_SECONDS, null, DEFAULT_MAXCHARS_LIMIT);
   }
 
   public TikaServerExtractionBackend(
