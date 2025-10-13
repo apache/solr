@@ -54,7 +54,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
   @Test
   public void testSingleZkHostSpecified() throws IOException {
     try (CloudSolrClient createdClient =
-        new CloudHttp2SolrClient.Builder(
+        new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .build()) {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
@@ -72,7 +72,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
     zkHostList.add(ANY_ZK_HOST);
     zkHostList.add(ANY_OTHER_ZK_HOST);
     try (CloudSolrClient createdClient =
-        new CloudHttp2SolrClient.Builder(zkHostList, Optional.of(ANY_CHROOT)).build()) {
+        new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(zkHostList, Optional.of(ANY_CHROOT)).build()) {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
           ZkClientClusterStateProvider.from(createdClient)) {
         final String clientZkHost = zkClientClusterStateProvider.getZkHost();
@@ -89,7 +89,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
     zkHosts.add(ANY_ZK_HOST);
     zkHosts.add(ANY_OTHER_ZK_HOST);
     try (CloudSolrClient createdClient =
-        new CloudHttp2SolrClient.Builder(zkHosts, Optional.of(ANY_CHROOT)).build()) {
+        new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(zkHosts, Optional.of(ANY_CHROOT)).build()) {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
           ZkClientClusterStateProvider.from(createdClient)) {
         final String clientZkHost = zkClientClusterStateProvider.getZkHost();
@@ -103,7 +103,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
   @Test
   public void testByDefaultConfiguresClientToSendUpdatesOnlyToShardLeaders() throws IOException {
     try (CloudSolrClient createdClient =
-        new CloudHttp2SolrClient.Builder(
+        new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .build()) {
       assertTrue(createdClient.isUpdatesToLeaders());
@@ -113,7 +113,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
   @Test
   public void testIsDirectUpdatesToLeadersOnlyDefault() throws IOException {
     try (CloudSolrClient createdClient =
-        new CloudHttp2SolrClient.Builder(
+        new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .build()) {
       assertFalse(createdClient.isDirectUpdatesToLeadersOnly());
@@ -125,7 +125,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
     expectThrows(
         IllegalStateException.class,
         () ->
-            new CloudHttp2SolrClient.Builder(
+            new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(
                     Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
                 .withHttpClient(mock(Http2SolrClient.class))
                 .withHttpClientBuilder(mock(Http2SolrClient.Builder.class))
@@ -133,7 +133,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
     expectThrows(
         IllegalStateException.class,
         () ->
-            new CloudHttp2SolrClient.Builder(
+            new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(
                     Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
                 .withHttpClientBuilder(mock(Http2SolrClient.Builder.class))
                 .withHttpClient(mock(Http2SolrClient.class))
@@ -141,16 +141,16 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testProvideInternalBuilder() throws IOException {
+  public void testProvideInternalJettyClientBuilder() throws IOException {
     Http2SolrClient http2Client = mock(Http2SolrClient.class);
     Http2SolrClient.Builder http2ClientBuilder = mock(Http2SolrClient.Builder.class);
     when(http2ClientBuilder.build()).thenReturn(http2Client);
-    CloudHttp2SolrClient.Builder clientBuilder =
-        new CloudHttp2SolrClient.Builder(
+    CloudHttp2SolrClient.Builder<HttpSolrClientBuilderBase<?, ?>, HttpSolrClientBase> clientBuilder =
+        new CloudHttp2SolrClient.Builder<>(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .withHttpClientBuilder(http2ClientBuilder);
     verify(http2ClientBuilder, never()).build();
-    try (CloudHttp2SolrClient client = clientBuilder.build()) {
+    try (CloudHttp2SolrClient<?> client = clientBuilder.build()) {
       assertEquals(http2Client, client.getHttpClient());
       verify(http2ClientBuilder, times(1)).build();
       verify(http2Client, never()).close();
@@ -160,13 +160,46 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testProvideExternalClient() throws IOException {
+  public void testProvideInternalJdkClientBuilder() throws IOException {
+    var http2Client = mock(HttpJdkSolrClient.class);
+    HttpJdkSolrClient.Builder http2ClientBuilder = mock(HttpJdkSolrClient.Builder.class);
+    when(http2ClientBuilder.build()).thenReturn(http2Client);
+    CloudHttp2SolrClient.Builder<HttpJdkSolrClient.Builder, HttpJdkSolrClient> clientBuilder =
+        new CloudHttp2SolrClient.Builder<HttpJdkSolrClient.Builder, HttpJdkSolrClient>(
+            Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .withHttpClientBuilder(http2ClientBuilder);
+    verify(http2ClientBuilder, never()).build();
+    try (CloudHttp2SolrClient<HttpJdkSolrClient> client = clientBuilder.build()) {
+      assertEquals(http2Client, client.getHttpClient());
+      verify(http2ClientBuilder, times(1)).build();
+      verify(http2Client, never()).close();
+    }
+    // it's internal, should be closed when closing CloudSolrClient
+    verify(http2Client, times(1)).close();
+  }
+
+  @Test
+  public void testProvideExternalJettyClient() throws IOException {
     Http2SolrClient http2Client = mock(Http2SolrClient.class);
-    CloudHttp2SolrClient.Builder clientBuilder =
-        new CloudHttp2SolrClient.Builder(
+    CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient> clientBuilder =
+        new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .withHttpClient(http2Client);
-    try (CloudHttp2SolrClient client = clientBuilder.build()) {
+    try (CloudHttp2SolrClient<Http2SolrClient> client = clientBuilder.build()) {
+      assertEquals(http2Client, client.getHttpClient());
+    }
+    // it's external, should be NOT closed when closing CloudSolrClient
+    verify(http2Client, never()).close();
+  }
+
+  @Test
+  public void testProvideExternalJdkClient() throws IOException {
+    HttpJdkSolrClient http2Client = mock(HttpJdkSolrClient.class);
+    CloudHttp2SolrClient.Builder<HttpJdkSolrClient.Builder, HttpJdkSolrClient> clientBuilder =
+        new CloudHttp2SolrClient.Builder<HttpJdkSolrClient.Builder, HttpJdkSolrClient>(
+            Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .withHttpClient(http2Client);
+    try (CloudHttp2SolrClient<HttpJdkSolrClient> client = clientBuilder.build()) {
       assertEquals(http2Client, client.getHttpClient());
     }
     // it's external, should be NOT closed when closing CloudSolrClient
@@ -175,8 +208,8 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
 
   @Test
   public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
-    try (CloudHttp2SolrClient createdClient =
-        new CloudHttp2SolrClient.Builder(
+    try (CloudHttp2SolrClient<Http2SolrClient> createdClient =
+        new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .withDefaultCollection("aCollection")
             .build()) {
@@ -213,7 +246,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
       Http2SolrClient httpClient,
       Http2SolrClient.Builder internalClientBuilder)
       throws IOException {
-    CloudHttp2SolrClient.Builder clientBuilder = new CloudHttp2SolrClient.Builder(solrUrls);
+    CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient> clientBuilder = new CloudHttp2SolrClient.Builder<>(solrUrls);
 
     if (httpClient != null) {
       clientBuilder.withHttpClient(httpClient);
@@ -221,7 +254,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
       clientBuilder.withHttpClientBuilder(internalClientBuilder);
     }
 
-    try (CloudHttp2SolrClient client = clientBuilder.build()) {
+    try (CloudHttp2SolrClient<Http2SolrClient> client = clientBuilder.build()) {
       assertEquals(
           client.getHttpClient(),
           ((Http2ClusterStateProvider) client.getClusterStateProvider()).getHttpClient());
@@ -230,7 +263,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
 
   public void testCustomStateProvider() throws IOException {
     ZkClientClusterStateProvider stateProvider = mock(ZkClientClusterStateProvider.class);
-    try (CloudSolrClient cloudSolrClient = new CloudHttp2SolrClient.Builder(stateProvider).build()) {
+    try (CloudSolrClient cloudSolrClient = new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(stateProvider).build()) {
       assertEquals(stateProvider, cloudSolrClient.getClusterStateProvider());
     }
     verify(stateProvider, times(1)).close();

@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ClusterState;
@@ -88,7 +89,7 @@ public class HealthcheckTool extends ToolBase {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
       runtime.exit(1);
     }
-    try (CloudHttp2SolrClient cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost)) {
+    try (CloudHttp2SolrClient<Http2SolrClient> cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
       cloudSolrClient.connect();
       runCloudTool(cloudSolrClient, cli);

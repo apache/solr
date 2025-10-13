@@ -2527,7 +2527,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * A variant of {@link org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} that will
    * randomize some internal settings.
    */
-  public static class RandomizingCloudHttp2SolrClientBuilder extends CloudHttp2SolrClient.Builder {
+  public static class RandomizingCloudHttp2SolrClientBuilder extends CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient> {
 
     public RandomizingCloudHttp2SolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
       super(zkHosts, zkChroot);
