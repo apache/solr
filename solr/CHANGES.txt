@@ -189,6 +189,8 @@ Deprecation Removals
 
 * SOLR-17935: Remove deprecated NoOpResponseParser. (Eric Pugh, David Smiley)
 
+* SOLR-17182: Remove `solr.useExitableDirectoryReader` property. (Andrzej Bialecki)
+
 Dependency Upgrades
 ---------------------
 
@@ -265,6 +267,10 @@ Other Changes
   upgrade guide.  (David Smiley)
 
 * SOLR-17929: Remove obsolete overseer internal work queue. This queue was read-only since Solr 8. (Pierre Salagnac)
+
+* SOLR-17182: Remove `solr.useExitableDirectoryReader` property. Using `ExitableDirectoryReader`
+  apparently has negligible impact on search performance so it's used now for all queries regardless of
+  their query limits params. (Andrzej Bialecki)
 
 ==================  9.10.0 ==================
 New Features
