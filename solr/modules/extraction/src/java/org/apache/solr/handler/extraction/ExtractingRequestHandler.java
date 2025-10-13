@@ -88,7 +88,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
         }
         Object maxCharsObj = initArgs.get(ExtractingParams.TIKASERVER_MAX_CHARS);
         long maxCharsLimit = 1024 * 1024 * 1024;
-        ;
         if (maxCharsObj != null) {
           try {
             maxCharsLimit = Long.parseLong(String.valueOf(maxCharsObj));
