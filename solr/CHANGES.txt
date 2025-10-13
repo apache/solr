@@ -277,6 +277,8 @@ New Features
 ---------------------
 * SOLR-17915: shards.preference=replica.location now supports the "host" option for routing to replicas on the same host. (Houston Putman)
 
+* SOLR-17923: Add fullOuterJoin stream function (Andy Webb)
+
 * SOLR-7632: The Extraction Request Handler, aka Solr Cell, now supports delegating the parsing of rich documents to
   an external Tika Server. This allows for a more stable Solr server, and easier to configure and scale parsing
   independently. The local in-process Tika parser is now deprecated. (Jan Høydahl, Eric Pugh)
