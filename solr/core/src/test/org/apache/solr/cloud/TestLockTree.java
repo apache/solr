@@ -48,7 +48,7 @@ public class TestLockTree extends SolrTestCaseJ4 {
             .getSession()
             .lock(CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1")));
 
-    assertNull(
+    assertNotNull(
         lockTree.getSession().lock(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2")));
     coll1Lock.unlock();
     Lock shard1Lock =
@@ -71,9 +71,9 @@ public class TestLockTree extends SolrTestCaseJ4 {
 
     List<Set<String>> orderOfExecution =
         Arrays.asList(
-            Set.of("coll1/shard1/core_node2", "coll2/shard2"),
-            Set.of("coll1", "coll2"),
-            Set.of("coll1/shard1", "coll2/shard1"));
+            Set.of("coll1", "coll2/shard2"),
+            Set.of("coll1/shard1", "coll2"),
+            Set.of("coll2/shard1"));
     lockTree = new LockTree();
     for (int counter = 0; counter < orderOfExecution.size(); counter++) {
       LockTree.Session session = lockTree.getSession();
@@ -82,7 +82,7 @@ public class TestLockTree extends SolrTestCaseJ4 {
       List<Thread> threads = new ArrayList<>();
       for (Pair<CollectionAction, List<String>> operation : operations) {
         final Lock lock = session.lock(operation.first(), operation.second());
-        if (lock != null) {
+        if (lock != null && !lock.equals(LockTree.FREELOCK)) {
           Thread thread = new Thread(getRunnable(completedOps, operation, locks, lock));
           threads.add(thread);
           thread.start();
