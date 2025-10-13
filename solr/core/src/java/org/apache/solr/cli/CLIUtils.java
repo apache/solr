@@ -261,13 +261,13 @@ public final class CLIUtils {
         .build();
   }
 
-  public static CloudHttp2SolrClient<Http2SolrClient> getCloudHttp2SolrClient(String zkHost) {
+  public static CloudHttp2SolrClient getCloudHttp2SolrClient(String zkHost) {
     return getCloudHttp2SolrClient(zkHost, null);
   }
 
-  public static CloudHttp2SolrClient<Http2SolrClient> getCloudHttp2SolrClient(
+  public static CloudHttp2SolrClient getCloudHttp2SolrClient(
       String zkHost, Http2SolrClient.Builder builder) {
-    return new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(Collections.singletonList(zkHost), Optional.empty())
+    return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
         .withHttpClientBuilder(builder)
         .build();
   }

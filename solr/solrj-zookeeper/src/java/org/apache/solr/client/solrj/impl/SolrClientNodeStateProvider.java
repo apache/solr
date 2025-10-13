@@ -52,14 +52,14 @@ import org.slf4j.LoggerFactory;
 public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CloudHttp2SolrClient<Http2SolrClient> solrClient;
+  private final CloudHttp2SolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<Replica>>>>
       nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
 
   @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
-  public SolrClientNodeStateProvider(CloudHttp2SolrClient<Http2SolrClient> solrClient) {
+  public SolrClientNodeStateProvider(CloudHttp2SolrClient solrClient) {
     this.solrClient = solrClient;
     try {
       readReplicaDetails();
@@ -222,7 +222,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   static class RemoteCallCtx {
 
     ZkClientClusterStateProvider zkClientClusterStateProvider;
-    CloudHttp2SolrClient <Http2SolrClient>cloudSolrClient;
+    CloudHttp2SolrClient cloudSolrClient;
     public final Map<String, Object> tags = new HashMap<>();
     private final String node;
     public Map<String, Object> session;
@@ -234,7 +234,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       return true;
     }
 
-    public RemoteCallCtx(String node, CloudHttp2SolrClient<Http2SolrClient> cloudSolrClient) {
+    public RemoteCallCtx(String node, CloudHttp2SolrClient cloudSolrClient) {
       this.node = node;
       this.cloudSolrClient = cloudSolrClient;
       this.zkClientClusterStateProvider =
@@ -289,7 +289,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       request.setResponseParser(new JavaBinResponseParser());
 
       try {
-        return cloudSolrClient.getHttpClient().requestWithBaseUrl(url, request::process);
+        return ((Http2SolrClient) cloudSolrClient.getHttpClient()).requestWithBaseUrl(url, request::process); //NOCOMMIT
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Fetching replica metrics failed", e);
       }

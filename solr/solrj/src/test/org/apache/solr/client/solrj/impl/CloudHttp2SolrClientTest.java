@@ -94,8 +94,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private static final int TIMEOUT = 30;
   private static final int NODE_COUNT = 3;
 
-  private static CloudSolrClient httpBasedCloudSolrClient = null;
-  private static CloudSolrClient zkBasedCloudSolrClient = null;
+  private static CloudHttp2SolrClient httpJettyBasedCloudSolrClient = null;
+  private static CloudHttp2SolrClient httpJdkBasedCloudSolrClient = null;
+  private static CloudHttp2SolrClient zkBasedCloudSolrClient = null;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -112,19 +113,39 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
-    httpBasedCloudSolrClient = new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(solrUrls).build();
+
+    httpJettyBasedCloudSolrClient = new CloudHttp2SolrClient.Builder(solrUrls).withHttpClientBuilder(new Http2SolrClient.Builder()).build();
+    assertTrue(httpJettyBasedCloudSolrClient.getHttpClient() instanceof Http2SolrClient);
+    assertTrue(httpJettyBasedCloudSolrClient.getClusterStateProvider() instanceof Http2ClusterStateProvider<?>);
+    assertTrue(((Http2ClusterStateProvider<?>) httpJettyBasedCloudSolrClient.getClusterStateProvider()).getHttpClient() instanceof  Http2SolrClient);
+
+    httpJdkBasedCloudSolrClient = new CloudHttp2SolrClient.Builder(solrUrls).withHttpClientBuilder(new HttpJdkSolrClient.Builder().withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT)).build();
+    assertTrue(httpJdkBasedCloudSolrClient.getHttpClient() instanceof HttpJdkSolrClient);
+    assertTrue(httpJdkBasedCloudSolrClient.getClusterStateProvider() instanceof Http2ClusterStateProvider<?>);
+    assertTrue(((Http2ClusterStateProvider<?>) httpJdkBasedCloudSolrClient.getClusterStateProvider()).getHttpClient() instanceof  HttpJdkSolrClient);
+
     zkBasedCloudSolrClient =
-        new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(
+        new CloudHttp2SolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build();
+    assertTrue(zkBasedCloudSolrClient.getHttpClient() instanceof Http2SolrClient);
+    assertTrue(zkBasedCloudSolrClient.getClusterStateProvider() instanceof ZkClientClusterStateProvider);
+
   }
 
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
 
-    if (httpBasedCloudSolrClient != null) {
+    if (httpJettyBasedCloudSolrClient != null) {
       try {
-        httpBasedCloudSolrClient.close();
+        httpJettyBasedCloudSolrClient.close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    if (httpJdkBasedCloudSolrClient != null) {
+      try {
+        httpJdkBasedCloudSolrClient.close();
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -138,14 +159,14 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     }
 
     shutdownCluster();
-    httpBasedCloudSolrClient = null;
+    httpJettyBasedCloudSolrClient = null;
     zkBasedCloudSolrClient = null;
   }
 
   /** Randomly return the cluster's ZK based CSC, or HttpClusterProvider based CSC. */
   private CloudSolrClient getRandomClient() {
     //    return random().nextBoolean()? zkBasedCloudSolrClient : httpBasedCloudSolrClient;
-    return httpBasedCloudSolrClient;
+    return httpJdkBasedCloudSolrClient; //NOCOMMit
   }
 
   @Test
@@ -312,7 +333,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private CloudSolrClient createHttpCSPBasedCloudSolrClient() {
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
-    return new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(solrUrls).build();
+    return new CloudHttp2SolrClient.Builder(solrUrls).build();
   }
 
   @Test
@@ -1007,7 +1028,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
-    CloudSolrClient client = httpBasedCloudSolrClient;
+    CloudSolrClient client = httpJettyBasedCloudSolrClient;
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
     new UpdateRequest().add(doc).commit(client, COLLECTION);
     assertEquals(1, client.query(COLLECTION, params("q", "*:*")).getResults().getNumFound());

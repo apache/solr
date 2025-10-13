@@ -631,7 +631,7 @@ public class RunExampleTool extends ToolBase {
   /** wait until the number of live nodes == numNodes. */
   protected void waitToSeeLiveNodes(String zkHost, int numNodes) {
     try (CloudSolrClient cloudClient =
-        new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(Collections.singletonList(zkHost), Optional.empty()).build()) {
+        new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
       cloudClient.connect();
       Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
       int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;

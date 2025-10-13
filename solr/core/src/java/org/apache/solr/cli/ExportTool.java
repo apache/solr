@@ -256,7 +256,7 @@ public class ExportTool extends ToolBase {
           new Http2SolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
-          new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(Collections.singletonList(baseurl))
+          new CloudHttp2SolrClient.Builder(Collections.singletonList(baseurl))
               .withHttpClientBuilder(builder)
               .build();
       NamedList<Object> response =

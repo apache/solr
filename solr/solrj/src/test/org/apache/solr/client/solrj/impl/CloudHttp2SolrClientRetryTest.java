@@ -53,7 +53,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
   public void testRetry() throws Exception {
     String collectionName = "testRetry";
     try (CloudSolrClient solrClient =
-        new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(
+        new CloudHttp2SolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build()) {
       CollectionAdminRequest.createCollection(collectionName, 1, 1).process(solrClient);

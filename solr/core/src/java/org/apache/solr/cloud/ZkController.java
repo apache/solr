@@ -207,7 +207,7 @@ public class ZkController implements Closeable {
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
 
-  private CloudHttp2SolrClient<Http2SolrClient> cloudSolrClient;
+  private CloudHttp2SolrClient cloudSolrClient;
 
   private final ExecutorService zkConnectionListenerCallbackExecutor =
       ExecutorUtil.newMDCAwareSingleThreadExecutor(
@@ -963,7 +963,7 @@ public class ZkController implements Closeable {
         return cloudManager;
       }
       cloudSolrClient =
-          new CloudHttp2SolrClient.Builder<Http2SolrClient.Builder, Http2SolrClient>(new ZkClientClusterStateProvider(zkStateReader))
+          new CloudHttp2SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
               .withHttpClient(cc.getDefaultHttpSolrClient())
               .build();
       cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
