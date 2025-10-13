@@ -929,52 +929,6 @@ having(rollup(over=a_s,
 
 In this example, the `having` expression iterates the aggregated tuples from the `rollup` expression and emits all tuples where the field `sum(a_i)` is greater than 100 and less than 110.
 
-== leftOuterJoin
-
-The `leftOuterJoin` function wraps two streams, Left and Right, and emits tuples from Left.
-If there is a tuple in Right equal (as defined by `on`) then the values in that tuple will be included in the emitted tuple.
-An equal tuple in Right *need not* exist for the Left tuple to be emitted.
-This supports one-to-one, one-to-many, many-to-one, and many-to-many left outer join scenarios.
-The tuples are emitted in the order in which they appear in the Left stream.
-Both streams must be sorted by the fields being used to determine equality (using the `on` parameter).
-If both tuples contain a field of the same name then the value from the Right stream will be used in the emitted tuple.
-
-You can wrap the incoming streams with a `select` function to be specific about which field values are included in the emitted tuple.
-
-=== leftOuterJoin Parameters
-
-* `StreamExpression for StreamLeft`
-* `StreamExpression for StreamRight`
-* `on`: Fields to be used for checking equality of tuples between Left and Right.
-Can be of the format `on="fieldName"`, `on="fieldNameInLeft=fieldNameInRight"`, or `on="fieldName, otherFieldName=rightOtherFieldName"`.
-
-=== leftOuterJoin Syntax
-
-[source,text]
-----
-leftOuterJoin(
-  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
-  search(pets, q="type:cat", qt="/export", fl="personId,petName", sort="personId asc"),
-  on="personId"
-)
-
-leftOuterJoin(
-  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
-  search(pets, q="type:cat", qt="/export", fl="ownerId,petName", sort="ownerId asc"),
-  on="personId=ownerId"
-)
-
-leftOuterJoin(
-  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
-  select(
-    search(pets, q="type:cat", qt="/export", fl="ownerId,name", sort="ownerId asc"),
-    ownerId,
-    name as petName
-  ),
-  on="personId=ownerId"
-)
-----
-
 == hashJoin
 
 The `hashJoin` function wraps two streams, Left and Right, and for every tuple in Left which exists in Right will emit a tuple containing the fields of both tuples.
@@ -1095,6 +1049,52 @@ intersect(
   search(collection1, q="a_s:(setA || setAB)", qt="/export", fl="id,a_s,a_i", sort="a_i asc, a_s asc"),
   search(collection1, q="a_s:(setB || setAB)", qt="/export", fl="id,a_s,a_i", sort="a_i asc, a_s asc"),
   on="a_i,a_s"
+)
+----
+
+== leftOuterJoin
+
+The `leftOuterJoin` function wraps two streams, Left and Right, and emits tuples from Left.
+If there is a tuple in Right equal (as defined by `on`) then the values in that tuple will be included in the emitted tuple.
+An equal tuple in Right *need not* exist for the Left tuple to be emitted.
+This supports one-to-one, one-to-many, many-to-one, and many-to-many left outer join scenarios.
+The tuples are emitted in the order in which they appear in the Left stream.
+Both streams must be sorted by the fields being used to determine equality (using the `on` parameter).
+If both tuples contain a field of the same name then the value from the Right stream will be used in the emitted tuple.
+
+You can wrap the incoming streams with a `select` function to be specific about which field values are included in the emitted tuple.
+
+=== leftOuterJoin Parameters
+
+* `StreamExpression for StreamLeft`
+* `StreamExpression for StreamRight`
+* `on`: Fields to be used for checking equality of tuples between Left and Right.
+Can be of the format `on="fieldName"`, `on="fieldNameInLeft=fieldNameInRight"`, or `on="fieldName, otherFieldName=rightOtherFieldName"`.
+
+=== leftOuterJoin Syntax
+
+[source,text]
+----
+leftOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  search(pets, q="type:cat", qt="/export", fl="personId,petName", sort="personId asc"),
+  on="personId"
+)
+
+leftOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  search(pets, q="type:cat", qt="/export", fl="ownerId,petName", sort="ownerId asc"),
+  on="personId=ownerId"
+)
+
+leftOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  select(
+    search(pets, q="type:cat", qt="/export", fl="ownerId,name", sort="ownerId asc"),
+    ownerId,
+    name as petName
+  ),
+  on="personId=ownerId"
 )
 ----
 
