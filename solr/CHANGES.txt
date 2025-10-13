@@ -279,7 +279,7 @@ New Features
 
 * SOLR-7632: The Extraction Request Handler, aka Solr Cell, now supports delegating the parsing of rich documents to
   an external Tika Server. This allows for a more stable Solr server, and easier to configure and scale parsing
-  independently. (Jan Høydahl, Eric Pugh)
+  independently. The local in-process Tika parser is now deprecated. (Jan Høydahl, Eric Pugh)
 
 Improvements
 ---------------------
