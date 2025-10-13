@@ -230,7 +230,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
 
   public void testCustomStateProvider() throws IOException {
     ZkClientClusterStateProvider stateProvider = mock(ZkClientClusterStateProvider.class);
-    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(stateProvider).build()) {
+    try (CloudSolrClient cloudSolrClient = new CloudHttp2SolrClient.Builder(stateProvider).build()) {
       assertEquals(stateProvider, cloudSolrClient.getClusterStateProvider());
     }
     verify(stateProvider, times(1)).close();

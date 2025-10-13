@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.beans.Field;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -254,7 +255,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add("http://solr1:8983/solr");
     solrUrls.add("http://solr2:8983/solr");
-    return new CloudSolrClient.Builder(solrUrls).build();
+    return new CloudHttp2SolrClient.Builder(solrUrls).build();
     // end::solrj-cloudsolrclient-baseurl[]
   }
 
@@ -264,7 +265,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     zkServers.add("zookeeper1:2181");
     zkServers.add("zookeeper2:2181");
     zkServers.add("zookeeper3:2181");
-    return new CloudSolrClient.Builder(zkServers, Optional.empty()).build();
+    return new CloudHttp2SolrClient.Builder(zkServers, Optional.empty()).build();
     // end::solrj-cloudsolrclient-zookeepernoroot[]
   }
 
@@ -274,7 +275,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     zkServers.add("zookeeper1:2181");
     zkServers.add("zookeeper2:2181");
     zkServers.add("zookeeper3:2181");
-    return new CloudSolrClient.Builder(zkServers, Optional.of("/solr")).build();
+    return new CloudHttp2SolrClient.Builder(zkServers, Optional.of("/solr")).build();
     // end::solrj-cloudsolrclient-zookeeperroot[]
   }
 
