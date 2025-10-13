@@ -832,6 +832,72 @@ fullOuterJoin(
 )
 ----
 
+=== Reciprocal Rank Fusion (RRF) using fullOuterJoin
+
+The `fullOuterJoin` function can be used to construct an RRF algorithm for merging together result sets, as illustrated below.
+
+(In a real-world example the two `sort/list/tuple` blocks would likely use `search` instead.)
+
+[source,text]
+----
+top(
+    n=10,
+    sort(
+        select(
+            fullOuterJoin(
+                sort(
+                    select(
+                        sort(
+                            list(
+                                tuple(id=1, title="L 1", left="a", score=4.5),
+                                tuple(id=2, title="L 2", left="b", score=3.5),
+                                tuple(id=3, title="L 3", left="c", score=2.5),
+                                tuple(id=4, title="L 4", left="d", score=2.5),
+                                tuple(id=5, title="L 5", left="e", score=2.5),
+                                tuple(id=6, title="L 6", left="f", score=2.5),
+                            ),
+                            by="score desc"
+                        ),
+                        *,
+                        score as scoreL,
+                        add(recNum(),1) as rankL,
+                        div(1,add(rankL,60)) as rrL
+                    ),
+                    by="id asc"
+                ),
+                sort(
+                    select(
+                        sort(
+                            list(
+                                tuple(id=3, title="R 3", right="g", score=0.9),
+                                tuple(id=2, title="R 2", right="h", score=0.8),
+                                tuple(id=4, title="R 4", right="i", score=0.7),
+                                tuple(id=7, title="R 7", right="j", score=0.6),
+                                tuple(id=8, title="R 8", right="k", score=0.5),
+                                tuple(id=9, title="R 9", right="l", score=0.5),
+                            ),
+                            by="score desc"
+                        ),
+                        *,
+                        score as scoreR,
+                        add(recNum(),1) as rankR,
+                        div(1,add(rankR,60)) as rrR
+                    ),
+                    by="id asc"
+                ),
+                on="id"
+            ),
+            *,
+            replace(rrL,null,withValue=0),
+            replace(rrR,null,withValue=0),
+            add(rrL,rrR) as rrf,
+        ),
+        by="rrf desc"
+    ),
+    sort="rrf desc"
+)
+----
+
 == having
 
 The `having` expression wraps a stream and applies a boolean operation to each tuple.
