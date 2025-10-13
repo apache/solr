@@ -598,8 +598,6 @@ Consult the Tika Java API documentation for configuration parameters that can be
 
 === Indexing Encrypted Documents
 
-NOTE: The `tikaserver` backend does not currently support indexing encrypted documents.
-
 The ExtractingRequestHandler will decrypt encrypted files and index their content if you supply a password in either `resource.password` in the request, or in a `passwordsFile` file.
 
 In the case of `passwordsFile`, the file supplied must be formatted so there is one line per rule.
