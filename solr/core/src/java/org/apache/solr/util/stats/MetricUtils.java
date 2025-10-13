@@ -18,19 +18,10 @@ package org.apache.solr.util.stats;
 
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.PlatformManagedObject;
-import java.lang.reflect.Method;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
@@ -71,32 +62,6 @@ public class MetricUtils {
   public static final Predicate<CharSequence> ALL_PROPERTIES = (name) -> true;
 
   /**
-   * Local cache for BeanInfo instances that are created to scan for system metrics. List of
-   * properties is not supposed to change for the JVM lifespan, so we can keep already create
-   * BeanInfo instance for future calls.
-   */
-  private static final ConcurrentMap<Class<?>, BeanInfo> beanInfos = new ConcurrentHashMap<>();
-
-  /**
-   * Converts a double representing nanoseconds to a double representing milliseconds.
-   *
-   * @param ns the amount of time in nanoseconds
-   * @return the amount of time in milliseconds
-   */
-  public static double nsToMs(double ns) {
-    return ns / TimeUnit.MILLISECONDS.toNanos(1);
-  }
-
-  // optionally convert ns to ms
-  static double nsToMs(boolean convert, double value) {
-    if (convert) {
-      return nsToMs(value);
-    } else {
-      return value;
-    }
-  }
-
-  /**
    * Adds metrics from a Timer to a NamedList, using well-known back-compat names.
    *
    * @param lst The NamedList to add the metrics data to
@@ -116,49 +81,21 @@ public class MetricUtils {
   }
 
   /**
-   * Creates a set of metrics (gauges) that correspond to available bean properties for the provided
-   * MXBean.
+   * Converts a double representing nanoseconds to a double representing milliseconds.
    *
-   * @param obj an instance of MXBean
-   * @param intf MXBean interface, one of {@link PlatformManagedObject}-s
-   * @param consumer consumer for created names and metrics
-   * @param <T> formal type
+   * @param ns the amount of time in nanoseconds
+   * @return the amount of time in milliseconds
    */
-  public static <T extends PlatformManagedObject> void addMXBeanMetrics(
-      T obj, Class<? extends T> intf, BiConsumer<String, Object> consumer) {
-    if (intf.isInstance(obj)) {
-      BeanInfo beanInfo =
-          beanInfos.computeIfAbsent(
-              intf,
-              clazz -> {
-                try {
-                  return Introspector.getBeanInfo(
-                      clazz, clazz.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
+  public static double nsToMs(double ns) {
+    return ns / TimeUnit.MILLISECONDS.toNanos(1);
+  }
 
-                } catch (IntrospectionException e) {
-                  log.warn("Unable to fetch properties of MXBean {}", obj.getClass().getName());
-                  return null;
-                }
-              });
-
-      // if BeanInfo retrieval failed, return early
-      if (beanInfo == null) {
-        return;
-      }
-      for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
-        try {
-          Method readMethod = desc.getReadMethod();
-          if (readMethod == null) {
-            continue; // skip properties without a read method
-          }
-
-          final String name = desc.getName();
-          Object value = readMethod.invoke(obj);
-          consumer.accept(name, value);
-        } catch (Exception e) {
-          // didn't work, skip it...
-        }
-      }
+  // optionally convert ns to ms
+  static double nsToMs(boolean convert, double value) {
+    if (convert) {
+      return nsToMs(value);
+    } else {
+      return value;
     }
   }
 
@@ -181,28 +118,5 @@ public class MetricUtils {
       SolrInfoBean.Category category,
       String name) {
     return new OtelInstrumentedExecutorService(delegate, ctx, category, name);
-  }
-
-  /**
-   * Creates a set of metrics (gauges) that correspond to available bean properties for the provided
-   * MXBean.
-   *
-   * @param obj an instance of MXBean
-   * @param interfaces interfaces that it may implement. Each interface will be tried in turn, and
-   *     only if it exists and if it contains unique properties then they will be added as metrics.
-   * @param consumer consumer for created names and metrics
-   * @param <T> formal type
-   */
-  public static <T extends PlatformManagedObject> void addMXBeanMetrics(
-      T obj, String[] interfaces, BiConsumer<String, Object> consumer) {
-    for (String clazz : interfaces) {
-      try {
-        final Class<? extends PlatformManagedObject> intf =
-            Class.forName(clazz).asSubclass(PlatformManagedObject.class);
-        MetricUtils.addMXBeanMetrics(obj, intf, consumer);
-      } catch (ClassNotFoundException e) {
-        // ignore
-      }
-    }
   }
 }

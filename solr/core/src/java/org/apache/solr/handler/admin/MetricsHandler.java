@@ -33,6 +33,7 @@ import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.StrUtils;
@@ -108,6 +109,18 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
           SolrException.ErrorCode.INVALID_STATE, "SolrMetricManager instance not initialized");
     }
 
+    SolrParams params = req.getParams();
+    String format = params.get(CommonParams.WT);
+
+    if (format == null) {
+      req.setParams(SolrParams.wrapDefaults(params, SolrParams.of("wt", "prometheus")));
+    } else if (!PROMETHEUS_METRICS_WT.equals(format) && !OPEN_METRICS_WT.equals(format)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Only Prometheus and OpenMetrics metric formats supported. Unsupported format requested: "
+              + format);
+    }
+
     if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
       return; // Request was proxied to other node
     }
@@ -125,10 +138,6 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       return;
     }
 
-    handlePrometheusRequest(params, consumer);
-  }
-
-  private void handlePrometheusRequest(SolrParams params, BiConsumer<String, Object> consumer) {
     Set<String> metricNames = readParamsAsSet(params, METRIC_NAME_PARAM);
     SortedMap<String, Set<String>> labelFilters = labelFilters(params);
 

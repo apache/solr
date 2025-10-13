@@ -165,7 +165,7 @@ public abstract class RequestHandlerBase
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     if (aggregateNodeLevelMetricsEnabled) {
-      //       NOCOMMIT: SOLR-17865
+      //      NOCOMMIT: SOLR-17865
       //      this.solrMetricsContext =
       //          new SolrDelegateRegistryMetricsContext(
       //              parentContext.getMetricManager(),
