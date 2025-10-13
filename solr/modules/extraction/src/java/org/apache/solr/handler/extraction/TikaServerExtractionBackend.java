@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.extraction;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
@@ -56,12 +57,15 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   private final TikaServerParser tikaServerResponseParser = new TikaServerParser();
   private boolean tikaMetadataCompatibility;
   private HashMap<String, Object> initArgsMap = new HashMap<>();
+  private final long maxCharsLimit;
 
   public TikaServerExtractionBackend(String baseUrl) {
-    this(baseUrl, DEFAULT_TIMEOUT_SECONDS, null);
+    this(baseUrl, DEFAULT_TIMEOUT_SECONDS, null, 100 * 1024 * 1024);
   }
 
-  public TikaServerExtractionBackend(String baseUrl, int timeoutSeconds, NamedList<?> initArgs) {
+  public TikaServerExtractionBackend(
+      String baseUrl, int timeoutSeconds, NamedList<?> initArgs, long maxCharsLimit) {
+    this.maxCharsLimit = maxCharsLimit;
     if (initArgs != null) {
       initArgs.toMap(this.initArgsMap);
     }
@@ -244,7 +248,69 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       throw new SolrException(errorCode, msg);
     }
 
-    return listener.getInputStream();
+    InputStream responseStream = listener.getInputStream();
+    // Bound the amount of data we read from Tika Server to avoid excessive memory/CPU usage
+    return new LimitingInputStream(responseStream, maxCharsLimit);
+  }
+
+  private static class LimitingInputStream extends InputStream {
+    private final InputStream in;
+    private final long max;
+    private long count;
+
+    LimitingInputStream(InputStream in, long max) {
+      this.in = in;
+      this.max = max;
+      this.count = 0L;
+    }
+
+    private void checkLimit(long toAdd) {
+      if (max <= 0) return; // non-positive means unlimited
+      long newCount = count + toAdd;
+      if (newCount > max) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "TikaServer response exceeded the configured maximum size of " + max + " bytes");
+      }
+      count = newCount;
+    }
+
+    @Override
+    public int read() throws IOException {
+      int b = in.read();
+      if (b != -1) {
+        checkLimit(1);
+      }
+      return b;
+    }
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+      int n = in.read(b, off, len);
+      if (n > 0) {
+        checkLimit(n);
+      }
+      return n;
+    }
+
+    @Override
+    public long skip(long n) throws IOException {
+      long skipped = in.skip(n);
+      if (skipped > 0) {
+        checkLimit(skipped);
+      }
+      return skipped;
+    }
+
+    @Override
+    public void close() throws IOException {
+      in.close();
+    }
+
+    @Override
+    public int available() throws IOException {
+      return in.available();
+    }
   }
 
   private static void ensureClientInitialized() {

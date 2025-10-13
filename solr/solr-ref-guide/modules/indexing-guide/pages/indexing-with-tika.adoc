@@ -421,6 +421,19 @@ Example: `passwordsFile=/path/to/passwords.txt`
 // +
 // Only applicable for `tikaserver` backend. Can only be set in `solrconfig.xml`, not per request.
 
+`tikaserver.maxChars`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 100 MBytes
+|===
++
+Sets a hard limit on the number of bytes Solr will accept from the Tika Server response body when using the `tikaserver` backend. If the extracted content exceeds this limit, the request will fail with HTTP 400 (Bad Request).
++
+Only applicable for the `tikaserver` backend. This parameter can only be configured in the request handler configuration (`solrconfig.xml`), not per request.
++
+Example: In `solrconfig.xml`: `<long name="tikaserver.maxChars">1000000</long>`
+
 `tikaserver.recursive`::
 +
 [%autowidth,frame=none]

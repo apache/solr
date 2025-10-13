@@ -86,8 +86,23 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
                 nfe);
           }
         }
+        Object maxCharsObj = initArgs.get(ExtractingParams.TIKASERVER_MAX_CHARS);
+        long maxCharsLimit = 1024 * 1024 * 1024;
+        ;
+        if (maxCharsObj != null) {
+          try {
+            maxCharsLimit = Long.parseLong(String.valueOf(maxCharsObj));
+          } catch (NumberFormatException nfe) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Invalid value for '"
+                    + ExtractingParams.TIKASERVER_MAX_CHARS
+                    + "': "
+                    + maxCharsLimit);
+          }
+        }
         this.tikaServerBackend =
-            new TikaServerExtractionBackend(tikaServerUrl, timeoutSecs, initArgs);
+            new TikaServerExtractionBackend(tikaServerUrl, timeoutSecs, initArgs, maxCharsLimit);
       }
 
       // Choose default backend name

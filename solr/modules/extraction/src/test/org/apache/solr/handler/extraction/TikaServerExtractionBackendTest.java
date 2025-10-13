@@ -26,6 +26,7 @@ import java.util.Map;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.tika.sax.ToXMLContentHandler;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -178,5 +179,53 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   private ExtractionRequest newRequest(String file, String contentType, String content) {
     return newRequest(file, contentType, content, false, Collections.emptyMap());
+  }
+
+  @Test
+  public void testMaxCharsLimitEnforced() throws Exception {
+    Assume.assumeTrue("Tika server container not started", tika != null);
+    // Set a very small max chars limit and attempt to extract more than that
+    long maxChars = 10L;
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(baseUrl, 180, null, maxChars)) {
+      byte[] data =
+          ("This content is definitely longer than ten characters.")
+              .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        SolrException e =
+            expectThrows(
+                SolrException.class,
+                () -> backend.extract(in, newRequest("test.txt", "text/plain", "xml")));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue(
+            "Expected message to mention max size exceeded",
+            e.getMessage().contains("exceeded the configured maximum size"));
+      }
+    }
+  }
+
+  @Test
+  public void testMaxCharsLimitEnforcedWithSaxHandler() throws Exception {
+    Assume.assumeTrue("Tika server container not started", tika != null);
+    long maxChars = 10L;
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(baseUrl, 180, null, maxChars)) {
+      byte[] data =
+          ("This content is definitely longer than ten characters.")
+              .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      ExtractionRequest request = newRequest("test.txt", "text/plain", "xml");
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        ToXMLContentHandler xmlHandler = new ToXMLContentHandler();
+        ExtractionMetadata md = backend.buildMetadataFromRequest(request);
+        SolrException e =
+            expectThrows(
+                SolrException.class,
+                () -> backend.extractWithSaxHandler(in, request, md, xmlHandler));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue(
+            "Expected message to mention max size exceeded",
+            e.getMessage().contains("exceeded the configured maximum size"));
+      }
+    }
   }
 }

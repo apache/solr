@@ -147,6 +147,9 @@ public interface ExtractingParams {
   /** URL of Tika Server instance. */
   public static final String TIKASERVER_URL = "tikaserver.url";
 
+  /** Max characters allowed in parsed content. Default 1Gb */
+  public static final String TIKASERVER_MAX_CHARS = "tikaserver.maxChars";
+
   /**
    * Enable recursive parsing of embedded documents when using TikaServer. This is experimental,
    * uses /rmeta endpoint, uses more RAM and is disabled by default.
