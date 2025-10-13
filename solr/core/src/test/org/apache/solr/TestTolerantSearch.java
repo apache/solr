@@ -58,7 +58,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
 
   @BeforeClass
   public static void createThings() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
+    systemSetPropertyEnableUrlAllowList(false);
     Path solrHome = createSolrHome();
     createAndStartJetty(solrHome);
     String url = getBaseUrl();
@@ -109,7 +109,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
       collection2 = null;
     }
     resetExceptionIgnores();
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @SuppressWarnings("unchecked")

@@ -25,7 +25,9 @@ import java.util.stream.Stream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.prometheus.PrometheusExporterTestBase;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
@@ -44,6 +46,7 @@ public class Helpers {
           .forEach(
               xml -> {
                 ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
+                req.setResponseParser(new JsonMapResponseParser());
                 try {
                   req.addFile(xml, "application/xml");
                   client.request(req, PrometheusExporterTestBase.COLLECTION);
@@ -51,7 +54,9 @@ public class Helpers {
                   throw new RuntimeException(e);
                 }
               });
-      client.commit(PrometheusExporterTestBase.COLLECTION);
+      var request = new UpdateRequest();
+      request.setResponseParser(new JsonMapResponseParser());
+      request.commit(client, PrometheusExporterTestBase.COLLECTION);
     }
   }
 

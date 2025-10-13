@@ -61,7 +61,7 @@ public class NodeValueFetcher {
       public Object extractResult(Object root) {
         NamedList<?> node = (NamedList<?>) Utils.getObjectByPath(root, false, "solr.node");
         int count = 0;
-        for (String leafCoreMetricName : new String[] {"lazy", "loaded", "unloaded"}) {
+        for (String leafCoreMetricName : new String[] {"loaded", "unloaded"}) {
           Number n = (Number) node.get("CONTAINER.cores." + leafCoreMetricName);
           if (n != null) count += n.intValue();
         }

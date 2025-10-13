@@ -135,8 +135,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public static final String STATS_SOURCE = "org.apache.solr.stats_source";
   public static final String STATISTICS_KEY = "searcher";
 
-  public static final String EXITABLE_READER_PROPERTY = "solr.useExitableDirectoryReader";
-
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
@@ -225,10 +223,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       throws IOException {
     assert reader != null;
     reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
-    // see SOLR-16693 and SOLR-17831 for more details
-    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY, Boolean.FALSE)) {
-      reader = ExitableDirectoryReader.wrap(reader, QueryLimitsTimeout.INSTANCE);
-    }
+    // see SOLR-16693, SOLR-17831 and SOLR-17182 for more details
+    reader = ExitableDirectoryReader.wrap(reader, QueryLimitsTimeout.INSTANCE);
     return reader;
   }
 
@@ -305,11 +301,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (cmd.shouldEarlyTerminateSearch()) {
       collector = new EarlyTerminatingCollector(collector, cmd.getMaxHitsAllowed());
     }
-
-    /*    final long timeAllowed = cmd.getTimeAllowed();
-    if (timeAllowed > 0) {
-      setTimeout(new QueryTimeoutImpl(timeAllowed));
-    }*/
 
     if (postFilter != null) {
       postFilter.setLastDelegate(collector);

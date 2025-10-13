@@ -51,7 +51,7 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
 
-    systemSetPropertySolrDisableUrlAllowList("true");
+    systemSetPropertyEnableUrlAllowList(false);
 
     leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();

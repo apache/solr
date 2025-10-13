@@ -58,7 +58,6 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
@@ -261,12 +260,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             sb);
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy, sb);
 
-    if (args != null && args.get("shardsWhitelist") != null) {
-      log.warn(
-          "Property 'shardsWhitelist' is deprecated, please use '{}' instead.",
-          AllowListUrlChecker.URL_ALLOW_LIST);
-    }
-
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
     String v = System.getProperty("tests.shardhandler.randomSeed");
     if (v != null) {
@@ -413,6 +406,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
               .toString(),
           zkController.getNodeName(),
           zkController.getBaseUrl(),
+          zkController.getHostName(),
           zkController.getSysPropsCacher());
     } else {
       return requestReplicaListTransformerGenerator.getReplicaListTransformer(params);

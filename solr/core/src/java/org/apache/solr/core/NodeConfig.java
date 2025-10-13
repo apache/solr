@@ -107,8 +107,6 @@ public class NodeConfig {
 
   private final int indexSearcherExecutorThreads;
 
-  @Deprecated private final int transientCacheSize;
-
   private final boolean useSchemaCache;
 
   private final String managementPath;
@@ -147,7 +145,6 @@ public class NodeConfig {
       Integer coreLoadThreads,
       int replayUpdatesThreads,
       int indexSearcherExecutorThreads,
-      int transientCacheSize,
       boolean useSchemaCache,
       String managementPath,
       Path solrHome,
@@ -187,7 +184,6 @@ public class NodeConfig {
     this.coreLoadThreads = coreLoadThreads;
     this.replayUpdatesThreads = replayUpdatesThreads;
     this.indexSearcherExecutorThreads = indexSearcherExecutorThreads;
-    this.transientCacheSize = transientCacheSize;
     this.useSchemaCache = useSchemaCache;
     this.managementPath = managementPath;
     this.solrHome = solrHome;
@@ -402,10 +398,6 @@ public class NodeConfig {
     return cloudConfig;
   }
 
-  public int getTransientCacheSize() {
-    return transientCacheSize;
-  }
-
   protected final Path solrHome;
   protected final SolrResourceLoader loader;
   protected final Properties solrProperties;
@@ -608,7 +600,6 @@ public class NodeConfig {
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
     private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
     private int indexSearcherExecutorThreads = DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS;
-    @Deprecated private int transientCacheSize = -1;
     private boolean useSchemaCache = false;
     private String managementPath;
     private Properties solrProperties = new Properties();
@@ -774,14 +765,6 @@ public class NodeConfig {
       return this;
     }
 
-    // Remove in Solr 10.0
-
-    @Deprecated
-    public NodeConfigBuilder setTransientCacheSize(int transientCacheSize) {
-      this.transientCacheSize = transientCacheSize;
-      return this;
-    }
-
     public NodeConfigBuilder setUseSchemaCache(boolean useSchemaCache) {
       this.useSchemaCache = useSchemaCache;
       return this;
@@ -916,7 +899,6 @@ public class NodeConfig {
           coreLoadThreads,
           replayUpdatesThreads,
           indexSearcherExecutorThreads,
-          transientCacheSize,
           useSchemaCache,
           managementPath,
           solrHome,
