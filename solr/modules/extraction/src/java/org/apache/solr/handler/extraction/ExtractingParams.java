@@ -147,7 +147,7 @@ public interface ExtractingParams {
   /** URL of Tika Server instance. */
   public static final String TIKASERVER_URL = "tikaserver.url";
 
-  /** Max characters allowed in parsed content. Default 1Gb */
+  /** Max characters allowed in parsed content */
   public static final String TIKASERVER_MAX_CHARS = "tikaserver.maxChars";
 
   /**
