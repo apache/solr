@@ -115,7 +115,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   private ClusterStateProvider createHttp2ClusterStateProvider(
       List<String> solrUrls, Http2SolrClient httpClient) {
     try {
-      return new Http2ClusterStateProvider(solrUrls, httpClient);
+      return new Http2ClusterStateProvider<>(solrUrls, httpClient);
     } catch (Exception e) {
       closeMyClientIfNeeded();
       throw new RuntimeException(
@@ -336,34 +336,9 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * number of locks.
      *
      * <p>Defaults to 3.
-     *
-     * @deprecated Please use {@link #withParallelCacheRefreshes(int)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder setParallelCacheRefreshes(int parallelCacheRefreshesLocks) {
-      this.withParallelCacheRefreshes(parallelCacheRefreshesLocks);
-      return this;
-    }
-
-    /**
-     * When caches are expired then they are refreshed after acquiring a lock. Use this to set the
-     * number of locks.
-     *
-     * <p>Defaults to 3.
      */
     public Builder withParallelCacheRefreshes(int parallelCacheRefreshesLocks) {
       this.parallelCacheRefreshesLocks = parallelCacheRefreshesLocks;
-      return this;
-    }
-
-    /**
-     * This is the time to wait to re-fetch the state after getting the same state version from ZK
-     *
-     * @deprecated Please use {@link #withRetryExpiryTime(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder setRetryExpiryTime(int secs) {
-      this.withRetryExpiryTime(secs, TimeUnit.SECONDS);
       return this;
     }
 
@@ -384,18 +359,6 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     /**
      * Sets the cache ttl for DocCollection Objects cached.
      *
-     * @param timeToLiveSeconds ttl value in seconds
-     * @deprecated Please use {@link #withCollectionCacheTtl(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder withCollectionCacheTtl(int timeToLiveSeconds) {
-      withCollectionCacheTtl(timeToLiveSeconds, TimeUnit.SECONDS);
-      return this;
-    }
-
-    /**
-     * Sets the cache ttl for DocCollection Objects cached.
-     *
      * @param timeToLive ttl value
      */
     public Builder withCollectionCacheTtl(long timeToLive, TimeUnit unit) {
@@ -405,19 +368,18 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
-     * Set the internal http client.
+     * Set the internal {@link Http2SolrClient}.
      *
-     * <p>Note: closing the httpClient instance is at the responsibility of the caller.
+     * <p>Note: closing the client instance is the responsibility of the caller.
      *
-     * @param httpClient http client
      * @return this
      */
-    public Builder withHttpClient(Http2SolrClient httpClient) {
+    public Builder withHttpClient(Http2SolrClient httpSolrClient) {
       if (this.internalClientBuilder != null) {
         throw new IllegalStateException(
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
       }
-      this.httpClient = httpClient;
+      this.httpClient = httpSolrClient;
       return this;
     }
 
@@ -429,13 +391,18 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * @param internalClientBuilder the builder to use for creating the internal http client.
      * @return this
      */
-    public Builder withInternalClientBuilder(Http2SolrClient.Builder internalClientBuilder) {
+    public Builder withHttpClientBuilder(Http2SolrClient.Builder internalClientBuilder) {
       if (this.httpClient != null) {
         throw new IllegalStateException(
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
       }
       this.internalClientBuilder = internalClientBuilder;
       return this;
+    }
+
+    @Deprecated(since = "9.10")
+    public Builder withInternalClientBuilder(Http2SolrClient.Builder internalClientBuilder) {
+      return withHttpClientBuilder(internalClientBuilder);
     }
 
     /**
