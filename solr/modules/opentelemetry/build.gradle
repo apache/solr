@@ -30,7 +30,9 @@ dependencies {
   implementation libs.slf4j.api
 
   implementation libs.opentelemetry.api
-  implementation libs.opentelemetry.sdkextension.autoconfigure
+  implementation libs.opentelemetry.sdk
+  implementation libs.opentelemetry.sdk.metrics
+  implementation libs.opentelemetry.sdk.extension.autoconfigure
   implementation libs.opentelemetry.exporter.otlp
   // End users must recompile with jaeger exporter and/or zipkin exporter if they need these
 
@@ -46,7 +48,6 @@ dependencies {
 
   testImplementation project(':solr:test-framework')
   testImplementation libs.junit.junit
-  testImplementation libs.opentelemetry.sdk
-  testImplementation libs.opentelemetry.sdktrace
-  testImplementation libs.opentelemetry.sdktesting
+  testImplementation libs.opentelemetry.sdk.trace
+  testImplementation libs.opentelemetry.sdk.testing
 }

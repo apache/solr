@@ -79,6 +79,7 @@ dependencies {
   implementation(libs.opentelemetry.sdk) {
     exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
   }
+  permitUnusedDeclared libs.opentelemetry.sdk
 
   implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server
