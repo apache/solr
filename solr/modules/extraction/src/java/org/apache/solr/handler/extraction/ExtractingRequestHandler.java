@@ -17,6 +17,7 @@
 package org.apache.solr.handler.extraction;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrCore;
@@ -27,6 +28,8 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handler for rich documents like PDF or Word or any other file format that Tika handles that need
@@ -34,6 +37,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  */
 public class ExtractingRequestHandler extends ContentStreamHandlerBase
     implements SolrCoreAware, PermissionNameProvider {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String PARSE_CONTEXT_CONFIG = "parseContext.config";
   public static final String CONFIG_LOCATION = "tika.config";
@@ -70,7 +75,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
 
       // Optionally create Tika Server backend if URL configured
       String tikaServerUrl = (String) initArgs.get(ExtractingParams.TIKASERVER_URL);
-      if (tikaServerUrl != null) {
+      if (tikaServerUrl != null && !tikaServerUrl.trim().isEmpty()) {
         int timeoutSecs = 0;
         Object initTimeout = initArgs.get(ExtractingParams.TIKASERVER_TIMEOUT_SECS);
         if (initTimeout != null) {
@@ -111,12 +116,28 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
               ? LocalTikaExtractionBackend.NAME
               : backendName;
 
-      // If the default is tikaserver but no URL configured, fall back to local
-      if (TikaServerExtractionBackend.NAME.equals(this.defaultBackendName)
-          && this.tikaServerBackend == null) {
-        this.defaultBackendName = LocalTikaExtractionBackend.NAME;
+      // Validate backend and check configuration
+      switch (this.defaultBackendName) {
+        case LocalTikaExtractionBackend.NAME:
+          break;
+        case TikaServerExtractionBackend.NAME:
+          // Tika Server backend requires URL to be configured
+          if (this.tikaServerBackend == null) {
+            throw new SolrException(
+                ErrorCode.INVALID_STATE, "Tika Server backend requested but no URL configured");
+          }
+          break;
+        default:
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "Invalid extraction backend: '"
+                  + this.defaultBackendName
+                  + "'. Must be one of: '"
+                  + LocalTikaExtractionBackend.NAME
+                  + "', '"
+                  + TikaServerExtractionBackend.NAME
+                  + "'");
       }
-
     } catch (Exception e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Unable to initialize ExtractingRequestHandler", e);

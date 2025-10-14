@@ -273,7 +273,8 @@ Example: `defaultField=\_text_`
 +
 Choose the backend to use for extraction. The options are `local` or `tikaserver`.
 The `local` backend uses Tika libraries included with Solr to do the extraction, and is the default in Solr 9.x.
-The `tikaserver` backend uses an external Tika server process to do the extraction.
+The `tikaserver` backend uses an external Tika server process to do the extraction, and
+requires the `tikaserver.url` parameter to point to a running Tika Server.
 **The `local` backend is deprecated and will be removed in a future release.**
 +
 Example: In `solrconfig.xml`: `<str name="extraction.backend">tikaserver</str>`.
