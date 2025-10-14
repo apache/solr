@@ -342,6 +342,24 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return "Bearer " + jws.getCompactSerialization();
   }
 
+  private void assertAuthMetricsMinimums(
+      int requests,
+      int authenticated,
+      int passThrough,
+      int failWrongCredentials,
+      int failMissingCredentials,
+      int errors)
+      throws InterruptedException {
+    super.assertAuthMetricsMinimums(
+        JWTAuthPlugin.class,
+        requests,
+        authenticated,
+        passThrough,
+        failWrongCredentials,
+        failMissingCredentials,
+        errors);
+  }
+
   /**
    * Configure solr cluster with a security.json talking to MockOAuth2 server
    *
