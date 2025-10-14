@@ -391,7 +391,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return maybeTryHeadRequestSync(uriNoQueryParams);
   }
 
-  protected Map<URI, Boolean> headSucceededByBaseUri = new HashMap<>();  // use only in synchronized method
+  protected final Map<URI, Boolean> headSucceededByBaseUri = new HashMap<>();  // use only in synchronized method
 
   private synchronized boolean maybeTryHeadRequestSync(URI uriNoQueryParams) {
     Boolean headSucceeded = headSucceededByBaseUri.get(uriNoQueryParams);
