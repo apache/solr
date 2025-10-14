@@ -62,13 +62,6 @@ shutdown_all() {
   solr stop --all >/dev/null 2>&1
 }
 
-shutdown_exporter(){
-  EXPORTER_PID=$(ps auxww | grep org.apache.solr.prometheus.exporter.SolrExporter | awk "/-classpath/"' {print $2}' | sort -r)
-  if [[ -n $EXPORTER_PID ]]; then
-    kill -9 $EXPORTER_PID
-  fi
-}
-
 delete_all_collections() {
   local collection_list="$(solr zk ls /collections -z localhost:${ZK_PORT})"
   for collection in $collection_list; do
