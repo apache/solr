@@ -34,6 +34,7 @@ public class OtlpExporterFactory implements MetricExporterFactory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @Override
   public MetricExporter getExporter() {
     if (!OTLP_EXPORTER_ENABLED) {
       log.info("OTLP metric exporter is disabled.");

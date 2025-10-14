@@ -112,7 +112,6 @@ public class SolrCoreMetricManager implements Closeable {
    * in the case of core swapping/renaming
    *
    * @param producer producer of metrics to be registered
-   * @param attributes
    */
   public void registerMetricProducer(SolrMetricProducer producer, Attributes attributes) {
     if (attributes == null || producer == null) {

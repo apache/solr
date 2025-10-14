@@ -674,7 +674,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                     runner.getBaseUrl().toString(),
                     SolrRequest.SolrRequestType.ADMIN.name(),
                     adminPath);
-            errorsBefore += numRequests;
+            errorsBefore += numRequests.longValue();
             if (log.isInfoEnabled()) {
               log.info(
                   "Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
@@ -700,7 +700,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                     runner.getBaseUrl().toString(),
                     SolrRequest.SolrRequestType.ADMIN.name(),
                     adminPath);
-            errorsAfter += numRequests;
+            errorsAfter += numRequests.longValue();
             if (log.isInfoEnabled()) {
               log.info(
                   "Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());

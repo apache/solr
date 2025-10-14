@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
@@ -585,7 +586,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
         (GaugeSnapshot.GaugeDataPointSnapshot)
             SolrMetricTestUtils.getDataPointSnapshot(metricsReader, metricName, labels);
     assertNotNull(dataPointSnapshot);
-    assertEquals(expectedValue, dataPointSnapshot.getValue(), 0.0);
+    assertEquals(expectedValue, (long) dataPointSnapshot.getValue());
   }
 
   private void assertAuditMetricsMinimums(int count, int errors) throws InterruptedException {
@@ -609,7 +610,10 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
     assertTrue(
         String.format(
-            "Counter metric '%s' did not meet minimum %d after retry", metricName, expectedMinimum),
+            Locale.ROOT,
+            "Counter metric '%s' did not meet minimum %d after retry",
+            metricName,
+            expectedMinimum),
         success);
   }
 

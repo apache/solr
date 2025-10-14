@@ -51,6 +51,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   private PrometheusMetricReader reader;
 
   @Before
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     this.metricManager = new SolrMetricManager(InMemoryMetricExporter.create());
@@ -60,6 +61,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   @After
+  @Override
   public void tearDown() throws Exception {
     metricManager.closeAllRegistries();
     super.tearDown();

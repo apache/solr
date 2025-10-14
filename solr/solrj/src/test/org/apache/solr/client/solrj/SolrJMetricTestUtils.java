@@ -74,9 +74,9 @@ public final class SolrJMetricTestUtils {
             .filter(
                 l ->
                     l.contains(metricName)
-                        && l.contains(String.format("category=\"%s\"", category))
-                        && l.contains(String.format("collection=\"%s\"", collectionName))
-                        && l.contains(String.format("handler=\"%s\"", handler)))
+                        && l.contains("category=\"" + category + "\"")
+                        && l.contains("collection=\"" + collectionName + "\"")
+                        && l.contains("handler=\"" + handler + "\""))
             .mapToDouble(s -> Double.parseDouble(s.substring(s.lastIndexOf(" "))))
             .sum();
       }
@@ -106,8 +106,8 @@ public final class SolrJMetricTestUtils {
             .filter(
                 l ->
                     l.contains(metricName)
-                        && l.contains(String.format("category=\"%s\"", category))
-                        && l.contains(String.format("handler=\"%s\"", handler)))
+                        && l.contains("category=\"" + category + "\"")
+                        && l.contains("handler=\"" + handler + "\""))
             .mapToDouble(s -> Double.parseDouble(s.substring(s.lastIndexOf(" "))))
             .sum();
       }

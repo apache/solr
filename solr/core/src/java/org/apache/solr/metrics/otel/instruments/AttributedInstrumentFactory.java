@@ -28,7 +28,6 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import java.util.Set;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
@@ -58,17 +57,14 @@ public class AttributedInstrumentFactory {
 
     // Primary could be a node
     this.primaryIsNodeRegistry =
-        primaryMetricsContext
-            .getRegistryName()
-            .equals(SolrMetricManager.NODE_REGISTRY);
+        primaryMetricsContext.getRegistryName().equals(SolrMetricManager.NODE_REGISTRY);
 
     // Only create node registry if we want dual registry mode AND primary is not already a node
     // registry
     if (aggregateToNodeRegistry && !primaryIsNodeRegistry) {
       this.nodeMetricsContext =
           new SolrMetricsContext(
-              primaryMetricsContext.getMetricManager(),
-              SolrMetricManager.NODE_REGISTRY);
+              primaryMetricsContext.getMetricManager(), SolrMetricManager.NODE_REGISTRY);
       this.nodeAttributes = createNodeAttributes(primaryAttributes);
     }
   }

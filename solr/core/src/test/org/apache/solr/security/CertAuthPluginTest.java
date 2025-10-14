@@ -65,6 +65,7 @@ public class CertAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(Collections.emptyMap());
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     deleteCore();

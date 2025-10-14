@@ -614,7 +614,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
             Double numRequests =
                 SolrJMetricTestUtils.getNumNodeRequestErrors(
                     runner.getBaseUrl().toString(), SolrRequestType.ADMIN.name(), adminPath);
-            errorsBefore += numRequests;
+            errorsBefore += numRequests.longValue();
             if (log.isInfoEnabled()) {
               log.info(
                   "Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
@@ -637,7 +637,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
             Double numRequests =
                 SolrJMetricTestUtils.getNumNodeRequestErrors(
                     runner.getBaseUrl().toString(), SolrRequestType.ADMIN.name(), adminPath);
-            errorsAfter += numRequests;
+            errorsAfter += numRequests.longValue();
             if (log.isInfoEnabled()) {
               log.info(
                   "Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());

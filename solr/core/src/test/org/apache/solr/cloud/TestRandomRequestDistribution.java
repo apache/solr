@@ -134,8 +134,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         assertEquals(
             "Sanity Check: Num Queries So Far Doesn't Match Total????",
             expectedTotalRequests,
-            actualTotalRequests,
-            0.0);
+            (long) actualTotalRequests);
       }
       log.info("Total requests: {}", expectedTotalRequests);
       assertEquals(
@@ -272,7 +271,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
         double c = getSelectRequestCount(leaderCore);
 
-        assertEquals("Query wasn't served by leader", count, c, 0.0);
+        assertEquals("Query wasn't served by leader", count, (long) c);
       }
     }
   }
