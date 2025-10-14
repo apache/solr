@@ -72,9 +72,8 @@ public class ZkContainer {
   public ZkContainer() {}
 
   public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
-    final var zkRun =
-        EnvUtils.getPropertyAsBool(
-            "solr.zookeeper.server.enabled", false); // "zkRun" pre-merge-conflict
+    final boolean zkServerEnabled =
+        EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
     // TODO NOCOMMIT - understand when zkRun is set
     boolean zkQuorumNode = false;
     if (NodeRoles.MODE_ON.equals(cc.nodeRoles.getRoleMode(NodeRoles.Role.ZOOKEEPER_QUORUM))) {
@@ -82,29 +81,18 @@ public class ZkContainer {
       log.info("Starting node in ZooKeeper Quorum role.");
     }
 
-    final boolean runAsQuorum = config.getZkHost() != null && zkQuorumNode;
-
-    if (zkRun && config == null)
+    if (zkServerEnabled && config == null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Cannot start Solr in cloud mode - no cloud config provided");
-
-    if (config == null) {
-      return; // not in cloud mode
     }
 
+    final boolean runAsQuorum = config.getZkHost() != null && zkQuorumNode;
+
     String zookeeperHost = config.getZkHost();
-
-    // zookeeper in quorum mode currently causes a failure when trying to
-    // register log4j mbeans.  See SOLR-2369
-    // TODO: remove after updating to an slf4j based zookeeper  (This may be done!)
-    // https://issues.apache.org/jira/browse/ZOOKEEPER-850
-    // https://issues.apache.org/jira/browse/ZOOKEEPER-1371
-    System.setProperty("zookeeper.jmx.log4j.disable", "true");
-
     final var solrHome = cc.getSolrHome();
 
-    if (zkRun && !runAsQuorum) {
+    if (zkServerEnabled && !runAsQuorum) {
       String zkDataHome =
           EnvUtils.getProperty(
               "solr.zookeeper.server.datadir", solrHome.resolve("zoo_data").toString());
@@ -112,7 +100,7 @@ public class ZkContainer {
           EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString());
       zkServer =
           new SolrZkServer(
-              zkRun,
+              zkServerEnabled,
               stripChroot(config.getZkHost()),
               Path.of(zkDataHome),
               zkConfHome,
@@ -127,7 +115,7 @@ public class ZkContainer {
       // TODO NOCOMMIT - should this code go in SolrZkServer to augment or replace its current
       // capabilities?  Doing so
       //  would definitely keep ZkContainer cleaner...
-    } else if (zkRun != null && runAsQuorum) {
+    } else if (zkServerEnabled && runAsQuorum) {
       // Figure out where to put zoo-data
       final var zkHomeDir = solrHome.resolve("zoo_home");
       final var zkDataDir = zkHomeDir.resolve("data");
@@ -165,7 +153,7 @@ public class ZkContainer {
         final var zkClientPort = Integer.valueOf(hostComponents[1]);
         final var zkQuorumPort = zkClientPort - 4000;
         final var zkLeaderPort = zkClientPort - 3000;
-        final var configEntry =
+        final String configEntry =
             "server." + (i + 1) + "=" + zkServer + ":" + zkQuorumPort + ":" + zkLeaderPort + "\n";
         zooCfgContents = zooCfgContents + configEntry;
       }
@@ -197,7 +185,7 @@ public class ZkContainer {
       // we are ZooKeeper enabled
       try {
         // If this is an ensemble, allow for a long connect time for other servers to come up
-        if (zkRun && zkServer.getServers().size() > 1) {
+        if (zkServerEnabled && zkServer.getServers().size() > 1) {
           zkClientConnectTimeout = 24 * 60 * 60 * 1000; // 1 day for embedded ensemble
           log.info("Zookeeper client={}  Waiting for a quorum.", zookeeperHost);
         } else {
@@ -214,7 +202,7 @@ public class ZkContainer {
         ZkController zkController =
             new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config);
 
-        if (zkRun) {
+        if (zkServerEnabled) {
           if (StrUtils.isNotNullOrEmpty(System.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient())
