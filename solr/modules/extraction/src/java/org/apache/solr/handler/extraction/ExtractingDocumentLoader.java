@@ -125,20 +125,21 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
       Integer tikaTimeoutSecs = params.getInt(ExtractingParams.TIKASERVER_TIMEOUT_SECS);
       ExtractionRequest extractionRequest =
-          new ExtractionRequest(
-              streamType,
-              resourceName,
-              stream.getContentType(),
-              charset,
-              stream.getName(),
-              stream.getSourceInfo(),
-              stream.getSize(),
-              params.get(ExtractingParams.RESOURCE_PASSWORD, null),
-              pwMap,
-              extractFormat,
-              tikaserverRecursive,
-              tikaTimeoutSecs,
-              Collections.emptyMap());
+          ExtractionRequest.builder()
+              .streamType(streamType)
+              .resourceName(resourceName)
+              .contentType(stream.getContentType())
+              .charset(charset)
+              .streamName(stream.getName())
+              .streamSourceInfo(stream.getSourceInfo())
+              .streamSize(stream.getSize())
+              .resourcePassword(params.get(ExtractingParams.RESOURCE_PASSWORD, null))
+              .passwordsMap(pwMap)
+              .extractFormat(extractFormat)
+              .tikaServerRecursive(tikaserverRecursive)
+              .tikaServerTimeoutSeconds(tikaTimeoutSecs)
+              .tikaServerRequestHeaders(Collections.emptyMap())
+              .build();
 
       boolean captureAttr = params.getBool(ExtractingParams.CAPTURE_ATTRIBUTES, false);
       String[] captureElems = params.getParams(ExtractingParams.CAPTURE_ELEMENTS);

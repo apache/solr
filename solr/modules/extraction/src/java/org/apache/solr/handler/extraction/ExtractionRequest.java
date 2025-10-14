@@ -17,7 +17,9 @@
 package org.apache.solr.handler.extraction;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /** Immutable request info needed by extraction backends. */
 public class ExtractionRequest {
@@ -39,7 +41,7 @@ public class ExtractionRequest {
 
   /**
    * Constructs an ExtractionRequest object containing metadata and configurations for extraction
-   * backends.
+   * backends. This constructor is private - use {@link #builder()} to create instances.
    *
    * @param streamType the explicit MIME type of the document (optional)
    * @param resourceName the name of the resource, typically a filename hint
@@ -58,7 +60,7 @@ public class ExtractionRequest {
    * @param tikaServerRequestHeaders optional headers to be included in requests to the extraction
    *     service. TikaServer only
    */
-  public ExtractionRequest(
+  private ExtractionRequest(
       String streamType,
       String resourceName,
       String contentType,
@@ -86,6 +88,112 @@ public class ExtractionRequest {
     this.tikaServerTimeoutSeconds = tikaServerTimeoutSeconds;
     if (tikaServerRequestHeaders != null) {
       this.tikaServerRequestHeaders.putAll(tikaServerRequestHeaders);
+    }
+  }
+
+  /** Creates a new Builder for constructing ExtractionRequest instances. */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /** Builder for creating ExtractionRequest instances with improved readability and safety. */
+  public static class Builder {
+    private String streamType;
+    private String resourceName;
+    private String contentType;
+    private String charset;
+    private String streamName;
+    private String streamSourceInfo;
+    private Long streamSize;
+    private String resourcePassword;
+    private LinkedHashMap<Pattern, String> passwordsMap;
+    private String extractFormat;
+    private boolean tikaServerRecursive = false;
+    private Integer tikaServerTimeoutSeconds;
+    private Map<String, String> tikaServerRequestHeaders;
+
+    private Builder() {}
+
+    public Builder streamType(String streamType) {
+      this.streamType = streamType;
+      return this;
+    }
+
+    public Builder resourceName(String resourceName) {
+      this.resourceName = resourceName;
+      return this;
+    }
+
+    public Builder contentType(String contentType) {
+      this.contentType = contentType;
+      return this;
+    }
+
+    public Builder charset(String charset) {
+      this.charset = charset;
+      return this;
+    }
+
+    public Builder streamName(String streamName) {
+      this.streamName = streamName;
+      return this;
+    }
+
+    public Builder streamSourceInfo(String streamSourceInfo) {
+      this.streamSourceInfo = streamSourceInfo;
+      return this;
+    }
+
+    public Builder streamSize(Long streamSize) {
+      this.streamSize = streamSize;
+      return this;
+    }
+
+    public Builder resourcePassword(String resourcePassword) {
+      this.resourcePassword = resourcePassword;
+      return this;
+    }
+
+    public Builder passwordsMap(LinkedHashMap<Pattern, String> passwordsMap) {
+      this.passwordsMap = passwordsMap;
+      return this;
+    }
+
+    public Builder extractFormat(String extractFormat) {
+      this.extractFormat = extractFormat;
+      return this;
+    }
+
+    public Builder tikaServerRecursive(boolean tikaServerRecursive) {
+      this.tikaServerRecursive = tikaServerRecursive;
+      return this;
+    }
+
+    public Builder tikaServerTimeoutSeconds(Integer tikaServerTimeoutSeconds) {
+      this.tikaServerTimeoutSeconds = tikaServerTimeoutSeconds;
+      return this;
+    }
+
+    public Builder tikaServerRequestHeaders(Map<String, String> tikaServerRequestHeaders) {
+      this.tikaServerRequestHeaders = tikaServerRequestHeaders;
+      return this;
+    }
+
+    public ExtractionRequest build() {
+      return new ExtractionRequest(
+          streamType,
+          resourceName,
+          contentType,
+          charset,
+          streamName,
+          streamSourceInfo,
+          streamSize,
+          resourcePassword,
+          passwordsMap,
+          extractFormat,
+          tikaServerRecursive,
+          tikaServerTimeoutSeconds,
+          tikaServerRequestHeaders);
     }
   }
 }

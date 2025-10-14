@@ -92,20 +92,15 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
       String extractFormat,
       boolean recursive,
       Map<String, String> tikaRequestHeaders) {
-    return new ExtractionRequest(
-        contentType, // streamType
-        resourceName, // resourceName
-        contentType, // contentType
-        null, // charset
-        resourceName, // streamName
-        null, // sourceInfo
-        null, // size
-        null, // resourcePassword
-        null, // passwordsMap
-        extractFormat, // extraction format xml or text
-        recursive,
-        null, // timeoutSeconds
-        tikaRequestHeaders);
+    return ExtractionRequest.builder()
+        .streamType(contentType)
+        .resourceName(resourceName)
+        .contentType(contentType)
+        .streamName(resourceName)
+        .extractFormat(extractFormat)
+        .tikaServerRecursive(recursive)
+        .tikaServerRequestHeaders(tikaRequestHeaders)
+        .build();
   }
 
   @Test
