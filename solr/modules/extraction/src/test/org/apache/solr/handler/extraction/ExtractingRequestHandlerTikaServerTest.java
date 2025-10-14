@@ -23,6 +23,7 @@ import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -70,5 +71,42 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
     System.clearProperty("solr.test.tikaserver.url");
     System.clearProperty("solr.test.extraction.backend");
     System.clearProperty("solr.test.tikaserver.metadata.compatibility");
+  }
+
+  @Test
+  public void testXPathWithTikaServer() throws Exception {
+    // Verify extractOnly with XPath expression returns expected content
+    var rsp =
+        loadLocal(
+            "extraction/example.html",
+            ExtractingParams.XPATH_EXPRESSION,
+            "/xhtml:html/xhtml:body/xhtml:a/descendant::node()",
+            ExtractingParams.EXTRACT_ONLY,
+            "true");
+    assertNotNull("rsp is null and it shouldn't be", rsp);
+    var list = rsp.getValues();
+    String val = (String) list.get("example.html");
+    assertEquals("News", val.trim());
+
+    // Verify capture + xpath mapping into a field works and can be queried
+    loadLocal(
+        "extraction/example.html",
+        "literal.id",
+        "tikaxpath1",
+        "captureAttr",
+        "true",
+        "defaultField",
+        "text",
+        "capture",
+        "h1",
+        "fmap.h1",
+        "foo_t",
+        "boost.foo_t",
+        "3",
+        "xpath",
+        "/xhtml:html/xhtml:body/xhtml:cite//node()",
+        "commit",
+        "true");
+    assertQ(req("+id:tikaxpath1 +foo_t:\"a h1 tag\""), "//*[@numFound='1']");
   }
 }
