@@ -26,7 +26,6 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.lucene.util.IOUtils;
-import org.apache.tika.metadata.TikaMetadataKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +47,8 @@ public class RegexRulesPasswordProvider implements ExtractionPasswordProvider {
     }
 
     if (passwordMap.size() > 0)
-      return lookupPasswordFromMap(extractionMetadata.getFirst(TikaMetadataKeys.RESOURCE_NAME_KEY));
+      return lookupPasswordFromMap(
+          extractionMetadata.getFirst(ExtractingMetadataConstants.RESOURCE_NAME_KEY));
 
     return null;
   }
