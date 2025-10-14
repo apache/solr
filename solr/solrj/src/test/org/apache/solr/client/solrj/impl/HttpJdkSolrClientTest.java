@@ -526,14 +526,16 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   private void assertNoHeadRequestWithSsl(HttpJdkSolrClient client) {
     if (isSSLMode()) {
-      assertNull("The HEAD request should not be performed if using SSL.", client.headSucceededByBaseUri.get(baseUri()));
+      assertNull(
+          "The HEAD request should not be performed if using SSL.",
+          client.headSucceededByBaseUri.get(baseUri()));
     }
   }
 
   private URI baseUri() {
     try {
       return new URI(getBaseUrl());
-    } catch(URISyntaxException e) {
+    } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }
   }

@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -391,11 +390,12 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return maybeTryHeadRequestSync(uriNoQueryParams);
   }
 
-  protected final Map<URI, Boolean> headSucceededByBaseUri = new HashMap<>();  // use only in synchronized method
+  protected final Map<URI, Boolean> headSucceededByBaseUri =
+      new HashMap<>(); // use only in synchronized method
 
   private synchronized boolean maybeTryHeadRequestSync(URI uriNoQueryParams) {
     Boolean headSucceeded = headSucceededByBaseUri.get(uriNoQueryParams);
-    if (headSucceeded !=null) {
+    if (headSucceeded != null) {
       return headSucceeded;
     }
 

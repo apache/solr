@@ -176,7 +176,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
     protected ClusterStateProvider stateProvider;
-    protected HttpSolrClientBuilderBase<?,?> internalClientBuilder;
+    protected HttpSolrClientBuilderBase<?, ?> internalClientBuilder;
     private RequestWriter requestWriter;
     private ResponseParser responseParser;
     private long retryExpiryTimeNano =
@@ -245,7 +245,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /** Whether to use the default ZK ACLs when building a ZK Client. */
-    public Builder  canUseZkACLs(boolean canUseZkACLs) {
+    public Builder canUseZkACLs(boolean canUseZkACLs) {
       this.canUseZkACLs = canUseZkACLs;
       return this;
     }
@@ -257,7 +257,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * @see #sendUpdatesToAnyReplica
      * @see CloudSolrClient#isUpdatesToLeaders
      */
-    public Builder  sendUpdatesOnlyToShardLeaders() {
+    public Builder sendUpdatesOnlyToShardLeaders() {
       shardLeadersOnly = true;
       return this;
     }
@@ -269,7 +269,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * @see #sendUpdatesOnlyToShardLeaders
      * @see CloudSolrClient#isUpdatesToLeaders
      */
-    public Builder  sendUpdatesToAnyReplica() {
+    public Builder sendUpdatesToAnyReplica() {
       shardLeadersOnly = false;
       return this;
     }
@@ -284,7 +284,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * @see #sendDirectUpdatesToAnyShardReplica
      * @see CloudSolrClient#isDirectUpdatesToLeadersOnly
      */
-    public Builder  sendDirectUpdatesToShardLeadersOnly() {
+    public Builder sendDirectUpdatesToShardLeadersOnly() {
       directUpdatesToLeadersOnly = true;
       return this;
     }
@@ -299,19 +299,19 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * @see #sendDirectUpdatesToShardLeadersOnly
      * @see CloudSolrClient#isDirectUpdatesToLeadersOnly
      */
-    public Builder  sendDirectUpdatesToAnyShardReplica() {
+    public Builder sendDirectUpdatesToAnyShardReplica() {
       directUpdatesToLeadersOnly = false;
       return this;
     }
 
     /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
-    public Builder  withRequestWriter(RequestWriter requestWriter) {
+    public Builder withRequestWriter(RequestWriter requestWriter) {
       this.requestWriter = requestWriter;
       return this;
     }
 
     /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
-    public Builder  withResponseParser(ResponseParser responseParser) {
+    public Builder withResponseParser(ResponseParser responseParser) {
       this.responseParser = responseParser;
       return this;
     }
@@ -326,7 +326,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      *
      * <p>If not set, this defaults to 'true' and sends sub-requests in parallel.
      */
-    public Builder  withParallelUpdates(boolean parallelUpdates) {
+    public Builder withParallelUpdates(boolean parallelUpdates) {
       this.parallelUpdates = parallelUpdates;
       return this;
     }
@@ -337,7 +337,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      *
      * <p>Defaults to 3.
      */
-    public Builder  withParallelCacheRefreshes(int parallelCacheRefreshesLocks) {
+    public Builder withParallelCacheRefreshes(int parallelCacheRefreshesLocks) {
       this.parallelCacheRefreshesLocks = parallelCacheRefreshesLocks;
       return this;
     }
@@ -345,13 +345,13 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     /**
      * This is the time to wait to re-fetch the state after getting the same state version from ZK
      */
-    public Builder  withRetryExpiryTime(long expiryTime, TimeUnit unit) {
+    public Builder withRetryExpiryTime(long expiryTime, TimeUnit unit) {
       this.retryExpiryTimeNano = TimeUnit.NANOSECONDS.convert(expiryTime, unit);
       return this;
     }
 
     /** Sets the default collection for request. */
-    public Builder  withDefaultCollection(String defaultCollection) {
+    public Builder withDefaultCollection(String defaultCollection) {
       this.defaultCollection = defaultCollection;
       return this;
     }
@@ -361,7 +361,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      *
      * @param timeToLive ttl value
      */
-    public Builder  withCollectionCacheTtl(long timeToLive, TimeUnit unit) {
+    public Builder withCollectionCacheTtl(long timeToLive, TimeUnit unit) {
       assert timeToLive > 0;
       this.timeToLiveSeconds = TimeUnit.SECONDS.convert(timeToLive, unit);
       return this;
@@ -374,7 +374,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      *
      * @return this
      */
-    public Builder  withHttpClient(HttpSolrClientBase httpSolrClient) {
+    public Builder withHttpClient(HttpSolrClientBase httpSolrClient) {
       if (this.internalClientBuilder != null) {
         throw new IllegalStateException(
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
@@ -391,7 +391,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * @param internalClientBuilder the builder to use for creating the internal http client.
      * @return this
      */
-    public Builder  withHttpClientBuilder(HttpSolrClientBuilderBase<?,?> internalClientBuilder) {
+    public Builder withHttpClientBuilder(HttpSolrClientBuilderBase<?, ?> internalClientBuilder) {
       if (this.httpClient != null) {
         throw new IllegalStateException(
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
@@ -401,7 +401,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     @Deprecated(since = "9.10")
-    public Builder  withInternalClientBuilder(HttpSolrClientBuilderBase<?,?> internalClientBuilder) {
+    public Builder withInternalClientBuilder(
+        HttpSolrClientBuilderBase<?, ?> internalClientBuilder) {
       return withHttpClientBuilder(internalClientBuilder);
     }
 
@@ -411,7 +412,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * @param zkConnectTimeout timeout value
      * @param unit time unit
      */
-    public Builder  withZkConnectTimeout(int zkConnectTimeout, TimeUnit unit) {
+    public Builder withZkConnectTimeout(int zkConnectTimeout, TimeUnit unit) {
       this.zkConnectTimeout = Math.toIntExact(unit.toMillis(zkConnectTimeout));
       return this;
     }
@@ -422,7 +423,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * @param zkClientTimeout timeout value
      * @param unit time unit
      */
-    public Builder  withZkClientTimeout(int zkClientTimeout, TimeUnit unit) {
+    public Builder withZkClientTimeout(int zkClientTimeout, TimeUnit unit) {
       this.zkClientTimeout = Math.toIntExact(unit.toMillis(zkClientTimeout));
       return this;
     }
