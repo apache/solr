@@ -34,11 +34,13 @@ import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -379,17 +381,6 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     if (forceHttp11 || url == null || url.toLowerCase(Locale.ROOT).startsWith("https://")) {
       return true;
     }
-    return maybeTryHeadRequestSync(url);
-  }
-
-  protected volatile boolean headRequested; // must be threadsafe
-  private boolean headSucceeded; // must be threadsafe
-
-  private synchronized boolean maybeTryHeadRequestSync(String url) {
-    if (headRequested) {
-      return headSucceeded;
-    }
-
     URI uriNoQueryParams;
     try {
       uriNoQueryParams = new URI(url);
@@ -397,6 +388,17 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       // If the url is invalid, let a subsequent request try again.
       return false;
     }
+    return maybeTryHeadRequestSync(uriNoQueryParams);
+  }
+
+  protected Map<URI, Boolean> headSucceededByBaseUri = new HashMap<>();  // use only in synchronized method
+
+  private synchronized boolean maybeTryHeadRequestSync(URI uriNoQueryParams) {
+    Boolean headSucceeded = headSucceededByBaseUri.get(uriNoQueryParams);
+    if (headSucceeded !=null) {
+      return headSucceeded;
+    }
+
     HttpRequest.Builder headReqB =
         HttpRequest.newBuilder(uriNoQueryParams)
             .method("HEAD", HttpRequest.BodyPublishers.noBody())
@@ -406,7 +408,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       httpClient.send(headReqB.build(), HttpResponse.BodyHandlers.discarding());
       headSucceeded = true;
     } catch (IOException ioe) {
-      log.warn("Could not issue HEAD request to {} ", url, ioe);
+      log.warn("Could not issue HEAD request to {} ", uriNoQueryParams, ioe);
       headSucceeded = false;
     } catch (InterruptedException ie) {
       Thread.currentThread().interrupt();
@@ -414,7 +416,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     } finally {
 
       // The HEAD request is tried only once.  All future requests will skip this check.
-      headRequested = true;
+      headSucceededByBaseUri.put(uriNoQueryParams, headSucceeded);
 
       if (!headSucceeded) {
         log.info("All unencrypted POST requests with a chunked body will use http/1.1");

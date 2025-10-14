@@ -20,6 +20,8 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.net.CookieHandler;
 import java.net.CookieManager;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.util.Arrays;
 import java.util.Collections;
@@ -328,9 +330,9 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       testUpdate(client, HttpSolrClientTestBase.WT.XML, "application/xml; charset=UTF-8", value);
       if (http11) {
         assertEquals(HttpClient.Version.HTTP_1_1, client.httpClient.version());
-        assertFalse(
+        assertNull(
             "The HEAD request should not be performed if already forcing Http/1.1.",
-            client.headRequested);
+            client.headSucceededByBaseUri.get(baseUri()));
       } else {
         assertEquals(HttpClient.Version.HTTP_2, client.httpClient.version());
       }
@@ -504,7 +506,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       assertTrue(client.maybeTryHeadRequest(url));
 
       // if https, the client won't attempt a HEAD request
-      if (client.headRequested) {
+      if (!client.headSucceededByBaseUri.isEmpty()) {
         assertEquals("head", DebugServlet.lastMethod);
         assertTrue(DebugServlet.headers.containsKey("content-type"));
       }
@@ -524,7 +526,15 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   private void assertNoHeadRequestWithSsl(HttpJdkSolrClient client) {
     if (isSSLMode()) {
-      assertFalse("The HEAD request should not be performed if using SSL.", client.headRequested);
+      assertNull("The HEAD request should not be performed if using SSL.", client.headSucceededByBaseUri.get(baseUri()));
+    }
+  }
+
+  private URI baseUri() {
+    try {
+      return new URI(getBaseUrl());
+    } catch(URISyntaxException e) {
+      throw new RuntimeException(e);
     }
   }
 
