@@ -9,6 +9,8 @@ New Features
 ---------------------
 * SOLR-17915: shards.preference=replica.location now supports the "host" option for routing to replicas on the same host. (Houston Putman)
 
+* SOLR-17923: Add fullOuterJoin stream function (Andy Webb)
+
 Improvements
 ---------------------
 * SOLR-17860: DocBasedVersionConstraintsProcessorFactory now supports PULL replicas. (Houston Putman)
