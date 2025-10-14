@@ -246,31 +246,27 @@ public class SolrIndexWriter extends IndexWriter {
       solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
     }
 
-    var baseAttributesBuilder =
-        Attributes.builder().put(CATEGORY_ATTR, SolrInfoBean.Category.INDEX.toString());
-    baseAttributes = baseAttributesBuilder.build();
+    baseAttributes =
+        core.getCoreAttributes().toBuilder()
+            .put(CATEGORY_ATTR, SolrInfoBean.Category.INDEX.toString())
+            .build();
+
+    String descSuffix =
+        " where \"major\" merges involve more than "
+            + majorMergeDocs
+            + " documents, otherwise merge classified as minor.";
 
     mergesCounter =
         solrMetricsContext.longCounter(
-            "solr_indexwriter_merges",
-            "Number of total merge operations, "
-                + " where \"major\" merges involve more than "
-                + majorMergeDocs
-                + " documents, otherwise merge classified as minor.");
+            "solr_indexwriter_merges", "Number of total merge operations, " + descSuffix);
     mergeDocsCounter =
         solrMetricsContext.longCounter(
             "solr_indexwriter_merge_docs",
-            "Number of documents involved in merge, "
-                + " where \"major\" merges involve more than "
-                + majorMergeDocs
-                + " documents, otherwise merge classified as minor.");
+            "Number of documents involved in merge, " + descSuffix);
     mergeSegmentsCounter =
         solrMetricsContext.longCounter(
             "solr_indexwriter_merge_segments",
-            "Number of segments involved in merge, "
-                + " where \"major\" merges involve more than "
-                + majorMergeDocs
-                + " documents, otherwise merge classified as minor.");
+            "Number of segments involved in merge, " + descSuffix);
     flushesCounter =
         solrMetricsContext.longCounter(
             "solr_indexwriter_flushes", "Number of flush to disk operations triggered");
@@ -278,10 +274,7 @@ public class SolrIndexWriter extends IndexWriter {
     var mergesTimerBase =
         solrMetricsContext.longHistogram(
             "solr_indexwriter_merge_time",
-            "Time spent merging segments, "
-                + " where \"major\" merges involve more than "
-                + majorMergeDocs
-                + " documents, otherwise merge classified as minor.",
+            "Time spent merging segments, " + descSuffix,
             OtelUnit.MILLISECONDS);
     majorMergeTimer =
         new AttributedLongTimer(
