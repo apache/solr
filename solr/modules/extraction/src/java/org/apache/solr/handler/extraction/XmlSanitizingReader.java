@@ -110,6 +110,12 @@ final class XmlSanitizingReader extends FilterReader {
     bufferLimit = result.length();
     bufferPos = overlapLen;
 
+    // Edge case: if sanitization removed characters from overlap at EOF,
+    // bufferPos might exceed bufferLimit
+    if (bufferPos > bufferLimit) {
+      bufferPos = bufferLimit;
+    }
+
     // Keep last OVERLAP_SIZE chars for next iteration (unless EOF)
     overlapLen = eof ? 0 : Math.min(OVERLAP_SIZE, bufferLimit);
 
