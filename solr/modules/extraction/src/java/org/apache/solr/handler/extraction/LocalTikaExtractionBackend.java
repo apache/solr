@@ -40,7 +40,7 @@ import org.xml.sax.helpers.DefaultHandler;
  *
  * @deprecated Will be removed soon, please use the 'tikaserver' extraction backend instead.
  */
-@Deprecated(since = "9.10.0")
+@Deprecated(since = "9.10.0", forRemoval = true)
 public class LocalTikaExtractionBackend implements ExtractionBackend {
   private final TikaConfig tikaConfig;
   private final ParseContextConfig parseContextConfig;
