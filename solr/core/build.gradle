@@ -152,10 +152,9 @@ dependencies {
   api libs.opentelemetry.api
   implementation libs.opentelemetry.context
 
-  implementation(libs.opentelemetry.exporter.prometheus, {
-    exclude group: "io.prometheus", module: "prometheus-metrics-exporter-httpserver"
-    exclude group: "io.prometheus", module: "prometheus-metrics-model"
-  })
+  implementation(libs.opentelemetry.exporter.prometheus) {
+    transitive = false
+  }
 
   implementation(libs.opentelemetry.sdk, {
     exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
