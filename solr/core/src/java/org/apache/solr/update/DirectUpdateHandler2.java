@@ -55,6 +55,7 @@ import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.instruments.AttributedInstrumentFactory;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongUpDownCounter;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -223,85 +224,121 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    if (core.getSolrConfig().getUpdateHandlerInfo().aggregateNodeLevelMetricsEnabled) {
-      // NOCOMMIT: SOLR-17865
-      //      this.solrMetricsContext =
-      //          new SolrDelegateRegistryMetricsContext(
-      //              parentContext.getMetricManager(),
-      //              parentContext.getRegistryName(),
-      //              SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
-      //              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
-    } else {
-      this.solrMetricsContext = parentContext.getChildContext(this);
-    }
-    final List<AutoCloseable> observables = new ArrayList<>();
+    this.solrMetricsContext = parentContext.getChildContext(this);
 
     var baseAttributes =
         attributes.toBuilder()
             .put(AttributeKey.stringKey("category"), getCategory().toString())
             .build();
 
-    var baseCommandsMetric =
-        solrMetricsContext.longUpDownCounter(
-            "solr_core_update_cumulative_ops",
-            "Cumulative number of update commands processed. Cumulative can decrease from rollback command");
+    boolean aggregateNodeLevelMetricsEnabled =
+        core.getSolrConfig().getUpdateHandlerInfo().aggregateNodeLevelMetricsEnabled;
+
+    createMetrics(baseAttributes, aggregateNodeLevelMetricsEnabled);
+  }
+
+  private void createMetrics(Attributes baseAttributes, boolean aggregateToNodeRegistry) {
+    final List<AutoCloseable> observables = new ArrayList<>();
+
+    AttributedInstrumentFactory factory =
+        new AttributedInstrumentFactory(
+            solrMetricsContext, baseAttributes, aggregateToNodeRegistry);
 
     addCommandsCumulative =
-        new AttributedLongUpDownCounter(
-            baseCommandsMetric, baseAttributes.toBuilder().put(OPERATION_ATTR, "adds").build());
+        factory.attributedLongUpDownCounter(
+            "solr_core_update_cumulative_ops",
+            "Cumulative number of update commands processed. Cumulative can decrease from rollback command",
+            Attributes.of(OPERATION_ATTR, "adds"));
 
     deleteByIdCommandsCumulative =
-        new AttributedLongUpDownCounter(
-            baseCommandsMetric,
-            baseAttributes.toBuilder().put(OPERATION_ATTR, "deletes_by_id").build());
+        factory.attributedLongUpDownCounter(
+            "solr_core_update_cumulative_ops",
+            "Cumulative number of update commands processed. Cumulative can decrease from rollback command",
+            Attributes.of(OPERATION_ATTR, "deletes_by_id"));
 
     deleteByQueryCommandsCumulative =
-        new AttributedLongUpDownCounter(
-            baseCommandsMetric,
-            baseAttributes.toBuilder().put(OPERATION_ATTR, "deletes_by_query").build());
-
-    var baseCommitOpsMetric =
-        solrMetricsContext.longCounter(
-            "solr_core_update_commit_ops", "Total number of commit operations");
+        factory.attributedLongUpDownCounter(
+            "solr_core_update_cumulative_ops",
+            "Cumulative number of update commands processed. Cumulative can decrease from rollback command",
+            Attributes.of(OPERATION_ATTR, "deletes_by_query"));
 
     commitCommands =
-        new AttributedLongCounter(
-            baseCommitOpsMetric, baseAttributes.toBuilder().put(OPERATION_ATTR, "commits").build());
+        factory.attributedLongCounter(
+            "solr_core_update_commit_ops",
+            "Total number of commit operations",
+            Attributes.of(OPERATION_ATTR, "commits"));
 
     optimizeCommands =
-        new AttributedLongCounter(
-            baseCommitOpsMetric,
-            baseAttributes.toBuilder().put(OPERATION_ATTR, "optimize").build());
+        factory.attributedLongCounter(
+            "solr_core_update_commit_ops",
+            "Total number of commit operations",
+            Attributes.of(OPERATION_ATTR, "optimize"));
 
     mergeIndexesCommands =
-        new AttributedLongCounter(
-            baseCommitOpsMetric,
-            baseAttributes.toBuilder().put(OPERATION_ATTR, "merge_indexes").build());
+        factory.attributedLongCounter(
+            "solr_core_update_commit_ops",
+            "Total number of commit operations",
+            Attributes.of(OPERATION_ATTR, "merge_indexes"));
 
     expungeDeleteCommands =
-        new AttributedLongCounter(
-            baseCommitOpsMetric,
-            baseAttributes.toBuilder().put(OPERATION_ATTR, "expunge_deletes").build());
-
-    var baseMaintenanceMetric =
-        solrMetricsContext.longCounter(
-            "solr_core_update_maintenance_ops", "Total number of maintenance operations");
+        factory.attributedLongCounter(
+            "solr_core_update_commit_ops",
+            "Total number of commit operations",
+            Attributes.of(OPERATION_ATTR, "expunge_deletes"));
 
     rollbackCommands =
-        new AttributedLongCounter(
-            baseMaintenanceMetric,
-            baseAttributes.toBuilder().put(OPERATION_ATTR, "rollback").build());
+        factory.attributedLongCounter(
+            "solr_core_update_maintenance_ops",
+            "Total number of maintenance operations",
+            Attributes.of(OPERATION_ATTR, "rollback"));
 
     splitCommands =
-        new AttributedLongCounter(
-            baseMaintenanceMetric, baseAttributes.toBuilder().put(OPERATION_ATTR, "split").build());
-
-    var baseErrorsMetric =
-        solrMetricsContext.longCounter("solr_core_update_errors", "Total number of update errors");
+        factory.attributedLongCounter(
+            "solr_core_update_maintenance_ops",
+            "Total number of maintenance operations",
+            Attributes.of(OPERATION_ATTR, "split"));
 
     numErrorsCumulative =
-        new AttributedLongCounter(baseErrorsMetric, baseAttributes.toBuilder().build());
+        factory.attributedLongCounter(
+            "solr_core_update_errors", "Total number of update errors", Attributes.empty());
 
+    submittedAdds =
+        factory.attributedLongCounter(
+            "solr_core_update_submitted_ops",
+            "Total number of submitted update operations",
+            Attributes.of(OPERATION_ATTR, "adds"));
+
+    submittedDeleteById =
+        factory.attributedLongCounter(
+            "solr_core_update_submitted_ops",
+            "Total number of submitted update operations",
+            Attributes.of(OPERATION_ATTR, "deletes_by_id"));
+
+    submittedDeleteByQuery =
+        factory.attributedLongCounter(
+            "solr_core_update_submitted_ops",
+            "Total number of submitted update operations",
+            Attributes.of(OPERATION_ATTR, "deletes_by_query"));
+
+    committedAdds =
+        factory.attributedLongCounter(
+            "solr_core_update_committed_ops",
+            "Total number of committed update operations",
+            Attributes.of(OPERATION_ATTR, "adds"));
+
+    committedDeleteById =
+        factory.attributedLongCounter(
+            "solr_core_update_committed_ops",
+            "Total number of committed update operations",
+            Attributes.of(OPERATION_ATTR, "deletes_by_id"));
+
+    committedDeleteByQuery =
+        factory.attributedLongCounter(
+            "solr_core_update_committed_ops",
+            "Total number of committed update operations",
+            Attributes.of(OPERATION_ATTR, "deletes_by_query"));
+
+    // Create observable metrics only for core registry
     observables.add(
         solrMetricsContext.observableLongCounter(
             "solr_core_update_auto_commits",
@@ -358,38 +395,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
             }));
 
     this.toClose = Collections.unmodifiableList(observables);
-
-    var baseSubmittedOpsMetric =
-        solrMetricsContext.longCounter(
-            "solr_core_update_submitted_ops", "Total number of submitted update operations");
-
-    var baseCommittedOpsMetric =
-        solrMetricsContext.longCounter(
-            "solr_core_update_committed_ops", "Total number of committed update operations");
-
-    submittedAdds =
-        new AttributedLongCounter(
-            baseSubmittedOpsMetric, baseAttributes.toBuilder().put(OPERATION_ATTR, "adds").build());
-    submittedDeleteById =
-        new AttributedLongCounter(
-            baseSubmittedOpsMetric,
-            baseAttributes.toBuilder().put(OPERATION_ATTR, "deletes_by_id").build());
-    submittedDeleteByQuery =
-        new AttributedLongCounter(
-            baseSubmittedOpsMetric,
-            baseAttributes.toBuilder().put(OPERATION_ATTR, "deletes_by_query").build());
-
-    committedAdds =
-        new AttributedLongCounter(
-            baseCommittedOpsMetric, baseAttributes.toBuilder().put(OPERATION_ATTR, "adds").build());
-    committedDeleteById =
-        new AttributedLongCounter(
-            baseCommittedOpsMetric,
-            baseAttributes.toBuilder().put(OPERATION_ATTR, "deletes_by_id").build());
-    committedDeleteByQuery =
-        new AttributedLongCounter(
-            baseCommittedOpsMetric,
-            baseAttributes.toBuilder().put(OPERATION_ATTR, "deletes_by_query").build());
   }
 
   private void deleteAll() throws IOException {
