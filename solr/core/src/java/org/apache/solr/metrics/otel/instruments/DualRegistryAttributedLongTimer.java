@@ -17,27 +17,29 @@
 package org.apache.solr.metrics.otel.instruments;
 
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.DoubleUpDownCounter;
+import io.opentelemetry.api.metrics.LongHistogram;
 
-public class AttributedDoubleUpDownCounter {
+/**
+ * An AttributedLongTimer that records to both core and node registries with corresponding
+ * attributes.
+ */
+public class DualRegistryAttributedLongTimer extends AttributedLongTimer {
 
-  private final DoubleUpDownCounter upDownCounter;
-  private final Attributes attributes;
+  private final AttributedLongTimer nodeTimer;
 
-  public AttributedDoubleUpDownCounter(DoubleUpDownCounter upDownCounter, Attributes attributes) {
-    this.upDownCounter = upDownCounter;
-    this.attributes = attributes;
+  public DualRegistryAttributedLongTimer(
+      LongHistogram coreHistogram,
+      Attributes coreAttributes,
+      LongHistogram nodeHistogram,
+      Attributes nodeAttributes) {
+    super(coreHistogram, coreAttributes);
+    assert coreHistogram != nodeHistogram;
+    this.nodeTimer = new AttributedLongTimer(nodeHistogram, nodeAttributes);
   }
 
-  public final void inc() {
-    add(1.0);
-  }
-
-  public final void dec() {
-    add(-1.0);
-  }
-
-  public void add(Double value) {
-    upDownCounter.add(value, attributes);
+  @Override
+  public void record(Long value) {
+    super.record(value);
+    nodeTimer.record(value);
   }
 }

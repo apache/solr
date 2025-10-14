@@ -17,27 +17,29 @@
 package org.apache.solr.metrics.otel.instruments;
 
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.DoubleUpDownCounter;
+import io.opentelemetry.api.metrics.LongUpDownCounter;
 
-public class AttributedDoubleUpDownCounter {
+/**
+ * An AttributedLongUpDownCounter that writes to both core and node registries with corresponding
+ * attributes.
+ */
+public class DualRegistryAttributedLongUpDownCounter extends AttributedLongUpDownCounter {
 
-  private final DoubleUpDownCounter upDownCounter;
-  private final Attributes attributes;
+  private final AttributedLongUpDownCounter nodeUpDownCounter;
 
-  public AttributedDoubleUpDownCounter(DoubleUpDownCounter upDownCounter, Attributes attributes) {
-    this.upDownCounter = upDownCounter;
-    this.attributes = attributes;
+  public DualRegistryAttributedLongUpDownCounter(
+      LongUpDownCounter coreUpDownCounter,
+      Attributes coreAttributes,
+      LongUpDownCounter nodeUpDownCounter,
+      Attributes nodeAttributes) {
+    super(coreUpDownCounter, coreAttributes);
+    assert coreUpDownCounter != nodeUpDownCounter;
+    this.nodeUpDownCounter = new AttributedLongUpDownCounter(nodeUpDownCounter, nodeAttributes);
   }
 
-  public final void inc() {
-    add(1.0);
-  }
-
-  public final void dec() {
-    add(-1.0);
-  }
-
-  public void add(Double value) {
-    upDownCounter.add(value, attributes);
+  @Override
+  public void add(Long value) {
+    super.add(value);
+    nodeUpDownCounter.add(value);
   }
 }

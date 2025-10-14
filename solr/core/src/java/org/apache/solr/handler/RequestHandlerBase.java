@@ -21,8 +21,6 @@ import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.LongCounter;
-import io.opentelemetry.api.metrics.LongHistogram;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -41,11 +39,10 @@ import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.metrics.otel.instruments.AttributedInstrumentFactory;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
@@ -72,6 +69,7 @@ public abstract class RequestHandlerBase
         PermissionNameProvider {
 
   public static final String REQUEST_CPU_TIMER_CONTEXT = "publishCpuTime";
+  public static final AttributeKey<String> SOURCE_ATTR = AttributeKey.stringKey("source");
   protected NamedList<?> initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
@@ -167,21 +165,13 @@ public abstract class RequestHandlerBase
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    if (aggregateNodeLevelMetricsEnabled) {
-      this.solrMetricsContext =
-          new SolrDelegateRegistryMetricsContext(
-              parentContext.getMetricManager(),
-              parentContext.getRegistryName(),
-              SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
-              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
-    } else {
-      this.solrMetricsContext = parentContext.getChildContext(this);
-    }
+    this.solrMetricsContext = parentContext.getChildContext(this);
 
     metrics =
         new HandlerMetrics(
             solrMetricsContext,
-            attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build());
+            attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build(),
+            aggregateNodeLevelMetricsEnabled);
   }
 
   /** Metrics for this handler. */
@@ -189,7 +179,8 @@ public abstract class RequestHandlerBase
     public static final HandlerMetrics NO_OP =
         new HandlerMetrics(
             new SolrMetricsContext(new SolrMetricManager(null), "NO_OP", "NO_OP"),
-            Attributes.empty());
+            Attributes.empty(),
+            false);
 
     public AttributedLongCounter requests;
     public AttributedLongCounter numServerErrors;
@@ -197,53 +188,41 @@ public abstract class RequestHandlerBase
     public AttributedLongCounter numTimeouts;
     public AttributedLongTimer requestTimes;
 
-    public HandlerMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
-      LongCounter requestMetric;
-      LongCounter errorRequestMetric;
-      LongCounter timeoutRequestMetric;
-      LongHistogram requestTimeMetric;
+    public HandlerMetrics(
+        SolrMetricsContext solrMetricsContext,
+        Attributes coreAttributes,
+        boolean aggregateNodeLevelMetricsEnabled) {
 
-      if (solrMetricsContext.getRegistryName().equals("solr.node")) {
-        requestMetric =
-            solrMetricsContext.longCounter("solr_node_requests", "Http Solr node requests");
-        errorRequestMetric =
-            solrMetricsContext.longCounter(
-                "solr_node_requests_errors", "HTTP Solr node request errors");
-        timeoutRequestMetric =
-            solrMetricsContext.longCounter(
-                "solr_node_requests_timeout", "HTTP Solr node request timeouts");
-        requestTimeMetric =
-            solrMetricsContext.longHistogram(
-                "solr_node_requests_times", "HTTP Solr node request times", OtelUnit.MILLISECONDS);
-      } else {
-        requestMetric =
-            solrMetricsContext.longCounter("solr_core_requests", "HTTP Solr core requests");
-        errorRequestMetric =
-            solrMetricsContext.longCounter(
-                "solr_core_requests_errors", "HTTP Solr core request errors");
-        timeoutRequestMetric =
-            solrMetricsContext.longCounter(
-                "solr_core_requests_timeout", "HTTP Solr core request timeouts");
-        requestTimeMetric =
-            solrMetricsContext.longHistogram(
-                "solr_core_requests_times", "HTTP Solr core request times", OtelUnit.MILLISECONDS);
-      }
+      AttributedInstrumentFactory factory =
+          new AttributedInstrumentFactory(
+              solrMetricsContext, coreAttributes, aggregateNodeLevelMetricsEnabled);
 
-      requests = new AttributedLongCounter(requestMetric, attributes);
+      requests =
+          factory.attributedLongCounter(
+              "solr_core_requests", "HTTP Solr requests", Attributes.empty());
 
       numServerErrors =
-          new AttributedLongCounter(
-              errorRequestMetric,
-              attributes.toBuilder().put(AttributeKey.stringKey("source"), "server").build());
+          factory.attributedLongCounter(
+              "solr_core_requests_errors",
+              "HTTP Solr request errors",
+              Attributes.of(SOURCE_ATTR, "server"));
 
       numClientErrors =
-          new AttributedLongCounter(
-              errorRequestMetric,
-              attributes.toBuilder().put(AttributeKey.stringKey("source"), "client").build());
+          factory.attributedLongCounter(
+              "solr_core_requests_errors",
+              "HTTP Solr request errors",
+              Attributes.of(SOURCE_ATTR, "client"));
 
-      numTimeouts = new AttributedLongCounter(timeoutRequestMetric, attributes);
+      numTimeouts =
+          factory.attributedLongCounter(
+              "solr_core_requests_timeout", "HTTP Solr request timeouts", Attributes.empty());
 
-      requestTimes = new AttributedLongTimer(requestTimeMetric, attributes);
+      requestTimes =
+          factory.attributedLongTimer(
+              "solr_core_requests_times",
+              "HTTP Solr request times",
+              OtelUnit.MILLISECONDS,
+              Attributes.empty());
     }
   }
 
