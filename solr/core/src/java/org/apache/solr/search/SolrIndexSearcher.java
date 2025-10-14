@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
 
-import com.codahale.metrics.Gauge;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
@@ -83,7 +82,6 @@ import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.TotalHits.Relation;
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -611,12 +609,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
     this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
     for (SolrCache<?, ?> cache : cacheList) {
-      cache.initializeMetrics(
-          solrMetricsContext,
-          core.getCoreAttributes().toBuilder().put(NAME_ATTR, cache.name()).build(),
-          "solr_searcher_cache");
+      if (cache instanceof CaffeineCache<?, ?> caffeineCache) {
+        caffeineCache.initializeMetrics(
+            solrMetricsContext,
+            core.getCoreAttributes().toBuilder().put(NAME_ATTR, cache.name()).build(),
+            "solr_searcher_cache");
+      }
     }
-    initializeMetrics(solrMetricsContext, core.getCoreAttributes(), STATISTICS_KEY);
+    initializeMetrics(solrMetricsContext, core.getCoreAttributes());
     registerTime = new Date();
   }
 
@@ -2616,8 +2616,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext solrMetricsContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
     var baseAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, Category.SEARCHER.toString()).build();
 
@@ -2693,20 +2692,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 // skip recording if unavailable (no nullNumber in OTel)
               }
             }));
-  }
-
-  /**
-   * wraps a gauge (related to an IndexReader) and swallows any {@link AlreadyClosedException} that
-   * might be thrown, returning the specified default in it's place.
-   */
-  private <T> Gauge<T> rgauge(T closedDefault, Gauge<T> g) {
-    return () -> {
-      try {
-        return g.getValue();
-      } catch (AlreadyClosedException ignore) {
-        return closedDefault;
-      }
-    };
   }
 
   public long getWarmupTime() {

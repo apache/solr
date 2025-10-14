@@ -17,9 +17,6 @@
 
 package org.apache.solr.metrics;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
 import com.google.common.util.concurrent.AtomicDouble;
 import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.DoubleGauge;
@@ -38,21 +35,12 @@ import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.concurrent.atomic.LongAdder;
-import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RetryUtil;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -77,128 +65,9 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  // NOCOMMIT: Migration of this to OTEL isn't possible. You can't register instruments to a
-  // meterprovider that the provider itself didn't create
-  @Test
-  public void testRegisterAll() throws Exception {
-    Random r = random();
-
-    Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(r, true);
-    MetricRegistry mr = new MetricRegistry();
-    for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-      mr.register(entry.getKey(), entry.getValue());
-    }
-
-    String registryName = TestUtil.randomSimpleString(r, 1, 10);
-    assertEquals(0, metricManager.registry(registryName).getMetrics().size());
-    // There is nothing registered so we should be error-free on the first pass
-    metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.ERROR);
-    // this should simply skip existing names
-    metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.IGNORE);
-    // this should re-register everything, and no errors
-    metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.REPLACE);
-    // this should produce error
-    expectThrows(
-        IllegalArgumentException.class,
-        () ->
-            metricManager.registerAll(
-                registryName, mr, SolrMetricManager.ResolutionStrategy.ERROR));
-  }
-
-  // NOCOMMIT: Migration of this to OTEL isn't possible. You can only delete the whole
-  // sdkMeterProvider and all it's recorded metrics
-  @Test
-  public void testClearMetrics() {
-    Random r = random();
-
-    Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(r, true);
-    String registryName = TestUtil.randomSimpleString(r, 1, 10);
-
-    for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-      metricManager.registerMetric(
-          null, registryName, entry.getValue(), false, entry.getKey(), "foo", "bar");
-    }
-    for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-      metricManager.registerMetric(
-          null, registryName, entry.getValue(), false, entry.getKey(), "foo", "baz");
-    }
-    for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-      metricManager.registerMetric(
-          null, registryName, entry.getValue(), false, entry.getKey(), "foo");
-    }
-
-    assertEquals(metrics.size() * 3, metricManager.registry(registryName).getMetrics().size());
-
-    // clear all metrics with prefix "foo.bar."
-    Set<String> removed = metricManager.clearMetrics(registryName, "foo", "bar.");
-    assertEquals(metrics.size(), removed.size());
-    for (String s : removed) {
-      assertTrue(s.startsWith("foo.bar."));
-    }
-    removed = metricManager.clearMetrics(registryName, "foo", "baz.");
-    assertEquals(metrics.size(), removed.size());
-    for (String s : removed) {
-      assertTrue(s.startsWith("foo.baz."));
-    }
-    // perhaps surprisingly, this works too - see PrefixFilter docs
-    removed = metricManager.clearMetrics(registryName, "fo");
-    assertEquals(metrics.size(), removed.size());
-    for (String s : removed) {
-      assertTrue(s.startsWith("foo."));
-    }
-  }
-
-  @Test
-  public void testSimpleMetrics() {
-    Random r = random();
-
-    String registryName = TestUtil.randomSimpleString(r, 1, 10);
-
-    metricManager.counter(null, registryName, "simple_counter", "foo", "bar");
-    metricManager.timer(null, registryName, "simple_timer", "foo", "bar");
-    metricManager.meter(null, registryName, "simple_meter", "foo", "bar");
-    metricManager.histogram(null, registryName, "simple_histogram", "foo", "bar");
-    Map<String, Metric> metrics = metricManager.registry(registryName).getMetrics();
-    assertEquals(4, metrics.size());
-    for (Map.Entry<String, Metric> entry : metrics.entrySet()) {
-      assertTrue(entry.getKey().startsWith("foo.bar.simple_"));
-    }
-  }
-
-  @Test
-  public void testRegistryName() {
-    Random r = random();
-
-    String name = TestUtil.randomSimpleString(r, 1, 10);
-
-    String result = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, name, "collection1");
-    assertEquals("solr.core." + name + ".collection1", result);
-    // try it with already prefixed name - group will be ignored
-    result = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, result);
-    assertEquals("solr.core." + name + ".collection1", result);
-    // try it with already prefixed name but with additional segments
-    result =
-        SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, result, "shard1", "replica1");
-    assertEquals("solr.core." + name + ".collection1.shard1.replica1", result);
-  }
-
   @Test
   public void testDefaultCloudReporterPeriodUnchanged() {
     assertEquals(60, SolrMetricManager.DEFAULT_CLOUD_REPORTER_PERIOD);
-  }
-
-  private PluginInfo createPluginInfo(String name, String group, String registry) {
-    Map<String, String> attrs = new HashMap<>();
-    attrs.put("name", name);
-    if (group != null) {
-      attrs.put("group", group);
-    }
-    if (registry != null) {
-      attrs.put("registry", registry);
-    }
-    NamedList<String> initArgs = new NamedList<>();
-    initArgs.add("configurable", "true");
-    return new PluginInfo("SolrMetricReporter", attrs, initArgs, null);
   }
 
   @Test

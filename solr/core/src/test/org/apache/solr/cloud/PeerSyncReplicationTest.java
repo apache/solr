@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import static java.util.Collections.singletonList;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
-import com.codahale.metrics.MetricRegistry;
+import io.opentelemetry.api.metrics.MeterProvider;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -177,10 +177,10 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
 
       // assert metrics
       SolrMetricManager manager = nodePeerSynced.jetty.getCoreContainer().getMetricManager();
-      MetricRegistry registry = null;
+      MeterProvider registry = null;
       for (String name : manager.registryNames()) {
         if (name.startsWith("solr.core.collection1")) {
-          registry = manager.registry(name);
+          registry = manager.meterProvider(name);
           break;
         }
       }

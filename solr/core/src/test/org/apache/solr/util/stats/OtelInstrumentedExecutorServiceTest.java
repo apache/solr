@@ -49,7 +49,7 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
 
   @Before
   public void setUpMetrics() {
-    metricsContext = new SolrMetricsContext(new SolrMetricManager(null), REGISTRY_NAME, TAG_NAME);
+    metricsContext = new SolrMetricsContext(new SolrMetricManager(null), REGISTRY_NAME);
   }
 
   @Test

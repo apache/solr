@@ -269,7 +269,6 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
   }
 
-  @SuppressWarnings("unchecked")
   public void testAddDocs() throws Exception {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)

@@ -60,7 +60,7 @@ public class AttributedInstrumentFactory {
     this.primaryIsNodeRegistry =
         primaryMetricsContext
             .getRegistryName()
-            .equals(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+            .equals(SolrMetricManager.NODE_REGISTRY);
 
     // Only create node registry if we want dual registry mode AND primary is not already a node
     // registry
@@ -68,8 +68,7 @@ public class AttributedInstrumentFactory {
       this.nodeMetricsContext =
           new SolrMetricsContext(
               primaryMetricsContext.getMetricManager(),
-              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node),
-              null);
+              SolrMetricManager.NODE_REGISTRY);
       this.nodeAttributes = createNodeAttributes(primaryAttributes);
     }
   }

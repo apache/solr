@@ -163,8 +163,7 @@ public abstract class RequestHandlerBase
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     this.solrMetricsContext = parentContext.getChildContext(this);
 
     metrics =
@@ -178,7 +177,7 @@ public abstract class RequestHandlerBase
   public static class HandlerMetrics {
     public static final HandlerMetrics NO_OP =
         new HandlerMetrics(
-            new SolrMetricsContext(new SolrMetricManager(null), "NO_OP", "NO_OP"),
+            new SolrMetricsContext(new SolrMetricManager(null), "NO_OP"),
             Attributes.empty(),
             false);
 

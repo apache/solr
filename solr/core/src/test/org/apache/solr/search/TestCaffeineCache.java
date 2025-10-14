@@ -56,7 +56,7 @@ public class TestCaffeineCache extends SolrTestCase {
     String lfuCacheName = scope + "-1";
     String newLfuCacheName = scope + "-2";
 
-    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry);
 
     lfuCache.initializeMetrics(
         solrMetricsContext, Attributes.of(NAME_ATTR, lfuCacheName), "solr_cache");

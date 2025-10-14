@@ -16,10 +16,6 @@
  */
 package org.apache.solr.search;
 
-import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
-import static org.apache.solr.metrics.SolrMetricProducer.OPERATION_ATTR;
-import static org.apache.solr.metrics.SolrMetricProducer.RESULT_ATTR;
-
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -475,11 +471,15 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   }
 
   @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    initializeMetrics(parentContext, attributes, "solr_caffeine_cache");
+  }
+
   public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String metricName) {
+      SolrMetricsContext solrMetricsContext, Attributes attributes, String metricName) {
     Attributes cacheAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
-    solrMetricsContext = parentContext.getChildContext(this);
+    this.solrMetricsContext = solrMetricsContext.getChildContext(this);
 
     ObservableLongMeasurement cacheLookupsMetric =
         solrMetricsContext.longCounterMeasurement(

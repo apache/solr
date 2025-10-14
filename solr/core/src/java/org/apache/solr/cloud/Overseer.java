@@ -217,13 +217,11 @@ public class Overseer implements SolrCloseable {
       this.compressor = compressor;
 
       this.clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
-      initializeMetrics(
-          solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()), "");
+      initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
     }
 
     @Override
-    public void initializeMetrics(
-        SolrMetricsContext parentContext, Attributes attributes, String scope) {
+    public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
       this.toClose =
           parentContext.observableLongGauge(
               "solr_overseer_state_update_queue_size",
@@ -660,7 +658,6 @@ public class Overseer implements SolrCloseable {
     public void close() {
       this.isClosed = true;
       IOUtils.closeQuietly(toClose);
-      clusterStateUpdaterMetricContext.unregister();
     }
 
     @Override
@@ -750,8 +747,7 @@ public class Overseer implements SolrCloseable {
     this.solrMetricsContext =
         new SolrMetricsContext(
             zkController.getCoreContainer().getMetricManager(),
-            SolrInfoBean.Group.overseer.toString(),
-            metricTag);
+            SolrInfoBean.Group.overseer.toString());
   }
 
   public synchronized void start(String id) {

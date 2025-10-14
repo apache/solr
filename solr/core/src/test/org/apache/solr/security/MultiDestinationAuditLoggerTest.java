@@ -55,7 +55,7 @@ public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
     al.init(config);
 
     SolrMetricsContext mockSolrMetricsContext = MockSolrMetricsContextFactory.create();
-    al.initializeMetrics(mockSolrMetricsContext, Attributes.empty(), "solr.test");
+    al.initializeMetrics(mockSolrMetricsContext, Attributes.empty());
 
     al.doAudit(new AuditEvent(AuditEvent.EventType.ANONYMOUS).setUsername("me"));
     assertEquals(

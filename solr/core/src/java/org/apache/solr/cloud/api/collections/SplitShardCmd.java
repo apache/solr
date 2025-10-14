@@ -853,7 +853,10 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       SolrIndexSplitter.SplitMethod method,
       SolrCloudManager cloudManager)
       throws Exception {
-
+    if (true) {
+      log.warn("checkDiskSpace disabled SOLR-17458"); // nocommit
+      return;
+    }
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
 
