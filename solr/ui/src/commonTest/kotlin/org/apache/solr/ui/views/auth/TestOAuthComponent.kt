@@ -15,30 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.domain
+package org.apache.solr.ui.views.auth
 
-import kotlinx.serialization.Serializable
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import org.apache.solr.ui.components.auth.OAuthComponent
+import org.apache.solr.ui.components.auth.OAuthComponent.Model
+import org.apache.solr.ui.components.auth.store.OAuthStore
 
-/**
- * The authentication method is used for determining what methods of authenticating are available.
- * These methods hold information for displaying and trying to authenticate.
- *
- * @see AuthOption
- */
-@Serializable
-sealed interface AuthMethod {
+internal class TestOAuthComponent(
+    model: Model = Model(),
+    override val labels: Flow<OAuthStore.Label> = MutableSharedFlow(),
+) : OAuthComponent {
+    var onAuthenticateClicked = false
 
-    /**
-     * Basic authentication method that uses username and password for
-     * authenticating.
-     *
-     * @property realm The realm of the basic auth.
-     */
-    @Serializable
-    data class BasicAuthMethod(val realm: String? = null) : AuthMethod
-
-    @Serializable
-    data class OAuthMethod(val data: OAuthData, val realm: String? = null) : AuthMethod
-
-    data object Unknown : AuthMethod
+    override val model: StateFlow<Model> = MutableStateFlow(model)
+    override fun onAuthenticate() {
+        onAuthenticateClicked = true
+    }
 }
