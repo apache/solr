@@ -60,7 +60,10 @@ public class SolrIdentifierValidator {
   }
 
   private static boolean validateIdentifier(String identifier) {
-    return identifier != null && identifierPattern.matcher(identifier).matches();
+    if (identifier != null && identifierPattern.matcher(identifier).matches()) {
+      return true;
+    }
+    return false;
   }
 
   public static String getIdentifierMessage(IdentifierType identifierType, String name) {
