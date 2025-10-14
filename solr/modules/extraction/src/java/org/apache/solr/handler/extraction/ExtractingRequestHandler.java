@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
  * Handler for rich documents like PDF or Word or any other file format that Tika handles that need
  * the text to be extracted first from the document.
  */
+@SuppressWarnings("removal")
 public class ExtractingRequestHandler extends ContentStreamHandlerBase
     implements SolrCoreAware, PermissionNameProvider {
 
