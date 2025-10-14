@@ -51,7 +51,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   private static volatile ExecutorService SHARED_EXECUTOR;
   private static final Object INIT_LOCK = new Object();
   private static volatile boolean INITIALIZED = false;
-  private static volatile boolean SHUTDOWN = false;
+  private static volatile int REFERENCE_COUNT = 0;
   private final String baseUrl;
   private static final int DEFAULT_TIMEOUT_SECONDS = 3 * 60;
   private final Duration defaultTimeout;
@@ -84,6 +84,11 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     }
     this.defaultTimeout =
         Duration.ofSeconds(timeoutSeconds > 0 ? timeoutSeconds : DEFAULT_TIMEOUT_SECONDS);
+
+    // Increment reference count when a backend instance is created
+    synchronized (INIT_LOCK) {
+      REFERENCE_COUNT++;
+    }
   }
 
   public static final String NAME = "tikaserver";
@@ -315,9 +320,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   }
 
   private static void ensureClientInitialized() {
-    if (INITIALIZED) return;
+    if (INITIALIZED && SHARED_CLIENT != null) return;
     synchronized (INIT_LOCK) {
-      if (INITIALIZED) return;
+      if (INITIALIZED && SHARED_CLIENT != null) return;
       ThreadFactory tf = new SolrNamedThreadFactory("TikaServerHttpClient");
       ExecutorService exec = ExecutorUtil.newMDCAwareCachedThreadPool(tf);
       HttpClient client = new HttpClient();
@@ -336,7 +341,6 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       SHARED_EXECUTOR = exec;
       SHARED_CLIENT = client;
       INITIALIZED = true;
-      SHUTDOWN = false;
     }
   }
 
@@ -377,25 +381,30 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
 
   @Override
   public void close() {
-    if (SHUTDOWN) return;
     synchronized (INIT_LOCK) {
-      if (SHUTDOWN) return;
-      HttpClient client = SHARED_CLIENT;
-      ExecutorService exec = SHARED_EXECUTOR;
-      SHARED_CLIENT = null;
-      SHARED_EXECUTOR = null;
-      INITIALIZED = false;
-      SHUTDOWN = true;
-      if (client != null) {
-        try {
-          client.stop();
-        } catch (Throwable ignore) {
+      // Decrement reference count
+      REFERENCE_COUNT--;
+
+      // Only shutdown shared resources when last reference is closed
+      if (REFERENCE_COUNT <= 0) {
+        HttpClient client = SHARED_CLIENT;
+        ExecutorService exec = SHARED_EXECUTOR;
+        SHARED_CLIENT = null;
+        SHARED_EXECUTOR = null;
+        INITIALIZED = false;
+        REFERENCE_COUNT = 0; // Ensure it doesn't go negative
+
+        if (client != null) {
+          try {
+            client.stop();
+          } catch (Throwable ignore) {
+          }
         }
-      }
-      if (exec != null) {
-        try {
-          exec.shutdownNow();
-        } catch (Throwable ignore) {
+        if (exec != null) {
+          try {
+            exec.shutdownNow();
+          } catch (Throwable ignore) {
+          }
         }
       }
     }
