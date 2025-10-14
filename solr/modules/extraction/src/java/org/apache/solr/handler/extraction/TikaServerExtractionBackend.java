@@ -46,7 +46,11 @@ import org.xml.sax.helpers.DefaultHandler;
 
 /** Extraction backend using the Tika Server. It uses a shared Jetty HttpClient. */
 public class TikaServerExtractionBackend implements ExtractionBackend {
+  /**
+   * Default maximum response size (100MB) to prevent excessive memory usage from large documents
+   */
   public static final long DEFAULT_MAXCHARS_LIMIT = 100 * 1024 * 1024;
+
   private static volatile HttpClient SHARED_CLIENT;
   private static volatile ExecutorService SHARED_EXECUTOR;
   private static final Object INIT_LOCK = new Object();
