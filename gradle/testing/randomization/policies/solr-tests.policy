@@ -279,3 +279,7 @@ grant {
 
   permission java.lang.RuntimePermission "loadLibrary.cudart";
 };
+
+grant {
+    permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
+};

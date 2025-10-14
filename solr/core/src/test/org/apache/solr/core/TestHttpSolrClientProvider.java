@@ -18,9 +18,8 @@ package org.apache.solr.core;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
+import io.opentelemetry.api.metrics.LongHistogram;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -39,6 +38,10 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
     super.setUp();
     assumeWorkingMockito();
     parentSolrMetricCtx = Mockito.mock(SolrMetricsContext.class);
+    SolrMetricsContext childContext = Mockito.mock(SolrMetricsContext.class);
+    LongHistogram mockHistogram = Mockito.mock(LongHistogram.class);
+    Mockito.when(parentSolrMetricCtx.getChildContext(any())).thenReturn(childContext);
+    Mockito.when(childContext.longHistogram(any(), any(), any())).thenReturn(mockHistogram);
   }
 
   @Test
@@ -57,18 +60,6 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
     UpdateShardHandlerConfig cfg = new UpdateShardHandlerConfig(-1, -1, idleTimeout, -1, null, -1);
     try (var httpSolrClientProvider = new HttpSolrClientProvider(cfg, parentSolrMetricCtx); ) {
       assertEquals(httpSolrClientProvider.getSolrClient().getIdleTimeout(), idleTimeout);
-    }
-  }
-
-  @Test
-  public void test_closing_solr_metric_context() {
-    SolrMetricsContext childSolrMetricContext = Mockito.mock(SolrMetricsContext.class);
-    Mockito.when(parentSolrMetricCtx.getChildContext(any(HttpSolrClientProvider.class)))
-        .thenReturn(childSolrMetricContext);
-    try (var httpSolrClientProvider = new HttpSolrClientProvider(null, parentSolrMetricCtx)) {
-      assertNotNull(httpSolrClientProvider.getSolrClient());
-    } finally {
-      verify(childSolrMetricContext, times(1)).unregister();
     }
   }
 }
