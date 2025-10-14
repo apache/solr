@@ -98,6 +98,8 @@ Bug Fixes
 Deprecation Removals
 ----------------------
 
+* SOLR-17957: XLSXResponseWriter has been removed. (Jan Høydahl)
+
 * SOLR-16535: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry' (janhoy)
 
 * SOLR-16601: Removed deprecated methods on the various Solr Clients. (Eric Pugh, Kevin Risden)
