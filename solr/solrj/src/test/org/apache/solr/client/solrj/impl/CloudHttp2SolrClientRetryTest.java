@@ -51,11 +51,15 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
 
   @Test
   public void testRetry() throws Exception {
-    String collectionName = "testRetry";
-    try (CloudSolrClient solrClient =
-        new CloudHttp2SolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .build()) {
+
+    // Randomly decide to use either the Jetty Http Client or the JDK Http Client
+    var jettyClientBuilder = new Http2SolrClient.Builder();
+    var jdkClientBuilder = new HttpJdkSolrClient.Builder().withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
+    var cloudSolrclientBuilder = new CloudHttp2SolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty());
+    cloudSolrclientBuilder.withHttpClientBuilder(random().nextBoolean() ? jettyClientBuilder : jdkClientBuilder);
+
+    try (CloudSolrClient solrClient = cloudSolrclientBuilder.build()) {
+      String collectionName = "testRetry";
       CollectionAdminRequest.createCollection(collectionName, 1, 1).process(solrClient);
 
       solrClient.add(collectionName, new SolrInputDocument("id", "1"));
