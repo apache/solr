@@ -26,9 +26,7 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.lucene.util.IOUtils;
-import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaMetadataKeys;
-import org.apache.tika.parser.PasswordProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,24 +35,13 @@ import org.slf4j.LoggerFactory;
  * matching against a list of regular expressions. The list of passwords is supplied in an optional
  * Map. If an explicit password is set, it will be used.
  */
-public class RegexRulesPasswordProvider implements PasswordProvider {
+public class RegexRulesPasswordProvider implements ExtractionPasswordProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private LinkedHashMap<Pattern, String> passwordMap = new LinkedHashMap<>();
   private String explicitPassword;
 
   @Override
-  public String getPassword(Metadata meta) {
-    if (getExplicitPassword() != null) {
-      return getExplicitPassword();
-    }
-
-    if (passwordMap.size() > 0)
-      return lookupPasswordFromMap(meta.get(TikaMetadataKeys.RESOURCE_NAME_KEY));
-
-    return null;
-  }
-
   public String getPassword(ExtractionMetadata extractionMetadata) {
     if (getExplicitPassword() != null) {
       return getExplicitPassword();

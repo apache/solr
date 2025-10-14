@@ -138,7 +138,7 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
     if (request.passwordsMap != null) {
       pwd.setPasswordMap(request.passwordsMap);
     }
-    context.set(PasswordProvider.class, pwd);
+    context.set(PasswordProvider.class, new PasswordProviderAdapter(pwd));
     return context;
   }
 
@@ -182,6 +182,19 @@ public class LocalTikaExtractionBackend implements ExtractionBackend {
     for (String name : tikaMetadata.names()) {
       String[] vals = tikaMetadata.getValues(name);
       if (vals != null) for (String v : vals) md.add(name, v);
+    }
+  }
+
+  private static class PasswordProviderAdapter implements PasswordProvider {
+    private final ExtractionPasswordProvider delegate;
+
+    public PasswordProviderAdapter(ExtractionPasswordProvider delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public String getPassword(Metadata metadata) {
+      return delegate.getPassword(tikaMetadataToExtractionMetadata(metadata));
     }
   }
 }
