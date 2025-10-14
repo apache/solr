@@ -75,6 +75,6 @@ public class SolrIdentifierValidator {
         + "]. "
         + typeStr
         + " names must consist entirely of periods, "
-        + "underscores, hyphens, and alphanumerics as well as not start with a hyphen";
+        + "underscores, hyphens, and alphanumerics as well as not start with a hyphen.";
   }
 }
