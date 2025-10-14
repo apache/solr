@@ -26,6 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Unit tests for LocalTikaExtractionBackend independent of the HTTP handler. */
+@SuppressWarnings("removal")
 public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
 
   private static TikaConfig tikaConfig;
