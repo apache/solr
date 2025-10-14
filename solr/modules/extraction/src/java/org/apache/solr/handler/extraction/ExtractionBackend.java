@@ -21,7 +21,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.xml.sax.helpers.DefaultHandler;
 
-/** Content extraction backends must implement this interface */
+/**
+ * Content extraction backends must implement this interface.
+ *
+ * <p>Implementations must be thread-safe as a single instance may be shared across multiple
+ * concurrent requests.
+ */
 public interface ExtractionBackend extends Closeable {
   /**
    * Extract plain text and metadata from the inputStream. Implementations should not close the
