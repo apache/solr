@@ -34,6 +34,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.RefCounted;
 import org.apache.tika.sax.BodyContentHandler;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamRequestContent;
@@ -51,11 +52,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
    */
   public static final long DEFAULT_MAXCHARS_LIMIT = 100 * 1024 * 1024;
 
-  private static volatile HttpClient SHARED_CLIENT;
-  private static volatile ExecutorService SHARED_EXECUTOR;
   private static final Object INIT_LOCK = new Object();
-  private static volatile boolean INITIALIZED = false;
-  private static volatile int REFERENCE_COUNT = 0;
   private final String baseUrl;
   private static final int DEFAULT_TIMEOUT_SECONDS = 3 * 60;
   private final Duration defaultTimeout;
@@ -63,6 +60,12 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   private boolean tikaMetadataCompatibility;
   private HashMap<String, Object> initArgsMap = new HashMap<>();
   private final long maxCharsLimit;
+
+  // Singleton holder for the shared HttpClient/Executor resources (one per JVM)
+  private static volatile RefCounted<HttpClientResources> SHARED_RESOURCES;
+  // Per-backend handle (same RefCounted instance as SHARED_RESOURCES) that this instance will
+  // decref() on close
+  private RefCounted<HttpClientResources> acquiredResourcesRef;
 
   public TikaServerExtractionBackend(String baseUrl) {
     this(baseUrl, DEFAULT_TIMEOUT_SECONDS, null, DEFAULT_MAXCHARS_LIMIT);
@@ -107,10 +110,8 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     this.defaultTimeout =
         Duration.ofSeconds(timeoutSeconds > 0 ? timeoutSeconds : DEFAULT_TIMEOUT_SECONDS);
 
-    // Increment reference count when a backend instance is created
-    synchronized (INIT_LOCK) {
-      REFERENCE_COUNT++;
-    }
+    // Acquire a reference to the shared resources; keep a handle so we can decref() on close
+    acquiredResourcesRef = initializeHttpClient().incref();
   }
 
   public static final String NAME = "tikaserver";
@@ -168,8 +169,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   InputStream callTikaServer(InputStream inputStream, ExtractionRequest request) throws Exception {
     String url = baseUrl + (request.tikaServerRecursive ? "/rmeta" : "/tika");
 
-    ensureClientInitialized();
-    HttpClient client = SHARED_CLIENT;
+    HttpClient client = acquiredResourcesRef.get().client;
 
     Request req = client.newRequest(url).method("PUT");
     Duration effectiveTimeout =
@@ -341,10 +341,46 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     }
   }
 
-  private static void ensureClientInitialized() {
-    if (INITIALIZED && SHARED_CLIENT != null) return;
+  private static final class HttpClientResources {
+    final HttpClient client;
+    final ExecutorService executor;
+
+    HttpClientResources(HttpClient client, ExecutorService executor) {
+      this.client = client;
+      this.executor = executor;
+    }
+  }
+
+  private static final class ResourcesRef extends RefCounted<HttpClientResources> {
+    ResourcesRef(HttpClientResources r) {
+      super(r);
+    }
+
+    @Override
+    protected void close() {
+      // stop client and shutdown executor
+      try {
+        if (resource.client != null) resource.client.stop();
+      } catch (Throwable ignore) {
+      }
+      try {
+        if (resource.executor != null) resource.executor.shutdownNow();
+      } catch (Throwable ignore) {
+      }
+      synchronized (INIT_LOCK) {
+        // clear the shared reference when closed
+        if (SHARED_RESOURCES == this) {
+          SHARED_RESOURCES = null;
+        }
+      }
+    }
+  }
+
+  private static RefCounted<HttpClientResources> initializeHttpClient() {
+    RefCounted<HttpClientResources> ref = SHARED_RESOURCES;
+    if (ref != null) return ref;
     synchronized (INIT_LOCK) {
-      if (INITIALIZED && SHARED_CLIENT != null) return;
+      if (SHARED_RESOURCES != null) return SHARED_RESOURCES;
       ThreadFactory tf = new SolrNamedThreadFactory("TikaServerHttpClient");
       ExecutorService exec = ExecutorUtil.newMDCAwareCachedThreadPool(tf);
       HttpClient client = new HttpClient();
@@ -360,9 +396,8 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Failed to start shared Jetty HttpClient", e);
       }
-      SHARED_EXECUTOR = exec;
-      SHARED_CLIENT = client;
-      INITIALIZED = true;
+      SHARED_RESOURCES = new ResourcesRef(new HttpClientResources(client, exec));
+      return SHARED_RESOURCES;
     }
   }
 
@@ -403,32 +438,13 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
 
   @Override
   public void close() {
+    RefCounted<HttpClientResources> ref;
     synchronized (INIT_LOCK) {
-      // Decrement reference count
-      REFERENCE_COUNT--;
-
-      // Only shutdown shared resources when last reference is closed
-      if (REFERENCE_COUNT <= 0) {
-        HttpClient client = SHARED_CLIENT;
-        ExecutorService exec = SHARED_EXECUTOR;
-        SHARED_CLIENT = null;
-        SHARED_EXECUTOR = null;
-        INITIALIZED = false;
-        REFERENCE_COUNT = 0; // Ensure it doesn't go negative
-
-        if (client != null) {
-          try {
-            client.stop();
-          } catch (Throwable ignore) {
-          }
-        }
-        if (exec != null) {
-          try {
-            exec.shutdownNow();
-          } catch (Throwable ignore) {
-          }
-        }
-      }
+      ref = acquiredResourcesRef;
+      acquiredResourcesRef = null;
+    }
+    if (ref != null) {
+      ref.decref();
     }
   }
 }
