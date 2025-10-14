@@ -40,7 +40,7 @@ import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
+import org.apache.solr.client.solrj.impl.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;

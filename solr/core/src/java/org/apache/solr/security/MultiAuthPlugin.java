@@ -131,11 +131,6 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     }
 
     List<Object> schemeList = (List<Object>) o;
-    // if you only have one scheme, then you don't need to use this class
-    if (schemeList.size() < 2) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR, "Invalid config: MultiAuthPlugin requires at least two schemes!");
-    }
 
     for (Object s : schemeList) {
       if (!(s instanceof Map)) {
@@ -233,7 +228,14 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     }
 
     final String scheme = getSchemeFromAuthHeader(authHeader);
-    final AuthenticationPlugin plugin = pluginMap.get(scheme);
+    AuthenticationPlugin plugin = pluginMap.get(scheme);
+
+    if (plugin == null && scheme.equalsIgnoreCase("basic")) {
+      // In case no plugin found try looking up custom scheme xBasic when scheme is Basic, so that
+      // clients that use "Basic ..." are resolved with plugin "xBasic ..." if configured
+      plugin = pluginMap.get("x" + scheme);
+    }
+
     if (plugin == null) {
       addWWWAuthenticateHeaders(response);
       response.sendError(

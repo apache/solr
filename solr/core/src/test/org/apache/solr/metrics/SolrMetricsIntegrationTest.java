@@ -82,7 +82,6 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     var reader = metricManager.getPrometheusMetricReader("solr.node");
 
     assertNotNull(getGaugeOpt(reader, "solr_cores_loaded", "permanent"));
-    assertNotNull(getGaugeOpt(reader, "solr_cores_loaded", "transient"));
     assertNotNull(getGaugeOpt(reader, "solr_cores_loaded", "unloaded"));
 
     assertNotNull(getGaugeOpt(reader, "solr_disk_space_bytes", "total_space"));

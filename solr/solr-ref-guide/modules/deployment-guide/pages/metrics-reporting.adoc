@@ -639,7 +639,6 @@ For example:
 
 [source,plain]
 ----
-example.solr.node.cores.lazy 0 1482932097
 example.solr.node.cores.loaded 1 1482932097
 example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.count 21 1482932097
 example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.m1_rate 2.5474287707930614 1482932097

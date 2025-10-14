@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** AKA CoreManager: Holds/manages {@link SolrCore}s within {@link CoreContainer}. */
-public class SolrCores implements SolrInfoBean {
+class SolrCores implements SolrInfoBean {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -61,17 +61,8 @@ public class SolrCores implements SolrInfoBean {
   // being operated upon.
   private final Set<String> pendingCoreOps = new HashSet<>();
 
-  // Due to the fact that closes happen potentially whenever anything is _added_ to the transient
-  // core list, we need to essentially queue them up to be handled via pendingCoreOps.
-  private final List<SolrCore> pendingCloses = new ArrayList<>();
-
-  public static SolrCores newSolrCores(CoreContainer coreContainer) {
-    final int transientCacheSize = coreContainer.getConfig().getTransientCacheSize();
-    if (transientCacheSize > 0) {
-      return new TransientSolrCores(coreContainer, transientCacheSize);
-    } else {
-      return new SolrCores(coreContainer);
-    }
+  static SolrCores newSolrCores(CoreContainer coreContainer) {
+    return new SolrCores(coreContainer);
   }
 
   SolrCores(CoreContainer container) {
@@ -94,7 +85,7 @@ public class SolrCores implements SolrInfoBean {
   // down, so we need to make a temporary copy of the names and shut them down outside the lock.
   @Override
   public void close() {
-    waitForLoadingCoresToFinish(30 * 1000);
+    waitForLoadingCoresToFinish(30_000);
 
     // It might be possible for one of the cores to move from one list to another while we're
     // closing them. So loop through the lists until they're all empty. In particular, the core
@@ -110,9 +101,6 @@ public class SolrCores implements SolrInfoBean {
             coreList.add(core);
           }
         }
-
-        coreList.addAll(pendingCloses);
-        pendingCloses.clear();
       }
 
       if (coreList.isEmpty()) {
@@ -160,8 +148,6 @@ public class SolrCores implements SolrInfoBean {
    *     <p>A core may be non-transient but still lazily loaded. If it is "permanent" and lazy-load
    *     _and_ not yet loaded it will _not_ be returned by this call.
    *     <p>This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
-   *     <p>Note: This is one of the places where SolrCloud is incompatible with Transient Cores.
-   *     This call is used in cancelRecoveries, transient cores don't participate.
    */
   @Deprecated
   public List<SolrCore> getCores() {
@@ -209,12 +195,6 @@ public class SolrCores implements SolrInfoBean {
     synchronized (modifyLock) {
       return cores.size();
     }
-  }
-
-  /** Gets the number of currently loaded transient cores. */
-  public int getNumLoadedTransientCores() {
-    // TODO; this metric ought to simply not exist here
-    return 0;
   }
 
   /** Gets the number of unloaded cores, including permanent and transient cores. */
@@ -297,35 +277,9 @@ public class SolrCores implements SolrInfoBean {
     }
   }
 
-  // See SOLR-5366 for why the UNLOAD command needs to know whether a core is actually loaded or
-  // not, it might have to close the core. However, there's a race condition. If the core happens to
-  // be in the pending "to close" queue, we should NOT close it in unload core.
-  public boolean isLoadedNotPendingClose(String name) {
-    synchronized (modifyLock) {
-      if (!isLoaded(name)) {
-        return false;
-      }
-      // Check pending
-      for (SolrCore core : pendingCloses) {
-        if (core.getName().equals(name)) {
-          return false;
-        }
-      }
-
-      return true;
-    }
-  }
-
   public boolean isLoaded(String name) {
     synchronized (modifyLock) {
       return cores.containsKey(name);
-    }
-  }
-
-  /** The core is currently loading, unloading, or reloading. */
-  protected boolean hasPendingCoreOps(String name) {
-    synchronized (modifyLock) {
-      return pendingCoreOps.contains(name);
     }
   }
 
@@ -334,17 +288,7 @@ public class SolrCores implements SolrInfoBean {
 
     // Keep multiple threads from operating on a core at one time.
     synchronized (modifyLock) {
-      boolean pending;
-      do { // Are we currently doing anything to this core? Loading, unloading, reloading?
-        pending = pendingCoreOps.contains(name); // wait for the core to be done being operated upon
-        if (!pending) { // Linear list, but shouldn't be too long
-          for (SolrCore core : pendingCloses) {
-            if (core.getName().equals(name)) {
-              pending = true;
-              break;
-            }
-          }
-        }
+      while (true) { // Are we currently doing anything to this core? Loading, unloading, reloading?
         if (container.isShutDown()) {
           // Just stop already.
           // Seems best to throw a SolrException if shutting down, because returning any value,
@@ -352,17 +296,21 @@ public class SolrCores implements SolrInfoBean {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Server is shutting down");
         }
 
-        if (pending) {
-          try {
-            modifyLock.wait();
-          } catch (InterruptedException e) {
-            // Seems best to throw a SolrException if interrupted, because returning any value,
-            // including null, would mean the waiting is complete.
-            Thread.currentThread().interrupt();
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-          }
+        if (!pendingCoreOps.contains(name)) {
+          break;
         }
-      } while (pending);
+
+        // wait for the core to be done being operated upon
+        try {
+          modifyLock.wait();
+        } catch (InterruptedException e) {
+          // Seems best to throw a SolrException if interrupted, because returning any value,
+          // including null, would mean the waiting is complete.
+          Thread.currentThread().interrupt();
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      }
+
       // We _really_ need to do this within the synchronized block!
       if (!pendingCoreOps.add(name)) {
         log.warn("Replaced an entry in pendingCoreOps {}, we should not be doing this", name);
@@ -385,23 +333,6 @@ public class SolrCores implements SolrInfoBean {
 
   public Object getModifyLock() {
     return modifyLock;
-  }
-
-  // Be a little careful. We don't want to either open or close a core unless it's _not_ being
-  // opened or closed by another thread. So within this lock we'll walk along the list of pending
-  // closes until we find something NOT in the list of threads currently being loaded or reloaded.
-  // The "usual" case will probably return the very first one anyway.
-  public SolrCore getCoreToClose() {
-    synchronized (modifyLock) {
-      for (SolrCore core : pendingCloses) {
-        if (!pendingCoreOps.contains(core.getName())) {
-          pendingCoreOps.add(core.getName());
-          pendingCloses.remove(core);
-          return core;
-        }
-      }
-    }
-    return null;
   }
 
   /**
@@ -485,13 +416,6 @@ public class SolrCores implements SolrInfoBean {
     return currentlyLoadingCores.contains(name);
   }
 
-  public void queueCoreToClose(SolrCore coreToClose) {
-    synchronized (modifyLock) {
-      pendingCloses.add(coreToClose); // Essentially just queue this core up for closing.
-      modifyLock.notifyAll(); // Wakes up closer thread too
-    }
-  }
-
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     parentContext.observableLongGauge(
@@ -501,9 +425,6 @@ public class SolrCores implements SolrInfoBean {
           measurement.record(
               getNumLoadedPermanentCores(),
               attributes.toBuilder().put(TYPE_ATTR, "permanent").build());
-          measurement.record(
-              getNumLoadedTransientCores(),
-              attributes.toBuilder().put(TYPE_ATTR, "transient").build());
           measurement.record(
               getNumUnloadedCores(), attributes.toBuilder().put(TYPE_ATTR, "unloaded").build());
         });

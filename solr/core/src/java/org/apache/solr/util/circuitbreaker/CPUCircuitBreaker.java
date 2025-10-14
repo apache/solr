@@ -49,11 +49,6 @@ public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
     super();
   }
 
-  @Deprecated(since = "9.5")
-  public CPUCircuitBreaker(SolrCore core) {
-    this(core.getCoreContainer());
-  }
-
   public CPUCircuitBreaker(CoreContainer coreContainer) {
     super();
     this.cc = coreContainer;

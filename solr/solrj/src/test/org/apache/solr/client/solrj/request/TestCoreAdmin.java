@@ -88,7 +88,6 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
       // These should be the inverse of defaults.
       req.setIsLoadOnStartup(false);
-      req.setIsTransient(true);
       req.process(client);
 
       // Show that the newly-created core has values for load on startup and transient that differ
@@ -96,9 +95,6 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       Path logDir;
       try (SolrCore coreProveIt = cores.getCore("collection1");
           SolrCore core = cores.getCore("newcore")) {
-
-        assertTrue(core.getCoreDescriptor().isTransient());
-        assertFalse(coreProveIt.getCoreDescriptor().isTransient());
 
         assertFalse(core.getCoreDescriptor().isLoadOnStartup());
         assertTrue(coreProveIt.getCoreDescriptor().isLoadOnStartup());

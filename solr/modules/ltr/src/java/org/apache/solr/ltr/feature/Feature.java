@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DocAndFloatFeatureBuffer;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -29,6 +30,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.DocInfo;
@@ -384,6 +386,12 @@ public abstract class Feature extends Query implements Accountable {
       @Override
       public float getMaxScore(int upTo) throws IOException {
         return in.getMaxScore(upTo);
+      }
+
+      @Override
+      public void nextDocsAndScores(int target, Bits acceptDocs, DocAndFloatFeatureBuffer results)
+          throws IOException {
+        in.nextDocsAndScores(target, acceptDocs, results);
       }
     }
 
