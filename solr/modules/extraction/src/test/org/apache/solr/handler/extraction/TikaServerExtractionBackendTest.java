@@ -27,7 +27,7 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.tika.sax.ToXMLContentHandler;
+import org.apache.solr.handler.extraction.fromtika.ToXMLContentHandler;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
