@@ -16,8 +16,11 @@
  */
 package org.apache.solr.metrics;
 
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.api.trace.TracerProvider;
+import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.instrumentation.runtimemetrics.java17.RuntimeMetrics;
-import io.opentelemetry.sdk.OpenTelemetrySdk;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.util.EnvUtils;
 import org.slf4j.Logger;
@@ -39,11 +42,26 @@ public class OtelRuntimeJvmMetrics {
       SolrMetricManager solrMetricManager, String registryName) {
     if (!isJvmMetricsEnabled()) return this;
 
+    // a dummy instance; we only care to provide the MeterProvider
+    var otel =
+        new OpenTelemetry() {
+          @Override
+          public MeterProvider getMeterProvider() {
+            return solrMetricManager.meterProvider(registryName);
+          }
+
+          @Override
+          public TracerProvider getTracerProvider() {
+            return OpenTelemetry.noop().getTracerProvider();
+          }
+
+          @Override
+          public ContextPropagators getPropagators() {
+            return OpenTelemetry.noop().getPropagators();
+          }
+        };
     this.runtimeMetrics =
-        RuntimeMetrics.builder(
-                OpenTelemetrySdk.builder()
-                    .setMeterProvider(solrMetricManager.meterProvider(registryName))
-                    .build())
+        RuntimeMetrics.builder(otel)
             // TODO: We should have this configurable to enable/disable specific JVM metrics
             .enableAllFeatures()
             .build();
