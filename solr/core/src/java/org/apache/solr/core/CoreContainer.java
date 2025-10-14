@@ -87,6 +87,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
@@ -279,7 +280,7 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
-  public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
+  public final NodeRoles nodeRoles = new NodeRoles(EnvUtils.getProperty(NodeRoles.NODE_ROLES_PROP));
 
   private final ExecutorService indexSearcherExecutor;
 

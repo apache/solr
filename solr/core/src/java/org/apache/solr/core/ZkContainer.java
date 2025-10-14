@@ -76,21 +76,30 @@ public class ZkContainer {
         EnvUtils.getPropertyAsBool(
             "solr.zookeeper.server.enabled", false); // "zkRun" pre-merge-conflict
     // TODO NOCOMMIT - understand when zkRun is set
-    String zkQuorumRun = System.getProperty("zkQuorumRun");
-    final boolean runAsQuorum = config.getZkHost() != null && zkQuorumRun != null;
+    boolean zkQuorumNode = false;
+    if (NodeRoles.MODE_ON.equals(cc.nodeRoles.getRoleMode(NodeRoles.Role.ZOOKEEPER_QUORUM))) {
+      zkQuorumNode = true;
+      log.info("Starting node in ZooKeeper Quorum role.");
+    }
+
+    final boolean runAsQuorum = config.getZkHost() != null && zkQuorumNode;
 
     if (zkRun && config == null)
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Cannot start Solr in cloud mode - no cloud config provided");
 
-    if (config == null) return; // not in zk mode
+    if (config == null) {
+      return; // not in cloud mode
+    }
 
     String zookeeperHost = config.getZkHost();
 
     // zookeeper in quorum mode currently causes a failure when trying to
     // register log4j mbeans.  See SOLR-2369
-    // TODO: remove after updating to an slf4j based zookeeper
+    // TODO: remove after updating to an slf4j based zookeeper  (This may be done!)
+    // https://issues.apache.org/jira/browse/ZOOKEEPER-850
+    // https://issues.apache.org/jira/browse/ZOOKEEPER-1371
     System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
     final var solrHome = cc.getSolrHome();
