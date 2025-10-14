@@ -102,7 +102,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
                 "Invalid value for '"
                     + ExtractingParams.TIKASERVER_MAX_CHARS
                     + "': "
-                    + maxCharsLimit);
+                    + maxCharsObj);
           }
         }
         this.tikaServerBackend =
