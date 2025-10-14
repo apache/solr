@@ -66,6 +66,24 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
 
   public TikaServerExtractionBackend(
       String baseUrl, int timeoutSeconds, NamedList<?> initArgs, long maxCharsLimit) {
+    // Validate baseUrl
+    if (baseUrl == null || baseUrl.trim().isEmpty()) {
+      throw new IllegalArgumentException("baseUrl cannot be null or empty");
+    }
+    // Validate URL format and scheme
+    try {
+      java.net.URI uri = new java.net.URI(baseUrl);
+      String scheme = uri.getScheme();
+      if (scheme == null
+          || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
+        throw new IllegalArgumentException(
+            "baseUrl must use http or https scheme, got: " + baseUrl);
+      }
+      uri.toURL(); // Additional validation that it's a valid URL
+    } catch (java.net.URISyntaxException | java.net.MalformedURLException e) {
+      throw new IllegalArgumentException("Invalid baseUrl: " + baseUrl, e);
+    }
+
     this.maxCharsLimit = maxCharsLimit;
     if (initArgs != null) {
       initArgs.toMap(this.initArgsMap);
