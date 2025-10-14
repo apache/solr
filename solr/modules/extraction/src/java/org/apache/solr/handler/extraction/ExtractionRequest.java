@@ -53,6 +53,8 @@ public class ExtractionRequest {
    * @param extractFormat the desired format for extraction output
    * @param tikaServerRecursive a flag indicating whether extraction should be recursive. TikaServer
    *     only
+   * @param tikaServerTimeoutSeconds optional per-request timeout override in seconds (TikaServer
+   *     only). If null or ≤ 0, the default timeout will be used
    * @param tikaServerRequestHeaders optional headers to be included in requests to the extraction
    *     service. TikaServer only
    */
