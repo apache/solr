@@ -57,12 +57,12 @@ public class LTRInterleavingRescorer extends LTRRescorer {
    *
    * @param searcher current IndexSearcher
    * @param firstPassTopDocs documents to rerank;
-   * @param topN documents to return;
+   * @param docsToRerank documents to return;
    */
   @Override
-  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN)
+  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int docsToRerank)
       throws IOException {
-    if ((topN == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
+    if ((docsToRerank == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
       return firstPassTopDocs;
     }
 
@@ -72,10 +72,10 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       System.arraycopy(
           firstPassTopDocs.scoreDocs, 0, firstPassResults, 0, firstPassTopDocs.scoreDocs.length);
     }
-    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value()));
+    docsToRerank = Math.toIntExact(Math.min(docsToRerank, firstPassTopDocs.totalHits.value()));
 
     ScoreDoc[][] reRankedPerModel =
-        rerank(searcher, topN, getFirstPassDocsRanked(firstPassTopDocs));
+        rerank(searcher, docsToRerank, getFirstPassDocsRanked(firstPassTopDocs));
     if (originalRankingIndex != null) {
       reRankedPerModel[originalRankingIndex] = firstPassResults;
     }
@@ -150,7 +150,7 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       for (int i = 0; i < rerankingQueries.length; i++) {
         if (modelWeights[i] != null) {
           final ScoreDoc hit_i = new ScoreDoc(hit.doc, hit.score, hit.shardIndex);
-          scoreSingleHit(topN, docBase, hitUpto, hit_i, docID, scorers[i], rerankedPerModel[i]);
+          scoreSingleHit(topN, docBase, hitUpto, hit_i, scorers[i], rerankedPerModel[i]);
         }
       }
       hitUpto++;

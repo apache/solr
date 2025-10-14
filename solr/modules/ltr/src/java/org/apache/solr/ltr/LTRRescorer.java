@@ -113,31 +113,31 @@ public class LTRRescorer extends Rescorer {
    *
    * @param searcher current IndexSearcher
    * @param firstPassTopDocs documents to rerank;
-   * @param topN documents to return;
+   * @param docsToRerank documents to return;
    */
   @Override
-  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN)
+  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int docsToRerank)
       throws IOException {
-    if ((topN == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
+    if ((docsToRerank == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
       return firstPassTopDocs;
     }
     final ScoreDoc[] firstPassResults = getFirstPassDocsRanked(firstPassTopDocs);
-    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value()));
+    docsToRerank = Math.toIntExact(Math.min(docsToRerank, firstPassTopDocs.totalHits.value()));
 
-    final ScoreDoc[] reranked = rerank(searcher, topN, firstPassResults);
+    final ScoreDoc[] reranked = rerank(searcher, docsToRerank, firstPassResults);
 
     return new TopDocs(firstPassTopDocs.totalHits, reranked);
   }
 
-  private ScoreDoc[] rerank(IndexSearcher searcher, int topN, ScoreDoc[] firstPassResults)
+  private ScoreDoc[] rerank(IndexSearcher searcher, int docsToRerank, ScoreDoc[] firstPassResults)
       throws IOException {
-    final ScoreDoc[] reranked = new ScoreDoc[topN];
+    final ScoreDoc[] reranked = new ScoreDoc[docsToRerank];
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     final LTRScoringQuery.ModelWeight modelWeight =
         (LTRScoringQuery.ModelWeight)
             searcher.createWeight(searcher.rewrite(scoringQuery), ScoreMode.COMPLETE, 1);
 
-    scoreFeatures(topN, modelWeight, firstPassResults, leaves, reranked);
+    scoreFeatures(docsToRerank, modelWeight, firstPassResults, leaves, reranked);
     // Must sort all documents that we reranked, and then select the top
     Arrays.sort(reranked, scoreComparator);
     return reranked;
@@ -152,7 +152,7 @@ public class LTRRescorer extends Rescorer {
   }
 
   public void scoreFeatures(
-      int topN,
+      int docsToRerank,
       LTRScoringQuery.ModelWeight modelWeight,
       ScoreDoc[] hits,
       List<LeafReaderContext> leaves,
@@ -164,13 +164,12 @@ public class LTRRescorer extends Rescorer {
     int docBase = 0;
 
     LTRScoringQuery.ModelWeight.ModelScorer scorer = null;
-    int hitUpto = 0;
+    int hitPosition = 0;
 
-    while (hitUpto < hits.length) {
-      final ScoreDoc hit = hits[hitUpto];
-      final int docID = hit.doc;
+    while (hitPosition < hits.length) {
+      final ScoreDoc hit = hits[hitPosition];
       LeafReaderContext readerContext = null;
-      while (docID >= endDoc) {
+      while (hit.doc >= endDoc) {
         readerUpto++;
         readerContext = leaves.get(readerUpto);
         endDoc = readerContext.docBase + readerContext.reader().maxDoc();
@@ -180,18 +179,17 @@ public class LTRRescorer extends Rescorer {
         docBase = readerContext.docBase;
         scorer = modelWeight.modelScorer(readerContext);
       }
-      scoreSingleHit(topN, docBase, hitUpto, hit, docID, scorer, reranked);
-      hitUpto++;
+      scoreSingleHit(docsToRerank, docBase, hitPosition, hit, scorer, reranked);
+      hitPosition++;
     }
   }
 
   /** Scores a single document. */
   protected void scoreSingleHit(
-      int topN,
+      int docsToRerank,
       int docBase,
-      int hitUpto,
+      int hitPosition,
       ScoreDoc hit,
-      int docID,
       LTRScoringQuery.ModelWeight.ModelScorer scorer,
       ScoreDoc[] reranked)
       throws IOException {
@@ -203,12 +201,12 @@ public class LTRRescorer extends Rescorer {
      * needs to compute a potentially non-zero score from blank features.
      */
     assert (scorer != null);
-    final int targetDoc = docID - docBase;
+    final int targetDoc = hit.doc - docBase;
     scorer.docID();
     scorer.iterator().advance(targetDoc);
 
     scorer.getDocInfo().setOriginalDocScore(hit.score);
-    scorer.setSolrDocID(docID);
+    scorer.getDocInfo().setOriginalDocId(hit.doc);
     hit.score = scorer.score();
     if (QueryLimits.getCurrentLimits()
         .maybeExitWithPartialResults(
@@ -217,19 +215,19 @@ public class LTRRescorer extends Rescorer {
                 + " If partial results are tolerated the reranking got reverted and all documents preserved their original score and ranking.")) {
       throw new IncompleteRerankingException();
     }
-    if (hitUpto < topN) {
-      reranked[hitUpto] = hit;
-    } else if (hitUpto == topN) {
+    if (hitPosition < docsToRerank) {
+      reranked[hitPosition] = hit;
+    } else if (hitPosition == docsToRerank) {
       // collected topN document, I create the heap
-      heapify(reranked, topN);
+      heapify(reranked, docsToRerank);
     }
-    if (hitUpto >= topN) {
+    if (hitPosition >= docsToRerank) {
       // once that heap is ready, if the score of this document is greater that
       // the minimum I replace it with the
       // minimum and fix the heap.
       if (hit.score > reranked[0].score) {
         reranked[0] = hit;
-        heapAdjust(reranked, topN, 0);
+        heapAdjust(reranked, docsToRerank, 0);
       }
     }
   }

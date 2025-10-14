@@ -25,6 +25,7 @@ import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
+import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.extraction.MultiFeaturesExtractor;
@@ -38,7 +39,6 @@ import org.apache.solr.request.SolrQueryRequest;
 public class MultiFeaturesScorer extends FeatureTraversalScorer {
   private int targetDoc = -1;
   private int activeDoc = -1;
-  private int solrDocID = -1;
   private final DisiPriorityQueue subScorers;
   private final List<DisiWrapper> wrappers;
   private final MultiFeaturesIterator multiFeaturesIteratorIterator;
@@ -50,7 +50,8 @@ public class MultiFeaturesScorer extends FeatureTraversalScorer {
       LTRScoringQuery.FeatureInfo[] allFeaturesInStore,
       LTRScoringModel ltrScoringModel,
       Map<String, String[]> efi,
-      List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+      List<Feature.FeatureWeight.FeatureScorer> featureScorers,
+      DocInfo docInfo) {
     if (featureScorers.size() <= 1) {
       throw new IllegalArgumentException("There must be at least 2 subScorers");
     }
@@ -76,6 +77,7 @@ public class MultiFeaturesScorer extends FeatureTraversalScorer {
             efi,
             subScorers);
     this.modelWeight = modelWeight;
+    this.docInfo = docInfo;
   }
 
   @Override
@@ -89,13 +91,8 @@ public class MultiFeaturesScorer extends FeatureTraversalScorer {
   }
 
   @Override
-  public int getSolrDocID() {
-    return solrDocID;
-  }
-
-  @Override
-  public void setSolrDocID(int solrDocID) {
-    this.solrDocID = solrDocID;
+  public DocInfo getDocInfo() {
+    return docInfo;
   }
 
   @Override

@@ -510,7 +510,8 @@ public class LTRScoringQuery extends Query implements Accountable {
                   allFeaturesInStore,
                   ltrScoringModel,
                   efi,
-                  featureScorers);
+                  featureScorers,
+                  docInfo);
         } else {
           featureTraversalScorer =
               new MultiFeaturesScorer(
@@ -520,7 +521,8 @@ public class LTRScoringQuery extends Query implements Accountable {
                   allFeaturesInStore,
                   ltrScoringModel,
                   efi,
-                  featureScorers);
+                  featureScorers,
+                  docInfo);
         }
       }
 
@@ -551,10 +553,6 @@ public class LTRScoringQuery extends Query implements Accountable {
 
       public void fillFeaturesInfo() throws IOException {
         featureTraversalScorer.fillFeaturesInfo();
-      }
-
-      public void setSolrDocID(int solrDocID) throws IOException {
-        featureTraversalScorer.setSolrDocID(solrDocID);
       }
     }
   }

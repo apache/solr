@@ -738,11 +738,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           });
     }
 
-    if (solrConfig.featureVectorCacheConfig != null
-        && solrConfig.featureVectorCacheConfig.getRegenerator() == null) {
-      solrConfig.featureVectorCacheConfig.setRegenerator(new NoOpRegenerator());
-    }
-
     if (solrConfig.queryResultCacheConfig != null
         && solrConfig.queryResultCacheConfig.getRegenerator() == null) {
       final int queryResultWindowSize = solrConfig.queryResultWindowSize;

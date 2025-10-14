@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
+import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.extraction.SingleFeatureExtractor;
@@ -33,7 +34,6 @@ import org.apache.solr.request.SolrQueryRequest;
 public class SingleFeatureScorer extends FeatureTraversalScorer {
   private int targetDoc = -1;
   private int activeDoc = -1;
-  private int solrDocID = -1;
   private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
 
   public SingleFeatureScorer(
@@ -43,7 +43,8 @@ public class SingleFeatureScorer extends FeatureTraversalScorer {
       LTRScoringQuery.FeatureInfo[] allFeaturesInStore,
       LTRScoringModel ltrScoringModel,
       Map<String, String[]> efi,
-      List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+      List<Feature.FeatureWeight.FeatureScorer> featureScorers,
+      DocInfo docInfo) {
     this.featureScorers = featureScorers;
     this.extractedFeatureWeights = extractedFeatureWeights;
     this.allFeaturesInStore = allFeaturesInStore;
@@ -58,6 +59,7 @@ public class SingleFeatureScorer extends FeatureTraversalScorer {
             efi,
             featureScorers);
     this.modelWeight = modelWeight;
+    this.docInfo = docInfo;
   }
 
   @Override
@@ -71,13 +73,8 @@ public class SingleFeatureScorer extends FeatureTraversalScorer {
   }
 
   @Override
-  public int getSolrDocID() {
-    return solrDocID;
-  }
-
-  @Override
-  public void setSolrDocID(int solrDocID) {
-    this.solrDocID = solrDocID;
+  public DocInfo getDocInfo() {
+    return docInfo;
   }
 
   @Override

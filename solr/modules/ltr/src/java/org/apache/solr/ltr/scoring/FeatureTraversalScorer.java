@@ -18,6 +18,7 @@ package org.apache.solr.ltr.scoring;
 
 import java.io.IOException;
 import org.apache.lucene.search.Scorer;
+import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.extraction.FeatureExtractor;
@@ -30,14 +31,13 @@ public abstract class FeatureTraversalScorer extends Scorer {
   protected LTRScoringModel ltrScoringModel;
   protected Feature.FeatureWeight[] extractedFeatureWeights;
   protected LTRScoringQuery.ModelWeight modelWeight;
+  protected DocInfo docInfo;
 
   public abstract int getActiveDoc();
 
   public abstract int getTargetDoc();
 
-  public abstract int getSolrDocID();
-
-  public abstract void setSolrDocID(int solrDocID);
+  public abstract DocInfo getDocInfo();
 
   public void reset() {
     for (int i = 0; i < extractedFeatureWeights.length; ++i) {
