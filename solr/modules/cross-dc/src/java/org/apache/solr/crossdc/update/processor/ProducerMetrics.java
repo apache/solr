@@ -16,52 +16,73 @@
  */
 package org.apache.solr.crossdc.update.processor;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Histogram;
+import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
+
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
+import org.apache.solr.metrics.otel.instruments.AttributedLongHistogram;
 
 /** Metrics presented for each SolrCore using `crossdc.producer.` path. */
 public class ProducerMetrics {
 
-  private final Counter local;
-  private final Counter localError;
-  private final Counter submitted;
-  private final Counter submitError;
-  private final Histogram documentSize;
-  private final Counter documentTooLarge;
+  private final AttributedLongCounter local;
+  private final AttributedLongCounter localError;
+  private final AttributedLongCounter submitted;
+  private final AttributedLongCounter submitError;
+  private final AttributedLongHistogram documentSize;
+  private final AttributedLongCounter documentTooLarge;
 
   public ProducerMetrics(SolrMetricsContext solrMetricsContext, SolrCore solrCore) {
+    var attributes = solrCore.getCoreAttributes();
+
+    var localProcessed =
+        solrMetricsContext.longCounter(
+            "solr_core_crossdc_producer_local_processed",
+            "The number of local documents processed (success or error)");
+    var localSubmitted =
+        solrMetricsContext.longCounter(
+            "solr_core_crossdc_producer_submitted",
+            "The number of documents submitted to the Kafka topic (success or error)");
+    var histogramDocSizes =
+        solrMetricsContext.longHistogram(
+            "solr_core_crossdc_producer_document_size",
+            "Histogram of the processed document sizes processed",
+            OtelUnit.BYTES);
+    var tooLargeErrors =
+        solrMetricsContext.longCounter(
+            "solr_core_crossdc_producer_doc_too_large_errors",
+            "The number of documents that were too large to send to the Kafka topic");
+
     this.local =
-        solrMetricsContext.counter(String.valueOf(solrCore), "local", "crossdc", "producer");
+        new AttributedLongCounter(
+            localProcessed, attributes.toBuilder().put(TYPE_ATTR, "success").build());
     this.localError =
-        solrMetricsContext.counter(
-            String.valueOf(solrCore), "local", "crossdc", "producer", "errors");
+        new AttributedLongCounter(
+            localProcessed, attributes.toBuilder().put(TYPE_ATTR, "error").build());
     this.submitted =
-        solrMetricsContext.counter(String.valueOf(solrCore), "submitted", "crossdc", "producer");
+        new AttributedLongCounter(
+            localSubmitted, attributes.toBuilder().put(TYPE_ATTR, "success").build());
     this.submitError =
-        solrMetricsContext.counter(
-            String.valueOf(solrCore), "submit", "crossdc", "producer", "errors");
-    this.documentSize =
-        solrMetricsContext.histogram(
-            String.valueOf(solrCore), "documentSize", "crossdc", "producer");
-    this.documentTooLarge =
-        solrMetricsContext.counter(
-            String.valueOf(solrCore), "documentTooLarge", "crossdc", "producer", "errors");
+        new AttributedLongCounter(
+            localSubmitted, attributes.toBuilder().put(TYPE_ATTR, "error").build());
+    this.documentSize = new AttributedLongHistogram(histogramDocSizes, attributes);
+    this.documentTooLarge = new AttributedLongCounter(tooLargeErrors, attributes);
   }
 
   /** Counter representing the number of local documents processed successfully. */
-  public Counter getLocal() {
+  public AttributedLongCounter getLocal() {
     return this.local;
   }
 
   /** Counter representing the number of local documents processed with error. */
-  public Counter getLocalError() {
+  public AttributedLongCounter getLocalError() {
     return this.localError;
   }
 
   /** Counter representing the number of documents submitted to the Kafka topic. */
-  public Counter getSubmitted() {
+  public AttributedLongCounter getSubmitted() {
     return this.submitted;
   }
 
@@ -69,19 +90,19 @@ public class ProducerMetrics {
    * Counter representing the number of documents that were not submitted to the Kafka topic because
    * of exception during execution.
    */
-  public Counter getSubmitError() {
+  public AttributedLongCounter getSubmitError() {
     return this.submitError;
   }
 
   /** Histogram of the processed document size. */
-  public Histogram getDocumentSize() {
+  public AttributedLongHistogram getDocumentSize() {
     return this.documentSize;
   }
 
   /**
    * Counter representing the number of documents that were too large to send to the Kafka topic.
    */
-  public Counter getDocumentTooLarge() {
+  public AttributedLongCounter getDocumentTooLarge() {
     return this.documentTooLarge;
   }
 }

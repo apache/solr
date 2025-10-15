@@ -18,7 +18,8 @@
 package org.apache.solr.util.tracing;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.trace.TracerProvider;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +35,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.CreateCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -49,13 +51,13 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    OpenTelemetryConfigurator.resetForTest();
+
     configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
 
-    // tracer should be disabled
-    assertEquals(
-        "Expecting noop otel (propagating only)",
-        TracerProvider.noop(),
-        GlobalOpenTelemetry.get().getTracerProvider());
+    Tracer tracer = GlobalOpenTelemetry.get().getTracer("solr");
+    Span span = tracer.spanBuilder("testSpan").startSpan();
+    assertFalse("Expected a no-op/non-recording tracer (propagating-only)", span.isRecording());
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
         .process(cluster.getSolrClient());

@@ -19,9 +19,8 @@ package org.apache.solr.handler;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -36,15 +35,16 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.metrics.otel.instruments.AttributedInstrumentFactory;
+import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -69,6 +69,7 @@ public abstract class RequestHandlerBase
         PermissionNameProvider {
 
   public static final String REQUEST_CPU_TIMER_CONTEXT = "publishCpuTime";
+  public static final AttributeKey<String> SOURCE_ATTR = AttributeKey.stringKey("source");
   protected NamedList<?> initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
@@ -162,48 +163,65 @@ public abstract class RequestHandlerBase
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    if (aggregateNodeLevelMetricsEnabled) {
-      this.solrMetricsContext =
-          new SolrDelegateRegistryMetricsContext(
-              parentContext.getMetricManager(),
-              parentContext.getRegistryName(),
-              SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
-              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
-    } else {
-      this.solrMetricsContext = parentContext.getChildContext(this);
-    }
-    metrics = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
-    solrMetricsContext.gauge(
-        () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
+
+    metrics =
+        new HandlerMetrics(
+            solrMetricsContext,
+            attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build(),
+            aggregateNodeLevelMetricsEnabled);
   }
 
   /** Metrics for this handler. */
   public static class HandlerMetrics {
     public static final HandlerMetrics NO_OP =
         new HandlerMetrics(
-            new SolrMetricsContext(
-                new SolrMetricManager(
-                    null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build()),
-                "NO_OP",
-                "NO_OP"));
+            new SolrMetricsContext(new SolrMetricManager(null), "NO_OP"),
+            Attributes.empty(),
+            false);
 
-    public final Meter numErrors;
-    public final Meter numServerErrors;
-    public final Meter numClientErrors;
-    public final Meter numTimeouts;
-    public final Counter requests;
-    public final Timer requestTimes;
-    public final Counter totalTime;
+    public AttributedLongCounter requests;
+    public AttributedLongCounter numServerErrors;
+    public AttributedLongCounter numClientErrors;
+    public AttributedLongCounter numTimeouts;
+    public AttributedLongTimer requestTimes;
 
-    public HandlerMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
-      numErrors = solrMetricsContext.meter("errors", metricPath);
-      numServerErrors = solrMetricsContext.meter("serverErrors", metricPath);
-      numClientErrors = solrMetricsContext.meter("clientErrors", metricPath);
-      numTimeouts = solrMetricsContext.meter("timeouts", metricPath);
-      requests = solrMetricsContext.counter("requests", metricPath);
-      requestTimes = solrMetricsContext.timer("requestTimes", metricPath);
-      totalTime = solrMetricsContext.counter("totalTime", metricPath);
+    public HandlerMetrics(
+        SolrMetricsContext solrMetricsContext,
+        Attributes coreAttributes,
+        boolean aggregateNodeLevelMetricsEnabled) {
+
+      AttributedInstrumentFactory factory =
+          new AttributedInstrumentFactory(
+              solrMetricsContext, coreAttributes, aggregateNodeLevelMetricsEnabled);
+
+      requests =
+          factory.attributedLongCounter(
+              "solr_core_requests", "HTTP Solr requests", Attributes.empty());
+
+      numServerErrors =
+          factory.attributedLongCounter(
+              "solr_core_requests_errors",
+              "HTTP Solr request errors",
+              Attributes.of(SOURCE_ATTR, "server"));
+
+      numClientErrors =
+          factory.attributedLongCounter(
+              "solr_core_requests_errors",
+              "HTTP Solr request errors",
+              Attributes.of(SOURCE_ATTR, "client"));
+
+      numTimeouts =
+          factory.attributedLongCounter(
+              "solr_core_requests_timeout", "HTTP Solr request timeouts", Attributes.empty());
+
+      requestTimes =
+          factory.attributedLongTimer(
+              "solr_core_requests_times",
+              "HTTP Solr request times",
+              OtelUnit.MILLISECONDS,
+              Attributes.empty());
     }
   }
 
@@ -227,10 +245,11 @@ public abstract class RequestHandlerBase
     if (publishCpuTime) {
       ThreadCpuTimer.beginContext(REQUEST_CPU_TIMER_CONTEXT);
     }
+
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
 
-    Timer.Context timer = metrics.requestTimes.time();
+    AttributedLongTimer.MetricTimer timer = metrics.requestTimes.start();
     try {
       TestInjection.injectLeaderTragedy(req.getCore());
       if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
@@ -242,7 +261,7 @@ public abstract class RequestHandlerBase
       // count timeouts
 
       if (!haveCompleteResults(rsp.getResponseHeader())) {
-        metrics.numTimeouts.mark();
+        metrics.numTimeouts.inc();
         rsp.setHttpCaching(false);
       }
     } catch (QueryLimitsExceededException e) {
@@ -253,8 +272,7 @@ public abstract class RequestHandlerBase
       rsp.setException(normalized);
     } finally {
       try {
-        long elapsed = timer.stop();
-        metrics.totalTime.inc(elapsed);
+        timer.stop();
 
         if (publishCpuTime) {
           Optional<Long> cpuTime = ThreadCpuTimer.readMSandReset(REQUEST_CPU_TIMER_CONTEXT);
@@ -296,13 +314,12 @@ public abstract class RequestHandlerBase
       }
     }
 
-    metrics.numErrors.mark();
     if (isClientError) {
       log.error("Client exception", e);
-      metrics.numClientErrors.mark();
+      metrics.numClientErrors.inc();
     } else {
       log.error("Server exception", e);
-      metrics.numServerErrors.mark();
+      metrics.numServerErrors.inc();
     }
   }
 
