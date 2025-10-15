@@ -17,7 +17,6 @@
 
 /**
  * The {@link org.apache.solr.metrics.SolrCoreMetricManager} is responsible for collecting metrics
- * from {@link org.apache.solr.metrics.SolrMetricProducer}'s and exposing metrics to {@link
- * org.apache.solr.metrics.SolrMetricReporter}'s.
+ * from {@link org.apache.solr.metrics.SolrMetricProducer}'s.
  */
 package org.apache.solr.metrics;

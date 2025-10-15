@@ -4,6 +4,31 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
+==================  11.0.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  10.0.0 ==================
 
 New Features
@@ -277,6 +302,8 @@ New Features
 ---------------------
 * SOLR-17915: shards.preference=replica.location now supports the "host" option for routing to replicas on the same host. (Houston Putman)
 
+* SOLR-17923: Add fullOuterJoin stream function (Andy Webb)
+
 Improvements
 ---------------------
 * SOLR-17860: DocBasedVersionConstraintsProcessorFactory now supports PULL replicas. (Houston Putman)
@@ -324,6 +351,8 @@ Other Changes
 
 * SOLR-17879: A Solr node will now fail to start if it's major.minor version (e.g. 9.10) is *lower* than that of any existing
   Solr node in a SolrCloud cluster (as reported by info in "live_node").  (David Smiley)
+
+* SOLR-17952: Stream decorator test refactoring - use underscore rather than dot in aliases (Andy Webb)
 
 ==================  9.9.1 ==================
 Bug Fixes

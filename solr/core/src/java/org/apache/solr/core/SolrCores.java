@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,11 +34,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** AKA CoreManager: Holds/manages {@link SolrCore}s within {@link CoreContainer}. */
-class SolrCores {
+class SolrCores implements SolrInfoBean {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -81,7 +83,8 @@ class SolrCores {
 
   // We are shutting down. You can't hold the lock on the various lists of cores while they shut
   // down, so we need to make a temporary copy of the names and shut them down outside the lock.
-  protected void close() {
+  @Override
+  public void close() {
     waitForLoadingCoresToFinish(30_000);
 
     // It might be possible for one of the cores to move from one list to another while we're
@@ -237,12 +240,8 @@ class SolrCores {
       cores.put(n1, c0);
       c0.setName(n1);
       c1.setName(n0);
-
-      container
-          .getMetricManager()
-          .swapRegistries(
-              c0.getCoreMetricManager().getRegistryName(),
-              c1.getCoreMetricManager().getRegistryName());
+      c0.getCoreMetricManager().reregisterCoreMetrics();
+      c1.getCoreMetricManager().reregisterCoreMetrics();
     }
   }
 
@@ -415,5 +414,39 @@ class SolrCores {
 
   public boolean isCoreLoading(String name) {
     return currentlyLoadingCores.contains(name);
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    parentContext.observableLongGauge(
+        "solr_cores_loaded",
+        "Number of Solr cores loaded by CoreContainer",
+        measurement -> {
+          measurement.record(
+              getNumLoadedPermanentCores(),
+              attributes.toBuilder().put(TYPE_ATTR, "permanent").build());
+          measurement.record(
+              getNumUnloadedCores(), attributes.toBuilder().put(TYPE_ATTR, "unloaded").build());
+        });
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return this.container.solrMetricsContext;
+  }
+
+  @Override
+  public String getName() {
+    return this.getClass().getName();
+  }
+
+  @Override
+  public String getDescription() {
+    return "Manager for Solr cores within a CoreContainer";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.CONTAINER;
   }
 }

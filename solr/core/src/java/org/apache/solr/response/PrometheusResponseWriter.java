@@ -16,131 +16,61 @@
  */
 package org.apache.solr.response;
 
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
+import static org.apache.solr.handler.admin.MetricsHandler.OPEN_METRICS_WT;
+
+import io.prometheus.metrics.expositionformats.OpenMetricsTextFormatWriter;
 import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.metrics.AggregateMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
-import org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreFormatter;
-import org.apache.solr.metrics.prometheus.jetty.SolrPrometheusJettyFormatter;
-import org.apache.solr.metrics.prometheus.jvm.SolrPrometheusJvmFormatter;
-import org.apache.solr.metrics.prometheus.node.SolrPrometheusNodeFormatter;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.stats.MetricUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/**
- * Response writer for Prometheus metrics. This is used only by the {@link
- * org.apache.solr.handler.admin.MetricsHandler}
- */
+/** Response writer for Prometheus metrics. This is used only by the {@link MetricsHandler} */
 @SuppressWarnings(value = "unchecked")
 public class PrometheusResponseWriter implements QueryResponseWriter {
   // not TextQueryResponseWriter because Prometheus libs work with an OutputStream
 
   private static final String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final String CONTENT_TYPE_OPEN_METRICS =
+      "application/openmetrics-text; version=1.0.0; charset=utf-8";
 
   @Override
   public void write(
       OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException {
-    NamedList<Object> prometheusRegistries =
-        (NamedList<Object>) response.getValues().get("metrics");
-    var prometheusTextFormatWriter = new PrometheusTextFormatWriter(false);
-    for (Map.Entry<String, Object> prometheusRegistry : prometheusRegistries) {
-      var prometheusFormatter = (SolrPrometheusFormatter) prometheusRegistry.getValue();
-      prometheusTextFormatWriter.write(out, prometheusFormatter.collect());
+
+    var metrics = response.getValues().get("metrics");
+    MetricSnapshots snapshots = (MetricSnapshots) metrics;
+    if (writeOpenMetricsFormat(request)) {
+      new OpenMetricsTextFormatWriter(false, true).write(out, snapshots);
+    } else {
+      new PrometheusTextFormatWriter(false).write(out, snapshots);
     }
   }
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return CONTENT_TYPE_PROMETHEUS;
+    return writeOpenMetricsFormat(request) ? CONTENT_TYPE_OPEN_METRICS : CONTENT_TYPE_PROMETHEUS;
   }
 
-  /**
-   * Provides a representation of the given Dropwizard metric registry as {@link
-   * SolrPrometheusCoreFormatter}-s. Only those metrics are converted which match at least one of
-   * the given MetricFilter instances.
-   *
-   * @param registry the {@link MetricRegistry} to be converted
-   * @param shouldMatchFilters a list of {@link MetricFilter} instances. A metric must match <em>any
-   *     one</em> of the filters from this list to be included in the output
-   * @param mustMatchFilter a {@link MetricFilter}. A metric <em>must</em> match this filter to be
-   *     included in the output.
-   * @param propertyFilter limit what properties of a metric are returned
-   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
-   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
-   * @param compact use compact representation for counters and gauges.
-   * @param consumer consumer that accepts produced {@link SolrPrometheusCoreFormatter}-s
-   */
-  public static void toPrometheus(
-      MetricRegistry registry,
-      String registryName,
-      List<MetricFilter> shouldMatchFilters,
-      MetricFilter mustMatchFilter,
-      Predicate<CharSequence> propertyFilter,
-      boolean skipHistograms,
-      boolean skipAggregateValues,
-      boolean compact,
-      Consumer<SolrPrometheusFormatter> consumer) {
-    Map<String, Metric> dropwizardMetrics = registry.getMetrics();
-    var formatter = getFormatterType(registryName);
-    if (formatter == null) {
-      return;
+  private boolean writeOpenMetricsFormat(SolrQueryRequest request) {
+    String wt = request.getParams().get(CommonParams.WT);
+    if (OPEN_METRICS_WT.equals(wt)) {
+      return true;
     }
 
-    MetricUtils.toMaps(
-        registry,
-        shouldMatchFilters,
-        mustMatchFilter,
-        propertyFilter,
-        skipHistograms,
-        skipAggregateValues,
-        compact,
-        false,
-        (metricName, metric) -> {
-          try {
-            Metric dropwizardMetric = dropwizardMetrics.get(metricName);
-            formatter.exportDropwizardMetric(dropwizardMetric, metricName);
-          } catch (Exception e) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Error occurred exporting Dropwizard Metric to Prometheus",
-                e);
-          }
-        });
+    String acceptHeader =
+        request.getHttpSolrCall() != null
+            ? request.getHttpSolrCall().getReq().getHeader("Accept")
+            : null;
 
-    consumer.accept(formatter);
-  }
-
-  public static SolrPrometheusFormatter getFormatterType(String registryName) {
-    String[] parsedRegistry = registryName.split("\\.");
-
-    switch (parsedRegistry[1]) {
-      case "core":
-        return new SolrPrometheusCoreFormatter();
-      case "jvm":
-        return new SolrPrometheusJvmFormatter();
-      case "jetty":
-        return new SolrPrometheusJettyFormatter();
-      case "node":
-        return new SolrPrometheusNodeFormatter();
-      default:
-        return null;
+    if (acceptHeader == null) {
+      return false;
     }
+
+    return acceptHeader.contains("application/openmetrics-text")
+        && (acceptHeader.contains("version=1.0.0"));
   }
 }
