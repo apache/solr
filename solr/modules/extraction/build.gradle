@@ -26,8 +26,6 @@ dependencies {
   implementation 'org.apache.lucene:lucene-core'
   implementation 'org.slf4j:slf4j-api'
 
-  implementation 'org.apache.poi:poi'
-  implementation 'org.apache.poi:poi-ooxml'
   implementation 'org.apache.tika:tika-core'
   implementation ('org.apache.tika:tika-parsers', {
     exclude group: 'org.apache.cxf', module: 'cxf-rt-rs-client'
