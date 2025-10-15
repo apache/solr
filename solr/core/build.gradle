@@ -148,18 +148,16 @@ dependencies {
   // StatsComponents percentiles
   implementation libs.tdunning.tdigest
 
-  // Distributed Tracing
+  // OpenTelemetry
   api libs.opentelemetry.api
   implementation libs.opentelemetry.context
-
   implementation(libs.opentelemetry.exporter.prometheus) {
     transitive = false
   }
-
-  implementation(libs.opentelemetry.sdk, {
+  implementation(libs.opentelemetry.sdk) {
     exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
-  })
-
+  }
+  implementation libs.opentelemetry.sdk.metrics
   // JVM Runtime Telemetry metrics
   implementation libs.opentelemetry.runtime.telemetry
 
@@ -217,6 +215,6 @@ dependencies {
   testImplementation libs.apache.httpcomponents.httpclient
   testImplementation libs.apache.httpcomponents.httpcore
 
-  testImplementation libs.opentelemetry.sdktesting
+  testImplementation libs.opentelemetry.sdk.testing
   testImplementation libs.dropwizard.metrics.core
 }

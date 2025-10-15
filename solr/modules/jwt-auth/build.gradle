@@ -45,10 +45,7 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.junit.junit
-  testImplementation libs.prometheus.metrics.model
-  testImplementation(libs.opentelemetry.exporter.prometheus) {
-    transitive = false
-  }
+
   testImplementation(libs.mockito.core, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
