@@ -82,6 +82,8 @@ Java has removed support for the Security Manager starting with Java 24; therefo
 
 The `XLSXResponseWriter` is now deprecated.
 
+The Tika Language Identifier is deprecated. Use one of the other detectors instead.
+
 == Solr 9.9
 
 === SolrJ
