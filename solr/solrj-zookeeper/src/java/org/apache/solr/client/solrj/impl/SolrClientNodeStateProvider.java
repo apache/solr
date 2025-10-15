@@ -60,8 +60,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
   public SolrClientNodeStateProvider(CloudHttp2SolrClient solrClient) {
-    if(!(solrClient.getHttpClient() instanceof Http2SolrClient)) {
-      throw new IllegalArgumentException("The passed-in Cloud Solr Client must delegate to " + Http2SolrClient.class);
+    if (!(solrClient.getHttpClient() instanceof Http2SolrClient)) {
+      throw new IllegalArgumentException(
+          "The passed-in Cloud Solr Client must delegate to " + Http2SolrClient.class);
     }
     this.solrClient = solrClient;
     try {
@@ -292,7 +293,8 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       request.setResponseParser(new JavaBinResponseParser());
 
       try {
-        return ((Http2SolrClient) cloudSolrClient.getHttpClient()).requestWithBaseUrl(url, request::process);
+        return ((Http2SolrClient) cloudSolrClient.getHttpClient())
+            .requestWithBaseUrl(url, request::process);
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Fetching replica metrics failed", e);
       }

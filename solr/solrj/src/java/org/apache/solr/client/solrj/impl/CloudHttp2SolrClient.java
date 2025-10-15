@@ -50,7 +50,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
    * every shard in a collection, there is no single point of failure. Updates will be sent to shard
    * leaders by default.
    *
-   * @param builder a {@link CloudHttp2SolrClient.Builder} with the options used to create the client.
+   * @param builder a {@link CloudHttp2SolrClient.Builder} with the options used to create the
+   *     client.
    */
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
