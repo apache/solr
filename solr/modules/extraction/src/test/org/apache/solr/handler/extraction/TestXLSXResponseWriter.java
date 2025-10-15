@@ -42,7 +42,7 @@ import org.junit.Test;
 
 public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
 
-  private static XLSXResponseWriter writerXlsx;
+  private static QueryResponseWriter writerXlsx;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -52,8 +52,8 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     // find a reference to the default response writer so we can redirect its output later
     SolrCore testCore = h.getCore();
     QueryResponseWriter writer = testCore.getQueryResponseWriter("xlsx");
-    if (writer instanceof XLSXResponseWriter) {
-      writerXlsx = (XLSXResponseWriter) testCore.getQueryResponseWriter("xlsx");
+    if (writer != null) {
+      writerXlsx = writer;
     } else {
       throw new Exception("XLSXResponseWriter not registered with solr core");
     }
