@@ -4,6 +4,56 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
+==================  11.0.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
+==================  10.1.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  10.0.0 ==================
 
 New Features
@@ -273,6 +323,8 @@ Other Changes
 * SOLR-17182: Remove `solr.useExitableDirectoryReader` property. Using `ExitableDirectoryReader`
   apparently has negligible impact on search performance so it's used now for all queries regardless of
   their query limits params. (Andrzej Bialecki)
+
+* PR#3758: Logs: removed webapp=/solr and also removed from internal context map.
 
 ==================  9.10.0 ==================
 New Features
