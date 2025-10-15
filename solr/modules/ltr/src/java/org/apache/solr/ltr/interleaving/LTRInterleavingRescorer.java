@@ -149,7 +149,8 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       for (int i = 0; i < rerankingQueries.length; i++) {
         if (modelWeights[i] != null) {
           final ScoreDoc hit_i = new ScoreDoc(hit.doc, hit.score, hit.shardIndex);
-          scoreSingleHit(docsToRerank, docBase, hitPosition, hit_i, scorers[i], rerankedPerModel[i]);
+          scoreSingleHit(
+              docsToRerank, docBase, hitPosition, hit_i, scorers[i], rerankedPerModel[i]);
         }
       }
       hitPosition++;
