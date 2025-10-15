@@ -109,7 +109,8 @@ task buildLocalAntoraYaml {
 
     doLast {
         // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
-        // These variable names must use underscores, not dashes or periods
+        // These variable names must use underscores, not dashes or periods.
+        // Modifying this list also requires modifying `antora.template.yml`
         props.putAll([
             ["dep_version_commons_codec", libs.versions.commons.codec],
             ["dep_version_log4j", libs.versions.apache.log4j],
@@ -121,7 +122,7 @@ task buildLocalAntoraYaml {
             [propKey, "${-> dependencyVersion.get()}"] })
         props["dep_version_lucene"] = "${ -> luceneBaseVersionProvider.get()}"
 
-      copy {
+        copy {
             from(templateYaml) {
                 rename {
                     "antora.yml"
