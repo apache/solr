@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -28,6 +29,8 @@ import org.apache.solr.client.solrj.impl.SolrZkClientTimeout.SolrZkClientTimeout
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SolrJ client class to communicate with SolrCloud using an Http/2-capable Solr Client. Instances
@@ -38,6 +41,7 @@ import org.apache.solr.common.SolrException;
  */
 @SuppressWarnings("serial")
 public class CloudHttp2SolrClient extends CloudSolrClient {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ClusterStateProvider stateProvider;
   private final LBHttp2SolrClient<HttpSolrClientBase> lbClient;
@@ -83,6 +87,13 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     } else if (builder.internalClientBuilder != null) {
       return builder.internalClientBuilder.build();
     } else {
+      try {
+        Class.forName("org.eclipse.jetty.client.HttpClient");
+      } catch(ClassNotFoundException e) {
+        log.debug("Using {} as the delegate http client", HttpJdkSolrClient.class.getName());
+        return new HttpJdkSolrClient.Builder().build();
+      }
+      log.debug("Using {} as the delegate http client", Http2SolrClient.class.getName());
       return new Http2SolrClient.Builder().build();
     }
   }
