@@ -50,8 +50,12 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
 
     // Randomly decide to use either the Jetty Http Client or the JDK Http Client
     var jettyClientBuilder = new Http2SolrClient.Builder();
+
+    // forcing Http/1.1 to avoid an extra HEAD request with the first update.
+    // (This causes the counts to be 1 greater than what we test for here.)
     var jdkClientBuilder =
-        new HttpJdkSolrClient.Builder().withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
+        new HttpJdkSolrClient.Builder().useHttp1_1(true).withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
+
     var cloudSolrclientBuilder =
         new CloudHttp2SolrClient.Builder(
             Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty());
