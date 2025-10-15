@@ -17,16 +17,27 @@
 
 package org.apache.solr.metrics;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import org.apache.solr.util.stats.MetricUtils;
+import io.opentelemetry.api.metrics.BatchCallback;
+import io.opentelemetry.api.metrics.DoubleCounter;
+import io.opentelemetry.api.metrics.DoubleGauge;
+import io.opentelemetry.api.metrics.DoubleHistogram;
+import io.opentelemetry.api.metrics.DoubleUpDownCounter;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongGauge;
+import io.opentelemetry.api.metrics.LongHistogram;
+import io.opentelemetry.api.metrics.LongUpDownCounter;
+import io.opentelemetry.api.metrics.ObservableDoubleCounter;
+import io.opentelemetry.api.metrics.ObservableDoubleGauge;
+import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
+import io.opentelemetry.api.metrics.ObservableLongCounter;
+import io.opentelemetry.api.metrics.ObservableLongGauge;
+import io.opentelemetry.api.metrics.ObservableLongMeasurement;
+import io.opentelemetry.api.metrics.ObservableMeasurement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.metrics.otel.OtelUnit;
 
 /**
  * This class represents a metrics context that ties together components with the same life-cycle
@@ -38,38 +49,11 @@ import org.apache.solr.util.stats.MetricUtils;
 public class SolrMetricsContext {
   private final String registryName;
   private final SolrMetricManager metricManager;
-  private final String tag;
-  private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private final List<AutoCloseable> closeables = new ArrayList<>();
 
-  public SolrMetricsContext(SolrMetricManager metricManager, String registryName, String tag) {
+  public SolrMetricsContext(SolrMetricManager metricManager, String registryName) {
     this.registryName = registryName;
     this.metricManager = metricManager;
-    this.tag = tag;
-  }
-
-  /** See {@link SolrMetricManager#nullNumber()}. */
-  public Object nullNumber() {
-    return metricManager.nullNumber();
-  }
-
-  /** See {@link SolrMetricManager#notANumber()}. */
-  public Object notANumber() {
-    return metricManager.notANumber();
-  }
-
-  /** See {@link SolrMetricManager#nullString()}. */
-  public Object nullString() {
-    return metricManager.nullString();
-  }
-
-  /** See {@link SolrMetricManager#nullObject()}. */
-  public Object nullObject() {
-    return metricManager.nullObject();
-  }
-
-  /** Metrics tag that represents objects with the same life-cycle. */
-  public String getTag() {
-    return tag;
   }
 
   /** Return metric registry name used in this context. */
@@ -82,22 +66,6 @@ public class SolrMetricsContext {
     return metricManager;
   }
 
-  /** Return a modifiable set of metric names that this component registers. */
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
-  /**
-   * Unregister all {@link Gauge} metrics that use this context's tag.
-   *
-   * <p><b>NOTE: This method MUST be called at the end of a life-cycle (typically in <code>close()
-   * </code>) of components that register gauge metrics with references to the current object's
-   * instance. Failure to do so may result in hard-to-debug memory leaks.</b>
-   */
-  public void unregister() {
-    metricManager.unregisterGauges(registryName, tag);
-  }
-
   /**
    * Get a context with the same registry name but a tag that represents a parent-child
    * relationship. Since it's a different tag than the parent's context it is assumed that the
@@ -106,80 +74,187 @@ public class SolrMetricsContext {
    * @param child child object that produces metrics with a different life-cycle than the parent.
    */
   public SolrMetricsContext getChildContext(Object child) {
-    SolrMetricsContext childContext =
-        new SolrMetricsContext(
-            metricManager, registryName, SolrMetricProducer.getUniqueMetricTag(child, tag));
+    SolrMetricsContext childContext = new SolrMetricsContext(metricManager, registryName);
     return childContext;
   }
 
-  /**
-   * Register a metric name that this component reports. This method is called by various metric
-   * registration methods in {@link org.apache.solr.metrics.SolrMetricManager} in order to capture
-   * what metric names are reported from this component (which in turn is called from {@link
-   * org.apache.solr.metrics.SolrMetricProducer#initializeMetrics(SolrMetricsContext, String)}).
-   */
-  public void registerMetricName(String name) {
-    metricNames.add(name);
+  public LongCounter longCounter(String metricName, String description) {
+    return longCounter(metricName, description, null);
   }
 
-  /** Return a snapshot of metric values that this component reports. */
-  public Map<String, Object> getMetricsSnapshot() {
-    return MetricUtils.convertMetrics(getMetricRegistry(), metricNames);
+  public LongCounter longCounter(String metricName, String description, OtelUnit unit) {
+    return metricManager.longCounter(registryName, metricName, description, unit);
   }
 
-  /**
-   * Convenience method for {@link SolrMetricManager#meter(SolrMetricsContext, String, String,
-   * String...)}.
-   */
-  public Meter meter(String metricName, String... metricPath) {
-    return metricManager.meter(this, registryName, metricName, metricPath);
+  public LongUpDownCounter longUpDownCounter(String metricName, String description) {
+    return longUpDownCounter(metricName, description, null);
   }
 
-  /**
-   * Convenience method for {@link SolrMetricManager#counter(SolrMetricsContext, String, String,
-   * String...)}.
-   */
-  public Counter counter(String metricName, String... metricPath) {
-    return metricManager.counter(this, registryName, metricName, metricPath);
+  public LongUpDownCounter longUpDownCounter(String metricName, String description, OtelUnit unit) {
+    return metricManager.longUpDownCounter(registryName, metricName, description, unit);
   }
 
-  /**
-   * Convenience method for {@link SolrMetricManager#registerGauge(SolrMetricsContext, String,
-   * Gauge, String, SolrMetricManager.ResolutionStrategy, String, String...)}.
-   */
-  public void gauge(Gauge<?> gauge, boolean force, String metricName, String... metricPath) {
-    metricManager.registerGauge(
-        this,
-        registryName,
-        gauge,
-        tag,
-        force
-            ? SolrMetricManager.ResolutionStrategy.REPLACE
-            : SolrMetricManager.ResolutionStrategy.ERROR,
-        metricName,
-        metricPath);
+  public DoubleCounter doubleCounter(String metricName, String description) {
+    return doubleCounter(metricName, description, null);
   }
 
-  /**
-   * Convenience method for {@link SolrMetricManager#meter(SolrMetricsContext, String, String,
-   * String...)}.
-   */
-  public Timer timer(String metricName, String... metricPath) {
-    return metricManager.timer(this, registryName, metricName, metricPath);
+  public DoubleCounter doubleCounter(String metricName, String description, OtelUnit unit) {
+    return metricManager.doubleCounter(registryName, metricName, description, unit);
   }
 
-  /**
-   * Convenience method for {@link SolrMetricManager#histogram(SolrMetricsContext, String, String,
-   * String...)}.
-   */
-  public Histogram histogram(String metricName, String... metricPath) {
-    return metricManager.histogram(this, registryName, metricName, metricPath);
+  public DoubleUpDownCounter doubleUpDownCounter(String metricName, String description) {
+    return doubleUpDownCounter(metricName, description, null);
   }
 
-  /**
-   * Get the {@link MetricRegistry} instance that is used for registering metrics in this context.
-   */
-  public MetricRegistry getMetricRegistry() {
-    return metricManager.registry(registryName);
+  public DoubleUpDownCounter doubleUpDownCounter(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.doubleUpDownCounter(registryName, metricName, description, unit);
+  }
+
+  public DoubleHistogram doubleHistogram(String metricName, String description) {
+    return metricManager.doubleHistogram(registryName, metricName, description, null);
+  }
+
+  public DoubleHistogram doubleHistogram(String metricName, String description, OtelUnit unit) {
+    return metricManager.doubleHistogram(registryName, metricName, description, unit);
+  }
+
+  public LongHistogram longHistogram(String metricName, String description) {
+    return metricManager.longHistogram(registryName, metricName, description, null);
+  }
+
+  public LongHistogram longHistogram(String metricName, String description, OtelUnit unit) {
+    return metricManager.longHistogram(registryName, metricName, description, unit);
+  }
+
+  public LongGauge longGauge(String metricName, String description) {
+    return metricManager.longGauge(registryName, metricName, description, null);
+  }
+
+  public LongGauge longGauge(String metricName, String description, OtelUnit unit) {
+    return metricManager.longGauge(registryName, metricName, description, unit);
+  }
+
+  public DoubleGauge doubleGauge(String metricName, String description) {
+    return metricManager.doubleGauge(registryName, metricName, description, null);
+  }
+
+  public DoubleGauge doubleGauge(String metricName, String description, OtelUnit unit) {
+    return metricManager.doubleGauge(registryName, metricName, description, unit);
+  }
+
+  public ObservableLongGauge observableLongGauge(
+      String metricName, String description, Consumer<ObservableLongMeasurement> callback) {
+    var observableLongGauge = observableLongGauge(metricName, description, callback, null);
+    closeables.add(observableLongGauge);
+    return observableLongGauge;
+  }
+
+  public ObservableLongGauge observableLongGauge(
+      String metricName,
+      String description,
+      Consumer<ObservableLongMeasurement> callback,
+      OtelUnit unit) {
+    return metricManager.observableLongGauge(registryName, metricName, description, callback, unit);
+  }
+
+  public ObservableDoubleGauge observableDoubleGauge(
+      String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
+    var observableDoubleGauge = observableDoubleGauge(metricName, description, callback, null);
+    closeables.add(observableDoubleGauge);
+    return observableDoubleGauge;
+  }
+
+  public ObservableDoubleGauge observableDoubleGauge(
+      String metricName,
+      String description,
+      Consumer<ObservableDoubleMeasurement> callback,
+      OtelUnit unit) {
+    return metricManager.observableDoubleGauge(
+        registryName, metricName, description, callback, unit);
+  }
+
+  public ObservableLongCounter observableLongCounter(
+      String metricName, String description, Consumer<ObservableLongMeasurement> callback) {
+    var observableLongCounter = observableLongCounter(metricName, description, callback, null);
+    closeables.add(observableLongCounter);
+    return observableLongCounter;
+  }
+
+  public ObservableLongCounter observableLongCounter(
+      String metricName,
+      String description,
+      Consumer<ObservableLongMeasurement> callback,
+      OtelUnit unit) {
+    return metricManager.observableLongCounter(
+        registryName, metricName, description, callback, unit);
+  }
+
+  public ObservableDoubleCounter observableDoubleCounter(
+      String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
+    var observableDoubleCounter = observableDoubleCounter(metricName, description, callback, null);
+    closeables.add(observableDoubleCounter);
+    return observableDoubleCounter;
+  }
+
+  public ObservableDoubleCounter observableDoubleCounter(
+      String metricName,
+      String description,
+      Consumer<ObservableDoubleMeasurement> callback,
+      OtelUnit unit) {
+    return metricManager.observableDoubleCounter(
+        registryName, metricName, description, callback, unit);
+  }
+
+  public ObservableLongMeasurement longGaugeMeasurement(String metricName, String description) {
+    return longGaugeMeasurement(metricName, description, null);
+  }
+
+  public ObservableLongMeasurement longGaugeMeasurement(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.longGaugeMeasurement(registryName, metricName, description, unit);
+  }
+
+  public ObservableDoubleMeasurement doubleGaugeMeasurement(String metricName, String description) {
+    return doubleGaugeMeasurement(metricName, description, null);
+  }
+
+  public ObservableDoubleMeasurement doubleGaugeMeasurement(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.doubleGaugeMeasurement(registryName, metricName, description, unit);
+  }
+
+  public ObservableLongMeasurement longCounterMeasurement(String metricName, String description) {
+    return longCounterMeasurement(metricName, description, null);
+  }
+
+  public ObservableLongMeasurement longCounterMeasurement(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.longCounterMeasurement(registryName, metricName, description, unit);
+  }
+
+  public ObservableDoubleMeasurement doubleCounterMeasurement(
+      String metricName, String description) {
+    return doubleCounterMeasurement(metricName, description, null);
+  }
+
+  public ObservableDoubleMeasurement doubleCounterMeasurement(
+      String metricName, String description, OtelUnit unit) {
+    return metricManager.doubleCounterMeasurement(registryName, metricName, description, unit);
+  }
+
+  public BatchCallback batchCallback(
+      Runnable callback,
+      ObservableMeasurement measurement,
+      ObservableMeasurement... additionalMeasurements) {
+    var batchCallback =
+        metricManager.batchCallback(registryName, callback, measurement, additionalMeasurements);
+    closeables.add(batchCallback);
+    return batchCallback;
+  }
+
+  public void unregister() {
+    IOUtils.closeQuietly(closeables);
+    closeables.clear();
   }
 }

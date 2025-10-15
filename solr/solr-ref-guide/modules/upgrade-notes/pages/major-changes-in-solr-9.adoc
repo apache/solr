@@ -78,6 +78,10 @@ SolrJ users not using SolrClients that use Jetty HttpClient can safely exclude t
 
 Java has removed support for the Security Manager starting with Java 24; therefore, Solr will disable this feature when run with Java 24 or later. Solr previously used the Security Manager to provide an additional layer of protection against unintended file system access, network access, and process execution. Users upgrading to Java 24 or later should review their security practices and consider alternative measures, such as running Solr in containers or implementing additional operating system-level controls.
 
+=== Deprecations
+
+The `XLSXResponseWriter` is now deprecated.
+
 == Solr 9.9
 
 === SolrJ

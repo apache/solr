@@ -179,6 +179,12 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-life support. Jetty 12.x requires Java 17 or newer and is fully compatible with Solr's new minimum requirement of Java 21. This upgrade brings support for modern HTTP protocols and adopts the Jakarta EE 10 namespace. For more details, see https://webtide.com/jetty-12-has-arrived/.
 
+=== Open Telemetry
+
+* The Prometheus exporter, JMX, SLF4J and Graphite metric reporters have been removed. Users should migrate to using OTLP or the /admin/metrics endpoint with external tools to get metrics to their preferred backend such as the link:https://opentelemetry.io/docs/collector/[OTEL Collector].
+
+* Core renaming and swapping will reset the state of all the corresponding cores metrics
+
 === Docker
 
 The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 24 (noble) from Ubuntu 22 (jammy).

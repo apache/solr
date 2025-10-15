@@ -93,7 +93,6 @@ dependencies {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
   testImplementation libs.apache.commons.lang3
-  testImplementation libs.dropwizard.metrics.core
   testImplementation libs.fasterxml.jackson.core.core
 }
 

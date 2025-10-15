@@ -4,6 +4,56 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
+==================  11.0.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
+==================  10.1.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  10.0.0 ==================
 
 New Features
@@ -189,6 +239,8 @@ Deprecation Removals
 
 * SOLR-17935: Remove deprecated NoOpResponseParser. (Eric Pugh, David Smiley)
 
+* SOLR-17182: Remove `solr.useExitableDirectoryReader` property. (Andrzej Bialecki)
+
 Dependency Upgrades
 ---------------------
 
@@ -266,10 +318,16 @@ Other Changes
 
 * SOLR-17929: Remove obsolete overseer internal work queue. This queue was read-only since Solr 8. (Pierre Salagnac)
 
+* SOLR-17182: Remove `solr.useExitableDirectoryReader` property. Using `ExitableDirectoryReader`
+  apparently has negligible impact on search performance so it's used now for all queries regardless of
+  their query limits params. (Andrzej Bialecki)
+
 ==================  9.10.0 ==================
 New Features
 ---------------------
 * SOLR-17915: shards.preference=replica.location now supports the "host" option for routing to replicas on the same host. (Houston Putman)
+
+* SOLR-17923: Add fullOuterJoin stream function (Andy Webb)
 
 Improvements
 ---------------------
@@ -318,6 +376,10 @@ Other Changes
 
 * SOLR-17879: A Solr node will now fail to start if it's major.minor version (e.g. 9.10) is *lower* than that of any existing
   Solr node in a SolrCloud cluster (as reported by info in "live_node").  (David Smiley)
+
+* SOLR-17956: XLSXResponseWriter has been deprecated and will be removed in a future release. (Jan Høydahl)
+
+* SOLR-17952: Stream decorator test refactoring - use underscore rather than dot in aliases (Andy Webb)
 
 ==================  9.9.1 ==================
 Bug Fixes

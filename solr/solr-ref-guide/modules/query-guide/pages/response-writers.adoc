@@ -404,3 +404,8 @@ cp modules/extraction/lib/*.jar server/solr-webapp/webapp/WEB-INF/lib/
 ----
 
 Once the libraries are in place, you can add `wt=xlsx` to your request, and results will be returned as an XLSX sheet.
+
+[IMPORTANT]
+====
+The `XLSXResponseWriter` is deprecated and will be removed in a future release.
+====
