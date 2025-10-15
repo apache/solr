@@ -220,8 +220,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
     try (InputStream in =
         (InputStream)
-            ctx.cloudSolrClient
-                .getHttpClient()
+            ctx.http2SolrClient()
                 .requestWithBaseUrl(baseUrl, req::process)
                 .getResponse()
                 .get(STREAM_KEY)) {
@@ -261,10 +260,18 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
 
     public RemoteCallCtx(String node, CloudHttp2SolrClient cloudSolrClient) {
+      if (!(cloudSolrClient.getHttpClient() instanceof Http2SolrClient)) {
+        throw new IllegalArgumentException(
+            "The passed-in Cloud Solr Client must delegate to " + Http2SolrClient.class);
+      }
       this.node = node;
       this.cloudSolrClient = cloudSolrClient;
       this.zkClientClusterStateProvider =
           (ZkClientClusterStateProvider) cloudSolrClient.getClusterStateProvider();
+    }
+
+    protected Http2SolrClient http2SolrClient() {
+      return (Http2SolrClient) cloudSolrClient.getHttpClient();
     }
 
     /**
