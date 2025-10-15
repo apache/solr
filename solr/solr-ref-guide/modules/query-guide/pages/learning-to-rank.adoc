@@ -140,7 +140,8 @@ This needs to be added in the `<query>` section as follows.
 ----
 
 [NOTE]
-The `featureVectorCache` holds Lucene Document IDs. Since they are transient, this cache is not auto-warmed.
+The `featureVectorCache` key is computed using the Lucene Document ID (necessary for document-level features).
+Since these IDs are transient, this cache does not support auto-warming.
 
 * Declaration of the `[features]` transformer.
 +

@@ -29,6 +29,8 @@ New Features
 
 * SOLR-17814: Add support for PatienceKnnVectorQuery. (Ilaria Petreti via Alessandro Benedetti)
 
+* SOLR-16667: LTR Add feature vector caching for ranking. (Anna Ruggero, Alessandro Benedetti)
+
 Improvements
 ---------------------
 
@@ -375,8 +377,6 @@ New Features
 * SOLR-5707: New ExpressionValueSourceParser that allows custom function queries / VSPs to be defined in a
   subset of JavaScript, pre-compiled, and that which can access the score and fields. It's powered by
   the Lucene Expressions module. (hossman, David Smiley, Ryan Ernst, Kevin Risden)
-
-* SOLR-16667: LTR Add feature vector caching for ranking. (Anna Ruggero, Alessandro Benedetti)
 
 Improvements
 ---------------------
