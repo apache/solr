@@ -71,20 +71,6 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
     assertEquals(nl.getName(2), ((NamedList) nl.get(nl.getName(2))).get("node"));
   }
 
-  @Test
-  public void proxyMetricsHandlerAllNodes() throws IOException, SolrServerException {
-    MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
-    GenericSolrRequest req =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params);
-    SimpleSolrResponse rsp = req.process(solrClient, null);
-    NamedList<Object> nl = rsp.getResponse();
-    assertEquals(3, nl.size());
-    assertTrue(nl.getName(1).endsWith("_solr"));
-    assertTrue(nl.getName(2).endsWith("_solr"));
-    assertNotNull(((NamedList) nl.get(nl.getName(1))).get("metrics"));
-  }
-
   @Test(expected = SolrException.class)
   public void proxySystemInfoHandlerNonExistingNode() throws IOException, SolrServerException {
     MapSolrParams params =

@@ -2366,8 +2366,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
                   + "search("
                   + COLLECTIONORALIAS
-                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
-                  + "on=\"ident_s=right.ident_s\")");
+                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right_id, join1_i=right_join1_i, join2_s=right_join2_s, ident_s=right_ident_s\"),"
+                  + "on=\"ident_s=right_ident_s\")");
       stream = new InnerJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -2488,8 +2488,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
                   + "search("
                   + COLLECTIONORALIAS
-                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
-                  + "on=\"ident_s=right.ident_s\")");
+                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right_id, join1_i=right_join1_i, join2_s=right_join2_s, ident_s=right_ident_s\"),"
+                  + "on=\"ident_s=right_ident_s\")");
       stream = new LeftOuterJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -3083,14 +3083,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       clause =
           "innerJoin("
               + "select("
-              + "id, join1_i as left.join1, join2_s as left.join2, ident_s as left.ident,"
+              + "id, join1_i as left_join1, join2_s as left_join2, ident_s as left_ident,"
               + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
               + "),"
               + "select("
-              + "join3_i as right.join1, join2_s as right.join2, ident_s as right.ident,"
+              + "join3_i as right_join1, join2_s as right_join2, ident_s as right_ident,"
               + "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\"),"
               + "),"
-              + "on=\"left.join1=right.join1, left.join2=right.join2\""
+              + "on=\"left_join1=right_join1, left_join2=right_join2\""
               + ")";
       stream = factory.constructStream(clause);
       stream.setStreamContext(streamContext);
@@ -3098,34 +3098,34 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertFields(
           tuples,
           "id",
-          "left.join1",
-          "left.join2",
-          "left.ident",
-          "right.join1",
-          "right.join2",
-          "right.ident");
+          "left_join1",
+          "left_join2",
+          "left_ident",
+          "right_join1",
+          "right_join2",
+          "right_ident");
 
       // Wrapped select test
       clause =
           "select("
-              + "id, left.ident, right.ident,"
+              + "id, left_ident, right_ident,"
               + "innerJoin("
               + "select("
-              + "id, join1_i as left.join1, join2_s as left.join2, ident_s as left.ident,"
+              + "id, join1_i as left_join1, join2_s as left_join2, ident_s as left_ident,"
               + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
               + "),"
               + "select("
-              + "join3_i as right.join1, join2_s as right.join2, ident_s as right.ident,"
+              + "join3_i as right_join1, join2_s as right_join2, ident_s as right_ident,"
               + "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\"),"
               + "),"
-              + "on=\"left.join1=right.join1, left.join2=right.join2\""
+              + "on=\"left_join1=right_join1, left_join2=right_join2\""
               + ")"
               + ")";
       stream = factory.constructStream(clause);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assertFields(tuples, "id", "left.ident", "right.ident");
-      assertNotFields(tuples, "left.join1", "left.join2", "right.join1", "right.join2");
+      assertFields(tuples, "id", "left_ident", "right_ident");
+      assertNotFields(tuples, "left_join1", "left_join2", "right_join1", "right_join2");
     } finally {
       solrClientCache.close();
     }

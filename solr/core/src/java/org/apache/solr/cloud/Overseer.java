@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -167,7 +168,7 @@ public class Overseer implements SolrCloseable {
    *
    * <p>The cluster state updater is a single thread dequeueing and executing requests.
    */
-  private class ClusterStateUpdater implements Runnable, Closeable {
+  private class ClusterStateUpdater implements SolrInfoBean, Runnable, Closeable {
 
     private final ZkStateReader reader;
     private final SolrZkClient zkClient;
@@ -183,6 +184,8 @@ public class Overseer implements SolrCloseable {
 
     private boolean isClosed = false;
 
+    private AutoCloseable toClose;
+
     public ClusterStateUpdater(
         final ZkStateReader reader,
         final String myId,
@@ -196,12 +199,25 @@ public class Overseer implements SolrCloseable {
       this.minStateByteLenForCompression = minStateByteLenForCompression;
       this.compressor = compressor;
 
-      clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
-      clusterStateUpdaterMetricContext.gauge(
-          () -> stateUpdateQueue.getZkStats().getQueueLength(),
-          true,
-          "stateUpdateQueueSize",
-          "queue");
+      this.clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
+      initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
+    }
+
+    @Override
+    public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+      this.toClose =
+          parentContext.observableLongGauge(
+              "solr_overseer_state_update_queue_size",
+              "Size of overseer's update queue",
+              (observableLongMeasurement) -> {
+                observableLongMeasurement.record(
+                    stateUpdateQueue.getZkStats().getQueueLength(), attributes);
+              });
+    }
+
+    @Override
+    public SolrMetricsContext getSolrMetricsContext() {
+      return clusterStateUpdaterMetricContext;
     }
 
     public Stats getStateUpdateQueueStats() {
@@ -624,7 +640,22 @@ public class Overseer implements SolrCloseable {
     @Override
     public void close() {
       this.isClosed = true;
-      clusterStateUpdaterMetricContext.unregister();
+      IOUtils.closeQuietly(toClose);
+    }
+
+    @Override
+    public String getName() {
+      return this.getClass().getName();
+    }
+
+    @Override
+    public String getDescription() {
+      return "Cluster leader responsible for processing state updates";
+    }
+
+    @Override
+    public Category getCategory() {
+      return Category.OVERSEER;
     }
   }
 
@@ -699,8 +730,7 @@ public class Overseer implements SolrCloseable {
     this.solrMetricsContext =
         new SolrMetricsContext(
             zkController.getCoreContainer().getMetricManager(),
-            SolrInfoBean.Group.overseer.toString(),
-            metricTag);
+            SolrInfoBean.Group.overseer.toString());
   }
 
   public synchronized void start(String id) {

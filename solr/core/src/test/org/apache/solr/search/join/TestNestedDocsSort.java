@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.join;
 
-import java.util.Map;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
@@ -26,6 +25,7 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -136,23 +136,21 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
       @SuppressWarnings({"rawtypes"})
       final SolrCache cache = req.getSearcher().getCache("perSegFilter");
       assertNotNull(cache);
-      final Map<String, Object> state = cache.getSolrMetricsContext().getMetricsSnapshot();
-      String lookupsKey = null;
-      for (String key : state.keySet()) {
-        if (key.endsWith(".lookups")) {
-          lookupsKey = key;
-          break;
-        }
-      }
-      Number before = (Number) state.get(lookupsKey);
+      var core = req.getSearcher().getCore();
+      double before =
+          SolrMetricTestUtils.getCacheSearcherTotalLookups(
+              core, SolrMetricTestUtils.PER_SEG_FILTER_CACHE);
+
       parse("childfield(name_s1,$q) asc");
-      Number after = (Number) cache.getSolrMetricsContext().getMetricsSnapshot().get(lookupsKey);
+      double after =
+          SolrMetricTestUtils.getCacheSearcherTotalLookups(
+              core, SolrMetricTestUtils.PER_SEG_FILTER_CACHE);
       assertEquals(
           "parsing bjq lookups parent filter,"
               + "parsing sort spec lookups parent and child filters, "
               + "hopefully for the purpose",
           3,
-          after.intValue() - before.intValue());
+          (int) (after - before));
     } finally {
       req.close();
     }

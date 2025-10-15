@@ -153,8 +153,6 @@ public class TestSolrConfigHandler extends RestTestBase {
     MapWriter confMap = getRespMap("/config", harness);
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/luke"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/system"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/mbeans"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/plugins"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/file"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/ping"), null));
 
@@ -1012,14 +1010,15 @@ public class TestSolrConfigHandler extends RestTestBase {
   public void testCacheDisableSolrConfig() throws Exception {
     RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
     restTestHarness.setServerProvider(() -> getBaseUrl());
-    MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
-    assertNotNull(
-        confMap._get(
-            asList("metrics", "solr.core.collection1", "CACHE.searcher.fieldValueCache"), null));
+    String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
+    assertTrue(
+        "fieldValueCache metrics should be present",
+        prometheusMetrics.contains("name=\"fieldValueCache\""));
     // Here documentCache is disabled at initialization in SolrConfig
-    assertNull(
-        confMap._get(
-            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+    assertFalse(
+        "documentCache metrics should be absent",
+        prometheusMetrics.contains("name=\"documentCache\""));
+
     restTestHarness.setServerProvider(oldProvider);
   }
 
@@ -1032,10 +1031,10 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertEquals("399", overlay._getStr("overlay/props/query/documentCache/size"));
     // Setting size only will not enable the cache
     restTestHarness.setServerProvider(() -> getBaseUrl());
-    MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
-    assertNull(
-        confMap._get(
-            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+
+    String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
+    assertFalse(prometheusMetrics.contains("cache_name=\"documentCache\""));
+
     restTestHarness.setServerProvider(oldProvider);
   }
 
@@ -1045,20 +1044,19 @@ public class TestSolrConfigHandler extends RestTestBase {
     String payload = "{'set-property' : { 'query.documentCache.enabled': true} }";
     runConfigCommand(restTestHarness, "/config", payload);
     restTestHarness.setServerProvider(() -> getBaseUrl());
-    MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
-    assertNotNull(
-        confMap._get(
-            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+
+    String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
+    assertTrue(prometheusMetrics.contains("name=\"documentCache\""));
 
     // Disabling Cache
     payload = "{ 'set-property' : { 'query.documentCache.enabled': false } }";
     restTestHarness.setServerProvider(oldProvider);
+
     runConfigCommand(restTestHarness, "/config", payload);
     restTestHarness.setServerProvider(() -> getBaseUrl());
-    confMap = getRespMap("/admin/metrics", restTestHarness);
-    assertNull(
-        confMap._get(
-            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+
+    prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
+    assertFalse(prometheusMetrics.contains("name=\"documentCache\""));
 
     restTestHarness.setServerProvider(oldProvider);
   }
