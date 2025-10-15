@@ -181,7 +181,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   /** Randomly return the cluster's ZK based CSC, or HttpClusterProvider based CSC. */
   private CloudSolrClient getRandomClient() {
-    int randInt = random().nextInt(2);
+    int randInt = random().nextInt(3);
     if (randInt == 0) {
       return zkBasedCloudSolrClient;
     }
