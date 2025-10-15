@@ -19,16 +19,16 @@ package org.apache.solr.core;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
-import java.io.FileInputStream;
 import io.opentelemetry.api.common.Attributes;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -68,6 +68,7 @@ public class ZkContainer {
 
   protected ZkController zkController;
   private SolrZkServer zkServer;
+  private ZooKeeperServerEmbedded zkServerEmbedded;
 
   private ExecutorService coreZkRegister =
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("coreZkRegister"));
@@ -192,9 +193,13 @@ public class ZkContainer {
       // we are ZooKeeper enabled
       try {
         // If this is an ensemble, allow for a long connect time for other servers to come up
-        if (zkServerEnabled && zkServer.getServers().size() > 1) {
+        if (zkServerEnabled && zkServer != null && zkServer.getServers().size() > 1) {
           zkClientConnectTimeout = 24 * 60 * 60 * 1000; // 1 day for embedded ensemble
           log.info("Zookeeper client={}  Waiting for a quorum.", zookeeperHost);
+        } else if (zkServerEnabled && runAsQuorum) {
+          // Quorum mode also needs long timeout for other nodes to start
+          zkClientConnectTimeout = 24 * 60 * 60 * 1000; // 1 day for embedded quorum
+          log.info("Zookeeper client={} (quorum mode)  Waiting for a quorum.", zookeeperHost);
         } else {
           log.info("Zookeeper client={}", zookeeperHost);
         }
@@ -326,14 +331,17 @@ public class ZkContainer {
     }
   }
 
-  private static void startZKSE(int port, String zkHomeDir) throws Exception {
+  private void startZKSE(int port, String zkHomeDir) throws Exception {
     Properties p = new Properties();
-    p.load(new FileInputStream(zkHomeDir + "/zoo.cfg"));
+    try (FileInputStream fis = new FileInputStream(zkHomeDir + "/zoo.cfg")) {
+      p.load(fis);
+    }
     p.setProperty("clientPort", String.valueOf(port));
 
-    // TODO NOCOMMIT - hang onto the created ZooKeeperServerEmbedded to be able to close it
-    // gracefully the way we do today with zkServer
-    ZooKeeperServerEmbedded.builder().baseDir(Path.of(zkHomeDir)).configuration(p).build().start();
+    zkServerEmbedded =
+        ZooKeeperServerEmbedded.builder().baseDir(Path.of(zkHomeDir)).configuration(p).build();
+    zkServerEmbedded.start();
+    log.info("Started embedded ZooKeeper server in quorum mode on port {}", port);
   }
 
   private String stripChroot(String zkRun) {
@@ -408,8 +416,19 @@ public class ZkContainer {
           zkController.close();
         }
       } finally {
-        if (zkServer != null) {
-          zkServer.stop();
+        try {
+          if (zkServer != null) {
+            zkServer.stop();
+          }
+        } finally {
+          if (zkServerEmbedded != null) {
+            try {
+              zkServerEmbedded.close();
+              log.info("Closed embedded ZooKeeper server in quorum mode");
+            } catch (Exception e) {
+              log.error("Error closing embedded ZooKeeper server", e);
+            }
+          }
         }
       }
       IOUtils.closeQuietly(toClose);
