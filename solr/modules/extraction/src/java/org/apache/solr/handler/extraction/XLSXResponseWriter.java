@@ -48,6 +48,12 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.ReturnFields;
 
+/**
+ * A .XLSX spreadsheet format {@link org.apache.solr.response.QueryResponseWriter}.
+ *
+ * @deprecated This class will be removed in a future release.
+ */
+@Deprecated(since = "9.10", forRemoval = true)
 public class XLSXResponseWriter extends RawResponseWriter {
 
   @Override
