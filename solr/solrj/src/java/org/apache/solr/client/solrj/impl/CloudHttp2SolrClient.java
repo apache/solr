@@ -89,7 +89,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     } else {
       try {
         Class.forName("org.eclipse.jetty.client.HttpClient");
-      } catch(ClassNotFoundException e) {
+      } catch (ClassNotFoundException e) {
         log.debug("Using {} as the delegate http client", HttpJdkSolrClient.class.getName());
         return new HttpJdkSolrClient.Builder().build();
       }
