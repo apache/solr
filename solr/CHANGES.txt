@@ -62,6 +62,8 @@ Other Changes
 
 * SOLR-17952: Stream decorator test refactoring - use underscore rather than dot in aliases (Andy Webb)
 
+* SOLR-17956: XLSXResponseWriter has been deprecated and will be removed in a future release. (Jan Høydahl)
+
 ==================  9.9.1 ==================
 Bug Fixes
 ---------------------
