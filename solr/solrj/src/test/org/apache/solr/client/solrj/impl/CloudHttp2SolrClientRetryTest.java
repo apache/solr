@@ -54,7 +54,9 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
     // forcing Http/1.1 to avoid an extra HEAD request with the first update.
     // (This causes the counts to be 1 greater than what we test for here.)
     var jdkClientBuilder =
-        new HttpJdkSolrClient.Builder().useHttp1_1(true).withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
+        new HttpJdkSolrClient.Builder()
+            .useHttp1_1(true)
+            .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
 
     var cloudSolrclientBuilder =
         new CloudHttp2SolrClient.Builder(
