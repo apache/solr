@@ -39,6 +39,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class MultiFeaturesScorer extends FeatureTraversalScorer {
   private int targetDoc = -1;
   private int activeDoc = -1;
+  protected DocInfo docInfo;
   private final DisiPriorityQueue subScorers;
   private final List<DisiWrapper> wrappers;
   private final MultiFeaturesIterator multiFeaturesIteratorIterator;

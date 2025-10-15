@@ -236,7 +236,7 @@ public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
     query.setQuery(
         "{!edismax qf='description^1' boost='sum(product(pow(normHits, 0.7), 1600), .1)' v='apple'}");
     // request 100 rows, if any rows are fetched from the second or subsequent segments the tests
-    // should succeed if LTRRescorer::extractFeatures() advances the doc iterator properly
+    // should succeed if LTRFeatureLoggerTransformerFactory::extractFeatures() advances the doc iterator properly
     int numRows = 100;
     query.add("rows", Integer.toString(numRows));
     query.add("wt", "json");

@@ -34,6 +34,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class SingleFeatureScorer extends FeatureTraversalScorer {
   private int targetDoc = -1;
   private int activeDoc = -1;
+  protected DocInfo docInfo;
   private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
 
   public SingleFeatureScorer(
