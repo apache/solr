@@ -14,6 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/*
+ * This file was originally part of Apache Tika 1.28.5 (org.apache.tika.sax.ToXMLContentHandler)
+ * and has been copied into the Solr codebase to eliminate the Tika dependency.
+ */
 package org.apache.solr.handler.extraction.fromtika;
 
 import java.io.OutputStream;

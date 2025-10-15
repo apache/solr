@@ -14,15 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/*
+ * This file was copied from Apache Tika 1.28.5 (org.apache.tika.sax.BodyContentHandler).
+ * It still depends on Tika, see imports.
+ * <p>
+ * TODO: Find a replacement for this class before removing Tika dependency
+ * </p>
+ */
 package org.apache.solr.handler.extraction.fromtika;
 
 import java.io.OutputStream;
 import java.io.Writer;
-import org.apache.tika.sax.WriteOutContentHandler;
-import org.apache.tika.sax.XHTMLContentHandler;
-import org.apache.tika.sax.xpath.Matcher;
-import org.apache.tika.sax.xpath.MatchingContentHandler;
-import org.apache.tika.sax.xpath.XPathParser;
+import org.apache.solr.handler.extraction.fromtika.xpath.Matcher;
+import org.apache.solr.handler.extraction.fromtika.xpath.MatchingContentHandler;
+import org.apache.solr.handler.extraction.fromtika.xpath.XPathParser;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
@@ -32,8 +38,11 @@ import org.xml.sax.SAXException;
  */
 public class BodyContentHandler extends ContentHandlerDecorator {
 
+  /** The XHTML namespace URI (from Apache Tika 1.28.5 XHTMLContentHandler.XHTML) */
+  private static final String XHTML = "http://www.w3.org/1999/xhtml";
+
   /** XHTML XPath parser. */
-  private static final XPathParser PARSER = new XPathParser("xhtml", XHTMLContentHandler.XHTML);
+  private static final XPathParser PARSER = new XPathParser("xhtml", XHTML);
 
   /** The XPath matcher used to select the XHTML body contents. */
   private static final Matcher MATCHER = PARSER.parse("/xhtml:html/xhtml:body/descendant::node()");
