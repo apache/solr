@@ -26,9 +26,10 @@ package org.apache.solr.handler.extraction.fromtika;
 
 import java.io.OutputStream;
 import java.io.Writer;
-import org.apache.solr.handler.extraction.fromtika.xpath.Matcher;
-import org.apache.solr.handler.extraction.fromtika.xpath.MatchingContentHandler;
-import org.apache.solr.handler.extraction.fromtika.xpath.XPathParser;
+import org.apache.tika.sax.WriteOutContentHandler;
+import org.apache.tika.sax.xpath.Matcher;
+import org.apache.tika.sax.xpath.MatchingContentHandler;
+import org.apache.tika.sax.xpath.XPathParser;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
