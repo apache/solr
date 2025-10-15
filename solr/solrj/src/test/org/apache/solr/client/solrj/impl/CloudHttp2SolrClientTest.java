@@ -176,6 +176,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     shutdownCluster();
     httpJettyBasedCloudSolrClient = null;
+    httpJdkBasedCloudSolrClient = null;
     zkBasedCloudSolrClient = null;
   }
 
