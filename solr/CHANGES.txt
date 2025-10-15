@@ -525,6 +525,8 @@ Other Changes
   apparently has negligible impact on search performance so it's used now for all queries regardless of
   their query limits params. (Andrzej Bialecki)
 
+* PR#3758: Logs: removed webapp=/solr and also removed from internal context map.
+
 ==================  9.10.0 ==================
 New Features
 ---------------------
