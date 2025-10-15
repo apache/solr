@@ -79,7 +79,6 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
           new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
 
       NamedList<Object> namedList = solrClient.request(metricsRequest);
-      System.out.println(namedList);
       NamedList<?> metrics = (NamedList<?>) namedList.get("metrics");
       assertEquals(1L, metrics.get(updateRequestCountKey));
 
@@ -96,7 +95,6 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
       }
 
       namedList = solrClient.request(metricsRequest);
-      System.out.println(namedList);
       metrics = (NamedList<?>) namedList.get("metrics");
       assertEquals(2L, metrics.get(updateRequestCountKey));
     }
