@@ -148,7 +148,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
                   return true;
                 }
               } else {
-                numErrors.mark();
+                numErrors.inc();
                 authenticationFailure(response, isAjaxRequest, "Invalid authentication token");
                 return false;
               }
@@ -156,7 +156,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
               throw new Error("Couldn't retrieve authentication", e);
             }
           } else {
-            numErrors.mark();
+            numErrors.inc();
             authenticationFailure(response, isAjaxRequest, "Malformed Basic Auth header");
             return false;
           }

@@ -20,8 +20,8 @@ package org.apache.solr.client.solrj.request;
 import java.util.Arrays;
 import java.util.TreeSet;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -120,7 +120,7 @@ public abstract class DelegationTokenRequest<
     public Cancel(String token) {
       super(METHOD.PUT);
       this.token = token;
-      setResponseParser(new NoOpResponseParser("xml"));
+      setResponseParser(new InputStreamResponseParser("xml"));
       setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY, TOKEN_KEY)));
     }
 

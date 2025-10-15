@@ -87,7 +87,7 @@ When making requests with the <<Metrics API>>, you can specify `&group=core` to 
 
 * all common RequestHandlers report: request timers / counters, timeouts, errors.
 Handlers that support process distributed shard requests also report `shardRequests` sub-counters for each type of distributed request.
-* <<Index Merge Metrics,index-level events>>: meters for minor / major merges, number of merged docs, number of deleted docs, gauges for currently running merges and their size.
+* <<Index Merge Metrics,index-level events>>: meters for minor / major merges, number of merged docs, number of deleted docs, number of flushes
 * shard replication and transaction log replay on replicas,
 * open / available / pending connections for shard handler and update handler.
 
@@ -312,7 +312,7 @@ complex objects:
 ----
 
 === Caching Threads Metrics ===
-The threads metrics in the JVM group can be expensive to compute, as it requires traversing all threads. 
+The threads metrics in the JVM group can be expensive to compute, as it requires traversing all threads.
 This can be avoided for every call to the metrics API (group=jvm) by setting a high caching expiration interval
 (in seconds). For example, to cache the thread metrics for 5 seconds:
 
@@ -639,7 +639,6 @@ For example:
 
 [source,plain]
 ----
-example.solr.node.cores.lazy 0 1482932097
 example.solr.node.cores.loaded 1 1482932097
 example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.count 21 1482932097
 example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.m1_rate 2.5474287707930614 1482932097
@@ -655,28 +654,13 @@ Metrics can be aggregated across cores using Shard and Cluster reporters.
 
 === Index Merge Metrics
 
-These metrics are collected in respective registries for each core (e.g., `solr.core.collection1....`), under the `INDEX` category.
+These metrics are collected under the `INDEX` category and track flush operations (documents being written to disk) and merge operations (segments on disk being merged).
 
-Metrics collection is controlled by boolean parameters in the `<metrics>` section of `solrconfig.xml`:
+For merge metrics, metrics are tracked with the distinction of "minor" and "major" merges (as merges with fewer documents will be typically more frequent).
+This is indicated by the `merge_type` label for the metric. The threshold for when a merge becomes large enough to be considered major is configurable, but
+defaults to 524k documents.
 
-Basic metrics:
-
-[source,xml]
-----
-<config>
-  ...
-  <indexConfig>
-    <metrics>
-      <long name="majorMergeDocs">524288</long>
-      <bool name="merge">true</bool>
-    </metrics>
-    ...
-  </indexConfig>
-...
-</config>
-----
-
-Detailed metrics:
+Metrics collection for index merges can be configured in the `<metrics>` section of `solrconfig.xml` as shown below:
 
 [source,xml]
 ----
@@ -685,7 +669,6 @@ Detailed metrics:
   <indexConfig>
     <metrics>
       <long name="majorMergeDocs">524288</long>
-      <bool name="mergeDetails">true</bool>
     </metrics>
     ...
   </indexConfig>
@@ -693,26 +676,6 @@ Detailed metrics:
 </config>
 ----
 
-The following metrics are collected:
-
-* `INDEX.merge.major` - timer for merge operations that include at least "majorMergeDocs" (default value for this parameter is 512k documents).
-* `INDEX.merge.minor` - timer for merge operations that include less than "majorMergeDocs".
-* `INDEX.merge.errors` - counter for merge errors.
-* `INDEX.flush` - meter for index flush operations.
-
-Additionally, the following gauges are reported, which help to monitor the momentary state of index merge operations:
-
-* `INDEX.merge.major.running` - number of running major merge operations (depending on the implementation of `MergeScheduler` that is used there can be several concurrently running merge operations).
-* `INDEX.merge.minor.running` - as above, for minor merge operations.
-* `INDEX.merge.major.running.docs` - total number of documents in the segments being currently merged in major merge operations.
-* `INDEX.merge.minor.running.docs` - as above, for minor merge operations.
-* `INDEX.merge.major.running.segments` - number of segments being currently merged in major merge operations.
-* `INDEX.merge.minor.running.segments` - as above, for minor merge operations.
-
-If the boolean flag `mergeDetails` is true then the following additional metrics are collected:
-
-* `INDEX.merge.major.docs` - meter for the number of documents merged in major merge operations
-* `INDEX.merge.major.deletedDocs` - meter for the number of deleted documents expunged in major merge operations
 
 == Metrics API
 
