@@ -30,9 +30,9 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 
 /**
- * SolrJ client class to communicate with SolrCloud using Http2SolrClient. Instances of this class
- * communicate with Zookeeper to discover Solr endpoints for SolrCloud collections, and then use the
- * {@link LBHttp2SolrClient} to issue requests.
+ * SolrJ client class to communicate with SolrCloud using an Http/2-capable Solr Client. Instances
+ * of this class communicate with Zookeeper to discover Solr endpoints for SolrCloud collections,
+ * and then use the {@link LBHttp2SolrClient} to issue requests.
  *
  * @since solr 8.0
  */
@@ -50,7 +50,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
    * every shard in a collection, there is no single point of failure. Updates will be sent to shard
    * leaders by default.
    *
-   * @param builder a {@link Http2SolrClient.Builder} with the options used to create the client.
+   * @param builder a {@link CloudHttp2SolrClient.Builder} with the options used to create the client.
    */
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
