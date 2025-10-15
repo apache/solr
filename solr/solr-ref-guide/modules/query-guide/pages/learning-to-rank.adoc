@@ -136,8 +136,11 @@ This needs to be added in the `<query>` section as follows.
 +
 [source,xml]
 ----
-<featureVectorCache class="solr.CaffeineCache" size="4096" initialSize="2048" autowarmCount="4096"/>
+<featureVectorCache class="solr.CaffeineCache" size="4096" initialSize="2048" autowarmCount="0"/>
 ----
+
+[NOTE]
+The `featureVectorCache` holds Lucene Document IDs. Since they are transient, this cache is not auto-warmed.
 
 * Declaration of the `[features]` transformer.
 +
