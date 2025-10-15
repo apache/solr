@@ -42,7 +42,7 @@ public class ReplaceNodeRequestBody {
               + "If false, the API will return the status of the single action, which may be "
               + "before the new replica is online and active.")
   @JsonProperty("waitForFinalState")
-  @Deprecated(since = "9.10")
+  @Deprecated(since = "9.10", forRemoval = true)
   public Boolean waitForFinalState = false;
 
   @Schema(description = "Request ID to track this action which will be processed asynchronously.")
