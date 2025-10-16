@@ -383,12 +383,15 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     URI uriNoQueryParams;
     try {
       var uriWithParams = new URI(url);
-      var uriNoPQueryParamsStr =
-          uriWithParams.getScheme()
-              + "://"
-              + uriWithParams.getAuthority()
-              + uriWithParams.getPath();
-      uriNoQueryParams = new URI(uriNoPQueryParamsStr);
+      uriNoQueryParams = new URI(
+          uriWithParams.getScheme(),
+          uriWithParams.getUserInfo(),
+          uriWithParams.getHost(),
+          uriWithParams.getPort(),
+          uriWithParams.getPath() == null ? "" : uriWithParams.getPath(),
+          null,
+          null
+      );
     } catch (URISyntaxException e) {
       // If the url is invalid, let a subsequent request try again.
       return false;
