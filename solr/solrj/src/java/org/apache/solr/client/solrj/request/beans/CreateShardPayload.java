@@ -35,7 +35,7 @@ public class CreateShardPayload implements ReflectMapWriter {
   @JsonProperty public String async;
 
   @JsonProperty
-  @Deprecated(since = "9.10", forRemoval = true)
+  @Deprecated(since = "9.10")
   public Boolean waitForFinalState;
 
   @JsonProperty public Integer replicationFactor;

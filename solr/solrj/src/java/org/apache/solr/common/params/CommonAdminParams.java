@@ -22,7 +22,7 @@ public interface CommonAdminParams {
   String ASYNC = "async";
 
   /** Wait for final state of the operation. */
-  @Deprecated(since = "9.10", forRemoval = true)
+  @Deprecated(since = "9.10")
   String WAIT_FOR_FINAL_STATE = "waitForFinalState";
 
   /** Allow in-place move of replicas that use shared filesystems. */

@@ -41,7 +41,7 @@ public class CreateShardRequestBody {
   public List<String> nodeSet;
 
   @JsonProperty
-  @Deprecated(since = "9.10", forRemoval = true)
+  @Deprecated(since = "9.10")
   public Boolean waitForFinalState;
 
   @JsonProperty public Boolean followAliases;
