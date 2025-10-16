@@ -96,6 +96,11 @@ public class ZkContainer {
           "Cannot start Solr in cloud mode - no cloud config provided");
     }
 
+    if (config == null) {
+      log.info("Solr is running in standalone mode");
+      return;
+    }
+
     final boolean runAsQuorum = config.getZkHost() != null && zkQuorumNode;
 
     String zookeeperHost = config.getZkHost();
