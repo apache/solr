@@ -20,9 +20,10 @@ import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
 import io.opentelemetry.api.common.Attributes;
-import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -147,10 +148,12 @@ public class ZkContainer {
       final String[] zkHosts = config.getZkHost().split(",");
       int myId = -1;
       final String targetConnStringSection = config.getHost() + ":" + zkPort;
-      log.info(
-          "Trying to match {} against zkHostString {} to determine myid",
-          targetConnStringSection,
-          config.getZkHost());
+      if (log.isInfoEnabled()) {
+        log.info(
+            "Trying to match {} against zkHostString {} to determine myid",
+            targetConnStringSection,
+            config.getZkHost());
+      }
       for (int i = 0; i < zkHosts.length; i++) {
         final String host = zkHosts[i];
         if (targetConnStringSection.equals(zkHosts[i])) {
@@ -333,8 +336,8 @@ public class ZkContainer {
 
   private void startZKSE(int port, String zkHomeDir) throws Exception {
     Properties p = new Properties();
-    try (FileInputStream fis = new FileInputStream(zkHomeDir + "/zoo.cfg")) {
-      p.load(fis);
+    try (FileReader fr = new FileReader(zkHomeDir + "/zoo.cfg", StandardCharsets.UTF_8)) {
+      p.load(fr);
     }
     p.setProperty("clientPort", String.valueOf(port));
 
