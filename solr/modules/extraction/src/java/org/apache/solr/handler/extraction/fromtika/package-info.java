@@ -14,18 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.extraction;
 
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.schema.IndexSchema;
-
-/** */
-public class SolrContentHandlerFactory {
-
-  public SolrContentHandlerFactory() {}
-
-  public SolrContentHandler createSolrContentHandler(
-      ExtractionMetadata metadata, SolrParams params, IndexSchema schema) {
-    return new SolrContentHandler(metadata, params, schema);
-  }
-}
+/** Classes in this package are copied from and (C) the Apache Tika project. */
+package org.apache.solr.handler.extraction.fromtika;

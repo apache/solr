@@ -16,16 +16,8 @@
  */
 package org.apache.solr.handler.extraction;
 
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.schema.IndexSchema;
-
-/** */
-public class SolrContentHandlerFactory {
-
-  public SolrContentHandlerFactory() {}
-
-  public SolrContentHandler createSolrContentHandler(
-      ExtractionMetadata metadata, SolrParams params, IndexSchema schema) {
-    return new SolrContentHandler(metadata, params, schema);
-  }
+/** Generic password provider without Tika dependency */
+public interface ExtractionPasswordProvider {
+  /** Given some metadata, return a password to use for the given document. */
+  String getPassword(ExtractionMetadata metadata);
 }
