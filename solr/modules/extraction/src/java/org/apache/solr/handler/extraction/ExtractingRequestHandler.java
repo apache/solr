@@ -87,10 +87,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
         } catch (NumberFormatException nfe) {
           throw new SolrException(
               ErrorCode.SERVER_ERROR,
-              "Invalid value for '"
-                  + ExtractingParams.TIKASERVER_MAX_CHARS
-                  + "': "
-                  + maxCharsObj);
+              "Invalid value for '" + ExtractingParams.TIKASERVER_MAX_CHARS + "': " + maxCharsObj);
         }
       }
       this.tikaServerBackend =
