@@ -48,6 +48,18 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   private final HttpSolrClientBase myClient;
   private final boolean clientIsInternal;
 
+  private static final boolean JETTY_CLIENT_AVAILABLE;
+
+  static {
+    boolean jettyClientAvailable = true;
+    try {
+      Class.forName("org.eclipse.jetty.client.HttpClient");
+    } catch (ClassNotFoundException e) {
+      jettyClientAvailable = false;
+    }
+    JETTY_CLIENT_AVAILABLE = jettyClientAvailable;
+  }
+
   /**
    * Create a new client object that connects to Zookeeper and is always aware of the SolrCloud
    * state. If there is a fully redundant Zookeeper quorum and SolrCloud has enough replicas for
@@ -86,15 +98,12 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       return builder.httpClient;
     } else if (builder.internalClientBuilder != null) {
       return builder.internalClientBuilder.build();
-    } else {
-      try {
-        Class.forName("org.eclipse.jetty.client.HttpClient");
-      } catch (ClassNotFoundException e) {
-        log.debug("Using {} as the delegate http client", HttpJdkSolrClient.class);
-        return new HttpJdkSolrClient.Builder().build();
-      }
+    } else if(JETTY_CLIENT_AVAILABLE) {
       log.debug("Using {} as the delegate http client", Http2SolrClient.class);
       return new Http2SolrClient.Builder().build();
+    } else {
+      log.debug("Using {} as the delegate http client", Http2SolrClient.class);
+      return new HttpJdkSolrClient.Builder().build();
     }
   }
 
@@ -380,7 +389,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
-     * Set the internal {@link Http2SolrClient}.
+     * Set the internal client Solr HTTP client.
      *
      * <p>Note: closing the client instance is the responsibility of the caller.
      *
@@ -396,7 +405,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
-     * If provided, the CloudHttp2SolrClient will build it's internal Http2SolrClient using this
+     * If provided, the CloudHttp2SolrClient will build it's internal client using this
      * builder (instead of the empty default one). Providing this builder allows users to configure
      * the internal clients (authentication, timeouts, etc.).
      *

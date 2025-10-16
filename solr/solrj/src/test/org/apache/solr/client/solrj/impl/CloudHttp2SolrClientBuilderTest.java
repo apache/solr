@@ -207,6 +207,17 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testDefaultClientUsesJetty() throws IOException {
+    try (CloudHttp2SolrClient createdClient =
+        new CloudHttp2SolrClient.Builder(
+            Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .build()) {
+      assertTrue(createdClient.getHttpClient() instanceof Http2SolrClient);
+      assertTrue(createdClient.getLbClient().solrClient  instanceof Http2SolrClient);
+    }
+  }
+
+  @Test
   public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
     try (CloudHttp2SolrClient createdClient =
         new CloudHttp2SolrClient.Builder(
