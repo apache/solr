@@ -161,6 +161,7 @@ public class MiniSolrCloudCluster {
   private final JettyConfig jettyConfig;
   private final String solrXml;
   private final boolean trackJettyMetrics;
+  private final String zkHost; // ZK connection string (used in quorum mode when zkServer is null)
 
   private final AtomicInteger nodeIds = new AtomicInteger();
   private final Map<String, CloudSolrClient> solrClientByCollection = new ConcurrentHashMap<>();
@@ -295,6 +296,7 @@ public class MiniSolrCloudCluster {
       }
     }
     this.zkServer = zkTestServer;
+    this.zkHost = null; // Not used in standard mode
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
@@ -340,6 +342,185 @@ public class MiniSolrCloudCluster {
     if (numServers > 0) {
       waitForAllNodes(numServers, 60);
     }
+  }
+
+  /**
+   * Create a MiniSolrCloudCluster with embedded ZooKeeper quorum mode. Each Solr node runs its own
+   * embedded ZooKeeper server, and together they form a quorum.
+   *
+   * @param numServers number of Solr servers (must be at least 3 for quorum)
+   * @param baseDir base directory that the mini cluster should be run from
+   * @param solrXml solr.xml file content
+   * @param jettyConfig Jetty configuration
+   * @param securityJson Optional security.json configuration
+   * @param trackJettyMetrics whether to track Jetty metrics
+   * @throws Exception if there was an error starting the cluster
+   */
+  MiniSolrCloudCluster(
+      int numServers,
+      Path baseDir,
+      String solrXml,
+      JettyConfig jettyConfig,
+      Optional<String> securityJson,
+      boolean trackJettyMetrics,
+      boolean useEmbeddedZkQuorum)
+      throws Exception {
+
+    if (!useEmbeddedZkQuorum) {
+      throw new IllegalArgumentException("This constructor is only for embedded ZK quorum mode");
+    }
+    if (numServers < 3) {
+      throw new IllegalArgumentException(
+          "ZooKeeper quorum requires at least 3 nodes, got: " + numServers);
+    }
+
+    Objects.requireNonNull(securityJson);
+    this.baseDir = Objects.requireNonNull(baseDir);
+    this.jettyConfig = Objects.requireNonNull(jettyConfig);
+    this.solrXml = solrXml == null ? DEFAULT_CLOUD_SOLR_XML : solrXml;
+    this.trackJettyMetrics = trackJettyMetrics;
+    this.externalZkServer = true; // No ZkTestServer in quorum mode
+    this.zkServer = null; // No single ZK server
+
+    log.info("Starting cluster of {} servers with embedded ZK quorum in {}", numServers, baseDir);
+    Files.createDirectories(baseDir);
+
+    // Phase 1: Reserve random ports for all nodes
+    int[] ports = new int[numServers];
+    for (int i = 0; i < numServers; i++) {
+      try (java.net.ServerSocket socket = new java.net.ServerSocket(0)) {
+        ports[i] = socket.getLocalPort();
+      }
+    }
+
+    // Build the zkHost string with all ZK ports (Solr port + 1000)
+    StringBuilder zkHostBuilder = new StringBuilder();
+    for (int i = 0; i < numServers; i++) {
+      if (i > 0) {
+        zkHostBuilder.append(",");
+      }
+      int zkPort = ports[i] + 1000;
+      zkHostBuilder.append("127.0.0.1:").append(zkPort);
+    }
+    this.zkHost = zkHostBuilder.toString(); // Save for later use
+
+    if (log.isInfoEnabled()) {
+      log.info("Reserved ports for {} nodes: {}", numServers, java.util.Arrays.toString(ports));
+      log.info("ZK connection string: {}", this.zkHost);
+    }
+
+    // Set system properties for embedded ZK quorum mode
+    System.setProperty("solr.zookeeper.server.enabled", "true");
+    System.setProperty("solr.security.manager.enabled", "false");
+    System.setProperty("solr.node.roles", "data:on,overseer:allowed,zookeeper_quorum:on");
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
+    System.setProperty("solr.zookeeper.client.timeout", "300000"); // 5 minutes
+
+    // Phase 2: Start all nodes in parallel
+    List<Callable<JettySolrRunner>> startups = new ArrayList<>(numServers);
+    for (int i = 0; i < numServers; i++) {
+      final int solrPort = ports[i];
+      final String nodeName = newNodeName();
+      startups.add(
+          () -> {
+            Path runnerPath = createInstancePath(nodeName);
+            Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
+
+            Properties nodeProps = new Properties();
+            nodeProps.setProperty("zkHost", this.zkHost);
+            nodeProps.setProperty("hostPort", String.valueOf(solrPort));
+
+            JettyConfig newConfig = JettyConfig.builder(jettyConfig).setPort(solrPort).build();
+
+            JettySolrRunner jetty =
+                !trackJettyMetrics
+                    ? new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig)
+                    : new JettySolrRunnerWithMetrics(runnerPath.toString(), nodeProps, newConfig);
+
+            int zkPort = solrPort + 1000;
+            log.info("Starting {} on port {} with ZK on port {}", nodeName, solrPort, zkPort);
+            jetty.start();
+            log.info("Node {} started successfully", nodeName);
+
+            jettys.add(jetty);
+            synchronized (startupWait) {
+              startupWait.notifyAll();
+            }
+            return jetty;
+          });
+    }
+
+    final ExecutorService executorLauncher =
+        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jetty-launcher"));
+    Collection<Future<JettySolrRunner>> futures = executorLauncher.invokeAll(startups);
+    ExecutorUtil.shutdownAndAwaitTermination(executorLauncher);
+    Exception startupError =
+        checkForExceptions(
+            "Error starting up MiniSolrCloudCluster with embedded ZK quorum", futures);
+    if (startupError != null) {
+      try {
+        this.shutdown();
+      } catch (Throwable t) {
+        startupError.addSuppressed(t);
+      }
+      throw startupError;
+    }
+
+    log.info("All {} nodes started, waiting for quorum formation...", numServers);
+    Thread.sleep(10000); // Wait for ZK quorum to fully form
+
+    // Initialize ZK paths and security (if provided)
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(this.zkHost)
+            .withTimeout(60000, TimeUnit.MILLISECONDS)
+            .build()) {
+      if (!zkClient.exists("/solr", true)) {
+        zkClient.makePath("/solr", false, true);
+      }
+      if (!zkClient.exists("/solr/initialized", true)) {
+        zkClient.makePath("/solr/initialized", "yes".getBytes(Charset.defaultCharset()), true);
+        if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
+          zkClient.makePath(
+              "/solr" + ZkStateReader.CLUSTER_PROPS,
+              "{'urlScheme':'https'}".getBytes(StandardCharsets.UTF_8),
+              true);
+        }
+        if (securityJson.isPresent()) {
+          zkClient.makePath(
+              "/solr/security.json", securityJson.get().getBytes(Charset.defaultCharset()), true);
+        }
+      }
+    }
+
+    solrClient = buildSolrClientForQuorum(this.zkHost);
+
+    if (numServers > 0) {
+      waitForAllNodes(numServers, 60);
+    }
+
+    log.info("Embedded ZK quorum cluster started successfully with {} nodes", numServers);
+  }
+
+  /**
+   * Get the ZK connection string. Works for both standard mode (using zkServer) and quorum mode
+   * (using zkHost field).
+   *
+   * @return ZK connection string
+   */
+  private String getZkAddress() {
+    if (zkHost != null) {
+      return zkHost; // Quorum mode
+    }
+    return zkServer.getZkAddress(); // Standard mode
+  }
+
+  private CloudSolrClient buildSolrClientForQuorum(String zkHost) {
+    return new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
+        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   private void waitForAllNodes(int numServers, int timeoutSeconds)
@@ -484,7 +665,7 @@ public class MiniSolrCloudCluster {
   public JettySolrRunner startJettySolrRunner(String name, JettyConfig config, String solrXml)
       throws Exception {
     final Properties nodeProps = new Properties();
-    nodeProps.setProperty("zkHost", zkServer.getZkAddress());
+    nodeProps.setProperty("zkHost", getZkAddress());
 
     Path runnerPath = createInstancePath(name);
     if (solrXml == null) {
@@ -574,7 +755,7 @@ public class MiniSolrCloudCluster {
   public void uploadConfigSet(Path configDir, String configName) throws IOException {
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .withUrl(zkServer.getZkAddress())
+            .withUrl(getZkAddress())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
@@ -682,7 +863,9 @@ public class MiniSolrCloudCluster {
         throw shutdownError;
       }
     } finally {
-      if (!externalZkServer) {
+      // Only shut down zkServer if it exists (not null) and we created it (!externalZkServer)
+      // In quorum mode, zkServer is null and each node's embedded ZK is shut down with the node
+      if (!externalZkServer && zkServer != null) {
         zkServer.shutdown();
       }
       resetRecordingFlag();
@@ -710,7 +893,7 @@ public class MiniSolrCloudCluster {
         k -> {
           CloudSolrClient solrClient =
               new CloudLegacySolrClient.Builder(
-                      Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
+                      Collections.singletonList(getZkAddress()), Optional.empty())
                   .withDefaultCollection(collectionName)
                   .withSocketTimeout(90000)
                   .withConnectionTimeout(15000)
@@ -747,7 +930,7 @@ public class MiniSolrCloudCluster {
 
   protected CloudSolrClient buildSolrClient() {
     return new CloudLegacySolrClient.Builder(
-            Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
+            Collections.singletonList(getZkAddress()), Optional.empty())
         .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .build(); // we choose 90 because we run in some harsh envs
@@ -761,7 +944,7 @@ public class MiniSolrCloudCluster {
    */
   public CloudLegacySolrClient.Builder basicSolrClientBuilder() {
     return new CloudLegacySolrClient.Builder(
-            Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
+            Collections.singletonList(getZkAddress()), Optional.empty())
         .withSocketTimeout(90000) // we choose 90 because we run in some harsh envs
         .withConnectionTimeout(15000);
   }
@@ -1033,6 +1216,7 @@ public class MiniSolrCloudCluster {
         EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
     private boolean formatZkServer = true;
     private boolean disableTraceIdGeneration = false;
+    private boolean useEmbeddedZkQuorum = false;
 
     /**
      * Create a builder
@@ -1152,6 +1336,27 @@ public class MiniSolrCloudCluster {
     }
 
     /**
+     * Configure cluster to use embedded ZooKeeper quorum mode where each Solr node runs its own
+     * ZooKeeper server.
+     *
+     * <p>When enabled, instead of using a separate {@link ZkTestServer}, each Solr node will run an
+     * embedded ZooKeeper server, and together they form a quorum. This tests the embedded ZK quorum
+     * functionality.
+     *
+     * <p>Requires at least 3 nodes for a valid quorum.
+     *
+     * @return this Builder
+     */
+    public Builder withEmbeddedZkQuorum() {
+      if (nodeCount < 3) {
+        throw new IllegalArgumentException(
+            "ZooKeeper quorum requires at least 3 nodes, got: " + nodeCount);
+      }
+      this.useEmbeddedZkQuorum = true;
+      return this;
+    }
+
+    /**
      * Configure and run the {@link MiniSolrCloudCluster}
      *
      * @throws Exception if an error occurs on startup
@@ -1174,16 +1379,33 @@ public class MiniSolrCloudCluster {
       }
 
       JettyConfig jettyConfig = jettyConfigBuilder.build();
-      MiniSolrCloudCluster cluster =
-          new MiniSolrCloudCluster(
-              nodeCount,
-              baseDir,
-              solrXml,
-              jettyConfig,
-              null,
-              securityJson,
-              trackJettyMetrics,
-              formatZkServer);
+      MiniSolrCloudCluster cluster;
+
+      if (useEmbeddedZkQuorum) {
+        // Use embedded ZK quorum mode constructor
+        cluster =
+            new MiniSolrCloudCluster(
+                nodeCount,
+                baseDir,
+                solrXml,
+                jettyConfig,
+                securityJson,
+                trackJettyMetrics,
+                true); // useEmbeddedZkQuorum = true
+      } else {
+        // Use standard constructor with ZkTestServer
+        cluster =
+            new MiniSolrCloudCluster(
+                nodeCount,
+                baseDir,
+                solrXml,
+                jettyConfig,
+                null,
+                securityJson,
+                trackJettyMetrics,
+                formatZkServer);
+      }
+
       for (Config config : configs) {
         cluster.uploadConfigSet(config.path, config.name);
       }
