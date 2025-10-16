@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.neural;
+package org.apache.solr.search.vector;
 
-import static org.apache.solr.search.neural.KnnQParser.DEFAULT_TOP_K;
+import static org.apache.solr.search.vector.KnnQParser.DEFAULT_TOP_K;
 
 import java.util.ArrayList;
 import java.util.Arrays;

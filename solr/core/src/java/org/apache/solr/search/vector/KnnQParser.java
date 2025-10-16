@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.neural;
+package org.apache.solr.search.vector;
 
 import java.util.Optional;
 import org.apache.lucene.search.Query;

@@ -21,7 +21,7 @@
    <requestParsers />
  </requestDispatcher>
 
- <!-- Query parser used to run neural queries-->
+ <!-- Query parser used to run vector search queries-->
  <queryParser name="knn_text_to_vector"
   class="org.apache.solr.llm.textvectorisation.search.TextToVectorQParserPlugin" />
 
@@ -43,7 +43,7 @@
    <str name="dir">${solr.data.dir:}</str>
   </updateLog>
  </updateHandler>
- 
+
  <!-- Query request handler managing models and features -->
  <requestHandler name="/query" class="solr.SearchHandler">
   <lst name="defaults">
@@ -71,7 +71,7 @@
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>
- 
- 
+
+
 
 </config>
