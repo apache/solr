@@ -79,6 +79,8 @@ New Features
 
 * SOLR-17814: Add support for PatienceKnnVectorQuery. (Ilaria Petreti via Alessandro Benedetti)
 
+* SOLR-17948: Support indexing primitive float[] values for DenseVectorField via JavaBin (Puneet Ahuja, Noble Paul)
+
 Improvements
 ---------------------
 
@@ -147,6 +149,8 @@ Bug Fixes
 
 Deprecation Removals
 ----------------------
+
+* SOLR-17957: XLSXResponseWriter has been removed. (Jan Høydahl)
 
 * SOLR-16535: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry' (janhoy)
 
@@ -330,6 +334,10 @@ New Features
 * SOLR-17915: shards.preference=replica.location now supports the "host" option for routing to replicas on the same host. (Houston Putman)
 
 * SOLR-17923: Add fullOuterJoin stream function (Andy Webb)
+
+* SOLR-7632: The Extraction Request Handler, aka Solr Cell, now supports delegating the parsing of rich documents to
+  an external Tika Server. This allows for a more stable Solr server, and easier to configure and scale parsing
+  independently. The local in-process Tika parser is now deprecated. (Jan Høydahl, Eric Pugh)
 
 Improvements
 ---------------------
