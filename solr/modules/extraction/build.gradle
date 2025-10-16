@@ -40,9 +40,6 @@ dependencies {
     exclude group: 'org.quartz-scheduler', module: 'quartz'
     exclude group: 'xml-apis', module: 'xml-apis'
   })
-  implementation ('xerces:xercesImpl', {
-    exclude group: 'xml-apis', module: 'xml-apis'
-  })
 
   // For 'tikaserver' backend
   implementation 'org.eclipse.jetty:jetty-client'
@@ -54,4 +51,5 @@ dependencies {
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'junit:junit'
   testImplementation 'org.testcontainers:testcontainers'
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
 }
