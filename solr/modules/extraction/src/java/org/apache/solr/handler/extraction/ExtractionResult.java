@@ -16,16 +16,23 @@
  */
 package org.apache.solr.handler.extraction;
 
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.schema.IndexSchema;
+/** Immutable extraction result with plain text content and neutral metadata. */
+public final class ExtractionResult {
+  private final String content;
+  private final ExtractionMetadata metadata;
 
-/** */
-public class SolrContentHandlerFactory {
+  public ExtractionResult(String content, ExtractionMetadata metadata) {
+    this.content = content == null ? "" : content;
+    this.metadata = metadata;
+  }
 
-  public SolrContentHandlerFactory() {}
+  /** Extracted textual content (plain text). */
+  public String getContent() {
+    return content;
+  }
 
-  public SolrContentHandler createSolrContentHandler(
-      ExtractionMetadata metadata, SolrParams params, IndexSchema schema) {
-    return new SolrContentHandler(metadata, params, schema);
+  /** Extracted metadata in neutral, backend-agnostic form. */
+  public ExtractionMetadata getMetadata() {
+    return metadata;
   }
 }
