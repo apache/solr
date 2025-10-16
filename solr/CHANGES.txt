@@ -335,6 +335,8 @@ Other Changes
 
 * SOLR-17956: XLSXResponseWriter has been deprecated and will be removed in a future release. (Jan Høydahl)
 
+* SOLR-17958: The Tika Language Identifier is deprecated. Use one of the other detectors instead. (Jan Høydahl)
+
 * SOLR-17952: Stream decorator test refactoring - use underscore rather than dot in aliases (Andy Webb)
 
 ==================  9.9.1 ==================
