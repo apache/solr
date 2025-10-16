@@ -52,7 +52,8 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-17961: Removed LocalTikaExtractionBackend in Solr 10. The 'tikaserver' backend is now the only supported extraction backend.
+  (janhoy)
 
 ==================  10.0.0 ==================
 

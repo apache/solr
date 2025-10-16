@@ -172,6 +172,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * The deprecated transient Solr cores capability has been removed.  (SOLR-17932)
 
+* LocalTikaExtractionBackend, which was deprecated in 9.10, has been removed. The 'tikaserver' extraction backend is now the only supported backend for the ExtractingRequestHandler, and the default. Users must configure a Tika Server URL via the `tikaserver.url` parameter. (SOLR-17961)
+
 
 === Security
 
