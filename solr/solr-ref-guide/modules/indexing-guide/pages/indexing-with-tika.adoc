@@ -442,7 +442,7 @@ Example: In `solrconfig.xml`: `<long name="tikaserver.maxChars">1000000</long>`
 |Optional |Default: false
 |===
 +
-**Only applicable for the `tikaserver` backend`.** For `local` backend parsing is always recursive, i.e. extracts text from embedded documents. For `tikaserver` you have to enable it explicitly.
+**Only applicable for the `tikaserver` backend.** For `local` backend parsing is always recursive, i.e. extracts text from embedded documents. For `tikaserver` you have to enable it explicitly.
 
 `resource.name`::
 +
