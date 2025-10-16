@@ -34,7 +34,9 @@ import org.slf4j.LoggerFactory;
  * href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-tika-language-detection">https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-tika-language-detection</a>
  *
  * @since 3.5
+ * @deprecated Since 9.10, use {@link OpenNLPLangDetectUpdateProcessor} instead.
  */
+@Deprecated(since = "9.10")
 public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpdateProcessor {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
