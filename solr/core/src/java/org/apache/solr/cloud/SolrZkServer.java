@@ -42,20 +42,21 @@ public class SolrZkServer {
 
   public static final String ZK_WHITELIST_PROPERTY = "zookeeper.4lw.commands.whitelist";
 
-  boolean zkRun = false;
+  boolean zkServerEnabled;
   String zkHost;
 
   int solrPort;
   Properties props;
   SolrZkServerProps zkProps;
 
-  private Thread zkThread; // the thread running a zookeeper server, only if zkRun is true
+  private Thread zkThread; // the thread running a zookeeper server, only if zkServerEnabled is true
 
   private Path dataHome; // o.a.zookeeper.**.QuorumPeerConfig needs a File not a Path
   private String confHome;
 
-  public SolrZkServer(boolean zkRun, String zkHost, Path dataHome, String confHome, int solrPort) {
-    this.zkRun = zkRun;
+  public SolrZkServer(
+      boolean zkServerEnabled, String zkHost, Path dataHome, String confHome, int solrPort) {
+    this.zkServerEnabled = zkServerEnabled;
     this.zkHost = zkHost;
     this.dataHome = dataHome;
     this.confHome = confHome;
@@ -72,7 +73,7 @@ public class SolrZkServer {
     }
 
     // if the string wasn't passed as zkHost, then use the standalone server we started
-    if (!zkRun) {
+    if (!zkServerEnabled) {
       return null;
     }
 
@@ -94,7 +95,7 @@ public class SolrZkServer {
       // set default data dir
       // TODO: use something based on IP+port???  support ensemble all from same solr home?
       zkProps.setDataDir(dataHome);
-      zkProps.zkRun = zkRun;
+      zkProps.zkRun = zkServerEnabled;
       zkProps.solrPort = Integer.toString(solrPort);
     }
 
@@ -113,7 +114,7 @@ public class SolrZkServer {
 
     try {
       props = SolrZkServerProps.getProperties(zooCfgPath);
-      SolrZkServerProps.injectServers(props, zkRun, zkHost);
+      SolrZkServerProps.injectServers(props, zkServerEnabled, zkHost);
       // This is the address that the embedded Zookeeper will bind to. Like Solr, it defaults to
       // "127.0.0.1".
       props.setProperty(
@@ -123,7 +124,7 @@ public class SolrZkServer {
       }
       zkProps.parseProperties(props);
     } catch (QuorumPeerConfig.ConfigException | IOException e) {
-      if (zkRun) {
+      if (zkServerEnabled) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }
@@ -134,7 +135,7 @@ public class SolrZkServer {
   }
 
   public void start() {
-    if (!zkRun) {
+    if (!zkServerEnabled) {
       return;
     }
 
@@ -203,7 +204,7 @@ public class SolrZkServer {
   }
 
   public void stop() {
-    if (!zkRun) {
+    if (!zkServerEnabled) {
       return;
     }
     zkThread.interrupt();
