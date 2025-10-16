@@ -94,8 +94,8 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
   public abstract String getDescription();
 
   /**
-   * A component can force solr to run in distributed mode to prevent extra development cost of an
-   * optimized single-shard algorithm.
+   * A component can force SearchHandler to run in distributed mode to prevent extra development
+   * cost of an optimized single-shard algorithm.
    *
    * @return the boolean
    */

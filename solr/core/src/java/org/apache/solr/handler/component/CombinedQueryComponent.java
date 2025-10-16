@@ -420,7 +420,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     responseDocs.setNumFoundExact(hitCountIsExact);
     responseDocs.setStart(ss.getOffset());
 
-    rb.resultIds = createShardResult(rb, shardDocMap, responseDocs, sortFields);
+    rb.resultIds = computeResultIdsWithCombiner(rb, shardDocMap, responseDocs, sortFields);
     rb.setResponseDocs(responseDocs);
 
     populateNextCursorMarkFromMergedShards(rb);
@@ -561,7 +561,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
    * @return A map from document IDs to the corresponding ShardDoc objects for the documents in the
    *     final sorted page of results.
    */
-  protected Map<Object, ShardDoc> createShardResult(
+  protected Map<Object, ShardDoc> computeResultIdsWithCombiner(
       ResponseBuilder rb,
       Map<String, List<ShardDoc>> shardDocMap,
       SolrDocumentList responseDocs,
@@ -571,6 +571,8 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     QueryAndResponseCombiner combinerStrategy =
         QueryAndResponseCombiner.getImplementation(algorithm, combiners);
     List<ShardDoc> combinedShardDocs = combinerStrategy.combine(shardDocMap, rb.req.getParams());
+
+    // adding explanation for the ordered shard docs as debug info
     if (rb.isDebugResults()) {
       String[] queryKeys = rb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
       NamedList<Explanation> explanations =
@@ -582,6 +584,8 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     shardDocMap.forEach(
         (shardKey, shardDocs) ->
             shardDocs.forEach(shardDoc -> shardDocIdMap.put(shardDoc.id.toString(), shardDoc)));
+
+    // creating a queue to sort basis on all the comparator and tie-break on docId
     Map<Object, ShardDoc> resultIds = new HashMap<>();
     float maxScore = 0.0f;
     final ShardFieldSortedHitQueue queue =
@@ -606,8 +610,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           }
         };
     combinedShardDocs.forEach(queue::insertWithOverflow);
-    int resultSize = queue.size() - rb.getSortSpec().getOffset();
-    resultSize = max(0, resultSize);
+
+    // get the resultSize as expected and fetch that shardDoc from the queue, putting it in a map
+    int resultSize = max(0, queue.size() - rb.getSortSpec().getOffset());
     for (int i = resultSize - 1; i >= 0; i--) {
       ShardDoc shardDoc = queue.pop();
       shardDoc.positionInResponse = i;
