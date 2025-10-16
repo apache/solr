@@ -16,8 +16,6 @@
  */
 package org.apache.solr.handler.extraction;
 
-import java.io.File;
-import java.io.InputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.SolrException;
