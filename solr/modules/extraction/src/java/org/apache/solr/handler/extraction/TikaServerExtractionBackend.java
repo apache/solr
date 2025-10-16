@@ -159,12 +159,12 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   }
 
   /**
-   * Call the Tika Server to extract text and metadata. Depending on <code>request.recursive</code>,
+   * Call the Tika Server to extract text and metadata. Depending on <code>request.tikaServerRecursive</code>,
    * will either return XML (false) or JSON array (true). <b>The recursive mode consumes more memory
    * both on the TikaServer side and on the Solr side</b>
    *
    * @return InputStream of the response body, either XML or JSON depending on <code>
-   *     request.tikaserverRecursive</code>
+   *     request.tikaServerRecursive</code>
    */
   InputStream callTikaServer(InputStream inputStream, ExtractionRequest request) throws Exception {
     String url = baseUrl + (request.tikaServerRecursive ? "/rmeta" : "/tika");
