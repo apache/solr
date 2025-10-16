@@ -266,7 +266,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 collectionName, shardNames, message));
       }
 
-      Map<String, CoreToCreate> coresToCreate = new LinkedHashMap<>();
+      Map<String, ModifiableSolrParams> coresToCreate = new LinkedHashMap<>();
+      Map<String, String> nodeNames = new HashMap<>();
       ShardHandler shardHandler = ccc.newShardHandler();
       final DistributedClusterStateUpdater.StateChangeRecorder scr;
 
@@ -362,7 +363,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         }
         CollectionHandlingUtils.addPropertyParams(message, params);
 
-        coresToCreate.put(coreName, new CoreToCreate(nodeName, params));
+        coresToCreate.put(coreName, params);
+        nodeNames.put(coreName, nodeName);
       }
 
       // Update the state.json for PRS collection in a single operation
@@ -402,10 +404,11 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 coresToCreate.keySet());
       }
 
-      for (Map.Entry<String, CoreToCreate> e : coresToCreate.entrySet()) {
-        CoreToCreate toCreate = e.getValue();
-        toCreate.params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
-        shardRequestTracker.sendShardRequest(toCreate.nodeName, toCreate.params, shardHandler);
+      for (Map.Entry<String, ModifiableSolrParams> e : coresToCreate.entrySet()) {
+        ModifiableSolrParams params = e.getValue();
+        String nodeName = nodeNames.get(e.getKey());
+        params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
+        shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
       }
 
       shardRequestTracker.processResponses(
@@ -787,7 +790,4 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           "Could not find configName for collection " + collection + " found:" + configNames);
     }
   }
-
-  /** Internal structure to track cores to create with the collection. */
-  private record CoreToCreate(String nodeName, ModifiableSolrParams params) {}
 }
