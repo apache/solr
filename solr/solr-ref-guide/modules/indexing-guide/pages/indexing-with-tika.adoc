@@ -70,7 +70,7 @@ Example handler configuration:
 
 === Starting Tika Server with Docker
 
-The quickest way to run Tika Server for development is using Docker. The examples below expose Tika on port 9998 on localhost, matching the default value when `tikaserver.url` is not explicitly set.
+The quickest way to run Tika Server for development is using Docker. The examples below expose Tika on port 9998 on localhost for convenience, matching the handler configuration above.
 
 [,bash]
 ----
