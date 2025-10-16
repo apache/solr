@@ -49,6 +49,6 @@ public class ExtractionMetadata extends LinkedHashMap<String, List<String>> {
   public String getFirst(String name) {
     List<String> vals = super.get(name);
     if (vals == null || vals.isEmpty()) return null;
-    return vals.getFirst();
+    return vals.get(0);
   }
 }

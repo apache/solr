@@ -22,7 +22,7 @@ import org.junit.Test;
 public class ExtractingRequestHandlerLocalTest extends ExtractingRequestHandlerTestAbstract {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
+    initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr/collection1").getParent());
   }
 
   @Test

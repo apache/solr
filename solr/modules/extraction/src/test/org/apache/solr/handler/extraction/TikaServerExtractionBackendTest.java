@@ -118,7 +118,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         assertNotNull(cts);
         assertFalse(cts.isEmpty());
         // Tika may append charset; be flexible
-        assertTrue(cts.getFirst().startsWith("text/plain"));
+        assertTrue(cts.get(0).startsWith("text/plain"));
       }
     }
   }
@@ -149,7 +149,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   public void testPdfWithImageRecursive() throws Exception {
     Assume.assumeTrue("Tika server container not started", tika != null);
     try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
-      byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf"));
+      byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf").toPath());
       // Enable recursive extraction and set header to extract images from PDF
       ExtractionRequest request =
           newRequest(

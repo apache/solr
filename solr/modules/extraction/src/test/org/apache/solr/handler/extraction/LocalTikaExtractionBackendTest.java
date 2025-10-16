@@ -78,7 +78,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
   @Test
   public void testWrongStreamTypeThrows() throws Exception {
     LocalTikaExtractionBackend backend = newBackend();
-    try (InputStream in = Files.newInputStream(getFile("extraction/version_control.txt"))) {
+    try (InputStream in =
+        Files.newInputStream(getFile("extraction/version_control.txt").toPath())) {
       // Non-existing type -> no parser available
       ExtractionRequest req =
           newRequest(
@@ -96,7 +97,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
       expectThrows(IllegalArgumentException.class, () -> backend.extract(in, req));
     }
 
-    try (InputStream in = Files.newInputStream(getFile("extraction/version_control.txt"))) {
+    try (InputStream in =
+        Files.newInputStream(getFile("extraction/version_control.txt").toPath())) {
       // Wrong but existing type -> likely to fail when parsing
       ExtractionRequest req =
           newRequest(
@@ -118,7 +120,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
   @Test
   public void testPasswordProtectedDocxWithoutPasswordThrows() throws Exception {
     LocalTikaExtractionBackend backend = newBackend();
-    try (InputStream in = Files.newInputStream(getFile("extraction/password-is-Word2010.docx"))) {
+    try (InputStream in =
+        Files.newInputStream(getFile("extraction/password-is-Word2010.docx").toPath())) {
       ExtractionRequest req =
           newRequest(
               "password-is-Word2010.docx",
@@ -139,7 +142,8 @@ public class LocalTikaExtractionBackendTest extends SolrTestCaseJ4 {
   @Test
   public void testPasswordProtectedDocxWithPasswordSucceeds() throws Exception {
     LocalTikaExtractionBackend backend = newBackend();
-    try (InputStream in = Files.newInputStream(getFile("extraction/password-is-Word2010.docx"))) {
+    try (InputStream in =
+        Files.newInputStream(getFile("extraction/password-is-Word2010.docx").toPath())) {
       ExtractionRequest req =
           newRequest(
               "password-is-Word2010.docx",
