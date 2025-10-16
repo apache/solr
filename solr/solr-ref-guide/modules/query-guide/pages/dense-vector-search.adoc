@@ -109,7 +109,7 @@ and the hyperparameter of the HNSW algorithm, make sure the xref:configuration-g
 Here's how `DenseVectorField` can be configured with the advanced hyperparameters:
 
 [source,xml]
-<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" hnswMaxConnections="10" hnswBeamWidth="40"/>
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" m="10" efConstruction="40"/>
 <field name="vector" type="knn_vector" indexed="true" stored="true"/>
 
 `knnAlgorithm`::
@@ -139,7 +139,7 @@ Please note that the `knnAlgorithm` accepted values may change in future release
 Accepted values: `FLOAT32`, `BYTE`.
 
 
-`hnswMaxConnections`::
+`m`::
 +
 [%autowidth,frame=none]
 |===
@@ -150,12 +150,10 @@ Accepted values: `FLOAT32`, `BYTE`.
 +
 Controls how many of the nearest neighbor candidates are connected to the new node.
 +
-It has the same meaning as `M` from the 2018 paper.
-+
 Accepted values:
 Any integer.
 
-`hnswBeamWidth`::
+`efConstruction`::
 +
 [%autowidth,frame=none]
 |===
@@ -165,8 +163,6 @@ Any integer.
 (advanced) This parameter is specific for the `hnsw` knn algorithm:
 +
 It is the number of nearest neighbor candidates to track while searching the graph for each newly inserted node.
-+
-It has the same meaning as `efConstruction` from the 2018 paper.
 +
 Accepted values:
 Any integer.
@@ -688,8 +684,8 @@ Define the xref:configuration-guide:codec-factory.adoc[codecFactory] in xref:con
     <str name="intGraphDegree">128</str>
     <str name="graphDegree">64</str>
     <str name="hnswLayers">1</str>
-    <str name="maxConn">16</str>
-    <str name="beamWidth">100</str>
+    <str name="m">16</str>
+    <str name="efConstruction">100</str>
 </codecFactory>
 ----
 
@@ -703,9 +699,9 @@ Where:
 
 * `hnswLayers` - Number of HNSW graph layers to construct while building the HNSW index
 
-* `maxConn` - Max connections parameter passed to the fallback Lucene99HnswVectorsWriter
+* `m` - m (or Max connections) parameter passed to the fallback Lucene99HnswVectorsWriter
 
-* `beamWidth` - Beam width parameter passed to the fallback Lucene99HnswVectorsWriter
+* `efConstruction` - efConstruction (or Beam Width) parameter passed to the fallback Lucene99HnswVectorsWriter
 
 === Example
 
@@ -824,7 +820,7 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
     <luceneMatchVersion>10.0.0</luceneMatchVersion>
     <dataDir>${solr.data.dir:}</dataDir>
     <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
-    
+
     <updateHandler class="solr.DirectUpdateHandler2">
         <updateLog>
             <str name="dir">${solr.ulog.dir:}</str>
@@ -843,8 +839,8 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
         <str name="intGraphDegree">128</str>
         <str name="graphDegree">64</str>
         <str name="hnswLayers">1</str>
-        <str name="maxConn">16</str>
-        <str name="beamWidth">100</str>
+        <str name="m">16</str>
+        <str name="efConstruction">100</str>
     </codecFactory>
 
     <requestHandler name="/select" class="solr.SearchHandler">
@@ -853,7 +849,7 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
             <int name="rows">10</int>
         </lst>
     </requestHandler>
-    
+
     <requestHandler name="/update" class="solr.UpdateRequestHandler" />
 </config>
 EOF
@@ -865,16 +861,16 @@ cat > cuvs_configset/conf/managed-schema << 'EOF'
 <?xml version="1.0" ?>
 <schema name="schema-densevector" version="1.7">
     <fieldType name="string" class="solr.StrField" multiValued="true"/>
-    <fieldType name="knn_vector" class="solr.DenseVectorField" 
-               vectorDimension="8" 
-               knnAlgorithm="cagra_hnsw" 
+    <fieldType name="knn_vector" class="solr.DenseVectorField"
+               vectorDimension="8"
+               knnAlgorithm="cagra_hnsw"
                similarityFunction="cosine" />
     <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
 
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="article_vector" type="knn_vector" indexed="true" stored="true"/>
     <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />
-    
+
     <uniqueKey>id</uniqueKey>
 </schema>
 EOF

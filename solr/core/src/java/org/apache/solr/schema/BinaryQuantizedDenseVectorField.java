@@ -23,6 +23,6 @@ public class BinaryQuantizedDenseVectorField extends DenseVectorField {
 
   @Override
   public KnnVectorsFormat buildKnnVectorsFormat() {
-    return new Lucene102HnswBinaryQuantizedVectorsFormat(getHnswMaxConn(), getHnswBeamWidth());
+    return new Lucene102HnswBinaryQuantizedVectorsFormat(getM(), getEfConstruction());
   }
 }
