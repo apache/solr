@@ -98,7 +98,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       return builder.httpClient;
     } else if (builder.internalClientBuilder != null) {
       return builder.internalClientBuilder.build();
-    } else if(JETTY_CLIENT_AVAILABLE) {
+    } else if (JETTY_CLIENT_AVAILABLE) {
       log.debug("Using {} as the delegate http client", Http2SolrClient.class);
       return new Http2SolrClient.Builder().build();
     } else {
@@ -405,9 +405,9 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
-     * If provided, the CloudHttp2SolrClient will build it's internal client using this
-     * builder (instead of the empty default one). Providing this builder allows users to configure
-     * the internal clients (authentication, timeouts, etc.).
+     * If provided, the CloudHttp2SolrClient will build it's internal client using this builder
+     * (instead of the empty default one). Providing this builder allows users to configure the
+     * internal clients (authentication, timeouts, etc.).
      *
      * @param internalClientBuilder the builder to use for creating the internal http client.
      * @return this
