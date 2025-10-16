@@ -14,6 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.search.vector;
 
-/** APIs and classes for implementing Neural (Dense Retrieval) QueryParsers. */
-package org.apache.solr.search.neural;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.QParserPlugin;
+
+/** A vector query parser to run min-similarity search on Dense Vector fields. */
+public class VectorSimilarityQParserPlugin extends QParserPlugin {
+  public static final String NAME = "vectorSimilarity";
+
+  @Override
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    return new VectorSimilarityQParser(qstr, localParams, params, req);
+  }
+}

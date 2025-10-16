@@ -34,10 +34,10 @@ import org.apache.solr.rest.ManagedResourceObserver;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.search.neural.KnnQParser;
+import org.apache.solr.search.vector.KnnQParser;
 
 /**
- * A neural query parser that encode the query to a vector and then run K-nearest neighbors search
+ * A vector query parser that encode the query to a vector and then run K-nearest neighbors search
  * on Dense Vector fields. See Wiki page
  * https://solr.apache.org/guide/solr/latest/query-guide/dense-vector-search.html
  */
