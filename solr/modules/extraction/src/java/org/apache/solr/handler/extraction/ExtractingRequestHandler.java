@@ -40,7 +40,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String PARSE_CONTEXT_CONFIG = "parseContext.config";
 
   protected SolrContentHandlerFactory factory;
   protected String defaultBackendName;
