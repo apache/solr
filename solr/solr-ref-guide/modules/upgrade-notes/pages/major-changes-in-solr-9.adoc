@@ -82,6 +82,9 @@ Java has removed support for the Security Manager starting with Java 24; therefo
 
 The `XLSXResponseWriter` is now deprecated.
 
+The Extraction module can now extract documents using an external Tika Server.
+The local in-process Tika 1.x extractor backend is deprecated and will go away in 10.0.
+
 == Solr 9.9
 
 === SolrJ
