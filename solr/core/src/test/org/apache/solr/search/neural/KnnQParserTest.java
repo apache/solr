@@ -1287,22 +1287,36 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//str[@name='parsedquery'][.='SeededKnnVectorQuery(SeededKnnVectorQuery{seed=KnnFloatVectorQuery:vector[0.1,...][4], seedWeight=null, delegate=KnnFloatVectorQuery:vector[1.0,...][4]})']");
   }
 
-  // NOTE: This test will need to be updated once Solr upgrades to a Lucene version that includes
-  // the fix for issue #14688
   @Test
-  public void knnQueryWithBothSeedAndEarlyTermination_shouldThrowException() {
-    // Test to verify that when both the seedQuery and the early termination parameters are
-    // provided,
-    // Solr throws a BAD_REQUEST exception.
+  public void
+      knnQueryWithBothSeedAndEarlyTermination_shouldPerformPatienceKnnVectorQueryFromSeeded() {
+    // Test to verify that when both the seed and the early termination parameters are provided, the
+    // PatienceKnnVectorQuery is executed
+    // using the SeededKnnVectorQuery.
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
-    assertQEx(
-        "Currently seed and earlyTermination parameters cannot be used together",
-        "Seeded queries and early termination cannot be used together. This limitation is due to Lucene issue #14688, which is not yet included in the current version.",
+    assertQ(
         req(
             CommonParams.Q,
             "{!knn f=vector topK=4 seedQuery='id:(1 4 7 8 9)' earlyTermination=true}"
-                + vectorToSearch),
-        SolrException.ErrorCode.BAD_REQUEST);
+                + vectorToSearch,
+            "fl",
+            "id",
+            "debugQuery",
+            "true"),
+        // Verify that 4 documents are returned
+        "//result[@numFound='4']",
+        // Verify that the parsed query is a nested PatienceKnnVectorQuery wrapping a
+        // SeededKnnVectorQuery
+        "//str[@name='parsedquery'][contains(.,'PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=0.995, patience=7, delegate=SeededKnnVectorQuery{')]",
+        // Verify that the seed query contains the expected document IDs
+        "//str[@name='parsedquery'][contains(.,'seed=id:1 id:4 id:7 id:8 id:9')]",
+        // Verify that a seedWeight field is present — its value (BooleanWeight@<hash>) includes a
+        // hash code
+        // that changes on each run, so it cannot be asserted explicitly
+        "//str[@name='parsedquery'][contains(.,'seedWeight=')]",
+        // Verify that the final delegate is a KnnFloatVectorQuery with the expected vector and topK
+        // value
+        "//str[@name='parsedquery'][contains(.,'delegate=KnnFloatVectorQuery:vector[1.0,...][4]')]");
   }
 }

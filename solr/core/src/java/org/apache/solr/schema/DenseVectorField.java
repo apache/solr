@@ -384,7 +384,7 @@ public class DenseVectorField extends FloatPointField {
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
 
-    Query knnQuery =
+    final Query knnQuery =
         switch (vectorEncoding) {
           case FLOAT32 -> new KnnFloatVectorQuery(
               fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
@@ -392,25 +392,22 @@ public class DenseVectorField extends FloatPointField {
               fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
         };
 
-    // NOTE: Currently seed and earlyTermination parameters cannot be used together due to
-    // https://github.com/apache/lucene/pull/14688
-    // PatienceKnnVectorQuery does not rewrite its SeededKnnVectorQuery delegate, leaving seedWeight
-    // uninitialized and triggering a NullPointerException.
-    // Solr must be upgraded to a Lucene version that includes this patch.
-    if (seedQuery != null && earlyTermination.isEnabled()) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Seeded queries and early termination cannot be used together. "
-              + "This limitation is due to Lucene issue #14688, which is not yet included in the current version.");
-    }
+    final boolean seedEnabled = (seedQuery != null);
+    final boolean earlyTerminationEnabled =
+        (earlyTermination != null && earlyTermination.isEnabled());
 
-    if (seedQuery != null) {
-      return applySeeded(knnQuery, seedQuery);
-    }
-    if (earlyTermination.isEnabled()) {
-      return applyEarlyTermination(knnQuery, earlyTermination);
-    }
-    return knnQuery;
+    return switch ((seedEnabled ? 1 : 0) | (earlyTerminationEnabled ? 2 : 0)) {
+        // 0: no seed, no early termination -> knnQuery
+      case 0 -> knnQuery;
+        // 1: only seed -> Seeded(knnQuery)
+      case 1 -> applySeeded(knnQuery, seedQuery);
+        // 2: only early termination -> Patience(knnQuery)
+      case 2 -> applyEarlyTermination(knnQuery, earlyTermination);
+        // 3: seed + early termination -> Patience(Seeded(knnQuery))
+      case 3 -> applyEarlyTermination(applySeeded(knnQuery, seedQuery), earlyTermination);
+      default -> throw new IllegalStateException(
+          "Unexpected combination of seedQuery and early termination parameters");
+    };
   }
 
   /**
@@ -472,6 +469,10 @@ public class DenseVectorField extends FloatPointField {
               earlyTermination.getSaturationThreshold(),
               earlyTermination.getPatience())
           : PatienceKnnVectorQuery.fromByteQuery(knnByteQuery);
+      case SeededKnnVectorQuery seedQuery -> useExplicitParams
+          ? PatienceKnnVectorQuery.fromSeededQuery(
+              seedQuery, earlyTermination.getSaturationThreshold(), earlyTermination.getPatience())
+          : PatienceKnnVectorQuery.fromSeededQuery(seedQuery);
       default -> knnQuery;
     };
   }
