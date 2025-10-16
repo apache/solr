@@ -52,8 +52,7 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-* SOLR-17961: Removed LocalTikaExtractionBackend in Solr 10. The 'tikaserver' backend is now the only supported extraction backend.
-  (janhoy)
+(No changes)
 
 ==================  10.0.0 ==================
 
@@ -245,6 +244,9 @@ Deprecation Removals
 * SOLR-17935: Remove deprecated NoOpResponseParser. (Eric Pugh, David Smiley)
 
 * SOLR-17182: Remove `solr.useExitableDirectoryReader` property. (Andrzej Bialecki)
+
+* SOLR-17961: Removed LocalTikaExtractionBackend from the extraction module (SolrCell).
+  Extraction using a remote Tika Server is now the only and default option (Jan Høydahl)
 
 Dependency Upgrades
 ---------------------
