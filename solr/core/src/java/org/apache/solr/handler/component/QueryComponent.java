@@ -378,12 +378,8 @@ public class QueryComponent extends SearchComponent {
 
     final boolean multiThreaded = params.getBool(CommonParams.MULTI_THREADED, false);
 
-    // -1 as flag if not set.
-    long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
-
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setMultiThreaded(multiThreaded);
-    cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
     cmd.setDistribStatsDisabled(rb.isDistribStatsDisabled());
 
@@ -758,14 +754,16 @@ public class QueryComponent extends SearchComponent {
   protected void regularFinishStage(ResponseBuilder rb) {
     // We may not have been able to retrieve all the docs due to an
     // index change.  Remove any null documents.
-    for (Iterator<SolrDocument> iter = rb.getResponseDocs().iterator(); iter.hasNext(); ) {
+    SolrDocumentList responseDocs =
+        rb.getResponseDocs() != null ? rb.getResponseDocs() : new SolrDocumentList();
+    for (Iterator<SolrDocument> iter = responseDocs.iterator(); iter.hasNext(); ) {
       if (iter.next() == null) {
         iter.remove();
-        rb.getResponseDocs().setNumFound(rb.getResponseDocs().getNumFound() - 1);
+        rb.getResponseDocs().setNumFound(responseDocs.getNumFound() - 1);
       }
     }
 
-    rb.rsp.addResponse(rb.getResponseDocs());
+    rb.rsp.addResponse(responseDocs);
     if (null != rb.getNextCursorMark()) {
       rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, rb.getNextCursorMark().getSerializedTotem());
     }
@@ -1339,6 +1337,9 @@ public class QueryComponent extends SearchComponent {
 
     // for each shard, collect the documents for that shard.
     HashMap<String, Collection<ShardDoc>> shardMap = new HashMap<>();
+    if (rb.resultIds == null) {
+      rb.resultIds = new HashMap<>();
+    }
     for (ShardDoc sdoc : rb.resultIds.values()) {
       Collection<ShardDoc> shardDocs = shardMap.get(sdoc.shard);
       if (shardDocs == null) {

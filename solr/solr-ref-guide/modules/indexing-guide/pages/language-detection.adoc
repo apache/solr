@@ -55,6 +55,11 @@ Here is an example of a minimal Tika `langid` configuration in `solrconfig.xml`:
 </processor>
 ----
 
+[IMPORTANT]
+====
+This detector is deprecated and may be removed in a future version.
+====
+
 === Configuring LangDetect Language Detection
 
 Here is an example of a minimal LangDetect `langid` configuration in `solrconfig.xml`:

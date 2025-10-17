@@ -27,7 +27,8 @@ import static org.apache.solr.handler.component.ResponseBuilder.STAGE_TOP_GROUPS
 import static org.apache.solr.request.SolrRequestInfo.getQueryLimits;
 import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY;
 
-import com.codahale.metrics.Counter;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -40,7 +41,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -64,7 +64,6 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
@@ -72,6 +71,7 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.security.AuthorizationContext;
@@ -91,11 +91,11 @@ import org.slf4j.MDC;
 /** Refer SOLR-281 */
 public class SearchHandler extends RequestHandlerBase
     implements SolrCoreAware, PluginInfoInitialized, PermissionNameProvider {
+
+  public static final AttributeKey<Boolean> INTERNAL_ATTR = AttributeKey.booleanKey("internal");
   static final String INIT_COMPONENTS = "components";
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
-
-  protected static final String SHARD_HANDLER_SUFFIX = "[shard]";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -121,7 +121,6 @@ public class SearchHandler extends RequestHandlerBase
       Boolean.getBoolean("solr.disableRequestId");
 
   private HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
-  private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
 
   protected volatile List<SearchComponent> components;
   private ShardHandlerFactory shardHandlerFactory;
@@ -155,17 +154,18 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    super.initializeMetrics(
+        parentContext, Attributes.builder().putAll(attributes).put(INTERNAL_ATTR, false).build());
     metricsShard =
         new HandlerMetrics( // will register various metrics in the context
-            solrMetricsContext, getCategory().toString(), scope + SHARD_HANDLER_SUFFIX);
-    solrMetricsContext.gauge(
-        new MetricsMap(map -> shardPurposes.forEach((k, v) -> map.putNoEx(k, v.getCount()))),
-        true,
-        "purposes",
-        getCategory().toString(),
-        scope + SHARD_HANDLER_SUFFIX);
+            solrMetricsContext,
+            Attributes.builder()
+                .putAll(attributes)
+                .put(CATEGORY_ATTR, getCategory().toString())
+                .put(INTERNAL_ATTR, true)
+                .build(),
+            false);
   }
 
   @Override
@@ -397,12 +397,6 @@ public class SearchHandler extends RequestHandlerBase
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
-      int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
-      SolrPluginUtils.forEachRequestPurpose(
-          purpose, n -> shardPurposes.computeIfAbsent(n, name -> new Counter()).inc());
-    }
-
     List<SearchComponent> components = getComponents();
     ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
@@ -524,7 +518,7 @@ public class SearchHandler extends RequestHandlerBase
           }
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
-        log.warn("Query: {}; ", req.getParamString(), ex);
+        log.warn("Query terminated: {}; ", req.getParamString(), ex);
         shortCircuitedResults(req, rb);
       }
     } else {
@@ -563,6 +557,8 @@ public class SearchHandler extends RequestHandlerBase
             // presume we'll get a response from each shard we send to
             sreq.responses = new ArrayList<>(sreq.actualShards.length);
 
+            QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {
               ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
@@ -585,6 +581,18 @@ public class SearchHandler extends RequestHandlerBase
                 if (!"/select".equals(reqPath)) {
                   params.set(CommonParams.QT, reqPath);
                 } // else if path is /select, then the qt gets passed thru if set
+              }
+              if (queryLimits.isLimitsEnabled()) {
+                if (queryLimits.adjustShardRequestLimits(sreq, shard, params, rb)) {
+                  // Skip this shard since one or more limits will be tripped
+                  if (log.isDebugEnabled()) {
+                    log.debug(
+                        "Skipping request to shard '{}' due to query limits, params {}",
+                        shard,
+                        params);
+                  }
+                  continue;
+                }
               }
               shardHandler1.submit(sreq, shard, params);
             }

@@ -99,6 +99,8 @@ public abstract class HttpSolrClientBase extends SolrClient {
     }
   }
 
+  public abstract HttpSolrClientBuilderBase<?, ?> builder();
+
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
     return ClientUtils.buildRequestUrl(solrRequest, serverBaseUrl, collection);
@@ -111,13 +113,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   protected RequestWriter getRequestWriter() {
     return requestWriter;
-  }
-
-  // TODO: Remove this for 10.0, there is a typo in the method name
-  @Deprecated(since = "9.8", forRemoval = true)
-  protected ModifiableSolrParams initalizeSolrParams(
-      SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    return initializeSolrParams(solrRequest, parserToUse);
   }
 
   protected ModifiableSolrParams initializeSolrParams(
@@ -221,13 +216,11 @@ public abstract class HttpSolrClientBase extends SolrClient {
       }
 
       Object error = rsp == null ? null : rsp.get("error");
-      if (rsp != null && error == null && processor instanceof NoOpResponseParser) {
-        error = rsp.get("response");
-      }
+
       if (error != null
           && (String.valueOf(getObjectByPath(error, true, errPath))
               .endsWith("ExceptionWithErrObject"))) {
-        throw BaseHttpSolrClient.RemoteExecutionException.create(urlExceptionMessage, rsp);
+        throw RemoteExecutionException.create(urlExceptionMessage, rsp);
       }
       if (httpStatus != 200 && !isV2Api) {
         NamedList<String> metadata = null;
