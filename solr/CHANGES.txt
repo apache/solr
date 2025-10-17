@@ -82,6 +82,8 @@ Improvements
 
 * SOLR-17943: `Http2ClusterStateProvider` now also can work with `HttpJdkSolrClient`. (James Dyer)
 
+* SOLR-17771: `CloudHttp2SolrClient.Builder` now also can work with `HttpJdkSolrClient`. (James Dyer)
+
 
 Optimizations
 ---------------------
@@ -192,6 +194,8 @@ Deprecation Removals
 * SOLR-17935: Remove deprecated NoOpResponseParser. (Eric Pugh, David Smiley)
 
 * SOLR-17182: Remove `solr.useExitableDirectoryReader` property. (Andrzej Bialecki)
+
+* SOLR-17771: Remove `CloudSolrClient.Builder`. (James Dyer)
 
 Dependency Upgrades
 ---------------------
@@ -576,6 +580,8 @@ Other Changes
 * SOLR-17958: The Tika Language Identifier is deprecated. Use one of the other detectors instead. (Jan Høydahl)
 
 * SOLR-17952: Stream decorator test refactoring - use underscore rather than dot in aliases (Andy Webb)
+
+* SOLR-17771: Deprecate `CloudSolrClient.Builder` in favor of `CloudHttp2SolrClient.Builder`. (James Dyer)
 
 ==================  9.9.1 ==================
 Bug Fixes
