@@ -23,8 +23,6 @@ Solr supports two implementations of this feature:
 * LangDetect language detection: https://github.com/shuyo/language-detection
 * OpenNLP language detection: http://opennlp.apache.org/docs/{dep-version-opennlp}/manual/opennlp.html#tools.langdetect
 
-In general, the LangDetect implementation supports more languages with higher performance.
-
 For specific information on each of these language identification implementations, including a list of supported languages for each, see the relevant project websites.
 
 For more information about language analysis in Solr, see xref:language-analysis.adoc[].
