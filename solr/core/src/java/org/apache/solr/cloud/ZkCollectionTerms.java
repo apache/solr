@@ -38,9 +38,7 @@ class ZkCollectionTerms implements AutoCloseable {
 
   public ZkShardTerms getShard(String shardId) {
     synchronized (terms) {
-      if (!terms.containsKey(shardId))
-        terms.put(shardId, new ZkShardTerms(collection, shardId, zkClient));
-      return terms.get(shardId);
+      return terms.computeIfAbsent(shardId, shard -> new ZkShardTerms(collection, shard, zkClient));
     }
   }
 

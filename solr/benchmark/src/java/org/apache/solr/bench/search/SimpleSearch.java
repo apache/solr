@@ -65,8 +65,6 @@ public class SimpleSearch {
       miniClusterState.setUseHttp1(useHttp1);
       miniClusterState.startMiniCluster(1);
       miniClusterState.createCollection(COLLECTION, 1, 1);
-      String base = miniClusterState.nodes.get(0);
-      q.setBasePath(base);
     }
 
     @Setup(Level.Iteration)
@@ -74,7 +72,6 @@ public class SimpleSearch {
         throws SolrServerException, IOException {
       // Reload the collection/core to drop existing caches
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
-      reload.setBasePath(miniClusterState.nodes.get(0));
       miniClusterState.client.request(reload);
 
       total = new AtomicLong();

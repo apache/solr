@@ -35,8 +35,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.util.resource.PathResourceFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -61,7 +61,7 @@ public class PackageToolTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
-    System.setProperty("enable.packages", "true");
+    System.setProperty("solr.packages.enabled", "true");
 
     configureCluster(2)
         .addConfig(
@@ -83,7 +83,7 @@ public class PackageToolTest extends SolrCloudTestCase {
         repositoryServer.stop();
       }
     } finally {
-      System.clearProperty("enable.packages");
+      System.clearProperty("solr.packages.enabled");
     }
   }
 
@@ -94,51 +94,50 @@ public class PackageToolTest extends SolrCloudTestCase {
 
   @Test
   public void testPackageTool() throws Exception {
-    PackageTool tool = new PackageTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    PackageTool tool = new PackageTool(runtime);
 
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "list-installed", "-credentials", SecurityJson.USER_PASS
+          "--solr-url", solrUrl, "list-installed", "--credentials", SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
-          "-credentials",
-          SecurityJson.USER_PASS,
           "add-repo",
           "fullstory",
           "http://localhost:" + repositoryServer.getPort(),
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "list-available", "-credentials", SecurityJson.USER_PASS
+          "--solr-url", solrUrl, "list-available", "--credentials", SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "install",
           "question-answer:1.0.0",
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "list-installed", "-credentials", SecurityJson.USER_PASS
+          "--solr-url", solrUrl, "list-installed", "--credentials", SecurityJson.USER_PASS
         });
 
     withBasicAuth(CollectionAdminRequest.createCollection("abc", "conf1", 1, 1))
@@ -151,27 +150,28 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "list-deployed",
           "question-answer",
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
 
+    // Leaving -p in for --param to test the deprecated value continues to work.
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "deploy",
           "question-answer",
           "-y",
-          "-collections",
+          "--collections",
           "abc",
-          "-p",
+          "--param",
           "RH-HANDLER-PATH=" + rhPath,
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
     assertPackageVersion(
@@ -180,18 +180,24 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "list-deployed",
           "question-answer",
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "list-deployed", "-c", "abc", "-credentials", SecurityJson.USER_PASS
+          "--solr-url",
+          solrUrl,
+          "list-deployed",
+          "-c",
+          "abc",
+          "--credentials",
+          SecurityJson.USER_PASS
         });
 
     // Should we test the "auto-update to latest" functionality or the default explicit deploy
@@ -205,14 +211,14 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "-solrUrl",
+            "--solr-url",
             solrUrl,
             "deploy",
             "question-answer:latest",
             "-y",
-            "-collections",
+            "--collections",
             "abc",
-            "-credentials",
+            "--credentials",
             SecurityJson.USER_PASS
           });
       assertPackageVersion(
@@ -221,11 +227,11 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "-solrUrl",
+            "--solr-url",
             solrUrl,
             "install",
             "question-answer",
-            "-credentials",
+            "--credentials",
             SecurityJson.USER_PASS
           });
       assertPackageVersion(
@@ -236,11 +242,11 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "-solrUrl",
+            "--solr-url",
             solrUrl,
             "install",
             "question-answer",
-            "-credentials",
+            "--credentials",
             SecurityJson.USER_PASS
           });
       assertPackageVersion(
@@ -251,32 +257,32 @@ public class PackageToolTest extends SolrCloudTestCase {
         run(
             tool,
             new String[] {
-              "-solrUrl",
+              "--solr-url",
               solrUrl,
               "deploy",
               "--update",
               "-y",
               "question-answer",
-              "-collections",
+              "--collections",
               "abc",
-              "-p",
+              "--param",
               "RH-HANDLER-PATH=" + rhPath,
-              "-credentials",
+              "--credentials",
               SecurityJson.USER_PASS
             });
       } else {
         run(
             tool,
             new String[] {
-              "-solrUrl",
+              "--solr-url",
               solrUrl,
               "deploy",
               "--update",
               "-y",
               "question-answer",
-              "-collections",
+              "--collections",
               "abc",
-              "-credentials",
+              "--credentials",
               SecurityJson.USER_PASS
             });
       }
@@ -288,24 +294,24 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "undeploy",
           "question-answer",
-          "-collections",
+          "--collections",
           "abc",
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "list-deployed",
           "question-answer",
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
   }
@@ -350,7 +356,8 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     boolean success = false;
 
-    ApiTool apiTool = new ApiTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    ApiTool apiTool = new ApiTool(runtime);
     String response = apiTool.callGet(testServerBaseUrl + uri, credentials);
 
     LinkedHashMapWriter m =
@@ -370,7 +377,7 @@ public class PackageToolTest extends SolrCloudTestCase {
   }
 
   private void run(PackageTool tool, String[] args) throws Exception {
-    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     assertEquals("Non-zero status returned for: " + Arrays.toString(args), 0, res);
   }
 
@@ -397,13 +404,13 @@ public class PackageToolTest extends SolrCloudTestCase {
       server.setStopAtShutdown(true);
 
       ResourceHandler resourceHandler = new ResourceHandler();
-      resourceHandler.setResourceBase(resourceDir);
-      resourceHandler.setDirectoriesListed(true);
+      resourceHandler.setBaseResource(new PathResourceFactory().newResource(resourceDir));
 
-      HandlerList handlers = new HandlerList();
-      handlers.setHandlers(new Handler[] {resourceHandler, new DefaultHandler()});
-      server.setHandler(handlers);
+      Handler.Sequence sequence = new Handler.Sequence();
+      sequence.addHandler(resourceHandler);
+      sequence.addHandler(new DefaultHandler());
 
+      server.setHandler(sequence);
       server.start();
     }
 

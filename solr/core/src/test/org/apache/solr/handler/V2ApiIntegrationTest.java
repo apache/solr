@@ -18,18 +18,23 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -74,9 +79,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
             .withPayload(payload)
             .build();
     v2Request.setResponseParser(responseParser);
-    BaseHttpSolrClient.RemoteSolrException ex =
+    SolrClient.RemoteSolrException ex =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               v2Request.process(cluster.getSolrClient());
             });
@@ -89,9 +94,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     String incorrectPayload = "{rebalance-leaders: {maxAtOnce: abc, maxWaitSeconds: xyz}}";
     testException(new XMLResponseParser(), 404, notFoundPath, incorrectPayload);
     testException(new JsonMapResponseParser(), 404, notFoundPath, incorrectPayload);
-    testException(new BinaryResponseParser(), 404, notFoundPath, incorrectPayload);
+    testException(new JavaBinResponseParser(), 404, notFoundPath, incorrectPayload);
     testException(new XMLResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
-    testException(new BinaryResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
+    testException(new JavaBinResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
     testException(new JsonMapResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
   }
 
@@ -112,10 +117,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   public void testWTParam() throws Exception {
     V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
     // TODO: If possible do this in a better way
-    request.setResponseParser(new NoOpResponseParser("bleh"));
-
-    Map<?, ?> resp = resAsMap(cluster.getSolrClient(), request);
-    String respString = resp.toString();
+    request.setResponseParser(new InputStreamResponseParser("bleh"));
+    NamedList<Object> res = cluster.getSolrClient().request(request);
+    String respString = InputStreamResponseParser.consumeResponseToString(res);
 
     assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
     assertFalse(respString.contains("500"));
@@ -128,7 +132,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
     // no response parser
     request.setResponseParser(null);
-    resp = resAsMap(cluster.getSolrClient(), request);
+    Map<?, ?> resp = resAsMap(cluster.getSolrClient(), request);
     respString = resp.toString();
 
     assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
@@ -137,6 +141,52 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
             "<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));
     assertEquals("/c/collection1/get", Utils.getObjectByPath(resp, true, "/spec[0]/url/paths[0]"));
     assertEquals(respString, 0, Utils.getObjectByPath(resp, true, "/responseHeader/status"));
+  }
+
+  @Test
+  public void testObeysWtParameterWhenProvided() throws Exception {
+    final var httpClient = getRawClient();
+    final var listCollRequest = getListCollectionsRequest();
+    listCollRequest.setURI(
+        new URIBuilder(listCollRequest.getURI()).addParameter("wt", "xml").build());
+
+    final var response = httpClient.execute(listCollRequest);
+
+    assertEquals(200, response.getStatusLine().getStatusCode());
+    assertEquals("application/xml", response.getFirstHeader("Content-type").getValue());
+  }
+
+  @Test
+  public void testObeysAcceptHeaderWhenWtParamNotProvided() throws Exception {
+    final var httpClient = getRawClient();
+    final var listCollRequest = getListCollectionsRequest();
+    listCollRequest.addHeader("Accept", "application/xml");
+
+    final var response = httpClient.execute(listCollRequest);
+
+    assertEquals(200, response.getStatusLine().getStatusCode());
+    assertEquals("application/xml", response.getFirstHeader("Content-type").getValue());
+  }
+
+  @Test
+  public void testRespondsWithJsonWhenWtAndAcceptAreMissing() throws Exception {
+    final var httpClient = getRawClient();
+    final var listCollRequest = getListCollectionsRequest();
+
+    final var response = httpClient.execute(listCollRequest);
+
+    assertEquals(200, response.getStatusLine().getStatusCode());
+    assertEquals("application/json", response.getFirstHeader("Content-type").getValue());
+  }
+
+  private HttpClient getRawClient() {
+    return ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
+  }
+
+  private HttpRequestBase getListCollectionsRequest() {
+    final var v2BaseUrl = cluster.getJettySolrRunner(0).getBaseURLV2().toString();
+    final var listCollUrl = v2BaseUrl + "/collections";
+    return new HttpGet(listCollUrl);
   }
 
   @Test
@@ -155,18 +205,17 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         cluster
             .getSolrClient()
             .request(
-                new V2Request.Builder("/cluster")
-                    .withMethod(SolrRequest.METHOD.POST)
-                    .withPayload("{set-property: {name: maxCoresPerNode, val:42}}")
+                new V2Request.Builder("/cluster/properties/maxCoresPerNode")
+                    .withMethod(SolrRequest.METHOD.PUT)
+                    .withPayload("{\"value\": \"42\"}")
                     .build());
     assertTrue(resp.toString().contains("status=0"));
     resp =
         cluster
             .getSolrClient()
             .request(
-                new V2Request.Builder("/cluster")
-                    .withMethod(SolrRequest.METHOD.POST)
-                    .withPayload("{set-property: {name: maxCoresPerNode, val:null}}")
+                new V2Request.Builder("/cluster/properties/maxCoresPerNode")
+                    .withMethod(SolrRequest.METHOD.DELETE)
                     .build());
     assertTrue(resp.toString().contains("status=0"));
   }
@@ -186,12 +235,12 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     assertEquals(
         "/collections/collection1/get",
         Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
-    String tempDir = createTempDir().toFile().getPath();
+    String tempDir = createTempDir().toString();
     Map<String, Object> backupParams = new HashMap<>();
     backupParams.put("location", tempDir);
     cluster
         .getJettySolrRunners()
-        .forEach(j -> j.getCoreContainer().getAllowPaths().add(Paths.get(tempDir)));
+        .forEach(j -> j.getCoreContainer().getAllowPaths().add(Path.of(tempDir)));
     client.request(
         new V2Request.Builder("/collections/" + COLL_NAME + "/backups/backup_test/versions")
             .withMethod(SolrRequest.METHOD.POST)

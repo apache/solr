@@ -21,13 +21,15 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,10 +44,9 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
@@ -440,6 +441,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       try (SolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
         q.set("qt", "/admin/info/system");
+
         QueryResponse rsp = adminClient.query(q);
         assertNotNull(rsp.getResponse().get("mode"));
         assertNotNull(rsp.getResponse().get("lucene"));
@@ -741,17 +743,15 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       ex = expectThrows(SolrException.class, () -> client.add(doc));
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().indexOf("contains multiple values for uniqueKey") > 0);
-    } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
+    } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {
       // XXX concurrentupdatesolrserver reports errors differently
-      ErrorTrackingConcurrentUpdateSolrClient concurrentClient =
-          (ErrorTrackingConcurrentUpdateSolrClient) client;
       concurrentClient.lastError = null;
       concurrentClient.add(doc);
       concurrentClient.blockUntilFinished();
       assertNotNull("Should throw exception!", concurrentClient.lastError);
       assertEquals(
           "Unexpected exception type",
-          RemoteSolrException.class,
+          SolrClient.RemoteSolrException.class,
           concurrentClient.lastError.getClass());
       assertTrue(
           "Unexpected exception message: " + concurrentClient.lastError.getMessage(),
@@ -842,7 +842,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     query.set(CommonParams.FL, "id,json_s:[json],xml_s:[xml]");
 
     QueryRequest req = new QueryRequest(query);
-    req.setResponseParser(new BinaryResponseParser());
+    req.setResponseParser(new JavaBinResponseParser());
     QueryResponse rsp = req.process(client);
 
     SolrDocumentList out = rsp.getResults();
@@ -873,9 +873,15 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     query.set(CommonParams.WT, "json");
 
     req = new QueryRequest(query);
-    req.setResponseParser(new NoOpResponseParser("json"));
+    req.setResponseParser(new InputStreamResponseParser("json"));
     NamedList<Object> resp = client.request(req);
     String raw = (String) resp.get("response");
+    try (InputStream responseStream =
+        (InputStream) resp.get(InputStreamResponseParser.STREAM_KEY)) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      responseStream.transferTo(baos);
+      raw = baos.toString(StandardCharsets.UTF_8);
+    }
 
     // Check that the response parses as JSON
     JSONParser parser = new JSONParser(raw);
@@ -887,13 +893,17 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertTrue(raw.indexOf('"' + rawXml + '"') > 0); // quoted xml
 
     // Check raw XML Output
-    req.setResponseParser(new NoOpResponseParser("xml"));
     query.set("fl", "id,json_s:[json],xml_s:[xml]");
     query.set(CommonParams.WT, "xml");
     req = new QueryRequest(query);
-    req.setResponseParser(new NoOpResponseParser("xml"));
+    req.setResponseParser(new InputStreamResponseParser("xml"));
     resp = client.request(req);
-    raw = (String) resp.get("response");
+    try (InputStream responseStream =
+        (InputStream) resp.get(InputStreamResponseParser.STREAM_KEY)) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      responseStream.transferTo(baos);
+      raw = baos.toString(StandardCharsets.UTF_8);
+    }
 
     // Check that we get raw xml and json is escaped
     assertTrue(raw.indexOf('>' + rawJson + '<') > 0); // escaped
@@ -939,13 +949,13 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    File file = getFile("solrj/books.csv");
+    Path file = getFile("solrj/books.csv");
     final int opened[] = new int[] {0};
     final int closed[] = new int[] {0};
 
     boolean assertClosed = random().nextBoolean();
     if (assertClosed) {
-      byte[] allBytes = Files.readAllBytes(file.toPath());
+      byte[] allBytes = Files.readAllBytes(file);
 
       ContentStreamBase.ByteArrayStream contentStreamMock =
           new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
@@ -988,8 +998,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(0, rsp.getResults().getNumFound());
     NamedList<Object> result =
         client.request(
-            new StreamingUpdateRequest(
-                    "/update", getFile("solrj/books.csv").toPath(), "application/csv")
+            new StreamingUpdateRequest("/update", getFile("solrj/books.csv"), "application/csv")
                 .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
     assertNotNull("Couldn't upload books.csv", result);
     rsp = client.query(new SolrQuery("*:*"));
@@ -1022,7 +1031,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   private ByteBuffer getFileContent(NamedList<?> nl, String name) throws IOException {
-    try (InputStream is = new FileInputStream(getFile(name))) {
+    try (InputStream is = new FileInputStream(getFile(name).toFile())) {
       return MultiContentWriterRequest.readByteBuffer(is);
     }
   }
@@ -2375,7 +2384,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     // First Try with the BinaryResponseParser
     QueryRequest req = new QueryRequest(q);
-    req.setResponseParser(new BinaryResponseParser());
+    req.setResponseParser(new JavaBinResponseParser());
     QueryResponse rsp = req.process(client);
     SolrDocument out = (SolrDocument) rsp.getResponse().get("doc");
     assertEquals("DOCID", out.get("id"));
@@ -2426,20 +2435,18 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       if (client instanceof HttpSolrClient) {
         // XXX concurrent client reports exceptions differently
         fail("Operation should throw an exception!");
-      } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
+      } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {
         client.commit(); // just to be sure the client has sent the doc
-        ErrorTrackingConcurrentUpdateSolrClient concurrentClient =
-            (ErrorTrackingConcurrentUpdateSolrClient) client;
         assertNotNull(
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
             "ConcurrentUpdateSolrClient did not report an error",
             concurrentClient.lastError.getMessage().contains("Conflict"));
       } else if (client
-          instanceof SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) {
+          instanceof
+          SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient
+          concurrentClient) {
         client.commit(); // just to be sure the client has sent the doc
-        SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient concurrentClient =
-            (SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) client;
         assertNotNull(
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
@@ -2575,7 +2582,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   @Test
-  public void testChildDoctransformer() throws IOException, SolrServerException {
+  public void testChildDocTransformer() throws IOException, SolrServerException {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -119,8 +118,8 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
     System.setProperty(SOLR_HOME_PROP, fakeSolrHome);
 
     // mock FS from createTempDir don't play nice using 'startsWith' when the solr stack
-    // reconsistutes the path from string so we have to go the string route here as well...
-    final Path workDir = Paths.get(createTempDir().toAbsolutePath().toString());
+    // reconstitutes the path from string so we have to go the string route here as well...
+    final Path workDir = Path.of(createTempDir().toAbsolutePath().toString());
 
     final MiniSolrCloudCluster cluster =
         new MiniSolrCloudCluster(1, workDir, JettyConfig.builder().build());
@@ -130,15 +129,10 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
           jetty.getCoreContainer().getSolrHome() + " vs " + workDir,
           // mock dirs from createTempDir() don't play nice with startsWith, so we have to use the
           // string value
-          Paths.get(jetty.getCoreContainer().getSolrHome()).startsWith(workDir));
+          jetty.getCoreContainer().getSolrHome().startsWith(workDir));
       assertEquals(
           jetty.getCoreContainer().getSolrHome(),
-          jetty
-              .getCoreContainer()
-              .getResourceLoader()
-              .getInstancePath()
-              .toAbsolutePath()
-              .toString());
+          jetty.getCoreContainer().getResourceLoader().getInstancePath().toAbsolutePath());
 
       assertTrue(
           CollectionAdminRequest.createCollection("test", 1, 1)

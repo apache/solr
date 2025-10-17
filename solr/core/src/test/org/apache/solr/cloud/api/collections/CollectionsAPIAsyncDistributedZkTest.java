@@ -30,7 +30,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -165,25 +164,22 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     assertSame("AddReplica did not complete", RequestStatusState.COMPLETED, state);
 
     // cloudClient watch might take a couple of seconds to reflect it
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            collection,
-            20,
-            TimeUnit.SECONDS,
-            (n, c) -> {
-              if (c == null) return false;
-              Slice slice = c.getSlice("shard1");
-              if (slice == null) {
-                return false;
-              }
+    waitForState(
+        "Wait for replica in cluster state",
+        collection,
+        c -> {
+          if (c == null) return false;
+          Slice slice = c.getSlice("shard1");
+          if (slice == null) {
+            return false;
+          }
 
-              if (slice.getReplicas().size() == 2) {
-                return true;
-              }
+          if (slice.getReplicas().size() == 2) {
+            return true;
+          }
 
-              return false;
-            });
+          return false;
+        });
 
     state =
         CollectionAdminRequest.createAlias("myalias", collection)
@@ -256,7 +252,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
             numThreads, new SolrNamedThreadFactory("testAsyncIdRaceCondition"));
     try {
       for (int i = 0; i < numThreads; i++) {
-        es.submit(
+        es.execute(
             new Runnable() {
 
               @Override
@@ -277,7 +273,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
                   reloadCollectionRequest.processAsync(
                       "repeatedId", clients[random().nextInt(clients.length)]);
                   numSuccess.incrementAndGet();
-                } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException e) {
+                } catch (SolrServerException | SolrClient.RemoteSolrException e) {
                   if (log.isInfoEnabled()) {
                     log.info("Exception during collection reloading, we were waiting for one: ", e);
                   }

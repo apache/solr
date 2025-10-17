@@ -21,8 +21,8 @@ import java.io.Writer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.request.SolrQueryRequest;
 
-/** */
-public class XMLResponseWriter implements QueryResponseWriter {
+/** An XML {@link QueryResponseWriter}. */
+public class XMLResponseWriter implements TextQueryResponseWriter {
   @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     XMLWriter w = new XMLWriter(writer, req, rsp);

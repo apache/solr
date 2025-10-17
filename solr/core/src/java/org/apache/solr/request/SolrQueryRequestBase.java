@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -62,8 +63,8 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   public SolrQueryRequestBase(SolrCore core, SolrParams params, RTimerTree requestTimer) {
     this.core = core;
     this.schema = null == core ? null : core.getLatestSchema();
-    this.params = this.origParams = params;
-    this.requestTimer = requestTimer;
+    this.params = this.origParams = Objects.requireNonNull(params);
+    this.requestTimer = Objects.requireNonNull(requestTimer);
     this.startTime = System.currentTimeMillis();
   }
 
@@ -90,7 +91,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
   @Override
   public void setParams(SolrParams params) {
-    this.params = params;
+    this.params = Objects.requireNonNull(params);
   }
 
   // Get the start time of this request in milliseconds

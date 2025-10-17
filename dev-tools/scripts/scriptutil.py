@@ -14,13 +14,17 @@
 # limitations under the License.
 
 import argparse
+import os
 import re
 import subprocess
 import sys
-import os
-from enum import Enum
 import time
-import urllib.request, urllib.error, urllib.parse
+import urllib.error
+import urllib.parse
+import urllib.request
+import json
+from enum import Enum
+
 
 class Version(object):
   def __init__(self, major, minor, bugfix, prerelease):
@@ -78,6 +82,52 @@ class Version(object):
     if not self.on_or_after(other):
       raise Exception('Back compat check disallowed for newer version: %s < %s' % (self, other))
     return other.major + 1 >= self.major
+
+
+class CommitterPgp():
+    """
+    A class to resolve a commiter's committer's PGP key from ASF records.
+    The class looks up the committer's ASF id in a json file downloaded from
+    https://whimsy.apache.org/public/public_ldap_people.json
+    and if the committer has a PGP key, it's fingerprint is made available.
+    """
+    def __init__(self, asf_id, json_content = None):
+        self.asf_id = asf_id
+        self.fingerprint = None
+        self.ldap_url = 'https://whimsy.apache.org/public/public_ldap_people.json'
+        self.fingerprint = None
+        self.fingerprint_short = None
+        if json_content:
+            self.ldap_json = json_content
+        else:
+            self.ldap_json = self.load_ldap()
+        self.resolve()
+
+
+    def load_ldap(self):
+        try:
+            with urllib.request.urlopen(self.ldap_url) as f:
+                return json.load(f)
+        except urllib.error.HTTPError as e:
+            raise Exception(f'Failed to load {self.ldap_url}: {e}')
+
+
+    def resolve(self):
+        """ Resolve the PGP key fingerprint for the committer's ASF id """
+        try:
+            self.fingerprint = self.ldap_json['people'][self.asf_id]['key_fingerprints'][0].replace(" ", "").upper()
+            self.fingerprint_short = self.fingerprint[-8:]
+        except KeyError:
+            raise Exception(f'No PGP key found for {self.asf_id}')
+
+
+    def get_fingerprint(self):
+        return self.fingerprint
+
+
+    def get_short_fingerprint(self):
+        return self.fingerprint_short
+
 
 def run(cmd, cwd=None):
   try:
@@ -179,7 +229,7 @@ def attemptDownload(urlString, fileName):
 
 version_prop_re = re.compile(r'baseVersion\s*=\s*([\'"])(.*)\1')
 
-lucene_version_prop_re = re.compile(r'org\.apache\.lucene:\*=(.*?)\n')
+lucene_version_prop_re = re.compile(r'apache-lucene\s*=\s*"([a-zA-Z0-9\.\-]+)"')
 
 def find_current_version():
   script_path = os.path.dirname(os.path.realpath(__file__))
@@ -190,7 +240,7 @@ def find_current_version():
 def find_current_lucene_version():
   script_path = os.path.dirname(os.path.realpath(__file__))
   top_level_dir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
-  versions_file = open('%s/versions.props' % top_level_dir).read()
+  versions_file = open('%s/gradle/libs.versions.toml' % top_level_dir).read()
   return lucene_version_prop_re.search(versions_file).group(1).strip()
 
 

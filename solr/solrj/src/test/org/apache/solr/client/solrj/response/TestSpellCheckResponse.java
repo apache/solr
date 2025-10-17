@@ -43,7 +43,10 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
   public static void beforeClass() throws Exception {
     solrClientTestRule.startSolr();
 
-    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
+    solrClientTestRule
+        .newCollection()
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
+        .create();
 
     client = getSolrClient();
   }
@@ -109,7 +112,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
     assertTrue(sug.getNumFound() > 0);
     // assertTrue(sug.getOriginalFrequency() > 0);
 
-    // Hmmm... the API for SpellCheckResponse could be nicer:
+    // Hmm... the API for SpellCheckResponse could be nicer:
     response.getSuggestions().get(0).getAlternatives().get(0);
   }
 

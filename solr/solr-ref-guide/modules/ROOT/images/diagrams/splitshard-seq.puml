@@ -17,7 +17,7 @@
 
 @startuml
 
-' Note: in TEOZ mode som skinparams don't work
+' Note: in TEOZ mode some skinparams don't work
 ' and currently notes on messages can't be customized -
 ' but this mode creates more compact layout, enable if needed
 

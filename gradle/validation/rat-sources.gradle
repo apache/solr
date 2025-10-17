@@ -24,7 +24,7 @@ configure(rootProject) {
     }
 
     dependencies {
-        ratDeps "org.apache.rat:apache-rat:${scriptDepVersions['apache-rat']}"
+        ratDeps libs.apache.rat.rat
     }
 }
 
@@ -96,24 +96,14 @@ allprojects {
                     exclude "dev-tools/scripts/README.md"
                     exclude "dev-tools/scripts/create_line_file_docs.py"
 
-                    // The root project also includes patterns for the boostrap (buildSrc) and composite
+                    // The root project also includes patterns for the include composite
                     // projects. Include their sources in the scan.
-                    include "buildSrc/src/**"
-                    include "dev-tools/solr-missing-doclet/src/**"
+                    include "build-tools/build-infra/src/**"
+                    include "build-tools/missing-doclet/src/**"
                     break
 
                 case ":solr:modules:clustering":
                     exclude "src/test-files/META-INF/services/*"
-                    break
-
-                case ":solr:modules:hadoop-auth":
-                    exclude "src/test-files/**/*.conf"
-                    break
-
-                case ":solr:modules:hdfs":
-                    exclude "src/test-files/**/*.aff"
-                    exclude "src/test-files/**/*.dic"
-                    exclude "src/test-files/**/*.incl"
                     break
 
                 case ":solr:modules:langid":

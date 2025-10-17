@@ -225,8 +225,7 @@ public class FieldCacheImpl implements FieldCache {
     /** Two of these are equal iff they reference the same field and type. */
     @Override
     public boolean equals(Object o) {
-      if (o instanceof CacheKey) {
-        CacheKey other = (CacheKey) o;
+      if (o instanceof CacheKey other) {
         if (other.field.equals(field)) {
           if (other.custom == null) {
             if (custom == null) return true;
@@ -784,7 +783,7 @@ public class FieldCacheImpl implements FieldCache {
           u.docsWithField == null ? new Bits.MatchNoBits(reader.maxDoc()) : u.docsWithField;
       if (values == null) {
         return new LongsFromArray(
-            key.field, new PackedInts.NullReader(reader.maxDoc()), 0L, docsWithField);
+            key.field, PackedInts.NullReader.forCount(reader.maxDoc()), 0L, docsWithField);
       }
       return new LongsFromArray(
           key.field, values.writer.getMutable(), values.minValue, docsWithField);

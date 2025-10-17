@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -128,27 +127,9 @@ public class V2ClusterAPIMappingTest extends SolrTestCaseJ4 {
     assertEquals("some_role", v1Params.get("role"));
   }
 
-  @Test
-  public void testSetPropertyAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cluster",
-            "POST",
-            "{'set-property': {" + "'name': 'some_prop_name', " + "'val':'some_value'}}");
-
-    assertEquals(CollectionParams.CollectionAction.CLUSTERPROP.toString(), v1Params.get(ACTION));
-    assertEquals("some_prop_name", v1Params.get(NAME));
-    assertEquals("some_value", v1Params.get("val"));
-  }
-
   private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody)
       throws Exception {
     return doCaptureParams(path, method, v2RequestBody, mockCollectionsHandler);
-  }
-
-  private SolrParams captureConvertedConfigsetV1Params(
-      String path, String method, String v2RequestBody) throws Exception {
-    return doCaptureParams(path, method, v2RequestBody, mockConfigSetHandler);
   }
 
   private SolrParams doCaptureParams(

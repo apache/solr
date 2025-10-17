@@ -68,6 +68,7 @@ public class FilterCache {
 
     QueryRequest q1 = new QueryRequest(new SolrQuery("q", "*:*", "fq", "Ea_b:true"));
     QueryRequest q2 = new QueryRequest(new SolrQuery("q", "*:*", "fq", "FB_b:true"));
+    String baseUrl;
 
     @Setup(Level.Trial)
     public void setupTrial(MiniClusterState.MiniClusterBenchState miniClusterState)
@@ -100,9 +101,7 @@ public class FilterCache {
       docs.field("FB_b", booleans);
 
       miniClusterState.index(COLLECTION, docs, 30 * 1000);
-      String base = miniClusterState.nodes.get(0);
-      q1.setBasePath(base);
-      q2.setBasePath(base);
+      baseUrl = miniClusterState.nodes.get(0);
     }
 
     @Setup(Level.Iteration)
@@ -110,8 +109,7 @@ public class FilterCache {
         throws SolrServerException, IOException {
       // Reload the collection/core to drop existing caches
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
-      reload.setBasePath(miniClusterState.nodes.get(0));
-      miniClusterState.client.request(reload);
+      miniClusterState.client.requestWithBaseUrl(miniClusterState.nodes.get(0), null, reload);
     }
 
     @TearDown(Level.Iteration)
@@ -139,14 +137,17 @@ public class FilterCache {
   public Object filterCacheMultipleQueries(
       BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState)
       throws SolrServerException, IOException {
-    return miniClusterState.client.request(
-        miniClusterState.getRandom().nextBoolean() ? benchState.q1 : benchState.q2, COLLECTION);
+    return miniClusterState.client.requestWithBaseUrl(
+        benchState.baseUrl,
+        COLLECTION,
+        miniClusterState.getRandom().nextBoolean() ? benchState.q1 : benchState.q2);
   }
 
   @Benchmark
   public Object filterCacheSingleQuery(
       BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState)
       throws SolrServerException, IOException {
-    return miniClusterState.client.request(benchState.q1, COLLECTION);
+    return miniClusterState.client.requestWithBaseUrl(
+        benchState.baseUrl, COLLECTION, benchState.q1);
   }
 }

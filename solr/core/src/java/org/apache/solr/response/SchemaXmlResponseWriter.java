@@ -22,7 +22,7 @@ import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.request.SolrQueryRequest;
 
 /** */
-public class SchemaXmlResponseWriter implements QueryResponseWriter {
+public class SchemaXmlResponseWriter implements TextQueryResponseWriter {
   @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     SchemaXmlWriter w = new SchemaXmlWriter(writer, req, rsp);

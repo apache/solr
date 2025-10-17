@@ -20,7 +20,6 @@ package org.apache.solr.handler.admin.api;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCoreBackupRequestBody;
 import org.apache.solr.common.SolrException;
@@ -170,7 +169,7 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
     final Path locationPath = createBackupLocation();
     final URI locationUri = bootstrapBackupLocation(locationPath);
     final CoreContainer cores = h.getCoreContainer();
-    cores.getAllowPaths().add(Paths.get(locationUri));
+    cores.getAllowPaths().add(Path.of(locationUri));
     final CreateCoreBackupRequestBody backupCoreRequestBody = new CreateCoreBackupRequestBody();
     backupCoreRequestBody.location = locationPath.toString();
     return backupCoreRequestBody;

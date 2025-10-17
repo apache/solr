@@ -64,7 +64,7 @@ public class JSONTupleStream implements TupleStreamParser {
     query.setResponseParser(new InputStreamResponseParser("json"));
     query.setMethod(SolrRequest.METHOD.POST);
     NamedList<Object> genericResponse = server.request(query);
-    InputStream stream = (InputStream) genericResponse.get("stream");
+    InputStream stream = (InputStream) genericResponse.get(InputStreamResponseParser.STREAM_KEY);
     InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
     return new JSONTupleStream(reader);
   }
@@ -78,7 +78,7 @@ public class JSONTupleStream implements TupleStreamParser {
       atDocs = true;
       if (!found) return null;
     }
-    // advance past ARRAY_START (in the case that we just advanced to docs, or OBJECT_END left over
+    // advance past ARRAY_START, in the case that we just advanced to docs, or OBJECT_END left over
     // from the last call.
     int event = parser.nextEvent();
     if (event == JSONParser.ARRAY_END) return null;

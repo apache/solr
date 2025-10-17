@@ -100,7 +100,6 @@ import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
-import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
 import java.lang.invoke.MethodHandles;
@@ -120,10 +119,13 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
+import org.apache.solr.client.api.model.ListCollectionSnapshotsResponse;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
+import org.apache.solr.client.api.model.SetClusterPropertyRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
 import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
@@ -141,7 +143,6 @@ import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetComma
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
@@ -171,9 +172,10 @@ import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
 import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUnique;
+import org.apache.solr.handler.admin.api.ClusterProperty;
 import org.apache.solr.handler.admin.api.CollectionProperty;
-import org.apache.solr.handler.admin.api.CollectionStatusAPI;
-import org.apache.solr.handler.admin.api.CreateAliasAPI;
+import org.apache.solr.handler.admin.api.CollectionStatus;
+import org.apache.solr.handler.admin.api.CreateAlias;
 import org.apache.solr.handler.admin.api.CreateCollection;
 import org.apache.solr.handler.admin.api.CreateCollectionBackup;
 import org.apache.solr.handler.admin.api.CreateCollectionSnapshot;
@@ -191,7 +193,7 @@ import org.apache.solr.handler.admin.api.ForceLeader;
 import org.apache.solr.handler.admin.api.InstallShardData;
 import org.apache.solr.handler.admin.api.ListAliases;
 import org.apache.solr.handler.admin.api.ListCollectionBackups;
-import org.apache.solr.handler.admin.api.ListCollectionSnapshotsAPI;
+import org.apache.solr.handler.admin.api.ListCollectionSnapshots;
 import org.apache.solr.handler.admin.api.ListCollections;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
 import org.apache.solr.handler.admin.api.MigrateReplicas;
@@ -201,7 +203,7 @@ import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.RenameCollection;
 import org.apache.solr.handler.admin.api.ReplaceNode;
-import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
+import org.apache.solr.handler.admin.api.RestoreCollection;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShard;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -219,8 +221,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final CoreContainer coreContainer;
-  private final Optional<DistributedCollectionConfigSetCommandRunner>
-      distributedCollectionConfigSetCommandRunner;
 
   public CollectionsHandler() {
     // Unlike most request handlers, CoreContainer initialization
@@ -235,10 +235,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
    */
   public CollectionsHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    distributedCollectionConfigSetCommandRunner =
-        coreContainer != null
-            ? coreContainer.getDistributedCollectionCommandRunner()
-            : Optional.empty();
   }
 
   @Override
@@ -348,12 +344,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   public static SolrResponse submitCollectionApiCommand(
-      CoreContainer coreContainer,
-      Optional<DistributedCollectionConfigSetCommandRunner>
-          distributedCollectionConfigSetCommandRunner,
-      ZkNodeProps m,
-      CollectionAction action,
-      long timeout)
+      ZkController zkController, ZkNodeProps m, CollectionAction action, long timeout)
       throws KeeperException, InterruptedException {
     // Collection API messages are either sent to Overseer and processed there, or processed
     // locally. Distributing Collection API implies we're also distributing Cluster State Updates.
@@ -365,10 +356,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     // same JVM as the Overseer based cluster state update... The configuration handling includes
     // these checks to not allow distributing collection API without distributing cluster state
     // updates (but the other way around is ok). See constructor of CloudConfig.
-    if (distributedCollectionConfigSetCommandRunner.isPresent()) {
-      return distributedCollectionConfigSetCommandRunner
-          .get()
-          .runCollectionCommand(m, action, timeout);
+    Optional<DistributedCollectionConfigSetCommandRunner> distribCommandRunner =
+        zkController.getDistributedCommandRunner();
+    if (distribCommandRunner.isPresent()) {
+      return distribCommandRunner.get().runCollectionCommand(m, action, timeout);
     } else { // Sending the Collection API message to Overseer via a Zookeeper queue
       String operation = m.getStr(QUEUE_OPERATION);
       if (operation == null) {
@@ -378,15 +369,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         String asyncId = m.getStr(ASYNC);
         NamedList<Object> r = new NamedList<>();
 
-        if (coreContainer.getZkController().claimAsyncId(asyncId)) {
+        if (zkController.claimAsyncId(asyncId)) {
           boolean success = false;
           try {
-            coreContainer.getZkController().getOverseerCollectionQueue().offer(m);
+            zkController.getOverseerCollectionQueue().offer(m);
             success = true;
           } finally {
             if (!success) {
               try {
-                coreContainer.getZkController().clearAsyncId(asyncId);
+                zkController.clearAsyncId(asyncId);
               } catch (Exception e) {
                 // let the original exception bubble up
                 log.error("Unable to release async ID={}", asyncId, e);
@@ -404,11 +395,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       long time = System.nanoTime();
-      QueueEvent event =
-          coreContainer
-              .getZkController()
-              .getOverseerCollectionQueue()
-              .offer(Utils.toJSON(m), timeout);
+      QueueEvent event = zkController.getOverseerCollectionQueue().offer(Utils.toJSON(m), timeout);
       if (event.getBytes() != null) {
         return OverseerSolrResponseSerializer.deserialize(event.getBytes());
       } else {
@@ -439,8 +426,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public SolrResponse submitCollectionApiCommand(
       ZkNodeProps m, CollectionAction action, long timeout)
       throws KeeperException, InterruptedException {
-    return submitCollectionApiCommand(
-        coreContainer, distributedCollectionConfigSetCommandRunner, m, action, timeout);
+    return submitCollectionApiCommand(coreContainer.getZkController(), m, action, timeout);
   }
 
   private boolean overseerCollectionQueueContains(String asyncId)
@@ -537,11 +523,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   ColStatus.RAW_SIZE_SAMPLING_PERCENT_PROP,
                   ColStatus.SIZE_INFO_PROP);
 
-          new ColStatus(
-                  h.coreContainer.getSolrClientCache(),
-                  h.coreContainer.getZkController().getZkStateReader().getClusterState(),
-                  new ZkNodeProps(props))
-              .getColStatus(rsp.getValues());
+          CollectionStatus.populateColStatusData(
+              h.coreContainer, new ZkNodeProps(props), rsp.getValues());
           return null;
         }),
     DELETE_OP(
@@ -615,10 +598,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CREATEALIAS_OP(
         CREATEALIAS,
         (req, rsp, h) -> {
-          final CreateAliasAPI.CreateAliasRequestBody reqBody =
-              CreateAliasAPI.createFromSolrParams(req.getParams());
+          final CreateAliasRequestBody reqBody = CreateAlias.createFromSolrParams(req.getParams());
           final SolrJerseyResponse response =
-              new CreateAliasAPI(h.coreContainer, req, rsp).createAlias(reqBody);
+              new CreateAlias(h.coreContainer, req, rsp).createAlias(reqBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
@@ -771,11 +753,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CLUSTERPROP_OP(
         CLUSTERPROP,
         (req, rsp, h) -> {
+          ClusterProperty clusterProperty = new ClusterProperty(req.getCoreContainer(), req, rsp);
+          SetClusterPropertyRequestBody setClusterPropertyRequestBody =
+              new SetClusterPropertyRequestBody();
           String name = req.getParams().required().get(NAME);
-          String val = req.getParams().get(VALUE_LONG);
-          ClusterProperties cp =
-              new ClusterProperties(h.coreContainer.getZkController().getZkClient());
-          cp.setClusterProperty(name, val);
+          setClusterPropertyRequestBody.value = req.getParams().get(VALUE_LONG);
+          clusterProperty.createOrUpdateClusterProperty(name, setClusterPropertyRequestBody);
           return null;
         }),
     COLLECTIONPROP_OP(
@@ -805,8 +788,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final ZkController zkController = coreContainer.getZkController();
 
           final NamedList<Object> status = new NamedList<>();
-          if (coreContainer.getDistributedCollectionCommandRunner().isEmpty()) {
-            if (zkController.getOverseerCompletedMap().contains(requestId)) {
+          if (zkController.getDistributedCommandRunner().isEmpty()) {
+            if (zkController.getOverseerRunningMap().contains(requestId)) {
+              addStatusToResponse(status, RUNNING, "found [" + requestId + "] in running tasks");
+            } else if (zkController.getOverseerCompletedMap().contains(requestId)) {
               final byte[] mapEntry = zkController.getOverseerCompletedMap().get(requestId);
               rsp.getValues()
                   .addAll(OverseerSolrResponseSerializer.deserialize(mapEntry).getResponse());
@@ -817,8 +802,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               rsp.getValues()
                   .addAll(OverseerSolrResponseSerializer.deserialize(mapEntry).getResponse());
               addStatusToResponse(status, FAILED, "found [" + requestId + "] in failed tasks");
-            } else if (zkController.getOverseerRunningMap().contains(requestId)) {
-              addStatusToResponse(status, RUNNING, "found [" + requestId + "] in running tasks");
             } else if (h.overseerCollectionQueueContains(requestId)) {
               addStatusToResponse(
                   status, SUBMITTED, "found [" + requestId + "] in submitted tasks");
@@ -828,8 +811,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             }
           } else {
             Pair<RequestStatusState, OverseerSolrResponse> sr =
-                coreContainer
-                    .getDistributedCollectionCommandRunner()
+                zkController
+                    .getDistributedCommandRunner()
                     .get()
                     .getAsyncTaskRequestStatus(requestId);
             final String message;
@@ -879,7 +862,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   "Both requestid and flush parameters can not be specified together.");
             }
 
-            if (coreContainer.getDistributedCollectionCommandRunner().isEmpty()) {
+            if (zkController.getDistributedCommandRunner().isEmpty()) {
               if (flush) {
                 Collection<String> completed = zkController.getOverseerCompletedMap().keys();
                 Collection<String> failed = zkController.getOverseerFailureMap().keys();
@@ -914,12 +897,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               }
             } else {
               if (flush) {
-                coreContainer.getDistributedCollectionCommandRunner().get().deleteAllAsyncIds();
+                zkController.getDistributedCommandRunner().get().deleteAllAsyncIds();
                 rsp.getValues()
                     .add("status", "successfully cleared stored collection api responses");
               } else {
-                if (coreContainer
-                    .getDistributedCollectionCommandRunner()
+                if (zkController
+                    .getDistributedCommandRunner()
                     .get()
                     .deleteSingleAsyncId(requestId)) {
                   rsp.getValues()
@@ -954,7 +937,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           NamedList<Object> results = new NamedList<>();
           boolean isDistributedApi =
-              h.coreContainer.getDistributedCollectionCommandRunner().isPresent();
+              h.coreContainer.getZkController().getDistributedCommandRunner().isPresent();
           results.add("isDistributedApi", isDistributedApi);
           rsp.getValues().addAll(results);
           return null;
@@ -975,11 +958,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CLUSTERSTATUS_OP(
         CLUSTERSTATUS,
         (req, rsp, h) -> {
-          Map<String, Object> all =
-              copy(req.getParams(), null, COLLECTION_PROP, SHARD_ID_PROP, _ROUTE_, "prs");
-          new ClusterStatus(
-                  h.coreContainer.getZkController().getZkStateReader(), new ZkNodeProps(all))
-              .getClusterStatus(rsp.getValues());
+          new ClusterStatus(h.coreContainer.getZkController().getZkStateReader(), req.getParams())
+              .getClusterStatus(rsp.getValues(), req.getHttpSolrCall().getUserAgentSolrVersion());
           return null;
         }),
     ADDREPLICAPROP_OP(
@@ -1067,7 +1047,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     RESTORE_OP(
         RESTORE,
         (req, rsp, h) -> {
-          final var response = RestoreCollectionAPI.invokeFromV1Params(req, rsp, h.coreContainer);
+          final var response = RestoreCollection.invokeFromV1Params(req, rsp, h.coreContainer);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
@@ -1152,15 +1132,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           req.getParams().required().check(COLLECTION_PROP);
 
-          final ListCollectionSnapshotsAPI listCollectionSnapshotsAPI =
-              new ListCollectionSnapshotsAPI(h.coreContainer, req, rsp);
+          final ListCollectionSnapshots listCollectionSnapshotsAPI =
+              new ListCollectionSnapshots(h.coreContainer, req, rsp);
 
-          final ListCollectionSnapshotsAPI.ListSnapshotsResponse response =
+          final ListCollectionSnapshotsResponse response =
               listCollectionSnapshotsAPI.listSnapshots(req.getParams().get(COLLECTION_PROP));
 
           NamedList<Object> snapshots = new NamedList<>();
-          for (CollectionSnapshotMetaData meta : response.snapshots.values()) {
-            snapshots.add(meta.getName(), meta.toNamedList());
+          for (Object meta : response.snapshots.values()) {
+            final var metaTyped = (CollectionSnapshotMetaData) meta;
+            snapshots.add(metaTyped.getName(), metaTyped.toNamedList());
           }
 
           rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, snapshots);
@@ -1360,7 +1341,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateReplica.class,
         AddReplicaProperty.class,
         BalanceShardUnique.class,
-        CreateAliasAPI.class,
+        CollectionStatus.class,
+        CreateAlias.class,
         CreateCollection.class,
         CreateCollectionBackup.class,
         CreateShard.class,
@@ -1379,15 +1361,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ReplaceNode.class,
         MigrateReplicas.class,
         BalanceReplicas.class,
-        RestoreCollectionAPI.class,
+        RestoreCollection.class,
         SyncShard.class,
         CollectionProperty.class,
         DeleteNode.class,
         ListAliases.class,
         AliasProperty.class,
-        ListCollectionSnapshotsAPI.class,
+        ListCollectionSnapshots.class,
         CreateCollectionSnapshot.class,
-        DeleteCollectionSnapshot.class);
+        DeleteCollectionSnapshot.class,
+        ClusterProperty.class);
   }
 
   @Override
@@ -1398,7 +1381,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RebalanceLeadersAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new CollectionStatusAPI(this)));
     return apis;
   }
 

@@ -46,6 +46,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.SolrPluginUtils;
 
@@ -191,6 +192,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private LTRScoringQuery.ModelWeight[] modelWeights;
     private FeatureLogger featureLogger;
     private boolean docsWereReranked;
+    private boolean docsHaveScores;
 
     /**
      * @param name Name of the field to be added in a document representing the feature vectors
@@ -234,6 +236,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       rerankingQueriesFromContext = SolrQueryRequestContextUtils.getScoringQueries(req);
       docsWereReranked =
           (rerankingQueriesFromContext != null && rerankingQueriesFromContext.length != 0);
+      docsHaveScores = context.wantsScores();
       String transformerFeatureStore = SolrQueryRequestContextUtils.getFvStoreName(req);
       FeatureLogger featureLogger = SolrQueryRequestContextUtils.getFeatureLogger(req);
 
@@ -402,16 +405,13 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid, float score) throws IOException {
-      implTransform(doc, docid, score);
+    public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo)
+        throws IOException {
+      implTransform(doc, docid, docInfo);
     }
 
-    @Override
-    public void transform(SolrDocument doc, int docid) throws IOException {
-      implTransform(doc, docid, null);
-    }
-
-    private void implTransform(SolrDocument doc, int docid, Float score) throws IOException {
+    private void implTransform(SolrDocument doc, int docid, DocIterationInfo docInfo)
+        throws IOException {
       LTRScoringQuery rerankingQuery = rerankingQueries[0];
       LTRScoringQuery.ModelWeight rerankingModelWeight = modelWeights[0];
       for (int i = 1; i < rerankingQueries.length; i++) {
@@ -430,7 +430,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                   LTRRescorer.extractFeaturesInfo(
                       rerankingModelWeight,
                       docid,
-                      (!docsWereReranked ? score : null),
+                      (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,
                       leafContexts));
         }
         doc.addField(name, featureVector);

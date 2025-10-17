@@ -379,6 +379,7 @@ public class StringsDSL {
                 new SolrGen<>() {
                   @Override
                   public String generate(SolrRandomnessSource in) {
+                    // TODO DWS: What does it even mean for the cardinality to vary (be generated)?
                     Integer maxCard = maxCardinality.generate(in);
 
                     if (cardinalityStart == null) {
@@ -386,9 +387,12 @@ public class StringsDSL {
                           SolrGenerate.range(0, Integer.MAX_VALUE - maxCard - 1).generate(in);
                     }
 
+                    // pick from maxCardinality seeds
                     long seed =
                         SolrGenerate.range(cardinalityStart, cardinalityStart + maxCard - 1)
                             .generate(in);
+                    // given the seed, generate a string.
+                    //   Final cardinality could be less!  Small strings have limited possibilities.
                     return strings.generate(
                         (RandomnessSource) new SplittableRandomSource(new SplittableRandom(seed)));
                   }

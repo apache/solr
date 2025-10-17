@@ -41,7 +41,7 @@ public class SetColumnLabelsEvaluator extends RecursiveObjectEvaluator implement
               "Invalid expression %s - found type %s for value, expecting a Matrix",
               toExpression(constructingFactory),
               value1.getClass().getSimpleName()));
-    } else if (!(value2 instanceof List)) {
+    } else if (!(value2 instanceof List<?> colLabels)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -51,7 +51,6 @@ public class SetColumnLabelsEvaluator extends RecursiveObjectEvaluator implement
     } else {
       Matrix matrix = (Matrix) value1;
 
-      List<?> colLabels = (List<?>) value2;
       // Convert numeric labels to strings.
       List<String> strLabels = new ArrayList<>(colLabels.size());
       for (Object o : colLabels) {

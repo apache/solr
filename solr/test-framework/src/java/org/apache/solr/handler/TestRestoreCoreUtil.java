@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
@@ -35,7 +36,7 @@ public class TestRestoreCoreUtil {
             + ReplicationHandler.CMD_RESTORE_STATUS;
     final Pattern pException = Pattern.compile("<str name=\"exception\">(.*?)</str>");
 
-    URL url = new URL(leaderUrl);
+    URL url = URI.create(leaderUrl).toURL();
     try (InputStream stream = url.openStream()) {
       String response = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
       Matcher matcher = pException.matcher(response);

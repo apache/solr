@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import static org.apache.solr.util.stats.InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES;
 
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.List;
@@ -31,9 +32,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.AffinityReplicaListTransformerFactory;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
@@ -54,11 +55,9 @@ import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
@@ -66,6 +65,7 @@ import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Creates {@link HttpShardHandler} instances */
 public class HttpShardHandlerFactory extends ShardHandlerFactory
     implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -79,11 +79,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   // requests at some point (or should we simply return failure?)
   //
   // This executor is initialized in the init method
-  private ExecutorService commExecutor;
+  protected ExecutorService commExecutor;
 
   protected volatile Http2SolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
-  protected LBHttp2SolrClient loadbalancer;
+  protected LBHttp2SolrClient<Http2SolrClient> loadbalancer;
 
   int corePoolSize = 0;
   int maximumPoolSize = Integer.MAX_VALUE;
@@ -195,6 +195,31 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
         new RequestReplicaListTransformerGenerator(defaultRltFactory, stableRltFactory);
   }
 
+  /**
+   * Customizes {@link HttpShardHandler} instances that will be produced by this factory.
+   *
+   * <p>Supports the following parameters in {@code info}:
+   *
+   * <ul>
+   *   <li>socketTimeout - read timeout for requests, in milliseconds.
+   *   <li>connTimeout - connection timeout for requests, in milliseconds.
+   *   <li>urlScheme - "http" or "https"
+   *   <li>maxConnectionsPerHost - caps the number of concurrent connections per host
+   *   <li>corePoolSize - the initial size of the thread pool used to service requests
+   *   <li>maximumPoolSize - the maximum size of the thread pool used to service requests.
+   *   <li>maxThreadIdleTime - the amount of time (in seconds) that thread pool entries may sit idle
+   *       before being killed
+   *   <li>sizeOfQueue - the size of the queue (if any) used by the thread pool that services
+   *       shard-handler requests
+   *   <li>fairnessPolicy - true if the thread pool should prioritize fairness over throughput,
+   *       false otherwise
+   *   <li>replicaRouting - a NamedList of preferences used to select the order in which replicas
+   *       for a shard will be used by created ShardHandlers
+   * </ul>
+   *
+   * @param info configuration for the created factory, typically reflecting the contents of a
+   *     &lt;shardHandlerFactory&gt; XML tag from solr.xml or solrconfig.xml
+   */
   @Override
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
@@ -235,12 +260,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             sb);
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy, sb);
 
-    if (args != null && args.get("shardsWhitelist") != null) {
-      log.warn(
-          "Property 'shardsWhitelist' is deprecated, please use '{}' instead.",
-          AllowListUrlChecker.URL_ALLOW_LIST);
-    }
-
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
     String v = System.getProperty("tests.shardhandler.randomSeed");
     if (v != null) {
@@ -268,17 +287,18 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     int connectionTimeout =
         getParameter(
             args,
-            HttpClientUtil.PROP_CONNECTION_TIMEOUT,
-            HttpClientUtil.DEFAULT_CONNECT_TIMEOUT,
+            SolrHttpConstants.PROP_CONNECTION_TIMEOUT,
+            SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT,
             sb);
     int maxConnectionsPerHost =
         getParameter(
             args,
-            HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST,
-            HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
+            SolrHttpConstants.PROP_MAX_CONNECTIONS_PER_HOST,
+            SolrHttpConstants.DEFAULT_MAXCONNECTIONSPERHOST,
             sb);
     int soTimeout =
-        getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT, HttpClientUtil.DEFAULT_SO_TIMEOUT, sb);
+        getParameter(
+            args, SolrHttpConstants.PROP_SO_TIMEOUT, SolrHttpConstants.DEFAULT_SO_TIMEOUT, sb);
 
     this.defaultClient =
         new Http2SolrClient.Builder()
@@ -288,7 +308,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             .withMaxConnectionsPerHost(maxConnectionsPerHost)
             .build();
     this.defaultClient.addListenerFactory(this.httpListenerFactory);
-    this.loadbalancer = new LBHttp2SolrClient.Builder(defaultClient).build();
+    this.loadbalancer = new LBHttp2SolrClient.Builder<Http2SolrClient>(defaultClient).build();
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 
@@ -386,6 +406,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
               .toString(),
           zkController.getNodeName(),
           zkController.getBaseUrl(),
+          zkController.getHostName(),
           zkController.getSysPropsCacher());
     } else {
       return requestReplicaListTransformerGenerator.getReplicaListTransformer(params);
@@ -411,15 +432,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
-    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
-    httpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
+    httpListenerFactory.initializeMetrics(solrMetricsContext, Attributes.empty());
     commExecutor =
         MetricUtils.instrumentedExecutorService(
-            commExecutor,
-            null,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
+            commExecutor, solrMetricsContext, SolrInfoBean.Category.QUERY, "httpShardExecutor");
   }
 }

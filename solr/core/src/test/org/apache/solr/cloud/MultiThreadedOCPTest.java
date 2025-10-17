@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.Random;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
@@ -247,8 +246,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   @Test
   public void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
-      CollectionAdminRequest.createCollection("ocptest_shardsplit2", "conf1", 3, 1)
-          .processAsync("3000", client);
+      CollectionAdminRequest.createCollection("ocptest_shardsplit2", "conf1", 3, 1).process(client);
 
       SplitShard splitShardRequest =
           CollectionAdminRequest.splitShard("ocptest_shardsplit2").setShardName(SHARD1);
@@ -261,7 +259,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       // Now submit another task with the same id. At this time, hopefully the previous 3002 should
       // still be in the queue.
       expectThrows(
-          BaseHttpSolrClient.RemoteSolrException.class,
+          SolrClient.RemoteSolrException.class,
           () -> {
             CollectionAdminRequest.splitShard("ocptest_shardsplit2")
                 .setShardName(SHARD1)

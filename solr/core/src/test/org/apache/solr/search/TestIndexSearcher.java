@@ -16,11 +16,8 @@
  */
 package org.apache.solr.search;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -137,18 +134,10 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     int baseRefCount = r3.getRefCount();
     assertEquals(1, baseRefCount);
 
-    Map<String, Metric> metrics = h.getCore().getCoreMetricManager().getRegistry().getMetrics();
-    @SuppressWarnings({"unchecked"})
-    Gauge<Date> g = (Gauge<Date>) metrics.get("SEARCHER.searcher.registeredAt");
-    Date sr3SearcherRegAt = g.getValue();
     assertU(commit()); // nothing has changed
     SolrQueryRequest sr4 = req("q", "foo");
     assertSame(
         "nothing changed, searcher should be the same", sr3.getSearcher(), sr4.getSearcher());
-    assertEquals(
-        "nothing changed, searcher should not have been re-registered",
-        sr3SearcherRegAt.toInstant(),
-        g.getValue().toInstant());
     IndexReader r4 = sr4.getSearcher().getRawReader();
 
     // force an index change so the registered searcher won't be the one we are testing (and
@@ -259,8 +248,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       addDummyDoc(newCore);
 
       // Open a new searcher, this should call the newSearcherListeners
-      @SuppressWarnings("unchecked")
-      Future<Void>[] future = (Future<Void>[]) Array.newInstance(Future.class, 1);
+      Future<?>[] future = (Future<?>[]) Array.newInstance(Future.class, 1);
       newCore.getSearcher(true, false, future);
       future[0].get();
 

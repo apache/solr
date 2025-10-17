@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -52,6 +52,8 @@ import org.slf4j.LoggerFactory;
  * Immutable state of the cloud. Normally you can get the state by using {@code
  * ZkStateReader#getClusterState()}.
  *
+ * <p>However, the {@link #setLiveNodes list of live nodes} is updated when nodes go up and down.
+ *
  * @lucene.experimental
  */
 public class ClusterState implements MapWriter {
@@ -62,8 +64,7 @@ public class ClusterState implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
-  private Set<String> liveNodes;
-  private Set<String> hostAllowList;
+  private volatile Set<String> liveNodes;
 
   /** Use this constr when ClusterState is meant for consumption. */
   public ClusterState(Set<String> liveNodes, Map<String, DocCollection> collectionStates) {
@@ -84,8 +85,7 @@ public class ClusterState implements MapWriter {
    * loaded (parameter order different from constructor above to have different erasures)
    */
   public ClusterState(Map<String, CollectionRef> collectionStates, Set<String> liveNodes) {
-    this.liveNodes = CollectionUtil.newHashSet(liveNodes.size());
-    this.liveNodes.addAll(liveNodes);
+    setLiveNodes(liveNodes);
     this.collectionStates = new LinkedHashMap<>(collectionStates);
     this.immutableCollectionStates = Collections.unmodifiableMap(this.collectionStates);
   }
@@ -96,6 +96,7 @@ public class ClusterState implements MapWriter {
    * @param collectionName the name of the modified (or deleted) collection
    * @param collection the collection object. A null value deletes the collection from the state
    * @return the updated cluster state which preserves the current live nodes
+   * @lucene.internal
    */
   public ClusterState copyWith(String collectionName, DocCollection collection) {
     LinkedHashMap<String, CollectionRef> collections = new LinkedHashMap<>(collectionStates);
@@ -155,6 +156,16 @@ public class ClusterState implements MapWriter {
   }
 
   /**
+   * The collection names. Like a Set but might not implement it. Immutable; non-null. Some names
+   * returned might not resolve via {@link #getCollectionOrNull(String)}, so consider this a close
+   * approximation.
+   */
+  public Collection<String> getCollectionNames() {
+    // should we document we are sorted too?  Albeit that ties our hands.
+    return immutableCollectionStates.keySet();
+  }
+
+  /**
    * Get a map of collection name vs DocCollection objects
    *
    * <p>Implementation note: This method resolves the collection reference by calling {@link
@@ -162,7 +173,9 @@ public class ClusterState implements MapWriter {
    * semantics of how collection list is loaded have changed in SOLR-6629.
    *
    * @return a map of collection name vs DocCollection object
+   * @deprecated see {@link #collectionStream()}
    */
+  @Deprecated
   public Map<String, DocCollection> getCollectionsMap() {
     Map<String, DocCollection> result = CollectionUtil.newHashMap(collectionStates.size());
     for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
@@ -176,7 +189,7 @@ public class ClusterState implements MapWriter {
 
   /** Get names of the currently live nodes. */
   public Set<String> getLiveNodes() {
-    return Collections.unmodifiableSet(liveNodes);
+    return liveNodes;
   }
 
   @Deprecated
@@ -201,7 +214,7 @@ public class ClusterState implements MapWriter {
       DocCollection coll = ref.get();
       if (coll == null) continue; // this collection got removed in between, skip
       // TODO: for really large clusters, we could 'index' on this
-      return Optional.ofNullable(coll.getReplicas(nodeName)).stream()
+      return Optional.ofNullable(coll.getReplicasOnNode(nodeName)).stream()
           .flatMap(List::stream)
           .filter(r -> coreName.equals(r.getStr(ReplicaStateProps.CORE_NAME)))
           .map(Replica::getShard)
@@ -211,6 +224,7 @@ public class ClusterState implements MapWriter {
     return null;
   }
 
+  @Deprecated
   public Map<String, List<Replica>> getReplicaNamesPerCollectionOnNode(final String nodeName) {
     Map<String, List<Replica>> replicaNamesPerCollectionOnNode = new HashMap<>();
     collectionStates.values().stream()
@@ -218,7 +232,7 @@ public class ClusterState implements MapWriter {
         .filter(Objects::nonNull)
         .forEach(
             col -> {
-              List<Replica> replicas = col.getReplicas(nodeName);
+              List<Replica> replicas = col.getReplicasOnNode(nodeName);
               if (replicas != null && !replicas.isEmpty()) {
                 replicaNamesPerCollectionOnNode.put(col.getName(), replicas);
               }
@@ -252,6 +266,7 @@ public class ClusterState implements MapWriter {
    *     {@link ClusterState}
    * @return the ClusterState
    */
+  @Deprecated
   public static ClusterState createFromJson(
       int version,
       byte[] bytes,
@@ -272,6 +287,7 @@ public class ClusterState implements MapWriter {
     return createFromJson(version, bytes, liveNodes, Instant.EPOCH, null);
   }
 
+  @Deprecated
   public static ClusterState createFromCollectionMap(
       int version,
       Map<String, Object> stateMap,
@@ -301,6 +317,9 @@ public class ClusterState implements MapWriter {
     return createFromCollectionMap(version, stateMap, liveNodes, Instant.EPOCH, null);
   }
 
+  /**
+   * @lucene.internal
+   */
   // TODO move to static DocCollection.loadFromMap
   public static DocCollection collectionFromObjects(
       String name,
@@ -366,63 +385,47 @@ public class ClusterState implements MapWriter {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (!(obj instanceof ClusterState)) return false;
-    ClusterState other = (ClusterState) obj;
+    if (!(obj instanceof ClusterState other)) return false;
     if (liveNodes == null) {
       return other.liveNodes == null;
     } else return liveNodes.equals(other.liveNodes);
   }
 
-  /** Internal API used only by ZkStateReader */
+  /**
+   * @lucene.internal used only by ZkStateReader
+   */
   void setLiveNodes(Set<String> liveNodes) {
-    this.liveNodes = liveNodes;
+    this.liveNodes = Set.copyOf(liveNodes);
   }
 
   /**
    * Be aware that this may return collections which may not exist now. You can confirm that this
    * collection exists after verifying CollectionRef.get() != null
+   *
+   * @deprecated see {@link #collectionStream()}
    */
+  @Deprecated
   public Map<String, CollectionRef> getCollectionStates() {
     return immutableCollectionStates;
   }
 
   /**
-   * Gets the set of allowed hosts (host:port) built from the set of live nodes. The set is cached
-   * to be reused.
+   * Streams the resolved {@link DocCollection}s, which will often fetch from ZooKeeper for each one
+   * for a many-collection scenario. Use this sparingly; some users have thousands of collections!
    */
-  public Set<String> getHostAllowList() {
-    if (hostAllowList == null) {
-      hostAllowList =
-          getLiveNodes().stream()
-              .map((liveNode) -> liveNode.substring(0, liveNode.indexOf('_')))
-              .collect(Collectors.toSet());
-    }
-    return hostAllowList;
+  public Stream<DocCollection> collectionStream() {
+    return collectionStates.values().stream().map(CollectionRef::get).filter(Objects::nonNull);
   }
 
   /**
-   * Iterate over collections. Unlike {@link #getCollectionStates()} collections passed to the
-   * consumer are guaranteed to exist.
+   * Calls {@code consumer} with a resolved {@link DocCollection}s for all collections. Use this
+   * sparingly in case there are many collections.
    *
-   * @param consumer collection consumer.
+   * @deprecated see {@link #collectionStream()}
    */
+  @Deprecated
   public void forEachCollection(Consumer<DocCollection> consumer) {
-    collectionStates.forEach(
-        (s, collectionRef) -> {
-          try {
-            DocCollection collection = collectionRef.get();
-            if (collection != null) {
-              consumer.accept(collection);
-            }
-          } catch (SolrException e) {
-            if (e.getCause() != null
-                && e.getCause().getClass().getName().endsWith("NoNodeException")) {
-              // don't do anything. This collection does not exist
-            } else {
-              throw e;
-            }
-          }
-        });
+    collectionStream().forEach(consumer);
   }
 
   public static class CollectionRef {
@@ -438,7 +441,7 @@ public class ClusterState implements MapWriter {
     }
 
     /**
-     * Return the DocCollection, always refetching if lazy. Equivalent to get(false)
+     * Return the DocCollection, always re-fetching if lazy. Equivalent to get(false)
      *
      * @return The collection state modeled in zookeeper
      */
@@ -471,6 +474,7 @@ public class ClusterState implements MapWriter {
     }
   }
 
+  /** The approximate number of collections. */
   public int size() {
     return collectionStates.size();
   }
@@ -478,6 +482,9 @@ public class ClusterState implements MapWriter {
   private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER =
       STANDARDOBJBUILDER;
 
+  /**
+   * @lucene.internal
+   */
   public static void setStrInternerParser(Function<JSONParser, ObjectBuilder> fun) {
     if (fun == null) return;
     STR_INTERNER_OBJ_BUILDER = fun;

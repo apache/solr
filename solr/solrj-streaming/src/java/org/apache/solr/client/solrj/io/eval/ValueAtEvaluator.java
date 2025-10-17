@@ -47,9 +47,8 @@ public class ValueAtEvaluator extends RecursiveObjectEvaluator implements ManyVa
       }
       return c.get(index);
 
-    } else if (values[0] instanceof Matrix) {
+    } else if (values[0] instanceof Matrix c) {
 
-      Matrix c = (Matrix) values[0];
       double[][] data = c.getData();
       int row = -1;
       int col = -1;

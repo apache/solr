@@ -23,7 +23,7 @@ configure(rootProject) {
     // NOTE: The actual dependency version isn't available at configuration time, so we use a lazy property provider to
     // supply it at execution time.
     //
-    // In the case of a 'SNAPSHOT' luceneDocVersion this URL won't actually exist, but that shouldn't mater since
+    // In the case of a 'SNAPSHOT' luceneDocVersion this URL won't actually exist, but that shouldn't matter since
     // we can't release Solr pointed at a Lucene SNAPSHOT, so we won't be publishing in this state...
     luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url',
         "https://lucene.apache.org/core/${-> luceneBaseVersionProvider.get().replace('.', '_')}")

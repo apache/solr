@@ -38,7 +38,9 @@ public class CreateCollectionRequestBody {
 
   @JsonProperty public Integer nrtReplicas;
 
-  @JsonProperty public Boolean waitForFinalState;
+  @JsonProperty
+  @Deprecated(since = "9.10")
+  public Boolean waitForFinalState;
 
   @JsonProperty public Boolean perReplicaState;
 

@@ -18,7 +18,6 @@ package org.apache.solr;
 
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 import java.lang.Thread.State;
-import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
 
 /** This ignores those threads in Solr for which there is no way to clean up after a suite. */
 public class SolrIgnoredThreadsFilter implements ThreadFilter {
@@ -33,9 +32,6 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
      */
 
     String threadName = t.getName();
-    if (threadName.equals(TimerThread.THREAD_NAME)) {
-      return true;
-    }
 
     // due to netty - will stop on it's own
     if (threadName.startsWith("globalEventExecutor")) {
@@ -82,6 +78,30 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-    return threadName.startsWith("closeThreadPool");
+    // CURATOR-720
+    if (threadName.equals("OverseerExitThread")) {
+      return true;
+    }
+
+    // JVM JFR (Java Flight Recorder) periodic tasks thread
+    if (threadName.equals("JFR Periodic Tasks")) {
+      return true;
+    }
+
+    if (threadName.startsWith("closeThreadPool")) {
+      return true;
+    }
+
+    // TestContainers
+    if (threadName.startsWith("testcontainers-ryuk")
+        || threadName.startsWith("testcontainers-wait-")
+        || threadName.startsWith("testcontainers-pull-watchdog-")
+        || threadName.equals("JNA Cleaner")
+        || threadName.startsWith("HttpClient-")
+        || threadName.startsWith("HttpClient-TestContainers")) {
+      return true;
+    }
+
+    return false;
   }
 }

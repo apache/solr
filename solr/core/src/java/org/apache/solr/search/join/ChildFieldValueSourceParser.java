@@ -100,8 +100,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof BlockJoinSortFieldValueSource)) return false;
-      BlockJoinSortFieldValueSource other = (BlockJoinSortFieldValueSource) obj;
+      if (!(obj instanceof BlockJoinSortFieldValueSource other)) return false;
       return Objects.equals(childField, other.childField)
           && Objects.equals(childFilter, other.childFilter)
           && Objects.equals(parentFilter, other.parentFilter);

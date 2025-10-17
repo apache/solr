@@ -25,18 +25,18 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 @test "healthcheck on cloud solr" {
-  solr start -c -e films
+  solr start -e films
   run solr healthcheck -c films
   refute_output --partial 'error'
   
 }
 
 @test "healthcheck errors on standalone solr" {
-  solr start -e films
+  solr start --user-managed -e films
   run solr healthcheck -c films
   assert_output --partial 'Healthcheck tool only works in Solr Cloud mode'
   

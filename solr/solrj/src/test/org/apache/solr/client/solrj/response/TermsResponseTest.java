@@ -34,7 +34,10 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
   public static void beforeClass() throws Exception {
     solrClientTestRule.startSolr();
 
-    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
+    solrClientTestRule
+        .newCollection()
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
+        .create();
   }
 
   @Before

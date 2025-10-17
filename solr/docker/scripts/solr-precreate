@@ -36,4 +36,4 @@ source run-initdb
 
 precreate-core "$@"
 
-exec solr-fg
+exec solr-fg --user-managed

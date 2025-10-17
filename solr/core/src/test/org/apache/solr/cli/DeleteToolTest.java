@@ -17,10 +17,6 @@
 
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.findTool;
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-
-import org.apache.commons.cli.CommandLine;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -60,15 +56,13 @@ public class DeleteToolTest extends SolrCloudTestCase {
       "delete",
       "-c",
       "testDeleteCollectionWithBasicAuth",
-      "-deleteConfig",
-      "false",
-      "-zkHost",
+      "-z",
       cluster.getZkClient().getZkServerAddress(),
-      "-credentials",
+      "--credentials",
       SecurityJson.USER_PASS,
-      "-verbose"
+      "--verbose"
     };
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, DeleteTool.class));
   }
 
   @Test
@@ -87,17 +81,10 @@ public class DeleteToolTest extends SolrCloudTestCase {
       "delete",
       "-c",
       "testFailsToDeleteProtectedCollection",
-      "-zkHost",
+      "-z",
       cluster.getZkClient().getZkServerAddress(),
-      "-verbose"
+      "--verbose"
     };
-    assertEquals(1, runTool(args));
-  }
-
-  private int runTool(String[] args) throws Exception {
-    Tool tool = findTool(args);
-    assertTrue(tool instanceof DeleteTool);
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
-    return tool.runTool(cli);
+    assertEquals(1, CLITestHelper.runTool(args, DeleteTool.class));
   }
 }

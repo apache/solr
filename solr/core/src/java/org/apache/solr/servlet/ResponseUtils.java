@@ -68,8 +68,7 @@ public class ResponseUtils {
   public static int getErrorInfo(
       Throwable ex, NamedList<Object> info, Logger log, boolean hideTrace) {
     int code = 500;
-    if (ex instanceof SolrException) {
-      SolrException solrExc = (SolrException) ex;
+    if (ex instanceof SolrException solrExc) {
       code = solrExc.code();
       NamedList<String> errorMetadata = solrExc.getMetadata();
       if (errorMetadata == null) {
@@ -79,8 +78,7 @@ public class ResponseUtils {
       errorMetadata.add(
           ErrorInfo.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
       info.add("metadata", errorMetadata);
-      if (ex instanceof ApiBag.ExceptionWithErrObject) {
-        ApiBag.ExceptionWithErrObject exception = (ApiBag.ExceptionWithErrObject) ex;
+      if (ex instanceof ApiBag.ExceptionWithErrObject exception) {
         info.add("details", exception.getErrs());
       }
     }
@@ -142,14 +140,12 @@ public class ResponseUtils {
   public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log, boolean hideTrace) {
     final ErrorInfo errorInfo = new ErrorInfo();
     int code = 500;
-    if (ex instanceof SolrException) {
-      SolrException solrExc = (SolrException) ex;
+    if (ex instanceof SolrException solrExc) {
       code = solrExc.code();
       errorInfo.metadata = new ErrorInfo.ErrorMetadata();
       errorInfo.metadata.errorClass = ex.getClass().getName();
       errorInfo.metadata.rootErrorClass = SolrException.getRootCause(ex).getClass().getName();
-      if (ex instanceof ApiBag.ExceptionWithErrObject) {
-        ApiBag.ExceptionWithErrObject exception = (ApiBag.ExceptionWithErrObject) ex;
+      if (ex instanceof ApiBag.ExceptionWithErrObject exception) {
         errorInfo.details = exception.getErrs();
       }
     }

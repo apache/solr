@@ -55,7 +55,7 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
 
         float maxScore = Float.NEGATIVE_INFINITY;
         for (GroupDocs<BytesRef> group : topGroups.groups) {
-          for (ScoreDoc scoreDoc : group.scoreDocs) {
+          for (ScoreDoc scoreDoc : group.scoreDocs()) {
             if (maxScore < scoreDoc.score) {
               maxScore = scoreDoc.score;
             }
@@ -70,15 +70,14 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
         }
         command.add("doclist", docList);
         commands.add(entry.getKey(), command);
-      } else if (value instanceof QueryCommandResult) {
-        QueryCommandResult queryCommandResult = (QueryCommandResult) value;
+      } else if (value instanceof QueryCommandResult queryCommandResult) {
         NamedList<Object> command = new SimpleOrderedMap<>();
         command.add("matches", queryCommandResult.getMatches());
 
         TopDocs topDocs = queryCommandResult.getTopDocs();
         SolrDocumentList docList = new SolrDocumentList();
         docList.setStart(rb.getGroupingSpec().getGroupSortSpec().getOffset());
-        docList.setNumFound(topDocs.totalHits.value);
+        docList.setNumFound(topDocs.totalHits.value());
 
         if (!Float.isNaN(queryCommandResult.getMaxScore())) {
           docList.setMaxScore(queryCommandResult.getMaxScore());

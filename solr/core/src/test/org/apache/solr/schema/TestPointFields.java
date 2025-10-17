@@ -56,6 +56,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.PointRangeQuery;
@@ -641,7 +642,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testIntPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     doTestIntPointFieldsAtomicUpdates("number_p_i");
@@ -651,7 +652,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiValuedIntPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     String[] ints = toStringArray(getRandomInts(3, false));
@@ -1283,7 +1284,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testDoublePointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     doTestDoublePointFieldsAtomicUpdates("number_p_d");
@@ -1293,7 +1294,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiValuedDoublePointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     String[] doubles = toStringArray(getRandomDoubles(3, false));
@@ -1899,7 +1900,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testFloatPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     doTestFloatPointFieldsAtomicUpdates("number_p_f");
@@ -1909,7 +1910,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiValuedFloatPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     String[] floats = toStringArray(getRandomFloats(3, false));
@@ -2462,7 +2463,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testLongPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     doTestLongPointFieldsAtomicUpdates("number_p_l");
@@ -2472,7 +2473,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiValuedLongPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     String[] longs = toStringArray(getRandomLongs(3, false));
@@ -3095,7 +3096,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testDatePointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     doTestDatePointFieldsAtomicUpdates("number_p_dt");
@@ -3105,7 +3106,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiValuedDatePointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     String[] dates =
@@ -3429,7 +3430,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertU(adoc("id", String.valueOf(i), field, values[i]));
     }
     // Check using RTG
-    if (Boolean.getBoolean("enable.update.log")) {
+    if (Boolean.getBoolean("solr.index.updatelog.enabled")) {
       for (int i = 0; i < values.length; i++) {
         assertQ(
             req("qt", "/get", "id", String.valueOf(i)),
@@ -3454,7 +3455,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(values.length)), expected);
 
     // Check using RTG
-    if (Boolean.getBoolean("enable.update.log")) {
+    if (Boolean.getBoolean("solr.index.updatelog.enabled")) {
       for (int i = 0; i < values.length; i++) {
         assertQ(
             req("qt", "/get", "id", String.valueOf(i)),
@@ -4076,7 +4077,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertU(adoc("id", String.valueOf(i), fieldName, numbers[i], fieldName, numbers[i + 10]));
     }
     // Check using RTG before commit
-    if (Boolean.getBoolean("enable.update.log")) {
+    if (Boolean.getBoolean("solr.index.updatelog.enabled")) {
       for (int i = 0; i < 10; i++) {
         assertQ(
             req("qt", "/get", "id", String.valueOf(i)),
@@ -4087,7 +4088,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
     // Check using RTG after commit
     assertU(commit());
-    if (Boolean.getBoolean("enable.update.log")) {
+    if (Boolean.getBoolean("solr.index.updatelog.enabled")) {
       for (int i = 0; i < 10; i++) {
         assertQ(
             req("qt", "/get", "id", String.valueOf(i)),
@@ -5811,8 +5812,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
               }
               for (LeafReaderContext leave : ir.leaves()) {
                 LeafReader reader = leave.reader();
+                StoredFields storedFields = reader.storedFields();
                 for (int i = 0; i < reader.numDocs(); i++) {
-                  Document doc = reader.document(i);
+                  Document doc = storedFields.document(i);
                   if (sf.stored()) {
                     assertNotNull("Field " + field + " not found. Doc: " + doc, doc.get(field));
                   } else {

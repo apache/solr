@@ -25,6 +25,11 @@ allprojects {
   // Repositories to fetch dependencies from.
   repositories {
     mavenCentral()
+    // Note: The maven repository below is temorary and will be removed eventually.
+    maven {
+      name "SearchScale"
+      url "https://maven.searchscale.com/snapshots"
+    }
     /* Reenable this if we need it again in future
     maven {
       name "LucenePrerelease${lucenePrereleaseBuild}"
@@ -35,9 +40,12 @@ allprojects {
 
   // Artifacts will have names after full gradle project path
   // so :solr:core will have solr-core.jar, etc.
-  project.archivesBaseName = project.path.replaceAll("^:", "").replace(':', '-')
+  project.archivesBaseName = project.path
+          .replaceAll("^:", "")
+          .replace(':', '-')
+          .replace("-modules-", "-")
 
-  ext {
+  project.ext {
     // Utility method to support passing overrides via -P or -D.
     propertyOrDefault = { propName, defValue ->
       def result
@@ -173,5 +181,6 @@ allprojects {
     // Assign different java version for client-side modules 'api' and 'solrj*'
     var isSolrJ = project.name.matches("^(solrj.*|api)\$")
     minJavaVersion = isSolrJ ? rootProject.minJavaVersionSolrJ : rootProject.minJavaVersionDefault
+    minJavaTestVersion = rootProject.minJavaVersionDefault
   }
 }

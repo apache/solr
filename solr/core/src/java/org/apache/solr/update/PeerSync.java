@@ -21,11 +21,11 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -33,14 +33,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.http.NoHttpResponseException;
-import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -50,6 +49,9 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -89,9 +91,9 @@ public class PeerSync implements SolrMetricProducer {
   private MissedUpdatesFinder missedUpdatesFinder;
 
   // metrics
-  private Timer syncTime;
-  private Counter syncErrors;
-  private Counter syncSkipped;
+  private AttributedLongTimer syncTime;
+  private AttributedLongCounter syncErrors;
+  private AttributedLongCounter syncSkipped;
   private SolrMetricsContext solrMetricsContext;
 
   // comparator that sorts by absolute value, putting highest first
@@ -121,7 +123,8 @@ public class PeerSync implements SolrMetricProducer {
     this.nUpdates = nUpdates;
     this.cantReachIsSuccess = cantReachIsSuccess;
     this.doFingerprint =
-        doFingerprint && !("true".equals(System.getProperty("solr.disableFingerprint")));
+        doFingerprint
+            && EnvUtils.getPropertyAsBool("solr.index.replication.fingerprint.enabled", true);
     this.onlyIfActive = onlyIfActive;
 
     uhandler = core.getUpdateHandler();
@@ -131,8 +134,7 @@ public class PeerSync implements SolrMetricProducer {
     shardHandler = shardHandlerFactory.getShardHandler();
     this.updater = new Updater(msg(), core);
 
-    core.getCoreMetricManager()
-        .registerMetricProducer(SolrInfoBean.Category.REPLICATION.toString(), this);
+    core.getCoreMetricManager().registerMetricProducer(this, Attributes.empty());
   }
 
   public static final String METRIC_SCOPE = "peerSync";
@@ -143,11 +145,27 @@ public class PeerSync implements SolrMetricProducer {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     this.solrMetricsContext = parentContext.getChildContext(this);
-    syncTime = solrMetricsContext.timer("time", scope, METRIC_SCOPE);
-    syncErrors = solrMetricsContext.counter("errors", scope, METRIC_SCOPE);
-    syncSkipped = solrMetricsContext.counter("skipped", scope, METRIC_SCOPE);
+    var baseAttributes =
+        attributes.toBuilder()
+            .put("category", SolrInfoBean.Category.REPLICATION.toString())
+            .build();
+    syncErrors =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_core_peer_sync_errors", "Total number of sync errors with peer"),
+            baseAttributes);
+    syncSkipped =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_core_peer_sync_skipped", "Total number of skipped syncs with peer"),
+            baseAttributes);
+    syncTime =
+        new AttributedLongTimer(
+            solrMetricsContext.longHistogram(
+                "solr_core_peer_sync_time", "Peer sync times", OtelUnit.MILLISECONDS),
+            baseAttributes);
   }
 
   public static long percentile(List<Long> arr, float frac) {
@@ -178,7 +196,7 @@ public class PeerSync implements SolrMetricProducer {
       syncErrors.inc();
       return PeerSyncResult.failure();
     }
-    Timer.Context timerContext = null;
+    AttributedLongTimer.MetricTimer timerContext = null;
     try {
       if (log.isInfoEnabled()) {
         log.info("{} START replicas={} nUpdates={}", msg(), replicas, nUpdates);
@@ -191,7 +209,7 @@ public class PeerSync implements SolrMetricProducer {
       }
 
       // measure only when actual sync is performed
-      timerContext = syncTime.time();
+      timerContext = syncTime.start();
 
       // Fire off the requests before getting our own recent updates (for better concurrency)
       // This also allows us to avoid getting updates we don't need... if we got our updates and
@@ -270,7 +288,7 @@ public class PeerSync implements SolrMetricProducer {
       return success ? PeerSyncResult.success() : PeerSyncResult.failure();
     } finally {
       if (timerContext != null) {
-        timerContext.close();
+        timerContext.stop();
       }
     }
   }
@@ -365,9 +383,7 @@ public class PeerSync implements SolrMetricProducer {
         boolean connectTimeoutExceptionInChain =
             connectTimeoutExceptionInChain(srsp.getException());
         if (connectTimeoutExceptionInChain
-            || solrException instanceof ConnectTimeoutException
             || solrException instanceof SocketTimeoutException
-            || solrException instanceof NoHttpResponseException
             || solrException instanceof SocketException) {
 
           log.warn(
@@ -427,7 +443,7 @@ public class PeerSync implements SolrMetricProducer {
   private boolean connectTimeoutExceptionInChain(Throwable exception) {
     Throwable t = exception;
     while (true) {
-      if (t instanceof ConnectTimeoutException) {
+      if (t instanceof ConnectException) { // note: Apache HttpClient used "ConnectTimeoutException"
         return true;
       }
       Throwable cause = t.getCause();
@@ -603,11 +619,8 @@ public class PeerSync implements SolrMetricProducer {
     // comparator that sorts update records by absolute value of version, putting lowest first
     private static final Comparator<Object> updateRecordComparator =
         (o1, o2) -> {
-          if (!(o1 instanceof List)) return 1;
-          if (!(o2 instanceof List)) return -1;
-
-          List<?> lst1 = (List<?>) o1;
-          List<?> lst2 = (List<?>) o2;
+          if (!(o1 instanceof List<?> lst1)) return 1;
+          if (!(o2 instanceof List<?> lst2)) return -1;
 
           long l1 = Math.abs((Long) lst1.get(1));
           long l2 = Math.abs((Long) lst2.get(1));

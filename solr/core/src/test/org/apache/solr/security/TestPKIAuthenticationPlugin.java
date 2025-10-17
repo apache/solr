@@ -23,22 +23,26 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongHistogram;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.PublicKey;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.message.BasicHttpRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -118,7 +122,18 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
     mockReq = createMockRequest(header);
     mock = new MockPKIAuthenticationPlugin(nodeName);
+    mockMetrics(mock);
     request = new BasicHttpRequest("GET", "http://localhost:56565");
+  }
+
+  private static void mockMetrics(MockPKIAuthenticationPlugin mock) {
+    SolrMetricsContext smcMock = mock(SolrMetricsContext.class);
+    when(smcMock.getChildContext(any())).thenReturn(smcMock);
+    LongCounter longCounterMock = mock(LongCounter.class);
+    LongHistogram longHistogramMock = mock(LongHistogram.class);
+    when(smcMock.longCounter(any(), any())).thenReturn(longCounterMock);
+    when(smcMock.longHistogram(any(), any(), any())).thenReturn(longHistogramMock);
+    mock.initializeMetrics(smcMock, Attributes.empty());
   }
 
   @Override
@@ -133,7 +148,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     String username = "solr user"; // with spaces
     principal.set(new BasicUserPrincipal(username));
     mock.solrRequestInfo = new SolrRequestInfo(localSolrQueryRequest, new SolrQueryResponse());
-    mock.setHeader(request);
+    mockSetHeaderOnRequest();
     header.set(request.getFirstHeader(headerKey));
     assertNotNull(header.get());
     assertTrue(header.get().getValue().startsWith(nodeName));
@@ -143,6 +158,10 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertNotNull(((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal());
     assertEquals(
         username, ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
+  }
+
+  private void mockSetHeaderOnRequest() {
+    mock.setHeader((k, v) -> request.setHeader(k, v));
   }
 
   public void testSuperUser() throws Exception {
@@ -161,10 +180,11 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
             }
           }
         };
+    mockMetrics(mock1);
 
     // Setup regular superuser request
     mock.solrRequestInfo = null;
-    mock.setHeader(request);
+    mockSetHeaderOnRequest();
     header.set(request.getFirstHeader(headerKey));
     assertNotNull(header.get());
     assertTrue(header.get().getValue().startsWith(nodeName));
@@ -187,10 +207,11 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     System.setProperty(PKIAuthenticationPlugin.SEND_VERSION, "v1");
     System.setProperty(PKIAuthenticationPlugin.ACCEPT_VERSIONS, "v2");
     mock = new MockPKIAuthenticationPlugin(nodeName);
+    mockMetrics(mock);
 
     principal.set(new BasicUserPrincipal("solr"));
     mock.solrRequestInfo = new SolrRequestInfo(localSolrQueryRequest, new SolrQueryResponse());
-    mock.setHeader(request);
+    mockSetHeaderOnRequest();
 
     HttpServletResponse response = mock(HttpServletResponse.class);
     // This will fail in the same way that a missing header would fail

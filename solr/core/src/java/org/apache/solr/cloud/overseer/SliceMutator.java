@@ -62,8 +62,7 @@ public class SliceMutator {
   }
 
   static SolrZkClient getZkClient(SolrCloudManager cloudManager) {
-    if (cloudManager instanceof SolrClientCloudManager) {
-      SolrClientCloudManager manager = (SolrClientCloudManager) cloudManager;
+    if (cloudManager instanceof SolrClientCloudManager manager) {
       return manager.getZkClient();
     } else {
       return null;
@@ -172,9 +171,7 @@ public class SliceMutator {
     final Map<String, Replica> newReplicas = new LinkedHashMap<>();
     for (Replica replica : slice.getReplicas()) {
       // TODO: this should only be calculated once and cached somewhere?
-      String coreURL =
-          ZkCoreNodeProps.getCoreUrl(
-              replica.getBaseUrl(), replica.getStr(ZkStateReader.CORE_NAME_PROP));
+      String coreURL = replica.getCoreUrl();
 
       if (replica.equals(oldLeader) && !coreURL.equals(leaderUrl)) {
         replica = ReplicaMutator.unsetLeader(replica);

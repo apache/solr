@@ -55,7 +55,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
 
     solrClientTestRule
         .newCollection(COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();
 
     SolrClient client = solrClientTestRule.getSolrClient(COLLECTION_NAME);

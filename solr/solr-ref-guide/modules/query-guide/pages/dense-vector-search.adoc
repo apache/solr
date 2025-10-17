@@ -1,4 +1,5 @@
 = Dense Vector Search
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -97,6 +98,9 @@ this similarity is intended as an optimized way to perform cosine similarity. In
 * `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]
 
 [NOTE]
+the cosine similarity scores returned by Solr are normalized like this : `(1 + cosine_similarity) / 2`.
+
+[NOTE]
 the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
 
 To use the following advanced parameters that customise the codec format
@@ -118,7 +122,7 @@ Here's how `DenseVectorField` can be configured with the advanced hyperparameter
 (advanced) Specifies the underlying knn algorithm to use
 +
 
-Accepted values: `hnsw`.
+Accepted values: `hnsw`, `cagra_hnsw` (requires GPU acceleration setup).
 
 Please note that the `knnAlgorithm` accepted values may change in future releases.
 
@@ -174,11 +178,11 @@ currently multivalue is not supported
 
 Here's how a `DenseVectorField` should be indexed:
 
-[.dynamic-tabs]
---
-[example.tab-pane#json]
+[tabs#densevectorfield-index]
+======
+JSON::
++
 ====
-[.tab-label]*JSON*
 [source,json]
 ----
 [{ "id": "1",
@@ -191,9 +195,9 @@ Here's how a `DenseVectorField` should be indexed:
 ----
 ====
 
-[example.tab-pane#xml]
+XML::
++
 ====
-[.tab-label]*XML*
 [source,xml]
 ----
 <add>
@@ -215,9 +219,9 @@ Here's how a `DenseVectorField` should be indexed:
 ----
 ====
 
-[example.tab-pane#solrj]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 final SolrClient client = getSolrClient();
@@ -234,17 +238,116 @@ d2.setField("vector", Arrays.asList(1.5f, 5.5f, 6.7f, 65.1f));
 client.add(Arrays.asList(d1, d2));
 ----
 ====
---
+======
+
+=== ScalarQuantizedDenseVectorField
+Because dense vectors can have a costly size, it may be worthwhile to use a technique called "quantization"
+which creates a compressed representation of the original vectors. This allows more of the index to be stored in faster memory
+at the cost of some precision.
+
+This dense vector type uses a conversion that projects a 32 bit float precision feature down to an 8 bit int (or smaller)
+by linearly mapping the float range of each dimension down to evenly sized "buckets" of values that fit into an int. For example:
+with 8 bits we can store up to 256 discrete values, so a float dimension with values from 0.0 to 1.0 may be mapped as
+
+[0.0, 0.0039) => 0, [0.0039, 0.0078) => 1 ... etc
+
+As a specific type of DenseVectorField, this field type supports all the same configurable properties outlined above as well
+as some additional ones.
+
+Here is how a ScalarQuantizedDenseVectorField can be defined in the schema:
+
+[source,xml]
+<fieldType name="scalar_quantized_vector" class="solr.ScalarQuantizedDenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
+<field name="vector" type="scalar_quantized_vector" indexed="true" stored="true"/>
+
+`bits`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `7`
+|===
++
+The number of bits to use for each quantized dimension value
++
+Accepted values: 4 (half byte) or 7 (unsigned byte).
+
+`confidenceInterval`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `dimension-scaled`
+|===
++
+Statistically, outlier values are rarely meaningfully relevant to searches, so to increase the size of each bucket for
+quantization (and therefore information gain) we can scale the quantization intervals to the middle n % of values and place the remaining
+outliers in the outermost intervals.
++
+For example: 0.9 means scale interval sizes to the middle 90% of values
++
+If this param is omitted a default is used; scaled to the number of dimensions according to `1-1/(vector_dimensions + 1)`
++
+Accepted values: `FLOAT32`  (within 0.9 and 1.0)
+
+`dynamicConfidenceInterval`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `false`
+|===
++
+If set to true, enables dynamically determining confidence interval (per dimension) by sampling values each time a merge occurs.
++
+`NOTE: when this is enabled, it will take precedence over any value configured for confidenceInterval`
++
+Accepted values: `BOOLEAN`
+
+`compress`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `false`
+|===
++
+If set to true, this will further pack multiple dimension values within a one byte alignment. This further decreases the
+quantized vector disk storage size by 50% at some decode penalty. This does not affect the raw vector which is always
+preserved when `stored` is true.
++
+`NOTE: this can only be enabled when bits=4`
++
+Accepted values: `BOOLEAN`
+
+=== BinaryQuantizedDenseVectorField
+
+Binary quantization is a quantization technique that extends scalar quantization, and is even more aggressive in its compression;
+able to reduce in-memory representation of each vector dimension from a 32 bit float down to a single bit.
+This is done by normalizing each dimension of a vector relative to a centroid (mid-point pre-calculated against all vectors in the index)
+with the stored bit representing whether the actual value is "above" or "below" the centroid's value. A further "corrective factor" is also computed
+and stored to help compensate accuracy in the estimated distance. At query time asymmetric quantization is applied to the query
+vector (reducing its dimension values down to 4 bits each), but allowing comparison with the stored binary quantized vector via bit arithmetic.
+
+This implementation comprises of LVQ, proposed in https://arxiv.org/abs/2304.04759[Similarity Search in the Blink of an Eye With Compressed Indices]
+by Cecilia Aguerrebere et al., previous work on globally optimized scalar quantization in Apache Lucene, and ideas from
+https://arxiv.org/abs/1908.10396[Accelerating Large-Scale Inference with Anisotropic Vector Quantization] by Ruiqi Guo et al.
+
+This vector type is best utilized for data sets consisting of large amounts of high dimensionality vectors.
+
+Here is how a BinaryQuantizedDenseVectorField can be defined in the schema:
+
+[source,xml]
+<fieldType name="binary_quantized_vector" class="solr.BinaryQuantizedDenseVectorField" vectorDimension="4"/>
+<field name="vector" type="binary_quantized_vector" indexed="true" stored="true"/>
+
+BinaryQuantizedDenseVectorField accepts the same parameters as `DenseVectorField` with the only notable exception being
+`similarityFunction`. Bit quantization uses its own distance calculation and so does not require nor use the `similarityFunction`
+param.
 
 == Query Time
-This is the Apache Solr query approach designed to support dense vector search:
 
-=== knn Query Parser
-The `knn` k-nearest neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.  The set of documents can be Pre-Filtered to reduce the number of vector distance calculations that must be computed, and ensure the best `topK` are returned.
+Apache Solr provides three query parsers that work with dense vector fields, that each support different ways of matching documents based on vector similarity: The `knn` query parser, the `vectorSimilarity` query parser and the `knn_text_to_vector` query parser.
 
-The score for a retrieved document is the approximate distance to the target vector(defined by the similarityFunction configured at indexing time).
+All parsers return scores for retrieved documents that are the approximate distance to the target vector (defined by the similarityFunction configured at indexing time) and both support "Pre-Filtering" the document graph to reduce the number of candidate vectors evaluated (without needing to compute their vector similarity distances).
 
-It takes the following parameters:
+Common parameters for both query parsers are:
 
 `f`::
 +
@@ -254,15 +357,6 @@ s|Required |Default: none
 |===
 +
 The `DenseVectorField` to search in.
-
-`topK`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: 10
-|===
-+
-How many k-nearest results to return.
 
 `preFilter`::
 +
@@ -293,22 +387,190 @@ Indicates that only `fq` filters with the specified `tag` should be considered f
 Indicates that `fq` filters with the specified `tag` should be excluded from consideration for implicit Pre-Filtering.  Must not be combined with `preFilter`.
 
 
-Here's how to run a simple KNN search:
+=== knn Query Parser
+
+The `knn` k-nearest neighbors query parser matches k-nearest documents to the target vector.
+
+In addition to the common parameters described above, it takes the following parameters:
+
+`topK`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 10
+|===
++
+How many k-nearest results to return.
+
+Here's an example of a simple `knn` search:
 
 [source,text]
 ?q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
 
 The search results retrieved are the k=10 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the `similarityFunction` configured at indexing time.
 
+`earlyTermination`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Early termination is an HNSW optimization. Solr relies on the Lucene’s implementation of early termination for kNN queries, based on https://cs.uwaterloo.ca/~jimmylin/publications/Teofili_Lin_ECIR2025.pdf[Patience in Proximity: A Simple Early Termination Strategy for HNSW Graph Traversal in Approximate k-Nearest Neighbor Search].
++
+When enabled (true), the search may exit early when the HNSW candidate queue remains saturated over a threshold (saturationThreshold) for more than a given number of iterations (patience). Refer to the two parameters below for more details.
++
+Enabling early termination typically reduces query latency and resource usage, with a potential small trade-off in recall.
 
-==== Explicit KNN Pre-Filtering
+`saturationThreshold`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0.995`
+|===
++
+(advanced) The early exit saturation threshold.
++
+Our recommendation is to rely on the default value and change this parameter only if you are confident about its impact. Using values that are too low can cause the search to terminate prematurely, leading to poor recall.
++
+This parameter must be used together with `patience`; either specify both to customize the behavior, or omit both to rely on the default values.
 
-The `knn` query parser's `preFilter` parameter can be specified to reduce the number of candidate documents evaluated for the k-nearest distance calculation:
+`patience`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `max(7, topK * 0.3)`
+|===
++
+(advanced) The number of consecutive iterations the search will continue after the candidate queue is considered saturated. The default value is not a fixed value (integer) but a formula based on the topK parameter.
++
+Our recommendation is to rely on the default value and change this parameter only if you are confident about its impact:
++
+* Using values that are too low can make the search stop too aggressively, reducing recall.
+* Using values that are too high reduces the benefit of early termination, since the search runs nearly as long as without it.
+
++
+This parameter must be used together with `saturationThreshold`; either specify both to customize the behavior, or omit both to rely on the default values.
+
+Here's an example of a `knn` search using the early termination with input parameters:
 
 [source,text]
-?q={!knn f=vector topK=10 preFilter=inStock:true}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=10 earlyTermination=true saturationThreshold=0.989 patience=10}[1.0, 2.0, 3.0, 4.0]
 
-In the above example, only documents matching the Pre-Filter `inStock:true` will be candidates for consideration when evaluating the k-nearest search against the specified vector.
+=== knn_text_to_vector Query Parser
+
+The `knn_text_to_vector` query parser encode a textual query to a vector using a dedicated Large Language Model(fine tuned for the task of encoding text to vector for sentence similarity) and matches k-nearest neighbours documents to such query vector.
+
+In addition to the parameters in common with the other dense-retrieval query parsers, it takes the following:
+
+`model`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The model to use to encode the text to a vector. Must reference an existing model loaded into the `/schema/text-to-vector-model-store`.
+
+`topK`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 10
+|===
++
+How many k-nearest results to return.
+
+Here's an example of a simple `knn_text_to_vector` search:
+
+[source,text]
+?q={!knn_text_to_vector model=a-model f=vector topK=10}hello world query
+
+The search results retrieved are the k=10 nearest documents to the vector encoded from the query `hello world query`, using the model `a-model`.
+
+For more details on how to work with vectorise text in Apache Solr, please refer to the dedicated page: xref:text-to-vector.adoc[Text to Vector]
+
+=== vectorSimilarity Query Parser
+
+The `vectorSimilarity` vector similarity query parser matches documents whose similarity with the target vector is a above a minimum threshold.
+
+In addition to the common parameters described above, it takes the following parameters:
+
+
+`minReturn`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Minimum similarity threshold of nodes in the graph to be returned as matches
+
+`minTraverse`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: -Infinity
+|===
++
+Minimum similarity of nodes in the graph to continue traversal of their neighbors
+
+Here's an example of a simple `vectorSimilarity` search:
+
+[source,text]
+?q={!vectorSimilarity f=vector minReturn=0.7}[1.0, 2.0, 3.0, 4.0]
+
+The search results retrieved are all documents whose similarity with the input vector `[1.0, 2.0, 3.0, 4.0]` is at least `0.7` based on the `similarityFunction` configured at indexing time
+
+
+=== Which one to use?
+
+Let's see when to use each of the dense retrieval query parsers available:
+
+== knn Query Parser
+
+You should use the `knn` query parser when:
+
+* you search for the top-K closest vectors to a query vector
+* you work directly with vectors (no text encoding is involved)
+* you want to a have a fine-grained control over the way you encode text to vector and prefer to do it outside of Apache Solr
+
+
+== knn_text_to_vector Query Parser
+
+You should use the `knn_text_to_vector` query parser when:
+
+* you search for the top-K closest vectors to a query text
+* you work directly with text and want Solr to handle the encoding to vector behind the scenes
+* you are building demos/prototypes
+
+[IMPORTANT]
+====
+Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to interact with Large Language Models.
+The integration is experimental and we are going to improve our stress-test and benchmarking coverage of this query parser in future iterations: if you care about raw performance you may prefer to encode the text outside of Solr
+====
+
+== vectorSimilarity Query Parser
+
+You should use the `vectorSimilarity` query parser when:
+
+* you search for the closest vectors to a query vector within a similarity threshold
+* you work directly with vectors (no text encoding is involved)
+* you want to a have a fine-grained control over the way you encode text to vector and prefer to do it outside of Apache Solr
+
+
+=== Graph Pre-Filtering
+
+Pre-Filtering the set of candidate documents considered when walking the graph can be specified either explicitly, or implicitly (based on existing `fq` params) depending on how and when these dense vector query parsers are used.
+
+==== Explicit Pre-Filtering
+
+The `preFilter` parameter can be specified explicitly to reduce the number of candidate documents evaluated for the distance calculation:
+
+[source,text]
+?q={!vectorSimilarity f=vector minReturn=0.7 preFilter=inStock:true}[1.0, 2.0, 3.0, 4.0]
+
+In the above example, only documents matching the Pre-Filter `inStock:true` will be candidates for consideration when evaluating the `vectorSimilarity` search against the specified vector.
 
 The `preFilter` parameter may be blank (ex: `preFilter=""`) to indicate that no Pre-Filtering should be performed; or it may be multi-valued -- either through repetition, or via duplicated xref:local-params.adoc#parameter-dereferencing[Parameter References].
 
@@ -324,22 +586,22 @@ These two examples are equivalent:
 &knnPreFilter=inStock:true
 ----
 
-==== Implicit KNN Pre-Filtering
+==== Implicit Pre-Filtering
 
-While the `preFilter` parameter may be explicitly specified on *_any_* usage of the `knn` query parser, the default Pre-Filtering behavior (when no `preFilter` parameter is specified) will vary based on how the `knn` query parser is used:
+While the `preFilter` parameter may be explicitly specified on *_any_* usage of the `knn` or `vectorSimilarity` query parsers, the default Pre-Filtering behavior (when no `preFilter` parameter is specified) will vary based on how the query parser is used:
 
-* When used as the main `q` param: `fq` filters in the request (that are not xref:common-query-parameters.adoc#cache-local-parameter[Solr Post Filters]) will be combined to form an implicit KNN Pre-Filter.
+* When used as the main `q` param: `fq` filters in the request (that are not xref:common-query-parameters.adoc#cache-local-parameter[Solr Post Filters]) will be combined to form an implicit Graph Pre-Filter.
 ** This default behavior optimizes the number of vector distance calculations considered, eliminating documents that would eventually be excluded by an `fq` filter anyway.
 ** `includeTags` and `excludeTags` may be used to limit the set of `fq` filters used in the Pre-Filter.
-* When used as an `fq` param, or as a subquery clause in a larger query: No implicit Pre-Filter is used.
+* When a vector search query parser is used as an `fq` param, or as a subquery clause in a larger query: No implicit Pre-Filter is used.
 ** `includeTags` and `excludeTags` must not be used in these situations.
 
 
-The example request below shows two usages of the `knn` query parser that will get _no_ implicit Pre-Filtering from any of the `fq` parameters, because neither usage is as the main `q` param:
+The example request below shows two usages of vector query parsers that will get _no_ implicit Pre-Filtering from any of the `fq` parameters, because neither usage is as the main `q` param:
 
 [source,text]
 ----
-?q=(color_str:red OR {!knn f=color_vector topK=10 v="[1.0, 2.0, 3.0, 4.0]"})
+?q=(color_str:red OR {!vectorSimilarity f=color_vector minReturn=0.7 v="[1.0, 2.0, 3.0, 4.0]"})
 &fq={!knn f=title_vector topK=10}[9.0, 8.0, 7.0, 6.0]
 &fq=inStock:true
 ----
@@ -363,20 +625,23 @@ If we modify the above request to add tags to the `fq` parameters, we can specif
 &fq={!tag=for_knn}inStock:true
 ----
 
-In this example, only the `inStock:true` filter will be used for KNN Pre-Filtering to find the the `topK=10` documents, and the `category:AAA` filter will be applied independently; possibly resulting in less then 10 total matches.
+In this example, only the `inStock:true` filter will be used for Pre-Filtering to find the the `topK=10` documents, and the `category:AAA` filter will be applied independently; possibly resulting in less then 10 total matches.
 
 
 Some use cases where `includeTags` and/or `excludeTags` may be more useful then an explicit `preFilter` parameters:
 
-* You have some `fq` parameters that are xref:configuration-guide:requesthandlers-searchcomponents.adoc#paramsets-and-useparams[re-used on many requests] (even when you don't use the `knn` parser) that you wish to be used as KNN Pre-Filters when you _do_ use the `knn` query parser.
-* You typically want all `fq` params to be used as KNN Pre-Filters, but when users "drill down" on Facets, you want the `fq` parameters you add to be excluded from the KNN Pre-Filtering so that the result set gets smaller; instead of just computing a new `topK` set.
+* You have some `fq` parameters that are xref:configuration-guide:requesthandlers-searchcomponents.adoc#paramsets-and-useparams[re-used on many requests] (even when you don't use search dense vector fields) that you wish to be used as Pre-Filters when you _do_ search dense vector fields.
+* You typically want all `fq` params to be used as graph Pre-Filters on your `knn` queries, but when users "drill down" on Facets, you want the `fq` parameters you add to be excluded from the Pre-Filtering so that the result set gets smaller; instead of just computing a new `topK` set.
 
 
 
-==== Usage as Re-Ranking Query
-The `knn` query parser can be used to rerank first pass query results:
+=== Usage in Re-Ranking Query
+
+Both dense vector search query parsers can be used to rerank first pass query results:
+
 [source,text]
 &q=id:(3 4 9 2)&rq={!rerank reRankQuery=$rqq reRankDocs=4 reRankWeight=1}&rqq={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+
 
 [IMPORTANT]
 ====
@@ -391,6 +656,283 @@ The final ranked list of results will have the first pass score(main query `q`) 
 
 Details about using the ReRank Query Parser can be found in the xref:query-guide:query-re-ranking.adoc[Query Re-Ranking] section.
 ====
+
+== GPU Acceleration
+
+[NOTE]
+This is feature is currently experimental.
+
+Building HNSW graphs, esp. with high dimensions and cardinality, is usually slow. If you have a NVIDIA GPU, then building HNSW based indexes can be sped up manifold. This is powered by the https://github.com/rapidsai/cuvs-lucene[cuVS-Lucene] library, a pluggable vectors format for Apache Lucene. It uses the state of the art https://arxiv.org/abs/2308.15136[CAGRA algorithm] for quickly building a fixed degree connected graph, which is then serialized into a HNSW graph. https://developer.nvidia.com/cuda-downloads[CUDA 13.0+] and https://jdk.java.net/archive/[JDK 22] are required to use this feature.
+
+
+To try this out, first copy the module jar files (found in the regular Solr tarball, not the slim one) before starting Solr.
+
+[source,sh]
+----
+cp modules/cuvs/lib/*.jar server/solr-webapp/webapp/WEB-INF/lib/
+----
+
+Define the `fieldType` in the schema, with knnAlgorithm set to `cagra_hnsw`:
+
+[source,xml]
+----
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cagra_hnsw" similarityFunction="cosine" />
+----
+
+Define the xref:configuration-guide:codec-factory.adoc[codecFactory] in xref:configuration-guide:configuring-solrconfig-xml.adoc[solrconfig.xml]
+
+[source,xml]
+----
+<codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
+    <str name="cuvsWriterThreads">8</str>
+    <str name="intGraphDegree">128</str>
+    <str name="graphDegree">64</str>
+    <str name="hnswLayers">1</str>
+    <str name="maxConn">16</str>
+    <str name="beamWidth">100</str>
+</codecFactory>
+----
+
+Where:
+
+* `cuvsWriterThreads` - number of threads to use
+
+* `intGraphDegree` - Intermediate graph degree for building the CAGRA index
+
+* `graphDegree` - Graph degree for building the CAGRA index
+
+* `hnswLayers` - Number of HNSW graph layers to construct while building the HNSW index
+
+* `maxConn` - Max connections parameter passed to the fallback Lucene99HnswVectorsWriter
+
+* `beamWidth` - Beam width parameter passed to the fallback Lucene99HnswVectorsWriter
+
+=== Example
+
+Following is a complete example of setting up a collection with cuVS.
+
+. Install CUDA 13.0
++
+[tabs#cuda-install]
+======
+Ubuntu 22.04 LTS::
++
+====
+[source,sh]
+----
+# Install CUDA 13.0 from NVIDIA's repository
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt-get update
+sudo apt-get install -y cuda-toolkit-13
+
+# Set up environment variables
+echo 'export PATH=/usr/local/cuda-13/bin:$PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda-13/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# Verify installation
+nvcc --version
+----
+====
+
+Ubuntu 24.04 LTS::
++
+====
+[source,sh]
+----
+# Install CUDA 13.0 from NVIDIA's repository
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt-get update
+sudo apt-get install -y cuda-toolkit-13
+
+# Set up environment variables
+echo 'export PATH=/usr/local/cuda-13/bin:$PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda-13/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# Verify installation
+nvcc --version
+----
+====
+
+Fedora 39+::
++
+====
+[source,sh]
+----
+# Install CUDA 13.0 from NVIDIA's repository
+# For Fedora 39, 40, and newer versions:
+sudo dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/fedora39/x86_64/cuda-fedora39.repo
+sudo dnf clean all
+sudo dnf -y install cuda-toolkit-13
+
+# Set up environment variables
+echo 'export PATH=/usr/local/cuda-13/bin:$PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda-13/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# Verify installation
+nvcc --version
+----
+====
+======
+
+. Fetch libcuvs native libraries
++
+[source,sh]
+----
+# Create virtual environment and install libcuvs-cu13 from NVIDIA's RAPIDS repositories
+python3 -m venv libcuvs-env
+source libcuvs-env/bin/activate
+
+# Install libcuvs-cu13 from NVIDIA's RAPIDS wheels (fetches latest 25.10.x artifact)
+pip install "libcuvs-cu13<25.11.0" --pre --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple/
+
+# Set LD_LIBRARY_PATH to include libcuvs libraries
+SITE_PACKAGES_PATH=$(pwd)/$(find libcuvs-env -name site-packages)
+export VENV_LIB=$SITE_PACKAGES_PATH/libcuvs/lib64:$SITE_PACKAGES_PATH/librmm/lib64:$SITE_PACKAGES_PATH/rapids_logger/lib64
+export LD_LIBRARY_PATH=$VENV_LIB:$LD_LIBRARY_PATH:/usr/local/cuda-13/lib64
+
+# Verify libcuvs_c.so is available
+find $LD_LIBRARY_PATH -name "libcuvs_c.so" | head -1
+
+# Deactivate virtual environment (optional - libraries are now accessible via LD_LIBRARY_PATH)
+deactivate
+----
+
+. Copy the `cuvs` module jar files (before starting Solr).
++
+[source,sh]
+----
+cp modules/cuvs/lib/*.jar server/solr-webapp/webapp/WEB-INF/lib/
+----
+
+. Create a configset
++
+[source,sh]
+----
+mkdir -p cuvs_configset/conf
+----
++
+[source,sh]
+----
+cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
+<?xml version="1.0" ?>
+<config>
+    <luceneMatchVersion>10.0.0</luceneMatchVersion>
+    <dataDir>${solr.data.dir:}</dataDir>
+    <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+    
+    <updateHandler class="solr.DirectUpdateHandler2">
+        <updateLog>
+            <str name="dir">${solr.ulog.dir:}</str>
+        </updateLog>
+        <autoCommit>
+            <maxTime>${solr.autoCommit.maxTime:15000}</maxTime>
+            <openSearcher>false</openSearcher>
+        </autoCommit>
+        <autoSoftCommit>
+            <maxTime>${solr.autoSoftCommit.maxTime:1000}</maxTime>
+        </autoSoftCommit>
+    </updateHandler>
+
+    <codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
+        <str name="cuvsWriterThreads">32</str>
+        <str name="intGraphDegree">128</str>
+        <str name="graphDegree">64</str>
+        <str name="hnswLayers">1</str>
+        <str name="maxConn">16</str>
+        <str name="beamWidth">100</str>
+    </codecFactory>
+
+    <requestHandler name="/select" class="solr.SearchHandler">
+        <lst name="defaults">
+            <str name="echoParams">explicit</str>
+            <int name="rows">10</int>
+        </lst>
+    </requestHandler>
+    
+    <requestHandler name="/update" class="solr.UpdateRequestHandler" />
+</config>
+EOF
+----
++
+[source,sh]
+----
+cat > cuvs_configset/conf/managed-schema << 'EOF'
+<?xml version="1.0" ?>
+<schema name="schema-densevector" version="1.7">
+    <fieldType name="string" class="solr.StrField" multiValued="true"/>
+    <fieldType name="knn_vector" class="solr.DenseVectorField" 
+               vectorDimension="8" 
+               knnAlgorithm="cagra_hnsw" 
+               similarityFunction="cosine" />
+    <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
+
+    <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+    <field name="article_vector" type="knn_vector" indexed="true" stored="true"/>
+    <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />
+    
+    <uniqueKey>id</uniqueKey>
+</schema>
+EOF
+----
+
+. Start Solr
++
+[source,sh]
+----
+./bin/solr start
+----
+
+. Upload the configset and create a collection
++
+[source,sh]
+----
+./bin/solr zk upconfig -n cuvs_vectors -d cuvs_configset/conf && ./bin/solr create -c vectors -n cuvs_vectors
+----
+
+. Index documents
++
+[source,sh]
+----
+curl -s -X POST "http://localhost:8983/solr/vectors/update?commit=true" \
+     -H "Content-Type: application/json" \
+     -d '[
+       {"id": "doc1", "article_vector": [0.35648, 0.11664, 0.85660, 0.25043, 0.80778, 0.08031, 0.48444, 0.39083]},
+       {"id": "doc2", "article_vector": [0.86821, 0.24947, 0.38601, 0.22615, 0.31498, 0.74612, 0.69403, 0.19691]},
+       {"id": "doc3", "article_vector": [0.34098, 0.49236, 0.35950, 0.17840, 0.49470, 0.97242, 0.28249, 0.72526]},
+       {"id": "doc4", "article_vector": [0.44979, 0.49473, 0.47197, 0.02869, 0.05262, 0.60855, 0.67370, 0.78656]},
+       {"id": "doc5", "article_vector": [0.23235, 0.70062, 0.95036, 0.36251, 0.41233, 0.53170, 0.25459, 0.81606]}
+     ]'
+----
+
+. Query the index
++
+[source,sh]
+----
+curl -s 'http://localhost:8983/solr/vectors/select?q=%7B!knn%20f=article_vector%20topK=1%7D%5B0.84393,0.50073,0.57059,0.89899,-0.08722,0.26803,0.00807,0.09877%5D&fl=id,score&rows=3&omitHeader=true'
+----
++
+Should return the following
++
+[source,json]
+----
+{
+  "response":{
+    "numFound":1,
+    "start":0,
+    "maxScore":0.8377289,
+    "numFoundExact":true,
+    "docs":[{
+      "id":"doc2",
+      "score":0.8377289
+    }]
+  }
+}
+----
 
 == Additional Resources
 

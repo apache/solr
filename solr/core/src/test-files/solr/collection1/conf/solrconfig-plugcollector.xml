@@ -38,7 +38,7 @@
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based and not persistent. -->
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}">
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}">
     <double name="maxWriteMBPerSecDefault">1000000</double>
     <double name="maxWriteMBPerSecFlush">2000000</double>
     <double name="maxWriteMBPerSecMerge">3000000</double>
@@ -59,7 +59,7 @@
     </autoCommit>
     -->
 
-    <updateLog enable="${enable.update.log:true}">
+    <updateLog enable="${solr.index.updatelog.enabled:true}">
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
 

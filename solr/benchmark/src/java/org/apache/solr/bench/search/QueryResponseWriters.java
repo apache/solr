@@ -26,7 +26,7 @@ import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.bench.MiniClusterState.MiniClusterBenchState;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -59,17 +59,7 @@ public class QueryResponseWriters {
   public static class BenchState {
 
     /** See {@link SolrCore#DEFAULT_RESPONSE_WRITERS} */
-    @Param({
-      CommonParams.JAVABIN,
-      CommonParams.JSON,
-      "cbor",
-      "smile",
-      "xml",
-      "python",
-      "phps",
-      "ruby",
-      "raw"
-    })
+    @Param({CommonParams.JAVABIN, CommonParams.JSON, "cbor", "smile", "xml", "raw"})
     String wt;
 
     private int docs = 100;
@@ -96,9 +86,8 @@ public class QueryResponseWriters {
       params.set(CommonParams.WT, wt);
       params.set(CommonParams.ROWS, docs);
       q = new QueryRequest(params);
-      q.setResponseParser(new NoOpResponseParser(wt));
+      q.setResponseParser(new InputStreamResponseParser(wt));
       String base = miniClusterState.nodes.get(0);
-      q.setBasePath(base);
     }
   }
 

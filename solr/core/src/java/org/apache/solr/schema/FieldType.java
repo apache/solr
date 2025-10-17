@@ -47,10 +47,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -178,7 +177,8 @@ public abstract class FieldType extends FieldProperties {
    * which is called by this method.
    */
   protected void setArgs(IndexSchema schema, Map<String, String> args) {
-    // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
+    // default to STORED, INDEXED, OMIT_TF_POSITIONS,MULTIVALUED, USE_DOCVALUES_AS_STORED
+    // and DOC_VALUES depending on schema version
     properties = (STORED | INDEXED);
     float schemaVersion = schema.getVersion();
     if (schemaVersion < 1.1f) properties |= MULTIVALUED;
@@ -187,8 +187,9 @@ public abstract class FieldType extends FieldProperties {
       args.remove("compressThreshold");
     }
     if (schemaVersion >= 1.6f) properties |= USE_DOCVALUES_AS_STORED;
+    if (schemaVersion >= 1.7f && enableDocValuesByDefault()) properties |= DOC_VALUES;
 
-    properties |= UNINVERTIBLE;
+    if (schemaVersion < 1.7f) properties |= UNINVERTIBLE;
 
     this.args = Collections.unmodifiableMap(args);
     Map<String, String> initArgs = new HashMap<>(args);
@@ -481,8 +482,9 @@ public abstract class FieldType extends FieldProperties {
     if (termStr != null && termStr.isEmpty()) {
       return getExistenceQuery(parser, sf);
     }
-    PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    PrefixQuery query =
+        new PrefixQuery(new Term(sf.getName(), termStr), sf.getType().getRewriteMethod(parser, sf));
+    QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(parser, query, termStr);
     return query;
   }
 
@@ -1019,8 +1021,7 @@ public abstract class FieldType extends FieldProperties {
    * to an unbounded rangeQuery.
    *
    * <p>This method should only be overridden whenever a fieldType does not support {@link
-   * org.apache.lucene.search.DocValuesFieldExistsQuery} or {@link
-   * org.apache.lucene.search.NormsFieldExistsQuery}. If a fieldType does not support an unbounded
+   * org.apache.lucene.search.FieldExistsQuery}. If a fieldType does not support an unbounded
    * rangeQuery as an existenceQuery (such as <code>double</code> or <code>float</code> fields),
    * {@link #getSpecializedExistenceQuery} should be overridden.
    *
@@ -1030,10 +1031,10 @@ public abstract class FieldType extends FieldProperties {
    */
   public Query getExistenceQuery(QParser parser, SchemaField field) {
     if (field.hasDocValues()) {
-      return new DocValuesFieldExistsQuery(field.getName());
+      return new FieldExistsQuery(field.getName());
     } else if (!field.omitNorms()
         && !isPointField()) { // TODO: Remove !isPointField() for SOLR-14199
-      return new NormsFieldExistsQuery(field.getName());
+      return new FieldExistsQuery(field.getName());
     } else {
       // Default to an unbounded range query
       return getSpecializedExistenceQuery(parser, field);
@@ -1156,6 +1157,19 @@ public abstract class FieldType extends FieldProperties {
   protected void checkSupportsDocValues() {
     throw new SolrException(
         ErrorCode.SERVER_ERROR, "Field type " + this + " does not support doc values");
+  }
+
+  /**
+   * Returns whether this field type should enable docValues by default for schemaVersion &gt;= 1.7.
+   * This should not be enabled for fields that did not have docValues implemented by Solr 9.7, as
+   * users may have indexed documents without docValues (since they weren't supported). Flipping the
+   * default docValues values when they upgrade to a new version will break their index
+   * compatibility.
+   *
+   * <p>New field types can enable this without issue, as long as they support docValues.
+   */
+  protected boolean enableDocValuesByDefault() {
+    return false;
   }
 
   public static final String TYPE = "type";
@@ -1295,9 +1309,8 @@ public abstract class FieldType extends FieldProperties {
   protected static SimpleOrderedMap<Object> getAnalyzerProperties(Analyzer analyzer) {
     SimpleOrderedMap<Object> analyzerProps = new SimpleOrderedMap<>();
 
-    if (analyzer instanceof TokenizerChain) {
+    if (analyzer instanceof TokenizerChain tokenizerChain) {
       Map<String, String> factoryArgs;
-      TokenizerChain tokenizerChain = (TokenizerChain) analyzer;
       CharFilterFactory[] charFilterFactories = tokenizerChain.getCharFilterFactories();
       if (0 < charFilterFactories.length) {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<>();

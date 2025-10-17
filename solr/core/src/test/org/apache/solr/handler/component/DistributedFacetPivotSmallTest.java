@@ -111,7 +111,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     params.add("facet", "true");
     params.add("facet.pivot", "place_t,company_t");
 
-    QueryResponse rsp = queryServer(params);
+    QueryResponse rsp = queryRandomShard(params);
 
     List<PivotField> expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
     List<PivotField> expectedCardiffPivots = new UnorderedEqualityArrayList<PivotField>();
@@ -167,7 +167,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     params.set(FacetParams.FACET_SORT, FacetParams.FACET_SORT_COUNT);
 
-    rsp = queryServer(params);
+    rsp = queryRandomShard(params);
 
     placePivots = rsp.getFacetPivot().get("place_t,company_t");
 
@@ -177,7 +177,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     params.set(FacetParams.FACET_LIMIT, 2);
 
-    rsp = queryServer(params);
+    rsp = queryRandomShard(params);
 
     expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
     expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
@@ -199,7 +199,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     params.set("f.place_t." + FacetParams.FACET_LIMIT, 1);
     params.set("f.company_t." + FacetParams.FACET_LIMIT, 4);
 
-    rsp = queryServer(params);
+    rsp = queryRandomShard(params);
 
     expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
 
@@ -512,7 +512,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     params.add("facet.range.end", "100");
     params.add("facet.range.gap", "20");
 
-    QueryResponse rsp = queryServer(params);
+    QueryResponse rsp = queryRandomShard(params);
 
     List<PivotField> expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
     List<PivotField> expectedCardiffPivots = new UnorderedEqualityArrayList<PivotField>();
@@ -799,7 +799,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     params.set(FacetParams.FACET_SORT, FacetParams.FACET_SORT_COUNT);
 
-    rsp = queryServer(params);
+    rsp = queryRandomShard(params);
 
     placePivots = rsp.getFacetPivot().get("place_t,company_t");
 
@@ -809,7 +809,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     params.set(FacetParams.FACET_LIMIT, 2);
 
-    rsp = queryServer(params);
+    rsp = queryRandomShard(params);
 
     expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
     expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
@@ -873,7 +873,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     params.set("f.place_t." + FacetParams.FACET_LIMIT, 1);
     params.set("f.company_t." + FacetParams.FACET_LIMIT, 4);
 
-    rsp = queryServer(params);
+    rsp = queryRandomShard(params);
 
     expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
 
@@ -1160,7 +1160,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     params.add("facet.pivot", "{!query=s1}place_t,company_t");
     params.add("facet.query", "{!tag=s1 key=highPrice}price_ti:[25 TO 100]");
 
-    QueryResponse rsp = queryServer(params);
+    QueryResponse rsp = queryRandomShard(params);
 
     List<PivotField> expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
     List<PivotField> expectedCardiffPivots = new UnorderedEqualityArrayList<PivotField>();
@@ -1718,7 +1718,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             createExpectedQCount(new String[] {"highPrice", "lowPrice"}, new int[] {0, 0}),
             null));
 
-    rsp = queryServer(params);
+    rsp = queryRandomShard(params);
 
     placePivots = rsp.getFacetPivot().get("place_t,company_t");
 
@@ -1731,7 +1731,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     params.set(FacetParams.FACET_SORT, FacetParams.FACET_SORT_COUNT);
 
-    rsp = queryServer(params);
+    rsp = queryRandomShard(params);
 
     placePivots = rsp.getFacetPivot().get("place_t,company_t");
 
@@ -1741,7 +1741,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     params.set(FacetParams.FACET_LIMIT, 2);
 
-    rsp = queryServer(params);
+    rsp = queryRandomShard(params);
 
     expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
     expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
@@ -1805,7 +1805,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     params.set("f.place_t." + FacetParams.FACET_LIMIT, 1);
     params.set("f.company_t." + FacetParams.FACET_LIMIT, 4);
 
-    rsp = queryServer(params);
+    rsp = queryRandomShard(params);
 
     expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
 
@@ -2523,8 +2523,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (obj == null) return false;
-      if (!(obj instanceof PivotField)) return false;
-      PivotField other = (PivotField) obj;
+      if (!(obj instanceof PivotField other)) return false;
       if (getCount() != other.getCount()) return false;
       if (getField() == null) {
         if (other.getField() != null) return false;
@@ -2595,8 +2594,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     @Override
     public boolean equals(Object o) {
       boolean equal = false;
-      if (o instanceof ArrayList) {
-        List<?> otherList = (List<?>) o;
+      if (o instanceof List<?> otherList) {
         if (size() == otherList.size()) {
           equal = true;
           for (Object objectInOtherList : otherList) {

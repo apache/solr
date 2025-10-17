@@ -16,8 +16,9 @@
  */
 package org.apache.solr.core;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricFilter;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +36,6 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SpellCheckComponent;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -97,11 +97,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount;
       assertEquals(pathToClassMap.get("/admin/luke"), "solr.LukeRequestHandler");
       ++ihCount;
-      assertEquals(pathToClassMap.get("/admin/mbeans"), "solr.SolrInfoMBeanHandler");
-      ++ihCount;
       assertEquals(pathToClassMap.get("/admin/ping"), "solr.PingRequestHandler");
-      ++ihCount;
-      assertEquals(pathToClassMap.get("/admin/plugins"), "solr.PluginInfoHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/admin/segments"), "solr.SegmentsInfoRequestHandler");
       ++ihCount;
@@ -298,6 +294,8 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals(
         "wrong config for slowQueryThresholdMillis", 2000, solrConfig.slowQueryThresholdMillis);
     assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);
+    assertEquals(
+        "wrong config for minPrefixQueryTermLength", -1, solrConfig.prefixQueryMinPrefixLength);
     assertTrue("wrong config for enableLazyFieldLoading", solrConfig.enableLazyFieldLoading);
     assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
   }
@@ -339,7 +337,6 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testCoreInitDeadlockMetrics() throws Exception {
-    SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     CoreContainer coreContainer = h.getCoreContainer();
 
     String coreName = "tmpCore";
@@ -349,18 +346,27 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     final ExecutorService executor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
             1, new SolrNamedThreadFactory("testCoreInitDeadlockMetrics"));
-    executor.submit(
+    executor.execute(
         () -> {
           while (!created.get()) {
-            var metrics =
-                metricManager.getMetrics(
-                    "solr.core." + coreName,
-                    MetricFilter.startsWith(SolrInfoBean.Category.INDEX.toString()));
-            for (var m : metrics.values()) {
-              if (m instanceof Gauge) {
-                var v = ((Gauge<?>) m).getValue();
-                atLeastOnePoll.compareAndSet(false, v != null);
+            try {
+              PrometheusMetricReader reader =
+                  coreContainer
+                      .getMetricManager()
+                      .getPrometheusMetricReader("solr.core." + coreName);
+              if (reader != null) {
+                MetricSnapshots snapshots = reader.collect();
+                for (var snapshot : snapshots) {
+                  if (snapshot instanceof GaugeSnapshot gaugeSnapshot) {
+                    var dataPoints = gaugeSnapshot.getDataPoints();
+                    if (!dataPoints.isEmpty()) {
+                      atLeastOnePoll.compareAndSet(false, true);
+                    }
+                  }
+                }
               }
+            } catch (Exception ignore) {
+              // Ignore in case the core may not be fully initialized
             }
 
             try {

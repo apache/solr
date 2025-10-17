@@ -73,7 +73,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   static HashMap<String, Object> testJwk;
 
   public static Path JWT_TEST_PATH() {
-    return getFile("solr/security").getParentFile().toPath();
+    return getFile("solr/security").getParent();
   }
 
   static {

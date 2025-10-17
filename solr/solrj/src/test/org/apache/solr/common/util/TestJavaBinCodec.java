@@ -19,11 +19,12 @@ package org.apache.solr.common.util;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -68,6 +69,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         jbcO.marshal(s, os);
         try (JavaBinCodec jbcI = new JavaBinCodec();
             ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray())) {
+          jbcI.readMapAsNamedList(false);
           Object o = jbcI.unmarshal(is);
           assertEquals(s, o);
         }
@@ -83,6 +85,17 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     idoc.addField("enumf", new EnumFieldValue(1, "foo"));
     types.add(idoc);
     compareObjects((List) getObject(getBytes(types, true)), (List) types);
+  }
+
+  public void testReadMap() throws Exception {
+    Map<String, String> types = new HashMap<>();
+    types.put("1", "one");
+
+    byte[] bytes = getBytes(types, true);
+    Object result = getObjectWithMapAsNl(bytes, true);
+
+    assertTrue(result instanceof SimpleOrderedMap);
+    assertEquals("one", ((SimpleOrderedMap<?>) result).get("1"));
   }
 
   public static SolrDocument generateSolrDocumentWithChildDocs() {
@@ -106,6 +119,20 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     parentDocument.addChildDocument(secondKid);
 
     return parentDocument;
+  }
+
+  @Test
+  public void testPrimitiveArrays() throws Exception {
+    List<Object> types = new ArrayList<>();
+
+    types.add(new float[] {1.0678f, 4.094565f, 0.000456f});
+    types.add(new double[] {1.0678d, 4.094565d, 0.000456d});
+    types.add(new int[] {145543, 4546354, 9789857});
+    types.add(new long[] {145543L, 4546354L, 9789857L});
+    types.add(new short[] {43, 454, 857});
+    types.add(new boolean[] {true, true, false});
+
+    compareObjects((List<?>) getObject(getBytes(types)), types);
   }
 
   private List<Object> generateAllDataTypes() {
@@ -146,11 +173,6 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     types.add(solrDocs);
 
     types.add(new byte[] {1, 2, 3, 4, 5});
-
-    // TODO?
-    // List<String> list = new ArrayList<String>();
-    // list.add("one");
-    // types.add(list.iterator());
 
     types.add((byte) 15); // END
 
@@ -196,37 +218,53 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
                 return super.readIterator(fis);
               }
             }; ) {
+      javabin.readMapAsNamedList(false);
       @SuppressWarnings({"unchecked"})
-      List<Object> unmarshaledObj = (List<Object>) javabin.unmarshal(is);
+      List<Object> unmarshalledObj = (List<Object>) javabin.unmarshal(is);
       List<Object> matchObj = generateAllDataTypes();
-      compareObjects(unmarshaledObj, matchObj);
+      compareObjects(unmarshalledObj, matchObj);
     } catch (IOException e) {
       throw e;
     }
   }
 
-  private void compareObjects(List<?> unmarshaledObj, List<?> matchObj) {
-    assertEquals(unmarshaledObj.size(), matchObj.size());
-    for (int i = 0; i < unmarshaledObj.size(); i++) {
+  private void compareObjects(List<?> unmarshalledObj, List<?> matchObj) {
+    assertEquals(unmarshalledObj.size(), matchObj.size());
+    for (int i = 0; i < unmarshalledObj.size(); i++) {
 
-      if (unmarshaledObj.get(i) instanceof byte[] && matchObj.get(i) instanceof byte[]) {
-        byte[] b1 = (byte[]) unmarshaledObj.get(i);
-        byte[] b2 = (byte[]) matchObj.get(i);
+      if (unmarshalledObj.get(i) instanceof byte[] b1 && matchObj.get(i) instanceof byte[] b2) {
         assertArrayEquals(b1, b2);
-      } else if (unmarshaledObj.get(i) instanceof SolrDocument
+      } else if (unmarshalledObj.get(i) instanceof SolrDocument
           && matchObj.get(i) instanceof SolrDocument) {
-        assertTrue(compareSolrDocument(unmarshaledObj.get(i), matchObj.get(i)));
-      } else if (unmarshaledObj.get(i) instanceof SolrDocumentList
+        assertTrue(compareSolrDocument(unmarshalledObj.get(i), matchObj.get(i)));
+      } else if (unmarshalledObj.get(i) instanceof SolrDocumentList
           && matchObj.get(i) instanceof SolrDocumentList) {
-        assertTrue(compareSolrDocumentList(unmarshaledObj.get(i), matchObj.get(i)));
-      } else if (unmarshaledObj.get(i) instanceof SolrInputDocument
+        assertTrue(compareSolrDocumentList(unmarshalledObj.get(i), matchObj.get(i)));
+      } else if (unmarshalledObj.get(i) instanceof SolrInputDocument
           && matchObj.get(i) instanceof SolrInputDocument) {
-        assertTrue(compareSolrInputDocument(unmarshaledObj.get(i), matchObj.get(i)));
-      } else if (unmarshaledObj.get(i) instanceof SolrInputField
+        assertTrue(compareSolrInputDocument(unmarshalledObj.get(i), matchObj.get(i)));
+      } else if (unmarshalledObj.get(i) instanceof SolrInputField
           && matchObj.get(i) instanceof SolrInputField) {
-        assertTrue(assertSolrInputFieldEquals(unmarshaledObj.get(i), matchObj.get(i)));
+        assertTrue(assertSolrInputFieldEquals(unmarshalledObj.get(i), matchObj.get(i)));
+      } else if (unmarshalledObj.get(i) instanceof float[] a
+          && matchObj.get(i) instanceof float[] e) {
+        assertArrayEquals(e, a, 0.000000f);
+      } else if (unmarshalledObj.get(i) instanceof double[] a
+          && matchObj.get(i) instanceof double[] e) {
+        assertArrayEquals(e, a, 0.000000d);
+      } else if (unmarshalledObj.get(i) instanceof long[] a
+          && matchObj.get(i) instanceof long[] e) {
+        assertArrayEquals(e, a);
+      } else if (unmarshalledObj.get(i) instanceof int[] a && matchObj.get(i) instanceof int[] e) {
+        assertArrayEquals(e, a);
+      } else if (unmarshalledObj.get(i) instanceof short[] a
+          && matchObj.get(i) instanceof short[] e) {
+        assertArrayEquals(e, a);
+      } else if (unmarshalledObj.get(i) instanceof boolean[] a
+          && matchObj.get(i) instanceof boolean[] e) {
+        assertArrayEquals(e, a);
       } else {
-        assertEquals(unmarshaledObj.get(i), matchObj.get(i));
+        assertEquals(unmarshalledObj.get(i), matchObj.get(i));
       }
     }
   }
@@ -255,6 +293,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 
       Object data = generateAllDataTypes();
+      javabin.readMapAsNamedList(false);
       javabin.marshal(data, os);
       byte[] newFormatBytes = os.toByteArray();
 
@@ -264,7 +303,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         for (int i = 1;
             i < currentFormatBytes.length;
             i++) { // ignore the first byte. It is version information
-          assertEquals(newFormatBytes[i], currentFormatBytes[i]);
+          assertEquals("for i:" + i, newFormatBytes[i], currentFormatBytes[i]);
         }
       }
     }
@@ -336,7 +375,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     // but keeping this in code to make a point, that even the same exact bin file, there could be
     // sub-objects in the key or value of the maps, with types that do not implement equals and in
     // these cases equals would fail as these sub-objects would be equated on their
-    // memory-references which is highly probbale to be unique and hence the top-level map's equals
+    // memory-references which is highly probable to be unique and hence the top-level map's equals
     // will also fail assertNotEquals("2 different references even though from same source are
     // un-equal",entryFromBinFileA,entryFromBinFileA_clone);
 
@@ -353,6 +392,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     try (InputStream is = getClass().getResourceAsStream(fileName)) {
       try (DataInputInputStream dis = new FastInputStream(is)) {
         try (JavaBinCodec javabin = new JavaBinCodec()) {
+          javabin.readMapAsNamedList(false);
           return javabin.readMapEntry(dis);
         }
       }
@@ -380,10 +420,16 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     }
   }
 
-  private static Object getObject(byte[] bytes) throws IOException {
+  private static Object getObjectWithMapAsNl(byte[] bytes, boolean mapAsNamedList)
+      throws IOException {
     try (JavaBinCodec jbc = new JavaBinCodec()) {
+      jbc.readMapAsNamedList(mapAsNamedList);
       return jbc.unmarshal(new ByteArrayInputStream(bytes));
     }
+  }
+
+  private static Object getObject(byte[] bytes) throws IOException {
+    return getObjectWithMapAsNl(bytes, false);
   }
 
   @Test
@@ -454,14 +500,14 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
     Object data = generateAllDataTypes();
     byte[] out = getBytes(data);
-    FileOutputStream fs = new FileOutputStream(new File(BIN_FILE_LOCATION));
+    OutputStream fs = Files.newOutputStream(Path.of(BIN_FILE_LOCATION));
     BufferedOutputStream bos = new BufferedOutputStream(fs);
     bos.write(out);
     bos.close();
 
     // Binary file with child documents
     SolrDocument sdoc = generateSolrDocumentWithChildDocs();
-    fs = new FileOutputStream(new File(BIN_FILE_LOCATION_CHILD_DOCS));
+    fs = Files.newOutputStream(Path.of(BIN_FILE_LOCATION_CHILD_DOCS));
     bos = new BufferedOutputStream(fs);
     bos.write(getBytes(sdoc));
     bos.close();
@@ -550,16 +596,6 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
     // Print free memory
     System.out.println("Free Memory:" + runtime.freeMemory() / mb);
-  }
-
-  public static void main(String[] args) throws IOException {
-    TestJavaBinCodec test = new TestJavaBinCodec();
-    test.genBinaryFiles();
-    //    try {
-    //      doDecodePerf(args);
-    //    } catch (Exception e) {
-    //      throw new RuntimeException(e);
-    //    }
   }
 
   // common-case ascii

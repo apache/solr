@@ -88,10 +88,10 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", sortType));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(2, td.totalHits.value);
+    assertEquals(2, td.totalHits.value());
     // 'bar' comes before 'foo'
-    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("bar", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("foo", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
 
     TestUtil.checkReader(ir);
     ir.close();
@@ -127,11 +127,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", sortType));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null comes first
-    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("bar", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("foo", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -164,10 +164,10 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", sortType, true));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(2, td.totalHits.value);
+    assertEquals(2, td.totalHits.value());
     // 'foo' comes after 'bar' in reverse order
-    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("foo", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("bar", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -203,11 +203,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(sf);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null comes first
-    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("bar", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("foo", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -243,11 +243,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(sf);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
-    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals(3, td.totalHits.value());
+    assertEquals("foo", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("bar", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
     // null comes last
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -284,11 +284,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(sf);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
-    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals(3, td.totalHits.value());
+    assertEquals("bar", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("foo", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
     // null comes last
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -325,11 +325,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(sf);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null comes first
-    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("bar", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("foo", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("bar", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -352,7 +352,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(SortField.FIELD_DOC);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(2, td.totalHits.value);
+    assertEquals(2, td.totalHits.value());
     // docid 0, then docid 1
     assertEquals(0, td.scoreDocs[0].doc);
     assertEquals(1, td.scoreDocs[1].doc);
@@ -378,7 +378,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField(null, SortField.Type.DOC, true));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(2, td.totalHits.value);
+    assertEquals(2, td.totalHits.value());
     // docid 1, then docid 0
     assertEquals(1, td.scoreDocs[0].doc);
     assertEquals(0, td.scoreDocs[1].doc);
@@ -404,11 +404,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort();
 
     TopDocs actual = searcher.search(new TermQuery(new Term("value", "foo")), 10, sort);
-    assertEquals(2, actual.totalHits.value);
+    assertEquals(2, actual.totalHits.value());
 
     TopDocs expected = searcher.search(new TermQuery(new Term("value", "foo")), 10);
     // the two topdocs should be the same
-    assertEquals(expected.totalHits.value, actual.totalHits.value);
+    assertEquals(expected.totalHits.value(), actual.totalHits.value());
     for (int i = 0; i < actual.scoreDocs.length; i++) {
       assertEquals(actual.scoreDocs[i].doc, expected.scoreDocs[i].doc);
     }
@@ -436,11 +436,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField(null, SortField.Type.SCORE, true));
 
     TopDocs actual = searcher.search(new TermQuery(new Term("value", "foo")), 10, sort);
-    assertEquals(2, actual.totalHits.value);
+    assertEquals(2, actual.totalHits.value());
 
     TopDocs expected = searcher.search(new TermQuery(new Term("value", "foo")), 10);
     // the two topdocs should be the reverse of each other
-    assertEquals(expected.totalHits.value, actual.totalHits.value);
+    assertEquals(expected.totalHits.value(), actual.totalHits.value());
     assertEquals(actual.scoreDocs[0].doc, expected.scoreDocs[1].doc);
     assertEquals(actual.scoreDocs[1].doc, expected.scoreDocs[0].doc);
     TestUtil.checkReader(ir);
@@ -473,11 +473,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.INT));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // numeric order
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("300000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("300000", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -506,11 +506,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.INT));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null is treated as a 0
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -543,11 +543,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(sortField);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null is treated as an Integer.MAX_VALUE
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -578,11 +578,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.INT, true));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // reverse numeric order
-    assertEquals("300000", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("300000", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -610,11 +610,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.INT));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // numeric order
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("300000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("300000", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -641,11 +641,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.INT));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null is treated as a 0
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -677,11 +677,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(sortField);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null is treated as an Integer.MAX_VALUE
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -709,11 +709,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.INT, true));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // reverse numeric order
-    assertEquals("300000", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("300000", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -744,11 +744,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // numeric order
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("3000000000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("3000000000", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -777,11 +777,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null is treated as 0
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -814,11 +814,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(sortField);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null is treated as Long.MAX_VALUE
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -849,11 +849,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG, true));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // reverse numeric order
-    assertEquals("3000000000", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("3000000000", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -881,11 +881,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // numeric order
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("3000000000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("3000000000", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -912,11 +912,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null is treated as 0
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -948,11 +948,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(sortField);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null is treated as Long.MAX_VALUE
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -980,11 +980,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG, true));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // reverse numeric order
-    assertEquals("3000000000", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("3000000000", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("-1", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1015,11 +1015,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // numeric order
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("30.1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("30.1", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1048,11 +1048,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null is treated as 0
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1085,11 +1085,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(sortField);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null is treated as Float.MAX_VALUE
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1120,11 +1120,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT, true));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // reverse numeric order
-    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("30.1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1152,11 +1152,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // numeric order
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("30.1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("30.1", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1183,11 +1183,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null is treated as 0
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1219,11 +1219,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(sortField);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // null is treated as Float.MAX_VALUE
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1251,11 +1251,11 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT, true));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(3, td.totalHits.value());
     // reverse numeric order
-    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("30.1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1290,12 +1290,14 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(4, td.totalHits.value);
+    assertEquals(4, td.totalHits.value());
     // numeric order
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertEquals("30.1", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals(
+        "4.2333333333332", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals(
+        "4.2333333333333", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
+    assertEquals("30.1", searcher.storedFields().document(td.scoreDocs[3].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1323,10 +1325,22 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(2, td.totalHits.value);
+    assertEquals(2, td.totalHits.value());
     // numeric order
-    double v0 = searcher.doc(td.scoreDocs[0].doc).getField("value").numericValue().doubleValue();
-    double v1 = searcher.doc(td.scoreDocs[1].doc).getField("value").numericValue().doubleValue();
+    double v0 =
+        searcher
+            .storedFields()
+            .document(td.scoreDocs[0].doc)
+            .getField("value")
+            .numericValue()
+            .doubleValue();
+    double v1 =
+        searcher
+            .storedFields()
+            .document(td.scoreDocs[1].doc)
+            .getField("value")
+            .numericValue()
+            .doubleValue();
     assertEquals(0, v0, 0d);
     assertEquals(0, v1, 0d);
     // check sign bits
@@ -1364,12 +1378,14 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(4, td.totalHits.value);
+    assertEquals(4, td.totalHits.value());
     // null treated as a 0
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals(
+        "4.2333333333332", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
+    assertEquals(
+        "4.2333333333333", searcher.storedFields().document(td.scoreDocs[3].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1407,12 +1423,14 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(sortField);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(4, td.totalHits.value);
+    assertEquals(4, td.totalHits.value());
     // null treated as Double.MAX_VALUE
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals(
+        "4.2333333333332", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals(
+        "4.2333333333333", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[3].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1447,12 +1465,14 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE, true));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(4, td.totalHits.value);
+    assertEquals(4, td.totalHits.value());
     // numeric order
-    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("30.1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals(
+        "4.2333333333333", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals(
+        "4.2333333333332", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[3].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1483,12 +1503,14 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(4, td.totalHits.value);
+    assertEquals(4, td.totalHits.value());
     // numeric order
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertEquals("30.1", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals(
+        "4.2333333333332", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals(
+        "4.2333333333333", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
+    assertEquals("30.1", searcher.storedFields().document(td.scoreDocs[3].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1514,10 +1536,22 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(2, td.totalHits.value);
+    assertEquals(2, td.totalHits.value());
     // numeric order
-    double v0 = searcher.doc(td.scoreDocs[0].doc).getField("value").numericValue().doubleValue();
-    double v1 = searcher.doc(td.scoreDocs[1].doc).getField("value").numericValue().doubleValue();
+    double v0 =
+        searcher
+            .storedFields()
+            .document(td.scoreDocs[0].doc)
+            .getField("value")
+            .numericValue()
+            .doubleValue();
+    double v1 =
+        searcher
+            .storedFields()
+            .document(td.scoreDocs[1].doc)
+            .getField("value")
+            .numericValue()
+            .doubleValue();
     assertEquals(0, v0, 0d);
     assertEquals(0, v1, 0d);
     // check sign bits
@@ -1552,12 +1586,14 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(4, td.totalHits.value);
+    assertEquals(4, td.totalHits.value());
     // null treated as a 0
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals(
+        "4.2333333333332", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
+    assertEquals(
+        "4.2333333333333", searcher.storedFields().document(td.scoreDocs[3].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1592,12 +1628,14 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(sortField);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(4, td.totalHits.value);
+    assertEquals(4, td.totalHits.value());
     // null treated as Double.MAX_VALUE
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals(
+        "4.2333333333332", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals(
+        "4.2333333333333", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.storedFields().document(td.scoreDocs[3].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1628,12 +1666,14 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE, true));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(4, td.totalHits.value);
+    assertEquals(4, td.totalHits.value());
     // numeric order
-    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("30.1", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals(
+        "4.2333333333333", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
+    assertEquals(
+        "4.2333333333332", searcher.storedFields().document(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.storedFields().document(td.scoreDocs[3].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1664,7 +1704,7 @@ public class TestFieldCacheSort extends SolrTestCase {
             new TermQuery(new Term("t", "1")),
             10,
             new Sort(new SortField("f", SortField.Type.STRING)));
-    assertEquals(2, hits.totalHits.value);
+    assertEquals(2, hits.totalHits.value());
     // null sorts first
     assertEquals(1, hits.scoreDocs[0].doc);
     assertEquals(0, hits.scoreDocs[1].doc);
@@ -1741,31 +1781,31 @@ public class TestFieldCacheSort extends SolrTestCase {
 
     Sort sort = new Sort();
     TopDocs td = empty.search(query, 10, sort, true);
-    assertEquals(0, td.totalHits.value);
+    assertEquals(0, td.totalHits.value());
 
     sort = new Sort(SortField.FIELD_DOC);
     td = empty.search(query, 10, sort, true);
-    assertEquals(0, td.totalHits.value);
+    assertEquals(0, td.totalHits.value());
 
     sort = new Sort(new SortField("int", SortField.Type.INT), SortField.FIELD_DOC);
     td = empty.search(query, 10, sort, true);
-    assertEquals(0, td.totalHits.value);
+    assertEquals(0, td.totalHits.value());
 
     sort = new Sort(new SortField("string", SortField.Type.STRING, true), SortField.FIELD_DOC);
     td = empty.search(query, 10, sort, true);
-    assertEquals(0, td.totalHits.value);
+    assertEquals(0, td.totalHits.value());
 
     sort =
         new Sort(new SortField("string_val", SortField.Type.STRING_VAL, true), SortField.FIELD_DOC);
     td = empty.search(query, 10, sort, true);
-    assertEquals(0, td.totalHits.value);
+    assertEquals(0, td.totalHits.value());
 
     sort =
         new Sort(
             new SortField("float", SortField.Type.FLOAT),
             new SortField("string", SortField.Type.STRING));
     td = empty.search(query, 10, sort, true);
-    assertEquals(0, td.totalHits.value);
+    assertEquals(0, td.totalHits.value());
   }
 
   /** Tests sorting a single document */
@@ -1783,8 +1823,8 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(1, td.totalHits.value);
-    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals(1, td.totalHits.value());
+    assertEquals("foo", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1805,10 +1845,10 @@ public class TestFieldCacheSort extends SolrTestCase {
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
 
     TopDocs expected = searcher.search(new TermQuery(new Term("value", "foo")), 10);
-    assertEquals(1, expected.totalHits.value);
+    assertEquals(1, expected.totalHits.value());
     TopDocs actual = searcher.search(new TermQuery(new Term("value", "foo")), 10, sort, true);
 
-    assertEquals(expected.totalHits.value, actual.totalHits.value);
+    assertEquals(expected.totalHits.value(), actual.totalHits.value());
     assertEquals(expected.scoreDocs[0].score, actual.scoreDocs[0].score, 0F);
     TestUtil.checkReader(ir);
     ir.close();
@@ -1842,10 +1882,10 @@ public class TestFieldCacheSort extends SolrTestCase {
             new SortField("value", SortField.Type.STRING));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(2, td.totalHits.value);
+    assertEquals(2, td.totalHits.value());
     // 'bar' comes before 'foo'
-    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("bar", searcher.storedFields().document(td.scoreDocs[0].doc).get("value"));
+    assertEquals("foo", searcher.storedFields().document(td.scoreDocs[1].doc).get("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1870,7 +1910,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     bq.add(new TermQuery(new Term("value", "foo")), Occur.SHOULD);
     bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
     TopDocs td = searcher.search(bq.build(), 10, sort);
-    assertEquals(2, td.totalHits.value);
+    assertEquals(2, td.totalHits.value());
     if (Float.isNaN(td.scoreDocs[0].score) == false
         && Float.isNaN(td.scoreDocs[1].score) == false) {
       assertEquals(1, td.scoreDocs[0].doc);

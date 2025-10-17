@@ -531,7 +531,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
       // skip past the (implicit) top Facet query to get it's "sub-facets" (the real facets)...
       @SuppressWarnings({"unchecked"})
       final List<NamedList<Object>> facetDebug =
-          (List<NamedList<Object>>) topNamedList.findRecursive("debug", "facet-trace", "sub-facet");
+          (List<NamedList<Object>>)
+              topNamedList._get(List.of("debug", "facet-trace", "sub-facet"), null);
       assertNotNull(topNamedList + " ... null facet debug?", facetDebug);
       assertFalse(topNamedList + " ... not even one facet debug?", facetDebug.isEmpty());
       return facetDebug.get(0);

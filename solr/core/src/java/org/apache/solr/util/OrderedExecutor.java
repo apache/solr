@@ -25,9 +25,9 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import org.apache.solr.common.util.ExecutorUtil;
 
-public class OrderedExecutor implements Executor {
+public class OrderedExecutor<T> implements Executor {
   private final ExecutorService delegate;
-  private final SparseStripedLock<Integer> sparseStripedLock;
+  private final SparseStripedLock<T> sparseStripedLock;
 
   public OrderedExecutor(int numThreads, ExecutorService delegate) {
     this.delegate = delegate;
@@ -51,7 +51,7 @@ public class OrderedExecutor implements Executor {
    * @param command the runnable task
    * @throws RejectedExecutionException if this task cannot be accepted for execution
    */
-  public void execute(Integer lockId, Runnable command) {
+  public void execute(T lockId, Runnable command) {
     try {
       sparseStripedLock.add(lockId);
     } catch (InterruptedException e) {

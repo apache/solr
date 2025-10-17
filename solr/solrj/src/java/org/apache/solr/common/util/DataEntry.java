@@ -22,9 +22,9 @@ import java.io.InputStream;
 
 /**
  * This represents a data entry in the payload/stream. There are multiple ways to consume the data
- * entry a) listen to it, if it's a container object, and get callbacks for each sub-entry b) read
+ * entry: 1) listen to it, if it's a container object, and get callbacks for each sub-entry 2) read
  * as an object using the {{@link #val()}} method. Please note that it creates objects and expect
- * more memory usage c) read the corresponding primitive value Do not keep a reference of this
+ * more memory usage 3) read the corresponding primitive value Do not keep a reference of this
  * Object beyond the scope where it is called. Read the relevant data out.
  */
 public interface DataEntry {
@@ -80,7 +80,7 @@ public interface DataEntry {
   Object ctx();
 
   /**
-   * If it is a non-primitive type type and size is known in advance
+   * If it is a non-primitive type and size is known in advance
    *
    * <p>if it's a map/list, it's the no:of items in this container
    *
@@ -132,8 +132,8 @@ public interface DataEntry {
   interface EntryListener {
 
     /**
-     * Callback for each entry in this container. once the method call returns, the entry object is
-     * not valid anymore It is usually reused. If the object value is a {{@link Utf8CharSequence}}
+     * Callback for each entry in this container. Once the method call returns, the entry object is
+     * not valid anymore. It is usually reused. If the object value is a {{@link Utf8CharSequence}}
      * do a {{@link Object#clone()}} because the object may be reused
      *
      * @param e The entry in the container

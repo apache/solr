@@ -16,19 +16,17 @@
  */
 package org.apache.solr.handler;
 
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -55,7 +53,6 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testAggregateNodeLevelMetrics() throws SolrServerException, IOException {
     String collection1 = "testRequestHandlerMetrics1";
     String collection2 = "testRequestHandlerMetrics2";
@@ -80,96 +77,83 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
     cloudClient.query(collection1, solrQuery);
     cloudClient.query(collection2, solrQuery);
 
-    NamedList<Object> response =
-        cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics"));
+    var coreContainer = cluster.getJettySolrRunners().get(0).getCoreContainer();
 
-    NamedList<Object> metrics = (NamedList<Object>) response.get("metrics");
+    try (SolrCore core1 = coreContainer.getCore(coreContainer.getAllCoreNames().get(0));
+        SolrCore core2 = coreContainer.getCore(coreContainer.getAllCoreNames().get(1))) {
 
-    final double[] minQueryTime = {Double.MAX_VALUE};
-    final double[] maxQueryTime = {-1.0};
-    final double[] minUpdateTime = {Double.MAX_VALUE};
-    final double[] maxUpdateTime = {-1.0};
-    Set<NamedList<Object>> coreMetrics = new HashSet<>();
-    metrics.forEachKey(
-        (key) -> {
-          if (key.startsWith("solr.core.testRequestHandlerMetrics")) {
-            NamedList<Object> coreMetric = (NamedList<Object>) metrics.get(key);
-            coreMetrics.add(coreMetric);
-          }
-        });
-    assertEquals(2, coreMetrics.size());
-    coreMetrics.forEach(
-        metric -> {
-          assertEquals(
-              1L,
-              ((Map<String, Number>) metric.get("QUERY./select.requestTimes"))
-                  .get("count")
-                  .longValue());
-          minQueryTime[0] =
-              Math.min(
-                  minQueryTime[0],
-                  ((Map<String, Number>) metric.get("QUERY./select.requestTimes"))
-                      .get("min_ms")
-                      .doubleValue());
-          maxQueryTime[0] =
-              Math.max(
-                  maxQueryTime[0],
-                  ((Map<String, Number>) metric.get("QUERY./select.requestTimes"))
-                      .get("max_ms")
-                      .doubleValue());
-          assertEquals(
-              1L,
-              ((Map<String, Number>) metric.get("UPDATE./update.requestTimes"))
-                  .get("count")
-                  .longValue());
-          minUpdateTime[0] =
-              Math.min(
-                  minUpdateTime[0],
-                  ((Map<String, Number>) metric.get("UPDATE./update.requestTimes"))
-                      .get("min_ms")
-                      .doubleValue());
-          maxUpdateTime[0] =
-              Math.max(
-                  maxUpdateTime[0],
-                  ((Map<String, Number>) metric.get("UPDATE./update.requestTimes"))
-                      .get("max_ms")
-                      .doubleValue());
-        });
+      CounterSnapshot.CounterDataPointSnapshot actualCore1Selects =
+          SolrMetricTestUtils.newCloudSelectRequestsDatapoint(core1);
+      CounterSnapshot.CounterDataPointSnapshot actualCore1Updates =
+          SolrMetricTestUtils.newCloudUpdateRequestsDatapoint(core1);
+      CounterSnapshot.CounterDataPointSnapshot actualCore2Selects =
+          SolrMetricTestUtils.newCloudSelectRequestsDatapoint(core2);
+      CounterSnapshot.CounterDataPointSnapshot actualCore2Updates =
+          SolrMetricTestUtils.newCloudUpdateRequestsDatapoint(core2);
+      CounterSnapshot.CounterDataPointSnapshot actualCore1SubmittedOps =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core1,
+              "solr_core_update_submitted_ops",
+              SolrMetricTestUtils.newCloudLabelsBuilder(core1)
+                  .label("category", "UPDATE")
+                  .label("ops", "adds")
+                  .build());
+      CounterSnapshot.CounterDataPointSnapshot actualCore2SubmittedOps =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core2,
+              "solr_core_update_submitted_ops",
+              SolrMetricTestUtils.newCloudLabelsBuilder(core2)
+                  .label("category", "UPDATE")
+                  .label("ops", "adds")
+                  .build());
 
-    NamedList<Object> nodeMetrics = (NamedList<Object>) metrics.get("solr.node");
-    assertEquals(
-        2L,
-        ((Map<String, Number>) nodeMetrics.get("QUERY./select.requestTimes"))
-            .get("count")
-            .longValue());
-    assertEquals(
-        minQueryTime[0],
-        ((Map<String, Number>) nodeMetrics.get("QUERY./select.requestTimes"))
-            .get("min_ms")
-            .doubleValue(),
-        0.0);
-    assertEquals(
-        maxQueryTime[0],
-        ((Map<String, Number>) nodeMetrics.get("QUERY./select.requestTimes"))
-            .get("max_ms")
-            .doubleValue(),
-        0.0);
-    assertEquals(
-        2L,
-        ((Map<String, Number>) nodeMetrics.get("UPDATE./update.requestTimes"))
-            .get("count")
-            .longValue());
-    assertEquals(
-        minUpdateTime[0],
-        ((Map<String, Number>) nodeMetrics.get("UPDATE./update.requestTimes"))
-            .get("min_ms")
-            .doubleValue(),
-        0.0);
-    assertEquals(
-        maxUpdateTime[0],
-        ((Map<String, Number>) nodeMetrics.get("UPDATE./update.requestTimes"))
-            .get("max_ms")
-            .doubleValue(),
-        0.0);
+      assertEquals(1.0, actualCore1Selects.getValue(), 0.0);
+      assertEquals(1.0, actualCore1Updates.getValue(), 0.0);
+      assertEquals(1.0, actualCore2Updates.getValue(), 0.0);
+      assertEquals(1.0, actualCore2Selects.getValue(), 0.0);
+      assertEquals(1.0, actualCore1SubmittedOps.getValue(), 0.0);
+      assertEquals(1.0, actualCore2SubmittedOps.getValue(), 0.0);
+
+      // Get node metrics and the select/update requests should be the sum of both cores requests
+      var nodeReader = SolrMetricTestUtils.getPrometheusMetricReader(coreContainer, "solr.node");
+
+      CounterSnapshot.CounterDataPointSnapshot nodeSelectRequests =
+          (CounterSnapshot.CounterDataPointSnapshot)
+              SolrMetricTestUtils.getDataPointSnapshot(
+                  nodeReader,
+                  "solr_node_requests",
+                  Labels.builder()
+                      .label("category", "QUERY")
+                      .label("handler", "/select")
+                      .label("otel_scope_name", "org.apache.solr")
+                      .build());
+      CounterSnapshot.CounterDataPointSnapshot nodeUpdateRequests =
+          (CounterSnapshot.CounterDataPointSnapshot)
+              SolrMetricTestUtils.getDataPointSnapshot(
+                  nodeReader,
+                  "solr_node_requests",
+                  Labels.builder()
+                      .label("category", "UPDATE")
+                      .label("handler", "/update")
+                      .label("otel_scope_name", "org.apache.solr")
+                      .build());
+      CounterSnapshot.CounterDataPointSnapshot nodeSubmittedOps =
+          (CounterSnapshot.CounterDataPointSnapshot)
+              SolrMetricTestUtils.getDataPointSnapshot(
+                  nodeReader,
+                  "solr_node_update_submitted_ops",
+                  Labels.builder()
+                      .label("category", "UPDATE")
+                      .label("ops", "adds")
+                      .label("otel_scope_name", "org.apache.solr")
+                      .build());
+
+      assertNotNull("Node select requests should be recorded", nodeSelectRequests);
+      assertNotNull("Node update requests should be recorded", nodeUpdateRequests);
+      assertNotNull("Node submitted update operations should be recorded", nodeSubmittedOps);
+      assertEquals(2.0, nodeSelectRequests.getValue(), 0.0);
+      assertEquals(2.0, nodeUpdateRequests.getValue(), 0.0);
+      assertEquals(2.0, nodeSubmittedOps.getValue(), 0.0);
+    }
   }
 }

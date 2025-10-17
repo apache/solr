@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Server to respond with different CSP header -->
+<!-- for new Admin UI endpoint /solr/ui/*.                           -->
+<!-- This configuration is used for release builds and has a         -->
+<!-- stricter security configuration compared to development.        -->
+<!-- Note that this configuration does not work with development     -->
+<!-- builds.                                                         -->
+<!-- This configuration is used by default or when                   -->
+<!-- SOLR_ADMIN_UI_EXPERIMENTAL_VARIANT is se to "release" or unset. -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+     <Ref refid="RewriteHandler">
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+            <Set name="pattern">/solr/ui/*</Set>
+            <Set name="headerName">Content-Security-Policy</Set>
+            <Set name="headerValue">default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self';</Set>
+          </New>
+        </Arg>
+      </Call>
+     </Ref>
+</Configure>

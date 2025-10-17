@@ -29,8 +29,10 @@ import java.lang.annotation.Target;
 import org.apache.solr.client.api.model.IndexType;
 
 /**
- * Concisely collects the parameters shared by APIs that interact with contents of a specific
- * core/collection.
+ * Concisely collects the parameters shared by APIs that interact with contents of a specific core
+ * OR collection.
+ *
+ * <p>Not to be used on APIs that are only available on cores or only on collections.
  *
  * <p>Used primarily as a way to avoid duplicating these parameter definitions on each relevant
  * interface method in {@link org.apache.solr.client.api.endpoint}

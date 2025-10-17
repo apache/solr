@@ -48,12 +48,12 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void reset() {
-    System.setProperty("solr.deleteUnknownCores", "false");
+    System.setProperty("solr.cloud.startup.delete.unknown.cores.enabled", "false");
   }
 
   @Test
   public void deleteInactiveReplicaTest() throws Exception {
-    System.setProperty("solr.deleteUnknownCores", "true");
+    System.setProperty("solr.cloud.startup.delete.unknown.cores.enabled", "true");
 
     String collectionName = "delDeadColl";
     int replicationFactor = 2;
@@ -82,8 +82,8 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     waitForState(
         "Expected replica " + replica.getName() + " on down node to be removed from cluster state",
         collectionName,
-        (n, c) -> {
-          Replica r = c.getReplica(replica.getCoreName());
+        c -> {
+          Replica r = c.getReplica(replica.getName());
           return r == null || r.getState() != Replica.State.ACTIVE;
         });
 
@@ -95,9 +95,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     waitForState(
         "Expected deleted replica " + replica.getName() + " to be removed from cluster state",
         collectionName,
-        (n, c) -> {
-          return c.getReplica(replica.getCoreName()) == null;
-        });
+        c -> c.getReplica(replica.getName()) == null);
 
     cluster.startJettySolrRunner(jetty);
     log.info("restarted jetty");

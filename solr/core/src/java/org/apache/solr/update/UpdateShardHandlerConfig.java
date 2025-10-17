@@ -16,7 +16,7 @@
  */
 package org.apache.solr.update;
 
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 
 public class UpdateShardHandlerConfig {
 
@@ -25,17 +25,17 @@ public class UpdateShardHandlerConfig {
 
   public static final UpdateShardHandlerConfig DEFAULT =
       new UpdateShardHandlerConfig(
-          HttpClientUtil.DEFAULT_MAXCONNECTIONS,
-          HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
-          HttpClientUtil.DEFAULT_SO_TIMEOUT,
-          HttpClientUtil.DEFAULT_CONNECT_TIMEOUT,
+          SolrHttpConstants.DEFAULT_MAXCONNECTIONS,
+          SolrHttpConstants.DEFAULT_MAXCONNECTIONSPERHOST,
+          SolrHttpConstants.DEFAULT_SO_TIMEOUT,
+          SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT,
           DEFAULT_METRICNAMESTRATEGY,
           DEFAULT_MAXRECOVERYTHREADS);
 
   public static final UpdateShardHandlerConfig TEST_DEFAULT =
       new UpdateShardHandlerConfig(
-          HttpClientUtil.DEFAULT_MAXCONNECTIONS,
-          HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
+          SolrHttpConstants.DEFAULT_MAXCONNECTIONS,
+          SolrHttpConstants.DEFAULT_MAXCONNECTIONSPERHOST,
           30000,
           30000,
           UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,

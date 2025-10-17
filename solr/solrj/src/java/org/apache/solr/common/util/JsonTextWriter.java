@@ -75,7 +75,7 @@ public interface JsonTextWriter extends TextWriter {
 
   @Override
   default void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-    // it might be more efficient to use a stringbuilder or write substrings
+    // it might be more efficient to use a StringBuilder or write substrings
     // if writing chars to the stream is slow.
     if (needsEscaping) {
 

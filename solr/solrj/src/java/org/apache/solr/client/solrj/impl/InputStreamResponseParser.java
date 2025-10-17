@@ -16,18 +16,47 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
-/** Simply puts the InputStream into an entry in a NamedList named "stream". */
+/**
+ * Simply puts the InputStream into an entry in a NamedList named "stream".
+ *
+ * @see org.apache.solr.client.solrj.InputStreamResponse
+ */
 public class InputStreamResponseParser extends ResponseParser {
+
+  public static String STREAM_KEY = "stream";
+  public static String HTTP_STATUS_KEY = "responseStatus";
 
   private final String writerType;
 
   public InputStreamResponseParser(String writerType) {
     this.writerType = writerType;
+  }
+
+  /**
+   * When using a {@link InputStreamResponseParser}, the raw output is available in the response
+   * under the key {@link #STREAM_KEY}.
+   */
+  public static String consumeResponseToString(NamedList<Object> response) throws IOException {
+    assert response != null;
+    String output;
+    // Would be nice to validate the STREAM_KEY value is present
+    try (InputStream responseStream = (InputStream) response.get(STREAM_KEY)) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      responseStream.transferTo(baos);
+      output = baos.toString(StandardCharsets.UTF_8);
+    }
+    return output;
   }
 
   @Override
@@ -36,12 +65,25 @@ public class InputStreamResponseParser extends ResponseParser {
   }
 
   @Override
-  public NamedList<Object> processResponse(Reader reader) {
-    throw new UnsupportedOperationException();
+  public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
+    StringWriter writer = new StringWriter();
+    new InputStreamReader(body, encoding == null ? "UTF-8" : encoding).transferTo(writer);
+    String output = writer.toString();
+    NamedList<Object> list = new NamedList<>();
+    list.add("response", output);
+    return list;
   }
 
   @Override
-  public NamedList<Object> processResponse(InputStream body, String encoding) {
-    throw new UnsupportedOperationException();
+  public Set<String> getContentTypes() {
+    return Set.of(); // don't enforce
+  }
+
+  public static NamedList<Object> createInputStreamNamedList(
+      int httpStatus, InputStream inputStream) {
+    final var nl = new SimpleOrderedMap<>();
+    nl.add(STREAM_KEY, inputStream);
+    nl.add(HTTP_STATUS_KEY, httpStatus);
+    return nl;
   }
 }

@@ -21,9 +21,9 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Locale;
-import org.eclipse.jetty.client.api.Authentication;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Authentication;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.util.Attributes;
 
 /** BasicAuthentication that does not care about uri and realm */
@@ -61,7 +61,7 @@ public class SolrBasicAuthentication implements Authentication {
 
       @Override
       public void apply(Request request) {
-        request.header(headerInfo.getHeader(), value);
+        request.headers(httpFields -> httpFields.add(headerInfo.getHeader(), value));
       }
     };
   }

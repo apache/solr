@@ -21,7 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -46,7 +46,7 @@ public class QueryResponseTest extends SolrTestCase {
   public void testRangeFacets() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;
-    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+    try (SolrResourceLoader loader = new SolrResourceLoader(Path.of("").toAbsolutePath());
         InputStream is = loader.openResource("solrj/sampleRangeFacetResponse.xml")) {
       assertNotNull(is);
 
@@ -55,7 +55,7 @@ public class QueryResponseTest extends SolrTestCase {
       }
     }
 
-    QueryResponse qr = new QueryResponse(response, null);
+    QueryResponse qr = new QueryResponse(response);
     assertNotNull(qr);
 
     int counter = 0;
@@ -111,7 +111,7 @@ public class QueryResponseTest extends SolrTestCase {
   public void testGroupResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;
-    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+    try (SolrResourceLoader loader = new SolrResourceLoader(Path.of("").toAbsolutePath());
         InputStream is = loader.openResource("solrj/sampleGroupResponse.xml")) {
       assertNotNull(is);
       try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
@@ -119,7 +119,7 @@ public class QueryResponseTest extends SolrTestCase {
       }
     }
 
-    QueryResponse qr = new QueryResponse(response, null);
+    QueryResponse qr = new QueryResponse(response);
     assertNotNull(qr);
     GroupResponse groupResponse = qr.getGroupResponse();
     assertNotNull(groupResponse);
@@ -217,7 +217,7 @@ public class QueryResponseTest extends SolrTestCase {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;
 
-    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+    try (SolrResourceLoader loader = new SolrResourceLoader(Path.of("").toAbsolutePath());
         InputStream is = loader.openResource("solrj/sampleSimpleGroupResponse.xml")) {
       assertNotNull(is);
       try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
@@ -225,7 +225,7 @@ public class QueryResponseTest extends SolrTestCase {
       }
     }
 
-    QueryResponse qr = new QueryResponse(response, null);
+    QueryResponse qr = new QueryResponse(response);
     assertNotNull(qr);
     GroupResponse groupResponse = qr.getGroupResponse();
     assertNotNull(groupResponse);
@@ -260,14 +260,14 @@ public class QueryResponseTest extends SolrTestCase {
   @Test
   public void testIntervalFacetsResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
-    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath())) {
+    try (SolrResourceLoader loader = new SolrResourceLoader(Path.of("").toAbsolutePath())) {
       InputStream is = loader.openResource("solrj/sampleIntervalFacetsResponse.xml");
       assertNotNull(is);
       Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
       NamedList<Object> response = parser.processResponse(in);
       in.close();
 
-      QueryResponse qr = new QueryResponse(response, null);
+      QueryResponse qr = new QueryResponse(response);
       assertNotNull(qr);
       assertNotNull(qr.getIntervalFacets());
       assertEquals(2, qr.getIntervalFacets().size());
@@ -303,7 +303,7 @@ public class QueryResponseTest extends SolrTestCase {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response;
 
-    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+    try (SolrResourceLoader loader = new SolrResourceLoader(Path.of("").toAbsolutePath());
         InputStream is = loader.openResource("solrj/sampleDebugResponse.xml")) {
       assertNotNull(is);
       try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
@@ -311,7 +311,7 @@ public class QueryResponseTest extends SolrTestCase {
       }
     }
 
-    QueryResponse qr = new QueryResponse(response, null);
+    QueryResponse qr = new QueryResponse(response);
     assertNotNull(qr);
 
     Map<String, Object> explainMap = qr.getExplainMap();

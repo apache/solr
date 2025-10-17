@@ -21,9 +21,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
-import java.util.Map;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
@@ -56,7 +54,6 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     apiBag.registerObject(new ModifyCollectionAPI(collectionsHandler));
     apiBag.registerObject(new MoveReplicaAPI(collectionsHandler));
     apiBag.registerObject(new RebalanceLeadersAPI(collectionsHandler));
-    apiBag.registerObject(new CollectionStatusAPI(collectionsHandler));
   }
 
   @Override
@@ -67,17 +64,6 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
   @Override
   public boolean isCoreSpecific() {
     return false;
-  }
-
-  @Test
-  public void testGetCollectionStatus() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName", "GET", Map.of(SHARD, new String[] {"shard2"}));
-
-    assertEquals(CollectionParams.CollectionAction.CLUSTERSTATUS.toString(), v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals("shard2", v1Params.get(SHARD));
   }
 
   @Test

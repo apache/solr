@@ -148,8 +148,7 @@ class Permission {
       }
       return null;
     }
-    if (val instanceof Collection) {
-      Collection<?> list = (Collection<?>) val;
+    if (val instanceof Collection<?> list) {
       for (Object o : list) result.add(String.valueOf(o));
     } else if (val instanceof String) {
       result.add((String) val);

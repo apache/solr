@@ -17,10 +17,12 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.client.solrj.impl.InputStreamResponseParser.STREAM_KEY;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,8 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
@@ -39,12 +39,9 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -54,14 +51,14 @@ import org.slf4j.LoggerFactory;
 public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CloudLegacySolrClient solrClient;
+  private final CloudHttp2SolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<Replica>>>>
       nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
 
   @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
-  public SolrClientNodeStateProvider(CloudLegacySolrClient solrClient) {
+  public SolrClientNodeStateProvider(CloudHttp2SolrClient solrClient) {
     this.solrClient = solrClient;
     try {
       readReplicaDetails();
@@ -80,23 +77,21 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     if (clusterState == null) { // zkStateReader still initializing
       return;
     }
-    Map<String, ClusterState.CollectionRef> all =
-        clusterStateProvider.getClusterState().getCollectionStates();
-    all.forEach(
-        (collName, ref) -> {
-          DocCollection coll = ref.get();
-          if (coll == null) return;
-          coll.forEachReplica(
-              (shard, replica) -> {
-                Map<String, Map<String, List<Replica>>> nodeData =
-                    nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(
-                        replica.getNodeName(), k -> new HashMap<>());
-                Map<String, List<Replica>> collData =
-                    nodeData.computeIfAbsent(collName, k -> new HashMap<>());
-                List<Replica> replicas = collData.computeIfAbsent(shard, k -> new ArrayList<>());
-                replicas.add((Replica) replica.clone());
-              });
-        });
+    clusterState
+        .collectionStream()
+        .forEach(
+            coll ->
+                coll.forEachReplica(
+                    (shard, replica) -> {
+                      Map<String, Map<String, List<Replica>>> nodeData =
+                          nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(
+                              replica.getNodeName(), k -> new HashMap<>());
+                      Map<String, List<Replica>> collData =
+                          nodeData.computeIfAbsent(coll.getName(), k -> new HashMap<>());
+                      List<Replica> replicas =
+                          collData.computeIfAbsent(shard, k -> new ArrayList<>());
+                      replicas.add((Replica) replica.clone());
+                    }));
   }
 
   @Override
@@ -142,72 +137,95 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       String node, Collection<String> keys) {
     Map<String, Map<String, List<Replica>>> result =
         nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, o -> new HashMap<>());
-    if (!keys.isEmpty()) {
-      Map<String, Pair<String, Replica>> metricsKeyVsTagReplica = new HashMap<>();
-      forEachReplica(
-          result,
-          r -> {
-            for (String key : keys) {
-              if (r.getProperties().containsKey(key)) continue; // it's already collected
-              String perReplicaMetricsKey =
-                  "solr.core."
-                      + r.getCollection()
-                      + "."
-                      + r.getShard()
-                      + "."
-                      + Utils.parseMetricsReplicaName(r.getCollection(), r.getCoreName())
-                      + ":";
-              String perReplicaValue = key;
-              perReplicaMetricsKey += perReplicaValue;
-              metricsKeyVsTagReplica.put(perReplicaMetricsKey, new Pair<>(key, r));
-            }
-          });
 
-      if (!metricsKeyVsTagReplica.isEmpty()) {
-        Map<String, Object> tagValues = fetchReplicaMetrics(node, metricsKeyVsTagReplica);
-        tagValues.forEach(
-            (k, o) -> {
-              Pair<String, Replica> p = metricsKeyVsTagReplica.get(k);
-              if (p.second() != null) p.second().getProperties().put(p.first(), o);
-            });
-      }
+    if (keys.isEmpty()) {
+      return result;
     }
+
+    // Build mapping from core name to (replica, metric) {coreName: <Replica, Prometheus Metric
+    // Name>}
+    Map<String, List<Pair<Replica, String>>> coreToReplicaProps = new HashMap<>();
+    Set<String> requestedMetricNames = new HashSet<>();
+
+    forEachReplica(
+        result,
+        replica -> {
+          for (String key : keys) {
+            if (replica.getProperties().containsKey(key)) continue;
+
+            // Build core name as the key to the replica and the metric it needs
+            String coreName =
+                replica.getCollection()
+                    + "_"
+                    + replica.getShard()
+                    + "_"
+                    + Utils.parseMetricsReplicaName(replica.getCollection(), replica.getCoreName());
+
+            coreToReplicaProps
+                .computeIfAbsent(coreName, k -> new ArrayList<>())
+                .add(new Pair<>(replica, key));
+            requestedMetricNames.add(key);
+          }
+        });
+
+    if (coreToReplicaProps.isEmpty()) {
+      return result;
+    }
+
+    RemoteCallCtx ctx = new RemoteCallCtx(node, solrClient);
+    processMetricStream(
+        node,
+        ctx,
+        requestedMetricNames,
+        (line) -> {
+          String prometheusMetricName = NodeValueFetcher.extractMetricNameFromLine(line);
+
+          // Extract core name from prometheus line and the core label
+          String coreParam = NodeValueFetcher.extractLabelValueFromLine(line, "core");
+          if (coreParam == null) return;
+
+          // Find the matching core and set the metric value to its corresponding replica
+          // properties
+          List<Pair<Replica, String>> replicaProps = coreToReplicaProps.get(coreParam);
+          if (replicaProps != null) {
+            Double value = NodeValueFetcher.Metrics.extractPrometheusValue(line);
+            replicaProps.stream()
+                .filter(pair -> pair.second().equals(prometheusMetricName))
+                .forEach(pair -> pair.first().getProperties().put(pair.second(), value));
+          }
+        });
     return result;
   }
 
-  protected Map<String, Object> fetchReplicaMetrics(
-      String node, Map<String, Pair<String, Replica>> metricsKeyVsTagReplica) {
-    Map<String, Set<Object>> collect =
-        metricsKeyVsTagReplica.entrySet().stream()
-            .collect(Collectors.toMap(e -> e.getKey(), e -> Set.of(e.getKey())));
-    RemoteCallCtx ctx = new RemoteCallCtx(null, solrClient);
-    fetchReplicaMetrics(node, ctx, collect);
-    return ctx.tags;
-  }
-
-  static void fetchReplicaMetrics(
-      String solrNode, RemoteCallCtx ctx, Map<String, Set<Object>> metricsKeyVsTag) {
+  /** Process a stream of prometheus metrics lines */
+  static void processMetricStream(
+      String solrNode, RemoteCallCtx ctx, Set<String> metricNames, Consumer<String> lineProcessor) {
     if (!ctx.isNodeAlive(solrNode)) return;
+
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("key", metricsKeyVsTag.keySet().toArray(new String[0]));
-    try {
-      SimpleSolrResponse rsp = ctx.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
-      metricsKeyVsTag.forEach(
-          (key, tags) -> {
-            Object v =
-                Utils.getObjectByPath(rsp.getResponse(), true, Arrays.asList("metrics", key));
-            for (Object tag : tags) {
-              if (tag instanceof Function) {
-                @SuppressWarnings({"unchecked"})
-                Pair<String, Object> p = (Pair<String, Object>) ((Function) tag).apply(v);
-                ctx.tags.put(p.first(), p.second());
-              } else {
-                if (v != null) ctx.tags.put(tag.toString(), v);
-              }
-            }
-          });
+    params.add("wt", "prometheus");
+    params.add("name", String.join(",", metricNames));
+
+    var req =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params);
+    req.setResponseParser(new InputStreamResponseParser("prometheus"));
+
+    String baseUrl =
+        ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
+
+    try (InputStream in =
+        (InputStream)
+            ctx.cloudSolrClient
+                .getHttpClient()
+                .requestWithBaseUrl(baseUrl, req::process)
+                .getResponse()
+                .get(STREAM_KEY)) {
+
+      NodeValueFetcher.Metrics.prometheusMetricStream(in).forEach(lineProcessor);
     } catch (Exception e) {
-      log.warn("could not get tags from node {}", solrNode, e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Unable to read prometheus metrics output", e);
     }
   }
 
@@ -226,7 +244,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   static class RemoteCallCtx {
 
     ZkClientClusterStateProvider zkClientClusterStateProvider;
-    CloudLegacySolrClient solrClient;
+    CloudHttp2SolrClient cloudSolrClient;
     public final Map<String, Object> tags = new HashMap<>();
     private final String node;
     public Map<String, Object> session;
@@ -238,11 +256,11 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       return true;
     }
 
-    public RemoteCallCtx(String node, CloudLegacySolrClient solrClient) {
+    public RemoteCallCtx(String node, CloudHttp2SolrClient cloudSolrClient) {
       this.node = node;
-      this.solrClient = solrClient;
+      this.cloudSolrClient = cloudSolrClient;
       this.zkClientClusterStateProvider =
-          (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
+          (ZkClientClusterStateProvider) cloudSolrClient.getClusterStateProvider();
     }
 
     /**
@@ -290,15 +308,12 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       String url = zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
       GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, path, params);
-      try (var client =
-          new HttpSolrClient.Builder()
-              .withHttpClient(solrClient.getHttpClient())
-              .withBaseSolrUrl(url)
-              .withResponseParser(new BinaryResponseParser())
-              .build()) {
-        NamedList<Object> rsp = client.request(request);
-        request.response.setResponse(rsp);
-        return request.response;
+      request.setResponseParser(new JavaBinResponseParser());
+
+      try {
+        return cloudSolrClient.getHttpClient().requestWithBaseUrl(url, request::process);
+      } catch (SolrServerException | IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Fetching replica metrics failed", e);
       }
     }
 

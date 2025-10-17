@@ -22,9 +22,6 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assume.assumeThat;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -677,33 +674,6 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testShortNameResolvesPermissions() {
-    assumeThat(
-        "ExternalRBAPlugin doesn't use short name",
-        createPlugin(),
-        is(instanceOf(RuleBasedAuthorizationPlugin.class)));
-
-    setUserRole("admin", "admin");
-    addPermission("all", "admin");
-
-    Map<String, Object> values =
-        Map.of(
-            "userPrincipal", "admin@EXAMPLE",
-            "userName", "admin",
-            "resource", "/admin/info/properties",
-            "requestType", RequestType.ADMIN,
-            "handler", new PropertiesRequestHandler());
-
-    // Short names disabled, admin should fail, admin@EXAMPLE should succeed
-    rules.put("useShortName", "false");
-    checkRules(values, FORBIDDEN);
-
-    // Short names enabled, admin should succeed, admin@EXAMPLE should fail
-    rules.put("useShortName", "true");
-    checkRules(values, STATUS_OK);
-  }
-
-  @Test
   public void testGetPermissionNamesForRoles() {
     // Tests the method that maps role(s) to permissions, used by SystemInfoHandler to provide UI
     // with logged-in user's permissions
@@ -870,7 +840,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     @Override
     public SolrParams getParams() {
       SolrParams params = (SolrParams) values.get("params");
-      return params == null ? new MapSolrParams(new HashMap<>()) : params;
+      return params == null ? SolrParams.of() : params;
     }
 
     @Override

@@ -20,20 +20,16 @@ import static org.apache.solr.cloud.SolrCloudTestCase.configureCluster;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
@@ -51,8 +47,8 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
   @SuppressWarnings({"try"})
   static class ZkConnection implements AutoCloseable {
 
-    private ZkTestServer server = null;
-    private SolrZkClient zkClient = null;
+    private final ZkTestServer server;
+    private final SolrZkClient zkClient;
 
     ZkConnection() throws Exception {
       Path zkDir = createTempDir("zkData");
@@ -91,15 +87,12 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
   @SuppressWarnings({"try"})
   public void testMakeRootNode() throws Exception {
     try (ZkConnection conn = new ZkConnection()) {
-      final SolrZkClient zkClient =
+      try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(conn.getServer().getZkHost())
               .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-              .build();
-      try {
+              .build()) {
         assertTrue(zkClient.exists("/solr", true));
-      } finally {
-        zkClient.close();
       }
     }
   }
@@ -122,7 +115,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
   public void testReconnect() throws Exception {
     Path zkDir = createTempDir("zkData");
-    ZkTestServer server = null;
+    ZkTestServer server;
     server = new ZkTestServer(zkDir);
     server.run();
     try (SolrZkClient zkClient =
@@ -191,7 +184,8 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       // simulate session expiration
 
       // one option
-      server.expire(zkClient.getZooKeeper().getSessionId());
+      long sessionId = zkClient.getZkSessionId();
+      server.expire(sessionId);
 
       // another option
       // zkClient.getSolrZooKeeper().getConnection().disconnect();
@@ -217,37 +211,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
     } finally {
 
-      if (server != null) {
-        server.shutdown();
-      }
-    }
-  }
-
-  public void testZkCmdExecutor() throws Exception {
-    Path zkDir = createTempDir("zkData");
-    ZkTestServer server = null;
-
-    try {
-      server = new ZkTestServer(zkDir);
-      server.run();
-
-      final int timeout = random().nextInt(10000) + 5000;
-
-      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(timeout);
-      final long start = System.nanoTime();
-      expectThrows(
-          KeeperException.SessionExpiredException.class,
-          () -> {
-            zkCmdExecutor.retryOperation(
-                () -> {
-                  if (System.nanoTime() - start
-                      > TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
-                    throw new KeeperException.SessionExpiredException();
-                  }
-                  throw new KeeperException.ConnectionLossException();
-                });
-          });
-    } finally {
       if (server != null) {
         server.shutdown();
       }
@@ -444,15 +407,9 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       Stat stat = zkClient.exists("/test-node", null, true);
       int cversion = stat.getCversion();
-      List<Op> ops =
-          Arrays.asList(
-              Op.create(
-                  "/test-node/abc",
-                  null,
-                  zkClient.getZkACLProvider().getACLsToAdd("/test-node/abc"),
-                  CreateMode.PERSISTENT),
-              Op.delete("/test-node/abc", -1));
-      zkClient.multi(ops, true);
+      zkClient.multi(
+          op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/test-node/abc", null),
+          op -> op.delete().withVersion(-1).forPath("/test-node/abc"));
       stat = zkClient.exists("/test-node", null, true);
       assertTrue(stat.getCversion() >= cversion + 2);
     } finally {

@@ -79,6 +79,15 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
+  public Object getClusterProperty(String propertyName) {
+    if (delegate != null) {
+      return delegate.getClusterProperty(propertyName);
+    } else {
+      return null;
+    }
+  }
+
+  @Override
   public ClusterState getClusterState() {
     if (delegate != null) {
       return delegate.getClusterState();

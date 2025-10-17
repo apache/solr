@@ -51,7 +51,7 @@ public class ModifiableSolrParams extends SolrParams {
   }
 
   /**
-   * If the input params are of type MofifiableSolrParams, returns the input, otherwise, constructs
+   * If the input params are of type ModifiableSolrParams, returns the input, otherwise, constructs
    * a new ModifiableSolrParams, copying values from the given params. If params is null, returns an
    * empty ModifiableSolrParams instance.
    */
@@ -129,8 +129,8 @@ public class ModifiableSolrParams extends SolrParams {
   }
 
   /**
-   * Add all of the params provided in the parameter to <em>this</em> params. Any current value(s)
-   * for the same key will be overridden.
+   * Add all the params provided in the parameter to <em>this</em> params. Any current value(s) for
+   * the same key will be overridden.
    */
   public void add(SolrParams params) {
     for (Map.Entry<String, String[]> pair : params) {

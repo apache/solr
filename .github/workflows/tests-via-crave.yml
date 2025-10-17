@@ -3,13 +3,14 @@ name: Solr Tests
 on:
   pull_request:
     branches:
-      - 'main'
+      - '*'
 
 jobs:
   test:
     name: Run Solr Tests using Crave.io resources
 
     runs-on: self-hosted
+    timeout-minutes: 40
 
     steps:
     - name: Destroy previous clone
@@ -24,6 +25,11 @@ jobs:
     - name: Initialize, build, test
       run: |
         cd /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}
-        crave run --clean
-    - name: Delete Clone
-      run: crave clone destroy -y /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}
+        crave run --clean --message "PR: ${GITHUB_REF_NAME}" -- ./gradlew --console=plain test
+    - name: Cleanup
+      if: ${{ always() }}
+      run: |
+        pushd /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}
+        crave stop --all
+        popd
+        crave clone destroy -y /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}

@@ -490,8 +490,7 @@ public abstract class RoutedAlias {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof Action)) return false;
-      Action action = (Action) o;
+      if (!(o instanceof Action action)) return false;
       return Objects.equals(sourceAlias, action.sourceAlias)
           && actionType == action.actionType
           && Objects.equals(targetCollection, action.targetCollection);

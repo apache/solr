@@ -27,17 +27,16 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.management.MBeanServer;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.common.ConfigNode;
@@ -48,13 +47,11 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
-import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.DataConfigNode;
-import org.apache.solr.util.JmxUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -131,10 +128,10 @@ public class SolrXmlConfig {
     // since it is arranged as a separate section it is placed here
     Map<String, String> coreAdminHandlerActions =
         readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")
-            .asMap()
+            .asShallowMap()
             .entrySet()
             .stream()
-            .collect(Collectors.toMap(item -> item.getKey(), item -> item.getValue().toString()));
+            .collect(Collectors.toMap(Entry::getKey, item -> item.getValue().toString()));
 
     UpdateShardHandlerConfig updateConfig;
     if (deprecatedUpdateConfig == null) {
@@ -288,7 +285,7 @@ public class SolrXmlConfig {
   }
 
   private static NamedList<Object> readNodeListAsNamedList(ConfigNode cfg, String section) {
-    NamedList<Object> nl = DOMUtil.readNamedListChildren(cfg);
+    NamedList<Object> nl = cfg.childNodesToNamedList();
     Set<String> keys = new HashSet<>();
     for (Map.Entry<String, Object> entry : nl) {
       if (!keys.add(entry.getKey()))
@@ -383,10 +380,6 @@ public class SolrXmlConfig {
               case "indexSearcherExecutorThreads":
                 builder.setIndexSearcherExecutorThreads(it.intVal(-1));
                 break;
-              case "transientCacheSize":
-                log.warn("solr.xml transientCacheSize -- transient cores is deprecated");
-                builder.setTransientCacheSize(it.intVal(-1));
-                break;
               case "allowUrls":
                 builder.setAllowUrls(separateStrings(it.txt()));
                 break;
@@ -434,10 +427,10 @@ public class SolrXmlConfig {
 
     boolean defined = false;
 
-    int maxUpdateConnections = HttpClientUtil.DEFAULT_MAXCONNECTIONS;
-    int maxUpdateConnectionsPerHost = HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST;
-    int distributedSocketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
-    int distributedConnectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+    int maxUpdateConnections = SolrHttpConstants.DEFAULT_MAXCONNECTIONS;
+    int maxUpdateConnectionsPerHost = SolrHttpConstants.DEFAULT_MAXCONNECTIONSPERHOST;
+    int distributedSocketTimeout = SolrHttpConstants.DEFAULT_SO_TIMEOUT;
+    int distributedConnectionTimeout = SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT;
     String metricNameStrategy = UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY;
     int maxRecoveryThreads = UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS;
 
@@ -563,18 +556,13 @@ public class SolrXmlConfig {
         case "pkiHandlerPublicKeyPath":
           builder.setPkiHandlerPublicKeyPath(value);
           break;
-        case "distributedClusterStateUpdates":
-          builder.setUseDistributedClusterStateUpdates(Boolean.parseBoolean(value));
-          break;
-        case "distributedCollectionConfigSetExecution":
-          builder.setUseDistributedCollectionConfigSetExecution(Boolean.parseBoolean(value));
-          break;
         case "minStateByteLenForCompression":
           builder.setMinStateByteLenForCompression(parseInt(name, value));
           break;
         case "stateCompressor":
           builder.setStateCompressorClass(value);
           break;
+
         default:
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
@@ -723,7 +711,7 @@ public class SolrXmlConfig {
     builder.setHistogramSupplier(getPluginInfo(metrics.get("suppliers").get("histogram")));
 
     if (metrics.get("missingValues").exists()) {
-      NamedList<Object> missingValues = DOMUtil.childNodesToNamedList(metrics.get("missingValues"));
+      NamedList<Object> missingValues = metrics.get("missingValues").childNodesToNamedList();
       builder.setNullNumber(decodeNullValue(missingValues.get("nullNumber")));
       builder.setNotANumber(decodeNullValue(missingValues.get("notANumber")));
       builder.setNullString(decodeNullValue(missingValues.get("nullString")));
@@ -733,7 +721,7 @@ public class SolrXmlConfig {
     ConfigNode caching = metrics.get("solr/metrics/caching");
     if (caching != null) {
       Object threadsCachingIntervalSeconds =
-          DOMUtil.childNodesToNamedList(caching).get("threadsIntervalSeconds", null);
+          caching.childNodesToNamedList().get("threadsIntervalSeconds");
       builder.setCacheConfig(
           new MetricsConfig.CacheConfig(
               threadsCachingIntervalSeconds == null
@@ -741,8 +729,7 @@ public class SolrXmlConfig {
                   : Integer.parseInt(threadsCachingIntervalSeconds.toString())));
     }
 
-    PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(metrics);
-    return builder.setMetricReporterPlugins(reporterPlugins).build();
+    return builder.build();
   }
 
   private static Map<String, CacheConfig> getCachesConfig(
@@ -760,8 +747,7 @@ public class SolrXmlConfig {
   }
 
   private static Object decodeNullValue(Object o) {
-    if (o instanceof String) { // check if it's a JSON object
-      String str = (String) o;
+    if (o instanceof String str) { // check if it's a JSON object
       if (!str.isBlank() && (str.startsWith("{") || str.startsWith("["))) {
         try {
           o = Utils.fromJSONString((String) o);
@@ -771,36 +757,6 @@ public class SolrXmlConfig {
       }
     }
     return o;
-  }
-
-  private static PluginInfo[] getMetricReporterPluginInfos(ConfigNode metrics) {
-    List<PluginInfo> configs = new ArrayList<>();
-    boolean hasJmxReporter = false;
-    for (ConfigNode node : metrics.getAll("reporter")) {
-      PluginInfo info = getPluginInfo(node);
-      if (info == null) {
-        continue;
-      }
-      String clazz = info.className;
-      if (clazz != null && clazz.equals(SolrJmxReporter.class.getName())) {
-        hasJmxReporter = true;
-      }
-      configs.add(info);
-    }
-
-    // if there's an MBean server running but there was no JMX reporter then add a default one
-    MBeanServer mBeanServer = JmxUtil.findFirstMBeanServer();
-    if (mBeanServer != null && !hasJmxReporter) {
-      log.debug(
-          "MBean server found: {}, but no JMX reporters were configured - adding default JMX reporter.",
-          mBeanServer);
-      Map<String, Object> attributes = new HashMap<>();
-      attributes.put("name", "default");
-      attributes.put("class", SolrJmxReporter.class.getName());
-      PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
-      configs.add(defaultPlugin);
-    }
-    return configs.toArray(new PluginInfo[0]);
   }
 
   /**

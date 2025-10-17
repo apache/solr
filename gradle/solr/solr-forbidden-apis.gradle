@@ -21,6 +21,5 @@
 configure(project(":solr:core")) {
   tasks.matching { it.name == "forbiddenApisMain" || it.name == "forbiddenApisTest" }.all {
     exclude "org/apache/solr/internal/**"
-    exclude "org/apache/hadoop/**"
   }
 }

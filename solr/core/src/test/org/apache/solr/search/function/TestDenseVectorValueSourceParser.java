@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import org.apache.lucene.queries.function.valuesource.ConstKnnByteVectorValueSource;
 import org.apache.lucene.queries.function.valuesource.ConstKnnFloatValueSource;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.SyntaxError;
 import org.junit.Assert;
@@ -30,7 +31,7 @@ public class TestDenseVectorValueSourceParser {
   @Test
   public void floatVectorParsing_shouldReturnConstKnnFloatValueSource()
       throws SyntaxError, IOException {
-    FunctionQParser qp = new FunctionQParser("[1, 2,3,4]", null, null, null);
+    FunctionQParser qp = newFunctionQParser("[1, 2,3,4]");
     var valueSource = qp.parseConstVector(0);
     Assert.assertEquals(ConstKnnFloatValueSource.class, valueSource.getClass());
     var floatVectorValueSource = (ConstKnnFloatValueSource) valueSource;
@@ -43,7 +44,7 @@ public class TestDenseVectorValueSourceParser {
   @Test
   public void byteVectorParsing_shouldReturnConstKnnByterValueSource()
       throws SyntaxError, IOException {
-    FunctionQParser qp = new FunctionQParser("[1, 2,3, 4]", null, null, null);
+    FunctionQParser qp = newFunctionQParser("[1, 2,3, 4]");
     var valueSource = qp.parseConstVector(FunctionQParser.FLAG_PARSE_VECTOR_BYTE_ENCODING);
     Assert.assertEquals(ConstKnnByteVectorValueSource.class, valueSource.getClass());
 
@@ -56,7 +57,7 @@ public class TestDenseVectorValueSourceParser {
 
   @Test
   public void byteVectorParsing_ValuesOutsideByteBoundaries_shouldRaiseAnException() {
-    FunctionQParser qp = new FunctionQParser("[1,2,3,170]", null, null, null);
+    FunctionQParser qp = newFunctionQParser("[1,2,3,170]");
     Assert.assertThrows(
         NumberFormatException.class,
         () -> qp.parseConstVector(FunctionQParser.FLAG_PARSE_VECTOR_BYTE_ENCODING));
@@ -64,7 +65,7 @@ public class TestDenseVectorValueSourceParser {
 
   @Test
   public void byteVectorParsing_NonIntegerValues_shouldRaiseAnException() {
-    FunctionQParser qp = new FunctionQParser("[1,2,3.2,4]", null, null, null);
+    FunctionQParser qp = newFunctionQParser("[1,2,3.2,4]");
     Assert.assertThrows(
         NumberFormatException.class,
         () -> qp.parseConstVector(FunctionQParser.FLAG_PARSE_VECTOR_BYTE_ENCODING));
@@ -76,10 +77,14 @@ public class TestDenseVectorValueSourceParser {
     var testCases = List.of("<1,2,3.2,4>", "[1,,2,3,4]", "[1,2,3,4,5", "[1,2,3,4,,]", "1,2,3,4]");
 
     for (String testCase : testCases) {
-      FunctionQParser qp = new FunctionQParser(testCase, null, null, null);
+      FunctionQParser qp = newFunctionQParser(testCase);
       Assert.assertThrows(
           SyntaxError.class,
           () -> qp.parseConstVector(FunctionQParser.FLAG_PARSE_VECTOR_BYTE_ENCODING));
     }
+  }
+
+  private static FunctionQParser newFunctionQParser(String qstr) {
+    return new FunctionQParser(qstr, null, SolrParams.of(), null);
   }
 }

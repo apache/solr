@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 public class CatStream extends TupleStream implements Expressible {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final String commaDelimitedFilepaths;
+  protected final String commaDelimitedFilepaths;
   private final int maxLines; // -1 for no max
 
   private StreamContext context;
@@ -163,7 +163,7 @@ public class CatStream extends TupleStream implements Expressible {
         .withExpression(toExpression(factory).toString());
   }
 
-  private List<CrawlFile> validateAndSetFilepathsInSandbox() {
+  protected List<CrawlFile> validateAndSetFilepathsInSandbox() {
     final List<CrawlFile> crawlSeeds = new ArrayList<>();
     for (String crawlRootStr : commaDelimitedFilepaths.split(",")) {
       Path crawlRootPath = chroot.resolve(crawlRootStr).normalize();

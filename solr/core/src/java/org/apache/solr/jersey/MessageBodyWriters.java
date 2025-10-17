@@ -17,7 +17,7 @@
 
 package org.apache.solr.jersey;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.impl.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 import static org.apache.solr.response.QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8;
@@ -36,10 +36,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
@@ -66,17 +65,17 @@ public class MessageBodyWriters {
     }
   }
 
-  @Produces(BINARY_CONTENT_TYPE_V2)
+  @Produces(JAVABIN_CONTENT_TYPE_V2)
   public static class JavabinMessageBodyWriter extends BaseMessageBodyWriter
       implements MessageBodyWriter<Object> {
     @Override
     public QueryResponseWriter createResponseWriter() {
-      return new BinaryResponseWriter();
+      return new JavaBinResponseWriter();
     }
 
     @Override
     public String getSupportedMediaType() {
-      return BINARY_CONTENT_TYPE_V2;
+      return JAVABIN_CONTENT_TYPE_V2;
     }
   }
 
@@ -141,8 +140,7 @@ public class MessageBodyWriters {
           (SolrQueryResponse) requestContext.getProperty(SOLR_QUERY_RESPONSE);
 
       V2ApiUtils.squashIntoSolrResponseWithHeader(solrQueryResponse, toWrite);
-      QueryResponseWriterUtil.writeQueryResponse(
-          entityStream, responseWriter, solrQueryRequest, solrQueryResponse, mediaType.toString());
+      responseWriter.write(entityStream, solrQueryRequest, solrQueryResponse, mediaType.toString());
     }
   }
 }

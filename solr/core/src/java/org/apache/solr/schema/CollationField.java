@@ -149,11 +149,8 @@ public class CollationField extends FieldType {
 
     if (language != null && country == null && variant != null)
       throw new SolrException(ErrorCode.SERVER_ERROR, "To specify variant, country is required");
-    else if (language != null && country != null && variant != null)
-      locale = new Locale(language, country, variant);
-    else if (language != null && country != null) locale = new Locale(language, country);
-    else locale = new Locale(language);
-
+    locale =
+        new Locale.Builder().setLanguage(language).setRegion(country).setVariant(variant).build();
     return Collator.getInstance(locale);
   }
 
@@ -243,6 +240,11 @@ public class CollationField extends FieldType {
 
   @Override
   protected void checkSupportsDocValues() { // we support DocValues
+  }
+
+  @Override
+  protected boolean enableDocValuesByDefault() {
+    return true;
   }
 
   @Override

@@ -168,12 +168,14 @@ public class PivotFacetProcessor extends SimpleFacets {
 
         for (String refinements : refinementValuesByField) {
           pivotResponse.addAll(
-              processSingle(
-                  pivotFields, refinements, statsFields, parsed, facetQueries, facetRanges));
+              (Map<String, List<NamedList<Object>>>)
+                  processSingle(
+                      pivotFields, refinements, statsFields, parsed, facetQueries, facetRanges));
         }
       } else {
         pivotResponse.addAll(
-            processSingle(pivotFields, null, statsFields, parsed, facetQueries, facetRanges));
+            (Map<String, List<NamedList<Object>>>)
+                processSingle(pivotFields, null, statsFields, parsed, facetQueries, facetRanges));
       }
     }
     return pivotResponse;

@@ -220,11 +220,6 @@
      -->
     <fieldType name="ignored" stored="false" indexed="false" class="solr.StrField" />
 
-    <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" />
-
-    <fieldType name="sfile" keyField="sfile_s" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" />
-
-
     <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
@@ -239,14 +234,6 @@
     <fieldType name="tdoubles" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
     <fieldType name="tdates" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
 
-
-  <!-- eff_tint class can't be randomized, because ExternalFileField disallows point-based keyField.  See SOLR-10846. -->
-  <fieldType name="eff_tint" class="solr.TrieDoubleField" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
-  <field name="eff_tint" type="eff_tint" indexed="true" stored="true"/>
-  <fieldType name="eff_tfloat" keyField="eff_tint" defVal="0"
-               stored="false" indexed="true"
-               class="solr.ExternalFileField" />
-
     <fieldType name="text_no_analyzer" stored="false" indexed="true" class="solr.TextField" />
 
     <fieldType name="text_length" class="solr.TextField">
@@ -256,10 +243,9 @@
         <filter class="solr.LengthFilterFactory" min="2" max="32768"/>
       </analyzer>
     </fieldType>
-
-
+    
     <!-- Enum type -->
-    <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
+    <fieldType name="severityType" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"/>    
 
    <!-- Valid attributes for fields:
      name: mandatory - the name for the field
@@ -283,8 +269,6 @@
    <field name="text" type="text" indexed="true" stored="false" />
 
    <field name="signatureField" type="string" indexed="true" stored="false"/>
-
-   <field name="eff_trie" type="eff_tfloat" />
 
    <field name="text_no_analyzer" type="text_no_analyzer" indexed="true" />
 
@@ -444,9 +428,6 @@
        <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
      </analyzer>
    </fieldType>
-
-   <dynamicField name="*_extf" type="file"/>
-   <dynamicField name="*_extfs" type="sfile"/>
 
    <dynamicField name="*_random" type="random" />
 

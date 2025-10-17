@@ -16,7 +16,6 @@
  */
 package org.apache.solr.uninverting;
 
-import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.util.ArrayList;
@@ -38,6 +37,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
@@ -174,8 +174,9 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
           TestUtil.checkReader(ar);
 
           BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field");
+          StoredFields storedFields = ar.storedFields();
           for (int docID = 0; docID < docBytes.size(); docID++) {
-            Document doc = ar.document(docID);
+            Document doc = storedFields.document(docID);
             assertEquals(docID, s.nextDoc());
             BytesRef bytes = s.binaryValue();
             byte[] expected = docBytes.get(Integer.parseInt(doc.get("id")));
@@ -433,11 +434,12 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
       if (docID == NO_MORE_DOCS) {
         break;
       }
-      long expectedOrd;
-      while ((expectedOrd = expected.nextOrd()) != NO_MORE_ORDS) {
+
+      assertEquals(expected.docValueCount(), actual.docValueCount());
+      for (int o = 0; o < expected.docValueCount(); o++) {
+        final long expectedOrd = expected.nextOrd();
         assertEquals(expectedOrd, actual.nextOrd());
       }
-      assertEquals(NO_MORE_ORDS, actual.nextOrd());
     }
 
     // compare ord dictionary

@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="add-schema-fields-update-processor" version="1.6">
+<schema name="add-schema-fields-update-processor" version="1.7">
 
   <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
   <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
@@ -33,22 +33,22 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
-  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
-  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
-  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
-  <fieldType name="pints" class="solr.IntPointField" docValues="true" multiValued="true"/>
-  <fieldType name="pfloats" class="solr.FloatPointField" docValues="true" multiValued="true"/>
-  <fieldType name="plongs" class="solr.LongPointField" docValues="true" multiValued="true"/>
-  <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
-  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
-  <fieldType name="pdates" class="solr.DatePointField" docValues="true" multiValued="true"/>
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="pfloat" class="solr.FloatPointField"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
+  <fieldType name="pdouble" class="solr.DoublePointField"/>
+  <fieldType name="pints" class="solr.IntPointField" multiValued="true"/>
+  <fieldType name="pfloats" class="solr.FloatPointField" multiValued="true"/>
+  <fieldType name="plongs" class="solr.LongPointField" multiValued="true"/>
+  <fieldType name="pdoubles" class="solr.DoublePointField" multiValued="true"/>
+  <fieldType name="pdate" class="solr.DatePointField"/>
+  <fieldType name="pdates" class="solr.DatePointField" multiValued="true"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="_version_" type="long" indexed="true" stored="true"/>
   <field name="_root_" type="string" indexed="true" stored="true" multiValued="false"/>
 
-  <dynamicField name="*_str" type="string" stored="false" multiValued="true" docValues="true" useDocValuesAsStored="false"/>
+  <dynamicField name="*_str" type="string" stored="false" multiValued="true" useDocValuesAsStored="false"/>
   <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
   <dynamicField name="*_ti" type="tint" indexed="true" stored="true"/>
   <dynamicField name="*_tl" type="tlong" indexed="true" stored="true"/>

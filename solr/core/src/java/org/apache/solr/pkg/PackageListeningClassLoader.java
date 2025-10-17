@@ -105,6 +105,9 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
     return theVersion;
   }
 
+  // Allow method reference to return a reference to a functional interface (Mapwriter),
+  // rather than a reference to a PgkVersion object
+  @SuppressWarnings("UnnecessaryMethodReference")
   @Override
   public MapWriter getPackageVersion(PluginInfo.ClassName cName) {
     if (cName.pkg == null) return null;

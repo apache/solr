@@ -179,11 +179,10 @@ public class ReRankQParserPlugin extends QParserPlugin {
     @Override
     protected float combine(
         float firstPassScore, boolean secondPassMatches, float secondPassScore) {
-      float score = firstPassScore;
       if (secondPassMatches) {
-        return scoreCombiner.func(score, secondPassScore);
+        return scoreCombiner.func(firstPassScore, secondPassScore);
       }
-      return score;
+      return firstPassScore;
     }
   }
 

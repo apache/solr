@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-sim-global-vs-ft-mismatch" version="1.0">
+<schema name="bad-schema-sim-global-vs-ft-mismatch" version="1.7">
 
   <similarity class="solr.SchemaSimilarityFactory" >
     <!-- BROKEN: the named fieldType does not have an explicit sim defined, circular default -->

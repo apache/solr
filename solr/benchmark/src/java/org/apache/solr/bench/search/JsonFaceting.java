@@ -43,6 +43,7 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Timeout;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.BenchmarkParams;
+import org.openjdk.jmh.infra.Blackhole;
 
 /** A benchmark to experiment with the performance of json faceting. */
 @BenchmarkMode(Mode.Throughput)
@@ -70,6 +71,9 @@ public class JsonFaceting {
 
     @Param("4")
     int numShards;
+
+    @Param({"false", "true"})
+    boolean useTimeLimit;
 
     // DV,  // DocValues, collect into ordinal array
     // UIF, // UnInvertedField, collect into ordinal array
@@ -99,8 +103,8 @@ public class JsonFaceting {
         BenchmarkParams benchmarkParams, MiniClusterState.MiniClusterBenchState miniClusterState)
         throws Exception {
 
-      System.setProperty("maxMergeAtOnce", "30");
-      System.setProperty("segmentsPerTier", "30");
+      System.setProperty("maxMergeAtOnce", "50");
+      System.setProperty("segmentsPerTier", "50");
 
       miniClusterState.startMiniCluster(nodeCount);
 
@@ -158,6 +162,11 @@ public class JsonFaceting {
               + " , f8:{type:terms, field:'facet_s', limit:2, sort:'x desc', facet:{x:'countvals(int4_i_dv)'}  } "
               + '}');
 
+      if (useTimeLimit) {
+        // high enough to return all results, but still affecting the performance
+        params.set("timeAllowed", "5000");
+      }
+
       // MiniClusterState.log("params: " + params + "\n");
     }
 
@@ -175,19 +184,22 @@ public class JsonFaceting {
 
   @Benchmark
   @Timeout(time = 500, timeUnit = TimeUnit.SECONDS)
-  public Object jsonFacet(
+  public void jsonFacet(
       MiniClusterState.MiniClusterBenchState miniClusterState,
       BenchState state,
-      BenchState.ThreadState threadState)
+      BenchState.ThreadState threadState,
+      Blackhole bh)
       throws Exception {
+    final var url = miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount));
     QueryRequest queryRequest = new QueryRequest(state.params);
-    queryRequest.setBasePath(
-        miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount)));
-
-    NamedList<Object> result = miniClusterState.client.request(queryRequest, state.collection);
+    NamedList<Object> result =
+        miniClusterState
+            .client
+            .requestWithBaseUrl(url, state.collection, queryRequest)
+            .getResponse();
 
     // MiniClusterState.log("result: " + result);
 
-    return result;
+    bh.consume(result);
   }
 }

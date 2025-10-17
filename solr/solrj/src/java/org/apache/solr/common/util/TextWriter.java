@@ -41,7 +41,7 @@ import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 
-// Base interface for all text based writers
+/** Base interface for all text based writers */
 public interface TextWriter extends PushWriter {
 
   default void writeVal(String name, Object val) throws IOException {
@@ -99,8 +99,7 @@ public interface TextWriter extends PushWriter {
       writeArray(name, ((Iterable) val).iterator(), raw);
     } else if (val instanceof Object[]) {
       writeArray(name, (Object[]) val, raw);
-    } else if (val instanceof byte[]) {
-      byte[] arr = (byte[]) val;
+    } else if (val instanceof byte[] arr) {
       writeByteArr(name, arr, 0, arr.length);
     } else if (val instanceof EnumFieldValue) {
       if (raw) {

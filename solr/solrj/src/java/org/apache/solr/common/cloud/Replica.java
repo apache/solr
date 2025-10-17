@@ -56,7 +56,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
      * trying to move to {@link State#RECOVERING}.
      *
      * <p><b>NOTE</b>: a replica's state may appear DOWN in ZK also when the node it's hosted on
-     * gracefully shuts down. This is a best effort though, and should not be relied on.
+     * gracefully shuts down. This is a "best effort" though, and should not be relied on.
      */
     DOWN("D"),
 
@@ -67,10 +67,10 @@ public class Replica extends ZkNodeProps implements MapWriter {
     RECOVERING("R"),
 
     /**
-     * Recovery attempts have not worked, something is not right.
+     * Recovery attempts has not worked, something is not right.
      *
      * <p><b>NOTE</b>: This state doesn't matter if the node is not part of {@code /live_nodes} in
-     * ZK; in that case the node is not part of the cluster and it's state should be discarded.
+     * ZK; in that case the node is not part of the cluster, and it's state should be discarded.
      */
     RECOVERY_FAILED("F");
 
@@ -113,7 +113,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
      */
     TLOG(true, true, true, CollectionAdminParams.TLOG_REPLICAS),
     /**
-     * Doesn’t index or writes to transaction log. Just replicates from {@link Type#NRT} or {@link
+     * Does not index or writes to transaction log. Just replicates from {@link Type#NRT} or {@link
      * Type#TLOG} replicas. {@link Type#PULL} replicas can’t become shard leaders (i.e., if there
      * are only pull replicas in the collection at some point, updates will fail same as if there is
      * no leaders, queries continue to work), so they don’t even participate in elections.
@@ -168,6 +168,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public final String core;
   public final Type type;
   public final String shard, collection;
+  private String baseUrl, coreUrl; // Derived values
   private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
   // mutable
@@ -254,8 +255,9 @@ public class Replica extends ZkNodeProps implements MapWriter {
     }
     Objects.requireNonNull(this.node, "'node' must not be null");
 
-    String baseUrl = (String) propMap.get(ReplicaStateProps.BASE_URL);
+    baseUrl = (String) propMap.get(ReplicaStateProps.BASE_URL);
     Objects.requireNonNull(baseUrl, "'base_url' must not be null");
+    coreUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, core);
 
     // make sure all declared props are in the propMap
     propMap.put(ReplicaStateProps.NODE_NAME, node);
@@ -282,10 +284,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof Replica)) return false;
+    if (!(o instanceof Replica other)) return false;
     if (!super.equals(o)) return false;
-
-    Replica other = (Replica) o;
 
     return name.equals(other.name);
   }
@@ -301,11 +301,11 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public String getCoreUrl() {
-    return ZkCoreNodeProps.getCoreUrl(getBaseUrl(), core);
+    return coreUrl;
   }
 
   public String getBaseUrl() {
-    return getStr(ReplicaStateProps.BASE_URL);
+    return baseUrl;
   }
 
   /** SolrCore name. */
@@ -331,6 +331,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return state;
   }
 
+  @Deprecated
   public void setState(State state) {
     this.state = state;
     propMap.put(ReplicaStateProps.STATE, this.state.toString());

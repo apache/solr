@@ -49,8 +49,8 @@ public class TestJsonRequest extends SolrTestCaseHS {
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
-    System.setProperty("solr.enableStreamBody", "true");
+    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty("solr.requests.streaming.body.enabled", "true");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }
@@ -69,7 +69,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @Test
@@ -864,7 +864,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
   }
 
   private static void addDocs(Client client) throws Exception {
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY"), null);
     client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ"), null);
     client.add(sdoc("id", "3"), null);

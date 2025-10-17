@@ -82,24 +82,23 @@ public class FacetBucket {
     mcontext.setShardFlag(bucketNumber);
 
     // drive merging off the received bucket?
-    for (int i = 0; i < bucket.size(); i++) {
-      String key = bucket.getName(i);
-      Object val = bucket.getVal(i);
-      if ("count".equals(key)) {
-        count += ((Number) val).longValue();
-        continue;
-      }
-      if ("val".equals(key)) {
-        // this is taken care of at a higher level...
-        continue;
-      }
+    bucket.forEach(
+        (key, val) -> {
+          if ("count".equals(key)) {
+            count += ((Number) val).longValue();
+            return;
+          }
+          if ("val".equals(key)) {
+            // this is taken care of at a higher level...
+            return;
+          }
 
-      FacetMerger merger = getMerger(key, val);
+          FacetMerger merger = getMerger(key, val);
 
-      if (merger != null) {
-        merger.merge(val, mcontext);
-      }
-    }
+          if (merger != null) {
+            merger.merge(val, mcontext);
+          }
+        });
   }
 
   public SimpleOrderedMap<Object> getMergedBucket() {

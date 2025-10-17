@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.Closeable;
-import java.io.File;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +30,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
@@ -59,6 +59,7 @@ import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.DeprecationLog;
@@ -107,15 +108,15 @@ public class SolrResourceLoader
     "security.",
     "handler.admin.",
     "security.jwt.",
-    "security.hadoop.",
+    "security.cert.",
     "handler.sql.",
-    "hdfs.",
-    "hdfs.update."
+    "crossdc.handler.",
+    "crossdc.update.processor."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
-  public static final String SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM =
-      "solr.allow.unsafe.resourceloading";
-  private final boolean allowUnsafeResourceloading;
+  public static final String SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM =
+      "solr.resourceloading.restricted.enabled";
+  private final boolean restrictUnsafeResourceloading;
 
   private String name = "";
   protected URLClassLoader classLoader;
@@ -191,7 +192,8 @@ public class SolrResourceLoader
    * directory.
    */
   public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
-    allowUnsafeResourceloading = Boolean.getBoolean(SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM);
+    restrictUnsafeResourceloading =
+        EnvUtils.getPropertyAsBool(SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM, true);
     if (instanceDir == null) {
       throw new NullPointerException("SolrResourceLoader instanceDir must be non-null");
     }
@@ -323,14 +325,6 @@ public class SolrResourceLoader
   }
 
   /**
-   * @deprecated use {@link #getConfigPath()}
-   */
-  @Deprecated(since = "9.0.0")
-  public String getConfigDir() {
-    return getConfigPath().toString();
-  }
-
-  /**
    * EXPERT
    *
    * <p>The underlying class loader. Most applications will not need to use this.
@@ -357,7 +351,7 @@ public class SolrResourceLoader
     Path instanceDir = getInstancePath().normalize();
     Path inInstanceDir = getInstancePath().resolve(resource).normalize();
     Path inConfigDir = instanceDir.resolve("conf").resolve(resource).normalize();
-    if (allowUnsafeResourceloading || inInstanceDir.startsWith(instanceDir)) {
+    if (!restrictUnsafeResourceloading || inInstanceDir.startsWith(instanceDir)) {
       // The resource is either inside instance dir or we allow unsafe loading, so allow testing if
       // file exists
       if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir)) {
@@ -371,12 +365,16 @@ public class SolrResourceLoader
 
     // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
     // We need a ClassLoader-compatible (forward-slashes) path here!
-    InputStream is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+    InputStream is =
+        classLoader.getResourceAsStream(
+            resource.replace(FileSystems.getDefault().getSeparator(), "/"));
 
     // This is a hack just for tests (it is not done in ZKResourceLoader)!
     // TODO can we nuke this?
     if (is == null && System.getProperty("jetty.testMode") != null) {
-      is = classLoader.getResourceAsStream(("conf/" + resource).replace(File.separatorChar, '/'));
+      is =
+          classLoader.getResourceAsStream(
+              ("conf/" + resource.replace(FileSystems.getDefault().getSeparator(), "/")));
     }
 
     if (is == null) {
@@ -394,7 +392,7 @@ public class SolrResourceLoader
     }
     Path inInstanceDir = instanceDir.resolve(resource).normalize();
     Path inConfigDir = instanceDir.resolve("conf").resolve(resource).normalize();
-    if (allowUnsafeResourceloading || inInstanceDir.startsWith(instanceDir.normalize())) {
+    if (!restrictUnsafeResourceloading || inInstanceDir.startsWith(instanceDir.normalize())) {
       if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir))
         return inConfigDir.normalize().toString();
 
@@ -403,13 +401,14 @@ public class SolrResourceLoader
     }
 
     try (InputStream is =
-        classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
+        classLoader.getResourceAsStream(
+            resource.replace(FileSystems.getDefault().getSeparator(), "/"))) {
       if (is != null) return "classpath:" + resource;
     } catch (IOException e) {
       // ignore
     }
 
-    return allowUnsafeResourceloading ? resource : null;
+    return restrictUnsafeResourceloading ? null : resource;
   }
 
   /**

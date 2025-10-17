@@ -17,8 +17,8 @@
 package org.apache.solr.util.tracing;
 
 import io.opentelemetry.context.propagation.TextMapGetter;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Iterator;
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * {@code HttpServletRequest} aware {@code TextMapGetter} that allows header data to be extracted

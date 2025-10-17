@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.handler.component.ShardRequest;
@@ -116,8 +117,8 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         }
         shardInfo.add(srsp.getShard(), individualShardInfo);
       }
-      if (ShardParams.getShardsTolerantAsBool(rb.req.getParams()) && srsp.getException() != null) {
-        rb.rsp.setPartialResults();
+      if (HttpShardHandler.getShardsTolerantAsBool(rb.req) && srsp.getException() != null) {
+        rb.rsp.setPartialResults(rb.req);
         continue; // continue if there was an error and we're tolerant.
       }
       NamedList<NamedList<?>> secondPhaseResult =
@@ -232,7 +233,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     int i = 0;
     for (TopGroups<BytesRef> topGroups : rb.mergedTopGroups.values()) {
       for (GroupDocs<BytesRef> group : topGroups.groups) {
-        for (ScoreDoc scoreDoc : group.scoreDocs) {
+        for (ScoreDoc scoreDoc : group.scoreDocs()) {
           ShardDoc solrDoc = (ShardDoc) scoreDoc;
           // Include the first if there are duplicate IDs
           if (!resultIds.containsKey(solrDoc.id)) {

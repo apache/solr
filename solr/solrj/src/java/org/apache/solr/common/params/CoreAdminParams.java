@@ -91,8 +91,6 @@ public abstract class CoreAdminParams {
 
   public static final String GET_RANGES = "getRanges";
 
-  public static final String ROLES = "roles";
-
   public static final String REQUESTID = "requestid";
 
   public static final String CORE_NODE_NAME = "coreNodeName";
@@ -108,8 +106,6 @@ public abstract class CoreAdminParams {
   public static final String DELETE_INSTANCE_DIR = "deleteInstanceDir";
 
   public static final String LOAD_ON_STARTUP = "loadOnStartup";
-
-  public static final String TRANSIENT = "transient";
 
   // Node to create a replica on for ADDREPLICA at least.
   public static final String NODE = "node";
@@ -171,15 +167,12 @@ public abstract class CoreAdminParams {
     PREPRECOVERY,
     REQUESTRECOVERY,
     REQUESTSYNCSHARD,
-    DELETEALIAS,
     REQUESTBUFFERUPDATES,
     REQUESTAPPLYUPDATES,
     OVERSEEROP,
     REQUESTSTATUS(true),
     REJOINLEADERELECTION,
-    // internal API used by force shard leader election
-    FORCEPREPAREFORLEADERSHIP,
-    // Internal APIs to backup and restore a core
+    // Internal APIs to back up and restore a core
     BACKUPCORE,
     RESTORECORE,
     INSTALLCOREDATA,

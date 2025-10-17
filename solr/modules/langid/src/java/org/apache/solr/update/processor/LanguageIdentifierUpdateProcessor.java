@@ -111,20 +111,11 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       overwrite = params.getBool(OVERWRITE, false);
       langAllowlist = new HashSet<>();
       threshold = params.getDouble(THRESHOLD, DOCID_THRESHOLD_DEFAULT);
-      String legacyAllowList = params.get(LANG_WHITELIST, "");
-      if (legacyAllowList.length() > 0) {
-        // nowarn compile time string concatenation
-        log.warn(
-            LANG_WHITELIST
-                + " parameter is deprecated; use "
-                + LANG_ALLOWLIST
-                + " instead."); // nowarn
-      }
-      if (params.get(LANG_ALLOWLIST, legacyAllowList).length() > 0) {
-        for (String lang : params.get(LANG_ALLOWLIST, "").split(",")) {
-          langAllowlist.add(lang);
-        }
-      }
+
+      Arrays.stream(params.get(LANG_ALLOWLIST, "").split(","))
+          .map(String::trim)
+          .filter(lang -> !lang.isEmpty())
+          .forEach(langAllowlist::add);
 
       // Mapping params (field centric)
       enableMapping = params.getBool(MAP_ENABLE, false);

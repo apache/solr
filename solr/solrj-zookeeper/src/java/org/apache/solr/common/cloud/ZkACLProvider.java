@@ -17,11 +17,17 @@
 package org.apache.solr.common.cloud;
 
 import java.util.List;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.zookeeper.data.ACL;
 
-public interface ZkACLProvider {
+public interface ZkACLProvider extends ACLProvider {
 
   List<ACL> getACLsToAdd(String zNodePath);
+
+  @Override
+  default List<ACL> getAclForPath(String zNodePath) {
+    return getACLsToAdd(zNodePath);
+  }
 
   /**
    * @param zkCredentialsInjector The ZkCredentialsInjector that injects ZK credentials

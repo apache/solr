@@ -27,7 +27,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -71,6 +70,7 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -93,7 +93,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final int DEFAULT_NUM_SUB_SHARDS = 2;
 
   public static final String SHARDSPLIT_CHECKDISKSPACE_ENABLED =
-      "solr.shardSplit.checkDiskSpace.enabled";
+      "solr.cloud.shardsplit.checkdiskspace.enabled";
 
   private final CollectionCommandContext ccc;
 
@@ -194,8 +194,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
     RTimerTree t;
     if (ccc.getCoreContainer().getNodeConfig().getMetricsConfig().isEnabled()) {
-      // check disk space for shard split
-      if (Boolean.parseBoolean(System.getProperty(SHARDSPLIT_CHECKDISKSPACE_ENABLED, "true"))) {
+      // check disk space before shard split
+      if (EnvUtils.getPropertyAsBool(SHARDSPLIT_CHECKDISKSPACE_ENABLED, true)) {
         // 1. verify that there is enough space on disk to create sub-shards
         log.debug(
             "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
@@ -717,7 +717,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         // state switch as per SOLR-13945 so that sub shards don't come up empty, momentarily, after
         // being marked active)
         t = timings.sub("finalCommit");
-        CollectionHandlingUtils.commit(results, slice.get(), parentShardLeader);
+        CollectionHandlingUtils.commit(
+            ccc.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient(),
+            results,
+            slice.get(),
+            parentShardLeader);
         t.stop();
         // switch sub shard states to 'active'
         log.info("Replication factor is 1 so switching shard states");
@@ -797,7 +801,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       // when the sub-shard replicas come up
       if (repFactor > 1) {
         t = timings.sub("finalCommit");
-        CollectionHandlingUtils.commit(results, slice.get(), parentShardLeader);
+        CollectionHandlingUtils.commit(
+            ccc.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient(),
+            results,
+            slice.get(),
+            parentShardLeader);
         t.stop();
       }
 
@@ -844,8 +852,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       Replica parentShardLeader,
       SolrIndexSplitter.SplitMethod method,
       SolrCloudManager cloudManager)
-      throws SolrException, IOException {
-
+      throws Exception {
+    if (true) {
+      log.warn("checkDiskSpace disabled SOLR-17458 SOLR-17955");
+      return;
+    }
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
 
@@ -859,17 +870,19 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             .add("key", indexSizeMetricName)
             .add("key", freeDiskSpaceMetricName);
     SolrResponse rsp =
-        cloudManager.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params));
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params)
+            .process(cloudManager.getSolrClient());
 
-    Number size = (Number) rsp.getResponse().findRecursive("metrics", indexSizeMetricName);
+    Number size = (Number) rsp.getResponse()._get(List.of("metrics", indexSizeMetricName), null);
     if (size == null) {
       log.warn("cannot verify information for parent shard leader");
       return;
     }
     double indexSize = size.doubleValue();
 
-    Number freeSize = (Number) rsp.getResponse().findRecursive("metrics", freeDiskSpaceMetricName);
+    Number freeSize =
+        (Number) rsp.getResponse()._get(List.of("metrics", freeDiskSpaceMetricName), null);
     if (freeSize == null) {
       log.warn("missing node disk space information for parent shard leader");
       return;
@@ -1126,8 +1139,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         }
       }
     } else if (splitKey != null) {
-      if (router instanceof CompositeIdRouter) {
-        CompositeIdRouter compositeIdRouter = (CompositeIdRouter) router;
+      if (router instanceof CompositeIdRouter compositeIdRouter) {
         List<DocRouter.Range> tmpSubRanges = compositeIdRouter.partitionRangeByKey(splitKey, range);
         if (tmpSubRanges.size() == 1) {
           throw new SolrException(

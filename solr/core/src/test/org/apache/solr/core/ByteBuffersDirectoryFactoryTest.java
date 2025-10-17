@@ -31,7 +31,7 @@ public class ByteBuffersDirectoryFactoryTest extends SolrTestCaseJ4 {
     ByteBuffersDirectoryFactory factory =
         new ByteBuffersDirectoryFactory() {
           @Override
-          protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
+          protected Directory create(String path, LockFactory lockFactory) {
             return directory;
           }
         };

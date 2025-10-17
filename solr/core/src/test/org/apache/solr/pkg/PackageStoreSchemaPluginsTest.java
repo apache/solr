@@ -51,8 +51,8 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
     }
   }
 
-  private final Path pluginJarPath = getFile("runtimecode/schema-plugins.jar.bin").toPath();
-  private final Path bogusJarPath = getFile("runtimecode/runtimelibs.jar.bin").toPath();
+  private final Path pluginJarPath = getFile("runtimecode/schema-plugins.jar.bin");
+  private final Path bogusJarPath = getFile("runtimecode/runtimelibs.jar.bin");
 
   private SolrClient client;
 
@@ -60,7 +60,7 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("enable.packages", "true");
+    System.setProperty("solr.packages.enabled", "true");
     configureCluster(2)
         // add a configset where one schema field is of type `my.pkg.MyTextField`
         // this class is available via schema-plugins.jar.bin
@@ -79,7 +79,7 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
       cluster.shutdown();
       cluster = null;
     }
-    System.clearProperty("enable.packages");
+    System.clearProperty("solr.packages.enabled");
     super.tearDown();
   }
 
@@ -124,7 +124,7 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
 
   private void uploadPluginJar(String version, Path jarPath) throws Exception {
     var pluginRequest =
-        new V2Request.Builder("/cluster/files/my-plugin/plugin-" + version + ".jar")
+        new V2Request.Builder("/cluster/filestore/files/my-plugin/plugin-" + version + ".jar")
             .PUT()
             .withParams(params("sig", signature(Files.readAllBytes(jarPath))))
             .withPayload(Files.newInputStream(jarPath))

@@ -267,12 +267,12 @@ Note that in the above example, the `/` characters in the `\_nest_path_` were "d
 
 === Combining Block Join Query Parsers with Child Doc Transformer
 
-The combination of these two parsers with the `[child] transformer enables seamless creation of very powerful queries.
+The combination of these two parsers with the `[child]` transformer enables seamless creation of very powerful queries.
 
 Here for example is a query where:
 
 * the (sku) documents returned must have a color of "RED"
-* the (sku) docments returned must be the descendents of root level (product) documents which have:
+* the (sku) documents returned must be the descendents of root level (product) documents which have:
 ** immediate child "manuals" documents which have:
 *** "lifetime guarantee" in their content
 * each return (sku) document also includes any descendent (manuals) documents it has

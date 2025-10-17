@@ -44,7 +44,9 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.BitsFilteredPostingsEnum;
+import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.slf4j.Logger;
@@ -124,11 +126,10 @@ class ChildDocTransformer extends DocTransformer {
   }
 
   @Override
-  public void transform(SolrDocument rootDoc, int rootDocId) {
+  public void transform(SolrDocument rootDoc, int rootDocId, DocIterationInfo docInfo) {
     // note: this algorithm works if both if we have have _nest_path_  and also if we don't!
 
     try {
-
       // lookup what the *previous* rootDocId is, and figure which segment this is
       final SolrIndexSearcher searcher = context.getSearcher();
       final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
@@ -173,6 +174,7 @@ class ChildDocTransformer extends DocTransformer {
       final Map<String, Map<String, List<SolrDocument>>> pendingParentPathsToChildren =
           new HashMap<>();
 
+      SolrDocumentFetcher docFetcher = context.getDocFetcher();
       final int firstChildId = segBaseId + segPrevRootId + 1;
       int matches = 0;
       // Loop each child ID up to the parent (exclusive).
@@ -207,12 +209,12 @@ class ChildDocTransformer extends DocTransformer {
           ++matches; // note: includes ancestors that are not necessarily in childDocSet
 
           // load the doc
-          SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, childReturnFields);
+          SolrDocument doc = docFetcher.solrDoc(docId, childReturnFields);
           if (childReturnFields.getTransformer() != null) {
             if (childReturnFields.getTransformer().context == null) {
               childReturnFields.getTransformer().setContext(context);
             }
-            childReturnFields.getTransformer().transform(doc, docId);
+            childReturnFields.getTransformer().transform(doc, docId, docInfo);
           }
 
           if (isAncestor) {

@@ -19,6 +19,7 @@ package org.apache.solr.jersey;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -49,6 +50,9 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
     customTypeModule.addSerializer(new NamedListSerializer(NamedList.class));
 
     return new ObjectMapper()
+        // TODO Should failOnUnknown=false be made available on a "permissive" object mapper instead
+        // of the "main" one?
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         .setSerializationInclusion(JsonInclude.Include.NON_NULL)
         .registerModule(customTypeModule);
   }
