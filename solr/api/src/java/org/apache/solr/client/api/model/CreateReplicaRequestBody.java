@@ -30,7 +30,11 @@ public class CreateReplicaRequestBody {
   @JsonProperty public Integer nrtReplicas;
   @JsonProperty public Integer tlogReplicas;
   @JsonProperty public Integer pullReplicas;
-  @JsonProperty public Boolean waitForFinalState;
+
+  @JsonProperty
+  @Deprecated(since = "9.10")
+  public Boolean waitForFinalState;
+
   @JsonProperty public Boolean followAliases;
 
   @JsonProperty public String async;
