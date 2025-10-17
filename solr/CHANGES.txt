@@ -61,6 +61,9 @@ Other Changes
 * SOLR-17879: A Solr node will now fail to start if it's major.minor version (e.g. 9.10) is *lower* than that of any existing
   Solr node in a SolrCloud cluster (as reported by info in "live_node").  (David Smiley)
 
+* SOLR-17712: Deprecating waitForFinalState parameter in any SolrCloud command that accepts it.
+  It remains defaulted to false in 9, but will become true and likely removed.  (Abhishek Umarjikar, David Smiley)
+
 * SOLR-17541: Deprecate `CloudHttp2SolrClient.Builder#withHttpClient` in favor of `CloudHttp2SolrClient.Builder#withInternalClientBuilder`.
   Deprecate `LBHttp2SolrClient.Builder#withListenerFactory` in favor of `LBHttp2SolrClient.Builder#withListenerFactories`. (James Dyer)
 
