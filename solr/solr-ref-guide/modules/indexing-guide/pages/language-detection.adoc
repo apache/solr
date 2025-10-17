@@ -18,13 +18,11 @@
 
 Solr can identify languages and map text to language-specific fields during indexing using the `langid` UpdateRequestProcessor.
 
-Solr supports three implementations of this feature:
+Solr supports two implementations of this feature:
 
-* Tika's language detection feature: https://tika.apache.org/{dep-version-tika}/detection.html
 * LangDetect language detection: https://github.com/shuyo/language-detection
 * OpenNLP language detection: http://opennlp.apache.org/docs/{dep-version-opennlp}/manual/opennlp.html#tools.langdetect
 
-You can see a comparison between the Tika and LangDetect implementations here: http://blog.mikemccandless.com/2011/10/accuracy-and-performance-of-googles.html.
 In general, the LangDetect implementation supports more languages with higher performance.
 
 For specific information on each of these language identification implementations, including a list of supported languages for each, see the relevant project websites.
@@ -40,25 +38,6 @@ This is provided via the `langid` xref:configuration-guide:solr-modules.adoc[Sol
 You can configure the `langid` UpdateRequestProcessor in `solrconfig.xml`.
 Both implementations take the same parameters, which are described in the following section.
 At a minimum, you must specify the fields for language identification and a field for the resulting language code.
-
-=== Configuring Tika Language Detection
-
-Here is an example of a minimal Tika `langid` configuration in `solrconfig.xml`:
-
-[source,xml]
-----
-<processor class="org.apache.solr.update.processor.TikaLanguageIdentifierUpdateProcessorFactory">
-  <lst name="defaults">
-    <str name="langid.fl">title,subject,text,keywords</str>
-    <str name="langid.langField">language_s</str>
-  </lst>
-</processor>
-----
-
-[IMPORTANT]
-====
-This detector is deprecated and may be removed in a future version.
-====
 
 === Configuring LangDetect Language Detection
 
