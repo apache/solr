@@ -46,7 +46,7 @@ public class PostLogsToolTest extends SolrTestCaseJ4 {
   public void testQueryRecord() throws Exception {
     String record =
         sometimesSolr9Format(
-            "2019-12-09 15:05:11.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  webapp=/solr path=/select params={q=*:*&_=1575835181759&shards.purpose=36&isShard=true&wt=javabin&distrib=false} hits=234868 status=0 QTime=8\n");
+            "2019-12-09 15:05:11.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  path=/select params={q=*:*&_=1575835181759&shards.purpose=36&isShard=true&wt=javabin&distrib=false} hits=234868 status=0 QTime=8\n");
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 1);
     SolrInputDocument doc = docs.get(0);
@@ -99,7 +99,7 @@ public class PostLogsToolTest extends SolrTestCaseJ4 {
   public void testRecordsFirstInstanceOfSingleValuedParams() throws Exception {
     final String record =
         sometimesSolr9Format(
-            "2019-12-09 15:05:01.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  webapp=/solr path=/select params={q=*:*&q=inStock:true&_=1575835181759&shards.purpose=36&isShard=true&wt=javabin&wt=xml&distrib=false} hits=234868 status=0 QTime=8\n");
+            "2019-12-09 15:05:01.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  path=/select params={q=*:*&q=inStock:true&_=1575835181759&shards.purpose=36&isShard=true&wt=javabin&wt=xml&distrib=false} hits=234868 status=0 QTime=8\n");
 
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 1);
@@ -116,7 +116,7 @@ public class PostLogsToolTest extends SolrTestCaseJ4 {
   public void testRTGRecord() throws Exception {
     final String record =
         sometimesSolr9Format(
-            "2020-03-19 20:00:30.845 INFO  (qtp1635378213-20354) [c:logs4 s:shard8 r:core_node63 x:logs4_shard8_replica_n60] o.a.s.c.S.Request [logs4_shard8_replica_n60]  webapp=/solr path=/get params={qt=/get&_stateVer_=logs4:104&ids=id1&ids=id2&ids=id3&wt=javabin} status=0 QTime=61");
+            "2020-03-19 20:00:30.845 INFO  (qtp1635378213-20354) [c:logs4 s:shard8 r:core_node63 x:logs4_shard8_replica_n60] o.a.s.c.S.Request [logs4_shard8_replica_n60]  path=/get params={qt=/get&_stateVer_=logs4:104&ids=id1&ids=id2&ids=id3&wt=javabin} status=0 QTime=61");
 
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 1);
@@ -139,8 +139,8 @@ public class PostLogsToolTest extends SolrTestCaseJ4 {
   public void testUpdateRecords() throws Exception {
     String record =
         sometimesSolr9Format(
-            "2019-12-25 20:38:23.498 INFO  (qtp2103763750-126) [c:logs3 s:shard1 r:core_node2 x:logs3_shard1_replica_n1] o.a.s.u.p.LogUpdateProcessorFactory [logs3_shard1_replica_n1]  webapp=/solr path=/update params={commitWithin=1000&overwrite=true&wt=json&_=1577306114481}{deleteByQuery=*:* (-1653925534487281664)} 0 11\n"
-                + "2019-12-25 20:42:13.411 INFO  (qtp2103763750-303) [c:logs5 s:shard1 r:core_node2 x:logs5_shard1_replica_n1] o.a.s.u.p.LogUpdateProcessorFactory [logs5_shard1_replica_n1]  webapp=/solr path=/update params={commitWithin=1000&overwrite=true&wt=json&_=1577306114481}{delete=[03bbe975-728a-4df8-aa25-fe25049dc0ef (-1653925775577972736)]} 0 1\n");
+            "2019-12-25 20:38:23.498 INFO  (qtp2103763750-126) [c:logs3 s:shard1 r:core_node2 x:logs3_shard1_replica_n1] o.a.s.u.p.LogUpdateProcessorFactory [logs3_shard1_replica_n1]  path=/update params={commitWithin=1000&overwrite=true&wt=json&_=1577306114481}{deleteByQuery=*:* (-1653925534487281664)} 0 11\n"
+                + "2019-12-25 20:42:13.411 INFO  (qtp2103763750-303) [c:logs5 s:shard1 r:core_node2 x:logs5_shard1_replica_n1] o.a.s.u.p.LogUpdateProcessorFactory [logs5_shard1_replica_n1]  path=/update params={commitWithin=1000&overwrite=true&wt=json&_=1577306114481}{delete=[03bbe975-728a-4df8-aa25-fe25049dc0ef (-1653925775577972736)]} 0 1\n");
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 2);
     SolrInputDocument doc = docs.get(0);
@@ -238,7 +238,7 @@ public class PostLogsToolTest extends SolrTestCaseJ4 {
             + "\tat org.apache.solr.parser.SolrQueryParserBase.parse(SolrQueryParserBase.java:262)\n"
             + "\t... 44 more\n"
             + "\n"
-            + "2019-12-09 15:05:01.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  webapp=/solr path=/select params={q=*:*&_=1575835181759&isShard=true&wt=javabin&distrib=false} hits=234868 status=0 QTime=8\n";
+            + "2019-12-09 15:05:01.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  path=/select params={q=*:*&_=1575835181759&isShard=true&wt=javabin&distrib=false} hits=234868 status=0 QTime=8\n";
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 2);
     SolrInputDocument doc = docs.get(0);
@@ -270,7 +270,7 @@ public class PostLogsToolTest extends SolrTestCaseJ4 {
   @Test
   public void testCommit() throws Exception {
     String record =
-        "2021-10-08 16:42:10.636 INFO  (qtp1080476785-26) [c:collection1 s:shard1 r:core_node2 x:collection1_shard1_replica_n1] o.a.s.u.p.LogUpdateProcessorFactory [collection1_shard1_replica_n1]  webapp=/solr path=/update params={waitSearcher=true&commit=true&softCommit=false&wt=javabin}{commit=} 0 152";
+        "2021-10-08 16:42:10.636 INFO  (qtp1080476785-26) [c:collection1 s:shard1 r:core_node2 x:collection1_shard1_replica_n1] o.a.s.u.p.LogUpdateProcessorFactory [collection1_shard1_replica_n1]  path=/update params={waitSearcher=true&commit=true&softCommit=false&wt=javabin}{commit=} 0 152";
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 1);
     SolrInputDocument doc = docs.get(0);

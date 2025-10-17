@@ -4,6 +4,7 @@
   "enabled": true,
   "dependencyDashboard": false,
   "enabledManagers": ["gradle", "github-actions"],
+  "labels": ["exempt-stale"],
   "includePaths": ["gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*"],
   "postUpgradeTasks": {
     "commands": [
@@ -94,7 +95,7 @@
     }
   ],
   "schedule": ["* * * * *"],
-  "prConcurrentLimit": 100,
-  "prHourlyLimit": 10,
+  "prConcurrentLimit": 300,
+  "prHourlyLimit": 20,
   "minimumReleaseAge": "5 days"
 }

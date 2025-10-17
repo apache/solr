@@ -92,13 +92,6 @@ public abstract class BaseSolrResource {
       String responseWriterName = solrRequest.getParams().get(CommonParams.WT, JSON);
       responseWriter = solrCore.getQueryResponseWriter(responseWriterName);
       contentType = responseWriter.getContentType(solrRequest, solrResponse);
-      final String path = solrRequest.getPath();
-      if (!RestManager.SCHEMA_BASE_PATH.equals(path)) {
-        // don't set webapp property on the request when context and core/collection are excluded
-        final int cutoffPoint = path.indexOf('/', 1);
-        final String firstPathElement = -1 == cutoffPoint ? path : path.substring(0, cutoffPoint);
-        solrRequest.getContext().put("webapp", firstPathElement); // Context path
-      }
 
       // client application can set a timeout for update requests
       String updateTimeoutSecsParam = solrRequest.getParams().get(UPDATE_TIMEOUT_SECS);

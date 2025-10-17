@@ -218,3 +218,18 @@ limitations under the License.
 {
   background-image: url( ../../img/ico/new-text.png );
 }
+
+.prometheus-metric {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 11px;
+  color: #0066cc;
+  background-color: #f5f5f5;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+#content #plugins .stats dl dd.prometheus-metric {
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+

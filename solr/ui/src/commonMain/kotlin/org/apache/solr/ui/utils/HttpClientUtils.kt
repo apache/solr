@@ -46,7 +46,7 @@ fun getDefaultClient(
             Json {
                 ignoreUnknownKeys = true
                 allowSpecialFloatingPointValues = true
-            }
+            },
         )
     }
 
@@ -57,19 +57,25 @@ fun getHttpClientWithAuthOption(option: AuthOption) = when (option) {
     is AuthOption.None -> getDefaultClient(option.url)
     is AuthOption.BasicAuthOption -> getHttpClientWithCredentials(
         url = option.url,
+        realm = option.realm,
         username = option.username,
         password = option.password,
     )
 }
 
 fun getHttpClientWithCredentials(
-    url: Url = Url("http://127.0.0.1:8983/"),
     username: String,
     password: String,
+    url: Url = Url("http://127.0.0.1:8983/"),
+    realm: String? = null,
 ) = getDefaultClient(url) {
     install(Auth) {
         basic {
             credentials { BasicAuthCredentials(username, password) }
+            // Always include the credentials, because we are accessing protected endpoints from a
+            // not protected asset (web-assembly app)
+            sendWithoutRequest { true }
+            this.realm = realm
         }
     }
 }

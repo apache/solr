@@ -79,8 +79,7 @@ internal class EnvironmentStoreProvider(
         data class JavaPropertiesUpdated(val properties: List<JavaProperty>) : Message
     }
 
-    private inner class ExecutorImpl :
-        CoroutineExecutor<Intent, Action, State, Message, Nothing>(mainContext) {
+    private inner class ExecutorImpl : CoroutineExecutor<Intent, Action, State, Message, Nothing>(mainContext) {
 
         override fun executeAction(action: Action) = when (action) {
             Action.FetchInitialSystemData -> {
@@ -104,7 +103,8 @@ internal class EnvironmentStoreProvider(
          * If successful, a [Message.SystemDataUpdated] with the new properties is dispatched.
          */
         private fun fetchSystemData() {
-            scope.launch { // TODO Add coroutine exception handler
+            scope.launch {
+                // TODO Add coroutine exception handler
                 withContext(ioContext) {
                     client.getSystemData()
                 }.onSuccess {
@@ -120,7 +120,8 @@ internal class EnvironmentStoreProvider(
          * If successful, a [Message.JavaPropertiesUpdated] with the new properties is dispatched.
          */
         private fun fetchJavaProperties() {
-            scope.launch { // TODO Add coroutine exception handler
+            scope.launch {
+                // TODO Add coroutine exception handler
                 withContext(ioContext) {
                     client.getJavaProperties()
                 }.onSuccess {

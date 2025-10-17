@@ -9,7 +9,6 @@ on:
       - 'solr/bin/**'
       - 'solr/packaging/**'
       - 'solr/core/src/java/org/apache/solr/cli/**'
-      - 'solr/prometheus-exporter/**'
 
 jobs:
   test:
@@ -19,11 +18,11 @@ jobs:
     timeout-minutes: 40
 
     env:
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - uses: ./.github/actions/prepare-for-build
 

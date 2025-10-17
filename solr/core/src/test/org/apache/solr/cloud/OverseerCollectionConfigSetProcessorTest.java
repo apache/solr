@@ -500,7 +500,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(coreContainerMock.getPlacementPluginFactory()).thenReturn(placementPluginFactory);
     when(coreContainerMock.getConfigSetService())
         .thenReturn(new ZkConfigSetService(solrZkClientMock));
-    when(updateShardHandlerMock.getDefaultHttpClient()).thenReturn(httpClientMock);
 
     when(zkControllerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
     when(cloudDataProviderMock.getClusterStateProvider()).thenReturn(clusterStateProviderMock);
@@ -587,7 +586,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     when(overseerMock.getSolrCloudManager()).thenReturn(cloudManagerMock);
 
-    when(overseerMock.getStateUpdateQueue(any())).thenReturn(stateUpdateQueueMock);
     when(overseerMock.getStateUpdateQueue()).thenReturn(stateUpdateQueueMock);
 
     // Selecting the cluster state update strategy: Overseer when distributedClusterStateUpdates is

@@ -59,7 +59,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     private String shardId;
     private String coreNodeName;
     private Boolean loadOnStartup;
-    private Boolean isTransient;
     private String collectionConfigName;
 
     public Create() {
@@ -104,10 +103,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
 
     public void setCoreNodeName(String coreNodeName) {
       this.coreNodeName = coreNodeName;
-    }
-
-    public void setIsTransient(Boolean isTransient) {
-      this.isTransient = isTransient;
     }
 
     public void setIsLoadOnStartup(Boolean loadOnStartup) {
@@ -157,10 +152,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
 
     public Boolean getIsLoadOnStartup() {
       return loadOnStartup;
-    }
-
-    public Boolean getIsTransient() {
-      return isTransient;
     }
 
     public String getCollectionConfigName() {
@@ -219,10 +210,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       }
       if (coreNodeName != null) {
         params.set(CoreAdminParams.CORE_NODE_NAME, coreNodeName);
-      }
-
-      if (isTransient != null) {
-        params.set(CoreAdminParams.TRANSIENT, isTransient);
       }
 
       if (loadOnStartup != null) {

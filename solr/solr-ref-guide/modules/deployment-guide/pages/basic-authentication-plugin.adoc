@@ -83,9 +83,9 @@ An example command and more information about securing your setup can be found a
 
 === Password Encoding
 
-Solr stores the passwords in the format: `base64(sha256(sha256(salt+password))) base64(salt)`.  
+Solr stores the passwords in the format: `base64(sha256(sha256(salt+password))) base64(salt)`.
 
-If you edit `security.json` directly then you need to encode the password yourself.  
+If you edit `security.json` directly then you need to encode the password yourself.
 You can visit https://clemente-biondo.github.io/ to use a simple web utility that does the encoding for you.
 
 
@@ -141,6 +141,33 @@ The following example illustrates how to configure the `MultiAuthPlugin` to  sup
 For un-authenticated AJAX requests from the Solr Admin UI (i.e. requests without an `Authorization` header),
 the `MultiAuthPlugin` forwards the request to the first plugin listed in the `schemes` list. In the example above,
 users will need to authenticate to the OIDC provider to login to the Admin UI.
+
+For un-authenticated, non-AJAX requests the `MultiAuthPlugin` returns all available plugins via
+`WWW-Authenticate` headers, if no plugin is configured to use `"blockUnknown": false`. Otherwise,
+the request is delegated to the first plugin that has set `blockUnknown` to `false`.
+
+=== Special Case for Basic Scheme
+
+A special case exists for the authentication scheme `Basic`. Some browser applications like the new UI
+may support multiple authentication options, but the `Basic` scheme in the `WWW-Authenticate` header
+triggers automatically a credentials prompt if received in the browser. For the scenario where the
+`Basic` scheme is used in combination with the `solr.BasicAuthPlugin`, the plugin maps the scheme
+to `xBasic` for AJAX requests, suppressing this way the prompt. For non-AJAX requests, this is not
+the case. The `BasicAuthPlugin` expects clients to continue using the `Basic` scheme in the
+`Authorization`header.
+
+In case you are using a web client that provides its own sign-in mask for the basic authentication
+and don't want to show the browser prompt you have the following options:
+- Configure `MultiAuthPlugin` with `BasicAuthPlugin` and scheme `xBasic`, so that it does not send
+  `WWW-Authenticate` header with `Basic` scheme (which triggers the browser prompt). This
+  configuration is supported starting with Solr 10.
+- Send the `X-Requested-With` header with `XMLHttpRequest` as value to let the `BasicAuthPlugin`
+  think it is an AJAX request (if it isn't already). This disables multiple authentication challenges
+  for unauthorized requests, but it is supported for all Solr versions.
+- Write a custom `AuthenticationPlugin` and use a custom scheme that is supported by your clients.
+
+If using basic authentication in combination with the new UI, it is recommended to use
+`MultiAuthPlugin`, even if you only have `BasicAuthPlugin` enabled.
 
 == Editing Basic Authentication Plugin Configuration
 
@@ -335,7 +362,7 @@ Alternatively, users can use SolrJ's `PreemptiveBasicAuthClientBuilderFactory` t
 To enable this feature, users should set the following system property `-Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory`.
 `PreemptiveBasicAuthClientBuilderFactory` allows applications to provide credentials in two different ways:
 
-. The `basicauth` system property can be passed, containing the credentials directly (e.g., `-Dbasicauth=username:password`).
+. The `solr.security.auth.basicauth.credentials` system property can be passed, containing the credentials directly (e.g., `-Dsolr.security.auth.basicauth.credentials=username:password`).
 This option is straightforward, but may expose the credentials in the command line, depending on how they're set.
 . The `solr.httpclient.config` system property can be passed, containing a path to a properties file holding the credentials.
 Inside this file the username and password can be specified as `httpBasicAuthUser` and `httpBasicAuthPassword`, respectively.
@@ -356,7 +383,7 @@ Add the following line to the `solr.in.sh` or `solr.in.cmd` file:
 [source,bash]
 ----
 SOLR_AUTH_TYPE="basic"
-SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
+SOLR_AUTHENTICATION_OPTS="-Dsolr.security.auth.basicauth.credentials=solr:SolrRocks"
 ----
 
 This tells the `bin/solr` command line to to use "basic" as the type of authentication, and to pass credentials with the user-name "solr" and password "SolrRocks".

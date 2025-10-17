@@ -66,7 +66,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty(
         "managed.schema.resourceName", "schema-one-field-no-dynamic-field-unique-key.xml");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
     initCore("solrconfig-managed-schema.xml", "ignoredSchemaName");
 
