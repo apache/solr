@@ -297,7 +297,7 @@ schema-elements.html
 sql-query.html
 currencies-exchange-rates.html
 query-elevation-component.html
-vector-search.html
+neural-search.html
 indexing-with-update-handlers.html
 join-query-parser.html
 core-discovery.html
