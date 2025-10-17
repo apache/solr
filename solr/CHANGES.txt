@@ -195,6 +195,244 @@ Deprecation Removals
 
 Dependency Upgrades
 ---------------------
+* PR#3662: Update com.github.spotbugs:spotbugs-annotations to v4.9.6 (solrbot)
+
+* PR#3455: Update apache.opennlp to v2.5.6 (solrbot)
+
+* PR#3736: Update gradle/actions action to v5 (solrbot)
+
+* PR#3098: Update org.apache.commons:commons-compress to v1.28.0 (solrbot)
+
+* PR#3693: Update org.apache.commons:commons-lang3 to v3.19.0 (solrbot)
+
+* PR#3094: Update commons-io:commons-io to v2.20.0 (solrbot)
+
+* PR#3753: Update de.thetaphi.forbiddenapis to v3.10 (solrbot)
+
+* PR#3727: Update com.microsoft.onnxruntime:onnxruntime to v1.23.0 (solrbot)
+
+* PR#3612: Update netty to v4.2.6.Final (solrbot)
+
+* PR#3116: Update google.errorprone to v2.41.0 (solrbot)
+
+* PR#3091: Update com.google.guava:guava to v33.4.8-jre (solrbot)
+
+* PR#3088: Update com.google.api.grpc:proto-google-common-protos to v2.61.1 (solrbot)
+
+* PR#3064: Update io.morethan.jmhreport to v0.9.6 (solrbot)
+
+* PR#3090: Update com.google.auto.value:auto-value-annotations to v1.11.0 (solrbot)
+
+* PR#3084: Update com.github.ben-manes.caffeine:caffeine to v3.2.2 (solrbot)
+
+* PR#3093: Update com.squareup.okhttp3:mockwebserver to v4.12.0 (solrbot)
+
+* PR#3231: Update google.cloud.core to v2.60.1 (solrbot)
+
+* PR#3364: Update apache.kafka to v3.9.1 (solrbot)
+
+* PR#3227: Update fasterxml (solrbot)
+
+* PR#3649: Update com.nimbusds:nimbus-jose-jwt to v10.5 (solrbot)
+
+* PR#3102: Update org.apache.commons:commons-text to v1.14.0 (solrbot)
+
+* PR#3135: Update org.eclipse.jgit:org.eclipse.jgit to v7 (solrbot)
+
+* PR#3642: Update actions/labeler action to v6 (solrbot)
+
+* PR#3089: Update com.google.api:gax to v2.70.0 (solrbot)
+
+* PR#3637: Update actions/stale action to v10 (solrbot)
+
+* PR#3605: Update actions/checkout action to v5 (solrbot)
+
+* PR#3606: Update actions/setup-java action to v5 (solrbot)
+
+* PR#3294: Update ow2.asm to v9.8 (solrbot)
+
+* PR#3481: Update com.google.j2objc:j2objc-annotations to v3.1 (solrbot)
+
+* PR#3067: Update org.glassfish.jaxb:jaxb-runtime to v2.3.9 (solrbot)
+
+* PR#3168: Update org.junit.jupiter:junit-jupiter to v5.13.4 (solrbot)
+
+* PR#3219: Update slf4j to v2.0.17 (solrbot)
+
+* PR#3081: Update bouncycastle to v1.81 (solrbot)
+
+* PR#3097: Update joda-time:joda-time to v2.14.0 (solrbot)
+
+* PR#3109: Update org.openapi.generator to v7.14.0 (solrbot)
+
+* PR#3143: Update com.google.code.gson:gson to v2.13.1 (solrbot)
+
+* PR#3335: Update org.apache.commons:commons-collections4 to v4.5.0 (solrbot)
+
+* PR#3063: Update commons-codec:commons-codec to v1.19.0 (solrbot)
+
+* PR#3367: Update org.apache.commons:commons-configuration2 to v2.12.0 (solrbot)
+
+* PR#3073: Update jersey to v3.1.11 (solrbot)
+
+* PR#3369: Update org.carrot2:carrot2-core to v4.8.1 (solrbot)
+
+* PR#3474: Update org.semver4j:semver4j to v6 (solrbot)
+
+* PR#3523: Update apache.zookeeper to v3.9.4 (solrbot)
+
+* PR#3165: Update opentelemetry to v1.53.0 (solrbot)
+
+* PR#3062: Update com.carrotsearch.randomizedtesting:randomizedtesting-runner to v2.8.3 (solrbot)
+
+* PR#3066: Update nl.littlerobots.version-catalog-update to v0.8.5 (solrbot)
+
+* PR#3596: Update amazon.awssdk to v2.32.31 (solrbot)
+
+* PR#3096: Update de.undercouch.download to v5.6.0 (solrbot)
+
+* PR#3069: Update org.xerial.snappy:snappy-java to v1.1.10.8 (solrbot)
+
+* PR#3368: Update org.apache.commons:commons-exec to v1.5.0 (solrbot)
+
+* PR#3456: Update apache.curator to v5.9.0 (solrbot)
+
+* PR#3309: Update mockito to v5.19.0 (solrbot)
+
+* PR#3480: Update io.nlopez.compose.rules:ktlint to v0.4.27 (solrbot)
+
+* PR#3169: Update io.github.oshai:kotlin-logging to v7.0.13 (solrbot)
+
+* PR#3297: Update bytebuddy to v1.17.7 (solrbot)
+
+* PR#3065: Update net.java.dev.javacc:javacc to v7.0.13 (solrbot)
+
+* PR#3365: Update adobe.testing.s3mock to v3.12.0 (solrbot)
+
+* PR#3457: Update commons-cli:commons-cli to v1.10.0 (solrbot)
+
+* PR#3192: Bump OWASP Dependency-Check to 12.1.3 (fix CVSS v4/SAFETY crash)  (solrbot)
+
+* PR#3072: Update google.protobuf to v3.25.8 (solrbot)
+
+* PR#3220: Update decompose to v3.3.0 (solrbot)
+
+* PR#3302: Update kotlinx.serialization to v1.9.0 (solrbot)
+
+* PR#3383: Update org.jetbrains.kotlinx:atomicfu to v0.29.0 (solrbot)
+
+* PR#3138: Update org.owasp.dependencycheck to v12 (solrbot)
+
+* PR#3110: Update org.ow2.asm:asm to v9.7.1 (solrbot)
+
+* PR#3068: Update org.hsqldb:hsqldb to v2.7.4 (solrbot)
+
+* PR#2702: update io.netty:* to v4.1.114.final (solrbot)
+
+* PR#2617: Update org.hamcrest:* to v3 (major) (solrbot)
+
+* PR#2396: Update org.glassfish.jersey*:* to v3.1.9 (solrbot)
+
+* PR#2268: Update org.glassfish.hk2*:* to v3.1.1 (solrbot)
+
+* PR#2380: Update org.apache.hadoop:* to v3.4.0 (solrbot)
+
+* PR#2769: Update com.fasterxml.jackson:jackson-bom to v2.18.0 (solrbot)
+
+* PR#2578: Update gradle/wrapper-validation-action action to v3 (solrbot)
+
+* PR#2512: Update com.carrotsearch:hppc to v0.10.0 (solrbot)
+
+* PR#2520: Update io.dropwizard.metrics:* to v4.2.26 (solrbot)
+
+* PR#2434: Update org.bouncycastle:bcpkix-jdk18on to v1.78.1 (solrbot)
+
+* PR#2140: Update org.apache.calcite to 1.37.0 (solrbot)
+
+* PR#2269: Update org.apache.hadoop.thirdparty:hadoop-shaded-guava to v1.2.0 (solrbot)
+
+* PR#2053: Update com.google.cloud:google-cloud-bom to v0.224.0 (solrbot)
+
+* PR#2056: Update software.amazon.awssdk:* to v2.26.19 (solrbot)
+
+* PR#2131: Update org.jctools:jctools-core to v4.0.5 (solrbot)
+
+* PR#2344: Update io.opentelemetry:opentelemetry-bom to v1.40.0 (solrbot)
+
+* PR#2314: Update io.grpc:grpc-* to v1.65.1 (solrbot)
+
+* PR#2564: Update actions/upload-artifact action to v4 (solrbot)
+
+* PR#2561: Update actions/cache action to v4 (solrbot)
+
+* PR#2406: Update org.slf4j:* to v2.0.13 (solrbot)
+
+* PR#2182: Update org.apache.curator:* to v5.7.0 (solrbot)
+
+* PR#2468: Update org.eclipse.jetty*:* to v10.0.22 (solrbot)
+
+* PR#2490: Update org.mockito:mockito* to v5.12.0 (solrbot)
+
+* PR#2373: Update io.swagger.core.v3:swagger-annotations-jakarta to v2.2.22 (solrbot)
+
+* PR#2341: Update org.apache.zookeeper:* to v3.9.2 (solrbot)
+
+* PR#2136: Update com.tdunning:t-digest to v3.3 (solrbot)
+
+* PR#2342: Update org.bitbucket.b_c:jose4j to v0.9.6 (solrbot)
+
+* PR#2307: Update org.immutables:value-annotations to v2.10.1 (solrbot)
+
+* PR#2222: Update com.jayway.jsonpath:json-path to v2.9.0 (solrbot)
+
+* PR#2055: Update org.mockito:mockito* from v5.5.0 to v5.8.0 (solrbot)
+
+* PR#2035: Update com.google.errorprone:error_prone_annotations to v2.23.0 (solrbot)
+
+* PR#2037: Update org.apache.logging.log4j:* to v2.21.0 (solrbot)
+
+* PR#2032: Update io.swagger.core.v3:swagger-annotations to v2.2.17 (solrbot)
+
+* PR#2015: Update org.codehaus.woodstox:stax2-api to v4.2.2 (solrbot)
+
+* PR#1743: SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (solrbot)
+
+* PR#1741: Update com.adobe.testing:s3mock-junit4 to v2.17.0 (solrbot)
+
+* PR#1608: Update no.nav.security:mock-oauth2-server to v0.5.10 (solrbot)
+
+* PR#1771: Update org.semver4j:semver4j dependency from 4.3 to 5.1 (solrbot)
+
+* PR#1838: Update org.openjdk.jmh:jmh-core to v1.37 (solrbot)
+
+* PR#1712: Update biz.aQute.bnd:biz.aQute.bnd.annotation to v6.4.1 (solrbot)
+
+* PR#1611: Update org.mockito:mockito-core to v5 (solrbot)
+
+* PR#1472: Update Jetty to 10.0.14, slf4j to 2.0.7, io.dropwizard.metrics to v4.2.18 (solrbot)
+
+* PR#1419: Update io.prometheus:* to v0.16.0 (solrbot)
+
+* PR#1420: Update org.apache.calcite:* to v1.33.0 and org.apache.calcite.avatica:* to v1.23.0 (solrbot)
+
+* PR#1394: Update org.apache.tika:* to v1.28.5 (solrbot)
+
+* PR#1401: Update com.google.re2j:re2j to v1.7 (solrbot)
+
+* PR#1382: Update com.lmax:disruptor to v3.4.4 (solrbot)
+
+* PR#1405: Remove explicit net.arnx:jsonic from versions.props (solrbot)
+
+* PR#1398: Update com.fasterxml.woodstox:woodstox-core to v6.5.0 (solrbot)
+
+* PR#1406: Update net.sourceforge.argparse4j:argparse4j to v0.9.0 (solrbot)
+
+* PR#1387: Update net.thisptr:jackson-jq to v0.0.13 (solrbot)
+
+* PR#1393: Update org.apache.httpcomponents (solrbot)
+
+* PR#1380: SOLR-16562 / SOLR-16578: Upgrade caffeine to 3.1.4 and errorprone to 2.18.0 (solrbot)
+
 
 * SOLR-16984: Upgraded Jetty to 12 (Jakarta EE 10 namespace). Updated related dependencies including amazon-awssdk to 2.28.11. (Sanjay Dutt, David Smiley, Kevin Risden)
 
