@@ -16,14 +16,17 @@
  */
 package org.apache.solr.cuvs;
 
-import com.codahale.metrics.Gauge;
 import com.nvidia.cuvs.CuVSResources;
 import com.nvidia.cuvs.CuVSResourcesInfo;
 import com.nvidia.cuvs.GPUInfo;
 import com.nvidia.cuvs.GPUInfoProvider;
 import com.nvidia.cuvs.spi.CuVSProvider;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.ObservableLongGauge;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,18 +36,26 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.GpuMetricsProvider;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricManager.ResolutionStrategy;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Service that collects GPU metrics for the Solr admin interface. */
-public class GpuMetricsService {
+public class GpuMetricsService implements GpuMetricsProvider {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static GpuMetricsService instance;
+
   private SolrMetricManager metricManager;
+  private SolrMetricsContext metricsContext;
   private ScheduledExecutorService scheduler;
+
+  private ObservableLongGauge gpuCountGauge;
+  private ObservableLongGauge gpuMemoryTotalGauge;
+  private ObservableLongGauge gpuMemoryUsedGauge;
+  private ObservableLongGauge gpuMemoryFreeGauge;
+
   private final AtomicLong gpuCount = new AtomicLong(0);
   private final AtomicLong gpuMemoryTotal = new AtomicLong(0);
   private final AtomicLong gpuMemoryUsed = new AtomicLong(0);
@@ -67,7 +78,6 @@ public class GpuMetricsService {
   public void initialize(CoreContainer coreContainer) {
     if (initialized.compareAndSet(false, true)) {
       this.metricManager = coreContainer.getMetricManager();
-      registerMetrics();
       startBackgroundService();
       log.info("GPU metrics service initialized");
     }
@@ -77,42 +87,48 @@ public class GpuMetricsService {
     initialize(core.getCoreContainer());
   }
 
-  private void registerMetrics() {
-    metricManager.registerGauge(
-        null,
-        "solr.node",
-        (Gauge<Long>) () -> gpuCount.get(),
-        "gpu-metrics",
-        ResolutionStrategy.REPLACE,
-        "gpu.count");
-    metricManager.registerGauge(
-        null,
-        "solr.node",
-        (Gauge<Long>) () -> gpuMemoryTotal.get(),
-        "gpu-metrics",
-        ResolutionStrategy.REPLACE,
-        "gpu.memory.total");
-    metricManager.registerGauge(
-        null,
-        "solr.node",
-        (Gauge<Long>) () -> gpuMemoryUsed.get(),
-        "gpu-metrics",
-        ResolutionStrategy.REPLACE,
-        "gpu.memory.used");
-    metricManager.registerGauge(
-        null,
-        "solr.node",
-        (Gauge<Long>) () -> gpuMemoryFree.get(),
-        "gpu-metrics",
-        ResolutionStrategy.REPLACE,
-        "gpu.memory.free");
-    metricManager.registerGauge(
-        null,
-        "solr.node",
-        (Gauge<ConcurrentHashMap<String, Object>>) () -> gpuDevices.get(),
-        "gpu-metrics",
-        ResolutionStrategy.REPLACE,
-        "gpu.devices");
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    this.metricsContext = parentContext;
+
+    gpuCountGauge =
+        metricManager.observableLongGauge(
+            parentContext.getRegistryName(),
+            "gpu.count",
+            "Number of available GPUs",
+            measurement -> measurement.record(gpuCount.get()),
+            null);
+
+    gpuMemoryTotalGauge =
+        metricManager.observableLongGauge(
+            parentContext.getRegistryName(),
+            "gpu.memory.total",
+            "Total GPU memory in bytes",
+            measurement -> measurement.record(gpuMemoryTotal.get()),
+            null);
+
+    gpuMemoryUsedGauge =
+        metricManager.observableLongGauge(
+            parentContext.getRegistryName(),
+            "gpu.memory.used",
+            "Used GPU memory in bytes",
+            measurement -> measurement.record(gpuMemoryUsed.get()),
+            null);
+
+    gpuMemoryFreeGauge =
+        metricManager.observableLongGauge(
+            parentContext.getRegistryName(),
+            "gpu.memory.free",
+            "Free GPU memory in bytes",
+            measurement -> measurement.record(gpuMemoryFree.get()),
+            null);
+
+    log.info("GPU metrics registered with OpenTelemetry");
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return metricsContext;
   }
 
   private void startBackgroundService() {
@@ -298,11 +314,61 @@ public class GpuMetricsService {
     }
   }
 
-  public void shutdown() {
+  @Override
+  public Map<String, Object> getGpuDevices() {
+    return gpuDevices.get();
+  }
+
+  @Override
+  public long getGpuCount() {
+    return gpuCount.get();
+  }
+
+  @Override
+  public long getGpuMemoryTotal() {
+    return gpuMemoryTotal.get();
+  }
+
+  @Override
+  public long getGpuMemoryUsed() {
+    return gpuMemoryUsed.get();
+  }
+
+  @Override
+  public long getGpuMemoryFree() {
+    return gpuMemoryFree.get();
+  }
+
+  @Override
+  public void close() throws IOException {
     running.set(false);
+
+    if (gpuCountGauge != null) {
+      gpuCountGauge.close();
+    }
+    if (gpuMemoryTotalGauge != null) {
+      gpuMemoryTotalGauge.close();
+    }
+    if (gpuMemoryUsedGauge != null) {
+      gpuMemoryUsedGauge.close();
+    }
+    if (gpuMemoryFreeGauge != null) {
+      gpuMemoryFreeGauge.close();
+    }
+
     if (scheduler != null) {
       scheduler.shutdownNow();
       log.info("GPU metrics service shut down");
+    }
+
+    GpuMetricsProvider.super.close();
+  }
+
+  public void shutdown() {
+    try {
+      close();
+    } catch (IOException e) {
+      log.warn("Error during shutdown", e);
     }
   }
 }

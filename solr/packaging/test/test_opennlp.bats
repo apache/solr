@@ -49,10 +49,10 @@ teardown() {
   mkdir -p ${SOLR_TIP}/models/sentiment/
   
   # Models originally sourced from Huggingface and store on ASF hardware
-  wget -O ${SOLR_TIP}/models/sentiment/model.onnx https://nightlies.apache.org/solr/opennlp-dl-integration/model_quantized.onnx
-  wget -O ${SOLR_TIP}/models/sentiment/vocab.txt https://nightlies.apache.org/solr/opennlp-dl-integration/vocab.txt
-  # wget -O ${SOLR_TIP}/models/sentiment/model.onnx https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/resolve/main/onnx/model_quantized.onnx
-  # wget -O ${SOLR_TIP}/models/sentiment/vocab.txt https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/raw/main/vocab.txt
+  curl -o ${SOLR_TIP}/models/sentiment/model.onnx https://nightlies.apache.org/solr/opennlp-dl-integration/model_quantized.onnx
+  curl -o ${SOLR_TIP}/models/sentiment/vocab.txt https://nightlies.apache.org/solr/opennlp-dl-integration/vocab.txt
+  # curl -o ${SOLR_TIP}/models/sentiment/model.onnx https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/resolve/main/onnx/model_quantized.onnx
+  # curl -o ${SOLR_TIP}/models/sentiment/vocab.txt https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/raw/main/vocab.txt
 
   run ls -alh ${SOLR_TIP}/modules/analysis-extras/lib
   refute_output --partial "onnxruntime_gpu"

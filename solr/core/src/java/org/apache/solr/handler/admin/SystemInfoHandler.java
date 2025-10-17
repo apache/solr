@@ -18,14 +18,17 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.PlatformManagedObject;
 import java.lang.management.RuntimeMXBean;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
@@ -36,6 +39,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.util.Version;
@@ -49,7 +55,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.GpuMetricsProvider;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -83,6 +89,13 @@ public class SystemInfoHandler extends RequestHandlerBase {
   private static final String REVERSE_DNS_OF_LOCALHOST_SYSPROP =
       "solr.admin.handler.systeminfo.dns.reverse.lookup.enabled";
 
+  /**
+   * Local cache for BeanInfo instances that are created to scan for system metrics. List of
+   * properties is not supposed to change for the JVM lifespan, so we can keep already create
+   * BeanInfo instance for future calls.
+   */
+  private static final ConcurrentMap<Class<?>, BeanInfo> beanInfos = new ConcurrentHashMap<>();
+
   // on some platforms, resolving canonical hostname can cause the thread
   // to block for several seconds if nameservices aren't available
   // so resolve this once per handler instance
@@ -99,6 +112,76 @@ public class SystemInfoHandler extends RequestHandlerBase {
     super();
     this.cc = cc;
     initHostname();
+  }
+
+  /**
+   * Iterates over properties of the given MXBean and invokes the provided consumer with each
+   * property name and its current value.
+   *
+   * @param obj an instance of MXBean
+   * @param interfaces interfaces that it may implement. Each interface will be tried in turn, and
+   *     only if it exists and if it contains unique properties then they will be added as metrics.
+   * @param consumer consumer for each property name and value
+   * @param <T> formal type
+   */
+  public static <T extends PlatformManagedObject> void forEachGetterValue(
+      T obj, String[] interfaces, BiConsumer<String, Object> consumer) {
+    for (String clazz : interfaces) {
+      try {
+        final Class<? extends PlatformManagedObject> intf =
+            Class.forName(clazz).asSubclass(PlatformManagedObject.class);
+        forEachGetterValue(obj, intf, consumer);
+      } catch (ClassNotFoundException e) {
+        // ignore
+      }
+    }
+  }
+
+  /**
+   * Iterates over properties of the given MXBean and invokes the provided consumer with each
+   * property name and its current value.
+   *
+   * @param obj an instance of MXBean
+   * @param intf MXBean interface, one of {@link PlatformManagedObject}-s
+   * @param consumer consumer for each property name and value
+   * @param <T> formal type
+   */
+  public static <T extends PlatformManagedObject> void forEachGetterValue(
+      T obj, Class<? extends T> intf, BiConsumer<String, Object> consumer) {
+    if (intf.isInstance(obj)) {
+      BeanInfo beanInfo =
+          beanInfos.computeIfAbsent(
+              intf,
+              clazz -> {
+                try {
+                  return Introspector.getBeanInfo(
+                      clazz, clazz.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
+
+                } catch (IntrospectionException e) {
+                  log.warn("Unable to fetch properties of MXBean {}", obj.getClass().getName());
+                  return null;
+                }
+              });
+
+      // if BeanInfo retrieval failed, return early
+      if (beanInfo == null) {
+        return;
+      }
+      for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
+        try {
+          Method readMethod = desc.getReadMethod();
+          if (readMethod == null) {
+            continue; // skip properties without a read method
+          }
+
+          final String name = desc.getName();
+          Object value = readMethod.invoke(obj);
+          consumer.accept(name, value);
+        } catch (Exception e) {
+          // didn't work, skip it...
+        }
+      }
+    }
   }
 
   private void initHostname() {
@@ -222,15 +305,15 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
     info.add(NAME, os.getName()); // add at least this one
+
     // add remaining ones dynamically using Java Beans API
     // also those from JVM implementation-specific classes
-    MetricUtils.addMXBeanMetrics(
+    forEachGetterValue(
         os,
         MetricUtils.OS_MXBEAN_CLASSES,
-        null,
-        (name, metric) -> {
+        (name, value) -> {
           if (info.get(name) == null) {
-            info.add(name, ((Gauge) metric).getValue());
+            info.add(name, value);
           }
         });
 
@@ -443,29 +526,32 @@ public class SystemInfoHandler extends RequestHandlerBase {
     SimpleOrderedMap<Object> gpuInfo = new SimpleOrderedMap<>();
 
     try {
-      SolrMetricManager metricManager = getCoreContainer(req).getMetricManager();
-      MetricRegistry registry = metricManager.registry("solr.node");
+      GpuMetricsProvider provider = getCoreContainer(req).getGpuMetricsProvider();
 
-      Long gpuCount = getLongGaugeValue(registry, "gpu.count");
-      if (gpuCount != null && gpuCount > 0) {
+      if (provider == null) {
+        gpuInfo.add("available", false);
+        return gpuInfo;
+      }
+
+      long gpuCount = provider.getGpuCount();
+      if (gpuCount > 0) {
         gpuInfo.add("available", true);
         gpuInfo.add("count", gpuCount);
 
-        Long gpuMemoryTotal = getLongGaugeValue(registry, "gpu.memory.total");
-        Long gpuMemoryUsed = getLongGaugeValue(registry, "gpu.memory.used");
-        Long gpuMemoryFree = getLongGaugeValue(registry, "gpu.memory.free");
+        long gpuMemoryTotal = provider.getGpuMemoryTotal();
+        long gpuMemoryUsed = provider.getGpuMemoryUsed();
+        long gpuMemoryFree = provider.getGpuMemoryFree();
 
-        if (gpuMemoryTotal != null && gpuMemoryUsed != null) {
+        if (gpuMemoryTotal > 0) {
           SimpleOrderedMap<Object> memory = new SimpleOrderedMap<>();
           memory.add("total", gpuMemoryTotal);
           memory.add("used", gpuMemoryUsed);
-          memory.add(
-              "free", gpuMemoryFree != null ? gpuMemoryFree : (gpuMemoryTotal - gpuMemoryUsed));
+          memory.add("free", gpuMemoryFree);
           gpuInfo.add("memory", memory);
         }
 
-        Object devices = getGaugeValue(registry, "gpu.devices");
-        if (devices != null) {
+        var devices = provider.getGpuDevices();
+        if (devices != null && devices.size() > 0) {
           gpuInfo.add("devices", devices);
         }
       } else {
@@ -478,23 +564,6 @@ public class SystemInfoHandler extends RequestHandlerBase {
     }
 
     return gpuInfo;
-  }
-
-  @SuppressWarnings("unchecked")
-  private Object getGaugeValue(MetricRegistry registry, String metricName) {
-    Metric metric = registry.getMetrics().get(metricName);
-    if (metric instanceof Gauge) {
-      return ((Gauge<Object>) metric).getValue();
-    }
-    return null;
-  }
-
-  private Long getLongGaugeValue(MetricRegistry registry, String metricName) {
-    Object value = getGaugeValue(registry, metricName);
-    if (value instanceof Number) {
-      return ((Number) value).longValue();
-    }
-    return null;
   }
 
   @Override
