@@ -2981,18 +2981,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
     final NamedList<Object> responseHeader = new SimpleOrderedMap<>();
     rsp.addResponseHeader(responseHeader);
 
-    // toLog is a local ref to the same NamedList used by the response
-    NamedList<Object> toLog = rsp.getToLog();
+    rsp.addToLog(PATH, req.getContext().get(PATH));
 
-    // for back compat, we set these now just in case other code
-    // are expecting them during handleRequest
-    toLog.add("webapp", req.getContext().get("webapp"));
-    toLog.add(PATH, req.getContext().get(PATH));
-
+    // params:
     final SolrParams params = req.getParams();
     final String lpList = params.get(CommonParams.LOG_PARAMS_LIST);
     if (lpList == null) {
-      toLog.add("params", "{" + req.getParamString() + "}");
+      rsp.addToLog("params", "{" + req.getParamString() + "}");
     } else if (lpList.length() > 0) {
 
       // Filter params by those in LOG_PARAMS_LIST so that we can then call toString
@@ -3022,7 +3017,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
             } // assume in lpSet
           };
 
-      toLog.add("params", "{" + filteredParams + "}");
+      rsp.addToLog("params", "{" + filteredParams + "}");
     }
   }
 
@@ -3102,16 +3097,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put(OPEN_METRICS_WT, new PrometheusResponseWriter());
     m.put(ReplicationAPIBase.FILE_STREAM, getFileStreamWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
-    try {
-      m.put(
-          "xlsx",
-          Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter")
-              .asSubclass(QueryResponseWriter.class)
-              .getDeclaredConstructor()
-              .newInstance());
-    } catch (Exception e) {
-      // don't worry; extraction module not in class path
-    }
   }
 
   private static JavaBinResponseWriter getFileStreamWriter() {

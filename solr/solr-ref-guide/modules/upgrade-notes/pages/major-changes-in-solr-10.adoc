@@ -116,8 +116,6 @@ Solr now lets you access models encoded in ONNX format, commonly sourced from Hu
 The DocumentCategorizerUpdateProcessorFactorythat lets you perform sentiment and other classification tasks on fields.
 It is available as part of the `analysis-extras` module.
 
-
-
 === Deprecation removals
 
 * The `jaegertracer-configurator` module, which was deprecated in 9.2, is removed. Users should migrate to the `opentelemetry` module.
@@ -142,6 +140,8 @@ To share resource intensive objects across multiple cores in components you shou
 
 * The language specific Response Writers, which were deprecated in 9.8 in favour of more widely used formats like JSON have been removed.
 The removed writer types (invoked as part of the `wt` parameter) include `python`, `ruby`, `php`, and `phps`.
+
+* The XLSX Response Writer (`wt=xlsx`), which was deprecated in 9.10, has been removed. Users needing Excel export functionality should use CSV format (`wt=csv`) and convert it to Excel format using external tools or libraries.
 
 * The deprecated support for configuring replication using master/slave terminology is removed.  Use leader/follower.
 
@@ -178,6 +178,7 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
 
 === Upgrade to Jetty 12.x
+
 Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-life support. Jetty 12.x requires Java 17 or newer and is fully compatible with Solr's new minimum requirement of Java 21. This upgrade brings support for modern HTTP protocols and adopts the Jakarta EE 10 namespace. For more details, see https://webtide.com/jetty-12-has-arrived/.
 
 === Open Telemetry
@@ -189,6 +190,10 @@ Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-lif
 === Docker
 
 The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 24 (noble) from Ubuntu 22 (jammy).
+
+=== Miscellaneous
+
+Solr logs no longer include webapp=/solr and there's no longer a "webapp" key-value pair in the internal context.
 
 === Analysis and Tokenizers
 
