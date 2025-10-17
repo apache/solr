@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTestCase {
 
   private static final String REMOVE_VERSION_FIELD = "remove.version.field";
-  private static final String ENABLE_UPDATE_LOG = "enable.update.log";
+  private static final String ENABLE_UPDATE_LOG = "solr.index.updatelog.enabled";
   private static final String ZK_HOST = "zkHost";
   private static final String ZOOKEEPER_FORCE_SYNC = "zookeeper.forceSync";
   protected static final String DEFAULT_COLLECTION = "collection1";

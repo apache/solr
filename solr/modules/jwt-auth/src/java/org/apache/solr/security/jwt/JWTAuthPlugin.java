@@ -100,9 +100,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   private static final long DEFAULT_REFRESH_REPRIEVE_THRESHOLD = 5000;
   static final String PRIMARY_ISSUER = "PRIMARY";
 
-  @Deprecated(since = "9.0") // Remove in 10.0
-  private static final String PARAM_ALG_WHITELIST = "algWhitelist";
-
   private static final Set<String> PROPS =
       Set.of(
           PARAM_BLOCK_UNKNOWN,
@@ -186,14 +183,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin
 
     rolesClaim = (String) pluginConfig.get(PARAM_ROLES_CLAIM);
     algAllowlist = (List<String>) pluginConfig.get(PARAM_ALG_ALLOWLIST);
-    // TODO: Remove deprecated warning in Solr 10.0
-    if ((algAllowlist == null || algAllowlist.isEmpty())
-        && pluginConfig.containsKey(PARAM_ALG_WHITELIST)) {
-      log.warn(
-          "Found use of deprecated parameter algWhitelist. Please use {} instead.",
-          PARAM_ALG_ALLOWLIST);
-      algAllowlist = (List<String>) pluginConfig.get(PARAM_ALG_WHITELIST);
-    }
     realm = (String) pluginConfig.getOrDefault(PARAM_REALM, DEFAULT_AUTH_REALM);
 
     Map<String, String> claimsMatch = (Map<String, String>) pluginConfig.get(PARAM_CLAIMS_MATCH);
@@ -443,7 +432,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       }
       if (jwtConsumer == null) {
         log.warn("JWTAuth not configured");
-        numErrors.mark();
+        numErrors.inc();
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin not correctly configured");
       }
@@ -484,7 +473,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
         final Principal principal = authResponse.getPrincipal();
         request = wrapWithPrincipal(request, principal);
         if (!(principal instanceof JWTPrincipal)) {
-          numErrors.mark();
+          numErrors.inc();
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
               "JWTAuth plugin says AUTHENTICATED but no token extracted");
@@ -510,7 +499,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             "Authentication failed. {}, {}",
             authResponse.getAuthCode(),
             authResponse.getAuthCode().getMsg());
-        numErrors.mark();
+        numErrors.inc();
         authenticationFailure(
             response,
             authResponse.getAuthCode().getMsg(),

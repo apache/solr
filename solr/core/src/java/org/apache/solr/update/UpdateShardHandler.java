@@ -17,6 +17,7 @@
 package org.apache.solr.update;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -24,14 +25,13 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -73,22 +73,22 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private SolrMetricsContext solrMetricsContext;
 
-  private int socketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
-  private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+  private int socketTimeout = SolrHttpConstants.DEFAULT_SO_TIMEOUT;
+  private int connectionTimeout = SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
 
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     if (cfg != null) {
-      clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
+      clientParams.set(SolrHttpConstants.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
       clientParams.set(
-          HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
+          SolrHttpConstants.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
       // following is done only for logging complete configuration.
       // The maxConnections and maxConnectionsPerHost have already been specified on the connection
       // manager
-      clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, cfg.getMaxUpdateConnections());
+      clientParams.set(SolrHttpConstants.PROP_MAX_CONNECTIONS, cfg.getMaxUpdateConnections());
       clientParams.set(
-          HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, cfg.getMaxUpdateConnectionsPerHost());
+          SolrHttpConstants.PROP_MAX_CONNECTIONS_PER_HOST, cfg.getMaxUpdateConnectionsPerHost());
       socketTimeout = cfg.getDistributedSocketTimeout();
       connectionTimeout = cfg.getDistributedConnectionTimeout();
     }
@@ -104,10 +104,12 @@ public class UpdateShardHandler implements SolrInfoBean {
     Http2SolrClient.Builder recoveryOnlyClientBuilder = new Http2SolrClient.Builder();
     if (cfg != null) {
       updateOnlyClientBuilder
+          .addListenerFactory(trackHttpSolrMetrics)
           .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
           .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
           .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
       recoveryOnlyClientBuilder
+          .addListenerFactory(trackHttpSolrMetrics)
           .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
           .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
           .withRequestTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
@@ -116,10 +118,8 @@ public class UpdateShardHandler implements SolrInfoBean {
 
     updateOnlyClientBuilder.withTheseParamNamesInTheUrl(urlParamNames);
     updateOnlyClient = updateOnlyClientBuilder.build();
-    updateOnlyClient.addListenerFactory(trackHttpSolrMetrics);
 
     recoveryOnlyClient = recoveryOnlyClientBuilder.build();
-    recoveryOnlyClient.addListenerFactory(trackHttpSolrMetrics);
 
     ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
     if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
@@ -163,22 +163,15 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
-    String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
+    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty());
     updateExecutor =
         MetricUtils.instrumentedExecutorService(
-            updateExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName("updateOnlyExecutor", expandedScope, "threadPool"));
+            updateExecutor, solrMetricsContext, getCategory(), "updateOnlyExecutor");
     recoveryExecutor =
         MetricUtils.instrumentedExecutorService(
-            recoveryExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName("recoveryExecutor", expandedScope, "threadPool"));
+            recoveryExecutor, solrMetricsContext, getCategory(), "recoveryExecutor");
   }
 
   @Override

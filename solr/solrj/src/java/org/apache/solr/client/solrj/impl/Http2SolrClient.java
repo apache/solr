@@ -113,7 +113,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private final long idleTimeoutMillis;
 
-  private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
+  private List<HttpListenerFactory> listenerFactory;
   protected AsyncTracker asyncTracker = new AsyncTracker();
 
   private final boolean closeClient;
@@ -154,9 +154,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
     // note: do not manipulate httpClient below this point; it could be a shared instance
 
-    if (builder.listenerFactory != null) {
-      this.listenerFactory.addAll(builder.listenerFactory);
+    if (builder.listenerFactories != null) {
+      this.listenerFactory = builder.listenerFactories;
+    } else {
+      this.listenerFactory = new ArrayList<>(0);
     }
+
     updateDefaultMimeTypeForParser();
     this.idleTimeoutMillis = builder.getIdleTimeoutMillis();
 
@@ -184,7 +187,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private void applyHttpClientBuilderFactory() {
     String factoryClassName =
-        System.getProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+        System.getProperty(SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
     if (factoryClassName != null) {
       log.debug("Using Http Builder Factory: {}", factoryClassName);
       HttpClientBuilderFactory factory;
@@ -542,11 +545,13 @@ public class Http2SolrClient extends HttpSolrClientBase {
                     new SolrServerException(failure.getMessage(), failure));
               }
             });
-    future.exceptionally(
-        (error) -> {
-          mrrv.request.abort(error);
-          return null;
-        });
+
+    // SOLR-17916: Disable request aborting
+    // future.exceptionally(
+    //    (error) -> {
+    //     mrrv.request.abort(error);
+    //      return null;
+    //   });
 
     if (mrrv.contentWriter != null) {
       try (var output = mrrv.requestContent.getOutputStream()) {
@@ -638,6 +643,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
     try (final var derivedClient = new NoCloseHttp2SolrClient(baseUrl, this)) {
       return clientFunction.apply(derivedClient);
     }
+  }
+
+  @Override
+  public HttpSolrClientBuilderBase<?, ?> builder() {
+    return new Http2SolrClient.Builder().withHttpClient(this);
   }
 
   private NamedList<Object> processErrorsAndResponse(
@@ -958,7 +968,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     protected Long keyStoreReloadIntervalSecs;
 
-    private List<HttpListenerFactory> listenerFactory;
+    private List<HttpListenerFactory> listenerFactories;
 
     public Builder() {
       super();
@@ -984,26 +994,35 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.baseSolrUrl = baseSolrUrl;
     }
 
-    public Http2SolrClient.Builder withListenerFactory(List<HttpListenerFactory> listenerFactory) {
-      this.listenerFactory = listenerFactory;
+    /**
+     * specify a listener factory, which will be appended to any existing values.
+     *
+     * @param listenerFactory a HttpListenerFactory
+     * @return This Builder
+     */
+    public Http2SolrClient.Builder addListenerFactory(HttpListenerFactory listenerFactory) {
+      if (this.listenerFactories == null) {
+        this.listenerFactories = new ArrayList<>(1);
+      }
+      this.listenerFactories.add(listenerFactory);
+      return this;
+    }
+
+    /**
+     * Specify listener factories, which will replace any existing values.
+     *
+     * @param listenerFactories a list of HttpListenerFactory instances
+     * @return This Builder
+     */
+    public Http2SolrClient.Builder withListenerFactories(
+        List<HttpListenerFactory> listenerFactories) {
+      this.listenerFactories = listenerFactories;
       return this;
     }
 
     public HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> withSSLConfig(
         SSLConfig sslConfig) {
       this.sslConfig = sslConfig;
-      return this;
-    }
-
-    /**
-     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
-     * to 4
-     *
-     * @deprecated Please use {@link #withMaxConnectionsPerHost(int)}
-     */
-    @Deprecated(since = "9.2")
-    public Http2SolrClient.Builder maxConnectionsPerHost(int max) {
-      withMaxConnectionsPerHost(max);
       return this;
     }
 
@@ -1021,37 +1040,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.keyStoreReloadIntervalSecs == 0 && interval > 0) {
         this.keyStoreReloadIntervalSecs = 1L;
       }
-      return this;
-    }
-
-    /**
-     * @deprecated Please use {@link #withIdleTimeout(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Http2SolrClient.Builder idleTimeout(int idleConnectionTimeout) {
-      withIdleTimeout(idleConnectionTimeout, TimeUnit.MILLISECONDS);
-      return this;
-    }
-
-    /**
-     * @deprecated Please use {@link #withConnectionTimeout(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Http2SolrClient.Builder connectionTimeout(int connectionTimeout) {
-      withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS);
-      return this;
-    }
-
-    /**
-     * Set a timeout in milliseconds for requests issued by this client.
-     *
-     * @param requestTimeout The timeout in milliseconds
-     * @return this Builder.
-     * @deprecated Please use {@link #withRequestTimeout(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Http2SolrClient.Builder requestTimeout(int requestTimeout) {
-      withRequestTimeout(requestTimeout, TimeUnit.MILLISECONDS);
       return this;
     }
 
@@ -1078,33 +1066,16 @@ public class Http2SolrClient extends HttpSolrClientBase {
       return new Http2SolrClient(baseSolrUrl, this);
     }
 
-    /**
-     * Provide a seed Http2SolrClient for the builder values, values can still be overridden by
-     * using builder methods
-     */
+    @Override
     public Builder withHttpClient(Http2SolrClient http2SolrClient) {
+      super.withHttpClient(http2SolrClient);
       this.httpClient = http2SolrClient.httpClient;
 
-      if (this.basicAuthAuthorizationStr == null) {
-        this.basicAuthAuthorizationStr = http2SolrClient.basicAuthAuthorizationStr;
-      }
       if (this.idleTimeoutMillis == null) {
         this.idleTimeoutMillis = http2SolrClient.idleTimeoutMillis;
       }
-      if (this.requestTimeoutMillis == null) {
-        this.requestTimeoutMillis = http2SolrClient.requestTimeoutMillis;
-      }
-      if (this.requestWriter == null) {
-        this.requestWriter = http2SolrClient.requestWriter;
-      }
-      if (this.responseParser == null) {
-        this.responseParser = http2SolrClient.parser;
-      }
-      if (this.urlParamNames == null) {
-        this.urlParamNames = http2SolrClient.urlParamNames;
-      }
-      if (this.listenerFactory == null) {
-        this.listenerFactory = new ArrayList<>(http2SolrClient.listenerFactory);
+      if (this.listenerFactories == null) {
+        this.listenerFactories = http2SolrClient.listenerFactory;
       }
       if (this.executor == null) {
         this.executor = http2SolrClient.executor;
@@ -1135,7 +1106,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   /* package-private for testing */
   static SslContextFactory.Client getDefaultSslContextFactory() {
-    String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
+    String checkPeerNameStr = System.getProperty(SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME);
     boolean sslCheckPeerName = !"false".equalsIgnoreCase(checkPeerNameStr);
 
     SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(!sslCheckPeerName);

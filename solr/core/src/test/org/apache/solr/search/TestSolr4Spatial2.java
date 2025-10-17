@@ -32,9 +32,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.SpatialUtils;
 import org.apache.solr.util.TestUtils;
 import org.junit.Before;
@@ -369,21 +368,15 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     if (testCache) {
       // The tricky thing is verifying the cache works correctly...
 
-      MetricsMap cacheMetrics =
-          (MetricsMap)
-              ((SolrMetricManager.GaugeWrapper)
-                      h.getCore()
-                          .getCoreMetricManager()
-                          .getRegistry()
-                          .getMetrics()
-                          .get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName))
-                  .getGauge();
-      assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
-      assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
+      long inserts = getSpatialFieldCacheInserts(fieldName);
+      long hits = getSpatialFieldCacheHits(fieldName);
+      assertEquals(1, inserts);
+      assertEquals(0, hits);
 
       // Repeat the query earlier
       assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
-      assertEquals("1", cacheMetrics.getValue().get("cumulative_hits").toString());
+      hits = getSpatialFieldCacheHits(fieldName);
+      assertEquals(1, hits);
 
       assertEquals("1 segment", 1, getSearcher().getRawReader().leaves().size());
       // Get key of first leaf reader -- this one contains the match for sure.
@@ -404,18 +397,8 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
       Object leafKey2 = getFirstLeafReaderKey();
       // get the current instance of metrics - the old one may not represent the current cache
       // instance
-      cacheMetrics =
-          (MetricsMap)
-              ((SolrMetricManager.GaugeWrapper)
-                      h.getCore()
-                          .getCoreMetricManager()
-                          .getRegistry()
-                          .getMetrics()
-                          .get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName))
-                  .getGauge();
-      assertEquals(
-          leafKey1.equals(leafKey2) ? "2" : "1",
-          cacheMetrics.getValue().get("cumulative_hits").toString());
+      hits = getSpatialFieldCacheHits(fieldName);
+      assertEquals(leafKey1.equals(leafKey2) ? 2 : 1, hits);
     }
 
     if (testHeatmap) {
@@ -454,6 +437,20 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
           req("q", fieldName + ":[55.0260828,-115.5085624 TO 55.02646,-115.507337]"),
           "/response/numFound==0");
     }
+  }
+
+  private long getSpatialFieldCacheInserts(String fieldName) {
+    return (long)
+        SolrMetricTestUtils.getCacheSearcherOps(
+                h.getCore(), "perSegSpatialFieldCache_" + fieldName, "inserts")
+            .getValue();
+  }
+
+  private long getSpatialFieldCacheHits(String fieldName) {
+    return (long)
+        SolrMetricTestUtils.getCacheSearcherLookups(
+                h.getCore(), "perSegSpatialFieldCache_" + fieldName, "hit")
+            .getValue();
   }
 
   protected SolrIndexSearcher getSearcher() {
