@@ -150,6 +150,8 @@ Accepted values: `FLOAT32`, `BYTE`.
 +
 Controls how many of the nearest neighbor candidates are connected to the new node.
 +
+For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 paper], where this parameter `M` is defined.
++
 Accepted values:
 Any integer.
 
@@ -163,6 +165,8 @@ Any integer.
 (advanced) This parameter is specific for the `hnsw` knn algorithm:
 +
 It is the number of nearest neighbor candidates to track while searching the graph for each newly inserted node.
++
+For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 paper], where this parameter `efConstruction` is defined.
 +
 Accepted values:
 Any integer.
@@ -699,9 +703,9 @@ Where:
 
 * `hnswLayers` - Number of HNSW graph layers to construct while building the HNSW index
 
-* `m` - m (or Max connections) parameter passed to the fallback Lucene99HnswVectorsWriter
+* `m` - m parameter passed to the fallback Lucene99HnswVectorsWriter
 
-* `efConstruction` - efConstruction (or Beam Width) parameter passed to the fallback Lucene99HnswVectorsWriter
+* `efConstruction` - efConstruction parameter passed to the fallback Lucene99HnswVectorsWriter
 
 === Example
 
