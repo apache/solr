@@ -387,6 +387,9 @@ Other Changes
 * SOLR-17879: A Solr node will now fail to start if it's major.minor version (e.g. 9.10) is *lower* than that of any existing
   Solr node in a SolrCloud cluster (as reported by info in "live_node").  (David Smiley)
 
+* SOLR-17712: Deprecating waitForFinalState parameter in any SolrCloud command that accepts it.
+  It remains defaulted to false in 9, but will become true and likely removed.  (Abhishek Umarjikar, David Smiley)
+
 * SOLR-17956: XLSXResponseWriter has been deprecated and will be removed in a future release. (Jan Høydahl)
 
 * SOLR-17958: The Tika Language Identifier is deprecated. Use one of the other detectors instead. (Jan Høydahl)
