@@ -40,7 +40,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
   protected SolrContentHandlerFactory factory;
   protected String defaultBackendName;
   protected TikaServerExtractionBackend tikaServerBackend;
