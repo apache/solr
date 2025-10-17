@@ -389,7 +389,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
-     * Set the internal client Solr HTTP client.
+     * Set the internal Solr HTTP client.
      *
      * <p>Note: closing the client instance is the responsibility of the caller.
      *
