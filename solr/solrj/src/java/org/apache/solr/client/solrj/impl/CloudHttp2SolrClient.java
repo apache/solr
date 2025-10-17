@@ -182,11 +182,6 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     return myClient;
   }
 
-  @Override
-  protected boolean wasCommError(Throwable rootCause) {
-    return false;
-  }
-
   /** Constructs {@link CloudHttp2SolrClient} instances from provided configuration. */
   public static class Builder {
     protected Collection<String> zkHosts = new ArrayList<>();

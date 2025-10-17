@@ -140,7 +140,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
 
   @Override
   protected boolean wasCommError(Throwable rootCause) {
-    return rootCause instanceof ConnectTimeoutException
+    return super.wasCommError(rootCause)
+        || rootCause instanceof ConnectTimeoutException
         || rootCause instanceof NoHttpResponseException;
   }
 
