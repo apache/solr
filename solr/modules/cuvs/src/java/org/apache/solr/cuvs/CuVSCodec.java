@@ -74,7 +74,7 @@ public class CuVSCodec extends FilterCodec {
     assert intGraphDegree > 0 : "intGraphDegree cannot be less then or equal to 0";
     assert graphDegree > 0 : "graphDegree cannot be less then or equal to 0";
     assert hnswLayers > 0 : "hnswLayers cannot be less then or equal to 0";
-    assert m > 0 : "m (or max connections) cannot be less then or equal to 0";
+    assert m > 0 : "m cannot be less then or equal to 0";
     assert efConstruction > 0 : "efConstruction cannot be less then or equal to 0";
 
     cuvsHNSWVectorsFormat =
@@ -83,7 +83,7 @@ public class CuVSCodec extends FilterCodec {
 
     if (log.isInfoEnabled()) {
       log.info(
-          "Lucene99AcceleratedHNSWVectorsFormat initialized with parameter values: cuvsWriterThreads {}, intGraphDegree {}, graphDegree {}, hnswLayers {}, maxConn {}, beamWidth {}",
+          "Lucene99AcceleratedHNSWVectorsFormat initialized with parameter values: cuvsWriterThreads {}, intGraphDegree {}, graphDegree {}, hnswLayers {}, m {}, efConstruction {}",
           cuvsWriterThreads,
           intGraphDegree,
           graphDegree,
