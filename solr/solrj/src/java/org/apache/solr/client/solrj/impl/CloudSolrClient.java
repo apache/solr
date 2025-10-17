@@ -221,7 +221,7 @@ public abstract class CloudSolrClient extends SolrClient {
     return getClusterStateProvider().getClusterState();
   }
 
-  /** Is this a communication error?  We will retry if so. */
+  /** Is this a communication error? We will retry if so. */
   protected boolean wasCommError(Throwable t) {
     return t instanceof SocketException || t instanceof UnknownHostException;
   }
