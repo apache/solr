@@ -48,6 +48,7 @@ public class MigrateReplicasRequestBody {
               + "If false, the API will return the status of the single action, which may be "
               + "before the new replicas are online and active.")
   @JsonProperty
+  @Deprecated(since = "9.10")
   public Boolean waitForFinalState = false;
 
   @Schema(description = "Request ID to track this action which will be processed asynchronously.")
