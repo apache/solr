@@ -102,7 +102,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
       // Validate backend name
       if (!TikaServerExtractionBackend.NAME.equals(this.defaultBackendName)) {
         throw new SolrException(
-            ErrorCode.BAD_REQUEST,
+            ErrorCode.SERVER_ERROR,
             "Invalid extraction backend: '"
                 + this.defaultBackendName
                 + "'. Only '"
