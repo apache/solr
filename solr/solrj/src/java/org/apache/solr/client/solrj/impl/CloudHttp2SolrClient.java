@@ -102,7 +102,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       log.debug("Using {} as the delegate http client", Http2SolrClient.class);
       return new Http2SolrClient.Builder().build();
     } else {
-      log.debug("Using {} as the delegate http client", Http2SolrClient.class);
+      log.debug("Using {} as the delegate http client", HttpJdkSolrClient.class);
       return new HttpJdkSolrClient.Builder().build();
     }
   }
