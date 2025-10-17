@@ -55,9 +55,9 @@ dependencies {
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
 
-  testImplementation libs.commonsio.commonsio
+  testImplementation libs.prometheus.metrics.model
 
-  testImplementation libs.dropwizard.metrics.core
+  testImplementation libs.commonsio.commonsio
 }
 
 task copyPythonClientToExample(type: Sync) {
