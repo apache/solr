@@ -139,7 +139,7 @@ public class SolrZkServer {
       return;
     }
 
-    if (EnvUtils.getProperty(ZK_ALLOWLIST_PROPERTY) == null) {
+    if (System.getProperty(ZK_ALLOWLIST_PROPERTY) == null) {
       System.setProperty(ZK_ALLOWLIST_PROPERTY, "ruok, mntr, conf");
     }
     AtomicReference<Exception> zkException = new AtomicReference<>();
