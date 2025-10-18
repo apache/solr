@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.solr.common.SolrDocument;
@@ -30,7 +31,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.CSVFeatureLogger;
 import org.apache.solr.ltr.FeatureLogger;
-import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
@@ -75,11 +75,10 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   // used inside fl to specify to log (all|model only) features
   private static final String FV_LOG_ALL = "logAll";
 
-  private static final String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
+  public static final String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
   private static final boolean DEFAULT_NO_RERANKING_LOGGING_ALL = true;
 
-  private String fvCacheName;
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
   private String defaultStore;
   private FeatureLogger.FeatureFormat defaultFormat = FeatureLogger.FeatureFormat.DENSE;
@@ -87,10 +86,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   private char csvFeatureSeparator = CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
 
   private LTRThreadModule threadManager = null;
-
-  public void setFvCacheName(String fvCacheName) {
-    this.fvCacheName = fvCacheName;
-  }
 
   public void setLoggingModelName(String loggingModelName) {
     this.loggingModelName = loggingModelName;
@@ -161,11 +156,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     } else {
       format = this.defaultFormat;
     }
-    if (fvCacheName == null) {
-      throw new IllegalArgumentException("a fvCacheName must be configured");
-    }
-    return new CSVFeatureLogger(
-        fvCacheName, format, logAll, csvKeyValueDelimiter, csvFeatureSeparator);
+    return new CSVFeatureLogger(format, logAll, csvKeyValueDelimiter, csvFeatureSeparator);
   }
 
   class FeatureTransformer extends DocTransformer {
@@ -373,6 +364,12 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                         : rerankingQueries[i].getExternalFeatureInfo()),
                     threadManager);
           }
+        } else {
+          for (int i = 0; i < rerankingQueries.length; i++) {
+            if (!transformerExternalFeatureInfo.isEmpty()) {
+              rerankingQueries[i].setExternalFeatureInfo(transformerExternalFeatureInfo);
+            }
+          }
         }
       }
     }
@@ -410,6 +407,32 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       implTransform(doc, docid, docInfo);
     }
 
+    private static LTRScoringQuery.FeatureInfo[] extractFeatures(
+        FeatureLogger logger,
+        LTRScoringQuery.ModelWeight modelWeight,
+        int docid,
+        Float originalDocScore,
+        List<LeafReaderContext> leafContexts)
+        throws IOException {
+      final int n = ReaderUtil.subIndex(docid, leafContexts);
+      final LeafReaderContext atomicContext = leafContexts.get(n);
+      final int deBasedDoc = docid - atomicContext.docBase;
+      final LTRScoringQuery.ModelWeight.ModelScorer r = modelWeight.modelScorer(atomicContext);
+      r.getDocInfo().setOriginalDocId(docid);
+      if ((r == null) || (r.iterator().advance(deBasedDoc) != deBasedDoc)) {
+        return new LTRScoringQuery.FeatureInfo[0];
+      } else {
+        if (originalDocScore != null) {
+          // If results have not been reranked, the score passed in is the original query's
+          // score, which some features can use instead of recalculating it
+          r.getDocInfo().setOriginalDocScore(originalDocScore);
+        }
+        r.fillFeaturesInfo();
+        logger.setLogFeatures(true);
+        return modelWeight.getAllFeaturesInStore();
+      }
+    }
+
     private void implTransform(SolrDocument doc, int docid, DocIterationInfo docInfo)
         throws IOException {
       LTRScoringQuery rerankingQuery = rerankingQueries[0];
@@ -423,16 +446,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         }
       }
       if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) || hasExplicitFeatureStore) {
-        Object featureVector = featureLogger.getFeatureVector(docid, rerankingQuery, searcher);
-        if (featureVector == null) { // FV for this document was not in the cache
-          featureVector =
-              featureLogger.makeFeatureVector(
-                  LTRRescorer.extractFeaturesInfo(
-                      rerankingModelWeight,
-                      docid,
-                      (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,
-                      leafContexts));
-        }
+        LTRScoringQuery.FeatureInfo[] featuresInfo =
+            extractFeatures(
+                featureLogger,
+                rerankingModelWeight,
+                docid,
+                (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,
+                leafContexts);
+        String featureVector = featureLogger.printFeatureVector(featuresInfo);
         doc.addField(name, featureVector);
       }
     }

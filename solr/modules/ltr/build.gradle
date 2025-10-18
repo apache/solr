@@ -55,6 +55,8 @@ dependencies {
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
 
+  testImplementation libs.prometheus.metrics.model
+
   testImplementation libs.commonsio.commonsio
 }
 

@@ -81,6 +81,8 @@ New Features
 
 * SOLR-17948: Support indexing primitive float[] values for DenseVectorField via JavaBin (Puneet Ahuja, Noble Paul)
 
+* SOLR-16667: LTR Add feature vector caching for ranking. (Anna Ruggero, Alessandro Benedetti)
+
 Improvements
 ---------------------
 
@@ -564,7 +566,7 @@ Bug Fixes
 
 * SOLR-17726: MoreLikeThis to support copy-fields (Ilaria Petreti via Alessandro Benedetti)
 
-* SOLR-16667: Fixed dense/sparse representation in LTR module. (Anna Ruggero, Alessandro Benedetti)
+* SOLR-17760: Fixed dense/sparse representation in LTR module. (Anna Ruggero, Alessandro Benedetti)
 
 * SOLR-17800: Security Manager should handle symlink on /tmp (Kevin Risden)
 

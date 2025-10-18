@@ -57,12 +57,12 @@ public class LTRInterleavingRescorer extends LTRRescorer {
    *
    * @param searcher current IndexSearcher
    * @param firstPassTopDocs documents to rerank;
-   * @param topN documents to return;
+   * @param docsToRerank documents to return;
    */
   @Override
-  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN)
+  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int docsToRerank)
       throws IOException {
-    if ((topN == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
+    if ((docsToRerank == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
       return firstPassTopDocs;
     }
 
@@ -72,10 +72,10 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       System.arraycopy(
           firstPassTopDocs.scoreDocs, 0, firstPassResults, 0, firstPassTopDocs.scoreDocs.length);
     }
-    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value()));
+    docsToRerank = Math.toIntExact(Math.min(docsToRerank, firstPassTopDocs.totalHits.value()));
 
     ScoreDoc[][] reRankedPerModel =
-        rerank(searcher, topN, getFirstPassDocsRanked(firstPassTopDocs));
+        rerank(searcher, docsToRerank, getFirstPassDocsRanked(firstPassTopDocs));
     if (originalRankingIndex != null) {
       reRankedPerModel[originalRankingIndex] = firstPassResults;
     }
@@ -90,9 +90,9 @@ public class LTRInterleavingRescorer extends LTRRescorer {
     return new TopDocs(firstPassTopDocs.totalHits, interleavedResults);
   }
 
-  private ScoreDoc[][] rerank(IndexSearcher searcher, int topN, ScoreDoc[] firstPassResults)
+  private ScoreDoc[][] rerank(IndexSearcher searcher, int docsToRerank, ScoreDoc[] firstPassResults)
       throws IOException {
-    ScoreDoc[][] reRankedPerModel = new ScoreDoc[rerankingQueries.length][topN];
+    ScoreDoc[][] reRankedPerModel = new ScoreDoc[rerankingQueries.length][docsToRerank];
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     LTRScoringQuery.ModelWeight[] modelWeights =
         new LTRScoringQuery.ModelWeight[rerankingQueries.length];
@@ -103,7 +103,7 @@ public class LTRInterleavingRescorer extends LTRRescorer {
                 searcher.createWeight(searcher.rewrite(rerankingQueries[i]), ScoreMode.COMPLETE, 1);
       }
     }
-    scoreFeatures(searcher, topN, modelWeights, firstPassResults, leaves, reRankedPerModel);
+    scoreFeatures(docsToRerank, modelWeights, firstPassResults, leaves, reRankedPerModel);
 
     for (int i = 0; i < rerankingQueries.length; i++) {
       if (originalRankingIndex == null || originalRankingIndex != i) {
@@ -115,8 +115,7 @@ public class LTRInterleavingRescorer extends LTRRescorer {
   }
 
   public void scoreFeatures(
-      IndexSearcher indexSearcher,
-      int topN,
+      int docsToRerank,
       LTRScoringQuery.ModelWeight[] modelWeights,
       ScoreDoc[] hits,
       List<LeafReaderContext> leaves,
@@ -126,14 +125,13 @@ public class LTRInterleavingRescorer extends LTRRescorer {
     int readerUpto = -1;
     int endDoc = 0;
     int docBase = 0;
-    int hitUpto = 0;
+    int hitPosition = 0;
     LTRScoringQuery.ModelWeight.ModelScorer[] scorers =
         new LTRScoringQuery.ModelWeight.ModelScorer[rerankingQueries.length];
-    while (hitUpto < hits.length) {
-      final ScoreDoc hit = hits[hitUpto];
-      final int docID = hit.doc;
+    while (hitPosition < hits.length) {
+      final ScoreDoc hit = hits[hitPosition];
       LeafReaderContext readerContext = null;
-      while (docID >= endDoc) {
+      while (hit.doc >= endDoc) {
         readerUpto++;
         readerContext = leaves.get(readerUpto);
         endDoc = readerContext.docBase + readerContext.reader().maxDoc();
@@ -151,13 +149,11 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       for (int i = 0; i < rerankingQueries.length; i++) {
         if (modelWeights[i] != null) {
           final ScoreDoc hit_i = new ScoreDoc(hit.doc, hit.score, hit.shardIndex);
-          if (scoreSingleHit(
-              topN, docBase, hitUpto, hit_i, docID, scorers[i], rerankedPerModel[i])) {
-            logSingleHit(indexSearcher, modelWeights[i], hit_i.doc, rerankingQueries[i]);
-          }
+          scoreSingleHit(
+              docsToRerank, docBase, hitPosition, hit_i, scorers[i], rerankedPerModel[i]);
         }
       }
-      hitUpto++;
+      hitPosition++;
     }
   }
 
