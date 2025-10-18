@@ -286,7 +286,7 @@ When running Solr as a user-managed cluster and using the `shards` parameter, a 
 In SolrCloud mode, the allow-list is automatically configured to include all live nodes in the cluster.
 +
 The allow-list can also be configured with the `solr.allowUrls` system property in `solr.in.sh` / `solr.in.cmd`.
-If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.allowUrls=true`.
+If you need to disable this feature for backwards compatibility, you can set the system property `solr.security.allow.urls.enabled=false`.
 
 `hideStackTrace`::
 +
