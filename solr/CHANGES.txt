@@ -81,6 +81,8 @@ New Features
 
 * SOLR-17948: Support indexing primitive float[] values for DenseVectorField via JavaBin (Puneet Ahuja, Noble Paul)
 
+* SOLR-17937: Adding GPU details to the Admin UI (Puneet Ahuja)
+
 Improvements
 ---------------------
 
