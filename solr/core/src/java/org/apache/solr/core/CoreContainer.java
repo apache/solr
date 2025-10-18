@@ -281,7 +281,7 @@ public class CoreContainer {
 
   protected MetricsHandler metricsHandler;
 
-  private volatile SolrClientCache solrClientCache;
+  // SolrClientCache is now stored in objectCache with key "solrClientCache"
 
   private volatile Map<String, SolrCache<?, ?>> caches;
 
@@ -704,12 +704,15 @@ public class CoreContainer {
    * @see #getDefaultHttpSolrClient()
    * @see ZkController#getSolrClient()
    * @see Http2SolrClient#requestWithBaseUrl(String, String, SolrRequest)
-   * @deprecated likely to simply be moved to the ObjectCache so as to not be used
    */
-  @Deprecated
   public SolrClientCache getSolrClientCache() {
-    // TODO put in the objectCache instead
-    return solrClientCache;
+    return objectCache.computeIfAbsent(
+        "solrClientCache",
+        SolrClientCache.class,
+        k -> {
+          // Create a new SolrClientCache with the appropriate solrClientProvider
+          return new SolrClientCache(solrClientProvider.getSolrClient());
+        });
   }
 
   public ObjectCache getObjectCache() {
@@ -787,7 +790,8 @@ public class CoreContainer {
     solrClientProvider =
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
     updateShardHandler.initializeMetrics(solrMetricsContext, Attributes.empty());
-    solrClientCache = new SolrClientCache(solrClientProvider.getSolrClient());
+    // We don't pre-initialize SolrClientCache here anymore
+    // It will be created on-demand in getSolrClientCache() when first needed
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {
@@ -814,7 +818,7 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
-      solrClientCache.setDefaultZKHost(getZkController().getZkServerAddress());
+      getSolrClientCache().setDefaultZKHost(getZkController().getZkServerAddress());
       // initialize ZkClient metrics
       zkSys
           .getZkMetricsProducer()
@@ -1234,9 +1238,8 @@ public class CoreContainer {
       } catch (Exception e) {
         log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.", e);
       }
-      if (solrClientCache != null) {
-        solrClientCache.close();
-      }
+      // SolrClientCache is stored in objectCache with key "solrClientCache"
+      // and will be closed when objectCache is closed
       if (containerPluginsRegistry != null) {
         IOUtils.closeQuietly(containerPluginsRegistry);
       }
