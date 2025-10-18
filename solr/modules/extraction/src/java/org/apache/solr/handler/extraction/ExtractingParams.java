@@ -137,7 +137,7 @@ public interface ExtractingParams {
    */
   public static final String PASSWORD_MAP_FILE = "passwordsFile";
 
-  /** Backend selection, either `local` or `tikaserver`. */
+  /** Backend selection */
   public static final String EXTRACTION_BACKEND = "extraction.backend";
 
   /** Preferred: Fix/normalize metadata naming for Tika Server compatibility */

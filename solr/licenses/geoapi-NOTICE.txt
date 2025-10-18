@@ -1,6 +1,0 @@
-GeoAPI - Programming interfaces for OGC/ISO standards
-http://www.geoapi.org
-
-Copyright (C) 2003-2021 Open Geospatial Consortium, Inc.
-All Rights Reserved. http://www.opengeospatial.org/ogc/legal
-

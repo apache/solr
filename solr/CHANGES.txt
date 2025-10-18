@@ -247,6 +247,9 @@ Deprecation Removals
 
 * SOLR-17182: Remove `solr.useExitableDirectoryReader` property. (Andrzej Bialecki)
 
+* SOLR-17961: Removed LocalTikaExtractionBackend from the extraction module (SolrCell).
+  Extraction using a remote Tika Server is now the only and default option (Jan Høydahl)
+
 * SOLR-17771: Remove `CloudSolrClient.Builder`. (James Dyer)
 
 Dependency Upgrades
