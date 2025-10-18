@@ -251,10 +251,6 @@ public class ZkController implements Closeable {
   private final ConcurrentHashMap<String, Throwable> replicasMetTragicEvent =
       new ConcurrentHashMap<>();
 
-  @Deprecated
-  // keeps track of replicas that have been asked to recover by leaders running on this node
-  private final Map<String, String> replicasInLeaderInitiatedRecovery = new HashMap<>();
-
   // keeps track of a list of objects that need to know a new ZooKeeper session was created after
   // expiration occurred ref is held as a HashSet since we clone the set before notifying to avoid
   // synchronizing too long

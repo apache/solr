@@ -43,7 +43,9 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-tika-language-detection">https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-tika-language-detection</a>
  *
  * @since 3.5
+ * @deprecated Since 9.10, use {@link OpenNLPLangDetectUpdateProcessorFactory} instead.
  */
+@Deprecated(since = "9.10")
 public class TikaLanguageIdentifierUpdateProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware, LangIdParams {
 

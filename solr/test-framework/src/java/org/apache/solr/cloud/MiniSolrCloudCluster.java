@@ -78,11 +78,10 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.TracerConfigurator;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
-import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -1169,9 +1168,8 @@ public class MiniSolrCloudCluster {
     public MiniSolrCloudCluster build() throws Exception {
       System.setProperty("solr.cloud.overseer.enabled", Boolean.toString(overseerEnabled));
 
-      // eager init to prevent OTEL init races caused by test setup
-      if (!disableTraceIdGeneration && TracerConfigurator.TRACE_ID_GEN_ENABLED) {
-        SimplePropagator.load();
+      if (!disableTraceIdGeneration && OpenTelemetryConfigurator.TRACE_ID_GEN_ENABLED) {
+        OpenTelemetryConfigurator.initializeOpenTelemetrySdk(null, null);
         injectRandomRecordingFlag();
       }
 
