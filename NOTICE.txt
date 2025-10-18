@@ -407,13 +407,12 @@ OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 =========================================================================
-==  Apache Tika Notices                                                ==
+==  Extraction Module Notices                                                ==
 =========================================================================
 
 The following notices apply to modules/extraction:
 
-This product includes Apache Tika Core, which is used for content type detection
-and metadata extraction when communicating with external Tika Server instances.
+This product includes Apache Tika Core.
 
 Apache Tika
 Copyright 2007-2024 The Apache Software Foundation
