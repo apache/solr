@@ -60,10 +60,10 @@ public class SolrIdentifierValidator {
   }
 
   private static boolean validateIdentifier(String identifier) {
-    if (identifier == null || !identifierPattern.matcher(identifier).matches()) {
-      return false;
+    if (identifier != null && identifierPattern.matcher(identifier).matches()) {
+      return true;
     }
-    return true;
+    return false;
   }
 
   public static String getIdentifierMessage(IdentifierType identifierType, String name) {
@@ -75,6 +75,6 @@ public class SolrIdentifierValidator {
         + "]. "
         + typeStr
         + " names must consist entirely of periods, "
-        + "underscores, hyphens, and alphanumerics as well not start with a hyphen";
+        + "underscores, hyphens, and alphanumerics as well as not start with a hyphen.";
   }
 }
