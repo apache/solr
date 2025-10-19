@@ -20,6 +20,8 @@ load bats_helper
 
 setup() {
   common_clean_setup
+  # NOCOMMIT: This test must somehow start a TikaServer on random port
+  # and define a $TIKA_PORT variable
 }
 
 teardown() {
@@ -28,6 +30,8 @@ teardown() {
 
   delete_all_collections
   SOLR_STOP_WAIT=1 solr stop --all >/dev/null 2>&1
+
+  # The TikaServer must be stopped after
 }
 
 @test "using curl to extract a single pdf file" {
@@ -36,21 +40,22 @@ teardown() {
   # This appears to be a bug.
   export SOLR_SECURITY_MANAGER_ENABLED=false
   solr start -Dsolr.modules=extraction
-  
-  
+
+
   solr create -c gettingstarted -d _default
 
-  
+
   curl -X POST -H 'Content-type:application/json' -d '{
     "add-requesthandler": {
       "name": "/update/extract",
       "class": "solr.extraction.ExtractingRequestHandler",
+      "tikaserver.url": "http://localhost:${TIKA_PORT}",
       "defaults":{ "lowernames": "true", "captureAttr":"true"}
     }
   }' "http://localhost:${SOLR_PORT}/solr/gettingstarted/config"
 
   curl "http://localhost:${SOLR_PORT}/solr/gettingstarted/update/extract?literal.id=doc1&commit=true" -F "myfile=@${SOLR_TIP}/example/exampledocs/solr-word.pdf"
-  
+
   run curl "http://localhost:${SOLR_PORT}/solr/gettingstarted/select?q=id:doc1"
   assert_output --partial '"numFound":1'
 }
@@ -61,23 +66,24 @@ teardown() {
   # This appears to be a bug.
   export SOLR_SECURITY_MANAGER_ENABLED=false
   solr start -Dsolr.modules=extraction
-  
+
   solr create -c content_extraction -d _default
-  
+
   curl -X POST -H 'Content-type:application/json' -d '{
     "add-requesthandler": {
       "name": "/update/extract",
       "class": "solr.extraction.ExtractingRequestHandler",
+      "tikaserver.url": "http://localhost:${TIKA_PORT}",
       "defaults":{ "lowernames": "true", "captureAttr":"true"}
     }
   }' "http://localhost:${SOLR_PORT}/solr/content_extraction/config"
-  
+
   # We filter to pdf to invoke the Extract handler.
   run solr post --filetypes pdf --solr-url http://localhost:${SOLR_PORT} --name content_extraction ${SOLR_TIP}/example/exampledocs
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
-  
+
   run curl "http://localhost:${SOLR_PORT}/solr/content_extraction/select?q=*:*"
   assert_output --partial '"numFound":1'
 }
@@ -88,23 +94,24 @@ teardown() {
   # This appears to be a bug.
   export SOLR_SECURITY_MANAGER_ENABLED=false
   solr start -Dsolr.modules=extraction
-  
+
   solr create -c website_extraction -d _default
-  
+
   curl -X POST -H 'Content-type:application/json' -d '{
     "add-requesthandler": {
       "name": "/update/extract",
       "class": "solr.extraction.ExtractingRequestHandler",
+      "tikaserver.url": "http://localhost:${TIKA_PORT}",
       "defaults":{ "lowernames": "true", "captureAttr":"true"}
     }
   }' "http://localhost:${SOLR_PORT}/solr/website_extraction/config"
-  
+
   # Change to --recursive 1 to crawl multiple pages, but may be too slow.
   run solr post --mode web --solr-url http://localhost:${SOLR_PORT} -c website_extraction --recursive 0 --delay 1 https://solr.apache.org/
 
   assert_output --partial 'POSTed web resource https://solr.apache.org (depth: 0)'
   refute_output --partial 'ERROR'
-  
+
   run curl "http://localhost:${SOLR_PORT}/solr/website_extraction/select?q=*:*"
   assert_output --partial '"numFound":1'
 }
