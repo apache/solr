@@ -62,7 +62,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
@@ -2306,12 +2306,12 @@ public class ZkController implements Closeable {
         }
 
         // short timeouts, we may be in a storm and this is just best effort, and maybe we should be
-        // the
-        // leader now
+        // the leader now
+        // TODO .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
         try (SolrClient client =
-            new Builder(leaderBaseUrl)
+            new Http2SolrClient.Builder(leaderBaseUrl)
                 .withConnectionTimeout(8000, TimeUnit.MILLISECONDS)
-                .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+                .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {
           WaitForState prepCmd = new WaitForState();
           prepCmd.setCoreName(leaderCoreName);
