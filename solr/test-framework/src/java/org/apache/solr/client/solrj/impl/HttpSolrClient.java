@@ -95,7 +95,7 @@ import org.slf4j.MDC;
  * @deprecated Please use {@link Http2SolrClient} or {@link HttpJdkSolrClient}
  */
 @Deprecated(since = "9.0")
-public class HttpSolrClient extends BaseHttpSolrClient {
+public class HttpSolrClient extends SolrClient {
 
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final long serialVersionUID = -946812319974801896L;
