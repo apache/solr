@@ -674,6 +674,9 @@
   <requestHandler name="/update/extract"
                   startup="lazy"
                   class="solr.extraction.ExtractingRequestHandler" >
+    <!-- Assuming user has started a Tika Server locally -->
+    <str name="tikaserver.url">http://localhost:9998</str>
+
     <lst name="defaults">
       <str name="lowernames">true</str>
       <str name="uprefix">ignored_</str>
