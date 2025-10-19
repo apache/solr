@@ -2307,10 +2307,11 @@ public class ZkController implements Closeable {
 
         // short timeouts, we may be in a storm and this is just best effort, and maybe we should be
         // the leader now
-        // TODO .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
+        // TODO ideally want 8sec connection timeout but can't easily also share the client
+        // listeners
         try (SolrClient client =
             new Http2SolrClient.Builder(leaderBaseUrl)
-                .withConnectionTimeout(8000, TimeUnit.MILLISECONDS)
+                .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
                 .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {
           WaitForState prepCmd = new WaitForState();
