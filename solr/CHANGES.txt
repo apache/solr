@@ -527,6 +527,9 @@ Other Changes
 
 * PR#3758: Logs: removed webapp=/solr and also removed from internal context map.
 
+* SOLR-17963: These SolrCloud commands no longer aquire locks (waiting or blocking on other commands that do):
+  COLLECTIONPROP, ADDREPLICAPROP, DELETEREPLICAPROP.  (David Smiley)
+
 ==================  9.10.0 ==================
 New Features
 ---------------------
