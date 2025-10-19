@@ -53,6 +53,9 @@ Local Files with `bin/solr post`::
 If you have a local directory of files, the Post Tool (`bin/solr post`) can index a directory of files.
 We saw this in action in our first exercise.
 +
+// NOCOMMIT: The user will need to add /update/extract handler?
+// TODO: The user will need to start a Tika server
++
 We used only JSON, XML and CSV in our exercises, but the Post Tool can also handle HTML, PDF, Microsoft Office formats (such as MS Word), plain text, and more.
 +
 In this example, assume there is a directory named "Documents" locally.
