@@ -52,9 +52,30 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
   @Override
   public void inform(SolrCore core) {
     try {
-      // Create Tika Server backend - now the only supported backend
+      // Handle backend selection
+      String backendName = (String) initArgs.get(ExtractingParams.EXTRACTION_BACKEND);
+      this.defaultBackendName =
+          (backendName == null || backendName.trim().isEmpty())
+              ? TikaServerExtractionBackend.NAME
+              : backendName;
+
+      // Validate backend name
+      if (!TikaServerExtractionBackend.NAME.equals(this.defaultBackendName)) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Invalid extraction backend: '"
+                + this.defaultBackendName
+                + "'. Only '"
+                + TikaServerExtractionBackend.NAME
+                + "' is supported");
+      }
+
       String tikaServerUrl = (String) initArgs.get(ExtractingParams.TIKASERVER_URL);
       if (tikaServerUrl == null || tikaServerUrl.trim().isEmpty()) {
+        log.error(
+            "Tika Server URL must be configured via '"
+                + ExtractingParams.TIKASERVER_URL
+                + "' parameter");
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
             "Tika Server URL must be configured via '"
@@ -90,24 +111,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
       }
       this.tikaServerBackend =
           new TikaServerExtractionBackend(tikaServerUrl, timeoutSecs, initArgs, maxCharsLimit);
-
-      // Choose default backend name
-      String backendName = (String) initArgs.get(ExtractingParams.EXTRACTION_BACKEND);
-      this.defaultBackendName =
-          (backendName == null || backendName.trim().isEmpty())
-              ? TikaServerExtractionBackend.NAME
-              : backendName;
-
-      // Validate backend name
-      if (!TikaServerExtractionBackend.NAME.equals(this.defaultBackendName)) {
-        throw new SolrException(
-            ErrorCode.SERVER_ERROR,
-            "Invalid extraction backend: '"
-                + this.defaultBackendName
-                + "'. Only '"
-                + TikaServerExtractionBackend.NAME
-                + "' is supported");
-      }
     } catch (Exception e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Unable to initialize ExtractingRequestHandler", e);

@@ -249,12 +249,13 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
           || cause instanceof ClosedChannelException) {
         throw new SolrException(
             SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-            "Error communicating with TikaServer "
+            "Error communicating with TikaServer at "
                 + url
                 + ": "
                 + cause.getClass().getSimpleName()
                 + ": "
-                + cause.getMessage(),
+                + cause.getMessage()
+                + ". Check that a TikaServer is running.",
             cause);
       }
       throw new SolrException(
