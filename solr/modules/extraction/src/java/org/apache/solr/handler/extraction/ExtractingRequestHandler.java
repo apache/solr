@@ -52,6 +52,15 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
   @Override
   public void inform(SolrCore core) {
     try {
+      // Fail if using old unsupported configuration
+      if (initArgs.get("tika.config") != null || initArgs.get("parseContext.config") != null) {
+        log.error(
+            "The 'tika.config' and 'parseContext.config' parameters are no longer supported since Solr 10.");
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "The 'tika.config' and 'parseContext.config' parameters are no longer supported since Solr 10.");
+      }
+
       // Handle backend selection
       String backendName = (String) initArgs.get(ExtractingParams.EXTRACTION_BACKEND);
       this.defaultBackendName =
