@@ -29,8 +29,6 @@ teardown_file() {
 
 setup() {
   common_setup
-  # NOCOMMIT: This test must somehow start a TikaServer on random port
-  # and define a $TIKA_PORT variable. See test_extraction.bats with a similar issue
 }
 
 teardown() {

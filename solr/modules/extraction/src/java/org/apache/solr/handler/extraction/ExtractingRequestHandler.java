@@ -81,10 +81,12 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
 
       String tikaServerUrl = (String) initArgs.get(ExtractingParams.TIKASERVER_URL);
       if (tikaServerUrl == null || tikaServerUrl.trim().isEmpty()) {
-        log.error(
-            "Tika Server URL must be configured via '"
-                + ExtractingParams.TIKASERVER_URL
-                + "' parameter");
+        if (log.isErrorEnabled()) {
+          log.error(
+              "Tika Server URL must be configured via '"
+                  + ExtractingParams.TIKASERVER_URL
+                  + "' parameter");
+        }
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
             "Tika Server URL must be configured via '"
