@@ -47,7 +47,7 @@ The strategy implemented in Apache Lucene and used by Apache Solr is based on Na
 
 It provides efficient approximate nearest neighbor search for high dimensional vectors.
 
-See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs [2014]] and https://arxiv.org/abs/1603.09320[Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs [2018]] for details.
+See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs (2014)] and https://arxiv.org/abs/1603.09320[Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs (2018)] for details.
 
 
 == Index Time
@@ -416,7 +416,7 @@ The search results retrieved are the k=10 nearest documents to the vector in inp
 |Optional |Default: `false`
 |===
 +
-Early termination is an HNSW optimization. Solr relies on the Lucene’s implementation of early termination for kNN queries, based on https://cs.uwaterloo.ca/~jimmylin/publications/Teofili_Lin_ECIR2025.pdf[Patience in Proximity: A Simple Early Termination Strategy for HNSW Graph Traversal in Approximate k-Nearest Neighbor Search].
+Early termination is an HNSW optimization. Solr relies on the Lucene’s implementation of early termination for kNN queries, based on https://cs.uwaterloo.ca/~jimmylin/publications/Teofili_Lin_ECIR2025.pdf[Patience in Proximity: A Simple Early Termination Strategy for HNSW Graph Traversal in Approximate k-Nearest Neighbor Search (2025)].
 +
 When enabled (true), the search may exit early when the HNSW candidate queue remains saturated over a threshold (saturationThreshold) for more than a given number of iterations (patience). Refer to the two parameters below for more details.
 +
@@ -456,6 +456,26 @@ Here's an example of a `knn` search using the early termination with input param
 
 [source,text]
 ?q={!knn f=vector topK=10 earlyTermination=true saturationThreshold=0.989 patience=10}[1.0, 2.0, 3.0, 4.0]
+
+`seedQuery`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A query seed to initiate the vector search, i.e. entry points in the HNSW graph exploration. Solr relies on Lucene’s implementation of {lucene-javadocs}/core/org/apache/lucene/search/SeededKnnVectorQuery.html[SeededKnnVectorQuery] based on https://arxiv.org/pdf/2307.16779[Lexically-Accelerated Dense Retrieval (2023)].
++
+The seedQuery is primarily intended to be a lexical query, guiding the vector search in a hybrid-like way through traditional query logic. Although a knn query can also be used as a seed — which might make sense in specific scenarios and has been verified by a dedicated test — this approach is not considered a best practice.
++
+The seedQuery can also be used in combination with earlyTermination.
+
+Here is an example of a `knn` search using a `seedQuery`:
+
+[source,text]
+?q={!knn f=vector topK=10 seedQuery='id:(1 4 10)'}[1.0, 2.0, 3.0, 4.0]
+
+The search results retrieved are the k=10 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`. Documents matching the query `id:(1 4 10)` are used as entry points for the ANN search. If no documents match the seed, Solr falls back to a regular knn search without seeding, starting instead from random entry points.
 
 === knn_text_to_vector Query Parser
 
@@ -824,7 +844,7 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
     <luceneMatchVersion>10.0.0</luceneMatchVersion>
     <dataDir>${solr.data.dir:}</dataDir>
     <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
-    
+
     <updateHandler class="solr.DirectUpdateHandler2">
         <updateLog>
             <str name="dir">${solr.ulog.dir:}</str>
@@ -853,7 +873,7 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
             <int name="rows">10</int>
         </lst>
     </requestHandler>
-    
+
     <requestHandler name="/update" class="solr.UpdateRequestHandler" />
 </config>
 EOF
@@ -865,16 +885,16 @@ cat > cuvs_configset/conf/managed-schema << 'EOF'
 <?xml version="1.0" ?>
 <schema name="schema-densevector" version="1.7">
     <fieldType name="string" class="solr.StrField" multiValued="true"/>
-    <fieldType name="knn_vector" class="solr.DenseVectorField" 
-               vectorDimension="8" 
-               knnAlgorithm="cagra_hnsw" 
+    <fieldType name="knn_vector" class="solr.DenseVectorField"
+               vectorDimension="8"
+               knnAlgorithm="cagra_hnsw"
                similarityFunction="cosine" />
     <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
 
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="article_vector" type="knn_vector" indexed="true" stored="true"/>
     <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />
-    
+
     <uniqueKey>id</uniqueKey>
 </schema>
 EOF
