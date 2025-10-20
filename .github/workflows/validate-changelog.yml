@@ -1,0 +1,88 @@
+name: Validate Changelog
+
+on:
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  validate-changelog:
+    name: Check changelog entry
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+
+    - name: Check for no-changelog label
+      id: check-label
+      run: |
+        LABELS='${{ toJson(github.event.pull_request.labels) }}'
+        if echo "$LABELS" | grep -q '"no-changelog"'; then
+          echo "skip=true" >> $GITHUB_OUTPUT
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Check for CHANGES.txt edits
+      if: steps.check-label.outputs.skip == 'false'
+      run: |
+        # Get the list of changed files
+        CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+        if echo "$CHANGED_FILES" | grep -q "^solr/CHANGES\.txt$"; then
+          echo "::error::Use of solr/CHANGES.txt is disallowed. Please create a changelog yaml file instead."
+          echo ""
+          echo "Instead of editing CHANGES.txt, please:"
+          echo "1. Run: ./gradlew generateChangeYaml"
+          echo "2. Edit the generated YAML file in changelog/unreleased/"
+          echo "3. Commit both the code change and the YAML file"
+          echo ""
+          echo "For more information, see: dev-docs/changelog.adoc"
+          echo ""
+          echo "If this PR should not have a changelog entry (e.g., documentation-only changes),"
+          echo "add the 'no-changelog' label to this PR."
+          exit 1
+        fi
+
+    - name: Check for changelog entry
+      if: steps.check-label.outputs.skip == 'false'
+      run: |
+        # Get the list of changed files
+        CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+        # Check if any files were added to changelog/unreleased/
+        if echo "$CHANGED_FILES" | grep -q "^solr/changelog/unreleased/"; then
+          echo "✓ Changelog entry found"
+          exit 0
+        fi
+
+        # Check if only docs/tests/comments were changed (common exceptions)
+        HAS_NON_DOCS_CHANGES=false
+        while IFS= read -r file; do
+          # Skip changelog, docs, tests, and certain config files
+          if ! echo "$file" | grep -qE "(^solr/changelog/|^solr/solr-ref-guide/|^dev-docs/|\.md$|\.adoc$|^solr/.*/test|\.gradle$|\.properties$|README|NOTICE|LICENSE)"; then
+            HAS_NON_DOCS_CHANGES=true
+            break
+          fi
+        done <<< "$CHANGED_FILES"
+
+        if [ "$HAS_NON_DOCS_CHANGES" = false ]; then
+          echo "✓ No code changes detected (docs/tests only)"
+          exit 0
+        fi
+
+        echo "::error::This PR appears to contain code changes but no changelog entry was added."
+        echo ""
+        echo "Please add a changelog entry by:"
+        echo "1. Running: ./gradlew generateChangeYaml"
+        echo "2. Editing the generated YAML file in changelog/unreleased/"
+        echo "3. Committing the YAML file"
+        echo ""
+        echo "For more information, see: dev-docs/changelog.adoc"
+        echo ""
+        echo "If this PR should not have a changelog entry (e.g., refactoring, internal cleanup),"
+        echo "add the 'no-changelog' label to this PR."
+        exit 1

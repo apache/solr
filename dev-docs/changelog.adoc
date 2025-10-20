@@ -75,7 +75,16 @@ Invoke the task with:
 | Run by the Release Manager during the release procedure.
 |===
 
-== 4. Writing Good Entries
+== 4. Changelog Validation in Pull Requests
+
+The `validate-changelog` GitHub workflow automatically checks that:
+
+. **CHANGES.txt is not edited directly** - All changes must use the YAML fragment approach
+. **A changelog entry is added** - Code changes must include a corresponding YAML file in `changelog/unreleased/`
+
+If your PR modifies code but should not have a changelog entry (e.g., internal refactoring, build system changes), add the `no-changelog` label to skip these checks.
+
+== 5. Writing Good Entries
 
 * **Audience** is end-users and administrators, not committers.
 * Keep the entry short and focused on the user impact.
@@ -91,7 +100,7 @@ Invoke the task with:
 * Reference issues as `SOLR-12345` or GitHub `PR#123`.
 * If the change is super minor, like a typo, don't bother adding a yaml file
 
-== 5. Example YAML Fragment
+== 6. Example YAML Fragment
 
 [source, yaml]
 ----
@@ -107,7 +116,7 @@ links:
     url: https://issues.apache.org/jira/browse/SOLR-3333
 ----
 
-== 6. Further Reading
+== 7. Further Reading
 
 * xref:https://github.com/logchange/logchange[Logchange web page]
 * xref:https://keepachangelog.com/en/1.1.0/[keepachangelog.com website]

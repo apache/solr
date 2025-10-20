@@ -39,13 +39,13 @@ task generateChangeYaml {
     def githubMatcher = gitBranch =~ /(PR|GH|GITHUB|#)?(\d+)/
     def githubRef = githubMatcher ? githubMatcher.group(2) : ""
     def githubLink = githubMatcher ? "issues:\n  - ${githubRef}" : ""
-    def branchWithoutJira = gitBranch.replaceFirst(/SOLR-\d+-/, "").replaceFirst(/(PR|GH|GITHUB|#)?(\d+)/, "").replace("-", " ").capitalize()
+    def branchWithoutJira = gitBranch.replaceFirst(/(SOLR|LUCENE|INFRA)-\d+-/, "").replaceFirst(/(PR|GH|GITHUB|#)?(\d+)/, "").replace("-", " ").capitalize()
     def fileName = "changelog/unreleased/${gitBranch}.yml"
     def file = new File(fileName)
     file.parentFile.mkdirs()
     file.text = """# logchange format: https://github.com/logchange/logchange#yaml-format
 title: ${branchWithoutJira}
-type: other # added, changed, optimized, fixed, deprecated, removed, dependency_update, security, other
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: ${configuredName}${nick}${asfIdUrl}
 ${jiraLinks}
