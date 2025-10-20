@@ -447,13 +447,11 @@ public class DenseVectorField extends FloatPointField {
       case KnnByteVectorQuery knnByteQuery -> SeededKnnVectorQuery.fromByteQuery(
           knnByteQuery, seed);
       default -> throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Invalid type of knn query");
+          SolrException.ErrorCode.SERVER_ERROR, "Invalid type of knn query");
     };
   }
 
-  private Query getEarlyTerminationQuery(
-      Query knnQuery, EarlyTerminationParams earlyTermination) {
+  private Query getEarlyTerminationQuery(Query knnQuery, EarlyTerminationParams earlyTermination) {
     final boolean useExplicitParams =
         (earlyTermination.getSaturationThreshold() != null
             && earlyTermination.getPatience() != null);
@@ -475,8 +473,7 @@ public class DenseVectorField extends FloatPointField {
               seedQuery, earlyTermination.getSaturationThreshold(), earlyTermination.getPatience())
           : PatienceKnnVectorQuery.fromSeededQuery(seedQuery);
       default -> throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Invalid type of knn query");
+          SolrException.ErrorCode.SERVER_ERROR, "Invalid type of knn query");
     };
   }
 }
