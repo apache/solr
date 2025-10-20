@@ -1133,7 +1133,7 @@ via parameters.  The below configuration supports hl.method=original and fastVec
     -->
     <!--
      <updateRequestProcessorChain name="langid">
-       <processor class="org.apache.solr.update.processor.TikaLanguageIdentifierUpdateProcessorFactory">
+       <processor class="org.apache.solr.update.processor.LangDetectLanguageIdentifierUpdateProcessorFactory">
          <str name="langid.fl">text,title,subject,description</str>
          <str name="langid.langField">language_s</str>
          <str name="langid.fallback">en</str>

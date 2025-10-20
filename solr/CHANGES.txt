@@ -238,6 +238,9 @@ Dependency Upgrades
 Other Changes
 ---------------------
 
+* SOLR-17960: Removed TikaLanguageIdentifierUpdateProcessor. Use LangDetectLanguageIdentifierUpdateProcessor
+  or OpenNLPLangDetectUpdateProcessor instead. (janhoy)
+
 * SOLR-15730: SolrJ modules like SolrJ-Zookeeper are now opt-in from a Maven POM perspective.
   Previously, the modules would come transitively.
   (David Smiley)
