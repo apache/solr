@@ -40,11 +40,7 @@ task generateChangeYaml {
     def githubRef = githubMatcher ? githubMatcher.group(2) : ""
     def githubLink = githubMatcher ? "issues:\n  - ${githubRef}" : ""
     def branchWithoutJira = gitBranch.replaceFirst(/SOLR-\d+-/, "").replaceFirst(/(PR|GH|GITHUB|#)?(\d+)/, "").replace("-", " ").capitalize()
-    def targetVer = providers.gradleProperty("ver").getOrElse(project.baseVersion)
-    if (!targetVer.matches("(9|1\\d)\\.\\d+\\.\\d+")) {
-      throw new GradleException("Invalid target version format: ${targetVer}. Expected format is x.y.z")
-    }
-    def fileName = "changelog/unreleased-${targetVer}/${gitBranch}.yml"
+    def fileName = "changelog/unreleased/${gitBranch}.yml"
     def file = new File(fileName)
     file.parentFile.mkdirs()
     file.text = """# logchange format: https://github.com/logchange/logchange#yaml-format
