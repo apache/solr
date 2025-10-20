@@ -3,9 +3,9 @@
 :toclevels: 2
 :icons: font
 
-Since Solr 10.0 we no longer edit a monolithic *CHANGES.txt* file directly.
-Instead, we create a small YAML fragment **per bug-fix or feature**, checked into
-`solr/changelog/unreleased/`. At release time these fragments are automatically
+The project no longer maintains a monolithic *CHANGES.txt* file directly.
+Instead, we create small YAML fragments **per bug-fix or feature**, checked into
+`solr/changelog/v1.2.3/`. At release time these fragments are automatically
 collated into a human-readable *CHANGES.md*.
 
 This document walks you through the workflow, explains the Gradle helpers
