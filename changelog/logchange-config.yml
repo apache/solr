@@ -25,30 +25,27 @@ changelog:
       order: 2
     - key: changed
       order: 3
-    - key: optimized
-      order: 4
     - key: fixed
-      order: 5
+      order: 4
     - key: deprecated
-      order: 6
+      order: 5
     - key: removed
-      order: 7
+      order: 6
     - key: dependency_update
-      order: 8
+      order: 7
     - key: security
-      order: 9
+      order: 8
     - key: other
-      order: 10
+      order: 9
   labels:
     unreleased: unreleased
     important_notes: Important notes
     types:
       entryTypesLabels:
-        added: New Features
-        changed: Improvements
-        optimized: Optimizations
-        fixed: Bug Fixes
-        deprecated: Deprecations
+        added: Added
+        changed: Changed
+        fixed: Fixed
+        deprecated: Deprecated
         removed: Removed
         dependency_update: Dependency Upgrades
         security: Security

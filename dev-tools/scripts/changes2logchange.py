@@ -62,9 +62,9 @@ class ChangeType:
         "Improvements / Changes": "changed",
 
         # Performance / Optimizations
-        "Optimizations": "optimized",
-        "Performance": "optimized",
-        "Optimization": "optimized",
+        "Optimizations": "changed",
+        "Performance": "changed",
+        "Optimization": "changed",
 
         # Bug Fixes
         "Bug Fixes": "fixed",
@@ -100,12 +100,6 @@ class ChangeType:
 
         # Upgrade Notes - special category
         "Upgrade Notes": "upgrade_notes",
-
-        # Sections to skip (no migration)
-        # These are handled specially and should not create entries
-        # "Versions of Major Components": SKIP,
-        # "Detailed Change List": SKIP,
-        # etc.
 
         # Other
         "Other Changes": "other",
