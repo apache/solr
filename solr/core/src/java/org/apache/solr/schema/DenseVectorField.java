@@ -396,17 +396,16 @@ public class DenseVectorField extends FloatPointField {
     final boolean earlyTerminationEnabled =
         (earlyTermination != null && earlyTermination.isEnabled());
 
-    return switch ((seedEnabled ? 1 : 0) | (earlyTerminationEnabled ? 2 : 0)) {
+    int caseNumber = (seedEnabled ? 1 : 0) + (earlyTerminationEnabled ? 2 : 0);
+    return switch (caseNumber) {
         // 0: no seed, no early termination -> knnQuery
-      case 0 -> knnQuery;
+      default -> knnQuery;
         // 1: only seed -> Seeded(knnQuery)
       case 1 -> getSeededQuery(knnQuery, seedQuery);
         // 2: only early termination -> Patience(knnQuery)
       case 2 -> getEarlyTerminationQuery(knnQuery, earlyTermination);
         // 3: seed + early termination -> Patience(Seeded(knnQuery))
       case 3 -> getEarlyTerminationQuery(getSeededQuery(knnQuery, seedQuery), earlyTermination);
-      default -> throw new IllegalStateException(
-          "Unexpected combination of seedQuery and early termination parameters");
     };
   }
 
