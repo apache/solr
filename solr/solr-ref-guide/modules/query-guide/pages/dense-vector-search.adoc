@@ -464,7 +464,7 @@ Here's an example of a `knn` search using the early termination with input param
 |Optional |Default: none
 |===
 +
-A query seed to initiate the vector search, i.e. entry points in the HNSW graph exploration. Solr relies on the Lucene’s implementation of SeededKnnVectorQuery based on https://arxiv.org/pdf/2307.16779[Lexically-Accelerated Dense Retrieval (2023)].
+A query seed to initiate the vector search, i.e. entry points in the HNSW graph exploration. Solr relies on Lucene’s implementation of {lucene-javadocs}/core/org/apache/lucene/search/SeededKnnVectorQuery.html[SeededKnnVectorQuery] based on https://arxiv.org/pdf/2307.16779[Lexically-Accelerated Dense Retrieval (2023)].
 +
 The seedQuery is primarily intended to be a lexical query, guiding the vector search in a hybrid-like way through traditional query logic. Although a knn query can also be used as a seed — which might make sense in specific scenarios and has been verified by a dedicated test — this approach is not considered a best practice.
 +
