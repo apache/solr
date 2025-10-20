@@ -183,20 +183,22 @@ files for each changelog entry, organized by version (v10.0.0/, v9.9.0/, etc.).
 
 Each YAML file complies with the schema outlined in `dev-docs/changelog.adoc`.
 
-    usage: changes2logchange.py <CHANGES.txt> [<output_dir>]
+    usage: changes2logchange.py [-h] [-o OUTPUT_DIR] [--last-released VERSION] changes_file
 
     Positional arguments:
-      CHANGES.txt      Path to the CHANGES.txt file to migrate
-      output_dir       Directory to write changelog/ structure (default: ./changelog)
+      changes_file         Path to the CHANGES.txt file to migrate
+
+    Optional arguments:
+      -h, --help                    Show this help message and exit
+      -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+                                    Output directory for changelog structure (default: ./changelog)
+      --last-released VERSION       Override auto-detected latest released version (e.g., 9.5.0)
+                                    Versions newer than this will be routed to unreleased/ folder
 
     Example usage:
-    python3 dev-tools/scripts/changes2logchange.py solr/CHANGES.txt changelog/
 
-    Output:
-    - Creates vX.Y.Z/ directories for each version
-    - Generates SOLR-XXXXX-slug-name.yml files for entries with JIRA issues
-    - Skips entries without traceable issue/PR references
-    - Reports migration statistics (versions, entries migrated, entries skipped)
+    # Default behavior
+    python3 dev-tools/scripts/changes2logchange.py solr/CHANGES.txt
 
 ### gitignore-gen.sh
 

@@ -590,17 +590,21 @@ class ReleaseDate:
     """Fetches and manages release dates from Apache projects JSON."""
 
     @staticmethod
-    def fetch_release_dates() -> dict:
+    def fetch_release_dates_and_latest() -> tuple:
         """
-        Fetch release dates from Apache projects JSON.
+        Fetch release dates from Apache projects JSON and identify latest version.
 
         Returns:
-            Dictionary mapping version strings to YYYY-MM-DD dates
-            Example: {'9.9.0': '2025-07-24', '9.8.1': '2025-03-11', ...}
+            Tuple of (version_dates_dict, latest_version_string)
+            Example: ({'9.9.0': '2025-07-24', ...}, '9.9.0')
         """
         import urllib.request
+        from packaging import version as pkg_version
 
         version_dates = {}
+        latest_version = None
+        latest_version_obj = None
+
         url = "https://projects.apache.org/json/projects/solr.json"
 
         try:
@@ -609,31 +613,51 @@ class ReleaseDate:
 
             releases = data.get('release', [])
             for release in releases:
-                version = release.get('revision')
+                ver = release.get('revision')
                 created = release.get('created')
 
-                if version and created:
-                    version_dates[version] = created
+                if ver and created:
+                    version_dates[ver] = created
+
+                    # Track the latest (highest) version
+                    try:
+                        ver_obj = pkg_version.parse(ver)
+                        if latest_version_obj is None or ver_obj > latest_version_obj:
+                            latest_version_obj = ver_obj
+                            latest_version = ver
+                    except Exception:
+                        # Skip invalid version strings
+                        pass
         except Exception as e:
             print(f"Warning: Could not fetch release dates: {e}", file=sys.stderr)
 
-        return version_dates
+        return version_dates, latest_version
 
 
 class MigrationRunner:
     """Orchestrates the complete migration process."""
 
-    def __init__(self, changes_file_path: str, output_base_dir: str):
+    def __init__(self, changes_file_path: str, output_base_dir: str, last_released_version: Optional[str] = None):
         self.changes_file_path = changes_file_path
         self.output_base_dir = Path(output_base_dir)
         self.parser = ChangesParser(changes_file_path)
-        self.version_dates = ReleaseDate.fetch_release_dates()
+
+        # Fetch release dates and latest version
+        self.version_dates, detected_latest = ReleaseDate.fetch_release_dates_and_latest()
+
+        # Use provided version or detected latest
+        self.last_released_version = last_released_version or detected_latest
+
+        if self.last_released_version:
+            print(f"Latest released version: {self.last_released_version}", file=sys.stderr)
+
         self.stats = {
             'versions_processed': 0,
             'entries_migrated': 0,
             'entries_skipped': 0,
             'files_created': 0,
             'release_dates_written': 0,
+            'unreleased_entries': 0,
         }
 
     def run(self):
@@ -650,9 +674,28 @@ class MigrationRunner:
 
     def _process_version(self, version_section: VersionSection):
         """Process all entries for a single version."""
-        version_dir = self.output_base_dir / version_section.get_directory_name()
+        from packaging import version as pkg_version
 
-        print(f"\nProcessing version {version_section.version}:")
+        # Determine if this version should go to unreleased folder
+        is_unreleased = False
+        if self.last_released_version:
+            try:
+                current_ver = pkg_version.parse(version_section.version)
+                latest_ver = pkg_version.parse(self.last_released_version)
+                is_unreleased = current_ver > latest_ver
+            except Exception:
+                # If parsing fails, treat as unreleased (conservative approach)
+                is_unreleased = True
+
+        # Route to appropriate directory
+        if is_unreleased:
+            version_dir = self.output_base_dir / "unreleased"
+            print(f"\nProcessing version {version_section.version} (unreleased):")
+            self.stats['unreleased_entries'] += len(version_section.entries)
+        else:
+            version_dir = self.output_base_dir / version_section.get_directory_name()
+            print(f"\nProcessing version {version_section.version}:")
+
         print(f"  Found {len(version_section.entries)} entries")
 
         # Write release-date.txt if we have a date for this version
@@ -710,27 +753,40 @@ class MigrationRunner:
         print(f"  Entries skipped:       {self.stats['entries_skipped']}")
         print(f"  Files created:         {self.stats['files_created']}")
         print(f"  Release dates written: {self.stats['release_dates_written']}")
+        if self.stats['unreleased_entries'] > 0:
+            print(f"  Unreleased entries:    {self.stats['unreleased_entries']}")
         print("="*60)
 
 
 def main():
     """Main entry point."""
-    if len(sys.argv) < 2:
-        print("Usage: changes2logchange.py <CHANGES.txt> [<output_dir>]")
-        print()
-        print("Arguments:")
-        print("  CHANGES.txt     Path to the CHANGES.txt file to migrate")
-        print("  output_dir      Directory to write changelog/ structure (default: ./changelog)")
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Migrate Apache Solr CHANGES.txt to logchange YAML format"
+    )
+    parser.add_argument(
+        "changes_file",
+        help="Path to the CHANGES.txt file to migrate"
+    )
+    parser.add_argument(
+        "-o", "--output-dir",
+        default="changelog",
+        help="Directory to write changelog/ structure (default: ./changelog)"
+    )
+    parser.add_argument(
+        "--last-released",
+        help="Last released version (e.g., 9.9.0). Versions newer than this go to unreleased/. "
+             "If not specified, fetches from Apache projects JSON."
+    )
+
+    args = parser.parse_args()
+
+    if not os.path.exists(args.changes_file):
+        print(f"Error: CHANGES.txt file not found: {args.changes_file}", file=sys.stderr)
         sys.exit(1)
 
-    changes_file = sys.argv[1]
-    output_dir = sys.argv[2] if len(sys.argv) > 2 else "changelog"
-
-    if not os.path.exists(changes_file):
-        print(f"Error: CHANGES.txt file not found: {changes_file}", file=sys.stderr)
-        sys.exit(1)
-
-    runner = MigrationRunner(changes_file, output_dir)
+    runner = MigrationRunner(args.changes_file, args.output_dir, args.last_released)
     runner.run()
 
 
