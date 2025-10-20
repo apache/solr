@@ -30,9 +30,11 @@ This exercise is intended to get you thinking about what you will need to do for
 * What kinds of search options do you want to provide to users?
 * How much testing will you need to do to ensure everything works the way you expect?
 
+The tutorial assumes that you have Docker installed and running on your computer.
+
 === Start an external Apache Tika Server
 
-Indexing binary files (PDF, DOCX, PPTX, etc.) with the Post Tool requires the Solr extraction module to be enabled and an external Apache Tika Server to be running. See xref:indexing-guide:indexing-with-tika.adoc#tika-server[Tika Server] for background.
+Indexing binary files (PDF, DOCX, PPTX, etc.) with the Post Tool requires the Solr extraction module to be enabled and an external Apache Tika Server to be running. See xref:indexing-guide:indexing-with-tika.adoc#tika-server[Tika Server] for background. We will be running Tika Server using Docker.
 
 .Start a Tika Server quickly using Docker (exposes port 9998 on localhost)
 [,bash]
@@ -157,5 +159,7 @@ You can also modify the above to only delete documents that match a specific que
 At this point, you're ready to start working on your own.
 
 Jump ahead to the overall xref:solr-tutorial.adoc#wrapping-up[wrap up] when you're ready to stop Solr and remove all the examples you worked with and start fresh.
+
+To stop Tika Server when done, run `docker stop --name tika` in a Terminal window.
 
 Or if you'd like, you could work your way through the remaining exercises.
