@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -89,7 +88,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   // no of times collection state to be reloaded if stale state error is received
   private static final int MAX_STALE_RETRIES =
-      Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
+      Integer.parseInt(System.getProperty("solr.solrj.cloud.max.stale.retries", "5"));
   private final Random rand = new Random();
 
   private final boolean updatesToLeaders;
@@ -119,68 +118,6 @@ public abstract class CloudSolrClient extends SolrClient {
           );
 
   protected volatile Object[] locks = objectList(3);
-
-  /** Constructs {@link CloudSolrClient} instances from provided configuration. */
-  public static class Builder extends CloudHttp2SolrClient.Builder {
-
-    /**
-     * Provide a series of Solr URLs to be used when configuring {@link CloudSolrClient} instances.
-     * The solr client will use these urls to understand the cluster topology, which solr nodes are
-     * active etc.
-     *
-     * <p>Provided Solr URLs are expected to point to the root Solr path
-     * ("http://hostname:8983/solr"); they should not include any collections, cores, or other path
-     * components.
-     *
-     * <p>Usage example:
-     *
-     * <pre>
-     *   final List&lt;String&gt; solrBaseUrls = new ArrayList&lt;String&gt;();
-     *   solrBaseUrls.add("http://solr1:8983/solr"); solrBaseUrls.add("http://solr2:8983/solr"); solrBaseUrls.add("http://solr3:8983/solr");
-     *   final SolrClient client = new CloudSolrClient.Builder(solrBaseUrls).build();
-     * </pre>
-     */
-    public Builder(List<String> solrUrls) {
-      super(solrUrls);
-    }
-
-    /**
-     * Provide a series of ZK hosts which will be used when configuring {@link CloudSolrClient}
-     * instances. This requires a dependency on {@code solr-solrj-zookeeper} which transitively
-     * depends on more JARs. The ZooKeeper based connection is the most reliable and performant
-     * means for CloudSolrClient to work. On the other hand, it means exposing ZooKeeper more
-     * broadly than to Solr nodes, which is a security risk.
-     *
-     * <p>Usage example when Solr stores data at the ZooKeeper root ('/'):
-     *
-     * <pre>
-     *   final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
-     *   zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
-     *   final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.empty()).build();
-     * </pre>
-     *
-     * Usage example when Solr data is stored in a ZooKeeper chroot:
-     *
-     * <pre>
-     *    final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
-     *    zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
-     *    final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.of("/solr")).build();
-     *  </pre>
-     *
-     * @param zkHosts a List of at least one ZooKeeper host and port (e.g. "zookeeper1:2181")
-     * @param zkChroot the path to the root ZooKeeper node containing Solr data. Provide {@code
-     *     java.util.Optional.empty()} if no ZK chroot is used.
-     */
-    @Deprecated(since = "10.0")
-    public Builder(List<String> zkHosts, Optional<String> zkChroot) {
-      super(zkHosts, zkChroot);
-    }
-
-    /** for an expert use-case */
-    public Builder(ClusterStateProvider stateProvider) {
-      super(stateProvider);
-    }
-  }
 
   static class StateCache extends ConcurrentHashMap<String, ExpiringCachedDocCollection> {
     final AtomicLong puts = new AtomicLong();
@@ -555,6 +492,7 @@ public abstract class CloudSolrClient extends SolrClient {
       DocCollection col, ReplicaListTransformer replicaListTransformer) {
     Map<String, List<String>> urlMap = new HashMap<>();
     Slice[] slices = col.getActiveSlicesArr();
+    Set<String> liveNodes = getClusterStateProvider().getLiveNodes();
     for (Slice slice : slices) {
       String name = slice.getName();
       List<Replica> sortedReplicas = new ArrayList<>();
@@ -562,9 +500,7 @@ public abstract class CloudSolrClient extends SolrClient {
       if (directUpdatesToLeadersOnly && leader == null) {
         for (Replica replica :
             slice.getReplicas(
-                replica ->
-                    replica.isActive(getClusterStateProvider().getLiveNodes())
-                        && replica.getType() == Replica.Type.NRT)) {
+                replica -> replica.isActive(liveNodes) && replica.getType() == Replica.Type.NRT)) {
           leader = replica;
           break;
         }
@@ -783,8 +719,6 @@ public abstract class CloudSolrClient extends SolrClient {
   protected NamedList<Object> requestWithRetryOnStaleState(
       SolrRequest<?> request, int retryCount, List<String> inputCollections)
       throws SolrServerException, IOException {
-    connect(); // important to call this before you start working with the ZkStateReader
-
     // build up a _stateVer_ param to pass to the server containing all the
     // external collection state versions involved in this request, which allows
     // the server to notify us that our cached state for one or more of the external
@@ -994,8 +928,6 @@ public abstract class CloudSolrClient extends SolrClient {
 
   protected NamedList<Object> sendRequest(SolrRequest<?> request, List<String> inputCollections)
       throws SolrServerException, IOException {
-    connect();
-
     boolean sendToLeaders = false;
 
     if (request.getRequestType() == SolrRequestType.UPDATE) {
@@ -1281,8 +1213,6 @@ public abstract class CloudSolrClient extends SolrClient {
    * will be only one shard in the return value.
    */
   public Map<String, Integer> getShardReplicationFactor(String collection, NamedList<?> resp) {
-    connect();
-
     Map<String, Integer> results = new HashMap<>();
     if (resp instanceof RouteResponse) {
       NamedList<NamedList<?>> routes = ((RouteResponse<?>) resp).getRouteResponses();

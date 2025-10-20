@@ -1844,7 +1844,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   @Override
-  protected QueryResponse queryServer(ModifiableSolrParams params)
+  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
       throws SolrServerException, IOException {
 
     if (r.nextBoolean()) params.set("collection", DEFAULT_COLLECTION);
@@ -2154,7 +2154,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
    * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   * org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} class directly
    */
   public static CloudSolrClient getCloudSolrClient(
       String zkHost,
@@ -2359,17 +2359,25 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     fail("Could not find the new collection - " + exp.code() + " : " + baseUrl);
   }
 
+  // for bypassing getPullReplicaCount() - idk why setting pulla replica # should be determined at
+  // class level and
+  //                                       can cause weird behavior
+  protected static Map<String, Object> createReplicaProps(
+      int numNrtReplicas, int numTlogReplicas, int numPullReplicas, int numShards) {
+    return Map.of(
+        ZkStateReader.NRT_REPLICAS, numNrtReplicas,
+        ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
+        ZkStateReader.PULL_REPLICAS, numPullReplicas,
+        CollectionHandlingUtils.NUM_SLICES, numShards);
+  }
+
   protected void createCollection(
       String collName, CloudSolrClient client, int replicationFactor, int numShards)
       throws Exception {
     int numNrtReplicas = useTlogReplicas() ? 0 : replicationFactor;
     int numTlogReplicas = useTlogReplicas() ? replicationFactor : 0;
     Map<String, Object> props =
-        Map.of(
-            ZkStateReader.NRT_REPLICAS, numNrtReplicas,
-            ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
-            ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
-            CollectionHandlingUtils.NUM_SLICES, numShards);
+        createReplicaProps(numNrtReplicas, numTlogReplicas, getPullReplicaCount(), numShards);
     Map<String, List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, collName, props, client);
   }

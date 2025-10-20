@@ -32,10 +32,9 @@ import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -483,8 +482,8 @@ public class SolrCmdDistributor implements Closeable {
     /**
      * NOTE: This is the request that happened to be executed when this error was <b>triggered</b>
      * the error, but because of how {@link StreamingSolrClients} uses {@link
-     * ConcurrentUpdateSolrClient} it might not actaully be the request that <b>caused</b> the error
-     * -- multiple requests are merged &amp; processed as a sequential batch.
+     * ConcurrentUpdateHttp2SolrClient} it might not actaully be the request that <b>caused</b> the
+     * error -- multiple requests are merged &amp; processed as a sequential batch.
      */
     public Req req;
 
@@ -584,9 +583,7 @@ public class SolrCmdDistributor implements Closeable {
      * @return true if Solr should retry in case of hitting this exception false otherwise
      */
     private boolean isRetriableException(Throwable t) {
-      return t instanceof SocketException
-          || t instanceof NoHttpResponseException
-          || t instanceof SocketTimeoutException;
+      return t instanceof SocketException || t instanceof SocketTimeoutException;
     }
 
     @Override

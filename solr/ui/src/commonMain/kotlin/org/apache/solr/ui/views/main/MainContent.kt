@@ -32,6 +32,8 @@ import com.arkivanov.decompose.extensions.compose.stack.Children
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import org.apache.solr.ui.components.main.MainComponent
 import org.apache.solr.ui.components.main.integration.asMainMenu
+import org.apache.solr.ui.views.cluster.ClusterContent
+import org.apache.solr.ui.views.configsets.ConfigsetsContent
 import org.apache.solr.ui.views.environment.EnvironmentContent
 import org.apache.solr.ui.views.logging.LoggingContent
 import org.apache.solr.ui.views.navigation.NavigationSideBar
@@ -55,13 +57,24 @@ fun MainContent(
                 .width(224.dp),
             selectedItem = childStack.active.instance.asMainMenu,
             onNavigate = component::onNavigate,
+            onLogout = component::onLogout,
         )
 
         Children(
             stack = component.childStack,
             modifier = Modifier.weight(1f),
         ) {
-            when(val child = it.instance) {
+            when (val child = it.instance) {
+                is MainComponent.Child.Cluster -> ClusterContent(
+                    component = child.component,
+                    modifier = Modifier.fillMaxWidth()
+                        .verticalScroll(scrollState),
+                )
+                is MainComponent.Child.Configsets -> ConfigsetsContent(
+                    component = child.component,
+                    modifier = Modifier.fillMaxWidth()
+                        .verticalScroll(scrollState),
+                )
                 is MainComponent.Child.Environment -> EnvironmentContent(
                     component = child.component,
                     modifier = Modifier.fillMaxWidth()

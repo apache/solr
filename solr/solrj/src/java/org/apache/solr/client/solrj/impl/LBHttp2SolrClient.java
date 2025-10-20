@@ -161,9 +161,14 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
               }
               MDC.put("LBSolrClient.url", url.toString());
               if (!apiFuture.isCancelled()) {
-                CompletableFuture<NamedList<Object>> future =
-                    doAsyncRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
-                currentFuture.set(future);
+                try {
+                  CompletableFuture<NamedList<Object>> future =
+                      doAsyncRequest(
+                          url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
+                  currentFuture.set(future);
+                } catch (Throwable ex) {
+                  apiFuture.completeExceptionally(ex);
+                }
               }
             } else {
               apiFuture.completeExceptionally(e);
@@ -249,7 +254,7 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
       RetryListener listener) {
     try {
       throw (Exception) oe;
-    } catch (BaseHttpSolrClient.RemoteExecutionException e) {
+    } catch (RemoteExecutionException e) {
       listener.onFailure(e, false);
     } catch (SolrException e) {
       // we retry on 404 or 403 or 503 or 500
@@ -284,7 +289,7 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
       } else {
         listener.onFailure(e, false);
       }
-    } catch (Exception e) {
+    } catch (Throwable e) {
       listener.onFailure(new SolrServerException(e), false);
     }
   }

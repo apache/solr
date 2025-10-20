@@ -212,7 +212,7 @@ public class HighlightComponent extends SearchComponent
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb.doHighlights && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.doHighlights && rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
 
       final Object[] objArr = newHighlightsArray(rb.resultIds.size());
       final String highlightingResponseField = highlightingResponseField();
@@ -240,18 +240,9 @@ public class HighlightComponent extends SearchComponent
     }
   }
 
-  ////////////////////////////////////////////
-  ///  SolrInfoBean
-  ////////////////////////////////////////////
-
   @Override
   public String getDescription() {
     return "Highlighting";
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.HIGHLIGHTER;
   }
 
   ////////////////////////////////////////////
