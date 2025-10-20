@@ -81,6 +81,8 @@ New Features
 
 * SOLR-17948: Support indexing primitive float[] values for DenseVectorField via JavaBin (Puneet Ahuja, Noble Paul)
 
+* SOLR-17813: Add support for SeededKnnVectorQuery (Ilaria Petreti via Alessandro Benedetti)
+
 Improvements
 ---------------------
 
