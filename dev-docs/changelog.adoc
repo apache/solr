@@ -3,10 +3,10 @@
 :toclevels: 2
 :icons: font
 
-Since Solr 10.0 we no longer edit the monolithic *CHANGES.txt* file directly.
-Instead we create a small YAML fragment **per bug-fix or feature**, checked into
-`solr/changelog/unreleased-x.y.z/`. At build or release time these fragments are
-automatically collated into a human-readable *CHANGES.md*.
+Since Solr 10.0 we no longer edit a monolithic *CHANGES.txt* file directly.
+Instead, we create a small YAML fragment **per bug-fix or feature**, checked into
+`solr/changelog/unreleased/`. At release time these fragments are automatically
+collated into a human-readable *CHANGES.md*.
 
 This document walks you through the workflow, explains the Gradle helpers
 available, and finishes with a concrete example fragment.
@@ -15,8 +15,8 @@ available, and finishes with a concrete example fragment.
 
 . Make a feature branch with a descriptive name like 'SOLR-12345-fix-memory-leak'.
 . Implement your change
-. Run `./gradlew generateChangeYaml [-Pver=10.1.0]`
-. Edit the generated YAML file to add a clear, user-focused description.
+. Run `./gradlew generateChangeYaml`
+. Edit the generated YAML file in `changelog/unreleased/` to add a clear, user-focused description.
 . Commit the YAML fragment along with the code change.
 . Open your PR as usual.
 
@@ -28,8 +28,7 @@ solr/
 └── changelog/
     ├── unreleased/         ← new fragments live here
     |   └── SOLR-12345-fix-memory-leak.yml
-    ├── unreleased-10.1.0/  ← or in versioned folders
-    ├── v10.0.0/            ← generated at release time
+    ├── v10.0.0/            ← changes in already released version
     └── v10.0.1/
 ----
 
@@ -37,13 +36,12 @@ solr/
 
 === 3.1 Our Custom Task: `generateChangeYaml`
 
-Bootstraps a YAML file, by default in the `unreleased-x.y.z/` directory for
-the current branch, or in a versioned sub-directory if `-Pver=10.1.0` is
-specified. The task will use branch name as file name and title, and will
+Bootstraps a YAML file, by default in the `changelog/unreleased/` directory for
+the current branch, The task will use branch name as file name and title, and will
 parse JIRA id from the branch name if it exists.
 
 It will use your git `user.name` as display name by default, but if you
-add your name, github username, and optionally Apache ID to the
+add your name, GitHub username, and optionally Apache ID to the
 `gradle.properties` file at the root of the Solr git checkout, this task will
 use that information. Example:
 
@@ -59,10 +57,10 @@ Invoke the task with:
 
 [source, bash]
 ----
-./gradlew generateChangeYaml [-Pver=10.1.0]`
+./gradlew generateChangeYaml
 ----
 
-=== .2 Plugin Tasks
+=== 3.2 Plugin Tasks
 
 [cols="1,2,3", options="header"]
 |===
@@ -73,10 +71,9 @@ Invoke the task with:
 | Doc generation, CI/CD
 
 | `logchangeRelease`
-| Creates new changelog release by moving files from <unreleasedVersionDir> directory to vX.X.X directory
-| Run by the RM during the release procedure.
+| Creates new changelog release by moving files from <unreleasedVersionDir> directory to vX.Y.Z directory
+| Run by the Release Manager during the release procedure.
 |===
-
 
 == 4. Writing Good Entries
 
@@ -112,5 +109,5 @@ links:
 
 == 6. Further Reading
 
-* <<_releasing_solr,Releasing Solr>>
-* <<https://github.com/logchange/logchange,Logchange web page>>
+* xref:https://github.com/logchange/logchange[Logchange web page]
+* xref:https://keepachangelog.com/en/1.1.0/[keepachangelog.com website]
