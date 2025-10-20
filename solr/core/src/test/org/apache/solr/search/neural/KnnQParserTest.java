@@ -1202,8 +1202,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   @Test
   public void knnQueryWithSeedQuery_shouldPerformSeededKnnVectorQuery() {
     // Test to verify that when the seedQuery parameter is provided, the SeededKnnVectorQuery is
-    // executed
-    // (float).
+    // executed (float).
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     assertQ(
@@ -1221,8 +1220,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   @Test
   public void byteKnnQueryWithSeedQuery_shouldPerformSeededKnnVectorQuery() {
     // Test to verify that when the seedQuery parameter is provided, the SeededKnnVectorQuery is
-    // executed
-    // (byte).
+    // executed (byte).
 
     String vectorToSearch = "[2, 2, 1, 3]";
 
@@ -1255,8 +1253,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   @Test
   public void knnQueryWithInvalidSeedQuery_shouldThrowException() {
     // Test to verify that when the seedQuery parameter is provided with an invalid value, Solr
-    // throws a
-    // BAD_REQUEST exception.
+    // throws a BAD_REQUEST exception.
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     assertQEx(
@@ -1291,8 +1288,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   public void
       knnQueryWithBothSeedAndEarlyTermination_shouldPerformPatienceKnnVectorQueryFromSeeded() {
     // Test to verify that when both the seed and the early termination parameters are provided, the
-    // PatienceKnnVectorQuery is executed
-    // using the SeededKnnVectorQuery.
+    // PatienceKnnVectorQuery is executed using the SeededKnnVectorQuery.
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     assertQ(
@@ -1312,8 +1308,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         // Verify that the seed query contains the expected document IDs
         "//str[@name='parsedquery'][contains(.,'seed=id:1 id:4 id:7 id:8 id:9')]",
         // Verify that a seedWeight field is present — its value (BooleanWeight@<hash>) includes a
-        // hash code
-        // that changes on each run, so it cannot be asserted explicitly
+        // hash code that changes on each run, so it cannot be asserted explicitly
         "//str[@name='parsedquery'][contains(.,'seedWeight=')]",
         // Verify that the final delegate is a KnnFloatVectorQuery with the expected vector and topK
         // value
