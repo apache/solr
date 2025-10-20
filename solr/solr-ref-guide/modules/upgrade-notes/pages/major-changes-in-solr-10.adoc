@@ -189,7 +189,7 @@ Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-lif
 
 === Docker
 
-The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 24 (noble) from Ubuntu 22 (jammy).
+The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 24 (noble) from Ubuntu 22 (jammy). The Docker base image is `eclipse-temurin:25-jre-noble`.
 
 === Miscellaneous
 
