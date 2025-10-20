@@ -30,6 +30,27 @@ This exercise is intended to get you thinking about what you will need to do for
 * What kinds of search options do you want to provide to users?
 * How much testing will you need to do to ensure everything works the way you expect?
 
+=== Start an external Apache Tika Server
+
+Indexing binary files (PDF, DOCX, PPTX, etc.) with the Post Tool requires the Solr extraction module to be enabled and an external Apache Tika Server to be running. See xref:indexing-guide:indexing-with-tika.adoc#tika-server[Tika Server] for background.
+
+.Start a Tika Server quickly using Docker (exposes port 9998 on localhost)
+[,bash]
+----
+docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
+----
+
+=== Start Solr with the extraction module enabled
+
+[,console]
+----
+# Stop Solr if it is running
+bin/solr stop -all
+
+# Start Solr with extraction module
+bin/solr start -Dsolr.modules=extraction
+----
+
 === Create Your Own Collection
 
 Before you get started, create a new collection, named whatever you'd like.
@@ -44,6 +65,22 @@ Again, as we saw from Exercise 2 above, this will use the `_default` configset a
 As we noted previously, this may cause problems when we index our data.
 You may need to iterate on indexing a few times before you get the schema right.
 
+=== Enable the extraction handler
+
+Add the /update/extract handler to your collection, pointing to the Tika Server you just started
+
+[,console]
+----
+curl -X POST -H 'Content-type:application/json' -d '{
+  "add-requesthandler": {
+    "name": "/update/extract",
+    "class": "solr.extraction.ExtractingRequestHandler",
+    "tikaserver.url": "http://localhost:9998",
+    "defaults": { "lowernames": "true", "captureAttr": "true" }
+  }
+}' 'http://localhost:8983/solr/localDocs/config'
+----
+
 === Indexing Ideas
 
 Solr has lots of ways to index data.
@@ -52,9 +89,6 @@ Choose one of the approaches below and try it out with your system:
 Local Files with `bin/solr post`::
 If you have a local directory of files, the Post Tool (`bin/solr post`) can index a directory of files.
 We saw this in action in our first exercise.
-+
-// NOCOMMIT: The user will need to add /update/extract handler?
-// TODO: The user will need to start a Tika server
 +
 We used only JSON, XML and CSV in our exercises, but the Post Tool can also handle HTML, PDF, Microsoft Office formats (such as MS Word), plain text, and more.
 +
