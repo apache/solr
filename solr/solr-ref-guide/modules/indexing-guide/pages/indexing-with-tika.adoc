@@ -540,7 +540,7 @@ So you can use the other URPs without worrying about unexpected field additions.
 
 === Parser-Specific Properties
 
-Parser-specific properties for Tika must be configured directly on your Tika Server instance. Consult the https://tika.apache.org/[Apache Tika documentation] documentation of this.
+Parser-specific properties for Tika must be configured directly on your Tika Server instance. Consult the https://tika.apache.org/[Apache Tika documentation] for details.
 
 NOTE: In earlier versions of Solr Cell you could supply Tika configuration directly to Solr. This is no longer possible.
 
