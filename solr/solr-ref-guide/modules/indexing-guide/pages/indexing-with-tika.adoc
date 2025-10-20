@@ -56,7 +56,7 @@ If you are not using the example, you will want to pay attention to the section 
 
 == Extraction Backends
 
-The ExtractionRequestHandler supports multiple backends, selectable with the `extraction.backend` parameter. The only backend currently supported is the `tikaserver` backend, which uses an external Tika server process to do the extraction.
+The ExtractingRequestHandler supports multiple backends, selectable with the `extraction.backend` parameter. The only backend currently supported is the `tikaserver` backend, which uses an external Tika server process to do the extraction.
 
 === Tika Server
 
