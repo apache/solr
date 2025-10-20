@@ -134,7 +134,7 @@ The xref:indexing-with-update-handlers.adoc#csv-formatted-index-updates[CSV hand
 
 Index a PDF file into `gettingstarted`.
 
-NOTE: This requires a Tika Serer to be configured. See xref:indexing-with-tika.adoc#tika-server[Indexing With Tika] for details.
+NOTE: This requires a Tika Server to be configured. See xref:indexing-with-tika.adoc#tika-server[Indexing With Tika] for details.
 
 [,console]
 ----
