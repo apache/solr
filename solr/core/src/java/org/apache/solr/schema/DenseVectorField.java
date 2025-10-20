@@ -400,11 +400,11 @@ public class DenseVectorField extends FloatPointField {
         // 0: no seed, no early termination -> knnQuery
       case 0 -> knnQuery;
         // 1: only seed -> Seeded(knnQuery)
-      case 1 -> applySeeded(knnQuery, seedQuery);
+      case 1 -> getSeededQuery(knnQuery, seedQuery);
         // 2: only early termination -> Patience(knnQuery)
-      case 2 -> applyEarlyTermination(knnQuery, earlyTermination);
+      case 2 -> getEarlyTerminationQuery(knnQuery, earlyTermination);
         // 3: seed + early termination -> Patience(Seeded(knnQuery))
-      case 3 -> applyEarlyTermination(applySeeded(knnQuery, seedQuery), earlyTermination);
+      case 3 -> getEarlyTerminationQuery(getSeededQuery(knnQuery, seedQuery), earlyTermination);
       default -> throw new IllegalStateException(
           "Unexpected combination of seedQuery and early termination parameters");
     };
@@ -441,17 +441,18 @@ public class DenseVectorField extends FloatPointField {
         SolrException.ErrorCode.BAD_REQUEST, "Cannot sort on a Dense Vector field");
   }
 
-  private static Query applySeeded(Query knnQuery, Query seed) {
+  private static Query getSeededQuery(Query knnQuery, Query seed) {
     return switch (knnQuery) {
       case KnnFloatVectorQuery knnFloatQuery -> SeededKnnVectorQuery.fromFloatQuery(
           knnFloatQuery, seed);
       case KnnByteVectorQuery knnByteQuery -> SeededKnnVectorQuery.fromByteQuery(
           knnByteQuery, seed);
+
       default -> knnQuery;
     };
   }
 
-  private static Query applyEarlyTermination(
+  private static Query getEarlyTerminationQuery(
       Query knnQuery, EarlyTerminationParams earlyTermination) {
     final boolean useExplicitParams =
         (earlyTermination.getSaturationThreshold() != null
