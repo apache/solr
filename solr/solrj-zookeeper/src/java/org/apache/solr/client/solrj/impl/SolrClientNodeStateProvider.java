@@ -59,6 +59,10 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
   public SolrClientNodeStateProvider(CloudHttp2SolrClient solrClient) {
+    if (!(solrClient.getHttpClient() instanceof Http2SolrClient)) {
+      throw new IllegalArgumentException(
+          "The passed-in Cloud Solr Client must delegate to " + Http2SolrClient.class);
+    }
     this.solrClient = solrClient;
     try {
       readReplicaDetails();
@@ -216,8 +220,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
     try (InputStream in =
         (InputStream)
-            ctx.cloudSolrClient
-                .getHttpClient()
+            ctx.http2SolrClient()
                 .requestWithBaseUrl(baseUrl, req::process)
                 .getResponse()
                 .get(STREAM_KEY)) {
@@ -257,10 +260,18 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
 
     public RemoteCallCtx(String node, CloudHttp2SolrClient cloudSolrClient) {
+      if (!(cloudSolrClient.getHttpClient() instanceof Http2SolrClient)) {
+        throw new IllegalArgumentException(
+            "The passed-in Cloud Solr Client must delegate to " + Http2SolrClient.class);
+      }
       this.node = node;
       this.cloudSolrClient = cloudSolrClient;
       this.zkClientClusterStateProvider =
           (ZkClientClusterStateProvider) cloudSolrClient.getClusterStateProvider();
+    }
+
+    protected Http2SolrClient http2SolrClient() {
+      return (Http2SolrClient) cloudSolrClient.getHttpClient();
     }
 
     /**
@@ -311,7 +322,8 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       request.setResponseParser(new JavaBinResponseParser());
 
       try {
-        return cloudSolrClient.getHttpClient().requestWithBaseUrl(url, request::process);
+        return ((Http2SolrClient) cloudSolrClient.getHttpClient())
+            .requestWithBaseUrl(url, request::process);
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Fetching replica metrics failed", e);
       }

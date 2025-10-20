@@ -79,6 +79,8 @@ New Features
 
 * SOLR-17814: Add support for PatienceKnnVectorQuery. (Ilaria Petreti via Alessandro Benedetti)
 
+* SOLR-17948: Support indexing primitive float[] values for DenseVectorField via JavaBin (Puneet Ahuja, Noble Paul)
+
 * SOLR-17813: Add support for SeededKnnVectorQuery (Ilaria Petreti via Alessandro Benedetti)
 
 Improvements
@@ -134,6 +136,8 @@ Improvements
 
 * SOLR-17943: `Http2ClusterStateProvider` now also can work with `HttpJdkSolrClient`. (James Dyer)
 
+* SOLR-17771: `CloudHttp2SolrClient.Builder` now also can work with `HttpJdkSolrClient`. (James Dyer)
+
 
 Optimizations
 ---------------------
@@ -149,6 +153,8 @@ Bug Fixes
 
 Deprecation Removals
 ----------------------
+
+* SOLR-17957: XLSXResponseWriter has been removed. (Jan Høydahl)
 
 * SOLR-16535: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry' (janhoy)
 
@@ -243,6 +249,8 @@ Deprecation Removals
 
 * SOLR-17182: Remove `solr.useExitableDirectoryReader` property. (Andrzej Bialecki)
 
+* SOLR-17771: Remove `CloudSolrClient.Builder`. (James Dyer)
+
 Dependency Upgrades
 ---------------------
 
@@ -326,12 +334,19 @@ Other Changes
 
 * PR#3758: Logs: removed webapp=/solr and also removed from internal context map.
 
+* SOLR-17963: These SolrCloud commands no longer aquire locks (waiting or blocking on other commands that do):
+  COLLECTIONPROP, ADDREPLICAPROP, DELETEREPLICAPROP.  (David Smiley)
+
 ==================  9.10.0 ==================
 New Features
 ---------------------
 * SOLR-17915: shards.preference=replica.location now supports the "host" option for routing to replicas on the same host. (Houston Putman)
 
 * SOLR-17923: Add fullOuterJoin stream function (Andy Webb)
+
+* SOLR-7632: The Extraction Request Handler, aka Solr Cell, now supports delegating the parsing of rich documents to
+  an external Tika Server. This allows for a more stable Solr server, and easier to configure and scale parsing
+  independently. The local in-process Tika parser is now deprecated. (Jan Høydahl, Eric Pugh)
 
 Improvements
 ---------------------
@@ -381,9 +396,16 @@ Other Changes
 * SOLR-17879: A Solr node will now fail to start if it's major.minor version (e.g. 9.10) is *lower* than that of any existing
   Solr node in a SolrCloud cluster (as reported by info in "live_node").  (David Smiley)
 
+* SOLR-17712: Deprecating waitForFinalState parameter in any SolrCloud command that accepts it.
+  It remains defaulted to false in 9, but will become true and likely removed.  (Abhishek Umarjikar, David Smiley)
+
 * SOLR-17956: XLSXResponseWriter has been deprecated and will be removed in a future release. (Jan Høydahl)
 
+* SOLR-17958: The Tika Language Identifier is deprecated. Use one of the other detectors instead. (Jan Høydahl)
+
 * SOLR-17952: Stream decorator test refactoring - use underscore rather than dot in aliases (Andy Webb)
+
+* SOLR-17771: Deprecate `CloudSolrClient.Builder` in favor of `CloudHttp2SolrClient.Builder`. (James Dyer)
 
 ==================  9.9.1 ==================
 Bug Fixes

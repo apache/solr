@@ -43,6 +43,7 @@ import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -121,7 +122,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
     protected CloudSolrClient createSolrClient() {
       log.debug("Creating new SolrClient...");
-      return new CloudSolrClient.Builder(
+      return new CloudHttp2SolrClient.Builder(
               Collections.singletonList(zkConnectString), Optional.empty())
           .build();
     }

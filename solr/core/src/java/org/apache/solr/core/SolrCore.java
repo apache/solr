@@ -3097,16 +3097,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put(OPEN_METRICS_WT, new PrometheusResponseWriter());
     m.put(ReplicationAPIBase.FILE_STREAM, getFileStreamWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
-    try {
-      m.put(
-          "xlsx",
-          Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter")
-              .asSubclass(QueryResponseWriter.class)
-              .getDeclaredConstructor()
-              .newInstance());
-    } catch (Exception e) {
-      // don't worry; extraction module not in class path
-    }
   }
 
   private static JavaBinResponseWriter getFileStreamWriter() {
