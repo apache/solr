@@ -17,26 +17,28 @@
 
 # More info about configuration you can find https://github.com/logchange/logchange#configuration
 changelog:
-  heading: Some information that will be display in the top of CHANGELOG.md
+  heading: This file lists Solr's raw release notes with details of every change to Solr. Most people will find the solr-upgrade-notes.adoc file more approachable. https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
   entryTypes: # you can define custom entry types
-    - key: added
+    - key: upgrade_notes
       order: 1
-    - key: changed
+    - key: added
       order: 2
-    - key: optimized
+    - key: changed
       order: 3
-    - key: fixed
+    - key: optimized
       order: 4
-    - key: deprecated
+    - key: fixed
       order: 5
-    - key: removed
+    - key: deprecated
       order: 6
-    - key: dependency_update
+    - key: removed
       order: 7
-    - key: security
+    - key: dependency_update
       order: 8
-    - key: other
+    - key: security
       order: 9
+    - key: other
+      order: 10
   labels:
     unreleased: unreleased
     important_notes: Important notes
@@ -51,6 +53,7 @@ changelog:
         dependency_update: Dependency Upgrades
         security: Security
         other: Other
+        upgrade_notes: Upgrade Notes
       number_of_changes:
         singular: change
         plural: changes

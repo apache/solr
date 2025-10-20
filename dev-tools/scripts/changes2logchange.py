@@ -1,0 +1,744 @@
+#!/usr/bin/env python3
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Migration script to convert Apache Solr's legacy CHANGES.txt file format
+to the new logchange YAML-based format.
+
+This script parses the monolithic CHANGES.txt file and generates individual
+YAML files for each changelog entry, organized by version.
+"""
+
+import os
+import re
+import sys
+import json
+import yaml
+import html
+from pathlib import Path
+from dataclasses import dataclass, asdict, field
+from typing import List, Optional, Tuple
+
+
+class ChangeType:
+    """Mapping of CHANGES.txt section headings to logchange types."""
+
+    # Section headings that should be skipped entirely (no entries created)
+    SKIP_SECTIONS = {
+        "Versions of Major Components",
+        "Detailed Change List",
+        "Upgrading from Solr any prior release",
+        "Upgrading from previous Solr versions",
+        "System Requirements",
+        "Lucene Information",
+        "Status",
+    }
+
+    # Maps various section heading patterns to logchange types
+    HEADING_MAP = {
+        # New Features / Additions
+        "New Features": "added",
+        "Features": "added",
+        "New Functionality": "added",
+
+        # Improvements / Changes
+        "Improvements": "changed",
+        "Enhancements": "changed",
+        "Changes": "changed",
+        "Improvements / Changes": "changed",
+
+        # Performance / Optimizations
+        "Optimizations": "optimized",
+        "Performance": "optimized",
+        "Optimization": "optimized",
+
+        # Bug Fixes
+        "Bug Fixes": "fixed",
+        "Bug Fix": "fixed",
+        "Bugs": "fixed",
+
+        # Deprecations
+        "Deprecations": "deprecated",
+        "Deprecation": "deprecated",
+        "Deprecation Notices": "deprecated",
+        "Deprecation Removals": "removed",  # This is more about removals but was in Deprecations section
+
+        # Removed / Removed Features
+        "Removed": "removed",
+        "Removal": "removed",
+        "Removed Features": "removed",
+        "Removals": "removed",
+
+        # Security
+        "Security": "security",
+        "Security Fixes": "security",
+
+        # Dependency Upgrades
+        "Dependency Upgrades": "dependency_update",
+        "Dependency Updates": "dependency_update",
+        "Dependency Upgrade": "dependency_update",
+        "Dependencies": "dependency_update",
+
+        # Build / Infrastructure
+        "Build": "other",
+        "Build Changes": "other",
+        "Build Fixes": "other",
+
+        # Upgrade Notes - special category
+        "Upgrade Notes": "upgrade_notes",
+
+        # Sections to skip (no migration)
+        # These are handled specially and should not create entries
+        # "Versions of Major Components": SKIP,
+        # "Detailed Change List": SKIP,
+        # etc.
+
+        # Other
+        "Other Changes": "other",
+        "Other": "other",
+        "Miscellaneous": "other",
+        "Docker": "other",
+        "Ref Guide": "other",
+        "Documentation": "other",
+    }
+
+    @staticmethod
+    def get_type(heading: str) -> str:
+        """Map a section heading to a logchange type."""
+        heading_normalized = heading.strip()
+        if heading_normalized in ChangeType.HEADING_MAP:
+            return ChangeType.HEADING_MAP[heading_normalized]
+
+        # Fallback: try case-insensitive matching
+        for key, value in ChangeType.HEADING_MAP.items():
+            if key.lower() == heading_normalized.lower():
+                return value
+
+        # Default to "other" if no match found
+        print(f"Warning: Unknown section heading '{heading}', defaulting to 'other'", file=sys.stderr)
+        return "other"
+
+
+@dataclass
+class Author:
+    """Represents a changelog entry author/contributor."""
+    name: str
+    nick: Optional[str] = None
+    url: Optional[str] = None
+
+    def to_dict(self):
+        """Convert to dictionary, excluding None values."""
+        result = {"name": self.name}
+        if self.nick:
+            result["nick"] = self.nick
+        if self.url:
+            result["url"] = self.url
+        return result
+
+
+@dataclass
+class Link:
+    """Represents a link (JIRA issue or GitHub PR)."""
+    name: str
+    url: str
+
+    def to_dict(self):
+        """Convert to dictionary."""
+        return {"name": self.name, "url": self.url}
+
+
+@dataclass
+class ChangeEntry:
+    """Represents a single changelog entry."""
+    title: str
+    change_type: str
+    authors: List[Author] = field(default_factory=list)
+    links: List[Link] = field(default_factory=list)
+
+    def to_dict(self):
+        """Convert to dictionary for YAML serialization."""
+        return {
+            "title": self.title,
+            "type": self.change_type,
+            "authors": [author.to_dict() for author in self.authors],
+            "links": [link.to_dict() for link in self.links],
+        }
+
+
+class AuthorParser:
+    """Parses author/contributor information from entry text."""
+
+    # Pattern to match TRAILING author list at the end of an entry: (Author1, Author2 via Committer)
+    # Must be at the very end, possibly with trailing punctuation
+    # Strategy: Match from the last '(' that leads to end-of-string pattern matching
+    # This regex finds the LAST occurrence of a parenthesized group followed by optional whitespace/punctuation
+    # and then end of string
+    AUTHOR_PATTERN = re.compile(r'\s+\(([^()]+)\)\s*[.,]?\s*$', re.MULTILINE)
+
+    @staticmethod
+    def parse_authors(entry_text: str) -> Tuple[str, List[Author]]:
+        """
+        Extract authors from entry text.
+
+        Returns:
+            Tuple of (cleaned_text, list_of_authors)
+
+        Patterns handled:
+        - (Author Name)
+        - (Author1, Author2)
+        - (Author Name via CommitterName)
+        - (Author1 via Committer1, Author2 via Committer2)
+
+        Only matches author attribution at the END of the entry text,
+        not in the middle of descriptions like (aka Standalone)
+        """
+        # Find ALL matches and use the LAST one (rightmost)
+        # This ensures we get the actual author attribution, not mid-text parentheses
+        matches = list(AuthorParser.AUTHOR_PATTERN.finditer(entry_text))
+        if not matches:
+            return entry_text, []
+
+        # Use the last match (rightmost)
+        match = matches[-1]
+
+        author_text = match.group(1)
+        # Include the space before the parenthesis in what we remove
+        cleaned_text = entry_text[:match.start()].rstrip()
+
+        authors = []
+
+        # Split by comma, but be aware of "via" keyword
+        # Pattern: "Author via Committer" or just "Author"
+        segments = [seg.strip() for seg in author_text.split(',')]
+
+        for segment in segments:
+            segment = segment.strip()
+            if not segment:
+                continue
+
+            # Handle "via" prefix (standalone or after author name)
+            if segment.startswith('via '):
+                # Malformed: standalone "via Committer" (comma was added incorrectly)
+                # Extract just the committer name
+                committer_name = segment[4:].strip()  # Remove "via " prefix
+                if committer_name:
+                    authors.append(Author(name=committer_name))
+            elif ' via ' in segment:
+                # Format: "Author via Committer"
+                parts = segment.split(' via ')
+                author_name = parts[0].strip()
+
+                if author_name:
+                    # Normal case: "Author via Committer" - add the author
+                    authors.append(Author(name=author_name))
+                else:
+                    # Should not happen, but handle it
+                    committer_name = parts[1].strip() if len(parts) > 1 else ""
+                    if committer_name:
+                        authors.append(Author(name=committer_name))
+            else:
+                # Just an author name
+                authors.append(Author(name=segment))
+
+        return cleaned_text, authors
+
+
+class IssueExtractor:
+    """Extracts issue/PR references from entry text."""
+
+    JIRA_ISSUE_PATTERN = re.compile(r'(?:SOLR|LUCENE|INFRA)-(\d+)')
+    GITHUB_PR_PATTERN = re.compile(r'(?:GitHub\s*)?#(\d+)')
+
+    @staticmethod
+    def extract_issues(entry_text: str) -> List[Link]:
+        """Extract JIRA and GitHub issue references."""
+        links = []
+        seen_issues = set()  # Track seen issues to avoid duplicates
+
+        # Extract SOLR, LUCENE, INFRA issues
+        for match in IssueExtractor.JIRA_ISSUE_PATTERN.finditer(entry_text):
+            issue_id = match.group(0)  # Full "SOLR-12345" or "LUCENE-12345" format
+            if issue_id not in seen_issues:
+                url = f"https://issues.apache.org/jira/browse/{issue_id}"
+                links.append(Link(name=issue_id, url=url))
+                seen_issues.add(issue_id)
+
+        # Extract GitHub PRs in multiple formats:
+        # "PR#3758", "PR-2475", "GITHUB#3666"
+        github_patterns = [
+            (r'PR[#-](\d+)', 'PR#'),  # PR#1234 or PR-1234
+            (r'GITHUB#(\d+)', 'GITHUB#'),  # GITHUB#3666
+        ]
+
+        for pattern_str, prefix in github_patterns:
+            pattern = re.compile(pattern_str)
+            for match in pattern.finditer(entry_text):
+                pr_num = match.group(1)
+                pr_name = f"{prefix}{pr_num}"
+                if pr_name not in seen_issues:
+                    url = f"https://github.com/apache/solr/pull/{pr_num}"
+                    links.append(Link(name=pr_name, url=url))
+                    seen_issues.add(pr_name)
+
+        return links
+
+
+class SlugGenerator:
+    """Generates slug-style filenames for YAML files."""
+
+    # Characters that are unsafe in filenames on various filesystems
+    # Avoid: < > : " / \ | ? *  and control characters
+    # Note: # is safe on most filesystems
+    # Also avoid multiple consecutive dashes
+    UNSAFE_CHARS_PATTERN = re.compile(r'[<>:"/\\|?*\x00-\x1f]+')
+
+    @staticmethod
+    def generate_slug(issue_id: str, title: str) -> str:
+        """
+        Generate a slug from issue ID and title.
+
+        Format: ISSUE-12345-short-slug or VERSION-entry-001-short-slug
+        Uses the actual issue ID without forcing SOLR- prefix
+        Ensures filesystem-safe filenames and respects word boundaries
+        """
+        # Sanitize issue_id to remove unsafe characters (preserve case and # for readability)
+        base_issue = SlugGenerator._sanitize_issue_id(issue_id)
+
+        # Create slug from title: lowercase, replace unsafe chars with dash
+        title_slug = SlugGenerator._sanitize_filename_part(title)
+
+        # Limit to reasonable length while respecting word boundaries
+        # Target max length: 50 chars for slug (leaving room for base_issue and dash)
+        if len(title_slug) > 50:
+            # Find last word boundary within 50 chars
+            truncated = title_slug[:50]
+            # Find the last dash (word boundary)
+            last_dash = truncated.rfind('-')
+            if last_dash > 20:  # Keep at least 20 chars to avoid too-short slugs
+                title_slug = truncated[:last_dash]
+            else:
+                # If no good word boundary found, use hard limit
+                title_slug = truncated.rstrip('-')
+
+        return f"{base_issue}-{title_slug}"
+
+    @staticmethod
+    def _sanitize_issue_id(issue_id: str) -> str:
+        """
+        Sanitize issue ID while preserving uppercase letters and # for readability.
+        Examples: SOLR-12345, LUCENE-1234, PR#3758, GITHUB#2408, v9.8.0-entry-001
+        """
+        # Replace unsafe characters with dash (preserving case)
+        sanitized = SlugGenerator.UNSAFE_CHARS_PATTERN.sub('-', issue_id)
+
+        # Replace remaining unsafe characters (but keep letters/numbers/dash/hash/dot)
+        sanitized = re.sub(r'[^a-zA-Z0-9.#-]+', '-', sanitized)
+
+        # Replace multiple consecutive dashes with single dash
+        sanitized = re.sub(r'-+', '-', sanitized)
+
+        # Strip leading/trailing dashes
+        sanitized = sanitized.strip('-')
+
+        return sanitized
+
+    @staticmethod
+    def _sanitize_filename_part(text: str) -> str:
+        """
+        Sanitize text for use in filenames.
+        - Convert to lowercase
+        - Replace unsafe characters with dashes
+        - Remove multiple consecutive dashes
+        - Strip leading/trailing dashes
+        """
+        # Convert to lowercase
+        text = text.lower()
+
+        # Replace unsafe characters with dash
+        text = SlugGenerator.UNSAFE_CHARS_PATTERN.sub('-', text)
+
+        # Replace non-alphanumeric (except dash) with dash
+        text = re.sub(r'[^a-z0-9-]+', '-', text)
+
+        # Replace multiple consecutive dashes with single dash
+        text = re.sub(r'-+', '-', text)
+
+        # Strip leading/trailing dashes
+        text = text.strip('-')
+
+        return text
+
+
+class VersionSection:
+    """Represents all entries for a specific version."""
+
+    def __init__(self, version: str):
+        self.version = version
+        self.entries: List[ChangeEntry] = []
+
+    def add_entry(self, entry: ChangeEntry):
+        """Add an entry to this version."""
+        self.entries.append(entry)
+
+    def get_directory_name(self) -> str:
+        """Get the directory name for this version (e.g., 'v10.0.0')."""
+        return f"v{self.version}"
+
+
+class ChangesParser:
+    """Main parser for CHANGES.txt file."""
+
+    # Pattern to match version headers: ==================  10.0.0 ==================
+    VERSION_HEADER_PATTERN = re.compile(r'=+\s+([\d.]+)\s+=+')
+
+    # Pattern to match section headers: "Section Name" followed by dashes
+    # Matches patterns like "New Features\n---------------------"
+    SECTION_HEADER_PATTERN = re.compile(r'^([A-Za-z][A-Za-z0-9\s/&-]*?)\n\s*-+\s*$', re.MULTILINE)
+
+    def __init__(self, changes_file_path: str):
+        self.changes_file_path = changes_file_path
+        self.versions: List[VersionSection] = []
+
+    def parse(self):
+        """Parse the CHANGES.txt file."""
+        with open(self.changes_file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Split into version sections
+        version_matches = list(self.VERSION_HEADER_PATTERN.finditer(content))
+
+        for i, version_match in enumerate(version_matches):
+            version = version_match.group(1)
+            start_pos = version_match.end()
+
+            # Find the end of this version section (start of next version or EOF)
+            if i + 1 < len(version_matches):
+                end_pos = version_matches[i + 1].start()
+            else:
+                end_pos = len(content)
+
+            version_content = content[start_pos:end_pos]
+            version_section = self._parse_version_section(version, version_content)
+            self.versions.append(version_section)
+
+    def _parse_version_section(self, version: str, content: str) -> VersionSection:
+        """Parse all entries within a single version section."""
+        version_section = VersionSection(version)
+
+        # Split into subsections (New Features, Bug Fixes, etc.)
+        section_matches = list(self.SECTION_HEADER_PATTERN.finditer(content))
+
+        for i, section_match in enumerate(section_matches):
+            section_name = section_match.group(1)
+
+            # Skip sections that should not be migrated
+            if section_name in ChangeType.SKIP_SECTIONS:
+                continue
+
+            section_type = ChangeType.get_type(section_name)
+
+            start_pos = section_match.end()
+
+            # Find the end of this section (start of next section or EOF)
+            if i + 1 < len(section_matches):
+                end_pos = section_matches[i + 1].start()
+            else:
+                end_pos = len(content)
+
+            section_content = content[start_pos:end_pos]
+
+            # Parse entries in this section
+            entries = self._parse_entries(section_content, section_type)
+            for entry in entries:
+                version_section.add_entry(entry)
+
+        return version_section
+
+    def _parse_entries(self, section_content: str, change_type: str) -> List[ChangeEntry]:
+        """Parse individual entries within a section.
+
+        Handles both:
+        - Bulleted entries: * text
+        - Numbered entries: 1. text, 2. text, etc. (older format)
+        """
+        entries = []
+
+        # First try to split by bulleted entries (* prefix)
+        bulleted_pattern = re.compile(r'^\*\s+', re.MULTILINE)
+        bulleted_entries = bulleted_pattern.split(section_content)
+
+        if len(bulleted_entries) > 1:
+            # Has bulleted entries
+            for entry_text in bulleted_entries[1:]:  # Skip first empty split
+                entry_text = entry_text.strip()
+                if not entry_text or entry_text == "(No changes)":
+                    continue
+                entry = self._parse_single_entry(entry_text, change_type)
+                if entry:
+                    entries.append(entry)
+        else:
+            # No bulleted entries, try numbered entries (old format: "1. text", "2. text", etc.)
+            numbered_pattern = re.compile(r'^\s{0,2}\d+\.\s+', re.MULTILINE)
+            if numbered_pattern.search(section_content):
+                # Has numbered entries
+                numbered_entries = numbered_pattern.split(section_content)
+                for entry_text in numbered_entries[1:]:  # Skip first empty split
+                    entry_text = entry_text.strip()
+                    if not entry_text:
+                        continue
+                    entry = self._parse_single_entry(entry_text, change_type)
+                    if entry:
+                        entries.append(entry)
+            else:
+                # No standard entries found, try as paragraph
+                entry_text = section_content.strip()
+                if entry_text and entry_text != "(No changes)":
+                    entry = self._parse_single_entry(entry_text, change_type)
+                    if entry:
+                        entries.append(entry)
+
+        return entries
+
+    def _parse_single_entry(self, entry_text: str, change_type: str) -> Optional[ChangeEntry]:
+        """Parse a single entry into a ChangeEntry object."""
+        # Extract authors
+        description, authors = AuthorParser.parse_authors(entry_text)
+
+        # Extract issues/PRs
+        links = IssueExtractor.extract_issues(description)
+
+        # Remove all issue/PR IDs from the description text
+        # Handle multiple formats of issue references at the beginning:
+
+        # 1. Remove leading issues with mixed projects: "LUCENE-3323,SOLR-2659,LUCENE-3329,SOLR-2666: description"
+        description = re.sub(r'^(?:(?:SOLR|LUCENE|INFRA)-\d+(?:\s*[,:]?\s*)?)+:\s*', '', description)
+
+        # 2. Remove SOLR-specific issues: "SOLR-12345: description" or "SOLR-12345, SOLR-12346: description"
+        description = re.sub(r'^(?:SOLR-\d+(?:\s*,\s*SOLR-\d+)*\s*[:,]?\s*)+', '', description)
+
+        # 3. Remove PR references: "PR#123: description" or "GITHUB#456: description"
+        description = re.sub(r'^(?:(?:PR|GITHUB)#\d+(?:\s*,\s*(?:PR|GITHUB)#\d+)*\s*[:,]?\s*)+', '', description)
+
+        # 4. Remove parenthesized issue lists at start: "(SOLR-123, SOLR-456)"
+        description = re.sub(r'^\s*\((?:SOLR-\d+(?:\s*,\s*)?)+\)\s*', '', description)
+        description = re.sub(r'^\s*\((?:(?:SOLR|LUCENE|INFRA)-\d+(?:\s*,\s*)?)+\)\s*', '', description)
+
+        # 5. Remove any remaining leading issue references
+        description = re.sub(r'^[\s,;]*(?:SOLR-\d+|LUCENE-\d+|INFRA-\d+|PR#\d+|GITHUB#\d+)[\s,:;]*', '', description)
+        while re.match(r'^[\s,;]*(?:SOLR-\d+|LUCENE-\d+|INFRA-\d+|PR#\d+|GITHUB#\d+)', description):
+            description = re.sub(r'^[\s,;]*(?:SOLR-\d+|LUCENE-\d+|INFRA-\d+|PR#\d+|GITHUB#\d+)[\s,:;]*', '', description)
+
+        description = description.strip()
+
+        # Normalize whitespace: collapse multiple newlines/spaces into single spaces
+        # This joins multi-line formatted text into a single coherent paragraph
+        description = re.sub(r'\s+', ' ', description)
+
+        # Escape HTML entities to prevent markdown rendering issues
+        # This converts <, >, &, etc. to &lt;, &gt;, &amp; for safe markdown
+        description = html.escape(description)
+
+        if not description:
+            return None
+
+        return ChangeEntry(
+            title=description,
+            change_type=change_type,
+            authors=authors,
+            links=links,
+        )
+
+
+class YamlWriter:
+    """Writes ChangeEntry objects to YAML files."""
+
+    @staticmethod
+    def write_entry(entry: ChangeEntry, slug: str, output_dir: Path):
+        """Write a single entry to a YAML file."""
+        # Ensure output directory exists
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        filename = f"{slug}.yml"
+        filepath = output_dir / filename
+
+        # Convert entry to dictionary and write as YAML
+        entry_dict = entry.to_dict()
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            # Use custom YAML dumper for better formatting
+            yaml.dump(
+                entry_dict,
+                f,
+                default_flow_style=False,
+                sort_keys=False,
+                allow_unicode=True,
+                width=80  # Line width for better readability
+            )
+
+        return filepath
+
+
+class ReleaseDate:
+    """Fetches and manages release dates from Apache projects JSON."""
+
+    @staticmethod
+    def fetch_release_dates() -> dict:
+        """
+        Fetch release dates from Apache projects JSON.
+
+        Returns:
+            Dictionary mapping version strings to YYYY-MM-DD dates
+            Example: {'9.9.0': '2025-07-24', '9.8.1': '2025-03-11', ...}
+        """
+        import urllib.request
+
+        version_dates = {}
+        url = "https://projects.apache.org/json/projects/solr.json"
+
+        try:
+            response = urllib.request.urlopen(url, timeout=10)
+            data = json.loads(response.read().decode('utf-8'))
+
+            releases = data.get('release', [])
+            for release in releases:
+                version = release.get('revision')
+                created = release.get('created')
+
+                if version and created:
+                    version_dates[version] = created
+        except Exception as e:
+            print(f"Warning: Could not fetch release dates: {e}", file=sys.stderr)
+
+        return version_dates
+
+
+class MigrationRunner:
+    """Orchestrates the complete migration process."""
+
+    def __init__(self, changes_file_path: str, output_base_dir: str):
+        self.changes_file_path = changes_file_path
+        self.output_base_dir = Path(output_base_dir)
+        self.parser = ChangesParser(changes_file_path)
+        self.version_dates = ReleaseDate.fetch_release_dates()
+        self.stats = {
+            'versions_processed': 0,
+            'entries_migrated': 0,
+            'entries_skipped': 0,
+            'files_created': 0,
+            'release_dates_written': 0,
+        }
+
+    def run(self):
+        """Execute the migration."""
+        print(f"Parsing CHANGES.txt from: {self.changes_file_path}")
+        self.parser.parse()
+
+        print(f"Found {len(self.parser.versions)} versions")
+
+        for version_section in self.parser.versions:
+            self._process_version(version_section)
+
+        self._print_summary()
+
+    def _process_version(self, version_section: VersionSection):
+        """Process all entries for a single version."""
+        version_dir = self.output_base_dir / version_section.get_directory_name()
+
+        print(f"\nProcessing version {version_section.version}:")
+        print(f"  Found {len(version_section.entries)} entries")
+
+        # Write release-date.txt if we have a date for this version
+        if version_section.version in self.version_dates:
+            release_date = self.version_dates[version_section.version]
+            release_date_file = version_dir / "release-date.txt"
+            version_dir.mkdir(parents=True, exist_ok=True)
+
+            with open(release_date_file, 'w', encoding='utf-8') as f:
+                f.write(release_date + '\n')
+
+            self.stats['release_dates_written'] += 1
+            print(f"  Release date: {release_date}")
+
+        entry_counter = 0  # For entries without explicit issue IDs
+
+        for entry in version_section.entries:
+            # Find primary issue ID from links
+            issue_id = None
+            for link in entry.links:
+                if link.name.startswith('SOLR-'):
+                    issue_id = link.name
+                    break
+
+            if not issue_id:
+                # If no SOLR issue found, try to use other JIRA/PR formats
+                for link in entry.links:
+                    if link.name.startswith(('LUCENE-', 'INFRA-', 'PR#', 'GITHUB#')):
+                        issue_id = link.name
+                        break
+
+            if not issue_id:
+                # No standard issue/PR found, generate a synthetic ID
+                # Use format: unknown-001, unknown-002, etc.
+                entry_counter += 1
+                synthetic_id = f"unknown-{entry_counter:03d}"
+                issue_id = synthetic_id
+
+            # Generate slug and write YAML
+            slug = SlugGenerator.generate_slug(issue_id, entry.title)
+            filepath = YamlWriter.write_entry(entry, slug, version_dir)
+
+            print(f"    ✓ {slug}.yml")
+            self.stats['entries_migrated'] += 1
+            self.stats['files_created'] += 1
+
+        self.stats['versions_processed'] += 1
+
+    def _print_summary(self):
+        """Print migration summary."""
+        print("\n" + "="*60)
+        print("Migration Summary:")
+        print(f"  Versions processed:    {self.stats['versions_processed']}")
+        print(f"  Entries migrated:      {self.stats['entries_migrated']}")
+        print(f"  Entries skipped:       {self.stats['entries_skipped']}")
+        print(f"  Files created:         {self.stats['files_created']}")
+        print(f"  Release dates written: {self.stats['release_dates_written']}")
+        print("="*60)
+
+
+def main():
+    """Main entry point."""
+    if len(sys.argv) < 2:
+        print("Usage: changes2logchange.py <CHANGES.txt> [<output_dir>]")
+        print()
+        print("Arguments:")
+        print("  CHANGES.txt     Path to the CHANGES.txt file to migrate")
+        print("  output_dir      Directory to write changelog/ structure (default: ./changelog)")
+        sys.exit(1)
+
+    changes_file = sys.argv[1]
+    output_dir = sys.argv[2] if len(sys.argv) > 2 else "changelog"
+
+    if not os.path.exists(changes_file):
+        print(f"Error: CHANGES.txt file not found: {changes_file}", file=sys.stderr)
+        sys.exit(1)
+
+    runner = MigrationRunner(changes_file, output_dir)
+    runner.run()
+
+
+if __name__ == "__main__":
+    main()

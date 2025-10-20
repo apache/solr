@@ -89,6 +89,7 @@ Invoke the task with:
   ** `dependency_update` for updates to dependencies
   ** `security` for security-related changes
   ** `other` for anything else, like the build or documentation
+  ** `upgrade_notes` for upgrade notes, only used in older versions
 * Reference issues as `SOLR-12345` or GitHub `#123`.
 
 == 5. Example YAML Fragment
