@@ -33,7 +33,7 @@ jobs:
         CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
         if echo "$CHANGED_FILES" | grep -q "^solr/CHANGES\.txt$"; then
-          echo "::error::Use of solr/CHANGES.txt is disallowed. Please create a changelog yaml file instead."
+          echo "::error::Use of solr/CHANGES.txt is deprecated. Please create a changelog yaml file instead."
           echo ""
           echo "Instead of editing CHANGES.txt, please:"
           echo "1. Run: ./gradlew generateChangeYaml"
