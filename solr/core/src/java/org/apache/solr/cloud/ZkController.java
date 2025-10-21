@@ -65,7 +65,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
@@ -2256,12 +2256,13 @@ public class ZkController implements Closeable {
               leaderProps.getCoreUrl());
         }
 
-        // short timeouts, we may be in a storm and this is best effort, and maybe we should be the
-        // leader now
+        // short timeouts, we may be in a storm and this is best effort, and maybe we should be the leader now
+        // TODO ideally want 8sec connection timeout but can't easily also share the client
+        // listeners
         try (SolrClient client =
-            new Builder(leaderBaseUrl)
-                .withConnectionTimeout(8000, TimeUnit.MILLISECONDS)
-                .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            new Http2SolrClient.Builder(leaderBaseUrl)
+                .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
+                .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {
           WaitForState prepCmd = new WaitForState();
           prepCmd.setCoreName(leaderCoreName);
