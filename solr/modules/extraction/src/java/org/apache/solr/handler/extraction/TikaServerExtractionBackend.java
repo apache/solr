@@ -34,8 +34,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.handler.extraction.fromtika.BodyContentHandler;
 import org.apache.solr.util.RefCounted;
+import org.apache.tika.sax.BodyContentHandler;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
@@ -45,7 +45,10 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.xml.sax.helpers.DefaultHandler;
 
-/** Extraction backend using the Tika Server. It uses a shared Jetty HttpClient. */
+/**
+ * Extraction backend using the Tika Server. It uses a shared Jetty HttpClient. TODO: Get rid of the
+ * import of org.apache.tika.sax.BodyContentHandler;
+ */
 public class TikaServerExtractionBackend implements ExtractionBackend {
   /**
    * Default maximum response size (100MB) to prevent excessive memory usage from large documents
