@@ -82,7 +82,7 @@ public class ExternalPaths {
       }
 
       Path base = file.toAbsolutePath();
-      while (!Files.exists(base.resolve("solr/CHANGES.txt")) && null != base) {
+      while (!Files.exists(base.resolve("CHANGELOG.md")) && null != base) {
         base = base.getParent();
       }
       return (null == base) ? null : base.resolve("solr/").toAbsolutePath();
