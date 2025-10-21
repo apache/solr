@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Locale;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.PatienceKnnVectorQuery;
+import org.apache.lucene.search.SeededKnnVectorQuery;
 import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -1319,7 +1321,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFilteredSearchThresholdParsingFloatEncoding() throws Exception {
+  public void testFilteredSearchThresholdParsingFloatEncoding_shouldSetCustomThreshold() throws Exception {
     Integer expectedThreshold = 30;
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
     String topK = "4";
@@ -1372,7 +1374,194 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFilteredSearchThresholdParsingByteEncoding() throws Exception {
+  public void testFilteredSearchThresholdSeededParsingFloatEncoding_shouldSetCustomThreshold() throws Exception {
+    Integer expectedThreshold = 30;
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    String seedQuery = "id:(1 4 7 8 9)";
+    String topK = "4";
+
+    SolrParams params =
+        params(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorField
+                + " topK="
+                + topK
+                + " seedQuery="
+                + seedQuery
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+    SolrParams localParams =
+        params(
+            "type",
+            "knn",
+            "f",
+            vectorField,
+            "topK",
+            topK,
+            "v",
+            vectorToSearch,
+            "seedQuery",
+            seedQuery,
+            "filteredSearchThreshold",
+            expectedThreshold.toString());
+    SolrQueryRequest req =
+        req(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorField
+                + " topK="
+                + topK
+                + " seedQuery="
+                + seedQuery
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+
+    KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
+    try {
+      SeededKnnVectorQuery vectorQuery = (SeededKnnVectorQuery) qparser.parse();
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      req.close();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThresholdEarlyTerminationParsingFloatEncoding_shouldSetCustomThreshold() throws Exception {
+    Integer expectedThreshold = 30;
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    String earlyTermination = "true";
+    String topK = "4";
+
+    SolrParams params =
+        params(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorField
+                + " topK="
+                + topK
+                + " earlyTermination="
+                + earlyTermination
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+    SolrParams localParams =
+        params(
+            "type",
+            "knn",
+            "f",
+            vectorField,
+            "topK",
+            topK,
+            "v",
+            vectorToSearch,
+            "earlyTermination",
+            earlyTermination,
+            "filteredSearchThreshold",
+            expectedThreshold.toString());
+    SolrQueryRequest req =
+        req(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorField
+                + " topK="
+                + topK
+                + " earlyTermination="
+                + earlyTermination
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+
+    KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
+    try {
+      PatienceKnnVectorQuery vectorQuery = (PatienceKnnVectorQuery) qparser.parse();
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      req.close();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThresholdSeededAndEarlyTerminationParsingFloatEncoding_shouldSetCustomThreshold() throws Exception {
+    Integer expectedThreshold = 30;
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    String seedQuery = "id:(1 4 7 8 9)";
+    String earlyTermination = "true";
+    String topK = "4";
+
+    SolrParams params =
+        params(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorField
+                + " topK="
+                + topK
+                + " seedQuery="
+                + seedQuery
+                + " earlyTermination="
+                + earlyTermination
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+    SolrParams localParams =
+        params(
+            "type",
+            "knn",
+            "f",
+            vectorField,
+            "topK",
+            topK,
+            "v",
+            vectorToSearch,
+            "seedQuery",
+            seedQuery,
+            "earlyTermination",
+            earlyTermination,
+            "filteredSearchThreshold",
+            expectedThreshold.toString());
+    SolrQueryRequest req =
+        req(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorField
+                + " topK="
+                + topK
+                + " seedQuery="
+                + seedQuery
+                + " earlyTermination="
+                + earlyTermination
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+
+    KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
+    try {
+      PatienceKnnVectorQuery vectorQuery = (PatienceKnnVectorQuery) qparser.parse();
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      req.close();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThresholdParsingByteEncoding_shouldSetCustomThreshold() throws Exception {
     Integer expectedThreshold = 30;
     String vectorToSearch = "[1, 2, 3, 4]";
     String topK = "4";
@@ -1415,6 +1604,194 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
     try {
       KnnByteVectorQuery vectorQuery = (KnnByteVectorQuery) qparser.parse();
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      req.close();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThresholdSeededParsingByteEncoding_shouldSetCustomThreshold() throws Exception {
+    Integer expectedThreshold = 30;
+    String vectorToSearch = "[1, 2, 3, 4]";
+    String seedQuery = "id:(1 4 7 8 9)";
+    String topK = "4";
+
+    SolrParams params =
+        params(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorFieldByteEncoding
+                + " topK="
+                + topK
+                + " seedQuery="
+                + seedQuery
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+    SolrParams localParams =
+        params(
+            "type",
+            "knn",
+            "f",
+            vectorFieldByteEncoding,
+            "topK",
+            topK,
+            "v",
+            vectorToSearch,
+            "seedQuery",
+            seedQuery,
+            "filteredSearchThreshold",
+            expectedThreshold.toString());
+    SolrQueryRequest req =
+        req(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorFieldByteEncoding
+                + " topK="
+                + topK
+                + " seedQuery="
+                + seedQuery
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+
+    KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
+    try {
+      SeededKnnVectorQuery vectorQuery = (SeededKnnVectorQuery) qparser.parse();
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      req.close();
+    }
+  }
+
+
+  @Test
+  public void testFilteredSearchThresholdEarlyTerminationParsingByteEncoding_shouldSetCustomThreshold() throws Exception {
+    Integer expectedThreshold = 30;
+    String vectorToSearch = "[1, 2, 3, 4]";
+    String earlyTermination = "true";
+    String topK = "4";
+
+    SolrParams params =
+        params(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorFieldByteEncoding
+                + " topK="
+                + topK
+                + " earlyTermination="
+                + earlyTermination
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+    SolrParams localParams =
+        params(
+            "type",
+            "knn",
+            "f",
+            vectorFieldByteEncoding,
+            "topK",
+            topK,
+            "v",
+            vectorToSearch,
+            "earlyTermination",
+            earlyTermination,
+            "filteredSearchThreshold",
+            expectedThreshold.toString());
+    SolrQueryRequest req =
+        req(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorFieldByteEncoding
+                + " topK="
+                + topK
+                + " earlyTermination="
+                + earlyTermination
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+
+    KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
+    try {
+      PatienceKnnVectorQuery vectorQuery = (PatienceKnnVectorQuery) qparser.parse();
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      req.close();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThresholdSeededAndEarlyTerminationParsingByteEncoding_shouldSetCustomThreshold() throws Exception {
+    Integer expectedThreshold = 30;
+    String vectorToSearch = "[1, 2, 3, 4]";
+    String seedQuery = "id:(1 4 7 8 9)";
+    String earlyTermination = "true";
+    String topK = "4";
+
+    SolrParams params =
+        params(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorFieldByteEncoding
+                + " topK="
+                + topK
+                + " seedQuery="
+                + seedQuery
+                + " earlyTermination="
+                + earlyTermination
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+    SolrParams localParams =
+        params(
+            "type",
+            "knn",
+            "f",
+            vectorFieldByteEncoding,
+            "topK",
+            topK,
+            "v",
+            vectorToSearch,
+            "seedQuery",
+            seedQuery,
+            "earlyTermination",
+            earlyTermination,
+            "filteredSearchThreshold",
+            expectedThreshold.toString());
+    SolrQueryRequest req =
+        req(
+            CommonParams.Q,
+            "{!knn f="
+                + vectorFieldByteEncoding
+                + " topK="
+                + topK
+                + " seedQuery="
+                + seedQuery
+                + " earlyTermination="
+                + earlyTermination
+                + " filteredSearchThreshold="
+                + expectedThreshold
+                + "}"
+                + vectorToSearch);
+
+    KnnQParser qparser = new KnnQParser(vectorToSearch, localParams, params, req);
+    try {
+      PatienceKnnVectorQuery vectorQuery = (PatienceKnnVectorQuery) qparser.parse();
       KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
       Integer threshold = strategy.filteredSearchThreshold();
 
