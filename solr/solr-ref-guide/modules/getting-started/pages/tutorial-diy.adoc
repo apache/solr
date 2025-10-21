@@ -160,6 +160,6 @@ At this point, you're ready to start working on your own.
 
 Jump ahead to the overall xref:solr-tutorial.adoc#wrapping-up[wrap up] when you're ready to stop Solr and remove all the examples you worked with and start fresh.
 
-To stop Tika Server when done, run `docker stop --name tika` in a Terminal window.
+To stop Tika Server when done, run `docker stop tika` in a Terminal window.
 
 Or if you'd like, you could work your way through the remaining exercises.
