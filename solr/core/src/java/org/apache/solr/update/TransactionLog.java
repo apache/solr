@@ -41,6 +41,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DataInputInputStream;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -66,6 +67,13 @@ public class TransactionLog implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final boolean debug = log.isDebugEnabled();
   private static final boolean trace = log.isTraceEnabled();
+
+  protected static final int TLOG_BUFFER_SIZE =
+      EnvUtils.getPropertyAsInteger("solr.tlogBufferSize", 65536);
+
+  static {
+    log.info("initialized static property TLOG_BUFFER_SIZE to {}", TLOG_BUFFER_SIZE);
+  }
 
   public static final String END_MESSAGE = "SOLR_TLOG_END";
 
@@ -212,7 +220,7 @@ public class TransactionLog implements Closeable {
           readHeader(null);
         }
         os = outputStreamOpener.open(channel, start);
-        fos = new FastOutputStream(os, new byte[65536], 0);
+        fos = new FastOutputStream(os, new byte[TLOG_BUFFER_SIZE], 0);
         if (start > 0) {
           channel.position(start);
           setWrittenCount(start);
@@ -232,7 +240,7 @@ public class TransactionLog implements Closeable {
                 StandardOpenOption.WRITE,
                 StandardOpenOption.CREATE_NEW);
         os = outputStreamOpener.open(channel, 0);
-        fos = new FastOutputStream(os, new byte[65536], 0);
+        fos = new FastOutputStream(os, new byte[TLOG_BUFFER_SIZE], 0);
 
         addGlobalStrings(globalStrings);
       }

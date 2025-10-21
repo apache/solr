@@ -109,7 +109,7 @@ public class HdfsTransactionLog extends TransactionLog {
         tlogOutStream.hsync();
       }
 
-      fos = new FastOutputStream(tlogOutStream, new byte[65536], 0);
+      fos = new FastOutputStream(tlogOutStream, new byte[TLOG_BUFFER_SIZE], 0);
       long start = tlogOutStream.getPos();
 
       if (openExisting) {
