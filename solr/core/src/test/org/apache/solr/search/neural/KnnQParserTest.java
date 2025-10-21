@@ -1321,7 +1321,8 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFilteredSearchThresholdParsingFloatEncoding_shouldSetCustomThreshold() throws Exception {
+  public void testFilteredSearchThresholdParsingFloatEncoding_shouldSetCustomThreshold()
+      throws Exception {
     Integer expectedThreshold = 30;
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
     String topK = "4";
@@ -1374,7 +1375,8 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFilteredSearchThresholdSeededParsingFloatEncoding_shouldSetCustomThreshold() throws Exception {
+  public void testFilteredSearchThresholdSeededParsingFloatEncoding_shouldSetCustomThreshold()
+      throws Exception {
     Integer expectedThreshold = 30;
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
     String seedQuery = "id:(1 4 7 8 9)";
@@ -1434,7 +1436,9 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFilteredSearchThresholdEarlyTerminationParsingFloatEncoding_shouldSetCustomThreshold() throws Exception {
+  public void
+      testFilteredSearchThresholdEarlyTerminationParsingFloatEncoding_shouldSetCustomThreshold()
+          throws Exception {
     Integer expectedThreshold = 30;
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
     String earlyTermination = "true";
@@ -1494,7 +1498,9 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFilteredSearchThresholdSeededAndEarlyTerminationParsingFloatEncoding_shouldSetCustomThreshold() throws Exception {
+  public void
+      testFilteredSearchThresholdSeededAndEarlyTerminationParsingFloatEncoding_shouldSetCustomThreshold()
+          throws Exception {
     Integer expectedThreshold = 30;
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
     String seedQuery = "id:(1 4 7 8 9)";
@@ -1561,7 +1567,8 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFilteredSearchThresholdParsingByteEncoding_shouldSetCustomThreshold() throws Exception {
+  public void testFilteredSearchThresholdParsingByteEncoding_shouldSetCustomThreshold()
+      throws Exception {
     Integer expectedThreshold = 30;
     String vectorToSearch = "[1, 2, 3, 4]";
     String topK = "4";
@@ -1614,7 +1621,8 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFilteredSearchThresholdSeededParsingByteEncoding_shouldSetCustomThreshold() throws Exception {
+  public void testFilteredSearchThresholdSeededParsingByteEncoding_shouldSetCustomThreshold()
+      throws Exception {
     Integer expectedThreshold = 30;
     String vectorToSearch = "[1, 2, 3, 4]";
     String seedQuery = "id:(1 4 7 8 9)";
@@ -1673,9 +1681,10 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     }
   }
 
-
   @Test
-  public void testFilteredSearchThresholdEarlyTerminationParsingByteEncoding_shouldSetCustomThreshold() throws Exception {
+  public void
+      testFilteredSearchThresholdEarlyTerminationParsingByteEncoding_shouldSetCustomThreshold()
+          throws Exception {
     Integer expectedThreshold = 30;
     String vectorToSearch = "[1, 2, 3, 4]";
     String earlyTermination = "true";
@@ -1735,7 +1744,9 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFilteredSearchThresholdSeededAndEarlyTerminationParsingByteEncoding_shouldSetCustomThreshold() throws Exception {
+  public void
+      testFilteredSearchThresholdSeededAndEarlyTerminationParsingByteEncoding_shouldSetCustomThreshold()
+          throws Exception {
     Integer expectedThreshold = 30;
     String vectorToSearch = "[1, 2, 3, 4]";
     String seedQuery = "id:(1 4 7 8 9)";
