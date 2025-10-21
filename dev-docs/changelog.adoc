@@ -116,7 +116,35 @@ links:
     url: https://issues.apache.org/jira/browse/SOLR-3333
 ----
 
-== 7. Further Reading
+== 7. Migration tool
+
+There is a migration tool in `dev-tools/scripts/changes2logchange.py`.
+It will bulk convert the entire `solr/CHANGES.txt` file to files in the `changelog/` folder and versioned sub folders.
+
+The tool can also convert a single changelog entry reading `stdin` as follows:
+
+```bash
+cat << EOF | python3 dev-tools/scripts/changes2logchange.py -
+* SOLR-17960: Removed TikaLanguageIdentifierUpdateProcessor.
+  Use LangDetectLanguageIdentifierUpdateProcessor or
+  OpenNLPLangDetectUpdateProcessor instead. (janhoy)
+EOF
+```
+
+which will output to `stdout`:
+
+```
+title: Removed TikaLanguageIdentifierUpdateProcessor. Use LangDetectLanguageIdentifierUpdateProcessor
+  or OpenNLPLangDetectUpdateProcessor instead.
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-17960
+  url: https://issues.apache.org/jira/browse/SOLR-17960
+```
+
+== 8. Further Reading
 
 * xref:https://github.com/logchange/logchange[Logchange web page]
 * xref:https://keepachangelog.com/en/1.1.0/[keepachangelog.com website]

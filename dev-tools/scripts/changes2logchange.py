@@ -758,6 +758,128 @@ class MigrationRunner:
         print("="*60)
 
 
+class StdinProcessor:
+    """Process individual changelog entries from stdin and output YAML to stdout."""
+
+    @staticmethod
+    def process():
+        """
+        Read from stdin, parse individual changelog entries, and output YAML.
+
+        Ignores headers and nested structure.
+        Outputs YAML entries separated by '----' YAML separator.
+        """
+        import sys
+
+        # Read all lines from stdin
+        lines = sys.stdin.readlines()
+
+        entries_yaml = []
+        i = 0
+
+        while i < len(lines):
+            line = lines[i]
+
+            # Skip empty lines and header lines (lines with only dashes or equals)
+            if not line.strip() or re.match(r'^[-=\s]+$', line):
+                i += 1
+                continue
+
+            # Check if this line starts a changelog entry (bullet point)
+            if line.strip().startswith('*') or line.strip().startswith('-'):
+                # Collect the full entry (may span multiple lines)
+                entry_text = line.strip()[1:].strip()  # Remove bullet and leading spaces
+
+                # Continue reading continuation lines
+                i += 1
+                while i < len(lines):
+                    next_line = lines[i]
+                    # If the next line is another entry or empty, stop collecting
+                    if (next_line.strip().startswith('*') or
+                        next_line.strip().startswith('-') or
+                        re.match(r'^[-=\s]+$', next_line) or
+                        not next_line.strip()):
+                        break
+                    # Add to entry text
+                    entry_text += ' ' + next_line.strip()
+                    i += 1
+
+                # Parse the entry to a ChangeEntry
+                entry = EntryParser.parse_entry_line(entry_text)
+                if entry:
+                    # Serialize to YAML
+                    yaml_dict = {
+                        'title': entry.title,
+                        'type': entry.change_type,
+                    }
+                    if entry.authors:
+                        yaml_dict['authors'] = [{'name': a.name} for a in entry.authors]
+                    if entry.links:
+                        yaml_dict['links'] = [
+                            {'name': link.name, 'url': link.url}
+                            for link in entry.links
+                        ]
+
+                    yaml_str = yaml.dump(yaml_dict, default_flow_style=False, sort_keys=False, allow_unicode=True)
+                    entries_yaml.append(yaml_str.rstrip())
+            else:
+                i += 1
+
+        # Output entries separated by YAML separators
+        for i, yaml_entry in enumerate(entries_yaml):
+            if i > 0:
+                print('----')
+            print(yaml_entry, end='')
+            if yaml_entry and not yaml_entry.endswith('\n'):
+                print()
+
+
+class EntryParser:
+    """Parse a single changelog entry line."""
+
+    @staticmethod
+    def parse_entry_line(text: str) -> Optional[ChangeEntry]:
+        """
+        Parse a single changelog entry line.
+
+        Format: [ISSUE-ID: ]description (author1) (author2) ...
+        """
+        if not text.strip():
+            return None
+
+        # Extract issue links
+        links = IssueExtractor.extract_issues(text)
+
+        # Remove issue IDs from text
+        for link in links:
+            # Remove markdown link format [ID](url)
+            text = re.sub(rf'\[{re.escape(link.name)}\]\([^)]+\)', '', text)
+            # Remove plain text issue IDs
+            text = re.sub(rf'{re.escape(link.name)}\s*:?\s*', '', text)
+
+        text = text.strip()
+
+        # Extract authors
+        text, authors = AuthorParser.parse_authors(text)
+        text = text.strip()
+
+        # Escape HTML angle brackets
+        text = text.replace('<', '&lt;').replace('>', '&gt;')
+
+        if not text:
+            return None
+
+        # Default to 'other' type
+        change_type = 'other'
+
+        return ChangeEntry(
+            title=text,
+            change_type=change_type,
+            authors=authors,
+            links=links,
+        )
+
+
 def main():
     """Main entry point."""
     import argparse
@@ -767,7 +889,7 @@ def main():
     )
     parser.add_argument(
         "changes_file",
-        help="Path to the CHANGES.txt file to migrate"
+        help="Path to the CHANGES.txt file to migrate. Use '-' to read individual changelog entries from stdin and output YAML to stdout"
     )
     parser.add_argument(
         "-o", "--output-dir",
@@ -781,6 +903,11 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # Handle stdin/stdout mode
+    if args.changes_file == '-':
+        StdinProcessor.process()
+        return
 
     if not os.path.exists(args.changes_file):
         print(f"Error: CHANGES.txt file not found: {args.changes_file}", file=sys.stderr)
