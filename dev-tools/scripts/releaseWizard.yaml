@@ -58,7 +58,7 @@ templates:
     {% set passed = plus_binding >= 3 and minus < plus_binding %}
     {% set too_few = plus_binding < 3 %}
     {% set veto = plus_binding < minus %}
-    {% set reason = 'too few binding votes' if too_few else 'too many negative votes' if veto else 'unknown' %}    
+    {% set reason = 'too few binding votes' if too_few else 'too many negative votes' if veto else 'unknown' %}
   vote_macro: |
     {% macro end_vote_result(plus_binding, plus_other, zero, minus) -%}
     (( template=vote_logic ))
@@ -75,9 +75,9 @@ templates:
 
     {% if not passed %}
     Reason for fail is {{ reason }}.
-    
+
     {% endif %}
-    This vote has {% if passed %}PASSED{% else %}FAILED{% endif %} 
+    This vote has {% if passed %}PASSED{% else %}FAILED{% endif %}
     ----
     {%- endmacro %}
   announce_solr: |
@@ -102,7 +102,7 @@ templates:
 
       <https://solr.apache.org/guide/solr/{{ release_version_refguide }}/upgrade-notes/solr-upgrade-notes.html>
 
-    Please read CHANGES.txt for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
+    Please read CHANGELOG.md for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
 
       <https://solr.apache.org/{{ release_version_underscore }}/changes/Changes.html>
   announce_solr_mail: |
@@ -116,10 +116,10 @@ templates:
 
     (( template=announce_solr_mail_body ))
     ----
-  announce_solr_announce_mail: |    
+  announce_solr_announce_mail: |
     The template below can be used to announce the Solr release to the
     `announce@apache.org` mailing list. The email *must* be sent *from your `@apache.org` account*,
-    and it *can optionally* be signed with your PGP key, using the `--clearsign` option of 
+    and it *can optionally* be signed with your PGP key, using the `--clearsign` option of
     gpg, as explained in https://www.gnupg.org/gph/en/manual/x135.html.
 
     .Mail template
@@ -166,12 +166,12 @@ templates:
 #       # Vars can contain global jinja vars or local vars earlier defined (ordered dict)
 #     persist_vars: ['var_name', 'var_name'] # List of variables to persist in TODO state
 #     asciidoc: |
-#         Some `asciidoc` text to be included in asciidoc guide 
+#         Some `asciidoc` text to be included in asciidoc guide
 #         *instead of* description/post_description
 #     function: my_python_function  # Will call the named function for complex tasks
 #     commands: !Commands   # A !Commands object holding commands to execute for this todo
 #       root_folder: '{{ git_checkout_folder }}' # path to where commands will run
-#       commands_text: Introduction text to be displayed just before the commands 
+#       commands_text: Introduction text to be displayed just before the commands
 #       enable_execute: true # Set to false to never offer to run commands automatically
 #       confirm_each_command: true # Set to false to run all commands without prompting
 #       remove_files: ['file1', 'folder2'] # List of files or folders that must be gone
@@ -196,7 +196,7 @@ templates:
 #       name: gpg_id  # This will be stored in todo state and can be referenced as {{ todo_id.name }}
 #       type: int  # if no type is given, a string is stored. Supported types are 'int'
 #     post_description: |
-#       Some `asciidoc` text (with jinja template support) 
+#       Some `asciidoc` text (with jinja template support)
 #       to be printed *after* commands and user_input is done.
 #     links:
 #     - http://example.com/list/of/links?to&be&displayed
@@ -453,7 +453,7 @@ groups:
     title: Update Ref Guide Metadata for new Minor Branch
     description: |
       This will update the "solr/solr-ref-guide/antora.yml" file.
-      
+
       The file shouldn't change much, but it should pick up new dependency versions, if they have changed.
     types:
     - major
@@ -557,7 +557,7 @@ groups:
     description: |
       This will make sure we are continuously testing the new branch(es) we have created.
       Consult the JenkinsReleaseBuilds page for more information.
-      
+
       Job Suffixes to create:
         {% if release_type == 'major' %}
         *-{{release_version_major}}.x (The new stable branch)
@@ -575,7 +575,7 @@ groups:
     description: |
       This will make sure we aren't using resources to test branches no longer in development.
       Consult the JenkinsReleaseBuilds page for more information.
-      
+
       Job Suffixes to delete:
         {% if release_type == 'major' %}
         *-{{latest_lts_version_major}}.{{latest_lts_version_minor}} (The previous LTS release branch)
@@ -665,12 +665,12 @@ groups:
     - bugfix
   - !Todo
     id: dependency_updates_changes
-    title: Add dependency updates to CHANGES.txt
+    title: Add dependency updates to CHANGELOG.md
     description: Bulk add all 'solrbot' dependency updates since last release
     depends: clean_git_checkout
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: We call out to a helper script that modifies CHANGES.txt, and then commit it.
+      commands_text: We call out to a helper script that compiles SolrBot changes into `changelog/unreleased`
       confirm_each_command: true
       commands:
       - !Command
@@ -680,14 +680,45 @@ groups:
         cmd: python3 -u dev-tools/scripts/addDepsToChanges.py --user solrbot --version {{ release_version }}
         tee: true
       - !Command
-        cmd: "{{ editor }} solr/CHANGES.txt"
-        comment: |
-          Verify that the modifications in CHANGES.txt under the 'Dependency Upgrades' are ok.
-          Look for duplicates, especially when a committer has manually added a similar entry for the same upgrade.
+        cmd: git add -u .  && git commit -m "Add dependency updates to changelog for {{ release_version }}"  && git push
+        logfile: dependency-changes.log
+  - !Todo
+    id: generate_changelog_release
+    title: Generate CHANGELOG.md for release
+    description: |
+      Generate `CHANGELOG.md` by running `logchange release` and `logchange generate`. This will prepare both a `changelog/v{{ release_version }}` folder and the `CHANGELOG.md` file in one commit.
+    depends: dependency_updates_changes
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Generate CHANGELOG.md
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
         stdout: true
       - !Command
-        cmd: git add -u .  && git commit -m "Add dependency updates to CHANGES for {{ release_version }}"  && git push
-        logfile: dependency-changes.log
+        cmd: git pull --ff-only
+        tee: true
+      - !Command
+        cmd: "{{ gradle_cmd }} logchangeRelease"
+        comment: Create `changelog/v{{ release_version }}` folder and move unreleased entries
+        tee: true
+      - !Command
+        cmd: "{{ gradle_cmd }} logchangeGenerate"
+        comment: Generate `CHANGELOG.md` in repository root
+        tee: true
+      - !Command
+        cmd: git add CHANGELOG.md changelog/v* && git commit -m "Changelog for release v{{ release_version }}" && git push
+        comment: Commit and push changelog changes
+        logfile: commit_changelog.log
+        tee: true
+  - !Todo
+    id: persist_changelog_sha
+    title: Persist the SHA of the changelog commit
+    description: Store the current git sha
+    depends: generate_changelog_release
+    vars:
+      changelog_sha: {{ current_git_rev }}
+    persist: changelog_sha
   - !Todo
     id: draft_release_notes
     title: Get a draft of the release notes in place
@@ -695,7 +726,7 @@ groups:
       These are typically edited on the Wiki
 
       Clone a page for a previous version as a starting point for your release notes.
-      Edit the contents of `CHANGES.txt` into a more concise format for public consumption.
+      Edit the contents of `CHANGELOG.md` into a more concise format for public consumption.
       Ask on dev@ for input. Ideally the timing of this request mostly coincides with the
       release branch creation. It's a good idea to remind the devs of this later in the release too.
 
@@ -799,7 +830,7 @@ groups:
   - !Todo
     id: build_rc
     title: Build the release candidate
-    depends: 
+    depends:
     - setup_gpg
     - run_tests
     vars:
@@ -820,7 +851,7 @@ groups:
         Note that the build will take a long time. To follow the detailed build
         log, you can tail the log file {{ logfile | default("<logfile>") }}.
       confirm_each_command: false
-      remove_files: 
+      remove_files:
       - '{{ dist_file_path }}'
       commands:
       - !Command
@@ -879,7 +910,7 @@ groups:
     id: verify_staged
     title: Verify staged artifacts
     description: |
-      A lightweight smoke testing which downloads the artifacts from stage 
+      A lightweight smoke testing which downloads the artifacts from stage
       area and checks hash and signatures, but does not re-run all tests.
     depends: import_svn
     vars:
@@ -1023,7 +1054,7 @@ groups:
         there are more positive than negative votes you can techically release
         the software. However, please review the negative votes and consider
         a re-spin.
-        
+
         {% endif %}
         {%- endif %}
         {{ end_vote_result(plus_binding,plus_other,zero,minus) }}
@@ -1095,10 +1126,10 @@ groups:
     depends: mv_to_release
     description: |
       For every release, we publish the official dockerfile for solr via the methods required by Docker.
-      
+
       This will start the process, and will ultimately create a PR in https://github.com/docker-library/official-images.
       This PR creation is automated, you do not need to do more work beyond these steps.
-      
+
       When that PR is approved and merged, the Official image for this Solr version will be built and available for use.
     vars:
       docker_version: '{{ release_version_major }}.{{ release_version_minor }}'
@@ -1242,7 +1273,7 @@ groups:
       The Solr minor branches do not contain up-to-date ref-guide metadata (antora.yml).
       Instead, they have the information from the last release.
       This allows us to build the official documentation from these minor branches, instead of from the release tags.
-      
+
       This means that we can make fixes to older ref-guides without requiring a new release for those versions.
     depends: tag_release
     commands: !Commands
@@ -1522,7 +1553,7 @@ groups:
     title: Update the DOAP file
     description: |
       Update the Solr DOAP RDF file on the unstable, stable and release branches to
-      reflect the new versions (note that the website .htaccess file redirects from their 
+      reflect the new versions (note that the website .htaccess file redirects from their
       canonical URLs to their locations in the Solr Git source repository - see
       dev-tools/doap/README.txt for more info)
     commands: !Commands
@@ -1586,7 +1617,7 @@ groups:
   id: announce
   title: Announce the release
   description: |
-    For feature releases, your announcement should describe the main features included 
+    For feature releases, your announcement should describe the main features included
     in the release. *Send the announce as Plain-text email, not HTML.*
 
     This step will generate email templates based on the news files you edited earlier for the website.
@@ -1689,52 +1720,43 @@ groups:
         cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
         logfile: commit-stable.log
   - !Todo
-    id: synchronize_changes
-    title: Synchronize CHANGES.txt
+    id: sync_changelog_cherry_pick
+    title: Cherry-pick changelog to stable and unstable branches
     description: |
-      Copy the CHANGES.txt section for this release back to the stable and unstable branches' 
-      CHANGES.txt files, removing any duplicate entries, but only from sections for as-yet 
-      unreleased versions; leave intact duplicate entries for already-released versions.
+      Cherry-pick the changelog commit from the release branch to the stable and main branches.
+      This syncs both CHANGELOG.md and changelog folder changes across all active branches.
 
-      There is a script to generate a regex that will match JIRAs fixed in a release: 
-      `releasedJirasRegex.py`. The following examples will print regexes matching all JIRAs 
-      fixed in {{ release_version }}, which can then be used to find duplicates in unreleased 
-      version sections of the corresponding CHANGES.txt files.
+      The changelog commit was created in the previous step (generate_changelog_release) and will
+      be referenced here. Cherry-pick will automatically handle conflict resolution if needed.
+    depends: generate_changelog_release
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Synchronize CHANGES.txt
+      commands_text: Cherry-pick changelog changes to other branches
       commands:
       - !Command
-        cmd: git checkout {{ release_branch }}
-        comment: Go to release branch
-        logfile: checkout-release.log
+        cmd: git checkout {{ stable_branch }}
+        comment: Checkout stable branch
         stdout: true
       - !Command
-        cmd: python3 -u -B dev-tools/scripts/releasedJirasRegex.py {{ release_version }} solr/CHANGES.txt
+        cmd: git pull --ff-only
         tee: true
-        comment: Find version regexes
       - !Command
-        cmd: git checkout main && git pull --ff-only && git clean -df && git checkout -- .
-        comment: Go to main branch
-        logfile: checkout-main.log
+        cmd: git cherry-pick {{ persist_changelog_sha.changelog_sha }} && git push
+        comment: Cherry-pick changelog commit
+        logfile: cherry_pick_changelog_stable.log
+        tee: true
       - !Command
-        cmd: "{{ editor }} solr/CHANGES.txt"
-        comment: Edit CHANGES.txt for main branch, do necessary changes
+        cmd: git checkout main
+        comment: Checkout main branch
         stdout: true
       - !Command
-        cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
-        logfile: commit-main.log
+        cmd: git pull --ff-only
+        tee: true
       - !Command
-        cmd: git checkout {{ stable_branch }} && git pull --ff-only && git clean -df && git checkout -- .
-        comment: Go to stable branch
-        logfile: checkout-stable.log
-      - !Command
-        cmd: "{{ editor }} solr/CHANGES.txt"
-        comment: Edit CHANGES.txt for stable branch, do necessary changes
-        stdout: true
-      - !Command
-        cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
-        logfile: commit-stable.log
+        cmd: git cherry-pick {{ persist_changelog_sha.changelog_sha }} && git push
+        comment: Cherry-pick changelog commit
+        logfile: cherry_pick_changelog_main.log
+        tee: true
   - !Todo
     id: increment_release_version
     title: Add the next version on release branch
@@ -1768,7 +1790,7 @@ groups:
 
       . Next to version {{ release_version_jira }}, click the gear pop-up menu icon and choose "Release"
       . Fill in the release date ({{ release_date | formatdate }})
-      . It will give the option of transitioning issues marked fix-for the released version to the 
+      . It will give the option of transitioning issues marked fix-for the released version to the
         next version, but do not do this as it will send an email for each issue :)
     links:
     - https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions
@@ -1849,7 +1871,7 @@ groups:
       root_folder: '{{ git_checkout_folder }}'
       commands_text: |
         Run these commands to delete proposed versions from distribution directory.
-        
+
         WARNING: Validate that the proposal is correct!
       commands:
       - !Command
