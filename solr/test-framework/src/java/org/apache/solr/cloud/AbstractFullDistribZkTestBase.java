@@ -1844,7 +1844,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   @Override
-  protected QueryResponse queryServer(ModifiableSolrParams params)
+  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
       throws SolrServerException, IOException {
 
     if (r.nextBoolean()) params.set("collection", DEFAULT_COLLECTION);
@@ -2154,7 +2154,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
    * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   * org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} class directly
    */
   public static CloudSolrClient getCloudSolrClient(
       String zkHost,

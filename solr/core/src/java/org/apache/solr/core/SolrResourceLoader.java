@@ -325,14 +325,6 @@ public class SolrResourceLoader
   }
 
   /**
-   * @deprecated use {@link #getConfigPath()}
-   */
-  @Deprecated(since = "9.0.0")
-  public String getConfigDir() {
-    return getConfigPath().toString();
-  }
-
-  /**
    * EXPERT
    *
    * <p>The underlying class loader. Most applications will not need to use this.

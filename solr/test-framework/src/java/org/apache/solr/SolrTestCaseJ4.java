@@ -112,6 +112,7 @@ import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoresLocator;
 import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
@@ -280,6 +281,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.http.disableCookies", Boolean.toString(rarely()));
+    System.setProperty("solr.metrics.jvm.enabled", "false");
+    System.setProperty("solr.metrics.otlpExporterInterval", "1000");
 
     startTrackingSearchers();
     ignoreException("ignore_exception");
@@ -296,6 +299,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     ExecutorUtil.resetThreadLocalProviders();
+    OpenTelemetryConfigurator.resetForTest();
   }
 
   @AfterClass
@@ -2785,13 +2789,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemSetPropertySolrDisableUrlAllowList(String value) {
-    System.setProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST, value);
+  protected static void systemSetPropertyEnableUrlAllowList(boolean value) {
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, String.valueOf(value));
   }
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemClearPropertySolrDisableUrlAllowList() {
-    System.clearProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST);
+  protected static void systemClearPropertySolrEnableUrlAllowList() {
+    System.clearProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST);
   }
 
   @SafeVarargs

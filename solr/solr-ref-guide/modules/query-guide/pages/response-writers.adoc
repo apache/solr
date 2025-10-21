@@ -30,7 +30,6 @@ The list below describe shows the most common settings for the `wt` parameter, w
 * <<Binary Response Writer,javabin>>
 * <<JSON Response Writer,json>>
 * <<Smile Response Writer,smile>>
-* <<XLSX Response Writer,xlsx>>
 * <<Standard XML Response Writer,xml>>
 * <<XSLT Response Writer,xslt>>
 
@@ -387,20 +386,3 @@ else:
 == Smile Response Writer
 
 The Smile format is a JSON-compatible binary format, described in detail here: https://en.wikipedia.org/wiki/Smile_%28data_interchange_format%29[https://en.wikipedia.org/wiki/Smile_(data_interchange_format)]
-
-== XLSX Response Writer
-
-Use this to get the response as a spreadsheet in the .xlsx (Microsoft Excel) format.
-It accepts parameters in the form `colwidth.<field-name>` and `colname.<field-name>` which helps you customize the column widths and column names.
-
-This response writer has been added as part of the extraction library, and will only work if the extraction module is present in the server classpath.
-Defining the classpath with the `lib` directive is not sufficient.
-Instead, you will need to copy the necessary .jars to the Solr webapp's `lib` directory manually.
-You can run these commands from your `$SOLR_INSTALL` directory:
-
-[source,bash]
-----
-cp modules/extraction/lib/*.jar server/solr-webapp/webapp/WEB-INF/lib/
-----
-
-Once the libraries are in place, you can add `wt=xlsx` to your request, and results will be returned as an XLSX sheet.

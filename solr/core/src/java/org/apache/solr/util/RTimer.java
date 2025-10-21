@@ -35,6 +35,7 @@ public class RTimer {
   private TimerImpl timerImpl;
   private double time;
   private double culmTime;
+  private TimeUnit timeUnit;
 
   protected interface TimerImpl {
     void start();
@@ -43,7 +44,12 @@ public class RTimer {
   }
 
   private static class NanoTimeTimerImpl implements TimerImpl {
+    private final TimeUnit timeUnit;
     private long start;
+
+    public NanoTimeTimerImpl(TimeUnit timeUnit) {
+      this.timeUnit = timeUnit;
+    }
 
     @Override
     public void start() {
@@ -52,15 +58,20 @@ public class RTimer {
 
     @Override
     public double elapsed() {
-      return TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+      return timeUnit.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
     }
   }
 
   protected TimerImpl newTimerImpl() {
-    return new NanoTimeTimerImpl();
+    return new NanoTimeTimerImpl(timeUnit);
   }
 
   public RTimer() {
+    this(TimeUnit.MILLISECONDS);
+  }
+
+  public RTimer(TimeUnit timeUnit) {
+    this.timeUnit = timeUnit;
     time = 0;
     culmTime = 0;
     timerImpl = newTimerImpl();
