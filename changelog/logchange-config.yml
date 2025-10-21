@@ -19,6 +19,7 @@
 changelog:
   heading: This file lists Solr's raw release notes with details of every change to Solr. Most people will find the solr-upgrade-notes.adoc file more approachable. [https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc](https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc)
   entryTypes: # you can define custom entry types
+    # Please do not use upgrade_notes type.
     - key: upgrade_notes
       order: 1
     - key: added
@@ -50,6 +51,7 @@ changelog:
         dependency_update: Dependency Upgrades
         security: Security
         other: Other
+        # Please do not use upgrade_notes type.
         upgrade_notes: Upgrade Notes
       number_of_changes:
         singular: change
