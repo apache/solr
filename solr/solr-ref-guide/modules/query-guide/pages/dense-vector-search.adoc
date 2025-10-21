@@ -47,7 +47,7 @@ The strategy implemented in Apache Lucene and used by Apache Solr is based on Na
 
 It provides efficient approximate nearest neighbor search for high dimensional vectors.
 
-See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs [2014]] and https://arxiv.org/abs/1603.09320[Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs [2018]] for details.
+See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs (2014)] and https://arxiv.org/abs/1603.09320[Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs (2018)] for details.
 
 
 == Index Time
@@ -416,7 +416,7 @@ The search results retrieved are the k=10 nearest documents to the vector in inp
 |Optional |Default: `false`
 |===
 +
-Early termination is an HNSW optimization. Solr relies on the Lucene’s implementation of early termination for kNN queries, based on https://cs.uwaterloo.ca/~jimmylin/publications/Teofili_Lin_ECIR2025.pdf[Patience in Proximity: A Simple Early Termination Strategy for HNSW Graph Traversal in Approximate k-Nearest Neighbor Search].
+Early termination is an HNSW optimization. Solr relies on the Lucene’s implementation of early termination for kNN queries, based on https://cs.uwaterloo.ca/~jimmylin/publications/Teofili_Lin_ECIR2025.pdf[Patience in Proximity: A Simple Early Termination Strategy for HNSW Graph Traversal in Approximate k-Nearest Neighbor Search (2025)].
 +
 When enabled (true), the search may exit early when the HNSW candidate queue remains saturated over a threshold (saturationThreshold) for more than a given number of iterations (patience). Refer to the two parameters below for more details.
 +
@@ -456,6 +456,48 @@ Here's an example of a `knn` search using the early termination with input param
 
 [source,text]
 ?q={!knn f=vector topK=10 earlyTermination=true saturationThreshold=0.989 patience=10}[1.0, 2.0, 3.0, 4.0]
+
+`seedQuery`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A query seed to initiate the vector search, i.e. entry points in the HNSW graph exploration. Solr relies on Lucene’s implementation of {lucene-javadocs}/core/org/apache/lucene/search/SeededKnnVectorQuery.html[SeededKnnVectorQuery] based on https://arxiv.org/pdf/2307.16779[Lexically-Accelerated Dense Retrieval (2023)].
++
+The seedQuery is primarily intended to be a lexical query, guiding the vector search in a hybrid-like way through traditional query logic. Although a knn query can also be used as a seed — which might make sense in specific scenarios and has been verified by a dedicated test — this approach is not considered a best practice.
++
+The seedQuery can also be used in combination with earlyTermination.
+
+Here is an example of a `knn` search using a `seedQuery`:
+
+[source,text]
+?q={!knn f=vector topK=10 seedQuery='id:(1 4 10)'}[1.0, 2.0, 3.0, 4.0]
+
+The search results retrieved are the k=10 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`. Documents matching the query `id:(1 4 10)` are used as entry points for the ANN search. If no documents match the seed, Solr falls back to a regular knn search without seeding, starting instead from random entry points.
+
+`filteredSearchThreshold`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default:  {lucene-javadocs}/core/constant-values.html#org.apache.lucene.search.knn.KnnSearchStrategy.DEFAULT_FILTERED_SEARCH_THRESHOLD[Lucene default] |An integer value from 0 to 100
+|===
++
+ACORN is an algorithm designed to make hybrid searches consisting of a filter and a vector search more efficient.
+This approach tackles both the performance limitations of pre- and post- filtering.
+It modifies the construction of the HNSW graph and the search on it. Based on https://arxiv.org/abs/2403.04871[ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data (2024)].
++
+Solr relies on Lucene's implementation of the `filteredSearchThreshold` in the  {lucene-javadocs}/core/org/apache/lucene/search/knn/KnnSearchStrategy.html[KnnSearchStrategy].
++
+A suggested value is 60 based on a benchmark you can read more about in this Github https://github.com/apache/lucene/pull/14160#issue-2805145799[comment].
++
+The `filteredSearchThreshold` regulates this behavior. If the percentage of documents that satisfies the filter is less than the threshold ACORN will be used.
+
+Here is an example of a `knn` search using a `filteredSearchThreshold`:
+
+[source,text]
+?q={!knn f=vector topK=10 filteredSearchThreshold=60}[1.0, 2.0, 3.0, 4.0]
 
 === knn_text_to_vector Query Parser
 

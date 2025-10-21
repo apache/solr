@@ -15,20 +15,5 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
-
-description = 'Language Identifier module for extracting language from a document being indexed'
-
-dependencies {
-  implementation project(':solr:core')
-  implementation project(':solr:solrj')
-
-  implementation libs.commonsio.commonsio
-  implementation libs.cybozulabs.langdetect
-  implementation libs.apache.opennlp.tools
-  implementation libs.slf4j.api
-
-  testImplementation project(':solr:test-framework')
-  testImplementation libs.carrotsearch.randomizedtesting.runner
-  testImplementation libs.junit.junit
-}
+/** Contains the logic to extract features. */
+package org.apache.solr.ltr.feature.extraction;

@@ -81,6 +81,12 @@ New Features
 
 * SOLR-17948: Support indexing primitive float[] values for DenseVectorField via JavaBin (Puneet Ahuja, Noble Paul)
 
+* SOLR-17813: Add support for SeededKnnVectorQuery (Ilaria Petreti via Alessandro Benedetti)
+
+* SOLR-16667: LTR Add feature vector caching for ranking. (Anna Ruggero, Alessandro Benedetti)
+
+* SOLR-17815: Add parameter to regulate for ACORN-based filtering in vector search. (Anna Ruggero, Alessandro Benedetti)
+
 Improvements
 ---------------------
 
@@ -133,6 +139,8 @@ Improvements
   details by providing an instance of either `Http2SolrClient.Builder` or `HttpJdkSolrClient.Builder`. (James Dyer)
 
 * SOLR-17943: `Http2ClusterStateProvider` now also can work with `HttpJdkSolrClient`. (James Dyer)
+
+* SOLR-17771: `CloudHttp2SolrClient.Builder` now also can work with `HttpJdkSolrClient`. (James Dyer)
 
 
 Optimizations
@@ -245,6 +253,8 @@ Deprecation Removals
 
 * SOLR-17182: Remove `solr.useExitableDirectoryReader` property. (Andrzej Bialecki)
 
+* SOLR-17771: Remove `CloudSolrClient.Builder`. (James Dyer)
+
 Dependency Upgrades
 ---------------------
 
@@ -256,6 +266,9 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
+
+* SOLR-17960: Removed TikaLanguageIdentifierUpdateProcessor. Use LangDetectLanguageIdentifierUpdateProcessor
+  or OpenNLPLangDetectUpdateProcessor instead. (janhoy)
 
 * SOLR-15730: SolrJ modules like SolrJ-Zookeeper are now opt-in from a Maven POM perspective.
   Previously, the modules would come transitively.
@@ -328,6 +341,9 @@ Other Changes
 
 * PR#3758: Logs: removed webapp=/solr and also removed from internal context map.
 
+* SOLR-17963: These SolrCloud commands no longer aquire locks (waiting or blocking on other commands that do):
+  COLLECTIONPROP, ADDREPLICAPROP, DELETEREPLICAPROP.  (David Smiley)
+
 ==================  9.10.0 ==================
 New Features
 ---------------------
@@ -395,6 +411,8 @@ Other Changes
 * SOLR-17958: The Tika Language Identifier is deprecated. Use one of the other detectors instead. (Jan Høydahl)
 
 * SOLR-17952: Stream decorator test refactoring - use underscore rather than dot in aliases (Andy Webb)
+
+* SOLR-17771: Deprecate `CloudSolrClient.Builder` in favor of `CloudHttp2SolrClient.Builder`. (James Dyer)
 
 ==================  9.9.1 ==================
 Bug Fixes
@@ -558,7 +576,7 @@ Bug Fixes
 
 * SOLR-17726: MoreLikeThis to support copy-fields (Ilaria Petreti via Alessandro Benedetti)
 
-* SOLR-16667: Fixed dense/sparse representation in LTR module. (Anna Ruggero, Alessandro Benedetti)
+* SOLR-17760: Fixed dense/sparse representation in LTR module. (Anna Ruggero, Alessandro Benedetti)
 
 * SOLR-17800: Security Manager should handle symlink on /tmp (Kevin Risden)
 

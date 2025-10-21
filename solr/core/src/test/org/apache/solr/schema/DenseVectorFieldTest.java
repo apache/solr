@@ -25,6 +25,13 @@ import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.KnnByteVectorQuery;
+import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.PatienceKnnVectorQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SeededKnnVectorQuery;
+import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -35,6 +42,7 @@ import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.apache.solr.handler.loader.JavabinLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.neural.KnnQParser;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -834,6 +842,285 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
           req("q", "{!knn f=vector topK=1}[1.1,2.2,3.3,4.4]", "fl", "id"),
           "/response/numFound==1",
           "/response/docs/[0]/id==\"" + id + "\"");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_floatNoThresholdInInput_shouldSetDefaultThreshold()
+      throws Exception {
+    try {
+      Integer expectedThreshold = KnnSearchStrategy.DEFAULT_FILTERED_SEARCH_THRESHOLD;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      KnnFloatVectorQuery vectorQuery =
+          (KnnFloatVectorQuery)
+              type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, null, null, null, null);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_floatThresholdInInput_shouldSetCustomThreshold()
+      throws Exception {
+    try {
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      KnnFloatVectorQuery vectorQuery =
+          (KnnFloatVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector", "[2, 1, 3, 4]", 3, null, null, null, expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_seededFloatThresholdInInput_shouldSetCustomThreshold()
+      throws Exception {
+    try {
+      Query seedQuery = new BooleanQuery.Builder().build();
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      SeededKnnVectorQuery vectorQuery =
+          (SeededKnnVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector", "[2, 1, 3, 4]", 3, null, seedQuery, null, expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void
+      testFilteredSearchThreshold_earlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
+          throws Exception {
+    try {
+      KnnQParser.EarlyTerminationParams earlyTermination =
+          new KnnQParser.EarlyTerminationParams(true, 0.995, 7);
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      PatienceKnnVectorQuery vectorQuery =
+          (PatienceKnnVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector", "[2, 1, 3, 4]", 3, null, null, earlyTermination, expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void
+      testFilteredSearchThreshold_seededAndEarlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
+          throws Exception {
+    try {
+      Query seedQuery = new BooleanQuery.Builder().build();
+      KnnQParser.EarlyTerminationParams earlyTermination =
+          new KnnQParser.EarlyTerminationParams(true, 0.995, 7);
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      PatienceKnnVectorQuery vectorQuery =
+          (PatienceKnnVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector",
+                  "[2, 1, 3, 4]",
+                  3,
+                  null,
+                  seedQuery,
+                  earlyTermination,
+                  expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_byteNoThresholdInInput_shouldSetDefaultThreshold()
+      throws Exception {
+    try {
+      Integer expectedThreshold = KnnSearchStrategy.DEFAULT_FILTERED_SEARCH_THRESHOLD;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_byte_encoding");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      KnnByteVectorQuery vectorQuery =
+          (KnnByteVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding", "[2, 1, 3, 4]", 3, null, null, null, null);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_byteThresholdInInput_shouldSetCustomThreshold()
+      throws Exception {
+    try {
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_byte_encoding");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      KnnByteVectorQuery vectorQuery =
+          (KnnByteVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding", "[2, 1, 3, 4]", 3, null, null, null, expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_seededByteThresholdInInput_shouldSetCustomThreshold()
+      throws Exception {
+    try {
+      Query seedQuery = new BooleanQuery.Builder().build();
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_byte_encoding");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      SeededKnnVectorQuery vectorQuery =
+          (SeededKnnVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding",
+                  "[2, 1, 3, 4]",
+                  3,
+                  null,
+                  seedQuery,
+                  null,
+                  expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void
+      testFilteredSearchThreshold_earlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
+          throws Exception {
+    try {
+      KnnQParser.EarlyTerminationParams earlyTermination =
+          new KnnQParser.EarlyTerminationParams(true, 0.995, 7);
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_byte_encoding");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      PatienceKnnVectorQuery vectorQuery =
+          (PatienceKnnVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding",
+                  "[2, 1, 3, 4]",
+                  3,
+                  null,
+                  null,
+                  earlyTermination,
+                  expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void
+      testFilteredSearchThreshold_seededAndEarlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
+          throws Exception {
+    try {
+      Query seedQuery = new BooleanQuery.Builder().build();
+      KnnQParser.EarlyTerminationParams earlyTermination =
+          new KnnQParser.EarlyTerminationParams(true, 0.995, 7);
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_byte_encoding");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      PatienceKnnVectorQuery vectorQuery =
+          (PatienceKnnVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding",
+                  "[2, 1, 3, 4]",
+                  3,
+                  null,
+                  seedQuery,
+                  earlyTermination,
+                  expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
     } finally {
       deleteCore();
     }
