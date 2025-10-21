@@ -37,7 +37,6 @@ teardown_file() {
 }
 
 setup() {
-  export BATS_VERBOSE=1
   common_clean_setup
 }
 
