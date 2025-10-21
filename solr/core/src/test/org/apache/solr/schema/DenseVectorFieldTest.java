@@ -860,8 +860,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField type = (DenseVectorField) vectorField.getType();
       KnnFloatVectorQuery vectorQuery =
           (KnnFloatVectorQuery)
-              type.getKnnVectorQuery(
-                  "vector", "[2, 1, 3, 4]", 3, null, null, null, null);
+              type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, null, null, null, null);
       KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
       Integer threshold = strategy.filteredSearchThreshold();
 
