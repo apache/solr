@@ -86,7 +86,7 @@ distributions {
         include "bin/**"
         include "licenses/**"
         exclude "licenses/README.committers.txt"
-        include "CHANGES.txt"
+        include "CHANGELOG.md"
       })
 
       from(projectDir, {
