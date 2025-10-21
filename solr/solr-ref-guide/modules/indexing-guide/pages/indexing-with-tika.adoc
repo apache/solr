@@ -78,7 +78,7 @@ The quickest way to run Tika Server for development is using Docker. The example
 
 [,bash]
 ----
-docker run --rm -p 9998:9998 apache/tika:3.2.3.0-full
+docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
 ----
 
 NOTE: If Solr runs in Docker too, ensure both containers share a network and use the Tika container name as the host in `tikaserver.url`.
