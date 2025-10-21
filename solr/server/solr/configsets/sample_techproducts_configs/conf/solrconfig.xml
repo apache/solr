@@ -391,7 +391,7 @@
                         />
       -->
 
-    <!-- Feature Values Cache
+    <!-- Feature Vector Cache
 
          Cache used by the Learning To Rank (LTR) module.
 
