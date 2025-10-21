@@ -43,6 +43,7 @@ import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SeededKnnVectorQuery;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
@@ -379,17 +380,36 @@ public class DenseVectorField extends FloatPointField {
       int topK,
       Query filterQuery,
       Query seedQuery,
-      EarlyTerminationParams earlyTermination) {
+      EarlyTerminationParams earlyTermination,
+      Integer filteredSearchThreshold) {
 
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
 
     final Query knnQuery =
         switch (vectorEncoding) {
-          case FLOAT32 -> new KnnFloatVectorQuery(
-              fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
-          case BYTE -> new KnnByteVectorQuery(
-              fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
+          case FLOAT32 -> {
+            if (filteredSearchThreshold != null) {
+              KnnSearchStrategy knnSearchStrategy =
+                  new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
+              yield new KnnFloatVectorQuery(
+                  fieldName, vectorBuilder.getFloatVector(), topK, filterQuery, knnSearchStrategy);
+            } else {
+              yield new KnnFloatVectorQuery(
+                  fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
+            }
+          }
+          case BYTE -> {
+            if (filteredSearchThreshold != null) {
+              KnnSearchStrategy knnSearchStrategy =
+                  new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
+              yield new KnnByteVectorQuery(
+                  fieldName, vectorBuilder.getByteVector(), topK, filterQuery, knnSearchStrategy);
+            } else {
+              yield new KnnByteVectorQuery(
+                  fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
+            }
+          }
         };
 
     final boolean seedEnabled = (seedQuery != null);
