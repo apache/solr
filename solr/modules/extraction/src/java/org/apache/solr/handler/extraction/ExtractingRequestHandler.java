@@ -54,8 +54,10 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
     try {
       // Fail if using old unsupported configuration
       if (initArgs.get("tika.config") != null || initArgs.get("parseContext.config") != null) {
-        log.error(
-            "The 'tika.config' and 'parseContext.config' parameters are no longer supported since Solr 10.");
+        if (log.isErrorEnabled()) {
+          log.error(
+              "The 'tika.config' and 'parseContext.config' parameters are no longer supported since Solr 10.");
+        }
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
             "The 'tika.config' and 'parseContext.config' parameters are no longer supported since Solr 10.");
@@ -83,9 +85,8 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
       if (tikaServerUrl == null || tikaServerUrl.trim().isEmpty()) {
         if (log.isErrorEnabled()) {
           log.error(
-              "Tika Server URL must be configured via '"
-                  + ExtractingParams.TIKASERVER_URL
-                  + "' parameter");
+              "Tika Server URL must be configured via '{}' parameter",
+              ExtractingParams.TIKASERVER_URL);
         }
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
