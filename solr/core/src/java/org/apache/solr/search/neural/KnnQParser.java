@@ -32,6 +32,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
   protected static final String TOP_K = "topK";
   protected static final int DEFAULT_TOP_K = 10;
   protected static final String SEED_QUERY = "seedQuery";
+  protected static final String FILTERED_SEARCH_THRESHOLD = "filteredSearchThreshold";
 
   // parameters for PatienceKnnVectorQuery, a version of knn vector query that exits early when HNSW
   // queue saturates over a {@code #saturationThreshold} for more than {@code #patience} times.
@@ -107,6 +108,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
     final String vectorToSearch = getVectorToSearch();
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
+    final Integer filteredSearchThreshold = localParams.getInt(FILTERED_SEARCH_THRESHOLD);
 
     return denseVectorType.getKnnVectorQuery(
         schemaField.getName(),
@@ -114,6 +116,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
         topK,
         getFilterQuery(),
         getSeedQuery(),
-        getEarlyTerminationParams());
+        getEarlyTerminationParams(),
+        filteredSearchThreshold);
   }
 }

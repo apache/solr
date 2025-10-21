@@ -477,6 +477,28 @@ Here is an example of a `knn` search using a `seedQuery`:
 
 The search results retrieved are the k=10 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`. Documents matching the query `id:(1 4 10)` are used as entry points for the ANN search. If no documents match the seed, Solr falls back to a regular knn search without seeding, starting instead from random entry points.
 
+`filteredSearchThreshold`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default:  {lucene-javadocs}/core/constant-values.html#org.apache.lucene.search.knn.KnnSearchStrategy.DEFAULT_FILTERED_SEARCH_THRESHOLD[Lucene default] |An integer value from 0 to 100
+|===
++
+ACORN is an algorithm designed to make hybrid searches consisting of a filter and a vector search more efficient.
+This approach tackles both the performance limitations of pre- and post- filtering.
+It modifies the construction of the HNSW graph and the search on it. Based on https://arxiv.org/abs/2403.04871[ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data (2024)].
++
+Solr relies on Lucene's implementation of the `filteredSearchThreshold` in the  {lucene-javadocs}/core/org/apache/lucene/search/knn/KnnSearchStrategy.html[KnnSearchStrategy].
++
+A suggested value is 60 based on a benchmark you can read more about in this Github https://github.com/apache/lucene/pull/14160#issue-2805145799[comment].
++
+The `filteredSearchThreshold` regulates this behavior. If the percentage of documents that satisfies the filter is less than the threshold ACORN will be used.
+
+Here is an example of a `knn` search using a `filteredSearchThreshold`:
+
+[source,text]
+?q={!knn f=vector topK=10 filteredSearchThreshold=60}[1.0, 2.0, 3.0, 4.0]
+
 === knn_text_to_vector Query Parser
 
 The `knn_text_to_vector` query parser encode a textual query to a vector using a dedicated Large Language Model(fine tuned for the task of encoding text to vector for sentence similarity) and matches k-nearest neighbours documents to such query vector.
