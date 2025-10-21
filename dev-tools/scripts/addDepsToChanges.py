@@ -119,7 +119,7 @@ def get_prev_release_tag(ver):
 
 
 def read_config():
-    parser = argparse.ArgumentParser(description='Adds dependency changes section to CHANGES.txt.')
+    parser = argparse.ArgumentParser(description='Adds changelog entries in changelog/ folder')
     parser.add_argument('--version', type=Version.parse, help='Solr version to add changes to', required=True)
     parser.add_argument('--user', default='solrbot', help='Git user to get changes for. Defaults to solrbot')
     newconf = parser.parse_args()
@@ -204,7 +204,7 @@ def sort_entries(entries):
 
 
 def main():
-    if not os.path.exists('solr/CHANGES.txt'):
+    if not os.path.exists('CHANGELOG.md'):
         sys.exit("Tool must be run from the root of a source checkout.")
     newconf = read_config()
     prev_tag = get_prev_release_tag(newconf.version)
