@@ -106,24 +106,6 @@ of the other tools in this folder.
       -h, --help         show this help message and exit
       -l LUCENE_VERSION  Optional lucene version. By default will read gradle/libs.versions.toml
 
-### releasedJirasRegex.py
-
-Pulls out all JIRAs mentioned at the beginning of bullet items
-under the given version in the given CHANGES.txt file
-and prints a regular expression that will match all of them
-
-    usage: releasedJirasRegex.py [-h] version changes
-
-    Prints a regex matching JIRAs fixed in the given version by parsing the given
-    CHANGES.txt file
-
-    positional arguments:
-      version     Version of the form X.Y.Z
-      changes     CHANGES.txt file to parse
-
-    optional arguments:
-      -h, --help  show this help message and exit
-
 ### reproduceJenkinsFailures.py
 
     usage: reproduceJenkinsFailures.py [-h] [--no-git] [--iters N] URL
