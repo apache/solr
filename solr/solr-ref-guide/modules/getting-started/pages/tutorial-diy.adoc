@@ -47,7 +47,7 @@ docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
 [,console]
 ----
 # Stop Solr if it is running
-bin/solr stop -all
+bin/solr stop --all
 
 # Start Solr with extraction module
 bin/solr start -Dsolr.modules=extraction
