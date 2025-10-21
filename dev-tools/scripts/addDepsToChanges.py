@@ -16,7 +16,7 @@
 # limitations under the License.
 
 """
-Script to add solrbot changes lines to CHANGES.txt
+Script to create changelog YAML entries for solrbot dependency updates
 """
 import os
 import sys
@@ -26,6 +26,8 @@ from scriptutil import *
 
 import argparse
 import re
+import yaml
+from pathlib import Path
 
 line_re = re.compile(r"(.*?) (\(branch_\d+x\) )?\(#(\d+)\)$")
 
@@ -57,6 +59,44 @@ class ChangeEntry:
     def __str__(self) -> str:
         # Keep trailing newline to preserve existing blank-line formatting by update_changes
         return f"* PR#{self.pr_num}: {self.message} ({self.author})\n"
+
+    def to_yaml_dict(self) -> dict:
+        """
+        Convert to a dictionary suitable for YAML serialization
+        """
+        return {
+            'title': self.message,
+            'type': 'dependency_update',
+            'authors': [
+                {
+                    'name': self.author
+                }
+            ],
+            'links': [
+                {
+                    'name': f'PR#{self.pr_num}',
+                    'url': f'https://github.com/apache/solr/pull/{self.pr_num}'
+                }
+            ]
+        }
+
+    def yaml_filename(self) -> str:
+        """
+        Generate a filesystem-safe filename for this entry.
+        Format: PR#####-slug.yaml
+        """
+        # Clean message for slug
+        slug = self.message.lower()
+        # Replace spaces with dashes
+        slug = re.sub(r'\s+', '-', slug)
+        # Remove non-alphanumeric except dashes
+        slug = re.sub(r'[^a-z0-9-]', '', slug)
+        # Truncate to reasonable length
+        slug = slug[:50]
+        # Remove trailing dashes
+        slug = slug.rstrip('-')
+
+        return f"PR{self.pr_num}-{slug}.yaml"
 
 
 def get_prev_release_tag(ver):
@@ -119,72 +159,28 @@ def parse_gitlog_lines(lines, author: str):
     return entries
 
 
-def gitlog_to_changes(line, user="solrbot"):
+def write_changelog_yaml(entries):
     """
-    DEPRECATED: Use parse_gitlog_lines + ChangeEntry.__str__ instead.
-    Converts a git log formatted line ending in (#<pr-num) into a CHANGES style line.
-    Strips any '(branch_Nx)' text from the commit message, as that is not needed in CHANGES.txt
+    Write each ChangeEntry to a YAML file in changelog/unreleased/
     """
-    match = line_re.search(line)
+    changelog_dir = Path('changelog/unreleased')
 
-    if match:
-        text = match.group(1)
-        pr_num = match.group(3)
-        return "* PR#%s: %s (%s)\n" % (pr_num, text, user)
-    else:
-        print("Skipped un-parsable line: %s" % line)
-        return ""
+    # Create directory if it doesn't exist
+    changelog_dir.mkdir(parents=True, exist_ok=True)
 
+    count = 0
+    for entry in entries:
+        filename = changelog_dir / entry.yaml_filename()
+        yaml_data = entry.to_yaml_dict()
 
-def update_changes(filename, version, changes_lines):
-    """
-    Edits CHANGES.txt in-place
-    """
-    buffer = []
-    found_ver = False
-    found_header = False
-    checked_no_changes = False
-    appended = False
-    with open(filename) as f:
-        version_re = re.compile(r' %s ===' % (version))
-        header_re = re.compile(r'^Dependency Upgrades')
-        header_line_re = re.compile(r'^----')
-        for line in f:
-            if not found_ver:
-                buffer.append(line)
-                if version_re.search(line):
-                    found_ver = True
-                continue
-            if not found_header:
-                buffer.append(line)
-                if header_re.search(line):
-                    found_header = True
-                continue
-            if not appended:
-                if header_line_re.search(line):
-                    buffer.append(line)
-                    appended = True
-                    for change_line in changes_lines:
-                        buffer.append(change_line)
-                        buffer.append("\n")
-                    continue
-                else:
-                    print("Mismatch in CHANGES.txt, expected '----' line after header, got: %s" % line)
-                    exit(1)
-            if not checked_no_changes:
-                checked_no_changes = True
-                if re.compile(r'^\(No changes\)').search(line):
-                    continue
-            buffer.append(line)
-    if appended:
+        # Write YAML file with proper formatting
         with open(filename, 'w') as f:
-            f.write(''.join(buffer))
-    else:
-        if not found_ver:
-            print("Did not find version %s in CHANGES.txt" % version.dot)
-        elif not found_header:
-            print("Did not find header 'Dependency Upgrades' under version %s in CHANGES.txt" % version.dot)
-        exit(1)
+            yaml.dump(yaml_data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+
+        print(f"Created: {filename}")
+        count += 1
+
+    return count
 
 
 def dedupe_entries(entries):
@@ -212,14 +208,15 @@ def main():
         sys.exit("Tool must be run from the root of a source checkout.")
     newconf = read_config()
     prev_tag = get_prev_release_tag(newconf.version)
-    print("Adding dependency updates since git tag %s" % prev_tag)
+    print("Creating changelog YAML entries for dependency updates since git tag %s" % prev_tag)
     try:
         gitlog_lines = get_gitlog_lines(newconf.user, prev_tag)
         entries = parse_gitlog_lines(gitlog_lines, author=newconf.user)
         if entries:
             deduped = dedupe_entries(entries)
-            change_lines = [str(e) for e in deduped]
-            update_changes('solr/CHANGES.txt', newconf.version, change_lines)
+            sorted_entries = sort_entries(deduped)
+            count = write_changelog_yaml(sorted_entries)
+            print(f"Successfully created {count} changelog YAML entries")
         else:
             print("No changes found for version %s" % newconf.version.dot)
         print("Done")
