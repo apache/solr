@@ -293,11 +293,10 @@ class HTMLGenerator:
         return result
 
     def escape_html(self, text):
-        """Escape HTML special characters"""
-        text = text.replace('&', '&amp;')
+        """Escape HTML angle brackets to prevent rendering issues"""
+        # Only escape < and > to avoid breaking markdown links and quotes
         text = text.replace('<', '&lt;')
         text = text.replace('>', '&gt;')
-        text = text.replace('"', '&quot;')
         return text
 
     def generate_header(self, preamble=None):

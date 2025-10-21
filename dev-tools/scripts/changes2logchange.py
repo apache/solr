@@ -542,9 +542,9 @@ class ChangesParser:
         # This joins multi-line formatted text into a single coherent paragraph
         description = re.sub(r'\s+', ' ', description)
 
-        # Escape HTML entities to prevent markdown rendering issues
-        # This converts <, >, &, etc. to &lt;, &gt;, &amp; for safe markdown
-        description = html.escape(description)
+        # Escape HTML angle brackets to prevent markdown rendering issues
+        # Only escape < and > to avoid breaking markdown links and quotes
+        description = description.replace('<', '&lt;').replace('>', '&gt;')
 
         if not description:
             return None
