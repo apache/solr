@@ -848,7 +848,31 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void testFilteredSearchThresholdKnnFloatVectorQuery_shouldSetCustomThreshold()
+  public void testFilteredSearchThreshold_floatNoThresholdInInput_shouldSetDefaultThreshold()
+      throws Exception {
+    try {
+      Integer expectedThreshold = KnnSearchStrategy.DEFAULT_FILTERED_SEARCH_THRESHOLD;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      KnnFloatVectorQuery vectorQuery =
+          (KnnFloatVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector", "[2, 1, 3, 4]", 3, null, null, null, null);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_floatThresholdInInput_shouldSetCustomThreshold()
       throws Exception {
     try {
       Integer expectedThreshold = 30;
@@ -872,7 +896,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void testFilteredSearchThresholdSeededKnnFloatVectorQuery_shouldSetCustomThreshold()
+  public void testFilteredSearchThreshold_seededFloatThresholdInInput_shouldSetCustomThreshold()
       throws Exception {
     try {
       Query seedQuery = new BooleanQuery.Builder().build();
@@ -898,7 +922,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void
-      testFilteredSearchThresholdEarlyTerminationKnnFloatVectorQuery_shouldSetCustomThreshold()
+      testFilteredSearchThreshold_earlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
           throws Exception {
     try {
       KnnQParser.EarlyTerminationParams earlyTermination =
@@ -925,7 +949,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void
-      testFilteredSearchThresholdSeededAndEarlyTerminationKnnFloatVectorQuery_shouldSetCustomThreshold()
+      testFilteredSearchThreshold_seededAndEarlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
           throws Exception {
     try {
       Query seedQuery = new BooleanQuery.Builder().build();
@@ -958,7 +982,31 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void testFilteredSearchThresholdKnnByteVectorQuery_shouldSetCustomThreshold()
+  public void testFilteredSearchThreshold_byteNoThresholdInInput_shouldSetDefaultThreshold()
+      throws Exception {
+    try {
+      Integer expectedThreshold = KnnSearchStrategy.DEFAULT_FILTERED_SEARCH_THRESHOLD;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_byte_encoding");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      KnnByteVectorQuery vectorQuery =
+          (KnnByteVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding", "[2, 1, 3, 4]", 3, null, null, null, null);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_byteThresholdInInput_shouldSetCustomThreshold()
       throws Exception {
     try {
       Integer expectedThreshold = 30;
@@ -982,7 +1030,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void testFilteredSearchThresholdSeededKnnByteVectorQuery_shouldSetCustomThreshold()
+  public void testFilteredSearchThreshold_seededByteThresholdInInput_shouldSetCustomThreshold()
       throws Exception {
     try {
       Query seedQuery = new BooleanQuery.Builder().build();
@@ -1014,7 +1062,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void
-      testFilteredSearchThresholdEarlyTerminationKnnByteVectorQuery_shouldSetCustomThreshold()
+      testFilteredSearchThreshold_earlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
           throws Exception {
     try {
       KnnQParser.EarlyTerminationParams earlyTermination =
@@ -1047,7 +1095,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void
-      testFilteredSearchThresholdSeededAndEarlyTerminationKnnByteVectorQuery_shouldSetCustomThreshold()
+      testFilteredSearchThreshold_seededAndEarlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
           throws Exception {
     try {
       Query seedQuery = new BooleanQuery.Builder().build();
