@@ -31,8 +31,8 @@ public class KnnQParser extends AbstractVectorQParserBase {
   // retrieve the top K results based on the distance similarity function
   protected static final String TOP_K = "topK";
   protected static final int DEFAULT_TOP_K = 10;
-  protected static final String FILTERED_SEARCH_THRESHOLD = "filteredSearchThreshold";
   protected static final String SEED_QUERY = "seedQuery";
+  protected static final String FILTERED_SEARCH_THRESHOLD = "filteredSearchThreshold";
 
   // parameters for PatienceKnnVectorQuery, a version of knn vector query that exits early when HNSW
   // queue saturates over a {@code #saturationThreshold} for more than {@code #patience} times.

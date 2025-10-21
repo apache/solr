@@ -386,28 +386,31 @@ public class DenseVectorField extends FloatPointField {
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
 
-    final Query knnQuery = switch (vectorEncoding) {
-      case FLOAT32 -> {
-        if (filteredSearchThreshold != null) {
-          KnnSearchStrategy knnSearchStrategy = new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
-          yield new KnnFloatVectorQuery(
-              fieldName, vectorBuilder.getFloatVector(), topK, filterQuery, knnSearchStrategy);
-        } else {
-          yield new KnnFloatVectorQuery(
-              fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
-        }
-      }
-      case BYTE -> {
-        if (filteredSearchThreshold != null) {
-          KnnSearchStrategy knnSearchStrategy = new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
-          yield new KnnByteVectorQuery(
-              fieldName, vectorBuilder.getByteVector(), topK, filterQuery, knnSearchStrategy);
-        } else {
-          yield new KnnByteVectorQuery(
-              fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
-        }
-      }
-    };
+    final Query knnQuery =
+        switch (vectorEncoding) {
+          case FLOAT32 -> {
+            if (filteredSearchThreshold != null) {
+              KnnSearchStrategy knnSearchStrategy =
+                  new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
+              yield new KnnFloatVectorQuery(
+                  fieldName, vectorBuilder.getFloatVector(), topK, filterQuery, knnSearchStrategy);
+            } else {
+              yield new KnnFloatVectorQuery(
+                  fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
+            }
+          }
+          case BYTE -> {
+            if (filteredSearchThreshold != null) {
+              KnnSearchStrategy knnSearchStrategy =
+                  new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
+              yield new KnnByteVectorQuery(
+                  fieldName, vectorBuilder.getByteVector(), topK, filterQuery, knnSearchStrategy);
+            } else {
+              yield new KnnByteVectorQuery(
+                  fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
+            }
+          }
+        };
 
     final boolean seedEnabled = (seedQuery != null);
     final boolean earlyTerminationEnabled =
