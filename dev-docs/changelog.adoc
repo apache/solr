@@ -82,7 +82,7 @@ The `validate-changelog` GitHub workflow automatically checks that:
 . **CHANGES.txt is not edited directly** - All changes must use the YAML fragment approach
 . **A changelog entry is added** - Code changes must include a corresponding YAML file in `changelog/unreleased/`
 
-If your PR modifies code but should not have a changelog entry (e.g., internal refactoring, build system changes), add the `no-changelog` label to skip these checks.
+If your change does not require a changelog entry, it is still possible to merge the PR.
 
 == 5. Writing Good Entries
 
@@ -118,10 +118,11 @@ links:
 
 == 7. Migration tool
 
-There is a migration tool in `dev-tools/scripts/changes2logchange.py`.
+There is a migration tool in `dev-tools/scripts/changes2logchange.py` for one-time use during the transition.
 It will bulk convert the entire `solr/CHANGES.txt` file to files in the `changelog/` folder and versioned sub folders.
 
-The tool can also convert a single changelog entry reading `stdin` as follows:
+The tool can also be used by a developer who needs to convert many entries from work-in-progress after the migration
+cutover. You can paste one or more entries and get them converted in the Terminal as follows:
 
 ```bash
 cat << EOF | python3 dev-tools/scripts/changes2logchange.py -
