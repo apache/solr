@@ -62,22 +62,28 @@ class ChangeEntry:
 
     def to_yaml_dict(self) -> dict:
         """
-        Convert to a dictionary suitable for YAML serialization
+        Convert to a dictionary suitable for YAML serialization.
+        Extracts JIRA IDs from the title and adds them to links.
         """
+        # Extract JIRA IDs from the message
+        title, jira_links = extract_jira_issues_from_title(self.message)
+
+        # Build links: JIRA issues first, then PR
+        links = jira_links.copy()  # Start with JIRA links
+        links.append({
+            'name': f'PR#{self.pr_num}',
+            'url': f'https://github.com/apache/solr/pull/{self.pr_num}'
+        })
+
         return {
-            'title': self.message,
+            'title': title,
             'type': 'dependency_update',
             'authors': [
                 {
                     'name': self.author
                 }
             ],
-            'links': [
-                {
-                    'name': f'PR#{self.pr_num}',
-                    'url': f'https://github.com/apache/solr/pull/{self.pr_num}'
-                }
-            ]
+            'links': links
         }
 
     def yaml_filename(self) -> str:
@@ -90,7 +96,7 @@ class ChangeEntry:
         # Replace spaces with dashes
         slug = re.sub(r'\s+', '-', slug)
         # Remove non-alphanumeric except dashes
-        slug = re.sub(r'[^a-z0-9-]', '', slug)
+        slug = re.sub(r'[^a-z0-9-._]', '', slug)
         # Truncate to reasonable length
         slug = slug[:50]
         # Remove trailing dashes

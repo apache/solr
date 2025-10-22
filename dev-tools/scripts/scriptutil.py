@@ -244,6 +244,38 @@ def find_current_lucene_version():
   return lucene_version_prop_re.search(versions_file).group(1).strip()
 
 
+def extract_jira_issues_from_title(title):
+  """
+  Extract JIRA issue IDs from a title/text string.
+  Returns a tuple of (cleaned_title, list_of_jira_links)
+  where jira_links is a list of dicts with 'name' and 'url' keys.
+
+  Handles patterns like: SOLR-12345, LUCENE-1234, INFRA-567
+  Only extracts JIRA issues, not GitHub PRs.
+  """
+  jira_pattern = re.compile(r'(?:SOLR|LUCENE|INFRA)-(\d+)')
+
+  links = []
+  seen_issues = set()
+
+  # Find all JIRA issues in the title
+  for match in jira_pattern.finditer(title):
+    issue_id = match.group(0)  # Full "SOLR-12345" format
+    if issue_id not in seen_issues:
+      url = f"https://issues.apache.org/jira/browse/{issue_id}"
+      links.append({
+        'name': issue_id,
+        'url': url
+      })
+      seen_issues.add(issue_id)
+
+  # Remove JIRA IDs from the title (only at the beginning, followed by colon or space)
+  # Pattern: "SOLR-12345: " or "SOLR-12345 " at the start
+  cleaned_title = re.sub(r'^(?:SOLR|LUCENE|INFRA)-\d+[\s:]*', '', title).strip()
+
+  return cleaned_title, links
+
+
 if __name__ == '__main__':
   print('This is only a support module, it cannot be run')
   sys.exit(1)
