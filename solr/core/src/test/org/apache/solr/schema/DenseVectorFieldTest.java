@@ -42,7 +42,7 @@ import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.apache.solr.handler.loader.JavabinLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.neural.KnnQParser;
+import org.apache.solr.search.vector.KnnQParser;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
