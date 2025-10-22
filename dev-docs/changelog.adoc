@@ -77,6 +77,8 @@ user.githubid=johngithub
 user.asfid=johnapache
 ----
 
+TIP: Aliases for `writeChangelog` task are `changelog` and `newChangelog`.
+
 == 4. Writing Good Entries
 
 * **Audience** is end-users and administrators, not committers.
