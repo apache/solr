@@ -244,6 +244,59 @@ def find_current_lucene_version():
   return lucene_version_prop_re.search(versions_file).group(1).strip()
 
 
+def extract_jira_issues_from_title(title):
+  """
+  Extract JIRA issue IDs from a title/text string.
+  Returns a tuple of (cleaned_title, list_of_jira_links)
+  where jira_links is a list of dicts with 'name' and 'url' keys.
+
+  Handles patterns like: SOLR-12345, LUCENE-1234, INFRA-567
+  Only extracts JIRA issues, not GitHub PRs.
+  Handles both "SOLR-123: description" and "description / SOLR-456:" patterns.
+  """
+  jira_pattern = re.compile(r'(?:SOLR|LUCENE|INFRA)-(\d+)')
+
+  links = []
+  seen_issues = set()
+
+  # Find all JIRA issues in the title
+  for match in jira_pattern.finditer(title):
+    issue_id = match.group(0)  # Full "SOLR-12345" format
+    if issue_id not in seen_issues:
+      url = f"https://issues.apache.org/jira/browse/{issue_id}"
+      links.append({
+        'name': issue_id,
+        'url': url
+      })
+      seen_issues.add(issue_id)
+
+  # Remove JIRA IDs from the title.
+  # Handle multiple patterns:
+  # 1. "SOLR-12345: description" at the beginning
+  # 2. "description / SOLR-456: more text" (remove the slash and JIRA ID)
+  # 3. "/ SOLR-123: description" (leading slash with JIRA)
+  # 4. Multiple JIRA IDs anywhere in the title
+
+  cleaned_title = title
+
+  # First, clean up leading slash patterns like "/ SOLR-123:" or "/ SOLR-123 "
+  cleaned_title = re.sub(r'^\s*/\s*(?:SOLR|LUCENE|INFRA)-\d+[\s:]*', '', cleaned_title)
+
+  # Remove slash-separated JIRA IDs in the middle: "... / SOLR-123:" or "... / SOLR-123 "
+  cleaned_title = re.sub(r'\s+/\s*(?:SOLR|LUCENE|INFRA)-\d+[\s:]*', ' ', cleaned_title)
+
+  # Remove any remaining JIRA IDs at the beginning followed by colon/space
+  cleaned_title = re.sub(r'^(?:SOLR|LUCENE|INFRA)-\d+[\s:]*', '', cleaned_title)
+
+  # Clean up any remaining leading slashes or extra whitespace
+  cleaned_title = re.sub(r'^\s*/\s*', '', cleaned_title).strip()
+
+  # Collapse multiple spaces
+  cleaned_title = re.sub(r'\s+', ' ', cleaned_title)
+
+  return cleaned_title, links
+
+
 if __name__ == '__main__':
   print('This is only a support module, it cannot be run')
   sys.exit(1)

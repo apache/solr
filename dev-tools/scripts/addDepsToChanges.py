@@ -62,39 +62,64 @@ class ChangeEntry:
 
     def to_yaml_dict(self) -> dict:
         """
-        Convert to a dictionary suitable for YAML serialization
+        Convert to a dictionary suitable for YAML serialization.
+        Extracts JIRA IDs from the title and adds them to links.
         """
+        # Extract JIRA IDs from the message
+        title, jira_links = extract_jira_issues_from_title(self.message)
+
+        # Build links: JIRA issues first, then PR
+        links = jira_links.copy()  # Start with JIRA links
+        links.append({
+            'name': f'PR#{self.pr_num}',
+            'url': f'https://github.com/apache/solr/pull/{self.pr_num}'
+        })
+
         return {
-            'title': self.message,
+            'title': title,
             'type': 'dependency_update',
             'authors': [
                 {
                     'name': self.author
                 }
             ],
-            'links': [
-                {
-                    'name': f'PR#{self.pr_num}',
-                    'url': f'https://github.com/apache/solr/pull/{self.pr_num}'
-                }
-            ]
+            'links': links
         }
 
     def yaml_filename(self) -> str:
         """
         Generate a filesystem-safe filename for this entry.
         Format: PR#####-slug.yaml
+        Truncates slug on whitespace boundaries, allowing up to 255 chars total.
         """
         # Clean message for slug
         slug = self.message.lower()
         # Replace spaces with dashes
         slug = re.sub(r'\s+', '-', slug)
         # Remove non-alphanumeric except dashes
-        slug = re.sub(r'[^a-z0-9-]', '', slug)
-        # Truncate to reasonable length
-        slug = slug[:50]
-        # Remove trailing dashes
-        slug = slug.rstrip('-')
+        slug = re.sub(r'[^a-z0-9-._]', '', slug)
+
+        # Calculate available space for slug
+        # Format: "PR" + pr_num + "-" + slug + ".yaml"
+        # Typical PR#1234 = 8 chars + "-" = 9 chars, ".yaml" = 5 chars, total overhead = 14 chars
+        # Most filesystems limit filenames to 255 chars
+        max_filename_length = 255
+        overhead = len(f"PR{self.pr_num}-.yaml")
+        max_slug_length = max_filename_length - overhead
+
+        # Truncate to max length on word boundaries if necessary
+        if len(slug) > max_slug_length:
+            # Find the last dash within the limit
+            truncated = slug[:max_slug_length]
+            last_dash = truncated.rfind('-')
+            if last_dash > max_slug_length // 2:  # Keep at least half the available space
+                slug = truncated[:last_dash]
+            else:
+                # If no good word boundary, use hard limit and clean up trailing dashes
+                slug = truncated.rstrip('-')
+        else:
+            # Remove trailing dashes
+            slug = slug.rstrip('-')
 
         return f"PR{self.pr_num}-{slug}.yaml"
 
