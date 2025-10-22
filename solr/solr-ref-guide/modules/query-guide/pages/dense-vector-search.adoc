@@ -109,7 +109,7 @@ and the hyperparameter of the HNSW algorithm, make sure the xref:configuration-g
 Here's how `DenseVectorField` can be configured with the advanced hyperparameters:
 
 [source,xml]
-<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" m="10" efConstruction="40"/>
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" hnswM="10" hnswEfConstruction="40"/>
 <field name="vector" type="knn_vector" indexed="true" stored="true"/>
 
 `knnAlgorithm`::
@@ -139,7 +139,7 @@ Please note that the `knnAlgorithm` accepted values may change in future release
 Accepted values: `FLOAT32`, `BYTE`.
 
 
-`m`::
+`hnswM`::
 +
 [%autowidth,frame=none]
 |===
@@ -155,7 +155,7 @@ For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 pa
 Accepted values:
 Any integer.
 
-`efConstruction`::
+`hnswEfConstruction`::
 +
 [%autowidth,frame=none]
 |===
@@ -730,8 +730,8 @@ Define the xref:configuration-guide:codec-factory.adoc[codecFactory] in xref:con
     <str name="intGraphDegree">128</str>
     <str name="graphDegree">64</str>
     <str name="hnswLayers">1</str>
-    <str name="m">16</str>
-    <str name="efConstruction">100</str>
+    <str name="hnswM">16</str>
+    <str name="hnswEfConstruction">100</str>
 </codecFactory>
 ----
 
@@ -745,9 +745,9 @@ Where:
 
 * `cuvsHnswLayers` - Number of HNSW graph layers to construct while building the HNSW index
 
-* `m` - m parameter passed to the fallback Lucene99HnswVectorsWriter
+* `hnswM` - hnswM parameter passed to the fallback Lucene99HnswVectorsWriter
 
-* `efConstruction` - efConstruction parameter passed to the fallback Lucene99HnswVectorsWriter
+* `hnswEfConstruction` - hnswEfConstruction parameter passed to the fallback Lucene99HnswVectorsWriter
 
 === Example
 
@@ -885,8 +885,8 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
         <str name="intGraphDegree">128</str>
         <str name="graphDegree">64</str>
         <str name="hnswLayers">1</str>
-        <str name="m">16</str>
-        <str name="efConstruction">100</str>
+        <str name="hnswM">16</str>
+        <str name="hnswEfConstruction">100</str>
     </codecFactory>
 
     <requestHandler name="/select" class="solr.SearchHandler">

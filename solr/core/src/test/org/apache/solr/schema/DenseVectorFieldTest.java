@@ -155,8 +155,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(type1.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       assertThat(type1.getDimension(), is(4));
       assertThat(type1.getKnnAlgorithm(), is("hnsw"));
-      assertThat(type1.getM(), is(10));
-      assertThat(type1.getEfConstruction(), is(40));
+      assertThat(type1.getHnswM(), is(10));
+      assertThat(type1.getHnswEfConstruction(), is(40));
 
       SchemaField vector2 = schema.getField("vector2");
       assertNotNull(vector2);
@@ -165,8 +165,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(type2.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       assertThat(type2.getDimension(), is(4));
       assertThat(type2.getKnnAlgorithm(), is("hnsw"));
-      assertThat(type2.getM(), is(6));
-      assertThat(type2.getEfConstruction(), is(60));
+      assertThat(type2.getHnswM(), is(6));
+      assertThat(type2.getHnswEfConstruction(), is(60));
 
       SchemaField vector3 = schema.getField("vector3");
       assertNotNull(vector3);
@@ -176,8 +176,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(type3.getDimension(), is(5));
 
       assertThat(type3.getKnnAlgorithm(), is("hnsw"));
-      assertThat(type3.getM(), is(8));
-      assertThat(type3.getEfConstruction(), is(46));
+      assertThat(type3.getHnswM(), is(8));
+      assertThat(type3.getHnswEfConstruction(), is(46));
 
       SchemaField vectorDefault = schema.getField("vector_default");
       assertNotNull(vectorDefault);
@@ -186,8 +186,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(typeDefault.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       assertThat(typeDefault.getKnnAlgorithm(), is("hnsw"));
       assertThat(typeDefault.getDimension(), is(4));
-      assertThat(typeDefault.getM(), is(16));
-      assertThat(typeDefault.getEfConstruction(), is(100));
+      assertThat(typeDefault.getHnswM(), is(16));
+      assertThat(typeDefault.getHnswEfConstruction(), is(100));
     } finally {
       deleteCore();
     }
