@@ -58,7 +58,7 @@ public interface ExtractionBackend extends Closeable {
     return md;
   }
 
-  /** A short name for debugging/config, e.g., "local" or "tikaserver". */
+  /** A short name for debugging/config. */
   String name();
 
   @Override

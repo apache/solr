@@ -137,6 +137,8 @@ The xref:indexing-with-update-handlers.adoc#csv-formatted-index-updates[CSV hand
 
 Index a PDF file into `gettingstarted`.
 
+NOTE: This requires a Tika Server to be configured. See xref:indexing-with-tika.adoc#tika-server[Indexing With Tika] for details.
+
 [,console]
 ----
 $ bin/solr post --solr-url http://localhost:8983/solr --name gettingstarted a.pdf

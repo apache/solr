@@ -151,8 +151,7 @@
   </requestHandler>
 
   <requestHandler name="/update/extract" class="org.apache.solr.handler.extraction.ExtractingRequestHandler">
-    <str name="parseContext.config">parseContext.xml</str>
-    <str name="extraction.backend">${solr.test.extraction.backend:local}</str>
+    <str name="extraction.backend">${solr.test.extraction.backend:tikaserver}</str>
     <str name="tikaserver.url">${solr.test.tikaserver.url:}</str>
     <str name="tikaserver.metadata.compatibility">${solr.test.tikaserver.metadata.compatibility:false}</str>
   </requestHandler>
@@ -164,7 +163,7 @@
   </requestHandler>
 
   <requestHandler name="/update/extract/lit-def" class="org.apache.solr.handler.extraction.ExtractingRequestHandler">
-    <str name="extraction.backend">${solr.test.extraction.backend:local}</str>
+    <str name="extraction.backend">${solr.test.extraction.backend:tikaserver}</str>
     <str name="tikaserver.url">${solr.test.tikaserver.url:}</str>
     <str name="tikaserver.metadata.compatibility">${solr.test.tikaserver.metadata.compatibility:false}</str>
     <lst name="defaults">
