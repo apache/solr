@@ -58,7 +58,7 @@ templates:
     {% set passed = plus_binding >= 3 and minus < plus_binding %}
     {% set too_few = plus_binding < 3 %}
     {% set veto = plus_binding < minus %}
-    {% set reason = 'too few binding votes' if too_few else 'too many negative votes' if veto else 'unknown' %}
+    {% set reason = 'too few binding votes' if too_few else 'too many negative votes' if veto else 'unknown' %}    
   vote_macro: |
     {% macro end_vote_result(plus_binding, plus_other, zero, minus) -%}
     (( template=vote_logic ))
@@ -75,7 +75,7 @@ templates:
 
     {% if not passed %}
     Reason for fail is {{ reason }}.
-
+    
     {% endif %}
     This vote has {% if passed %}PASSED{% else %}FAILED{% endif %}  
     ----
@@ -116,10 +116,10 @@ templates:
 
     (( template=announce_solr_mail_body ))
     ----
-  announce_solr_announce_mail: |
+  announce_solr_announce_mail: |    
     The template below can be used to announce the Solr release to the
     `announce@apache.org` mailing list. The email *must* be sent *from your `@apache.org` account*,
-    and it *can optionally* be signed with your PGP key, using the `--clearsign` option of
+    and it *can optionally* be signed with your PGP key, using the `--clearsign` option of 
     gpg, as explained in https://www.gnupg.org/gph/en/manual/x135.html.
 
     .Mail template
@@ -166,12 +166,12 @@ templates:
 #       # Vars can contain global jinja vars or local vars earlier defined (ordered dict)
 #     persist_vars: ['var_name', 'var_name'] # List of variables to persist in TODO state
 #     asciidoc: |
-#         Some `asciidoc` text to be included in asciidoc guide
+#         Some `asciidoc` text to be included in asciidoc guide 
 #         *instead of* description/post_description
 #     function: my_python_function  # Will call the named function for complex tasks
 #     commands: !Commands   # A !Commands object holding commands to execute for this todo
 #       root_folder: '{{ git_checkout_folder }}' # path to where commands will run
-#       commands_text: Introduction text to be displayed just before the commands
+#       commands_text: Introduction text to be displayed just before the commands 
 #       enable_execute: true # Set to false to never offer to run commands automatically
 #       confirm_each_command: true # Set to false to run all commands without prompting
 #       remove_files: ['file1', 'folder2'] # List of files or folders that must be gone
@@ -196,7 +196,7 @@ templates:
 #       name: gpg_id  # This will be stored in todo state and can be referenced as {{ todo_id.name }}
 #       type: int  # if no type is given, a string is stored. Supported types are 'int'
 #     post_description: |
-#       Some `asciidoc` text (with jinja template support)
+#       Some `asciidoc` text (with jinja template support) 
 #       to be printed *after* commands and user_input is done.
 #     links:
 #     - http://example.com/list/of/links?to&be&displayed
@@ -453,7 +453,7 @@ groups:
     title: Update Ref Guide Metadata for new Minor Branch
     description: |
       This will update the "solr/solr-ref-guide/antora.yml" file.
-
+      
       The file shouldn't change much, but it should pick up new dependency versions, if they have changed.
     types:
     - major
@@ -557,7 +557,7 @@ groups:
     description: |
       This will make sure we are continuously testing the new branch(es) we have created.
       Consult the JenkinsReleaseBuilds page for more information.
-
+      
       Job Suffixes to create:
         {% if release_type == 'major' %}
         *-{{release_version_major}}.x (The new stable branch)
@@ -575,7 +575,7 @@ groups:
     description: |
       This will make sure we aren't using resources to test branches no longer in development.
       Consult the JenkinsReleaseBuilds page for more information.
-
+      
       Job Suffixes to delete:
         {% if release_type == 'major' %}
         *-{{latest_lts_version_major}}.{{latest_lts_version_minor}} (The previous LTS release branch)
@@ -832,7 +832,7 @@ groups:
   - !Todo
     id: build_rc
     title: Build the release candidate
-    depends:
+    depends: 
     - setup_gpg
     - run_tests
     vars:
@@ -853,7 +853,7 @@ groups:
         Note that the build will take a long time. To follow the detailed build
         log, you can tail the log file {{ logfile | default("<logfile>") }}.
       confirm_each_command: false
-      remove_files:
+      remove_files: 
       - '{{ dist_file_path }}'
       commands:
       - !Command
@@ -912,7 +912,7 @@ groups:
     id: verify_staged
     title: Verify staged artifacts
     description: |
-      A lightweight smoke testing which downloads the artifacts from stage
+      A lightweight smoke testing which downloads the artifacts from stage 
       area and checks hash and signatures, but does not re-run all tests.
     depends: import_svn
     vars:
@@ -1056,7 +1056,7 @@ groups:
         there are more positive than negative votes you can techically release
         the software. However, please review the negative votes and consider
         a re-spin.
-
+        
         {% endif %}
         {%- endif %}
         {{ end_vote_result(plus_binding,plus_other,zero,minus) }}
@@ -1128,10 +1128,10 @@ groups:
     depends: mv_to_release
     description: |
       For every release, we publish the official dockerfile for solr via the methods required by Docker.
-
+      
       This will start the process, and will ultimately create a PR in https://github.com/docker-library/official-images.
       This PR creation is automated, you do not need to do more work beyond these steps.
-
+      
       When that PR is approved and merged, the Official image for this Solr version will be built and available for use.
     vars:
       docker_version: '{{ release_version_major }}.{{ release_version_minor }}'
@@ -1275,7 +1275,7 @@ groups:
       The Solr minor branches do not contain up-to-date ref-guide metadata (antora.yml).
       Instead, they have the information from the last release.
       This allows us to build the official documentation from these minor branches, instead of from the release tags.
-
+      
       This means that we can make fixes to older ref-guides without requiring a new release for those versions.
     depends: tag_release
     commands: !Commands
@@ -1555,7 +1555,7 @@ groups:
     title: Update the DOAP file
     description: |
       Update the Solr DOAP RDF file on the unstable, stable and release branches to
-      reflect the new versions (note that the website .htaccess file redirects from their
+      reflect the new versions (note that the website .htaccess file redirects from their 
       canonical URLs to their locations in the Solr Git source repository - see
       dev-tools/doap/README.txt for more info)
     commands: !Commands
@@ -1619,7 +1619,7 @@ groups:
   id: announce
   title: Announce the release
   description: |
-    For feature releases, your announcement should describe the main features included
+    For feature releases, your announcement should describe the main features included 
     in the release. *Send the announce as Plain-text email, not HTML.*
 
     This step will generate email templates based on the news files you edited earlier for the website.
@@ -1792,7 +1792,7 @@ groups:
 
       . Next to version {{ release_version_jira }}, click the gear pop-up menu icon and choose "Release"
       . Fill in the release date ({{ release_date | formatdate }})
-      . It will give the option of transitioning issues marked fix-for the released version to the
+      . It will give the option of transitioning issues marked fix-for the released version to the 
         next version, but do not do this as it will send an email for each issue :)
     links:
     - https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions
@@ -1873,7 +1873,7 @@ groups:
       root_folder: '{{ git_checkout_folder }}'
       commands_text: |
         Run these commands to delete proposed versions from distribution directory.
-
+        
         WARNING: Validate that the proposal is correct!
       commands:
       - !Command
