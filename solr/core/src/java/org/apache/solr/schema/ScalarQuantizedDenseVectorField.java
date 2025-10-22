@@ -96,8 +96,8 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   @Override
   public KnnVectorsFormat buildKnnVectorsFormat() {
     return new Lucene99HnswScalarQuantizedVectorsFormat(
-        getM(),
-        getEfConstruction(),
+        getHnswM(),
+        getHnswEfConstruction(),
         DEFAULT_NUM_MERGE_WORKER,
         getBits(),
         useCompression(),

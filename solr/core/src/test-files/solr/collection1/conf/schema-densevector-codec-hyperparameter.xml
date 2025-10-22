@@ -21,9 +21,9 @@
 <schema name="schema-densevector-codec-hyperparameter" version="1.7">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
   <fieldType name="knn_vector_default" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
-  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" m="10" efConstruction="40"/>
-  <fieldType name="knn_vector2" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" m="6" efConstruction="60"/>
-  <fieldType name="knn_vector3" class="solr.DenseVectorField" vectorDimension="5" similarityFunction="cosine" knnAlgorithm="hnsw" m="8" efConstruction="46"/>
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" hnswM="10" hnswEfConstruction="40"/>
+  <fieldType name="knn_vector2" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" hnswM="6" hnswEfConstruction="60"/>
+  <fieldType name="knn_vector3" class="solr.DenseVectorField" vectorDimension="5" similarityFunction="cosine" knnAlgorithm="hnsw" hnswM="8" hnswEfConstruction="46"/>
 
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
