@@ -178,7 +178,27 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   }
 
   /** Class representing an UpdateRequest and an optional collection. */
-  private record Update(UpdateRequest request, String collection) {}
+  private static class Update {
+    final UpdateRequest request;
+    final String collection;
+
+    /**
+     * @param request the update request.
+     * @param collection The collection, can be null.
+     */
+    Update(UpdateRequest request, String collection) {
+      this.request = request;
+      this.collection = collection;
+    }
+
+    UpdateRequest request() {
+      return request;
+    }
+
+    String collection() {
+      return collection;
+    }
+  }
 
   /** Opens a connection and sends everything... */
   class Runner implements Runnable {
