@@ -23,25 +23,6 @@ from scriptutil import *
 import argparse
 import re
 from configparser import ConfigParser, ExtendedInterpolation
-from textwrap import dedent
-
-def update_changes(filename, new_version, init_changes, headers):
-  print('  adding new section to %s...' % filename, end='', flush=True)
-  matcher = re.compile(r'\d+\.\d+\.\d+\s+===')
-  def edit(buffer, match, line):
-    if new_version.dot in line:
-      return None
-    match = new_version.previous_dot_matcher.search(line)
-    if match is not None:
-      buffer.append(line.replace(match.group(0), new_version.dot))
-      buffer.append(init_changes)
-      for header in headers:
-        buffer.append('%s\n---------------------\n(No changes)\n\n' % header)
-    buffer.append(line)
-    return match is not None
-     
-  changed = update_file(filename, matcher, edit)
-  print('done' if changed else 'uptodate')
 
 def update_solrversion_class(new_version):
   filename = 'solr/api/src/java/org/apache/solr/client/api/util/SolrVersion.java'
@@ -54,7 +35,7 @@ def update_solrversion_class(new_version):
       return None
     buffer.append(line.replace(match.group(1), new_version.dot))
     return True
-  
+
   changed = update_file(filename, matcher, edit)
   print('done' if changed else 'uptodate')
 
@@ -65,7 +46,7 @@ def update_build_version(new_version):
     if new_version.dot in line:
       return None
     buffer.append('  String baseVersion = \'' + new_version.dot + '\'\n')
-    return True 
+    return True
 
   changed = update_file(filename, version_prop_re, edit)
   print('done' if changed else 'uptodate')
@@ -113,7 +94,7 @@ def check_lucene_match_version_tests():
   print('ok')
 
 def read_config(current_version, current_lucene_version):
-  parser = argparse.ArgumentParser(description='Add a new version to CHANGES, to Version.java, build.gradle and solrconfig.xml files')
+  parser = argparse.ArgumentParser(description='Add a new version to Version.java, build.gradle and solrconfig.xml files')
   parser.add_argument('version', type=Version.parse, help='New Solr version')
   parser.add_argument('-l', dest='lucene_version', type=Version.parse, help='Optional lucene version. By default will read versions.props')
   newconf = parser.parse_args()
@@ -137,18 +118,13 @@ def parse_properties_file(filename):
 
 def get_solr_init_changes():
   return ''
-  
+
 def main():
   if not os.path.exists('build.gradle'):
     sys.exit("Tool must be run from the root of a source checkout.")
   current_version = Version.parse(find_current_version())
   current_lucene_version = Version.parse(find_current_lucene_version())
   newconf = read_config(current_version, current_lucene_version)
-  is_bugfix = newconf.version.is_bugfix_release()
-
-  print('\nAdding new version %s' % newconf.version)
-  update_changes('solr/CHANGES.txt', newconf.version, get_solr_init_changes(),
-                 ['Bug Fixes', 'Dependency Upgrades'] if is_bugfix else ['New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Dependency Upgrades', 'Other Changes'])
 
   if newconf.is_latest_version:
     print('\nAdded version is latest version, updating...')

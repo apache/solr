@@ -7,7 +7,8 @@ Before creating a pull request, please file an issue in the ASF Jira system for 
 
 * https://issues.apache.org/jira/projects/SOLR
 
-You will need to create an account in Jira in order to create an issue.
+For something minor (i.e. that wouldn't be worth putting in release notes), you can skip JIRA.
+To create a Jira issue, you will need to create an account there first.
 
 The title of the PR should reference the Jira issue number in the form:
 
@@ -41,3 +42,4 @@ Please review the following and check all that apply:
 - [ ] I have run `./gradlew check`.
 - [ ] I have added tests for my changes.
 - [ ] I have added documentation for the [Reference Guide](https://github.com/apache/solr/tree/main/solr/solr-ref-guide)
+- [ ] I have added a [changelog entry](https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc) for my change

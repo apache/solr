@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import java.io.File;
 import java.net.URL;
+import org.apache.solr.common.SolrException;
 
 /**
  * Some tests need to reach outside the classpath to get certain resources (e.g. the example
@@ -80,13 +81,14 @@ public class ExternalPaths {
       }
 
       File base = file.getAbsoluteFile();
-      while (!(new File(base, "solr/CHANGES.txt").exists()) && null != base) {
+      while (!(new File(base, "solr/test-framework/build.gradle").exists()) && null != base) {
         base = base.getParentFile();
       }
       return (null == base) ? null : new File(base, "solr/").getAbsolutePath();
     } catch (Exception e) {
       // all bets are off
-      return null;
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Failed to determine source home", e);
     }
   }
 }

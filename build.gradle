@@ -28,6 +28,7 @@ plugins {
   id 'net.ltgt.errorprone' version '3.1.0' apply false
   id 'com.diffplug.spotless' version '7.2.1' apply false
   id 'com.github.node-gradle.node' version '7.1.0' apply false
+  id 'dev.logchange' version '1.19.10'
 }
 
 apply from: file('gradle/globals.gradle')
@@ -41,10 +42,10 @@ version = {
 
   // On a release explicitly set release version in one go:
   //  -Dversion.release=x.y.z
-  
+
   // Jenkins can just set just a suffix, overriding SNAPSHOT, e.g. using build id:
   //  -Dversion.suffix=jenkins123
-  
+
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
   String v = propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
   if (v.endsWith("-")) {
@@ -93,8 +94,8 @@ ext {
     logger.info("External tool '${name}' resolved to: ${resolved}")
     return resolved
   }
-  
-  luceneBaseVersionProvider = project.provider { 
+
+  luceneBaseVersionProvider = project.provider {
     def luceneVersion = getVersion('org.apache.lucene:lucene-core')
     def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
     if (!m) {
@@ -206,3 +207,5 @@ apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 apply from: file('gradle/ant-compat/solr.post-jar.gradle')
 
 apply from: file('gradle/node.gradle')
+
+apply from: file('gradle/changelog.gradle')
