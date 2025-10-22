@@ -94,10 +94,10 @@ class ChangeEntry:
         """
         # Clean message for slug
         slug = self.message.lower()
-        # Replace spaces with dashes
-        slug = re.sub(r'\s+', '-', slug)
+        # Replace whitespace with single space
+        slug = re.sub(r'\s+', ' ', slug)
         # Remove non-alphanumeric except dashes
-        slug = re.sub(r'[^a-z0-9-._]', '', slug)
+        slug = re.sub(r'[^a-z0-9-._ ]', '', slug)
 
         # Calculate available space for slug
         # Format: "PR" + pr_num + "-" + slug + ".yaml"
@@ -109,17 +109,17 @@ class ChangeEntry:
 
         # Truncate to max length on word boundaries if necessary
         if len(slug) > max_slug_length:
-            # Find the last dash within the limit
+            # Find the last space within the limit
             truncated = slug[:max_slug_length]
-            last_dash = truncated.rfind('-')
+            last_dash = truncated.rfind(' ')
             if last_dash > max_slug_length // 2:  # Keep at least half the available space
                 slug = truncated[:last_dash]
             else:
-                # If no good word boundary, use hard limit and clean up trailing dashes
-                slug = truncated.rstrip('-')
+                # If no good word boundary, use hard limit and clean up trailing spaces
+                slug = truncated.rstrip(' ')
         else:
-            # Remove trailing dashes
-            slug = slug.rstrip('-')
+            # Remove trailing spaces
+            slug = slug.rstrip(' ')
 
         return f"PR{self.pr_num}-{slug}.yaml"
 
