@@ -297,7 +297,6 @@ class SlugGenerator:
     # Characters that are unsafe in filenames on various filesystems
     # Avoid: < > : " / \ | ? *  and control characters
     # Note: # is safe on most filesystems
-    # Also avoid multiple consecutive dashes
     UNSAFE_CHARS_PATTERN = re.compile(r'[<>:"/\\|?*\x00-\x1f]+')
 
     @staticmethod
@@ -308,25 +307,31 @@ class SlugGenerator:
         Format: ISSUE-12345-short-slug or VERSION-entry-001-short-slug
         Uses the actual issue ID without forcing SOLR- prefix
         Ensures filesystem-safe filenames and respects word boundaries
+        Whitespace is preserved as spaces (not converted to dashes)
         """
         # Sanitize issue_id to remove unsafe characters (preserve case and # for readability)
         base_issue = SlugGenerator._sanitize_issue_id(issue_id)
 
-        # Create slug from title: lowercase, replace unsafe chars with dash
+        # Create slug from title: lowercase, preserve spaces, replace only unsafe chars with dash
         title_slug = SlugGenerator._sanitize_filename_part(title)
 
         # Limit to reasonable length while respecting word boundaries
         # Target max length: 50 chars for slug (leaving room for base_issue and dash)
         if len(title_slug) > 50:
-            # Find last word boundary within 50 chars
+            # Find last word/space boundary within 50 chars
             truncated = title_slug[:50]
-            # Find the last dash (word boundary)
-            last_dash = truncated.rfind('-')
-            if last_dash > 20:  # Keep at least 20 chars to avoid too-short slugs
-                title_slug = truncated[:last_dash]
+            # Find the last space within the limit
+            last_space = truncated.rfind(' ')
+            if last_space > 20:  # Keep at least 20 chars to avoid too-short slugs
+                title_slug = truncated[:last_space]
             else:
-                # If no good word boundary found, use hard limit
-                title_slug = truncated.rstrip('-')
+                # If no good space boundary, try to find a dash (from unsafe chars)
+                last_dash = truncated.rfind('-')
+                if last_dash > 20:
+                    title_slug = truncated[:last_dash]
+                else:
+                    # If no good boundary, use hard limit and clean up
+                    title_slug = truncated.rstrip(' -')
 
         return f"{base_issue}-{title_slug}"
 
@@ -356,23 +361,27 @@ class SlugGenerator:
         Sanitize text for use in filenames.
         - Convert to lowercase
         - Replace unsafe characters with dashes
-        - Remove multiple consecutive dashes
-        - Strip leading/trailing dashes
+        - Convert any whitespace to space (preserved in filename)
+        - Remove multiple consecutive spaces or dashes
+        - Strip leading/trailing spaces and dashes
         """
         # Convert to lowercase
         text = text.lower()
 
+        # Normalize all whitespace to single spaces
+        text = re.sub(r'\s+', ' ', text)
+
         # Replace unsafe characters with dash
         text = SlugGenerator.UNSAFE_CHARS_PATTERN.sub('-', text)
 
-        # Replace non-alphanumeric (except dash) with dash
-        text = re.sub(r'[^a-z0-9-]+', '-', text)
+        # Replace other non-alphanumeric (except space and dash) with dash
+        text = re.sub(r'[^a-z0-9\s-]+', '-', text)
 
-        # Replace multiple consecutive dashes with single dash
+        # Replace multiple consecutive dashes with single dash (but preserve spaces)
         text = re.sub(r'-+', '-', text)
 
-        # Strip leading/trailing dashes
-        text = text.strip('-')
+        # Strip leading/trailing spaces and dashes
+        text = text.strip(' -')
 
         return text
 
