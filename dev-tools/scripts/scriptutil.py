@@ -33,12 +33,12 @@ class Version(object):
     self.bugfix = bugfix
     self.prerelease = prerelease
     self.previous_dot_matcher = self.make_previous_matcher()
-    self.dot = '%d.%d.%d' % (self.major, self.minor, self.bugfix) 
+    self.dot = '%d.%d.%d' % (self.major, self.minor, self.bugfix)
     self.constant = 'LUCENE_%d_%d_%d' % (self.major, self.minor, self.bugfix)
 
   @classmethod
   def parse(cls, value):
-    match = re.search(r'(\d+)\.(\d+).(\d+)(.1|.2)?', value) 
+    match = re.search(r'(\d+)\.(\d+).(\d+)(.1|.2)?', value)
     if match is None:
       raise argparse.ArgumentTypeError('Version argument must be of format x.y.z(.1|.2)?')
     parts = [int(v) for v in match.groups()[:-1]]
@@ -135,12 +135,12 @@ def run(cmd, cwd=None):
   except subprocess.CalledProcessError as e:
     print(e.output.decode('utf-8'))
     raise e
-  return output.decode('utf-8') 
+  return output.decode('utf-8')
 
 def update_file(filename, line_re, edit):
   infile = open(filename, 'r')
-  buffer = [] 
-  
+  buffer = []
+
   changed = False
   for line in infile:
     if not changed:
