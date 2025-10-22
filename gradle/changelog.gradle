@@ -22,7 +22,7 @@ logchange {
   generateChangesXml = false
 }
 
-task generateChangeYaml {
+task changelog {
   description = 'Generates a change/log description file (YAML)'
   doLast {
     def gitUserName = 'git config user.name'.execute().text.trim()
@@ -43,7 +43,7 @@ task generateChangeYaml {
     def fileName = "changelog/unreleased/${gitBranch}.yml"
     def file = new File(fileName)
     file.parentFile.mkdirs()
-    file.text = """# logchange format: https://github.com/logchange/logchange#yaml-format
+    file.text = """# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 title: ${branchWithoutJira}
 type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:

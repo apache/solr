@@ -15,7 +15,7 @@ available, and finishes with a concrete example fragment.
 
 . Make a feature branch with a descriptive name like 'SOLR-12345-fix-memory-leak'.
 . Implement your change
-. Run `./gradlew generateChangeYaml`
+. Run `./gradlew changelog`
 . Edit the generated YAML file in `changelog/unreleased/` to add a clear, user-focused description.
 . Commit the YAML fragment along with the code change.
 . Open your PR as usual.
@@ -34,7 +34,7 @@ solr/
 
 == 3. Gradle Tasks
 
-=== 3.1 Our Custom Task: `generateChangeYaml`
+=== 3.1 Our Custom Task: `changelog`
 
 Bootstraps a YAML file, by default in the `changelog/unreleased/` directory for
 the current branch, The task will use branch name as file name and title, and will
@@ -47,7 +47,7 @@ use that information. Example:
 
 [source, properties]
 ----
-# Changelog generator settings (./gradlew generateChangeYaml)
+# Changelog generator settings (./gradlew changelog)
 user.name=John Doe
 user.githubid=johngithub
 user.asfid=johnapache
@@ -57,7 +57,7 @@ Invoke the task with:
 
 [source, bash]
 ----
-./gradlew generateChangeYaml
+./gradlew changelog
 ----
 
 === 3.2 Plugin Tasks
