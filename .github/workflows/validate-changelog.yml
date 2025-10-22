@@ -94,7 +94,7 @@ jobs:
         CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
         # Find all YAML files added to changelog/unreleased/
-        YAML_FILES=$(echo "$CHANGED_FILES" | grep "^solr/changelog/unreleased/.*\.ya\?ml$" || true)
+        YAML_FILES=$(echo "$CHANGED_FILES" | grep "^changelog/unreleased/.*\.ya\?ml$" || true)
 
         if [ -z "$YAML_FILES" ]; then
           exit 0
@@ -121,5 +121,10 @@ jobs:
         done <<< "$YAML_FILES"
 
         if [ "$VALIDATION_FAILED" = true ]; then
+          echo "::error::This PR contains an invalid changelog entry."
+          echo ""
+          echo "Please ensure it is valid YAML and complies to"
+          echo "the specification in dev-docs/changelog.adoc."
+
           exit 1
         fi
