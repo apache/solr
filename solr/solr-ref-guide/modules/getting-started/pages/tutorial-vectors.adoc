@@ -160,7 +160,7 @@ The output is:
 
 *KNN with SeededQuery* - Search for the top 10 movies most similar to the target vector, guided by a seed lexical query on the `genre` field, which provides the initial entry points in the vector graph search:
 
-         http://localhost:8983/solr/films/query?seedQuery=genre:Children's/Family&q={!knn f=film_vector topK=10 seedQuery=$seedQuery}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]
+         http://localhost:8983/solr/films/query?seedQuery=genre:Family&q={!knn f=film_vector topK=10 seedQuery=$seedQuery}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]
 
 - This allows the KNN algorithm to start the similarity exploration from documents that already match the lexical criteria, potentially improving relevance and reducing search time.
 
