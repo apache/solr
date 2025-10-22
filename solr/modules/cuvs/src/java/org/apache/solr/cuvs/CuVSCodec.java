@@ -85,7 +85,7 @@ public class CuVSCodec extends FilterCodec {
 
     if (log.isInfoEnabled()) {
       log.info(
-          "Lucene99AcceleratedHNSWVectorsFormat initialized with parameter values: cuvsWriterThreads {}, intGraphDegree {}, graphDegree {}, hnswLayers {}, m {}, efConstruction {}",
+          "Lucene99AcceleratedHNSWVectorsFormat initialized with parameter values: cuvsWriterThreads {}, intGraphDegree {}, graphDegree {}, hnswLayers {}, hnswM {}, hnswEfConstruction {}",
           cuvsWriterThreads,
           intGraphDegree,
           graphDegree,
