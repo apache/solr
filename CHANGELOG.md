@@ -9,7 +9,7 @@
 
 DUMMY changelog file.
 
-We are in the process of migrating from CHANGES.txt to a structured approach to changelog generation. See [SOLR-17619](https://issues.apache.org/jira/browse/SOLR-17619) as well as [dev-docs/changelog.md](dev-docs/changelog.md) for details.
+We are in the process of migrating from CHANGES.txt to a structured approach to changelog generation. See [SOLR-17619](https://issues.apache.org/jira/browse/SOLR-17619) as well as [dev-docs/changelog.adoc](dev-docs/changelog.adoc) for details.
 
 [unreleased]
 ------------
