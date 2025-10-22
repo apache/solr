@@ -121,10 +121,7 @@ jobs:
         done <<< "$YAML_FILES"
 
         if [ "$VALIDATION_FAILED" = true ]; then
-          echo "::error::This PR contains an invalid changelog entry."
-          echo ""
-          echo "Please ensure it is valid YAML and complies to"
-          echo "the specification in dev-docs/changelog.adoc."
+          echo "Please see dev-docs/changelog.adoc for more info."
 
           exit 1
         fi
