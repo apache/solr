@@ -79,6 +79,7 @@ cuvs-lucene = "25.10.0"
 cybozulabs-langdetect = "1.1-20120112"
 decompose = "3.3.0"
 diffplug-spotless = "7.2.1"
+# @keep Use for dockerfile JRE version
 dockerfile-baseimage-java = "25"
 dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.39.0"
@@ -162,6 +163,7 @@ langchain4j = "0.35.0"
 link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "0.8.5"
 lmax-disruptor = "3.4.4"
+logchange = "1.19.10"
 ltgt-errorprone = "3.1.0"
 mockito = "5.19.0"
 morethan-jmhreport = "0.9.6"
@@ -217,6 +219,7 @@ jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "compose" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 littlerobots-versioncatalogupdate = { id = "nl.littlerobots.version-catalog-update", version.ref = "littlerobots-versioncatalogupdate" }
+logchange = { id = "dev.logchange", version.ref = "logchange" }
 ltgt-errorprone = { id = "net.ltgt.errorprone", version.ref = "ltgt-errorprone" }
 morethan-jmhreport = { id = "io.morethan.jmhreport", version.ref = "morethan-jmhreport" }
 nodegradle-node = { id = "com.github.node-gradle.node", version.ref = "nodegradle-node" }
