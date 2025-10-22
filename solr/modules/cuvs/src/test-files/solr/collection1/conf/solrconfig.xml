@@ -33,8 +33,8 @@
       <str name="intGraphDegree">128</str>
       <str name="graphDegree">64</str>
       <str name="hnswLayers">1</str>
-      <str name="m">16</str>
-      <str name="efConstruction">100</str>
+      <str name="hnswM">16</str>
+      <str name="hnswEfConstruction">100</str>
     </codecFactory>
 
     <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
