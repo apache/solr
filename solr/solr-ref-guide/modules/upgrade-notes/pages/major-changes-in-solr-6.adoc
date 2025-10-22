@@ -51,7 +51,7 @@ Replication across data centers is now possible with Cross Data Center Replicati
 
 === Graph QueryParser
 
-A new xref:query-guide:other-parsers.adoc#graph-query-parser[`graph` query parser] makes it possible to to graph traversal queries of Directed (Cyclic) Graphs modelled using Solr documents.
+A new xref:query-guide:other-parsers.adoc#graph-query-parser[`graph` query parser] makes it possible to graph traversal queries of Directed (Cyclic) Graphs modelled using Solr documents.
 
 [[major-5-6-docvalues]]
 === DocValues
