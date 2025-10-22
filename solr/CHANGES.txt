@@ -344,6 +344,8 @@ Other Changes
 * SOLR-17963: These SolrCloud commands no longer aquire locks (waiting or blocking on other commands that do):
   COLLECTIONPROP, ADDREPLICAPROP, DELETEREPLICAPROP.  (David Smiley)
 
+* SOLR-17927: Rename vector search parameters and language model modules (Ilaria Petreti via Alessandro Benedetti)
+
 ==================  9.10.0 ==================
 New Features
 ---------------------

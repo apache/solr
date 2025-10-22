@@ -48,7 +48,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.neural.KnnQParser.EarlyTerminationParams;
+import org.apache.solr.search.vector.KnnQParser.EarlyTerminationParams;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
 import org.apache.solr.util.vector.DenseVectorParser;
@@ -72,8 +72,8 @@ public class DenseVectorField extends FloatPointField {
   public static final String DEFAULT_KNN_ALGORITHM = HNSW_ALGORITHM;
   static final String KNN_VECTOR_DIMENSION = "vectorDimension";
   static final String KNN_ALGORITHM = "knnAlgorithm";
-  static final String HNSW_MAX_CONNECTIONS = "hnswMaxConnections";
-  static final String HNSW_BEAM_WIDTH = "hnswBeamWidth";
+  static final String HNSW_M = "hnswM";
+  static final String HNSW_EF_CONSTRUCTION = "hnswEfConstruction";
   static final String VECTOR_ENCODING = "vectorEncoding";
   static final VectorEncoding DEFAULT_VECTOR_ENCODING = VectorEncoding.FLOAT32;
   static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
@@ -86,13 +86,13 @@ public class DenseVectorField extends FloatPointField {
    * This parameter is coupled with the hnsw algorithm. Controls how many of the nearest neighbor
    * candidates are connected to the new node. See {@link HnswGraph} for more details.
    */
-  private int hnswMaxConn;
+  private int hnswM;
 
   /**
    * This parameter is coupled with the hnsw algorithm. The number of candidate neighbors to track
    * while searching the graph for each newly inserted node. See {@link HnswGraph} for details.
    */
-  private int hnswBeamWidth;
+  private int hnswEfConstruction;
 
   /**
    * Encoding for vector value representation. The possible values are FLOAT32 or BYTE. The default
@@ -147,13 +147,14 @@ public class DenseVectorField extends FloatPointField {
             .orElse(DEFAULT_VECTOR_ENCODING);
     args.remove(VECTOR_ENCODING);
 
-    this.hnswMaxConn =
-        ofNullable(args.get(HNSW_MAX_CONNECTIONS)).map(Integer::parseInt).orElse(DEFAULT_MAX_CONN);
-    args.remove(HNSW_MAX_CONNECTIONS);
+    this.hnswM = ofNullable(args.get(HNSW_M)).map(Integer::parseInt).orElse(DEFAULT_MAX_CONN);
+    args.remove(HNSW_M);
 
-    this.hnswBeamWidth =
-        ofNullable(args.get(HNSW_BEAM_WIDTH)).map(Integer::parseInt).orElse(DEFAULT_BEAM_WIDTH);
-    args.remove(HNSW_BEAM_WIDTH);
+    this.hnswEfConstruction =
+        ofNullable(args.get(HNSW_EF_CONSTRUCTION))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_BEAM_WIDTH);
+    args.remove(HNSW_EF_CONSTRUCTION);
 
     this.properties &= ~MULTIVALUED;
     this.properties &= ~UNINVERTIBLE;
@@ -173,12 +174,12 @@ public class DenseVectorField extends FloatPointField {
     return knnAlgorithm;
   }
 
-  public Integer getHnswMaxConn() {
-    return hnswMaxConn;
+  public Integer getHnswM() {
+    return hnswM;
   }
 
-  public Integer getHnswBeamWidth() {
-    return hnswBeamWidth;
+  public Integer getHnswEfConstruction() {
+    return hnswEfConstruction;
   }
 
   public VectorEncoding getVectorEncoding() {
@@ -352,7 +353,7 @@ public class DenseVectorField extends FloatPointField {
   }
 
   public KnnVectorsFormat buildKnnVectorsFormat() {
-    return new Lucene99HnswVectorsFormat(hnswMaxConn, hnswBeamWidth);
+    return new Lucene99HnswVectorsFormat(hnswM, hnswEfConstruction);
   }
 
   @Override

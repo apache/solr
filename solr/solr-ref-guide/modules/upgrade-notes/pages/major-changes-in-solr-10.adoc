@@ -228,3 +228,9 @@ Due to Lucene 10 changes (https://github.com/apache/lucene/pull/12875), `PathHie
   </analyzer>
 </fieldType>
 ----
+
+=== Renaming in Vector Search
+Attention:
+
+* The `llm` module has been renamed to `language-models`.
+* The HNSW parameters `hnswMaxConnections` and `hnswBeamWidth` have been renamed to `hnswM` and `hnswEfConstruction`, respectively, so they must be updated accordingly in the schema.xml file.
