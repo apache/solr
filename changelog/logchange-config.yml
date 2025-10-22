@@ -68,6 +68,11 @@ changelog:
   templates:
     entry: "${prefix}${title} ${merge_requests} ${issues} ${links} ${authors}"
     author: "([${name}](${url}) @${nick})"
+# TODO: Using defaults for now, but want to test templates
+#    version_summary_templates:
+#      - path: version-summary.md
+#    changelog_templates:
+#      - path: CHANGELOG.md
     # see examples of templates at examples/templates
     # if you are missing some function, which will simplify your template (f.e getNumberOfEntries())
     # feel free to create issue or pull request with change
