@@ -17,7 +17,7 @@ the changelog.
 
 . Make a feature branch with a descriptive name like 'SOLR-12345-fix-memory-leak'.
 . Implement your change
-. Run `./gradlew changelog`
+. Run `./gradlew writeChangelog`
 . Edit the generated YAML file in `changelog/unreleased/` to add a clear, user-focused description.
 . Commit the YAML fragment along with the code change.
 . Open your PR as usual.
@@ -61,7 +61,7 @@ Invoke the task with:
 
 [source, bash]
 ----
-./gradlew changelog
+./gradlew writeChangelog
 ----
 
 The task will use your git `user.name` as display name by default, but if you
@@ -71,7 +71,7 @@ use that information. Example:
 
 [source, properties]
 ----
-# Changelog generator settings (./gradlew changelog)
+# Changelog generator settings (./gradlew writeChangelog)
 user.name=John Doe
 user.githubid=johngithub
 user.asfid=johnapache

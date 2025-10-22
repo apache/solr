@@ -22,7 +22,7 @@ logchange {
   generateChangesXml = false
 }
 
-task changelog {
+task writeChangelog {
   description = 'Generates a change/log description file (YAML)'
   doLast {
     def gitUserName = 'git config user.name'.execute().text.trim()
@@ -54,4 +54,14 @@ ${githubLink}
 
     println "Generated file: ${fileName} -- open it"
   }
+}
+
+task changelog {
+  dependsOn writeChangelog
+  description = 'Generates a change/log description file (YAML)'
+}
+
+task newChangelog {
+  dependsOn writeChangelog
+  description = 'Generates a change/log description file (YAML)'
 }
