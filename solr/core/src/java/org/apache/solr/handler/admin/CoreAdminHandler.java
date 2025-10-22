@@ -25,6 +25,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.Ticker;
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -73,7 +74,6 @@ import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCores;
 import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -128,23 +128,21 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    super.initializeMetrics(parentContext, attributes);
     coreAdminAsyncTracker.standardExecutor =
         MetricUtils.instrumentedExecutorService(
             coreAdminAsyncTracker.standardExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName(
-                "parallelCoreAdminExecutor", getCategory().name(), scope, "threadPool"));
+            solrMetricsContext,
+            getCategory(),
+            "parallelCoreAdminExecutor");
 
     coreAdminAsyncTracker.expensiveExecutor =
         MetricUtils.instrumentedExecutorService(
             coreAdminAsyncTracker.expensiveExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName(
-                "parallelCoreExpensiveAdminExecutor", getCategory().name(), scope, "threadPool"));
+            solrMetricsContext,
+            getCategory(),
+            "parallelCoreExpensiveAdminExecutor");
   }
 
   @Override

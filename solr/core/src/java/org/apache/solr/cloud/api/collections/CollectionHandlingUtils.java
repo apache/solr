@@ -650,7 +650,8 @@ public class CollectionHandlingUtils {
       if (asyncId != null) {
         String coreAdminAsyncId = asyncId + Math.abs(System.nanoTime());
         params.set(ASYNC, coreAdminAsyncId);
-        track(nodeName, coreAdminAsyncId);
+        // Track async requests
+        shardAsyncIdByNode.add(nodeName, coreAdminAsyncId);
       }
 
       ShardRequest sreq = new ShardRequest();
@@ -731,14 +732,6 @@ public class CollectionHandlingUtils {
           addSuccess(results, node, reqResult);
         }
       }
-    }
-
-    /**
-     * @deprecated consider to make it private after {@link CreateCollectionCmd} refactoring
-     */
-    @Deprecated
-    void track(String nodeName, String coreAdminAsyncId) {
-      shardAsyncIdByNode.add(nodeName, coreAdminAsyncId);
     }
   }
 }

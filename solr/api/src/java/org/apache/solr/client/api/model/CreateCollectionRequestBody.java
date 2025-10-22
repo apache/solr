@@ -38,6 +38,10 @@ public class CreateCollectionRequestBody {
 
   @JsonProperty public Integer nrtReplicas;
 
+  @JsonProperty
+  @Deprecated(since = "9.10")
+  public Boolean waitForFinalState;
+
   @JsonProperty public Boolean perReplicaState;
 
   @JsonProperty public String alias;

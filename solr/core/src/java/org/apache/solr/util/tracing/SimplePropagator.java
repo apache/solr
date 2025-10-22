@@ -16,12 +16,8 @@
  */
 package org.apache.solr.util.tracing;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextKey;
-import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
@@ -53,19 +49,6 @@ public class SimplePropagator implements TextMapPropagator {
   private static final List<String> FIELDS = List.of(TRACE_ID);
 
   private static final AtomicLong traceCounter = new AtomicLong(0);
-
-  private static volatile boolean loaded = false;
-
-  public static synchronized Tracer load() {
-    if (!loaded) {
-      log.info("OpenTelemetry tracer enabled with simple propagation only.");
-      OpenTelemetry otel =
-          OpenTelemetry.propagating(ContextPropagators.create(SimplePropagator.getInstance()));
-      GlobalOpenTelemetry.set(otel);
-      loaded = true;
-    }
-    return TraceUtils.getGlobalTracer();
-  }
 
   public static TextMapPropagator getInstance() {
     return INSTANCE;

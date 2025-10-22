@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_REPLICA_TASK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
 
@@ -48,8 +49,6 @@ public class TestLockTree extends SolrTestCaseJ4 {
             .getSession()
             .lock(CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1")));
 
-    assertNotNull(
-        lockTree.getSession().lock(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2")));
     coll1Lock.unlock();
     Lock shard1Lock =
         lockTree
@@ -62,7 +61,7 @@ public class TestLockTree extends SolrTestCaseJ4 {
     assertNotNull(replica1Lock);
 
     List<Pair<CollectionAction, List<String>>> operations = new ArrayList<>();
-    operations.add(new Pair<>(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2")));
+    operations.add(new Pair<>(MOCK_REPLICA_TASK, Arrays.asList("coll1", "shard1", "core_node2")));
     operations.add(new Pair<>(MODIFYCOLLECTION, Arrays.asList("coll1")));
     operations.add(new Pair<>(SPLITSHARD, Arrays.asList("coll1", "shard1")));
     operations.add(new Pair<>(SPLITSHARD, Arrays.asList("coll2", "shard2")));
@@ -71,9 +70,9 @@ public class TestLockTree extends SolrTestCaseJ4 {
 
     List<Set<String>> orderOfExecution =
         Arrays.asList(
-            Set.of("coll1", "coll2/shard2"),
-            Set.of("coll1/shard1", "coll2"),
-            Set.of("coll2/shard1"));
+            Set.of("coll1/shard1/core_node2", "coll2/shard2"),
+            Set.of("coll1", "coll2"),
+            Set.of("coll1/shard1", "coll2/shard1"));
     lockTree = new LockTree();
     for (int counter = 0; counter < orderOfExecution.size(); counter++) {
       LockTree.Session session = lockTree.getSession();
@@ -82,7 +81,7 @@ public class TestLockTree extends SolrTestCaseJ4 {
       List<Thread> threads = new ArrayList<>();
       for (Pair<CollectionAction, List<String>> operation : operations) {
         final Lock lock = session.lock(operation.first(), operation.second());
-        if (lock != null && !lock.equals(LockTree.FREELOCK)) {
+        if (lock != null) {
           Thread thread = new Thread(getRunnable(completedOps, operation, locks, lock));
           threads.add(thread);
           thread.start();

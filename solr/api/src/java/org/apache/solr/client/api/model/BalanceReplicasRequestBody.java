@@ -35,6 +35,15 @@ public class BalanceReplicasRequestBody {
   @JsonProperty(value = "nodes")
   public Set<String> nodes;
 
+  @Schema(
+      description =
+          "If true, the request will complete only when all affected replicas become active. "
+              + "If false, the API will return the status of the single action, which may be "
+              + "before the new replica is online and active.")
+  @JsonProperty("waitForFinalState")
+  @Deprecated(since = "9.10")
+  public Boolean waitForFinalState = false;
+
   @Schema(description = "Request ID to track this action which will be processed asynchronously.")
   @JsonProperty("async")
   public String async;

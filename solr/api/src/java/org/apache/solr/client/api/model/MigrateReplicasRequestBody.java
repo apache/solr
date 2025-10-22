@@ -25,9 +25,10 @@ public class MigrateReplicasRequestBody {
   public MigrateReplicasRequestBody() {}
 
   public MigrateReplicasRequestBody(
-      Set<String> sourceNodes, Set<String> targetNodes, String async) {
+      Set<String> sourceNodes, Set<String> targetNodes, Boolean waitForFinalState, String async) {
     this.sourceNodes = sourceNodes;
     this.targetNodes = targetNodes;
+    this.waitForFinalState = waitForFinalState;
     this.async = async;
   }
 
@@ -40,6 +41,15 @@ public class MigrateReplicasRequestBody {
           "A set of nodes to migrate the replicas to. If this is not provided, then the API will use the live data nodes not in 'sourceNodes'.")
   @JsonProperty
   public Set<String> targetNodes;
+
+  @Schema(
+      description =
+          "If true, the request will complete only when all affected replicas become active. "
+              + "If false, the API will return the status of the single action, which may be "
+              + "before the new replicas are online and active.")
+  @JsonProperty
+  @Deprecated(since = "9.10")
+  public Boolean waitForFinalState = false;
 
   @Schema(description = "Request ID to track this action which will be processed asynchronously.")
   @JsonProperty

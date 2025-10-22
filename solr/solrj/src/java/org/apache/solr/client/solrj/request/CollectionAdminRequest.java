@@ -167,7 +167,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return asyncId;
     }
 
-    @Deprecated(since = "10.0")
+    @Deprecated(since = "9.10")
     public void setWaitForFinalState(boolean waitForFinalState) {
       this.waitForFinalState = waitForFinalState;
     }
@@ -1865,8 +1865,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       long finishTime = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
       RequestStatusState state = RequestStatusState.NOT_FOUND;
       while (System.nanoTime() < finishTime) {
-        RequestStatusResponse response = this.process(client);
-        state = response.getRequestStatus();
+        state = this.process(client).getRequestStatus();
         if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
           propagateBasicAuthCreds(deleteAsyncId(requestId)).process(client);
           return state;
