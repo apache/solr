@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Update;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
@@ -177,6 +176,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     // processedCount is now managed by StallDetection
   }
 
+  /** Class representing an UpdateRequest and an optional collection. */
+  private record Update(UpdateRequest request, String collection) {}
+
   /** Opens a connection and sends everything... */
   class Runner implements Runnable {
 
@@ -237,16 +239,16 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
             InputStreamResponseListener responseListener = null;
             try (Http2SolrClient.OutStream out =
-                client.initOutStream(basePath, update.getRequest(), update.getCollection())) {
+                client.initOutStream(basePath, update.request(), update.collection())) {
               Update upd = update;
               while (upd != null) {
-                UpdateRequest req = upd.getRequest();
-                if (!out.belongToThisStream(req, upd.getCollection())) {
+                UpdateRequest req = upd.request();
+                if (!out.belongToThisStream(req, upd.collection())) {
                   // Request has different params or destination core/collection, return to queue
                   queue.add(upd);
                   break;
                 }
-                client.send(out, upd.getRequest(), upd.getCollection());
+                client.send(out, upd.request(), upd.collection());
                 out.flush();
 
                 notifyQueueAndRunnersIfEmptyQueue();

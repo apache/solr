@@ -16,11 +16,9 @@
  */
 package org.apache.solr.core;
 
-import com.codahale.metrics.Gauge;
-import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,12 +30,14 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testInitCount() {
-    String registry = h.getCore().getCoreMetricManager().getRegistryName();
-    SolrMetricManager manager = h.getCoreContainer().getMetricManager();
-    @SuppressWarnings({"unchecked"})
-    Gauge<Number> g =
-        (Gauge<Number>) manager.registry(registry).getMetrics().get("QUERY./mock.initCount");
-    assertEquals("Incorrect init count", 1, g.getValue().intValue());
+    var datapoint =
+        SolrMetricTestUtils.getGaugeDatapoint(
+            h.getCore(),
+            "mock_request",
+            SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
+                .label("handler", "/mock")
+                .build());
+    assertEquals(1.0, datapoint.getValue(), 0.0);
   }
 
   @Test
@@ -114,8 +114,6 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
   @Test
   public void testStatistics() {
     SolrCore core = h.getCore();
-    SolrRequestHandler updateHandler = core.getRequestHandler("/update");
-    SolrRequestHandler termHandler = core.getRequestHandler("/terms");
 
     assertU(
         adoc(
@@ -125,12 +123,25 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
             "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
     assertU(commit());
 
-    Map<String, Object> updateStats = updateHandler.getSolrMetricsContext().getMetricsSnapshot();
-    Map<String, Object> termStats = termHandler.getSolrMetricsContext().getMetricsSnapshot();
+    var updateDp =
+        SolrMetricTestUtils.getHistogramDatapoint(
+            core,
+            "solr_core_requests_times_milliseconds",
+            SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                .label("category", "UPDATE")
+                .label("handler", "/update")
+                .build());
+    var termDp =
+        SolrMetricTestUtils.getHistogramDatapoint(
+            core,
+            "solr_core_requests_times_milliseconds",
+            SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                .label("category", "QUERY")
+                .label("handler", "/terms")
+                .build());
 
-    Long updateTime = (Long) updateStats.get("UPDATE./update.totalTime");
-    Long termTime = (Long) termStats.get("QUERY./terms.totalTime");
-
-    assertNotEquals("RequestHandlers should not share statistics!", updateTime, termTime);
+    // RequestHandlers should not share statistics
+    assertTrue(updateDp.getSum() > 0);
+    assertNull("/terms should not have any time value", termDp);
   }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.solr.ui.views.navigation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,15 +37,17 @@ import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Hub
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Security
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.generated.resources.Res
@@ -124,18 +125,22 @@ private fun MenuElement(
     onClick: () -> Unit = {},
 ) {
     val alpha = if (enabled) 1f else 0.38f
-    Tab(
-        modifier = modifier.background(
-            if (selected) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha)
-            } else {
-                Color.Unspecified
-            },
-        ),
-        selected = selected,
+    Button(
+        colors = if (selected) {
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha),
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = alpha),
+                disabledContainerColor = Color.Transparent,
+            )
+        } else {
+            ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
+                disabledContainerColor = Color.Transparent,
+            )
+        },
+        shape = RectangleShape,
         enabled = enabled,
-        selectedContentColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = alpha),
-        unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
         onClick = onClick,
     ) {
         Row(

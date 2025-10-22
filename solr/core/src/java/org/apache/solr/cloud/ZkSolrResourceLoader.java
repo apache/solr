@@ -22,8 +22,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceNotFoundException;
@@ -153,13 +151,6 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     public Stat getStat() {
       return stat;
     }
-  }
-
-  @Override
-  public String getConfigDir() {
-    throw new ZooKeeperException(
-        ErrorCode.SERVER_ERROR,
-        "ZkSolrResourceLoader does not support getConfigDir() - likely, what you are trying to do is not supported in ZooKeeper mode");
   }
 
   public String getConfigSetZkPath() {
