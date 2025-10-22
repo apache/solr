@@ -39,7 +39,7 @@
  </mergePolicyFactory>
  <!-- add a transformer that will encode the document features in the response. 
   For each document the transformer will add the features as an extra field 
-  in the response. The name of the field we will be the the name of the transformer 
+  in the response. The name of the field will be the name of the transformer 
   enclosed between brackets (in this case [fv]). In order to get the feature 
   vector you will have to specify that you want the field (e.g., fl="*,[fv]) -->
  <transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">

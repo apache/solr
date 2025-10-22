@@ -666,7 +666,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
   }
 
   /**
-   * A helper method that attempts to determine the file length of the the segments file for the
+   * A helper method that attempts to determine the file length of the segments file for the
    * specified IndexCommit from it's Directory.
    *
    * <p>If any sort of {@link IOException} occurs, this method will return "-1" and swallow the
