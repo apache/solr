@@ -77,7 +77,7 @@ templates:
     Reason for fail is {{ reason }}.
 
     {% endif %}
-    This vote has {% if passed %}PASSED{% else %}FAILED{% endif %}
+    This vote has {% if passed %}PASSED{% else %}FAILED{% endif %}  
     ----
     {%- endmacro %}
   announce_solr: |
@@ -665,7 +665,7 @@ groups:
     - bugfix
   - !Todo
     id: dependency_updates_changes
-    title: Add dependency updates to CHANGELOG.md
+    title: Add dependency updates to changelog
     description: Bulk add all 'solrbot' dependency updates since last release
     depends: clean_git_checkout
     commands: !Commands
@@ -686,7 +686,8 @@ groups:
     id: generate_changelog_release
     title: Generate CHANGELOG.md for release
     description: |
-      Generate `CHANGELOG.md` by running `logchange release` and `logchange generate`. This will prepare both a `changelog/v{{ release_version }}` folder and the `CHANGELOG.md` file in one commit.
+      Generate `CHANGELOG.md` by running `logchange release` and `logchange generate`. This will prepare both a
+      `changelog/v{{ release_version }}` folder and the `CHANGELOG.md` file in one commit.
     depends: dependency_updates_changes
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
@@ -707,7 +708,7 @@ groups:
         comment: Generate `CHANGELOG.md` in repository root
         tee: true
       - !Command
-        cmd: git add CHANGELOG.md changelog/v* && git commit -m "Changelog for release v{{ release_version }}" && git push
+        cmd: git add CHANGELOG.md changelog && git commit -m "Changelog for release v{{ release_version }}" && git push
         comment: Commit and push changelog changes
         logfile: commit_changelog.log
         tee: true
@@ -717,8 +718,8 @@ groups:
     description: Store the current git sha
     depends: generate_changelog_release
     vars:
-      changelog_sha: {{ current_git_rev }}
-    persist: changelog_sha
+      changelog_sha: '{{ current_git_rev }}'
+    persist_vars: changelog_sha
   - !Todo
     id: draft_release_notes
     title: Get a draft of the release notes in place
@@ -726,7 +727,8 @@ groups:
       These are typically edited on the Wiki
 
       Clone a page for a previous version as a starting point for your release notes.
-      Edit the contents of `CHANGELOG.md` into a more concise format for public consumption.
+      Use the contents of `CHANGELOG.md` and `major-changes-in-solr-N.adoc` as input and write a more
+      concise format for public consumption.
       Ask on dev@ for input. Ideally the timing of this request mostly coincides with the
       release branch creation. It's a good idea to remind the devs of this later in the release too.
 
