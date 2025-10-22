@@ -39,9 +39,8 @@ apache-kafka = "3.9.1"
 apache-log4j = "2.21.0"
 apache-lucene = "10.3.1"
 apache-opennlp = "2.5.6"
-apache-poi = "5.2.2"
 apache-rat = "0.15"
-apache-tika = "1.28.5"
+apache-tika = "3.2.3"
 apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.4"
 # @keep for version alignment
@@ -207,7 +206,6 @@ thetaphi-forbiddenapis = "3.10"
 thisptr-jacksonjq = "0.0.13"
 threeten-bp = "1.6.8"
 undercouch-download = "5.6.0"
-xerces = "2.12.2"
 xerial-snappy = "1.1.10.8"
 
 [plugins]
@@ -298,11 +296,8 @@ apache-lucene-suggest = { module = "org.apache.lucene:lucene-suggest", version.r
 apache-lucene-testframework = { module = "org.apache.lucene:lucene-test-framework", version.ref = "apache-lucene" }
 apache-opennlp-dl = { module = "org.apache.opennlp:opennlp-dl", version.ref = "apache-opennlp" }
 apache-opennlp-tools = { module = "org.apache.opennlp:opennlp-tools", version.ref = "apache-opennlp" }
-apache-poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "apache-poi" }
-apache-poi-poi = { module = "org.apache.poi:poi", version.ref = "apache-poi" }
 apache-rat-rat = { module = "org.apache.rat:apache-rat", version.ref = "apache-rat" }
 apache-tika-core = { module = "org.apache.tika:tika-core", version.ref = "apache-tika" }
-apache-tika-parsers = { module = "org.apache.tika:tika-parsers", version.ref = "apache-tika" }
 apache-tomcat-annotationsapi = { module = "org.apache.tomcat:annotations-api", version.ref = "apache-tomcat" }
 apache-zookeeper-jute = { module = "org.apache.zookeeper:zookeeper-jute", version.ref = "apache-zookeeper" }
 apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", version.ref = "apache-zookeeper" }
@@ -528,5 +523,4 @@ tdunning-tdigest = { module = "com.tdunning:t-digest", version.ref = "tdunning-t
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 thisptr-jacksonjq = { module = "net.thisptr:jackson-jq", version.ref = "thisptr-jacksonjq" }
 threeten-bp = { module = "org.threeten:threetenbp", version.ref = "threeten-bp" }
-xerces-impl = { module = "xerces:xercesImpl", version.ref = "xerces" }
 xerial-snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "xerial-snappy" }
