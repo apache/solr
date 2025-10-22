@@ -80,13 +80,13 @@ distributions {
       from(rootDir, {
         include "LICENSE.txt"
         include "NOTICE.txt"
+        include "CHANGELOG.md"
       })
 
       from(project(":solr").projectDir, {
         include "bin/**"
         include "licenses/**"
         exclude "licenses/README.committers.txt"
-        include "CHANGELOG.md"
       })
 
       from(projectDir, {
