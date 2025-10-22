@@ -62,17 +62,15 @@ Invoke the task with:
 
 === 3.2 Plugin Tasks
 
-[cols="1,2,3", options="header"]
+[cols="1,2", options="header"]
 |===
-| Task | Purpose | Typical Usage
+| Task | Purpose
 
 | `logchangeGenerate`
-| Generates changelog file (<outputFile>) based on .yml entries and archives (does not moves any files)
-| Doc generation, CI/CD
+| Generates changelog file `/CHANGELOG.md` based on `.yml` entries and archives (does not moves any files)
 
 | `logchangeRelease`
-| Creates new changelog release by moving files from <unreleasedVersionDir> directory to vX.Y.Z directory
-| Run by the Release Manager during the release procedure.
+| Creates a new changelog release by moving files from `changelog/unreleased/` directory to `changelog/vX.Y.Z` directory
 |===
 
 == 4. Changelog Validation in Pull Requests
@@ -87,6 +85,7 @@ If your change does not require a changelog entry, it is still possible to merge
 == 5. Writing Good Entries
 
 * **Audience** is end-users and administrators, not committers.
+* If the change is super minor, like a typo, don't bother adding a yaml file
 * Keep the entry short and focused on the user impact.
 * Choose the correct *type*:
   ** `added` for new features
@@ -98,14 +97,13 @@ If your change does not require a changelog entry, it is still possible to merge
   ** `security` for security-related changes
   ** `other` for anything else, like the build or documentation
 * Reference issues as `SOLR-12345` or GitHub `PR#123`.
-* If the change is super minor, like a typo, don't bother adding a yaml file
 
 == 6. Example YAML Fragment
 
 [source, yaml]
 ----
 title: Fix nasty bug in CoreContainer shutdown
-# added, changed, optimized, fixed, deprecated, removed, dependency_update, security, other
+# added, changed, fixed, deprecated, removed, dependency_update, security, other
 type: fixed
 authors:
   - name: John Contributor
@@ -124,26 +122,28 @@ It will bulk convert the entire `solr/CHANGES.txt` file to files in the `changel
 The tool can also be used by a developer who needs to convert many entries from work-in-progress after the migration
 cutover. You can paste one or more entries and get them converted in the Terminal as follows:
 
-```bash
+[source,bash]
+----
 cat << EOF | python3 dev-tools/scripts/changes2logchange.py -
 * SOLR-17960: Removed TikaLanguageIdentifierUpdateProcessor.
   Use LangDetectLanguageIdentifierUpdateProcessor or
   OpenNLPLangDetectUpdateProcessor instead. (janhoy)
 EOF
-```
+----
 
 which will output to `stdout`:
 
-```
+[source,yaml]
+----
 title: Removed TikaLanguageIdentifierUpdateProcessor. Use LangDetectLanguageIdentifierUpdateProcessor
   or OpenNLPLangDetectUpdateProcessor instead.
-type: other
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
 - name: janhoy
 links:
 - name: SOLR-17960
   url: https://issues.apache.org/jira/browse/SOLR-17960
-```
+----
 
 == 8. Further Reading
 
