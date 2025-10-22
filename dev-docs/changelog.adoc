@@ -152,7 +152,7 @@ links:
   url: https://issues.apache.org/jira/browse/SOLR-17960
 ----
 
-== 8. Further Reading
+== 7. Further Reading
 
 * xref:https://github.com/logchange/logchange[Logchange web page]
 * xref:https://keepachangelog.com/en/1.1.0/[keepachangelog.com website]
