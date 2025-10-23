@@ -16,7 +16,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 
 
-public class LazyMultiFieldTextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFactory {
+public class LazyMultiFieldTextToVectorUpdateProcessorFactory extends TextToVectorUpdateProcessorFactory {
   private static final String INPUT_FIELD_PARAM = "inputField";
   private static final String ADDITIONAL_INPUT_FIELDS_PARAM = "additionalInputField";
   private static final String OUTPUT_FIELD_PARAM = "outputField";
@@ -38,56 +38,9 @@ public class LazyMultiFieldTextToVectorUpdateProcessorFactory extends UpdateRequ
     additionalInputFields = inputFields != null ? inputFields.split(",") : null;
   }
 
-  @Override
-  public UpdateRequestProcessor getInstance(
-      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    IndexSchema latestSchema = req.getCore().getLatestSchema();
-
-    if (!latestSchema.isDynamicField(inputField) && !latestSchema.hasExplicitField(inputField)) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + inputField + "\"");
-    }
-
-    if (!latestSchema.isDynamicField(outputField) && !latestSchema.hasExplicitField(outputField)) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + outputField + "\"");
-    }
-
-    final SchemaField outputFieldSchema = latestSchema.getField(outputField);
-    assertIsDenseVectorField(outputFieldSchema);
-
-    ManagedTextToVectorModelStore modelStore =
-        ManagedTextToVectorModelStore.getManagedModelStore(req.getCore());
-    SolrTextToVectorModel textToVector = modelStore.getModel(modelName);
-    if (textToVector == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "The model configured in the Update Request Processor '"
-              + modelName
-              + "' can't be found in the store: "
-              + ManagedTextToVectorModelStore.REST_END_POINT);
-    }
-
+  protected TextToVectorUpdateProcessor createTextToVectorUpdateProcessor(SolrQueryRequest req, UpdateRequestProcessor next, SolrTextToVectorModel textToVector) {
     return new LazyMultiFieldTextToVectorUpdateProcessor(
-        inputField, additionalInputFields, outputField, textToVector, req, next);
-  }
-
-  protected void assertIsDenseVectorField(SchemaField schemaField) {
-    FieldType fieldType = schemaField.getType();
-    if (!(fieldType instanceof DenseVectorField)) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "only DenseVectorField is compatible with Vector Query Parsers: "
-              + schemaField.getName());
-    }
-  }
-
-  public String getInputField() {
-    return inputField;
-  }
-
-  public String getOutputField() {
-    return outputField;
+          inputField, additionalInputFields, outputField, textToVector, req, next);
   }
 
   public String getModelName() {

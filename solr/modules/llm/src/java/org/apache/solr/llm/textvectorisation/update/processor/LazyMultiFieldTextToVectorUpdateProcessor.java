@@ -32,7 +32,7 @@ import org.apache.zookeeper.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LazyMultiFieldTextToVectorUpdateProcessor extends UpdateRequestProcessor {
+public class LazyMultiFieldTextToVectorUpdateProcessor extends TextToVectorUpdateProcessor {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -50,8 +50,7 @@ public class LazyMultiFieldTextToVectorUpdateProcessor extends UpdateRequestProc
       SolrTextToVectorModel textToVector,
       SolrQueryRequest req,
       UpdateRequestProcessor next) {
-    super(next);
-
+    super(inputField, outputField, textToVector, req, next);
     this.schema = req.getSchema();
     this.inputField = inputField;
     this.outputField = outputField;
@@ -83,16 +82,7 @@ public class LazyMultiFieldTextToVectorUpdateProcessor extends UpdateRequestProc
 
         newDoc.addField(outputField, targetVector);
       } catch (RuntimeException vectorisationFailure) {
-        if (log.isErrorEnabled()) {
-          SchemaField uniqueKeyField = schema.getUniqueKeyField();
-          String uniqueKeyFieldName = uniqueKeyField.getName();
-          log.error(
-              "Could not vectorize: {} for the document with {}: {}",
-              inputField,
-              uniqueKeyFieldName,
-              newDoc.getFieldValue(uniqueKeyFieldName),
-              vectorisationFailure);
-        }
+        logError(vectorisationFailure, newDoc);
       }
     }
     if (next != null) {
@@ -164,10 +154,12 @@ public class LazyMultiFieldTextToVectorUpdateProcessor extends UpdateRequestProc
         .map(Object::toString)
         .collect(Collectors.joining(" "));
   }
-  
-  protected boolean isNullOrEmpty(SolrInputField inputFieldContent) {
-    return (inputFieldContent == null
-        || inputFieldContent.getValue() == null
-        || inputFieldContent.getValue().toString().isEmpty());
+
+  protected IndexSchema getSchema() {
+    return schema;
+  }
+
+  protected String getInputField() {
+    return inputField;
   }
 }

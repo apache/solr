@@ -7,17 +7,15 @@ import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.DimensionAwareEmbeddingModel;
 import dev.langchain4j.model.output.Response;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 
 public class CustomModel extends DimensionAwareEmbeddingModel {
 
@@ -27,12 +25,14 @@ public class CustomModel extends DimensionAwareEmbeddingModel {
   private final String endpointUrl;
   private final String fieldName;
 
+  HttpClient httpClient;
+
   public CustomModel(Boolean waitForModel, Duration timeout, String endpointUrl, String fieldName) {
     this.endpointUrl = endpointUrl;
     this.fieldName = fieldName;
 
     timeout = timeout == null ? Duration.ofSeconds(30) : timeout;
-
+    httpClient = HttpClient.newBuilder().connectTimeout(timeout).build();
     mapper = new ObjectMapper();
 
     this.waitForModel = waitForModel == null || waitForModel;
@@ -51,25 +51,33 @@ public class CustomModel extends DimensionAwareEmbeddingModel {
     return Response.from(embeddings);
   }
 
-  private List<Float> doEmbeddingCall(String text) {
-    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-      HttpPost post = new HttpPost(endpointUrl);
-      post.setHeader("Content-Type", "application/json");
 
+
+  private List<Float> doEmbeddingCall(String text) {
+
+    try {
+      // Prepare JSON body
       Map<String, String> data = new HashMap<>();
       data.put(fieldName, text);
-
       ObjectMapper mapper = new ObjectMapper();
       String jsonPayload = mapper.writeValueAsString(data);
-      post.setEntity(new StringEntity(jsonPayload, "UTF-8"));
 
-      try (CloseableHttpResponse response = httpClient.execute(post)) {
-        HttpEntity entity = response.getEntity();
+      // Create HTTP client and request
 
-        String json = EntityUtils.toString(entity);
-        return parseFloatArray(json);
-      }
-    } catch (IOException ex) {
+      HttpRequest request = HttpRequest.newBuilder()
+          .timeout(timeout)
+          .uri(URI.create(endpointUrl))
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString(jsonPayload, StandardCharsets.UTF_8))
+          .build();
+
+      // Send request and get response
+      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+      // Parse and return
+      return parseFloatArray(response.body());
+
+    } catch (IOException | InterruptedException ex) {
       throw new RuntimeException(ex);
     }
   }

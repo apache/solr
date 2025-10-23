@@ -81,16 +81,20 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
 
     ManagedTextToVectorModelStore modelStore =
         ManagedTextToVectorModelStore.getManagedModelStore(req.getCore());
-    SolrTextToVectorModel textToVector = modelStore.getModel(modelName);
+    SolrTextToVectorModel textToVector = modelStore.getModel(getModelName());
     if (textToVector == null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "The model configured in the Update Request Processor '"
-              + modelName
+              + getModelName()
               + "' can't be found in the store: "
               + ManagedTextToVectorModelStore.REST_END_POINT);
     }
 
+    return createTextToVectorUpdateProcessor(req, next, textToVector);
+  }
+
+  protected TextToVectorUpdateProcessor createTextToVectorUpdateProcessor(SolrQueryRequest req, UpdateRequestProcessor next, SolrTextToVectorModel textToVector) {
     return new TextToVectorUpdateProcessor(inputField, outputField, textToVector, req, next);
   }
 
