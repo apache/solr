@@ -380,15 +380,19 @@ def testOpenApi(version, openApiDirUrl):
     raise RuntimeError('Did not see %s in %s' % expectedSpecFileName, openApiDirUrl)
 
 
-def testChangesText(dir, version):
-  "Checks all CHANGES.txt under this dir."
-  for root, dirs, files in os.walk(dir): # pylint: disable=unused-variable
+def testChangelogMd(dir, version):
+  "Checks CHANGELOG.md file."
+  changelog_path = os.path.join(dir, 'CHANGELOG.md')
 
-    # NOTE: O(N) but N should be smallish:
-    if 'CHANGES.txt' in files:
-      fullPath = '%s/CHANGES.txt' % root
-      #print 'CHECK %s' % fullPath
-      checkChangesContent(open(fullPath, encoding='UTF-8').read(), version, fullPath, False)
+  if not os.path.exists(changelog_path):
+    raise RuntimeError('CHANGELOG.md not found at %s' % changelog_path)
+
+  with open(changelog_path, encoding='UTF-8') as f:
+    content = f.read()
+
+  # Verify that the changelog contains the current version
+  if 'v%s' % version not in content and version not in content:
+    raise RuntimeError('Version %s not found in CHANGELOG.md' % version)
 
 reChangesSectionHREF = re.compile('<a id="(.*?)".*?>(.*?)</a>', re.IGNORECASE)
 reUnderbarNotDashHTML = re.compile(r'<li>(\s*(SOLR)_\d\d\d\d+)')
@@ -612,10 +616,10 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   in_solr_folder = []
   if isSrc:
     in_solr_folder.extend(os.listdir(os.path.join(unpackPath, 'solr')))
-    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.md', 'CONTRIBUTING.md'])
-    is_in_list(in_solr_folder, ['CHANGES.txt', 'README.adoc'])
+    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.md', 'CONTRIBUTING.md', 'CHANGELOG.md'])
+    is_in_list(in_solr_folder, ['README.adoc'])
   else:
-    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.txt', 'CHANGES.txt'])
+    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.txt', 'CHANGELOG.md'])
 
   if SOLR_NOTICE is None:
     SOLR_NOTICE = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
@@ -715,7 +719,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
 
     os.chdir(unpackPath)
 
-  testChangesText('.', version)
+  testChangelogMd('.', version)
 
 
 def readSolrOutput(p, startupEvent, failureEvent, logFile):
