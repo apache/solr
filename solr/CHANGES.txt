@@ -492,8 +492,6 @@ Other Changes
 
 * SOLR-17675: Remove DirContext param from DirectoryFactory.create method. (Bruno Roustant, David Smiley)
 
-* SOLR-16903: Switch CoreContainer#getSolrHome to return Path instead of String (Andrey Bozhko)
-
 * SOLR-17682: QueryResponseWriter: refactor the hierarchy.  Base abstraction is now byte oriented,
   thus BinaryQueryResponseWriter is gone.  Added TextQueryResponseWriter for the text ones.
   Stopped using RawResponseWriter when not needed.  Rename BinaryResponseWriter to JavaBinResponseWriter.
