@@ -95,7 +95,7 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
-* SOLR-17964: Upgrade Lucene to 9.12.3. (Christine Poerschke)
+(No changes)
 
 ==================  9.9.0 ==================
 New Features
