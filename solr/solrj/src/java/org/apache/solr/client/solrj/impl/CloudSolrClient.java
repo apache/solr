@@ -22,8 +22,8 @@ import static org.apache.solr.common.params.CommonParams.ID;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -316,7 +316,10 @@ public abstract class CloudSolrClient extends SolrClient {
     return getClusterStateProvider().getClusterState();
   }
 
-  protected abstract boolean wasCommError(Throwable t);
+  /** Is this a communication error? We will retry if so. */
+  protected boolean wasCommError(Throwable t) {
+    return t instanceof SocketException || t instanceof UnknownHostException;
+  }
 
   @Override
   public void close() throws IOException {
@@ -948,10 +951,7 @@ public abstract class CloudSolrClient extends SolrClient {
               ? ((SolrException) rootCause).code()
               : SolrException.ErrorCode.UNKNOWN.code;
 
-      boolean wasCommError =
-          (rootCause instanceof ConnectException
-              || rootCause instanceof SocketException
-              || wasCommError(rootCause));
+      final boolean wasCommError = wasCommError(rootCause);
 
       if (wasCommError
           || (exc instanceof RouteException
