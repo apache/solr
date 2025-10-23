@@ -1861,6 +1861,8 @@ public class IndexFetcher {
         // delete the file being downloaded
         try {
           file.delete();
+        } catch (FileNotFoundException | NoSuchFileException e) {
+          log.info("Error deleting file: {}", this.saveAs, e);
         } catch (Exception e) {
           log.error("Error deleting file: {}", this.saveAs, e);
         }
