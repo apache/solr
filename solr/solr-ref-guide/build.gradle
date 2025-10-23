@@ -59,14 +59,14 @@ dependencies {
 }
 
 ext {
-    antoraVersion = "3.1.4"
-    antoraLunrExtensionVersion = "1.0.0-alpha.8"
+    antoraVersion = "3.1.12"
+    antoraLunrExtensionVersion = "1.0.0-alpha.10"
     asciidoctorMathjaxVersion = "0.0.9"
     asciidoctorTabsVersion = "1.0.0-beta.6"
     linkCheckerVersion = "1.4.2"
-    gulpCliVersion = "2.3.0"
-    // Most recent commit as of 2022-06-24, this repo does not have tags
-    antoraDefaultUIVersion = "51ad811622394027afb4e182c2fdabc235ae04dd"
+    gulpCliVersion = "3.1.0"
+    // Most recent commit as of 2025-08-03, this repo does not have tags
+    antoraDefaultUIVersion = "782311344b54aaa734d4c86629b8cd75e4da36d6"
 
     siteDir = "${buildDir}/site"
     antoraConfigBuildDir = "${buildDir}/antora-config"

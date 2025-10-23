@@ -73,6 +73,8 @@ Other Changes
 
 * SOLR-17956: XLSXResponseWriter has been deprecated and will be removed in a future release. (Jan Høydahl)
 
+* SOLR-17771: Deprecate `CloudSolrClient.Builder` in favor of `CloudHttp2SolrClient.Builder`. (James Dyer)
+
 ==================  9.9.1 ==================
 Bug Fixes
 ---------------------
