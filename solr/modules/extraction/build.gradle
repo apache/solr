@@ -32,13 +32,8 @@ dependencies {
   implementation libs.apache.lucene.core
   implementation libs.slf4j.api
 
-  // For 'local' Tika backend
+  // Tika core - needed for common interfaces and utilities
   implementation libs.apache.tika.core
-  implementation (libs.apache.tika.parsers, {
-    exclude group: 'org.apache.cxf', module: 'cxf-rt-rs-client'
-    exclude group: 'org.quartz-scheduler', module: 'quartz'
-    exclude group: 'xml-apis', module: 'xml-apis'
-  })
 
   // For 'tikaserver' backend
   implementation libs.eclipse.jetty.client
