@@ -342,6 +342,9 @@ Improvements
 * SOLR-17921: SolrJ CloudSolrClient configured with a Solr URL (not ZK) now refreshes liveNodes in the background.
   This will reduce spikes in request latency when the cached liveNodes have expired. (Houston Putman, David Smiley)
 
+* SOLR-17897: CloudSolrClient now recognizes UnknownHostException as a case to refetch the cluster
+  state and retry.  (David Smiley)
+
 Optimizations
 ---------------------
 (No changes)
