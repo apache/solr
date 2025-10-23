@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.impl;
 
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -566,7 +567,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     method.setConfig(requestConfigBuilder.build());
 
     HttpEntity entity = null;
-    InputStream respBody = null;
     boolean shouldClose = true;
     try {
       // Execute the method.
@@ -584,7 +584,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
       // Read the contents
       entity = response.getEntity();
-      respBody = entity.getContent();
       String mimeType = null;
       Charset charset = null;
       String charsetName = null;
@@ -624,6 +623,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
                 null);
           }
       }
+
+      InputStream respBody =
+          (entity == null ? new ByteArrayInputStream(new byte[0]) : entity.getContent());
       if (processor == null || processor instanceof InputStreamResponseParser) {
         // no processor specified, return raw stream
         final var rsp =
@@ -736,7 +738,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           "IOException occurred when talking to server at: " + getBaseURL(), e);
     } finally {
       if (shouldClose) {
-        Utils.consumeFully(entity);
+        HttpClientUtil.consumeFully(entity);
       }
     }
   }

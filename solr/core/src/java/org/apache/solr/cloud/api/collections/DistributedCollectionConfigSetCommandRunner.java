@@ -347,8 +347,7 @@ public class DistributedCollectionConfigSetCommandRunner {
   /**
    * Collection name can be found in either of two message parameters (why??). Return it from where
    * it's defined. (see also parameter {@code collectionNameParamName} of {@link
-   * org.apache.solr.cloud.DistributedClusterStateUpdater.MutatingCommand#MutatingCommand(CollectionParams.CollectionAction,
-   * String)})
+   * org.apache.solr.cloud.DistributedClusterStateUpdater.MutatingCommand#MutatingCommand(String)})
    */
   public static String getCollectionName(ZkNodeProps message) {
     return message.containsKey(COLLECTION_PROP)

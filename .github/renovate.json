@@ -7,9 +7,15 @@
     "executionMode": "branch"
   },
   "schedule": ["* * * * *"],
-  "prConcurrentLimit": 3,
-  "prHourlyLimit": 3,
+  "prConcurrentLimit": 100,
+  "prHourlyLimit": 10,
   "branchPrefix": "renovate-9x/",
   "commitMessageSuffix": " (branch_9x)",
-  "dryRun": "extract"
+  "packageRules": [
+    {
+      "description": "Skip errorprone upgrades since newer versions require JDK17",
+      "matchPackagePrefixes": ["com.google.errorprone"],
+      "enabled": false
+    }
+  ]
 }

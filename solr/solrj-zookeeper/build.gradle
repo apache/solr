@@ -31,8 +31,8 @@ dependencies {
     }
 
     implementation project(':solr:solrj')
+    implementation project(':solr:api')
 
-    // declare dependencies we use even though already declared by solrj-core
     implementation 'org.slf4j:slf4j-api'
 
     api('org.apache.zookeeper:zookeeper', {

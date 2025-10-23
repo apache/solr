@@ -17,9 +17,11 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider.SYS_PROP_CACHE_TIMEOUT_SECONDS;
 import static org.apache.solr.common.util.URLUtil.getNodeNameForBaseUrl;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import java.io.IOException;
@@ -29,6 +31,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -60,7 +63,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
                 .resolve("conf"))
         .configure();
     cluster.waitForAllNodes(30);
-    System.setProperty("solr.solrj.cache.timeout.sec", "1");
+    System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "1");
   }
 
   @After
@@ -346,9 +349,17 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(jettyNode2);
       waitForCSPCacheTimeout();
 
+      long startTimeNs = System.nanoTime();
       actualKnownNodes = cspHttp.getLiveNodes();
+      long liveNodeFetchTimeMs =
+          TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeNs, TimeUnit.NANOSECONDS);
       assertEquals(1, actualKnownNodes.size());
       assertEquals(Set.of(nodeName3), actualKnownNodes);
+      // This should already be cached, because it is being updated in the background
+      assertThat(
+          "Cached getLiveNodes() should take no more than 2 milliseconds",
+          liveNodeFetchTimeMs,
+          lessThanOrEqualTo(2L));
 
       // Bring back a backup node and take down the new node
       cluster.startJettySolrRunner(jettyNode2, true);

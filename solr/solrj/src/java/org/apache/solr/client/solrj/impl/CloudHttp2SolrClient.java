@@ -406,19 +406,20 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
-     * Set the internal http client.
+     * Set the internal {@link Http2SolrClient}.
      *
-     * <p>Note: closing the httpClient instance is at the responsibility of the caller.
+     * <p>Note: closing the client instance is the responsibility of the caller.
      *
-     * @param httpClient http client
      * @return this
+     * @deprecated Please use {@link #withInternalClientBuilder(Http2SolrClient.Builder)}
      */
-    public Builder withHttpClient(Http2SolrClient httpClient) {
+    @Deprecated(since = "9.9")
+    public Builder withHttpClient(Http2SolrClient httpSolrClient) {
       if (this.internalClientBuilder != null) {
         throw new IllegalStateException(
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
       }
-      this.httpClient = httpClient;
+      this.httpClient = httpSolrClient;
       return this;
     }
 
@@ -430,13 +431,18 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * @param internalClientBuilder the builder to use for creating the internal http client.
      * @return this
      */
-    public Builder withInternalClientBuilder(Http2SolrClient.Builder internalClientBuilder) {
+    public Builder withHttpClientBuilder(Http2SolrClient.Builder internalClientBuilder) {
       if (this.httpClient != null) {
         throw new IllegalStateException(
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
       }
       this.internalClientBuilder = internalClientBuilder;
       return this;
+    }
+
+    @Deprecated(since = "9.10")
+    public Builder withInternalClientBuilder(Http2SolrClient.Builder internalClientBuilder) {
+      return withHttpClientBuilder(internalClientBuilder);
     }
 
     /**

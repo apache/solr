@@ -348,7 +348,7 @@ public class HttpSolrCall {
     }
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     Supplier<DocCollection> logic =
-        () -> zkStateReader.getClusterState().getCollectionOrNull(collectionName);
+        () -> zkStateReader.getClusterState().getCollectionOrNull(collectionName, true);
 
     DocCollection docCollection = logic.get();
     if (docCollection != null) {
@@ -838,7 +838,7 @@ public class HttpSolrCall {
                   + forwardCount,
               e));
     } finally {
-      Utils.consumeFully(httpEntity);
+      HttpClientUtil.consumeFully(httpEntity);
     }
   }
 
@@ -1124,7 +1124,7 @@ public class HttpSolrCall {
   protected String getRemoteCoreUrl(String collectionName, String origCorename)
       throws SolrException {
     ClusterState clusterState = cores.getZkController().getClusterState();
-    final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName, true);
     Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
     List<Slice> activeSlices;
     boolean byCoreName = false;

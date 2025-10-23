@@ -130,7 +130,7 @@ public abstract class HttpSolrClientBuilderBase<
   public long getIdleTimeoutMillis() {
     return idleTimeoutMillis != null && idleTimeoutMillis > 0
         ? idleTimeoutMillis
-        : HttpClientUtil.DEFAULT_SO_TIMEOUT;
+        : SolrHttpConstants.DEFAULT_SO_TIMEOUT;
   }
 
   /** The max time a connection can take to connect to destinations. */
@@ -143,7 +143,7 @@ public abstract class HttpSolrClientBuilderBase<
   public long getConnectionTimeoutMillis() {
     return connectionTimeoutMillis != null && connectionTimeoutMillis > 0
         ? connectionTimeoutMillis
-        : HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+        : SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT;
   }
 
   /** Set a timeout for requests to receive a response. */

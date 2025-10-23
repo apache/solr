@@ -121,8 +121,8 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
     assertEquals(1, getCollectionState(collection).getActiveSlices().size());
     assertTrue(
-        "Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
-    assertTrue("Data directory still exists", FileUtils.fileExists(coreStatus.getDataDirectory()));
+        "Instance directory not deleted", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
+    assertTrue("Data directory not deleted", FileUtils.fileExists(coreStatus.getDataDirectory()));
   }
 
   private void setSliceState(String collectionName, String shardId, Slice.State state)

@@ -66,12 +66,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -624,27 +618,6 @@ public class Utils {
   }
 
   /**
-   * If the passed entity has content, make sure it is fully read and closed.
-   *
-   * @param entity to consume or null
-   */
-  public static void consumeFully(HttpEntity entity) {
-    if (entity != null) {
-      try {
-        // make sure the stream is full read
-        readFully(entity.getContent());
-      } catch (UnsupportedOperationException e) {
-        // nothing to do then
-      } catch (IOException e) {
-        // quiet
-      } finally {
-        // close the stream
-        EntityUtils.consumeQuietly(entity);
-      }
-    }
-  }
-
-  /**
    * Make sure the InputStream is fully read.
    *
    * @param is to read
@@ -811,49 +784,6 @@ public class Utils {
         throw new RuntimeException(e);
       }
     };
-  }
-
-  public static <T> T executeGET(HttpClient client, String url, InputStreamConsumer<T> consumer)
-      throws SolrException {
-    return executeHttpMethod(client, url, consumer, new HttpGet(url));
-  }
-
-  public static <T> T executeHttpMethod(
-      HttpClient client, String url, InputStreamConsumer<T> consumer, HttpRequestBase httpMethod) {
-    T result = null;
-    HttpResponse rsp = null;
-    try {
-      rsp = client.execute(httpMethod);
-    } catch (IOException e) {
-      log.error("Error in request to url : {}", url, e);
-      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Error sending request");
-    }
-    int statusCode = rsp.getStatusLine().getStatusCode();
-    if (statusCode != 200) {
-      try {
-        log.error(
-            "Failed a request to: {}, status: {}, body: {}",
-            url,
-            rsp.getStatusLine(),
-            EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8)); // nowarn
-      } catch (IOException e) {
-        log.error("could not print error", e);
-      }
-      throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), "Unknown error");
-    }
-    HttpEntity entity = rsp.getEntity();
-    try {
-      InputStream is = entity.getContent();
-      if (consumer != null) {
-
-        result = consumer.accept(is);
-      }
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
-    } finally {
-      Utils.consumeFully(entity);
-    }
-    return result;
   }
 
   /**

@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Update;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
@@ -178,6 +177,29 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     }
   }
 
+  /** Class representing an UpdateRequest and an optional collection. */
+  private static class Update {
+    final UpdateRequest request;
+    final String collection;
+
+    /**
+     * @param request the update request.
+     * @param collection The collection, can be null.
+     */
+    Update(UpdateRequest request, String collection) {
+      this.request = request;
+      this.collection = collection;
+    }
+
+    UpdateRequest request() {
+      return request;
+    }
+
+    String collection() {
+      return collection;
+    }
+  }
+
   /** Opens a connection and sends everything... */
   class Runner implements Runnable {
 
@@ -238,16 +260,16 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
             InputStreamResponseListener responseListener = null;
             try (Http2SolrClient.OutStream out =
-                client.initOutStream(basePath, update.getRequest(), update.getCollection())) {
+                client.initOutStream(basePath, update.request(), update.collection())) {
               Update upd = update;
               while (upd != null) {
-                UpdateRequest req = upd.getRequest();
-                if (!out.belongToThisStream(req, upd.getCollection())) {
+                UpdateRequest req = upd.request();
+                if (!out.belongToThisStream(req, upd.collection())) {
                   // Request has different params or destination core/collection, return to queue
                   queue.add(upd);
                   break;
                 }
-                client.send(out, upd.getRequest(), upd.getCollection());
+                client.send(out, upd.request(), upd.collection());
                 out.flush();
 
                 notifyQueueAndRunnersIfEmptyQueue();
