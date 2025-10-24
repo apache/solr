@@ -195,7 +195,7 @@ public final class CLIUtils {
       if (zkHost == null) {
         solrUrl = getDefaultSolrUrl();
         CLIO.err(
-            "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
+            "Neither --zk-host or --solr-url parameters, nor ZK_HOST env var provided, so assuming solr url is "
                 + solrUrl
                 + ".");
       } else {
