@@ -667,7 +667,7 @@ If we modify the above request to add tags to the `fq` parameters, we can specif
 &fq={!tag=for_knn}inStock:true
 ----
 
-In this example, only the `inStock:true` filter will be used for Pre-Filtering to find the `topK=10` documents, and the `category:AAA` filter will be applied independently; possibly resulting in less than 10 total matches.
+In this example, only the `inStock:true` filter will be used for Pre-Filtering to find the `topK=10` documents, and the `category:AAA` filter will be applied independently; possibly resulting in less then 10 total matches.
 
 
 Some use cases where `includeTags` and/or `excludeTags` may be more useful then an explicit `preFilter` parameters:

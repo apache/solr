@@ -304,8 +304,6 @@ Other Changes
 
 * SOLR-17675: Remove DirContext param from DirectoryFactory.create method. (Bruno Roustant, David Smiley)
 
-* SOLR-16903: Switch CoreContainer#getSolrHome to return Path instead of String (Andrey Bozhko)
-
 * SOLR-17682: QueryResponseWriter: refactor the hierarchy.  Base abstraction is now byte oriented,
   thus BinaryQueryResponseWriter is gone.  Added TextQueryResponseWriter for the text ones.
   Stopped using RawResponseWriter when not needed.  Rename BinaryResponseWriter to JavaBinResponseWriter.
@@ -368,6 +366,9 @@ Improvements
 
 * SOLR-17921: SolrJ CloudSolrClient configured with a Solr URL (not ZK) now refreshes liveNodes in the background.
   This will reduce spikes in request latency when the cached liveNodes have expired. (Houston Putman, David Smiley)
+
+* SOLR-17897: CloudSolrClient now recognizes UnknownHostException as a case to refetch the cluster
+  state and retry.  (David Smiley)
 
 Optimizations
 ---------------------
@@ -3909,7 +3910,7 @@ Improvements
 * SOLR-8673: Make JSON Facets extendable (Tim Owen via Mikhail Khludnev)
 
 * SOLR-14965: metrics: Adds two metrics to the SolrCloud Overseer: solr_metrics_overseer_stateUpdateQueueSize
-  and solr_metrics_overseer_collectionWorkQueueSize with corresponding entries in the the Prometheus exporter's
+  and solr_metrics_overseer_collectionWorkQueueSize with corresponding entries in the Prometheus exporter's
   default/stock configuration.  (Saatchi Bhalla, Megan Carey, Andrzej Białecki, David Smiley)
 
 * SOLR-14827: Refactor schema loading to not use XPath (noble)
@@ -5457,7 +5458,7 @@ Improvements
   nodes instead of using them directly at the toplevel (noble)
 
 * SOLR-13329: In autoscaling policies, use an explicit 'put : on-each-node'
-  to specify the the rules is applied on each node  (noble)
+  to specify the rules is applied on each node  (noble)
 
 * SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
 
@@ -23417,7 +23418,7 @@ This problem is corrected in Solr 1.3, but DateField users that might
 have been affected by indexing inconsistent formats of equivalent
 dates (ie: 1995-12-31T23:59:59Z vs 1995-12-31T23:59:59.000Z) may want
 to consider reindexing to correct these inconsistencies.  Users who
-depend on some of the the "broken" behavior of DateField in Solr 1.2
+depend on some of the "broken" behavior of DateField in Solr 1.2
 (specificly: accepting any input that ends in a 'Z') should consider
 using the LegacyDateField class as a possible alternative.  Users that
 desire 100% backwards compatibility should consider using the Solr 1.2
@@ -24387,7 +24388,7 @@ Bug Fixes
     possible for path based request handlers.  (ryan)
 
 14. SOLR-214: Some servlet containers (including Tomcat and Resin) do not
-    obey the specified charset.  Rather then letting the the container handle
+    obey the specified charset.  Rather than letting the container handle
     it solr now uses the charset from the header contentType to decode posted
     content.  Using the contentType: "text/xml; charset=utf-8" will force
     utf-8 encoding.  If you do not specify a contentType, it will use the
