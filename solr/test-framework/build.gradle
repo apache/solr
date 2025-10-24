@@ -102,4 +102,11 @@ dependencies {
     exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
     exclude group: "io.prometheus", module: "prometheus-metrics-config"
   })
+
+  implementation(libs.apache.httpcomponents.httpmime, {
+    exclude group: "commons-codec", module: "commons-codec"
+    exclude group: "commons-logging", module: "commons-logging"
+  })
+  implementation libs.apache.httpcomponents.httpclient
+  implementation libs.apache.httpcomponents.httpcore
 }

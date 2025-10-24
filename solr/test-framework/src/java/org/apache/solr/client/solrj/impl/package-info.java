@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
+/** Concrete implementations of client API classes. */
 package org.apache.solr.client.solrj.impl;
-
-import org.apache.solr.client.solrj.SolrClient;
-
-@Deprecated
-public abstract class BaseHttpSolrClient extends SolrClient {}
