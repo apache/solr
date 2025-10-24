@@ -149,7 +149,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
 In this example we've used `\*:* -\_nest_path_:*` as our xref:block-join-query-parser.adoc#block-mask[`of` parameter] to indicate we want to consider all documents which don't have a nest path -- i.e., all "root" level document -- as the set of possible parents.
 
 By changing the `of` parameter to match ancestors at specific `\_nest_path_` levels, we can narrow down the list of children we return.
-In the query below, we search for all descendants of `skus` (using an `of` parameter that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) with a `price_i` less then `50`:
+In the query below, we search for all descendants of `skus` (using an `of` parameter that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) with a `price_i` less than `50`:
 
 [source,text]
 ----
