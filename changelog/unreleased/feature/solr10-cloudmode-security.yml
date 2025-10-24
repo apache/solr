@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Fix Admin UI incorrectly showing 'Security not enabled' in SolrCloud with reverse proxies
+type: fixed
+authors:
+  - name: Jess Sullivan
+    nick: Jesssullivan
+    url: https://github.com/Jesssullivan
+
+links:
+  - name: SOLR-17977
+    url: https://issues.apache.org/jira/browse/SOLR-17977
