@@ -305,6 +305,8 @@ class SlugGenerator:
         Generate a slug from issue ID and title.
 
         Format: ISSUE-12345 short slug or VERSION entry 001 short slug
+        Note: Previous slug formats used dashes ("ISSUE-12345-short-slug"), but this script now uses spaces between components (e.g., "ISSUE-12345 short slug").
+        Spaces are preferred over dashes for improved readability, better preservation of word boundaries, and to avoid unnecessary character substitutions. This change also ensures that filenames remain filesystem-safe while being more human-friendly.
         Uses the actual issue ID without forcing SOLR- prefix
         Ensures filesystem-safe filenames and respects word boundaries
         Whitespace is preserved as spaces (not converted to dashes)
