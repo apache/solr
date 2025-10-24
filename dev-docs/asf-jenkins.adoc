@@ -36,7 +36,7 @@ That is: they are VMs requested by a project for their exclusive use.
 
 Maintenance of these agent VMs falls into a bit of a gray area.
 INFRA will still intervene when asked: to reboot nodes, to deploy OS upgrades, etc.
-But some burden also falls on Lucene and Solr as project teams to monitor the the VMs and keep them healthy.
+But some burden also falls on Lucene and Solr as project teams to monitor the VMs and keep them healthy.
 
 === Accessing Jenkins Agents
 

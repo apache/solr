@@ -125,7 +125,7 @@ public final class BackupStatusChecker {
    *
    * <p><b>NOTE:</b> this method is <em>NOT</em> suitable/safe to use in a test where multiple
    * backups are being taken/deleted concurrently, because the replication handler API provides no
-   * reliable way to determine if the the most recently reported status to the a particular backup
+   * reliable way to determine if the most recently reported status to the a particular backup
    * request.
    *
    * @param directoryName to compare to, may be null
@@ -161,7 +161,7 @@ public final class BackupStatusChecker {
    *
    * <p><b>NOTE:</b> this method is <em>NOT</em> suitable/safe to use in a test where multiple
    * backups are being taken/deleted concurrently, because the replication handler API provides no
-   * reliable way to determine if the the most recently reported status to the a particular backup
+   * reliable way to determine if the most recently reported status to the a particular backup
    * request.
    *
    * @return the "directoryName" of the backup if the response indicates that a is completed

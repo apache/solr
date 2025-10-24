@@ -1321,7 +1321,7 @@ groups:
     description: |
       Ensure that the reference Guide is updated for {{ release_version }}. In particular, the sections "Solr Upgrade Notes"
       and (if applicable) also the "Major changes in Solr ..." section must be up to date for the latest release.
-      Check that the the Blocker JIRA issue created in the beginning of the release process is resolved.
+      Check that the Blocker JIRA issue created in the beginning of the release process is resolved.
   - !Todo
     id: build_ref_guide_htaccess
     title: Build the ref guide .htaccess file
