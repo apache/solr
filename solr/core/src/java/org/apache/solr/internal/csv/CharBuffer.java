@@ -99,23 +99,6 @@ public class CharBuffer {
    *
    * @param sb the StringBuffer to append or null
    */
-  @Deprecated
-  @SuppressWarnings("JdkObsolete")
-  public void append(final StringBuffer sb) {
-    if (sb == null) {
-      return;
-    }
-    provideCapacity(length + sb.length());
-    sb.getChars(0, sb.length(), c, length);
-    length += sb.length();
-  }
-
-  /**
-   * Appends <code>sb</code> to the end of this CharBuffer. This method involves copying the new
-   * data once!
-   *
-   * @param sb the StringBuffer to append or null
-   */
   public void append(final StringBuilder sb) {
     if (sb == null) {
       return;
@@ -174,8 +157,8 @@ public class CharBuffer {
 
   /**
    * Returns the contents of the buffer as a char[]. The returned array may be the internal array of
-   * the buffer, so the caller must take care when modifying it. This method allows to avoid copying
-   * if the caller knows the exact capacity before.
+   * the buffer, so the caller must take care when modifying it. This method avoids copying if the
+   * caller knows the exact capacity before.
    */
   public char[] getCharacters() {
     if (c.length == length) {

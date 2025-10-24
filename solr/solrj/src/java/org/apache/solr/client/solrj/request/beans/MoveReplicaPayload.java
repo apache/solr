@@ -29,7 +29,9 @@ public class MoveReplicaPayload implements ReflectMapWriter {
 
   @JsonProperty public String sourceNode;
 
-  @JsonProperty public Boolean waitForFinalState = false;
+  @JsonProperty
+  @Deprecated(since = "9.10")
+  public Boolean waitForFinalState = false;
 
   @JsonProperty public Integer timeout = 600;
 

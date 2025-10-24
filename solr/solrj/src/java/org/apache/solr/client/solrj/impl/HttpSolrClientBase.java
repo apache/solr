@@ -115,13 +115,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
     return requestWriter;
   }
 
-  // TODO: Remove this for 10.0, there is a typo in the method name
-  @Deprecated(since = "9.8", forRemoval = true)
-  protected ModifiableSolrParams initalizeSolrParams(
-      SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    return initializeSolrParams(solrRequest, parserToUse);
-  }
-
   protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
     // The parser 'wt=' param is used instead of the original params
@@ -227,7 +220,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
       if (error != null
           && (String.valueOf(getObjectByPath(error, true, errPath))
               .endsWith("ExceptionWithErrObject"))) {
-        throw BaseHttpSolrClient.RemoteExecutionException.create(urlExceptionMessage, rsp);
+        throw RemoteExecutionException.create(urlExceptionMessage, rsp);
       }
       if (httpStatus != 200 && !isV2Api) {
         NamedList<String> metadata = null;
