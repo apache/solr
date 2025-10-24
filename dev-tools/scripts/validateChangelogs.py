@@ -959,14 +959,14 @@ class ChangelogValidator:
             # Step 8: Analyze feature distribution
             analysis = self.analyze_feature_distribution()
 
-            # Step 7: Create temporary branch and generate changelog
+            # Step 9: Create temporary branch and generate changelog
             temp_branch = self.create_temp_branch_with_changelog(analysis)
             changelog_preview = None
 
             if temp_branch:
                 changelog_preview = self.generate_changelog_preview(temp_branch)
 
-            # Step 8: Generate and print report
+            # Step 10: Generate and print report
             self.print_report(analysis, changelog_preview)
 
             # Return success if no errors
