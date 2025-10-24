@@ -24387,7 +24387,7 @@ Bug Fixes
     possible for path based request handlers.  (ryan)
 
 14. SOLR-214: Some servlet containers (including Tomcat and Resin) do not
-    obey the specified charset.  Rather then letting the container handle
+    obey the specified charset.  Rather than letting the container handle
     it solr now uses the charset from the header contentType to decode posted
     content.  Using the contentType: "text/xml; charset=utf-8" will force
     utf-8 encoding.  If you do not specify a contentType, it will use the
