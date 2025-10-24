@@ -77,16 +77,15 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreatesValidOverseerMessage() throws Exception {
-    final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", false, "async");
+    final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", "async");
     replaceNodeApi.replaceNode("demoSourceNode", requestBody);
     verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
-    assertEquals(5, createdMessageProps.size());
+    assertEquals(4, createdMessageProps.size());
     assertEquals("demoSourceNode", createdMessageProps.get("sourceNode"));
     assertEquals("demoTargetNode", createdMessageProps.get("targetNode"));
-    assertEquals(false, createdMessageProps.get("waitForFinalState"));
     assertEquals("async", createdMessageProps.get("async"));
     assertEquals("replacenode", createdMessageProps.get("operation"));
   }
@@ -105,7 +104,7 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testOptionalValuesNotAddedToRemoteMessageIfNotProvided() throws Exception {
-    final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", null, null);
+    final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", null);
     replaceNodeApi.replaceNode("demoSourceNode", requestBody);
     verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
 
@@ -116,10 +115,6 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
     assertEquals("demoSourceNode", createdMessageProps.get("sourceNode"));
     assertEquals("demoTargetNode", createdMessageProps.get("targetNode"));
     assertEquals("replacenode", createdMessageProps.get("operation"));
-    assertFalse(
-        "Expected message to not contain value for waitForFinalState: "
-            + createdMessageProps.get("waitForFinalState"),
-        createdMessageProps.containsKey("waitForFinalState"));
     assertFalse(
         "Expected message to not contain value for async: " + createdMessageProps.get("async"),
         createdMessageProps.containsKey("async"));

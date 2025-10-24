@@ -24,9 +24,8 @@ public class BalanceReplicasRequestBody {
 
   public BalanceReplicasRequestBody() {}
 
-  public BalanceReplicasRequestBody(Set<String> nodes, Boolean waitForFinalState, String async) {
+  public BalanceReplicasRequestBody(Set<String> nodes, String async) {
     this.nodes = nodes;
-    this.waitForFinalState = waitForFinalState;
     this.async = async;
   }
 
