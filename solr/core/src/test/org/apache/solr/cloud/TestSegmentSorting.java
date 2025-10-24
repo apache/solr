@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
@@ -52,7 +51,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
       System.setProperty("solr.tests.id.docValues", "true");
     }
     configureCluster(NUM_SERVERS)
-        .addConfig(configName, Paths.get(TEST_HOME(), "collection1", "conf"))
+        .addConfig(configName, TEST_HOME().resolve("collection1").resolve("conf"))
         .configure();
   }
 

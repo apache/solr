@@ -22,14 +22,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
-import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -60,12 +58,8 @@ import org.apache.solr.handler.CatStream;
 /** Supports stream command in the bin/solr script. */
 public class StreamTool extends ToolBase {
 
-  public StreamTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public StreamTool(PrintStream stdout) {
-    super(stdout);
+  public StreamTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   private final SolrClientCache solrClientCache = new SolrClientCache();
@@ -442,7 +436,7 @@ public class StreamTool extends ToolBase {
 
       final List<CrawlFile> crawlSeeds = new ArrayList<>();
       for (String crawlRootStr : commaDelimitedFilepaths.split(",")) {
-        Path crawlRootPath = Paths.get(crawlRootStr).normalize();
+        Path crawlRootPath = Path.of(crawlRootStr).normalize();
 
         if (!Files.exists(crawlRootPath)) {
           throw new SolrException(

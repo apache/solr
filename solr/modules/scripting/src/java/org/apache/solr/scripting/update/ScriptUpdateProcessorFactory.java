@@ -40,7 +40,6 @@ import javax.script.ScriptException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -216,13 +215,6 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
 
   @Override
   public void inform(SolrCore core) {
-    if (!core.getCoreDescriptor().isConfigSetTrusted()) {
-      throw new SolrException(
-          ErrorCode.UNAUTHORIZED,
-          "The configset for this collection was uploaded without any authentication in place,"
-              + " and this operation is not available for collections with untrusted configsets. To use this component, re-upload the configset"
-              + " after enabling authentication and authorization.");
-    }
     resourceLoader = core.getResourceLoader();
 
     // test that our engines & scripts are valid

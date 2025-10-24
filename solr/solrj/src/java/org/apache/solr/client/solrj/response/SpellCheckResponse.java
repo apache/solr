@@ -40,13 +40,13 @@ public class SpellCheckResponse {
       correctlySpelled = true;
       return;
     }
-    for (int i = 0; i < sugg.size(); i++) {
-      String n = sugg.getName(i);
-      @SuppressWarnings("unchecked")
-      Suggestion s = new Suggestion(n, (NamedList<Object>) sugg.getVal(i));
-      suggestionMap.put(n, s);
-      suggestions.add(s);
-    }
+    sugg.forEach(
+        (n, val) -> {
+          @SuppressWarnings("unchecked")
+          Suggestion s = new Suggestion(n, (NamedList<Object>) val);
+          suggestionMap.put(n, s);
+          suggestions.add(s);
+        });
 
     Boolean correctlySpelled = (Boolean) spellInfo.get("correctlySpelled");
     if (correctlySpelled != null) {
@@ -75,11 +75,9 @@ public class SpellCheckResponse {
           collation.setCollationQueryString(collationQuery);
           collation.setNumberOfHits(hits);
 
-          for (int ii = 0; ii < misspellingsAndCorrections.size(); ii++) {
-            String misspelling = misspellingsAndCorrections.getName(ii);
-            String correction = misspellingsAndCorrections.getVal(ii);
-            collation.addMisspellingsAndCorrection(new Correction(misspelling, correction));
-          }
+          misspellingsAndCorrections.forEach(
+              (misspelling, correction) ->
+                  collation.addMisspellingsAndCorrection(new Correction(misspelling, correction)));
           collations.add(collation);
         } else {
           throw new AssertionError("Should get Lists of Strings or List of NamedLists here.");
@@ -143,35 +141,32 @@ public class SpellCheckResponse {
 
     public Suggestion(String token, NamedList<Object> suggestion) {
       this.token = token;
-      for (int i = 0; i < suggestion.size(); i++) {
-        String n = suggestion.getName(i);
-
-        if ("numFound".equals(n)) {
-          numFound = (Integer) suggestion.getVal(i);
-        } else if ("startOffset".equals(n)) {
-          startOffset = (Integer) suggestion.getVal(i);
-        } else if ("endOffset".equals(n)) {
-          endOffset = (Integer) suggestion.getVal(i);
-        } else if ("origFreq".equals(n)) {
-          originalFrequency = (Integer) suggestion.getVal(i);
-        } else if ("suggestion".equals(n)) {
-          List<?> list = (List<?>) suggestion.getVal(i);
-          if (list.size() > 0 && list.get(0) instanceof NamedList) {
-            // extended results detected
-            @SuppressWarnings("unchecked")
-            List<NamedList<?>> extended = (List<NamedList<?>>) list;
-            alternativeFrequencies = new ArrayList<>();
-            for (NamedList<?> nl : extended) {
-              alternatives.add((String) nl.get("word"));
-              alternativeFrequencies.add((Integer) nl.get("freq"));
+      suggestion.forEach(
+          (n, val) -> {
+            switch (n) {
+              case "numFound" -> numFound = (Integer) val;
+              case "startOffset" -> startOffset = (Integer) val;
+              case "endOffset" -> endOffset = (Integer) val;
+              case "origFreq" -> originalFrequency = (Integer) val;
+              case "suggestion" -> {
+                List<?> list = (List<?>) val;
+                if (!list.isEmpty() && list.get(0) instanceof NamedList) {
+                  // extended results detected
+                  @SuppressWarnings("unchecked")
+                  List<NamedList<?>> extended = (List<NamedList<?>>) list;
+                  alternativeFrequencies = new ArrayList<>();
+                  for (NamedList<?> nl : extended) {
+                    alternatives.add((String) nl.get("word"));
+                    alternativeFrequencies.add((Integer) nl.get("freq"));
+                  }
+                } else {
+                  @SuppressWarnings("unchecked")
+                  List<String> alts = (List<String>) list;
+                  alternatives.addAll(alts);
+                }
+              }
             }
-          } else {
-            @SuppressWarnings("unchecked")
-            List<String> alts = (List<String>) list;
-            alternatives.addAll(alts);
-          }
-        }
-      }
+          });
     }
 
     public String getToken() {

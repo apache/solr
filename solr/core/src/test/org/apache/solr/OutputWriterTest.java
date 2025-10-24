@@ -18,11 +18,11 @@ package org.apache.solr;
 
 import java.io.IOException;
 import java.io.Writer;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.TextQueryResponseWriter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,15 +43,7 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testSOLR59responseHeaderVersions() {
-    // default version is 2.2, with "new" responseHeader
-    lrf.args.remove(CommonParams.VERSION);
-    lrf.args.put("wt", "standard");
-    assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
-    lrf.args.remove("wt");
-    assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='QTime']");
-
-    // and explicit 2.2 works as default
-    // lrf.args.put("version", "2.2");
+    // default results in "new" responseHeader
     lrf.args.put("wt", "standard");
     assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
     lrf.args.remove("wt");
@@ -77,7 +69,7 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
 
   ////////////////////////////////////////////////////////////////////////////
   /** An output writer that doesn't do anything useful. */
-  public static class UselessOutputWriter implements QueryResponseWriter {
+  public static class UselessOutputWriter implements TextQueryResponseWriter {
 
     public UselessOutputWriter() {}
 

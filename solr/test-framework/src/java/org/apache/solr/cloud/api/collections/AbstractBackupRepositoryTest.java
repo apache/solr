@@ -22,18 +22,18 @@ import static org.apache.lucene.codecs.CodecUtil.writeBEInt;
 import static org.apache.lucene.codecs.CodecUtil.writeBELong;
 import static org.apache.solr.core.backup.repository.DelegatingBackupRepository.PARAM_DELEGATE_REPOSITORY_NAME;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -151,7 +151,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       final int expectedNumBytes = storedBytes.length;
       final byte[] retrievedBytes = new byte[expectedNumBytes];
       try (final IndexInput is =
-          repo.openInput(getBaseUri(), "file.txt", new IOContext(IOContext.Context.READ))) {
+          // TBD
+          repo.openInput(getBaseUri(), "file.txt", IOContext.DEFAULT)) {
         assertEquals(expectedNumBytes, is.length());
         is.readBytes(retrievedBytes, 0, expectedNumBytes);
       }
@@ -286,10 +287,10 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
     Collections.shuffle(Arrays.asList(plugins), random());
 
     // Given a file on the local disk with an invalid checksum (e.g. could be encrypted).
-    File sourceDir = createTempDir().toFile();
+    Path sourceDir = createTempDir();
     String fileName = "source-file";
     String content = "content";
-    try (OutputStream os = FileUtils.openOutputStream(new File(sourceDir, fileName));
+    try (OutputStream os = PathUtils.newOutputStream(sourceDir.resolve(fileName), false);
         IndexOutput io = new OutputStreamIndexOutput("", "", os, Long.BYTES)) {
       byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
       io.writeBytes(bytes, bytes.length);
@@ -301,14 +302,14 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
     }
 
     BackupRepositoryFactory repoFactory = new BackupRepositoryFactory(plugins);
-    try (SolrResourceLoader resourceLoader = new SolrResourceLoader(sourceDir.toPath())) {
+    try (SolrResourceLoader resourceLoader = new SolrResourceLoader(sourceDir)) {
 
       // When we copy the local file with the standard BackupRepository,
       // then it fails because the checksum is invalid.
       expectThrows(
           CorruptIndexException.class,
           () -> copyFileToRepo(sourceDir, fileName, repoName, repoFactory, resourceLoader));
-      File destinationDir = createTempDir().toFile();
+      Path destinationDir = createTempDir();
       expectThrows(
           CorruptIndexException.class,
           () ->
@@ -329,30 +330,30 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
   }
 
   private void copyFileToRepo(
-      File dir,
+      Path dir,
       String fileName,
       String repoName,
       BackupRepositoryFactory repoFactory,
       SolrResourceLoader resourceLoader)
       throws IOException, URISyntaxException {
     try (BackupRepository repo = repoFactory.newInstance(resourceLoader, repoName);
-        Directory directory = newFSDirectory(dir.toPath())) {
+        Directory directory = newFSDirectory(dir)) {
       URI destinationDir = repo.resolve(getBaseUri(), "destination-folder");
       repo.copyIndexFileFrom(directory, fileName, destinationDir, fileName);
     }
   }
 
   private void copyFileToDir(
-      File sourceDir,
+      Path sourceDir,
       String fileName,
-      File destinationDir,
+      Path destinationDir,
       String repoName,
       BackupRepositoryFactory repoFactory,
       SolrResourceLoader resourceLoader)
       throws IOException {
     try (BackupRepository repo = repoFactory.newInstance(resourceLoader, repoName);
-        Directory sourceDirectory = newFSDirectory(sourceDir.toPath());
-        Directory destinationDirectory = newFSDirectory(destinationDir.toPath())) {
+        Directory sourceDirectory = newFSDirectory(sourceDir);
+        Directory destinationDirectory = newFSDirectory(destinationDir)) {
       repo.copyIndexFileFrom(sourceDirectory, fileName, destinationDirectory, fileName);
     }
   }

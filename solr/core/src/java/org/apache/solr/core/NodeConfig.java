@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -41,6 +40,7 @@ import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.search.CacheConfig;
@@ -107,8 +107,6 @@ public class NodeConfig {
 
   private final int indexSearcherExecutorThreads;
 
-  @Deprecated private final int transientCacheSize;
-
   private final boolean useSchemaCache;
 
   private final String managementPath;
@@ -147,7 +145,6 @@ public class NodeConfig {
       Integer coreLoadThreads,
       int replayUpdatesThreads,
       int indexSearcherExecutorThreads,
-      int transientCacheSize,
       boolean useSchemaCache,
       String managementPath,
       Path solrHome,
@@ -187,7 +184,6 @@ public class NodeConfig {
     this.coreLoadThreads = coreLoadThreads;
     this.replayUpdatesThreads = replayUpdatesThreads;
     this.indexSearcherExecutorThreads = indexSearcherExecutorThreads;
-    this.transientCacheSize = transientCacheSize;
     this.useSchemaCache = useSchemaCache;
     this.managementPath = managementPath;
     this.solrHome = solrHome;
@@ -249,10 +245,11 @@ public class NodeConfig {
     //  ZkFailoverTest test case...
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
     if (StrUtils.isNotNullOrEmpty(zkHost)) {
-      int startUpZkTimeOut = 1000 * Integer.getInteger("waitForZk", 0);
-      if (startUpZkTimeOut == 0) {
-        startUpZkTimeOut = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
-      }
+      int startUpZkTimeOut =
+          1000
+              * Integer.getInteger(
+                  "solr.cloud.wait.for.zk.seconds", SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT);
+
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
@@ -307,7 +304,7 @@ public class NodeConfig {
       log.debug("solr.install.dir property not initialized.");
       return null;
     }
-    return Paths.get(prop);
+    return Path.of(prop);
   }
 
   /**
@@ -398,10 +395,6 @@ public class NodeConfig {
 
   public CloudConfig getCloudConfig() {
     return cloudConfig;
-  }
-
-  public int getTransientCacheSize() {
-    return transientCacheSize;
   }
 
   protected final Path solrHome;
@@ -495,7 +488,7 @@ public class NodeConfig {
 
   public static final String REDACTED_SYS_PROP_VALUE = "--REDACTED--";
 
-  /** Returns the a system property value, or "--REDACTED--" if the system property is hidden */
+  /** Returns the system property value, or "--REDACTED--" if the system property is hidden */
   public String getRedactedSysPropValue(String sysPropName) {
     return hiddenSysPropPattern.test(sysPropName)
         ? REDACTED_SYS_PROP_VALUE
@@ -606,7 +599,6 @@ public class NodeConfig {
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
     private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
     private int indexSearcherExecutorThreads = DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS;
-    @Deprecated private int transientCacheSize = -1;
     private boolean useSchemaCache = false;
     private String managementPath;
     private Properties solrProperties = new Properties();
@@ -618,7 +610,8 @@ public class NodeConfig {
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
-    private boolean hideStackTrace = Boolean.getBoolean("solr.hideStackTrace");
+    private boolean hideStackTrace =
+        !EnvUtils.getPropertyAsBool("solr.responses.stacktrace.enabled", true);
 
     private final Path solrHome;
     private final String nodeName;
@@ -647,7 +640,7 @@ public class NodeConfig {
         Set.of(
             "javax\\.net\\.ssl\\.keyStorePassword",
             "javax\\.net\\.ssl\\.trustStorePassword",
-            "basicauth",
+            ".*credentials",
             "zkDigestPassword",
             "zkDigestReadonlyPassword",
             "aws\\.secretKey", // AWS SDK v1
@@ -771,14 +764,6 @@ public class NodeConfig {
       return this;
     }
 
-    // Remove in Solr 10.0
-
-    @Deprecated
-    public NodeConfigBuilder setTransientCacheSize(int transientCacheSize) {
-      this.transientCacheSize = transientCacheSize;
-      return this;
-    }
-
     public NodeConfigBuilder setUseSchemaCache(boolean useSchemaCache) {
       this.useSchemaCache = useSchemaCache;
       return this;
@@ -861,25 +846,17 @@ public class NodeConfig {
     }
 
     /**
-     * Finds list of hiddenSysProps requested by system property or environment variable or the
-     * default
+     * Finds list of hiddenSysProps requested in priority of solr.xml, system properties or the
+     * default set
      *
-     * @return set of raw hidden sysProps, may be regex
+     * @return set of raw hidden system properties, may be regex
      */
-    private Set<String> resolveHiddenSysPropsFromSysPropOrEnvOrDefault(String hiddenSysProps) {
-      // Fall back to sysprop and env.var if nothing configured through solr.xml
+    private Set<String> resolveHiddenSysProps(String hiddenSysProps) {
+      // Fall back to system properties if nothing configured through solr.xml
       if (!StrUtils.isNotNullOrEmpty(hiddenSysProps)) {
-        String fromProps = System.getProperty("solr.hiddenSysProps");
-        // Back-compat for solr 9x
-        // DEPRECATED: Remove in 10.0
-        if (StrUtils.isNotNullOrEmpty(fromProps)) {
-          fromProps = System.getProperty("solr.redaction.system.pattern");
-        }
-        String fromEnv = System.getenv("SOLR_HIDDEN_SYS_PROPS");
+        String fromProps = EnvUtils.getProperty("solr.responses.hidden.sys.props");
         if (StrUtils.isNotNullOrEmpty(fromProps)) {
           hiddenSysProps = fromProps;
-        } else if (StrUtils.isNotNullOrEmpty(fromEnv)) {
-          hiddenSysProps = fromEnv;
         }
       }
       Set<String> hiddenSysPropSet = Collections.emptySet();
@@ -921,7 +898,6 @@ public class NodeConfig {
           coreLoadThreads,
           replayUpdatesThreads,
           indexSearcherExecutorThreads,
-          transientCacheSize,
           useSchemaCache,
           managementPath,
           solrHome,
@@ -938,7 +914,7 @@ public class NodeConfig {
           hideStackTrace,
           configSetServiceClass,
           modules,
-          resolveHiddenSysPropsFromSysPropOrEnvOrDefault(hiddenSysProps));
+          resolveHiddenSysProps(hiddenSysProps));
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {

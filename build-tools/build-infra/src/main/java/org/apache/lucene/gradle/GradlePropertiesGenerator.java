@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
@@ -37,7 +36,7 @@ public class GradlePropertiesGenerator {
     }
 
     try {
-      new GradlePropertiesGenerator().run(Paths.get(args[0]), Paths.get(args[1]));
+      new GradlePropertiesGenerator().run(Path.of(args[0]), Path.of(args[1]));
     } catch (Exception e) {
       System.err.println("ERROR: " + e.getMessage());
       System.exit(3);

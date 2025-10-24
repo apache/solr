@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -25,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
@@ -62,7 +60,6 @@ public class SolrStream extends TupleStream {
   private transient TupleStreamParser tupleStreamParser;
   private String slice;
   private long checkpoint = -1;
-  private Closeable closeableHttpResponse;
   private boolean distrib = true;
   private String user;
   private String password;
@@ -189,7 +186,6 @@ public class SolrStream extends TupleStream {
   @Override
   public void close() throws IOException {
     IOUtils.closeQuietly(tupleStreamParser);
-    IOUtils.closeQuietly(closeableHttpResponse);
     if (doCloseCache) {
       IOUtils.closeQuietly(clientCache);
     }
@@ -303,24 +299,12 @@ public class SolrStream extends TupleStream {
     var client = clientCache.getHttpSolrClient(baseUrl);
     NamedList<Object> genericResponse = client.request(query);
     InputStream stream = (InputStream) genericResponse.get(InputStreamResponseParser.STREAM_KEY);
-
-    CloseableHttpResponse httpResponse =
-        (CloseableHttpResponse) genericResponse.get("closeableResponse");
-    // still attempting to read http status from http response for backwards compatibility reasons
-    // since 9.4 the updated format will have a dedicated status field
-    final int statusCode;
-    if (httpResponse != null) {
-      statusCode = httpResponse.getStatusLine().getStatusCode();
-    } else {
-      statusCode = (int) genericResponse.get("responseStatus");
-    }
+    // since 9.4 the updated format has a dedicated status field
+    final Integer statusCode = (Integer) genericResponse.get("responseStatus");
 
     if (statusCode == 401
         || statusCode == 403) { // auth response comes as html, so propagate as string
       String errMsg = consumeStreamAsErrorMessage(stream);
-      if (httpResponse != null) {
-        httpResponse.close();
-      }
       throw new IOException(
           "Query to '"
               + query.getPath()
@@ -332,7 +316,6 @@ public class SolrStream extends TupleStream {
               + errMsg);
     }
 
-    this.closeableHttpResponse = httpResponse;
     if (CommonParams.JAVABIN.equals(wt)) {
       return new JavabinTupleStreamParser(stream, true);
     } else {

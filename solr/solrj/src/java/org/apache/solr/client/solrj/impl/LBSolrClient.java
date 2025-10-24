@@ -17,8 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
@@ -46,8 +44,8 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -88,6 +86,7 @@ public abstract class LBSolrClient extends SolrClient {
   private volatile EndpointWrapper[] aliveServerList = new EndpointWrapper[0];
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
+  private volatile boolean isClosed = false;
 
   protected long aliveCheckIntervalMillis =
       TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
@@ -456,8 +455,9 @@ public abstract class LBSolrClient extends SolrClient {
   public Rsp request(Req req) throws SolrServerException, IOException {
     Rsp rsp = new Rsp();
     Exception ex = null;
-    boolean isNonRetryable =
-        req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
+    boolean isAdmin =
+        req.request.getRequestType() == SolrRequestType.ADMIN && !req.request.requiresCollection();
+    boolean isNonRetryable = req.request.getRequestType() == SolrRequestType.UPDATE || isAdmin;
     EndpointIterator endpointIterator = new EndpointIterator(req, zombieServers);
     Endpoint serverStr;
     while ((serverStr = endpointIterator.nextOrError(ex)) != null) {
@@ -526,7 +526,7 @@ public abstract class LBSolrClient extends SolrClient {
       if (isZombie) {
         reviveZombieServer(baseUrl);
       }
-    } catch (BaseHttpSolrClient.RemoteExecutionException e) {
+    } catch (RemoteExecutionException e) {
       throw e;
     } catch (SolrException e) {
       // we retry on 404 or 403 or 503 or 500
@@ -575,11 +575,16 @@ public abstract class LBSolrClient extends SolrClient {
     // if it's not null.
     if (aliveCheckExecutor == null) {
       synchronized (this) {
+        if (isClosed) {
+          // must check inside sync block
+          return;
+        }
         if (aliveCheckExecutor == null) {
           log.debug("Starting aliveCheckExecutor for {}", this);
           aliveCheckExecutor =
               Executors.newSingleThreadScheduledExecutor(
                   new SolrNamedThreadFactory("aliveCheckExecutor"));
+          ObjectReleaseTracker.track(aliveCheckExecutor);
           aliveCheckExecutor.scheduleAtFixedRate(
               getAliveCheckRunner(new WeakReference<>(this)),
               this.aliveCheckIntervalMillis,
@@ -826,8 +831,10 @@ public abstract class LBSolrClient extends SolrClient {
   @Override
   public void close() {
     synchronized (this) {
+      isClosed = true;
       if (aliveCheckExecutor != null) {
         ExecutorUtil.shutdownNowAndAwaitTermination(aliveCheckExecutor);
+        ObjectReleaseTracker.release(aliveCheckExecutor);
       }
     }
     ObjectReleaseTracker.release(this);

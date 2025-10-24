@@ -17,7 +17,10 @@
 
 package org.apache.solr.jersey;
 
+import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -25,18 +28,22 @@ import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // TODO Deprecate or remove support for the 'wt' parameter in the v2 APIs in favor of the more
 //  HTTP-compliant 'Accept' header
 /** Overrides the content-type of the response based on an optional user-provided 'wt' parameter */
 public class MediaTypeOverridingFilter implements ContainerResponseFilter {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final List<Class<? extends JerseyResource>> EXEMPTED_RESOURCES =
       List.of(ZookeeperRead.class);
@@ -65,9 +72,16 @@ public class MediaTypeOverridingFilter implements ContainerResponseFilter {
         (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
     // TODO Is it valid for SQRequest to be null?
     final var params = (solrQueryRequest != null) ? solrQueryRequest.getParams() : null;
-    final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(params, MediaType.APPLICATION_JSON);
-    if (mediaType != null) {
-      responseContext.getHeaders().putSingle(CONTENT_TYPE, mediaType);
+    if (params != null && params.get(WT) != null) { // Override for 'wt'
+      final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(params, null);
+      if (mediaType != null) {
+        responseContext.getHeaders().putSingle(CONTENT_TYPE, mediaType);
+      }
+    } else if (!requestContext.getHeaders().containsKey(ACCEPT)
+        || "*/*"
+            .equals(requestContext.getHeaderString(ACCEPT))) { // Override default response to json
+      responseContext.getHeaders().putSingle(CONTENT_TYPE, APPLICATION_JSON);
     }
+    // Else, obey the user-provided 'Accept' header
   }
 }

@@ -23,7 +23,6 @@ import static org.apache.solr.handler.admin.ConfigSetsHandler.CONFIG_SET_TIMEOUT
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.security.Principal;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -37,13 +36,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,24 +58,18 @@ public class ConfigSetAPIBase extends JerseyResource {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final CoreContainer coreContainer;
-
+  protected final ConfigSetService configSetService;
   protected final SolrQueryRequest solrQueryRequest;
   protected final SolrQueryResponse solrQueryResponse;
-  protected final Optional<DistributedCollectionConfigSetCommandRunner>
-      distributedCollectionConfigSetCommandRunner;
-  protected final ConfigSetService configSetService;
 
   public ConfigSetAPIBase(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     this.coreContainer = coreContainer;
+    this.configSetService = coreContainer.getConfigSetService();
     this.solrQueryRequest = solrQueryRequest;
     this.solrQueryResponse = solrQueryResponse;
-
-    this.distributedCollectionConfigSetCommandRunner =
-        coreContainer.getDistributedCollectionCommandRunner();
-    this.configSetService = coreContainer.getConfigSetService();
   }
 
   protected void runConfigSetCommand(
@@ -88,8 +81,10 @@ public class ConfigSetAPIBase extends JerseyResource {
       log.info("Invoked ConfigSet Action :{} with params {} ", action.toLower(), messageToSend);
     }
 
-    if (distributedCollectionConfigSetCommandRunner.isPresent()) {
-      distributedCollectionConfigSetCommandRunner
+    Optional<DistributedCollectionConfigSetCommandRunner> distribCommandRunner =
+        coreContainer.getZkController().getDistributedCommandRunner();
+    if (distribCommandRunner.isPresent()) {
+      distribCommandRunner
           .get()
           .runConfigSetCommand(rsp, action, messageToSend, CONFIG_SET_TIMEOUT);
     } else {
@@ -98,10 +93,10 @@ public class ConfigSetAPIBase extends JerseyResource {
   }
 
   protected void ensureConfigSetUploadEnabled() {
-    if (!"true".equals(System.getProperty("configset.upload.enabled", "true"))) {
+    if (!EnvUtils.getPropertyAsBool("solr.configset.upload.enabled", true)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Configset upload feature is disabled. To enable this, start Solr with '-Dconfigset.upload.enabled=true'.");
+          "Configset upload feature is disabled. To enable this, start Solr with '-Dsolr.configset.upload.enabled=true'.");
     }
   }
 
@@ -117,15 +112,6 @@ public class ConfigSetAPIBase extends JerseyResource {
     return contentStreamsIterator.next().getStream();
   }
 
-  public static boolean isTrusted(Principal userPrincipal, AuthenticationPlugin authPlugin) {
-    if (authPlugin != null && userPrincipal != null) {
-      log.debug("Trusted configset request");
-      return true;
-    }
-    log.debug("Untrusted configset request");
-    return false;
-  }
-
   protected void createBaseNode(
       ConfigSetService configSetService,
       boolean overwritesExisting,
@@ -134,24 +120,9 @@ public class ConfigSetAPIBase extends JerseyResource {
       throws IOException {
     if (overwritesExisting) {
       if (!requestIsTrusted) {
-        ensureOverwritingUntrustedConfigSet(configName);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Trying to make an untrusted ConfigSet update");
       }
-      // If the request is trusted and cleanup=true, then the configSet will be set to trusted after
-      // the overwriting has been done.
-    } else {
-      configSetService.setConfigSetTrust(configName, requestIsTrusted);
-    }
-  }
-
-  /*
-   * Fail if an untrusted request tries to update a trusted ConfigSet
-   */
-  private void ensureOverwritingUntrustedConfigSet(String configName) throws IOException {
-    boolean isCurrentlyTrusted = configSetService.isConfigSetTrusted(configName);
-    if (isCurrentlyTrusted) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Trying to make an untrusted ConfigSet update on a trusted configSet");
     }
   }
 

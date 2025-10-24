@@ -18,7 +18,12 @@ package org.apache.solr.common;
 
 import java.util.Map;
 
-/** This is to facilitate just in time creation of objects before writing it to the response. */
+/**
+ * This is to facilitate just in time creation of objects before writing it to the response.
+ *
+ * @deprecated Use {@link MapWriter} instead
+ */
+@Deprecated
 public interface MapSerializable {
   /**
    * Use the passed map to minimize object creation. Do not keep a reference to the passed map and

@@ -41,7 +41,7 @@ import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 
-// Base interface for all text based writers
+/** Base interface for all text based writers */
 public interface TextWriter extends PushWriter {
 
   default void writeVal(String name, Object val) throws IOException {

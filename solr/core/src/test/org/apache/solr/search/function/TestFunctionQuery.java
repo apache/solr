@@ -16,14 +16,9 @@
  */
 package org.apache.solr.search.function;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
@@ -42,17 +37,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     initCore("solrconfig-functionquery.xml", "schema11.xml");
   }
 
-  static long start = System.nanoTime();
-
-  void makeExternalFile(String field, String contents) throws IOException {
-    String dir = h.getCore().getDataDir();
-    String filename = dir + "/external_" + field + "." + (start++);
-
-    Files.writeString(Path.of(filename), contents, StandardCharsets.UTF_8);
-  }
-
   void createIndex(String field, int... values) {
-    // lrf.args.put("version","2.0");
     for (int val : values) {
       String s = Integer.toString(val);
 
@@ -134,7 +119,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   void doTest(String field) {
     clearIndex();
 
-    // lrf.args.put("version","2.0");
     int[] vals = {100, -4, 0, 10, 25, 5};
     createIndex(field, vals);
     createIndex(null, 88); // id with no value
@@ -199,111 +183,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   public void testFunctions() {
     doTest("foo_f"); // a sortable float field
     doTest("foo_tf"); // a trie float field
-  }
-
-  @Test
-  public void testExternalField() throws Exception {
-    clearIndex();
-
-    String field = "foo_extf";
-
-    int[] ids = {
-      100, -4, 0, 10, 25, 5, 77, 23, 55, -78, -45, -24, 63, 78, 94, 22, 34, 54321, 261, -627
-    };
-
-    createIndex(null, ids);
-
-    // Unsorted field, the largest first
-    makeExternalFile(field, "54321=543210\n0=-999\n25=250");
-    // test identity (straight field value)
-    singleTest(field, "\0", 54321, 543210, 0, 0, 25, 250, 100, 1);
-    Object orig = FileFloatSource.onlyForTesting;
-    singleTest(field, "log(\0)");
-    // make sure the values were cached
-    assertSame(orig, FileFloatSource.onlyForTesting);
-    singleTest(field, "sqrt(\0)");
-    assertSame(orig, FileFloatSource.onlyForTesting);
-
-    makeExternalFile(field, "0=1");
-    assertU(h.query("/reloadCache", lrf.makeRequest("", "")));
-    singleTest(field, "sqrt(\0)");
-    assertNotSame(orig, FileFloatSource.onlyForTesting);
-
-    Random r = random();
-    for (int i = 0; i < 10; i++) { // do more iterations for a thorough test
-      int len = r.nextInt(ids.length + 1);
-      boolean sorted = r.nextBoolean();
-      // shuffle ids
-      for (int j = 0; j < ids.length; j++) {
-        int other = r.nextInt(ids.length);
-        int v = ids[0];
-        ids[0] = ids[other];
-        ids[other] = v;
-      }
-
-      if (sorted) {
-        // sort only the first elements
-        Arrays.sort(ids, 0, len);
-      }
-
-      // make random values
-      float[] vals = new float[len];
-      for (int j = 0; j < len; j++) {
-        vals[j] = r.nextInt(200) - 100;
-      }
-
-      // make and write the external file
-      StringBuilder sb = new StringBuilder();
-      for (int j = 0; j < len; j++) {
-        sb.append("" + ids[j] + "=" + vals[j] + "\n");
-      }
-      makeExternalFile(field, sb.toString());
-
-      // make it visible
-      assertU(h.query("/reloadCache", lrf.makeRequest("", "")));
-
-      // test it
-      float[] answers = new float[ids.length * 2];
-      for (int j = 0; j < len; j++) {
-        answers[j * 2] = ids[j];
-        answers[j * 2 + 1] = Math.max(0, vals[j]);
-      }
-      for (int j = len; j < ids.length; j++) {
-        answers[j * 2] = ids[j];
-        answers[j * 2 + 1] = 1; // the default values
-      }
-
-      singleTest(field, "\0", answers);
-      // System.out.println("Done test "+i);
-    }
-  }
-
-  @Test
-  public void testExternalFileFieldStringKeys() throws IOException {
-    clearIndex();
-
-    final String extField = "foo_extfs";
-    final String keyField = "sfile_s";
-    assertU(adoc("id", "991", keyField, "AAA=AAA"));
-    assertU(adoc("id", "992", keyField, "BBB"));
-    assertU(adoc("id", "993", keyField, "CCC=CCC"));
-    assertU(commit());
-    makeExternalFile(extField, "AAA=AAA=543210\nBBB=-8\nCCC=CCC=250");
-    singleTest(extField, "\0", 991, 543210, 992, 0, 993, 250);
-  }
-
-  @Test
-  public void testExternalFileFieldNumericKey() throws IOException {
-    clearIndex();
-
-    final String extField = "eff_trie";
-    final String keyField = "eff_tint";
-    assertU(adoc("id", "991", keyField, "91"));
-    assertU(adoc("id", "992", keyField, "92"));
-    assertU(adoc("id", "993", keyField, "93"));
-    assertU(commit());
-    makeExternalFile(extField, "91=543210\n92=-8\n93=250\n=67");
-    singleTest(extField, "\0", 991, 543210, 992, 0, 993, 250);
   }
 
   @Test
@@ -1014,46 +893,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   /**
-   * verify that both the field("...") value source parser as well as ExternalFileField work with
-   * esoteric field names
-   */
-  @Test
-  public void testExternalFieldValueSourceParser() throws IOException {
-    clearIndex();
-
-    String field = "CoMpleX fieldName _extf";
-    String fieldAsFunc = "field(\"CoMpleX fieldName _extf\")";
-
-    int[] ids = {
-      100, -4, 0, 10, 25, 5, 77, 23, 55, -78, -45, -24, 63, 78, 94, 22, 34, 54321, 261, -627
-    };
-
-    createIndex(null, ids);
-
-    // Unsorted field, the largest first
-    makeExternalFile(field, "54321=543210\n0=-999\n25=250");
-    // test identity (straight field value)
-    singleTest(fieldAsFunc, "\0", 54321, 543210, 0, 0, 25, 250, 100, 1);
-    Object orig = FileFloatSource.onlyForTesting;
-    singleTest(fieldAsFunc, "log(\0)");
-    // make sure the values were cached
-    assertSame(orig, FileFloatSource.onlyForTesting);
-    singleTest(fieldAsFunc, "sqrt(\0)");
-    assertSame(orig, FileFloatSource.onlyForTesting);
-
-    makeExternalFile(field, "0=1");
-    assertU(adoc("id", "10000")); // will get same reader if no index change
-    assertU(commit());
-    singleTest(fieldAsFunc, "sqrt(\0)");
-    assertNotSame(orig, FileFloatSource.onlyForTesting);
-  }
-
-  /**
-   * some platforms don't allow quote characters in filenames, so in addition to
-   * testExternalFieldValueSourceParser above, test a field name with quotes in it that does NOT use
-   * ExternalFileField
-   *
-   * @see #testExternalFieldValueSourceParser
+   * some platforms don't allow quote characters in filenames, test a field name with quotes in it.
    */
   @Test
   public void testFieldValueSourceParser() {

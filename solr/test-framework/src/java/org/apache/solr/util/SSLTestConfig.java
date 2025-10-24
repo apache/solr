@@ -37,9 +37,10 @@ import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -98,8 +99,9 @@ public class SSLTestConfig {
    * @param clientAuth - whether client authentication should be required.
    * @param checkPeerName - whether the client should validate the 'peer name' of the SSL
    *     Certificate (and which testing Cert should be used)
-   * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
+   * @see SolrHttpConstants#SYS_PROP_CHECK_PEER_NAME
    */
+  @SuppressWarnings("removal")
   public SSLTestConfig(boolean useSsl, boolean clientAuth, boolean checkPeerName) {
     this.useSsl = useSsl;
     this.clientAuth = clientAuth;
@@ -107,7 +109,7 @@ public class SSLTestConfig {
 
     final String resourceName =
         checkPeerName ? TEST_KEYSTORE_LOCALHOST_RESOURCE : TEST_KEYSTORE_BOGUSHOST_RESOURCE;
-    trustStore = keyStore = Resource.newClassPathResource(resourceName);
+    trustStore = keyStore = ResourceFactory.root().newClassLoaderResource(resourceName, true);
     if (null == keyStore || !keyStore.exists()) {
       throw new IllegalStateException(
           "Unable to locate keystore resource file in classpath: " + resourceName);

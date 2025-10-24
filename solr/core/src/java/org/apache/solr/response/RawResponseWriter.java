@@ -20,8 +20,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
-import java.io.Writer;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -39,7 +37,7 @@ import org.apache.solr.request.SolrQueryRequest;
  *
  * @since solr 1.3
  */
-public class RawResponseWriter implements BinaryQueryResponseWriter {
+public class RawResponseWriter implements QueryResponseWriter {
 
   public static final String CONTENT_TYPE = "application/vnd.apache.solr.raw";
 
@@ -75,8 +73,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
     }
 
     // Requests to a specific core already have writers, but we still need a 'default writer' for
-    // non-core
-    // (i.e. container-level) APIs
+    // non-core (i.e. container-level) APIs
     synchronized (this) {
       if (defaultWriter == null) {
         defaultWriter = new JSONResponseWriter();
@@ -88,41 +85,27 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     Object obj = response.getValues().get(CONTENT);
-    if (obj != null && (obj instanceof ContentStream)) {
-      return ((ContentStream) obj).getContentType();
+    if (obj instanceof ContentStream content) {
+      return content.getContentType();
     }
     return getBaseWriter(request).getContentType(request, response);
   }
 
   @Override
-  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
+  public void write(
+      OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException {
     Object obj = response.getValues().get(CONTENT);
-    if (obj != null && (obj instanceof ContentStream content)) {
-      // copy the contents to the writer...
-      try (Reader reader = content.getReader()) {
-        reader.transferTo(writer);
-      }
-    } else {
-      getBaseWriter(request).write(writer, request, response);
-    }
-  }
-
-  @Override
-  public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
-      throws IOException {
-    Object obj = response.getValues().get(CONTENT);
-    if (obj != null && (obj instanceof ContentStream content)) {
+    if (obj instanceof ContentStream content) {
       // copy the contents to the writer...
       try (InputStream in = content.getStream()) {
         in.transferTo(out);
       }
-    } else if (obj != null && (obj instanceof SolrCore.RawWriter rawWriter)) {
+    } else if (obj instanceof SolrCore.RawWriter rawWriter) {
       rawWriter.write(out);
-      if (rawWriter instanceof Closeable) ((Closeable) rawWriter).close();
+      if (rawWriter instanceof Closeable closeable) closeable.close();
     } else {
-      QueryResponseWriterUtil.writeQueryResponse(
-          out, getBaseWriter(request), request, response, getContentType(request, response));
+      getBaseWriter(request).write(out, request, response, contentType);
     }
   }
 }

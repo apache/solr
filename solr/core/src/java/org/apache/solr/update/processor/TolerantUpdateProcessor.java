@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -249,10 +250,10 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
           continue;
         }
 
-        for (int i = 0; i < remoteErrMetadata.size(); i++) {
+        for (Entry<String, String> errEntry : remoteErrMetadata) {
           ToleratedUpdateError err =
               ToleratedUpdateError.parseMetadataIfToleratedUpdateError(
-                  remoteErrMetadata.getName(i), remoteErrMetadata.getVal(i));
+                  errEntry.getKey(), errEntry.getValue());
           if (null == err) {
             // some metadata unrelated to this update processor
             continue;

@@ -16,8 +16,6 @@
  */
 package org.apache.solr;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -40,7 +38,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -54,6 +51,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.BaseTestHarness;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -105,7 +103,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @Test
   public void testIgnoredFields() {
-    lrf.args.put(CommonParams.VERSION, "2.2");
     assertU("adding doc with ignored field", adoc("id", "42", "foo_ignored", "blah blah"));
     assertU("commit", commit());
 
@@ -120,24 +117,21 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSomeStuff() {
-    clearIndex();
+    try (SolrCore core = h.getCoreContainer().getCore("collection1")) {
+      // test that we got the expected config, not just hardcoded defaults
+      assertNotNull(core.getRequestHandler("/mock"));
 
-    SolrCore core = h.getCore();
-
-    // test that we got the expected config, not just hardcoded defaults
-    assertNotNull(core.getRequestHandler("/mock"));
-
-    // test stats call
-    SolrMetricManager manager = core.getCoreContainer().getMetricManager();
-    String registry = core.getCoreMetricManager().getRegistryName();
-    Map<String, Metric> metrics = manager.registry(registry).getMetrics();
-    assertTrue(metrics.containsKey("CORE.coreName"));
-    assertTrue(metrics.containsKey("CORE.refCount"));
-    @SuppressWarnings({"unchecked"})
-    Gauge<Number> g = (Gauge<Number>) metrics.get("CORE.refCount");
-    assertTrue(g.getValue().intValue() > 0);
-
-    lrf.args.put(CommonParams.VERSION, "2.2");
+      // test stats call
+      var refCount =
+          SolrMetricTestUtils.getGaugeDatapoint(
+              core,
+              "solr_core_ref_count",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label("category", "CORE")
+                  .build());
+      assertNotNull(refCount);
+      assertTrue(refCount.getValue() > 0);
+    }
     assertQ(
         "test query on empty index",
         req("qlkciyopsbgzyvkylsjhchghjrdf"),
@@ -644,7 +638,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   @Test
   public void testDefaultFieldValues() {
     clearIndex();
-    lrf.args.put(CommonParams.VERSION, "2.2");
     assertU(
         adoc(
             "id", "4055",

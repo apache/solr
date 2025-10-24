@@ -21,7 +21,6 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,9 +45,9 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
   protected static void initWithRequestWriter(RequestWriterSupplier requestWriterSupplier)
       throws Exception {
-    solrClientTestRule.startSolr(Paths.get(SolrTestCaseJ4.TEST_HOME()));
+    solrClientTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
 
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
     SolrTestCaseJ4.newRandomConfig();
     System.setProperty("solr.test.sys.prop1", "propone"); // TODO yuck; remove
     System.setProperty("solr.test.sys.prop2", "proptwo"); // TODO yuck; remove
@@ -398,12 +397,6 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
             return o;
           }
         });
-  }
-
-  @Test
-  public void testMultivalueExternalFileField() throws SolrServerException, IOException {
-    runTestForFieldWithoutQuery(
-        "externalFileRemove", new String[] {"file1.txt", "file2.txt", "file3.txt", "file4.txt"});
   }
 
   @Test

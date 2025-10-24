@@ -173,7 +173,7 @@ public abstract class FieldMutatingUpdateProcessorFactory extends UpdateRequestP
       if (0 < exc.size()) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
-            "Unexpected 'exclude' init sub-param(s): '" + args.getName(0) + "'");
+            "Unexpected 'exclude' init sub-param(s): " + args);
       }
       // call once per instance
       args.remove("exclude");
@@ -196,8 +196,7 @@ public abstract class FieldMutatingUpdateProcessorFactory extends UpdateRequestP
 
     if (0 < args.size()) {
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Unexpected init param(s): '" + args.getName(0) + "'");
+          SolrException.ErrorCode.SERVER_ERROR, "Unexpected init param(s): " + args);
     }
   }
 

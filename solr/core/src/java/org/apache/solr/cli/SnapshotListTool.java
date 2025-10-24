@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -38,12 +37,8 @@ public class SnapshotListTool extends ToolBase {
           .desc("Name of collection to list snapshots for.")
           .build();
 
-  public SnapshotListTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public SnapshotListTool(PrintStream stdout) {
-    super(stdout);
+  public SnapshotListTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -80,9 +75,7 @@ public class SnapshotListTool extends ToolBase {
 
       NamedList<?> apiResult =
           (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
-      for (int i = 0; i < apiResult.size(); i++) {
-        echo(apiResult.getName(i));
-      }
+      apiResult.forEach((name, value) -> echo(name));
 
     } catch (Exception e) {
       echo(

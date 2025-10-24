@@ -18,7 +18,6 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.packagemanager.PackageUtils.format;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
@@ -32,12 +31,8 @@ import org.slf4j.LoggerFactory;
 public class ZkMvTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public ZkMvTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ZkMvTool(PrintStream stdout) {
-    super(stdout);
+  public ZkMvTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

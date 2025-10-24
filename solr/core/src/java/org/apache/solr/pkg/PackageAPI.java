@@ -36,7 +36,7 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.common.SolrException;
@@ -62,11 +62,11 @@ import org.slf4j.LoggerFactory;
 
 /** This implements the public end points (/api/cluster/package) of package API. */
 public class PackageAPI {
-  public final boolean enablePackages = EnvUtils.getPropertyAsBool("enable.packages", false);
+  public final boolean enablePackages = EnvUtils.getPropertyAsBool("solr.packages.enabled", false);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ERR_MSG =
-      "Package loading is not enabled , Start your nodes with -Denable.packages=true";
+      "Package loading is not enabled , Start your nodes with -Dsolr.packages.enabled=true";
 
   final CoreContainer coreContainer;
   private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
@@ -260,7 +260,7 @@ public class PackageAPI {
 
       final var request =
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/cluster/package", solrParams);
-      request.setResponseParser(new BinaryResponseParser());
+      request.setResponseParser(new JavaBinResponseParser());
 
       for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
         final var baseUrl =
@@ -442,7 +442,7 @@ public class PackageAPI {
 
     final var request =
         new GenericSolrRequest(SolrRequest.METHOD.GET, "/cluster/package", solrParams);
-    request.setResponseParser(new BinaryResponseParser());
+    request.setResponseParser(new JavaBinResponseParser());
 
     for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
       var baseUrl = coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);

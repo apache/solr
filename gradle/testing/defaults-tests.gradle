@@ -23,7 +23,7 @@ def resources = scriptResources(buildscript)
 def verboseModeHookInstalled = false
 
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     project.ext {
       // This array will collect all test options, including default values and option description.
       // The actual values of these properties (defaults, project properties) are resolved lazily after evaluation
@@ -87,7 +87,7 @@ allprojects {
       }
     }
 
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
       ext {
         testOutputsDir = file("${reports.junitXml.outputLocation.get()}/outputs")
       }
@@ -112,6 +112,13 @@ allprojects {
       ignoreFailures = resolvedTestOption("tests.haltonfailure").toBoolean() == false
 
       jvmArgs Commandline.translateCommandline(resolvedTestOption("tests.jvmargs"))
+
+      // Enable the vector incubator module on supported Java versions:
+      if (rootProject.vectorIncubatorJavaVersions.contains(rootProject.runtimeJavaVersion)) {
+        jvmArgs '--add-modules', 'jdk.incubator.vector'
+      }
+
+      jvmArgs '--enable-native-access=ALL-UNNAMED'
 
       def loggingConfigFile = layout.projectDirectory.file("${resources}/logging.properties")
       def tempDir = layout.projectDirectory.dir(testsTmpDir.toString())

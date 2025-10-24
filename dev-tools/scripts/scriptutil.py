@@ -22,6 +22,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import json
 from enum import Enum
 
 
@@ -32,12 +33,12 @@ class Version(object):
     self.bugfix = bugfix
     self.prerelease = prerelease
     self.previous_dot_matcher = self.make_previous_matcher()
-    self.dot = '%d.%d.%d' % (self.major, self.minor, self.bugfix) 
+    self.dot = '%d.%d.%d' % (self.major, self.minor, self.bugfix)
     self.constant = 'LUCENE_%d_%d_%d' % (self.major, self.minor, self.bugfix)
 
   @classmethod
   def parse(cls, value):
-    match = re.search(r'(\d+)\.(\d+).(\d+)(.1|.2)?', value) 
+    match = re.search(r'(\d+)\.(\d+).(\d+)(.1|.2)?', value)
     if match is None:
       raise argparse.ArgumentTypeError('Version argument must be of format x.y.z(.1|.2)?')
     parts = [int(v) for v in match.groups()[:-1]]
@@ -82,18 +83,64 @@ class Version(object):
       raise Exception('Back compat check disallowed for newer version: %s < %s' % (self, other))
     return other.major + 1 >= self.major
 
+
+class CommitterPgp():
+    """
+    A class to resolve a commiter's committer's PGP key from ASF records.
+    The class looks up the committer's ASF id in a json file downloaded from
+    https://whimsy.apache.org/public/public_ldap_people.json
+    and if the committer has a PGP key, it's fingerprint is made available.
+    """
+    def __init__(self, asf_id, json_content = None):
+        self.asf_id = asf_id
+        self.fingerprint = None
+        self.ldap_url = 'https://whimsy.apache.org/public/public_ldap_people.json'
+        self.fingerprint = None
+        self.fingerprint_short = None
+        if json_content:
+            self.ldap_json = json_content
+        else:
+            self.ldap_json = self.load_ldap()
+        self.resolve()
+
+
+    def load_ldap(self):
+        try:
+            with urllib.request.urlopen(self.ldap_url) as f:
+                return json.load(f)
+        except urllib.error.HTTPError as e:
+            raise Exception(f'Failed to load {self.ldap_url}: {e}')
+
+
+    def resolve(self):
+        """ Resolve the PGP key fingerprint for the committer's ASF id """
+        try:
+            self.fingerprint = self.ldap_json['people'][self.asf_id]['key_fingerprints'][0].replace(" ", "").upper()
+            self.fingerprint_short = self.fingerprint[-8:]
+        except KeyError:
+            raise Exception(f'No PGP key found for {self.asf_id}')
+
+
+    def get_fingerprint(self):
+        return self.fingerprint
+
+
+    def get_short_fingerprint(self):
+        return self.fingerprint_short
+
+
 def run(cmd, cwd=None):
   try:
     output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, cwd=cwd)
   except subprocess.CalledProcessError as e:
     print(e.output.decode('utf-8'))
     raise e
-  return output.decode('utf-8') 
+  return output.decode('utf-8')
 
 def update_file(filename, line_re, edit):
   infile = open(filename, 'r')
-  buffer = [] 
-  
+  buffer = []
+
   changed = False
   for line in infile:
     if not changed:
@@ -182,7 +229,7 @@ def attemptDownload(urlString, fileName):
 
 version_prop_re = re.compile(r'baseVersion\s*=\s*([\'"])(.*)\1')
 
-lucene_version_prop_re = re.compile(r'^apache-lucene\s*=\s*"([a-zA-Z0-9\.\-]+)"')
+lucene_version_prop_re = re.compile(r'apache-lucene\s*=\s*"([a-zA-Z0-9\.\-]+)"')
 
 def find_current_version():
   script_path = os.path.dirname(os.path.realpath(__file__))
@@ -195,6 +242,28 @@ def find_current_lucene_version():
   top_level_dir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
   versions_file = open('%s/gradle/libs.versions.toml' % top_level_dir).read()
   return lucene_version_prop_re.search(versions_file).group(1).strip()
+
+
+def extract_jira_issues_from_title(title):
+  """Return (cleaned_title, links) where links list unique JIRA issues found in title."""
+  jira = re.compile(r'(?:SOLR|LUCENE|INFRA)-\d+')
+
+  seen = set()
+  links = [
+    {'name': m, 'url': f'https://issues.apache.org/jira/browse/{m}'}
+    for m in jira.findall(title)
+    if not (m in seen or seen.add(m))
+  ]
+
+  cleaned = title
+  # Remove variants at start or when slash-separated, then normalize whitespace
+  cleaned = re.sub(r'^\s*/\s*' + jira.pattern + r'[\s:]*', '', cleaned)
+  cleaned = re.sub(r'\s+/\s*' + jira.pattern + r'[\s:]*', ' ', cleaned)
+  cleaned = re.sub(r'^' + jira.pattern + r'[\s:]*', '', cleaned)
+  cleaned = re.sub(r'^\s*/\s*', '', cleaned).strip()
+  cleaned = re.sub(r'\s+', ' ', cleaned)
+
+  return cleaned, links
 
 
 if __name__ == '__main__':

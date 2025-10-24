@@ -77,22 +77,17 @@ public class NodesSysPropsCacher implements NodesSysProps, AutoCloseable {
   private Map<String, Object> fetchProps(String nodeName, Collection<String> tags) {
     ModifiableSolrParams msp = new ModifiableSolrParams();
     msp.add(CommonParams.OMIT_HEADER, "true");
-    LinkedHashMap<String, String> keys = new LinkedHashMap<>();
-    for (String tag : tags) {
-      String metricsKey = "solr.jvm:system.properties:" + tag;
-      keys.put(tag, metricsKey);
-      msp.add("key", metricsKey);
-    }
 
-    GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", msp);
+    GenericSolrRequest req =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/properties", msp);
     try {
       LinkedHashMap<String, Object> result = new LinkedHashMap<>();
       NavigableObject response =
           solrClient
               .requestWithBaseUrl(zkStateReader.getBaseUrlForNodeName(nodeName), null, req)
               .getResponse();
-      var metrics = NavigableObject.wrap(response._get("metrics", null));
-      keys.forEach((tag, key) -> result.put(tag, metrics._get(key, null)));
+      var metrics = NavigableObject.wrap(response._get("system.properties"));
+      tags.forEach((tag) -> result.put(tag, metrics._get(tag)));
       return result;
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);

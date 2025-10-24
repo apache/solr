@@ -16,8 +16,8 @@
  */
 package org.apache.solr.cli;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Pair;
 import org.apache.solr.SolrTestCase;
@@ -55,8 +56,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
     long processHttpsValue = isWindows ? processHttps.getKey() : processHttps.getValue().pid();
     SolrProcessManager.enableTestingMode = true;
     System.setProperty("jetty.port", Integer.toString(processHttp.getKey()));
-    Path pidDir = Files.createTempDirectory("solr-pid-dir").toAbsolutePath();
-    pidDir.toFile().deleteOnExit();
+    Path pidDir = createTempDir("solr-pid-dir");
     System.setProperty("solr.pid.dir", pidDir.toString());
     Files.writeString(
         pidDir.resolve("solr-" + processHttpValue + PID_SUFFIX), Long.toString(processHttpValue));
@@ -84,9 +84,11 @@ public class SolrProcessManagerTest extends SolrTestCase {
   private static Pair<Integer, Process> createProcess(int port, boolean https) throws IOException {
     // Get the path to the java executable from the current JVM
     String classPath =
-        Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
+        Arrays.stream(
+                System.getProperty("java.class.path").split(System.getProperty("path.separator")))
             .filter(p -> p.contains("solr") && p.contains("core") && p.contains("build"))
-            .collect(Collectors.joining(File.pathSeparator));
+            .collect(Collectors.joining(System.getProperty("path.separator")));
+
     ProcessBuilder processBuilder =
         new ProcessBuilder(
             System.getProperty("java.home") + "/bin/java",
@@ -174,6 +176,15 @@ public class SolrProcessManagerTest extends SolrTestCase {
     assertEquals(processHttps.getKey().intValue(), https.getPort());
     assertTrue(https.isHttps());
     assertEquals("https://localhost:" + processHttps.getKey() + "/solr", https.getLocalUrl());
+  }
+
+  public void testParseWindowsPidToCommandLineJson() throws JsonProcessingException {
+    String jsonResponseFromPowershell =
+        "[{\"ProcessId\": 9356, \"CommandLine\":  \"date\"}, {\"ProcessId\": 4736, \"CommandLine\":  null}\n]";
+    Map<Long, String> pidToCommandLine =
+        SolrProcessManager.parseWindowsPidToCommandLineJson(jsonResponseFromPowershell);
+    assertEquals(1, pidToCommandLine.size());
+    assertEquals("date", pidToCommandLine.get(9356L));
   }
 
   /**

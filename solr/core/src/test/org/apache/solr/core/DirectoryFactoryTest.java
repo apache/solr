@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCase;
@@ -91,6 +90,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
     args.add("solr.data.home", "/solrdata/");
     df.init(args);
     assertDataHome("/solrdata/inst_dir/data", "inst_dir", df, cc);
+    cc.shutdown();
 
     // solr.data.home set with System property, and relative path
     System.setProperty("solr.data.home", "solrdata");
@@ -109,6 +109,8 @@ public class DirectoryFactoryTest extends SolrTestCase {
         cc,
         "dataDir",
         "mydata");
+    cc.shutdown();
+
     // solr.data.home set but also solrDataHome set in solr.xml, which should override the former
     System.setProperty("test.solr.data.home", "/foo");
     config = loadNodeConfig("/solr/solr-solrDataHome.xml");
@@ -117,6 +119,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
     df.initCoreContainer(cc);
     df.init(new NamedList<>());
     assertDataHome("/foo/inst_dir/data", "inst_dir", df, cc);
+    cc.shutdown();
   }
 
   private void assertDataHome(
@@ -128,9 +131,8 @@ public class DirectoryFactoryTest extends SolrTestCase {
       throws IOException {
     String dataHome =
         df.getDataHome(
-            new CoreDescriptor(
-                "core_name", Paths.get(instanceDir).toAbsolutePath(), cc, properties));
-    assertEquals(Paths.get(expected).toAbsolutePath(), Paths.get(dataHome).toAbsolutePath());
+            new CoreDescriptor("core_name", Path.of(instanceDir).toAbsolutePath(), cc, properties));
+    assertEquals(Path.of(expected).toAbsolutePath(), Path.of(dataHome).toAbsolutePath());
   }
 
   private NodeConfig loadNodeConfig(String config) {

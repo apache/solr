@@ -61,7 +61,6 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.HashBasedRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -1190,8 +1189,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     SolrQuery query = new SolrQuery("*:*").setRows(1000).setFields("id", "_version_");
     query.set("distrib", false);
 
-    ZkCoreNodeProps shard1_0 =
-        getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_0);
+    Replica shard1_0 = getLeaderFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_0);
     QueryResponse response;
     try (SolrClient shard1_0Client =
         getHttpSolrClient(shard1_0.getBaseUrl(), shard1_0.getCoreName())) {
@@ -1199,8 +1197,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
     long shard10Count = response.getResults().getNumFound();
 
-    ZkCoreNodeProps shard1_1 =
-        getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_1);
+    Replica shard1_1 = getLeaderFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_1);
     QueryResponse response2;
     try (SolrClient shard1_1Client =
         getHttpSolrClient(shard1_1.getBaseUrl(), shard1_1.getCoreName())) {
@@ -1224,7 +1221,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     long[] numFound = new long[slice.getReplicasMap().size()];
     int c = 0;
     for (Replica replica : slice.getReplicas()) {
-      String coreUrl = new ZkCoreNodeProps(replica).getCoreUrl();
+      String coreUrl = replica.getCoreUrl();
       QueryResponse response;
       try (SolrClient client = getHttpSolrClient(replica)) {
         response = client.query(query);

@@ -35,8 +35,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Exchange Rates Provider for {@link CurrencyField} and {@link CurrencyFieldType} capable of
- * fetching &amp; parsing the freely available exchange rates from openexchangerates.org
+ * Exchange Rates Provider for {@link CurrencyFieldType} capable of fetching &amp; parsing the
+ * freely available exchange rates from openexchangerates.org
  *
  * <p>Configuration Options:
  *

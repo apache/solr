@@ -32,7 +32,7 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.ZooKeeperReadApis;
 import org.apache.solr.client.api.model.ZooKeeperListChildrenResponse;
 import org.apache.solr.client.api.model.ZooKeeperStat;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -138,7 +138,7 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
       case '?':
         return XMLResponseParser.XML_CONTENT_TYPE;
       default:
-        return BinaryResponseParser.BINARY_CONTENT_TYPE;
+        return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
     }
   }
 

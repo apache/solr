@@ -19,32 +19,39 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.util.List;
-import org.apache.solr.client.solrj.SolrClient;
 
-public class Http2ClusterStateProvider extends BaseHttpClusterStateProvider {
-  final Http2SolrClient httpClient;
-  final boolean closeClient;
+public class Http2ClusterStateProvider<C extends HttpSolrClientBase>
+    extends BaseHttpClusterStateProvider {
+  final C httpClient;
 
-  public Http2ClusterStateProvider(List<String> solrUrls, Http2SolrClient httpClient)
-      throws Exception {
-    this.httpClient = httpClient == null ? new Http2SolrClient.Builder().build() : httpClient;
-    this.closeClient = httpClient == null;
-    init(solrUrls);
+  /**
+   * Provide the solr urls and a solr http client for this cluster state provider to use. It is the
+   * caller's responsibiity to close the client.
+   *
+   * @param solrUrls root path solr urls
+   * @param httpClient an instance of HttpSolrClientBase
+   * @throws Exception if a problem with initialization occurs
+   */
+  public Http2ClusterStateProvider(List<String> solrUrls, C httpClient) throws Exception {
+    if (httpClient == null) {
+      throw new IllegalArgumentException("You must provide an Http client.");
+    }
+    this.httpClient = httpClient;
+    initConfiguredNodes(solrUrls);
   }
 
   @Override
   public void close() throws IOException {
-    if (this.closeClient && this.httpClient != null) {
-      httpClient.close();
-    }
+    super.close();
   }
 
   @Override
-  protected SolrClient getSolrClient(String baseUrl) {
-    return new Http2SolrClient.Builder(baseUrl).withHttpClient(httpClient).build();
+  @SuppressWarnings("unchecked")
+  protected C getSolrClient(String baseUrl) {
+    return (C) httpClient.builder().withBaseSolrUrl(baseUrl).build();
   }
 
-  public Http2SolrClient getHttpClient() {
+  public C getHttpClient() {
     return httpClient;
   }
 }

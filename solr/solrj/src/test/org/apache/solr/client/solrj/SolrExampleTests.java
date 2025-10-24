@@ -21,13 +21,15 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,9 +44,9 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
@@ -439,6 +441,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       try (SolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
         q.set("qt", "/admin/info/system");
+
         QueryResponse rsp = adminClient.query(q);
         assertNotNull(rsp.getResponse().get("mode"));
         assertNotNull(rsp.getResponse().get("lucene"));
@@ -839,7 +842,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     query.set(CommonParams.FL, "id,json_s:[json],xml_s:[xml]");
 
     QueryRequest req = new QueryRequest(query);
-    req.setResponseParser(new BinaryResponseParser());
+    req.setResponseParser(new JavaBinResponseParser());
     QueryResponse rsp = req.process(client);
 
     SolrDocumentList out = rsp.getResults();
@@ -870,9 +873,15 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     query.set(CommonParams.WT, "json");
 
     req = new QueryRequest(query);
-    req.setResponseParser(new NoOpResponseParser("json"));
+    req.setResponseParser(new InputStreamResponseParser("json"));
     NamedList<Object> resp = client.request(req);
     String raw = (String) resp.get("response");
+    try (InputStream responseStream =
+        (InputStream) resp.get(InputStreamResponseParser.STREAM_KEY)) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      responseStream.transferTo(baos);
+      raw = baos.toString(StandardCharsets.UTF_8);
+    }
 
     // Check that the response parses as JSON
     JSONParser parser = new JSONParser(raw);
@@ -884,13 +893,17 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertTrue(raw.indexOf('"' + rawXml + '"') > 0); // quoted xml
 
     // Check raw XML Output
-    req.setResponseParser(new NoOpResponseParser("xml"));
     query.set("fl", "id,json_s:[json],xml_s:[xml]");
     query.set(CommonParams.WT, "xml");
     req = new QueryRequest(query);
-    req.setResponseParser(new NoOpResponseParser("xml"));
+    req.setResponseParser(new InputStreamResponseParser("xml"));
     resp = client.request(req);
-    raw = (String) resp.get("response");
+    try (InputStream responseStream =
+        (InputStream) resp.get(InputStreamResponseParser.STREAM_KEY)) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      responseStream.transferTo(baos);
+      raw = baos.toString(StandardCharsets.UTF_8);
+    }
 
     // Check that we get raw xml and json is escaped
     assertTrue(raw.indexOf('>' + rawJson + '<') > 0); // escaped
@@ -936,13 +949,13 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    File file = getFile("solrj/books.csv").toFile();
+    Path file = getFile("solrj/books.csv");
     final int opened[] = new int[] {0};
     final int closed[] = new int[] {0};
 
     boolean assertClosed = random().nextBoolean();
     if (assertClosed) {
-      byte[] allBytes = Files.readAllBytes(file.toPath());
+      byte[] allBytes = Files.readAllBytes(file);
 
       ContentStreamBase.ByteArrayStream contentStreamMock =
           new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
@@ -960,7 +973,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
           };
       up.addContentStream(contentStreamMock);
     } else {
-      up.addFile(file.toPath(), "application/csv");
+      up.addFile(file, "application/csv");
     }
 
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
@@ -2371,7 +2384,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     // First Try with the BinaryResponseParser
     QueryRequest req = new QueryRequest(q);
-    req.setResponseParser(new BinaryResponseParser());
+    req.setResponseParser(new JavaBinResponseParser());
     QueryResponse rsp = req.process(client);
     SolrDocument out = (SolrDocument) rsp.getResponse().get("doc");
     assertEquals("DOCID", out.get("id"));

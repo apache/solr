@@ -365,7 +365,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             "Pull jetty replicas didn't become active in time",
             COLL,
             ((liveNodes, collectionState) ->
-                collectionState.getReplicas(pullJettyF.getNodeName()).stream()
+                collectionState.getReplicasOnNode(pullJettyF.getNodeName()).stream()
                     .allMatch(rep -> rep.getState() == Replica.State.ACTIVE)));
         AtomicBoolean done = new AtomicBoolean();
         long runMinutes = 1;
@@ -396,7 +396,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                           toManipulate.getNodeName() + " replicas didn't become active in time",
                           COLL,
                           ((liveNodes, collectionState) ->
-                              collectionState.getReplicas(toManipulate.getNodeName()).stream()
+                              collectionState.getReplicasOnNode(toManipulate.getNodeName()).stream()
                                   .allMatch(rep -> rep.getState() == Replica.State.ACTIVE)));
                     } catch (Exception e) {
                       throw new RuntimeException(e);

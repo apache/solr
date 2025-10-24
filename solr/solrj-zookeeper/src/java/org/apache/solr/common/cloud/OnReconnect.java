@@ -28,12 +28,12 @@ import org.apache.curator.framework.state.ConnectionStateListener;
  * to be notified of ZK reconnection events.
  */
 public interface OnReconnect extends ConnectionStateListener {
-  void command();
+  void onReconnect();
 
   @Override
   default void stateChanged(CuratorFramework client, ConnectionState newState) {
     if (ConnectionState.RECONNECTED.equals(newState)) {
-      command();
+      onReconnect();
     }
   }
 }

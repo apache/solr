@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Function;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -81,11 +82,10 @@ public class XMLResponseParser extends ResponseParser {
   }
 
   @Override
-  public String getContentType() {
-    return XML_CONTENT_TYPE;
+  public Set<String> getContentTypes() {
+    return Set.of(XML_CONTENT_TYPE);
   }
 
-  @Override
   public NamedList<Object> processResponse(Reader in) {
     XMLStreamReader parser = null;
     try {

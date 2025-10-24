@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
@@ -25,15 +24,12 @@ import org.apache.solr.util.StartupLoggingUtils;
 
 public abstract class ToolBase implements Tool {
 
+  protected final ToolRuntime runtime;
+
   private boolean verbose = false;
-  protected PrintStream stdout;
 
-  protected ToolBase() {
-    this(CLIO.getOutStream());
-  }
-
-  protected ToolBase(PrintStream stdout) {
-    this.stdout = stdout;
+  protected ToolBase(ToolRuntime runtime) {
+    this.runtime = runtime;
   }
 
   /** Is this tool being run in a verbose mode? */
@@ -48,7 +44,7 @@ public abstract class ToolBase implements Tool {
   }
 
   protected void echo(final String msg) {
-    stdout.println(msg);
+    runtime.println(msg);
   }
 
   @Override
@@ -56,6 +52,11 @@ public abstract class ToolBase implements Tool {
     return new Options()
         .addOption(CommonCLIOptions.HELP_OPTION)
         .addOption(CommonCLIOptions.VERBOSE_OPTION);
+  }
+
+  @Override
+  public ToolRuntime getRuntime() {
+    return runtime;
   }
 
   /**

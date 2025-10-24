@@ -17,16 +17,13 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.client.solrj.SolrJMetricTestUtils.getPrometheusMetricValue;
+
 import java.util.Collections;
 import java.util.Optional;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -50,27 +47,33 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
 
   @Test
   public void testRetry() throws Exception {
-    String collectionName = "testRetry";
-    try (CloudSolrClient solrClient =
+
+    // Randomly decide to use either the Jetty Http Client or the JDK Http Client
+    var jettyClientBuilder = new Http2SolrClient.Builder();
+
+    // forcing Http/1.1 to avoid an extra HEAD request with the first update.
+    // (This causes the counts to be 1 greater than what we test for here.)
+    var jdkClientBuilder =
+        new HttpJdkSolrClient.Builder()
+            .useHttp1_1(true)
+            .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
+
+    var cloudSolrclientBuilder =
         new CloudHttp2SolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .build()) {
+            Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty());
+    cloudSolrclientBuilder.withHttpClientBuilder(
+        random().nextBoolean() ? jettyClientBuilder : jdkClientBuilder);
+
+    try (CloudSolrClient solrClient = cloudSolrclientBuilder.build()) {
+      String collectionName = "testRetry";
+      String prometheusMetric =
+          "solr_core_requests_total{category=\"UPDATE\",collection=\"testRetry\",core=\"testRetry_shard1_replica_n1\",handler=\"/update\",otel_scope_name=\"org.apache.solr\",replica_type=\"NRT\",shard=\"shard1\"}";
+
       CollectionAdminRequest.createCollection(collectionName, 1, 1).process(solrClient);
 
       solrClient.add(collectionName, new SolrInputDocument("id", "1"));
 
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(CommonParams.QT, "/admin/metrics");
-      String updateRequestCountKey =
-          "solr.core.testRetry.shard1.replica_n1:UPDATE./update.requestTimes:count";
-      params.set("key", updateRequestCountKey);
-      params.set("indent", "true");
-
-      QueryResponse response = solrClient.query(collectionName, params, SolrRequest.METHOD.GET);
-      NamedList<Object> namedList = response.getResponse();
-      System.out.println(namedList);
-      NamedList<?> metrics = (NamedList<?>) namedList.get("metrics");
-      assertEquals(1L, metrics.get(updateRequestCountKey));
+      assertEquals(1.0, getPrometheusMetricValue(solrClient, prometheusMetric), 0.0);
 
       TestInjection.failUpdateRequests = "true:100";
       try {
@@ -84,11 +87,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
         TestInjection.reset();
       }
 
-      response = solrClient.query(collectionName, params, SolrRequest.METHOD.GET);
-      namedList = response.getResponse();
-      System.out.println(namedList);
-      metrics = (NamedList<?>) namedList.get("metrics");
-      assertEquals(2L, metrics.get(updateRequestCountKey));
+      assertEquals(2.0, getPrometheusMetricValue(solrClient, prometheusMetric), 0.0);
     }
   }
 }

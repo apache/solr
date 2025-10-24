@@ -35,7 +35,7 @@ public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
   public HttpClusterStateProvider(List<String> solrUrls, HttpClient httpClient) throws Exception {
     this.httpClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
     this.clientIsInternal = httpClient == null;
-    init(solrUrls);
+    initConfiguredNodes(solrUrls);
   }
 
   @Override
@@ -48,5 +48,6 @@ public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
     if (this.clientIsInternal && this.httpClient != null) {
       HttpClientUtil.close(httpClient);
     }
+    super.close();
   }
 }

@@ -59,6 +59,7 @@ import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.DeprecationLog;
@@ -107,14 +108,15 @@ public class SolrResourceLoader
     "security.",
     "handler.admin.",
     "security.jwt.",
+    "security.cert.",
     "handler.sql.",
     "crossdc.handler.",
     "crossdc.update.processor."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
-  public static final String SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM =
-      "solr.allow.unsafe.resourceloading";
-  private final boolean allowUnsafeResourceloading;
+  public static final String SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM =
+      "solr.resourceloading.restricted.enabled";
+  private final boolean restrictUnsafeResourceloading;
 
   private String name = "";
   protected URLClassLoader classLoader;
@@ -190,7 +192,8 @@ public class SolrResourceLoader
    * directory.
    */
   public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
-    allowUnsafeResourceloading = Boolean.getBoolean(SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM);
+    restrictUnsafeResourceloading =
+        EnvUtils.getPropertyAsBool(SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM, true);
     if (instanceDir == null) {
       throw new NullPointerException("SolrResourceLoader instanceDir must be non-null");
     }
@@ -322,14 +325,6 @@ public class SolrResourceLoader
   }
 
   /**
-   * @deprecated use {@link #getConfigPath()}
-   */
-  @Deprecated(since = "9.0.0")
-  public String getConfigDir() {
-    return getConfigPath().toString();
-  }
-
-  /**
    * EXPERT
    *
    * <p>The underlying class loader. Most applications will not need to use this.
@@ -356,7 +351,7 @@ public class SolrResourceLoader
     Path instanceDir = getInstancePath().normalize();
     Path inInstanceDir = getInstancePath().resolve(resource).normalize();
     Path inConfigDir = instanceDir.resolve("conf").resolve(resource).normalize();
-    if (allowUnsafeResourceloading || inInstanceDir.startsWith(instanceDir)) {
+    if (!restrictUnsafeResourceloading || inInstanceDir.startsWith(instanceDir)) {
       // The resource is either inside instance dir or we allow unsafe loading, so allow testing if
       // file exists
       if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir)) {
@@ -397,7 +392,7 @@ public class SolrResourceLoader
     }
     Path inInstanceDir = instanceDir.resolve(resource).normalize();
     Path inConfigDir = instanceDir.resolve("conf").resolve(resource).normalize();
-    if (allowUnsafeResourceloading || inInstanceDir.startsWith(instanceDir.normalize())) {
+    if (!restrictUnsafeResourceloading || inInstanceDir.startsWith(instanceDir.normalize())) {
       if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir))
         return inConfigDir.normalize().toString();
 
@@ -413,7 +408,7 @@ public class SolrResourceLoader
       // ignore
     }
 
-    return allowUnsafeResourceloading ? resource : null;
+    return restrictUnsafeResourceloading ? null : resource;
   }
 
   /**

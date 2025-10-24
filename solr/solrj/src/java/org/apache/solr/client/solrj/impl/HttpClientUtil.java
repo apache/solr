@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +41,8 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.config.RequestConfig.Builder;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -57,6 +60,8 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.http.util.EntityUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -65,50 +70,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Utility class for creating/configuring httpclient instances.
+ * Utility class for creating/configuring Apache {@link HttpClient} instances.
  *
  * <p>This class can touch internal HttpClient details and is subject to change.
  *
  * @lucene.experimental
- * @deprecated Used to configure the Apache HTTP client. Please use the Http2 client
+ * @deprecated Used to configure the Apache HTTP client. Please use another client
  */
 @Deprecated(since = "9.0")
-public class HttpClientUtil {
+public class HttpClientUtil implements SolrHttpConstants {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static final int DEFAULT_CONNECT_TIMEOUT = 60000;
-  public static final int DEFAULT_SO_TIMEOUT = 600000;
-  public static final int DEFAULT_MAXCONNECTIONSPERHOST = 100000;
-  public static final int DEFAULT_MAXCONNECTIONS = 100000;
 
   private static final int VALIDATE_AFTER_INACTIVITY_DEFAULT = 3000;
   private static final int EVICT_IDLE_CONNECTIONS_DEFAULT = 50000;
   private static final String VALIDATE_AFTER_INACTIVITY = "validateAfterInactivity";
   private static final String EVICT_IDLE_CONNECTIONS = "evictIdleConnections";
 
-  // Maximum connections allowed per host
-  public static final String PROP_MAX_CONNECTIONS_PER_HOST = "maxConnectionsPerHost";
-  // Maximum total connections allowed
-  public static final String PROP_MAX_CONNECTIONS = "maxConnections";
   // Retry http requests on error
   public static final String PROP_USE_RETRY = "retry";
   // Allow compression (deflate,gzip) if server supports it
   public static final String PROP_ALLOW_COMPRESSION = "allowCompression";
-  // Basic auth username
-  public static final String PROP_BASIC_AUTH_USER = "httpBasicAuthUser";
-  // Basic auth password
-  public static final String PROP_BASIC_AUTH_PASS = "httpBasicAuthPassword";
-
-  /**
-   * System property consulted to determine if the default {@link SocketFactoryRegistryProvider}
-   * will require hostname validation of SSL Certificates. The default behavior is to enforce peer
-   * name validation.
-   *
-   * <p>This property will have no effect if {@link #setSocketFactoryRegistryProvider} is used to
-   * override the default {@link SocketFactoryRegistryProvider}
-   */
-  public static final String SYS_PROP_CHECK_PEER_NAME = "solr.ssl.checkPeerName";
 
   // * NOTE* The following params configure the default request config and this
   // is overridden by SolrJ clients. Use the setters on the SolrJ clients
@@ -116,22 +98,6 @@ public class HttpClientUtil {
 
   // Follow redirects
   public static final String PROP_FOLLOW_REDIRECTS = "followRedirects";
-
-  // socket timeout measured in ms, closes a socket if read
-  // takes longer than x ms to complete. throws
-  // java.net.SocketTimeoutException: Read timed out exception
-  public static final String PROP_SO_TIMEOUT = "socketTimeout";
-  // connection timeout measures in ms, closes a socket if connection
-  // cannot be established within x ms. with a
-  // java.net.SocketTimeoutException: Connection timed out
-  public static final String PROP_CONNECTION_TIMEOUT = "connTimeout";
-
-  /**
-   * A Java system property to select the {@linkplain HttpClientBuilderFactory} used for configuring
-   * the {@linkplain HttpClientBuilder} instance by default.
-   */
-  public static final String SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY =
-      "solr.httpclient.builder.factory";
 
   /**
    * A Java system property to select the {@linkplain SocketFactoryRegistryProvider} used for
@@ -174,24 +140,71 @@ public class HttpClientUtil {
         throw new RuntimeException("Unable to instantiate Solr SocketFactoryRegistryProvider", e);
       }
     }
+  }
 
-    // Configure the HttpClientBuilder if user has specified the factory type.
-    String factoryClassName = System.getProperty(SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
-    if (factoryClassName != null) {
-      log.debug("Using {}", factoryClassName);
+  public static <T> T executeGET(
+      HttpClient client, String url, Utils.InputStreamConsumer<T> consumer) throws SolrException {
+    return executeHttpMethod(client, url, consumer, new HttpGet(url));
+  }
+
+  public static <T> T executeHttpMethod(
+      HttpClient client,
+      String url,
+      Utils.InputStreamConsumer<T> consumer,
+      HttpRequestBase httpMethod) {
+    T result = null;
+    HttpResponse rsp;
+    try {
+      rsp = client.execute(httpMethod);
+    } catch (IOException e) {
+      log.error("Error in request to url : {}", url, e);
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Error sending request");
+    }
+    int statusCode = rsp.getStatusLine().getStatusCode();
+    if (statusCode != 200) {
       try {
-        HttpClientBuilderFactory factory =
-            Class.forName(factoryClassName)
-                .asSubclass(HttpClientBuilderFactory.class)
-                .getDeclaredConstructor()
-                .newInstance();
-        httpClientBuilder = factory.getHttpClientBuilder(SolrHttpClientBuilder.create());
-      } catch (InstantiationException
-          | IllegalAccessException
-          | ClassNotFoundException
-          | InvocationTargetException
-          | NoSuchMethodException e) {
-        throw new RuntimeException("Unable to instantiate Solr HttpClientBuilderFactory", e);
+        log.error(
+            "Failed a request to: {}, status: {}, body: {}",
+            url,
+            rsp.getStatusLine(),
+            EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8)); // nowarn
+      } catch (IOException e) {
+        log.error("could not print error", e);
+      }
+      throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), "Unknown error");
+    }
+    HttpEntity entity = rsp.getEntity();
+    try {
+      InputStream is = entity.getContent();
+      if (consumer != null) {
+
+        result = consumer.accept(is);
+      }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
+    } finally {
+      consumeFully(entity);
+    }
+    return result;
+  }
+
+  /**
+   * If the passed entity has content, make sure it is fully read and closed.
+   *
+   * @param entity to consume or null
+   */
+  public static void consumeFully(HttpEntity entity) {
+    if (entity != null) {
+      try {
+        // make sure the stream is full read
+        Utils.readFully(entity.getContent());
+      } catch (UnsupportedOperationException e) {
+        // nothing to do then
+      } catch (IOException e) {
+        // quiet
+      } finally {
+        // close the stream
+        EntityUtils.consumeQuietly(entity);
       }
     }
   }

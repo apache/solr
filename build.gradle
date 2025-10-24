@@ -33,6 +33,7 @@ plugins {
   alias(libs.plugins.diffplug.spotless) apply false
   alias(libs.plugins.nodegradle.node) apply false
   alias(libs.plugins.openapi.generator) apply false
+  alias(libs.plugins.logchange)
 }
 
 // Declare default Java versions for the entire project and for SolrJ separately
@@ -49,7 +50,7 @@ apply from: file('gradle/globals.gradle')
 // Calculate project version:
 version = {
   // Release manager: update base version here after release:
-  String baseVersion = '10.0.0'
+  String baseVersion = '11.0.0'
 
   // On a release explicitly set release version in one go:
   //  -Dversion.release=x.y.z
@@ -69,6 +70,12 @@ description = 'Grandparent project for Apache Solr'
 // Propagate version and derived properties across projects.
 allprojects {
   version = rootProject.version
+
+  gradle.projectsEvaluated {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xmaxerrs" << "1000"
+    }
+  }
 }
 
 ext {
@@ -114,6 +121,12 @@ ext {
     logger.debug('Lucene base version (without suffix): {}', luceneBaseVersion)
     return luceneBaseVersion
   }
+
+  // For testing code
+  vectorIncubatorJavaVersions = [ JavaVersion.VERSION_21, JavaVersion.VERSION_22, JavaVersion.VERSION_23, JavaVersion.VERSION_24, JavaVersion.VERSION_25 ] as Set
+
+  // Use gradle flag in root project for further referencing
+  withUiModule = gradle.ext.withUiModule
 }
 
 // Include smaller chunks configuring dedicated build areas.
@@ -204,3 +217,5 @@ apply from: file('gradle/solr/packaging.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/node.gradle')
+
+apply from: file('gradle/changelog.gradle')

@@ -64,7 +64,8 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     // as compared with testHealthCheckHandlerWithCloudClient
     // (Not sure if that's actually a good thing -- but it's how the existing test worked)
     final var genericHealthcheck =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH);
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, SolrRequest.SolrRequestType.ADMIN);
     assertEquals(
         CommonParams.OK,
         genericHealthcheck.process(cluster.getSolrClient()).getResponse().get(CommonParams.STATUS));
@@ -131,13 +132,6 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       HealthCheckResponse rsp = req.process(solrClient);
       assertEquals(CommonParams.OK, rsp.getNodeStatus());
     }
-  }
-
-  @Test(expected = AssertionError.class)
-  public void testHealthCheckHandlerWithCloudClient() throws IOException, SolrServerException {
-    // negative check of a HealthCheckRequest using cloud solr client
-    HealthCheckRequest req = new HealthCheckRequest();
-    req.process(cluster.getSolrClient());
   }
 
   @Test

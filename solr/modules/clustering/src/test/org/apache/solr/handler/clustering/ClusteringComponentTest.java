@@ -57,7 +57,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     Path testHome = createTempDir();
     PathUtils.copyDirectory(getFile("clustering/solr"), testHome);
-    initCore("solrconfig.xml", "schema.xml", testHome.toAbsolutePath().toString());
+    initCore("solrconfig.xml", "schema.xml", testHome);
 
     String[] languages = {
       "English", "French", "German", "Unknown",

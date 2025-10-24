@@ -253,7 +253,7 @@ For example, `why_score` is the display name below:
 
 [source,text]
 ----
-fl=id,sales_price:price,secret_sauce:prod(price,popularity),why_score:[explain style=nl]
+fl=id,sales_price:price,secret_sauce:product(price,popularity),why_score:[explain style=nl]
 ----
 
 [source,json]
@@ -382,6 +382,10 @@ As this check is periodically performed, the actual time for which a request can
 If the request consumes more time in other stages, custom components, etc., this parameter is not expected to abort the request.
 Regular search and the JSON Facet component abandon requests in accordance with this parameter.
 
+When `timeAllowed` is specified in a distributed and/or multi-phase search, sub-requests will approximately track the same
+wall clock starting point as the original request. Shard requests may be skipped if the limit would run out shortly after they are
+sent - this in-flight allowance can be set with the `timeAllowed.inflight` parameter in milliseconds (default is 2ms).
+
 == cpuAllowed Parameter
 
 [%autowidth,frame=none]
@@ -398,6 +402,26 @@ Solr nodes (e.g. getting top document id-s, retrieving their fields, additional 
 For example, setting `cpuAllowed=500` gives a limit of at most 500 ms of CPU time for each of these stages - meaning that the total CPU usage by the query may reach a multiple of the `cpuAllowed` value depending on the number of stages.
 
 All other considerations regarding partial results listed for the `timeAllowed` parameter apply here, too.
+
+
+== maxHitsAllowed Parameter
+
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
+
+This parameter specifies the max number of hits a searcher will iterate through.
+Searchers will arbitrarily ignore any number of additional hits beyond this value.
+In a multi-sharded collection, this parameter will be used independently **per-shard**.
+When utilizing multi-threaded search, the limit will be best-effort and collectors may iterate through a few more documents than specified in `maxHitsAllowed`.
+
+The intention of this feature is to favor speed over perfect relevancy & recall.
+The trade-off is that if one shard contains many relevant hits and another contains a few less relevant hits the less relevant hits from the second shard may get returned instead of the more relevant hits that were clustered in the first shard.
+
+This parameter works in conjunction with other parameters that could early terminate a search, ex: `timeAllowed` etc.
+In case the search was early terminated due to it exceeding maxHits a `maxHitsTerminatedEarly` header in the response will be set along with `partialResults` to indicate the same.
+The `partialResults` flag could be set in the absence of the `maxHitsAllowed` parameter due to other limits like `timeAllowed` or `cpuAllowed`.
 
 == memAllowed Parameter
 

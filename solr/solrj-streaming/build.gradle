@@ -24,8 +24,6 @@ dependencies {
 
   // declare dependencies we use even though already declared by solrj-core
   implementation libs.slf4j.api
-  implementation libs.apache.httpcomponents.httpclient
-  implementation libs.apache.httpcomponents.httpcore
   implementation libs.apache.commons.math3
 
   testImplementation project(':solr:test-framework')
@@ -38,6 +36,7 @@ dependencies {
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.junit.junit
+  testImplementation libs.hamcrest.hamcrest
 
   testImplementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"

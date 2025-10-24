@@ -21,10 +21,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,17 +34,16 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import javax.management.ObjectName;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -55,7 +52,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -63,7 +59,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -146,7 +141,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             .setCreateNodeSet("")
             .process(cluster.getSolrClient())
             .getStatus());
-    String dataDir = createTempDir().toFile().getAbsolutePath();
+    String dataDir = createTempDir().toString();
     // create a core that simulates something left over from a partially-deleted collection
     assertTrue(
         CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
@@ -193,8 +188,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     String collectionName = "badactioncollection";
     params.set("name", collectionName);
     params.set("numShards", 2);
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     expectThrows(
         Exception.class,
@@ -209,8 +204,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     params.set("action", CollectionAction.CREATE.toString());
     params.set("numShards", 2);
     // missing required collection parameter
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     expectThrows(
         Exception.class,
@@ -228,8 +223,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     params.set(REPLICATION_FACTOR, 10);
     params.set("collection.configName", "conf");
 
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     expectThrows(
         Exception.class,
@@ -247,8 +242,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     params.set("numShards", 0);
     params.set("collection.configName", "conf");
 
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
     expectThrows(
         Exception.class,
         () -> {
@@ -523,7 +518,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
           "Could not find expected core.properties file",
           Files.exists(instancedir.resolve("core.properties")));
 
-      Path expected = Paths.get(jetty.getSolrHome()).toAbsolutePath().resolve(core.getName());
+      Path expected = Path.of(jetty.getSolrHome()).resolve(core.getName());
 
       assertTrue(
           "Expected: " + expected + "\nFrom core stats: " + instancedir,
@@ -566,13 +561,12 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     if (collectionState != null) {
       for (Slice shard : collectionState) {
         for (Replica replica : shard) {
-          ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
           CoreStatusResponse.SingleCoreData coreStatus;
-          try (SolrClient server = getHttpSolrClient(coreProps.getBaseUrl())) {
-            coreStatus = CoreAdminRequest.getCoreStatus(coreProps.getCoreName(), false, server);
+          try (SolrClient server = getHttpSolrClient(replica.getBaseUrl())) {
+            coreStatus = CoreAdminRequest.getCoreStatus(replica.getCoreName(), false, server);
           }
           long before = coreStatus.startTime.getTime();
-          urlToTime.put(coreProps.getCoreUrl(), before);
+          urlToTime.put(replica.getCoreUrl(), before);
         }
       }
     } else {
@@ -583,28 +577,17 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
   private void checkNoTwoShardsUseTheSameIndexDir() {
     Map<String, Set<String>> indexDirToShardNamesMap = new HashMap<>();
 
-    List<MBeanServer> servers = new ArrayList<>();
-    servers.add(ManagementFactory.getPlatformMBeanServer());
-    servers.addAll(MBeanServerFactory.findMBeanServer(null));
-    for (final MBeanServer server : servers) {
-      Set<ObjectName> mbeans = new HashSet<>(server.queryNames(null, null));
-      for (final ObjectName mbean : mbeans) {
-        try {
-          Map<String, String> props = mbean.getKeyPropertyList();
-          String category = props.get("category");
-          String name = props.get("name");
-          if ((category != null && category.equals(Category.CORE.toString()))
-              && (name != null && name.equals("indexDir"))) {
-            String indexDir = server.getAttribute(mbean, "Value").toString();
-            String key = props.get("dom2") + "." + props.get("dom3") + "." + props.get("dom4");
-            if (!indexDirToShardNamesMap.containsKey(indexDir)) {
-              indexDirToShardNamesMap.put(indexDir, new HashSet<>());
-            }
-            indexDirToShardNamesMap.get(indexDir).add(key);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      CoreContainer coreContainer = jetty.getCoreContainer();
+      List<String> coreNames = coreContainer.getAllCoreNames();
+      for (String coreName : coreNames) {
+        try (SolrCore core = coreContainer.getCore(coreName)) {
+          String indexDir = core.getIndexDir();
+          String shardKey = jetty.getNodeName() + "." + coreName;
+          if (!indexDirToShardNamesMap.containsKey(indexDir)) {
+            indexDirToShardNamesMap.put(indexDir, new HashSet<>());
           }
-        } catch (Exception e) {
-          // ignore, just continue - probably a "Value" attribute
-          // not found
+          indexDirToShardNamesMap.get(indexDir).add(shardKey);
         }
       }
     }
@@ -615,7 +598,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             + " : "
             + indexDirToShardNamesMap,
         indexDirToShardNamesMap.size() > 0);
-    for (Entry<String, Set<String>> entry : indexDirToShardNamesMap.entrySet()) {
+
+    for (Map.Entry<String, Set<String>> entry : indexDirToShardNamesMap.entrySet()) {
       if (entry.getValue().size() > 1) {
         fail(
             "We have shards using the same indexDir. E.g. shards "
@@ -656,6 +640,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             .process(cluster.getSolrClient());
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertNotNull(newReplica);
+    cluster.waitForActiveCollection(collectionName, 2, 6);
 
     try (SolrClient coreclient = getHttpSolrClient(newReplica.getBaseUrl())) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
@@ -676,8 +661,9 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
               params.set("collection", collectionName);
               params.set("shard", "shard1");
               params.set("name", coreName);
-              QueryRequest request = new QueryRequest(params);
-              request.setPath("/admin/collections");
+              var request =
+                  new GenericSolrRequest(
+                      METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
               cluster.getSolrClient().request(request);
             });
 
@@ -697,6 +683,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertEquals(
         "'core' should be 'propertyDotName' ", "propertyDotName", newReplica.getStr("core"));
+    cluster.waitForActiveCollection(collectionName, 2, 7);
   }
 
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {

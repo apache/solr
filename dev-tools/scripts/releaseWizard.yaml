@@ -77,7 +77,7 @@ templates:
     Reason for fail is {{ reason }}.
     
     {% endif %}
-    This vote has {% if passed %}PASSED{% else %}FAILED{% endif %} 
+    This vote has {% if passed %}PASSED{% else %}FAILED{% endif %}  
     ----
     {%- endmacro %}
   announce_solr: |
@@ -102,7 +102,7 @@ templates:
 
       <https://solr.apache.org/guide/solr/{{ release_version_refguide }}/upgrade-notes/solr-upgrade-notes.html>
 
-    Please read CHANGES.txt for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
+    Please read CHANGELOG.md for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
 
       <https://solr.apache.org/{{ release_version_underscore }}/changes/Changes.html>
   announce_solr_mail: |
@@ -257,7 +257,7 @@ groups:
         fingerprint for the key.
 
       You can choose between signing the release with the gpg program or with the
-      gradle signing plugin. Read about the difference in https://github.com/apache/solr/blob/main/help/publishing.txt
+      gradle signing plugin. Read about the difference in https://github.com/apache/solr/blob/main/dev-docs/gradle-help/publishing.txt
 
       This wizard can prompt you securely for your passphrase (will not be stored) and pass it on to
       buildAndPushRelease in a secure way. However, you can also configure your passphrase in advance
@@ -269,7 +269,7 @@ groups:
     - https://infra.apache.org/openpgp.html#apache-wot
     - https://id.apache.org
     - https://dist.apache.org/repos/dist/release/solr/KEYS
-    - https://github.com/apache/solr/blob/main/help/publishing.txt
+    - https://github.com/apache/solr/blob/main/dev-docs/gradle-help/publishing.txt
   - !Todo
     id: jira_permissions
     title: Obtain the necessary permissions for Apache Jira
@@ -665,12 +665,12 @@ groups:
     - bugfix
   - !Todo
     id: dependency_updates_changes
-    title: Add dependency updates to CHANGES.txt
+    title: Add dependency updates to changelog
     description: Bulk add all 'solrbot' dependency updates since last release
     depends: clean_git_checkout
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: We call out to a helper script that modifies CHANGES.txt, and then commit it.
+      commands_text: We call out to a helper script that compiles SolrBot changes into `changelog/unreleased`
       confirm_each_command: true
       commands:
       - !Command
@@ -680,14 +680,46 @@ groups:
         cmd: python3 -u dev-tools/scripts/addDepsToChanges.py --user solrbot --version {{ release_version }}
         tee: true
       - !Command
-        cmd: "{{ editor }} solr/CHANGES.txt"
-        comment: |
-          Verify that the modifications in CHANGES.txt under the 'Dependency Upgrades' are ok.
-          Look for duplicates, especially when a committer has manually added a similar entry for the same upgrade.
+        cmd: git add -u .  && git commit -m "Add dependency updates to changelog for {{ release_version }}"  && git push
+        logfile: dependency-changes.log
+  - !Todo
+    id: generate_changelog_release
+    title: Generate CHANGELOG.md for release
+    description: |
+      Generate `CHANGELOG.md` by running `logchange release` and `logchange generate`. This will prepare both a
+      `changelog/v{{ release_version }}` folder and the `CHANGELOG.md` file in one commit.
+    depends: dependency_updates_changes
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Generate CHANGELOG.md
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
         stdout: true
       - !Command
-        cmd: git add -u .  && git commit -m "Add dependency updates to CHANGES for {{ release_version }}"  && git push
-        logfile: dependency-changes.log
+        cmd: git pull --ff-only
+        tee: true
+      - !Command
+        cmd: "{{ gradle_cmd }} logchangeRelease"
+        comment: Create `changelog/v{{ release_version }}` folder and move unreleased entries
+        tee: true
+      - !Command
+        cmd: "{{ gradle_cmd }} logchangeGenerate"
+        comment: Generate `CHANGELOG.md` in repository root
+        tee: true
+      - !Command
+        cmd: git add CHANGELOG.md changelog && git commit -m "Changelog for release v{{ release_version }}" && git push
+        comment: Commit and push changelog changes
+        logfile: commit_changelog.log
+        tee: true
+  - !Todo
+    id: persist_changelog_sha
+    title: Persist the SHA of the changelog commit
+    description: Store the current git sha
+    depends: generate_changelog_release
+    vars:
+      changelog_sha: '{{ current_git_rev }}'
+    persist_vars: changelog_sha
   - !Todo
     id: draft_release_notes
     title: Get a draft of the release notes in place
@@ -695,7 +727,8 @@ groups:
       These are typically edited on the Wiki
 
       Clone a page for a previous version as a starting point for your release notes.
-      Edit the contents of `CHANGES.txt` into a more concise format for public consumption.
+      Use the contents of `CHANGELOG.md` and `major-changes-in-solr-N.adoc` as input and write a more
+      concise format for public consumption.
       Ask on dev@ for input. Ideally the timing of this request mostly coincides with the
       release branch creation. It's a good idea to remind the devs of this later in the release too.
 
@@ -1288,7 +1321,7 @@ groups:
     description: |
       Ensure that the reference Guide is updated for {{ release_version }}. In particular, the sections "Solr Upgrade Notes"
       and (if applicable) also the "Major changes in Solr ..." section must be up to date for the latest release.
-      Check that the the Blocker JIRA issue created in the beginning of the release process is resolved.
+      Check that the Blocker JIRA issue created in the beginning of the release process is resolved.
   - !Todo
     id: build_ref_guide_htaccess
     title: Build the ref guide .htaccess file
@@ -1689,52 +1722,43 @@ groups:
         cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
         logfile: commit-stable.log
   - !Todo
-    id: synchronize_changes
-    title: Synchronize CHANGES.txt
+    id: sync_changelog_cherry_pick
+    title: Cherry-pick changelog to stable and unstable branches
     description: |
-      Copy the CHANGES.txt section for this release back to the stable and unstable branches' 
-      CHANGES.txt files, removing any duplicate entries, but only from sections for as-yet 
-      unreleased versions; leave intact duplicate entries for already-released versions.
+      Cherry-pick the changelog commit from the release branch to the stable and main branches.
+      This syncs both CHANGELOG.md and changelog folder changes across all active branches.
 
-      There is a script to generate a regex that will match JIRAs fixed in a release: 
-      `releasedJirasRegex.py`. The following examples will print regexes matching all JIRAs 
-      fixed in {{ release_version }}, which can then be used to find duplicates in unreleased 
-      version sections of the corresponding CHANGES.txt files.
+      The changelog commit was created in the previous step (generate_changelog_release) and will
+      be referenced here. Cherry-pick will automatically handle conflict resolution if needed.
+    depends: generate_changelog_release
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Synchronize CHANGES.txt
+      commands_text: Cherry-pick changelog changes to other branches
       commands:
       - !Command
-        cmd: git checkout {{ release_branch }}
-        comment: Go to release branch
-        logfile: checkout-release.log
+        cmd: git checkout {{ stable_branch }}
+        comment: Checkout stable branch
         stdout: true
       - !Command
-        cmd: python3 -u -B dev-tools/scripts/releasedJirasRegex.py {{ release_version }} solr/CHANGES.txt
+        cmd: git pull --ff-only
         tee: true
-        comment: Find version regexes
       - !Command
-        cmd: git checkout main && git pull --ff-only && git clean -df && git checkout -- .
-        comment: Go to main branch
-        logfile: checkout-main.log
+        cmd: git cherry-pick {{ persist_changelog_sha.changelog_sha }} && git push
+        comment: Cherry-pick changelog commit
+        logfile: cherry_pick_changelog_stable.log
+        tee: true
       - !Command
-        cmd: "{{ editor }} solr/CHANGES.txt"
-        comment: Edit CHANGES.txt for main branch, do necessary changes
+        cmd: git checkout main
+        comment: Checkout main branch
         stdout: true
       - !Command
-        cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
-        logfile: commit-main.log
+        cmd: git pull --ff-only
+        tee: true
       - !Command
-        cmd: git checkout {{ stable_branch }} && git pull --ff-only && git clean -df && git checkout -- .
-        comment: Go to stable branch
-        logfile: checkout-stable.log
-      - !Command
-        cmd: "{{ editor }} solr/CHANGES.txt"
-        comment: Edit CHANGES.txt for stable branch, do necessary changes
-        stdout: true
-      - !Command
-        cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
-        logfile: commit-stable.log
+        cmd: git cherry-pick {{ persist_changelog_sha.changelog_sha }} && git push
+        comment: Cherry-pick changelog commit
+        logfile: cherry_pick_changelog_main.log
+        tee: true
   - !Todo
     id: increment_release_version
     title: Add the next version on release branch

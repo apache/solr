@@ -17,9 +17,10 @@
 package org.apache.solr.cloud;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -39,11 +41,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -54,6 +54,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -88,7 +89,7 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createTestCluster() throws Exception {
-    System.setProperty("cloudSolrClientMaxStaleRetries", "1");
+    System.setProperty("solr.solrj.cloud.max.stale.retries", "1");
     System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "1000");
 
     configureCluster(2) // 2 + random().nextInt(3)
@@ -98,7 +99,7 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   @AfterClass
   public static void tearDownCluster() {
-    System.clearProperty("cloudSolrClientMaxStaleRetries");
+    System.clearProperty("solr.solrj.cloud.max.stale.retries");
     System.clearProperty("zkReaderGetLeaderRetryTimeoutMs");
     TestInjection.reset();
   }
@@ -233,15 +234,15 @@ public class TestPullReplica extends SolrCloudTestCase {
    * otherwise returns the <code>tlog</code> subdirectory within {@link SolrCore#getDataDir()}.
    * (NOTE: the last of these is by far the most common default location of the tlog directory).
    */
-  static File getHypotheticalTlogDir(SolrCore core) {
+  static Path getHypotheticalTlogDir(SolrCore core) {
     String ulogDir;
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
     if (ulog != null) {
-      return new File(ulog.getTlogDir());
+      return Path.of(ulog.getTlogDir());
     } else if ((ulogDir = core.getCoreDescriptor().getUlogDir()) != null) {
-      return new File(ulogDir, UpdateLog.TLOG_NAME);
+      return Path.of(ulogDir, UpdateLog.TLOG_NAME);
     } else {
-      return new File(core.getDataDir(), UpdateLog.TLOG_NAME);
+      return Path.of(core.getDataDir(), UpdateLog.TLOG_NAME);
     }
   }
 
@@ -258,17 +259,16 @@ public class TestPullReplica extends SolrCloudTestCase {
         try (SolrCore core =
             cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName())) {
           assertNotNull(core);
-          File tlogDir = getHypotheticalTlogDir(core);
+          Path tlogDir = getHypotheticalTlogDir(core);
           assertFalse(
               "Update log should not exist for replicas of type Passive but file is present: "
                   + tlogDir,
-              tlogDir.exists());
+              Files.exists(tlogDir));
         }
       }
     }
   }
 
-  @SuppressWarnings("unchecked")
   public void testAddDocs() throws Exception {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
@@ -309,17 +309,26 @@ public class TestPullReplica extends SolrCloudTestCase {
               : s.getReplicas(EnumSet.of(Replica.Type.PULL));
       waitForNumDocsInAllReplicas(numDocs, pullReplicas);
 
-      for (Replica r : pullReplicas) {
-        try (SolrClient pullReplicaClient = getHttpSolrClient(r)) {
-          SolrQuery req = new SolrQuery("qt", "/admin/plugins", "stats", "true");
-          QueryResponse statsResponse = pullReplicaClient.query(req);
-          // The adds gauge metric should be null for pull replicas since they don't process adds
-          assertNull(
-              "Replicas shouldn't process the add document request: " + statsResponse,
-              ((Map<String, Object>)
-                      (statsResponse.getResponse())
-                          .findRecursive("plugins", "UPDATE", "updateHandler", "stats"))
-                  .get("UPDATE.updateHandler.adds"));
+      for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+        CoreContainer cc = jetty.getCoreContainer();
+        for (String coreName : cc.getAllCoreNames()) {
+          try (SolrCore core = cc.getCore(coreName)) {
+            var addOpsDatapoint =
+                org.apache.solr.util.SolrMetricTestUtils.getCounterDatapoint(
+                    core,
+                    "solr_core_update_committed_ops",
+                    org.apache.solr.util.SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "UPDATE")
+                        .label("ops", "adds")
+                        .build());
+            // The adds gauge metric should be null for pull replicas since they don't process adds
+            if ((core.getCoreDescriptor().getCloudDescriptor().getReplicaType()
+                == Replica.Type.PULL)) {
+              assertNull(addOpsDatapoint);
+            } else {
+              assertNotNull(addOpsDatapoint);
+            }
+          }
         }
       }
 
@@ -474,7 +483,18 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   public void testRealTimeGet()
-      throws SolrServerException, IOException, KeeperException, InterruptedException {
+      throws SolrServerException,
+          IOException,
+          KeeperException,
+          InterruptedException,
+          TimeoutException {
+    cluster
+        .getZkStateReader()
+        .waitForLiveNodes(
+            10,
+            TimeUnit.SECONDS,
+            (oldLiveNodes, newLiveNodes) ->
+                newLiveNodes.size() == cluster.getJettySolrRunners().size());
     // should be redirected to Replica.Type.NRT
     int numReplicas = random().nextBoolean() ? 1 : 2;
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, numReplicas, 0, numReplicas)
@@ -484,27 +504,18 @@ public class TestPullReplica extends SolrCloudTestCase {
         collectionName,
         activeReplicaCount(numReplicas, 0, numReplicas));
     DocCollection docCollection = assertNumberOfReplicas(numReplicas, 0, numReplicas, false, true);
-    HttpClient httpClient = getHttpClient();
     int id = 0;
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd : slice.getReplicas()) {
-      try (SolrClient client =
-          new HttpSolrClient.Builder(rAdd.getBaseUrl())
-              .withDefaultCollection(rAdd.getCoreName())
-              .withHttpClient(httpClient)
-              .build()) {
+      try (SolrClient client = getHttpSolrClient(rAdd.getBaseUrl(), rAdd.getCoreName())) {
         client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
       }
       SolrDocument docCloudClient =
           cluster.getSolrClient().getById(collectionName, String.valueOf(id));
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet : slice.getReplicas()) {
-        try (SolrClient client =
-            new HttpSolrClient.Builder(rGet.getBaseUrl())
-                .withDefaultCollection(rGet.getCoreName())
-                .withHttpClient(httpClient)
-                .build()) {
+        try (SolrClient client = getHttpSolrClient(rGet.getBaseUrl(), rGet.getCoreName())) {
           SolrDocument doc = client.getById(String.valueOf(id));
           assertEquals("bar", doc.getFieldValue("foo_s"));
         }
@@ -514,11 +525,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd : slice.getReplicas()) {
-      try (SolrClient client =
-          new HttpSolrClient.Builder(rAdd.getBaseUrl())
-              .withDefaultCollection(rAdd.getCoreName())
-              .withHttpClient(httpClient)
-              .build()) {
+      try (SolrClient client = getHttpSolrClient(rAdd.getBaseUrl(), rAdd.getCoreName())) {
         SolrDocumentList allIdsResult = client.getById(ids);
         if (previousAllIdsResult != null) {
           assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));

@@ -19,10 +19,10 @@ package org.apache.solr.cloud;
 import static org.apache.solr.cloud.TestPullReplica.getHypotheticalTlogDir;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.codahale.metrics.Meter;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,12 +45,13 @@ import org.apache.http.util.EntityUtils;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -71,6 +72,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -145,8 +147,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
         try {
           core = cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName());
           assertNotNull(core);
-          File tlogDir = getHypotheticalTlogDir(core);
-          assertTrue("Update log should exist for replicas of type Append", tlogDir.exists());
+          Path tlogDir = getHypotheticalTlogDir(core);
+          assertTrue("Update log should exist for replicas of type Append", Files.exists(tlogDir));
         } finally {
           core.close();
         }
@@ -278,22 +280,29 @@ public class TestTlogReplica extends SolrCloudTestCase {
                 "Replica " + r.getName() + " not up to date after 10 seconds",
                 1,
                 tlogReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-            // Append replicas process all updates
-            SolrQuery req =
-                new SolrQuery(
-                    "qt", "/admin/plugins",
-                    "stats", "true");
-            QueryResponse statsResponse = tlogReplicaClient.query(req);
-            assertEquals(
-                "Append replicas should recive all updates. Replica: "
-                    + r
-                    + ", response: "
-                    + statsResponse,
-                1L,
-                ((Map<String, Object>)
-                        (statsResponse.getResponse())
-                            .findRecursive("plugins", "UPDATE", "updateHandler", "stats"))
-                    .get("UPDATE.updateHandler.cumulativeAdds.count"));
+            JettySolrRunner jetty =
+                cluster.getJettySolrRunners().stream()
+                    .filter(j -> j.getBaseUrl().toString().equals(r.getBaseUrl()))
+                    .findFirst()
+                    .orElse(null);
+            assertNotNull("Could not find jetty for replica " + r, jetty);
+
+            try (SolrCore core = jetty.getCoreContainer().getCore(r.getCoreName())) {
+              var cumulativeAddsDatapoint =
+                  SolrMetricTestUtils.getGaugeDatapoint(
+                      core,
+                      "solr_core_update_cumulative_ops",
+                      SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                          .label("category", "UPDATE")
+                          .label("ops", "adds")
+                          .build());
+              assertNotNull("Could not find cumulative adds metric", cumulativeAddsDatapoint);
+              assertEquals(
+                  "Append replicas should receive all updates. Replica: " + r,
+                  1.0,
+                  cumulativeAddsDatapoint.getValue(),
+                  0.0);
+            }
             break;
           } catch (AssertionError e) {
             if (t.hasTimedOut()) {
@@ -568,32 +577,34 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .process(cloudClient, collectionName);
 
     {
-      long docsPending =
-          (long)
-              getSolrCore(true)
-                  .get(0)
-                  .getSolrMetricsContext()
-                  .getMetricRegistry()
-                  .getGauges()
-                  .get("UPDATE.updateHandler.docsPending")
-                  .getValue();
+      SolrCore core = getSolrCore(true).getFirst();
+      var actual =
+          SolrMetricTestUtils.getGaugeDatapoint(
+              core,
+              "solr_core_update_docs_pending_commit",
+              SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                  .label("category", "UPDATE")
+                  .label("ops", "docs_pending")
+                  .build());
       assertEquals(
-          "Expected 4 docs are pending in core " + getSolrCore(true).get(0).getCoreDescriptor(),
+          "Expected 4 docs are pending in core " + getSolrCore(true).getFirst().getCoreDescriptor(),
           4,
-          docsPending);
+          (long) actual.getValue());
     }
 
     for (SolrCore solrCore : getSolrCore(false)) {
-      long docsPending =
-          (long)
-              solrCore
-                  .getSolrMetricsContext()
-                  .getMetricRegistry()
-                  .getGauges()
-                  .get("UPDATE.updateHandler.docsPending")
-                  .getValue();
+      var actual =
+          SolrMetricTestUtils.getGaugeDatapoint(
+              solrCore,
+              "solr_core_update_docs_pending_commit",
+              SolrMetricTestUtils.newCloudLabelsBuilder(solrCore)
+                  .label("category", "UPDATE")
+                  .label("ops", "docs_pending")
+                  .build());
       assertEquals(
-          "Expected non docs are pending in core " + solrCore.getCoreDescriptor(), 0, docsPending);
+          "Expected non docs are pending in core " + solrCore.getCoreDescriptor(),
+          0,
+          (long) actual.getValue());
     }
 
     checkRTG(1, 4, cluster.getJettySolrRunners());
@@ -810,8 +821,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
     params.set("replica", newLeader.getName());
     params.set("property", "preferredLeader");
     params.set("property.value", "true");
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.POST,
+            "/admin/collections",
+            SolrRequest.SolrRequestType.ADMIN,
+            params);
     cloudClient.request(request);
 
     // Wait until a preferredleader flag is set to the new leader candidate
@@ -832,8 +847,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
     params.set("action", CollectionParams.CollectionAction.REBALANCELEADERS.toString());
     params.set("collection", collectionName);
     params.set("maxAtOnce", "10");
-    request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    request =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.POST,
+            "/admin/collections",
+            SolrRequest.SolrRequestType.ADMIN,
+            params);
     cloudClient.request(request);
 
     // Wait until a new leader is elected
@@ -1223,11 +1242,11 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   private long getTimesCopyOverOldUpdates(SolrCore core) {
-    return ((Meter)
-            core.getSolrMetricsContext()
-                .getMetricRegistry()
-                .getMetrics()
-                .get("TLOG.copyOverOldUpdates.ops"))
-        .getCount();
+    var metric =
+        SolrMetricTestUtils.getCounterDatapoint(
+            core,
+            "solr_core_update_log_old_updates_copied",
+            SolrMetricTestUtils.newCloudLabelsBuilder(core).label("category", "TLOG").build());
+    return (metric != null) ? (long) metric.getValue() : 0L;
   }
 }

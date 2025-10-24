@@ -146,12 +146,24 @@ public class ChaosMonkey {
 
   // TODO: expire all clients at once?
   public void expireSession(final JettySolrRunner jetty) {
+    expireSession(jetty, zkServer);
+  }
+
+  public static void expireSession(final JettySolrRunner jetty, final ZkTestServer zkServer) {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
-      monkeyLog("expire session for " + jetty.getLocalPort() + " !");
-      long sessionId = cores.getZkController().getZkClient().getZkSessionId();
+      monkeyLog("expire session for node " + jetty.getBaseUrl() + " !");
+      SolrZkClient zkClient = cores.getZkController().getZkClient();
+      long sessionId = zkClient.getZkSessionId();
       zkServer.expire(sessionId);
       causeConnectionLoss(jetty);
+      // Loop until either the Zookeeper Client is no longer connected, or the zkSessionID changes
+      // (which means the connection was lost in the client)
+      while (zkClient.getCuratorFramework().getZookeeperClient().isConnected()) {
+        if (zkClient.getZkSessionId() != sessionId) {
+          break;
+        }
+      }
     }
   }
 
@@ -179,7 +191,7 @@ public class ChaosMonkey {
   public static void causeConnectionLoss(JettySolrRunner jetty) {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
-      monkeyLog("Will cause connection loss on " + jetty.getLocalPort());
+      monkeyLog("Will cause connection loss on node " + jetty.getBaseUrl());
       SolrZkClient zkClient = cores.getZkController().getZkClient();
       try {
         KillSession.kill(zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());

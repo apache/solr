@@ -130,11 +130,11 @@ grant {
   permission javax.management.MBeanServerPermission "findMBeanServer";
   permission javax.management.MBeanServerPermission "releaseMBeanServer";
   permission javax.management.MBeanTrustPermission "register";
-  
+
   // needed by crossdc
   permission javax.security.auth.AuthPermission "getLoginConfiguration";
   permission javax.security.auth.AuthPermission "setLoginConfiguration";
-  
+
   // needed by benchmark
   permission java.security.SecurityPermission "insertProvider";
 
@@ -146,6 +146,7 @@ grant {
 
   // needed by s3mock
   permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
+  permission java.lang.RuntimePermission "accessSystemModules";
 
   // needed for kafka mockito
   permission java.lang.RuntimePermission "manageProcess";
@@ -198,11 +199,14 @@ grant {
   permission "java.net.URLPermission" "http://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "https://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "socket://[::1]:*", "CONNECT:*";
+
+  // Needed by TestCoreDiscovery
+  permission java.lang.RuntimePermission "accessUserInformation";
 };
 
 // additional permissions based on system properties set by /bin/solr
 // NOTE: if the property is not set, the permission entry is ignored.
-grant {  
+grant {
   permission java.io.FilePermission "${solr.jetty.keystore}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.jetty.keystore}${/}-", "read,write,delete,readlink";
 
@@ -221,11 +225,11 @@ grant {
   permission java.io.FilePermission "${solr.data.home}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.data.home}${/}-", "read,write,delete,readlink";
 
-  permission java.io.FilePermission "${solr.default.confdir}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.default.confdir}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.configset.default.confdir}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.configset.default.confdir}${/}-", "read,write,delete,readlink";
 
-  permission java.io.FilePermission "${solr.log.dir}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.log.dir}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.logs.dir}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.logs.dir}${/}-", "read,write,delete,readlink";
 
   permission java.io.FilePermission "${solr.allowPaths}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.allowPaths}${/}-", "read,write,delete,readlink";
@@ -237,8 +241,15 @@ grant {
   permission java.io.FilePermission "${aws.configFile}", "read,readlink";
   permission java.io.FilePermission "${user.home}${/}.aws${/}-", "read,readlink";
 
+  // GCS
+  permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}properties", "read,readlink";
+  permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}active_config", "read,readlink";
+  permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}configurations${/}config_default", "read,readlink";
+
+
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "metadata.google.internal:80", "connect,resolve";
 
   // Run java
   permission java.io.FilePermission "${java.home}${/}-", "execute";
@@ -265,4 +276,10 @@ grant {
   permission java.io.FilePermission "${lucene-dev-path.dir}${/}-", "read";
   // Allow testing effects of customized or bug-fixed dependencies locally (also need to add mavenLocal() to build)
   permission java.io.FilePermission "${user.home}${/}.m2${/}repository${/}-", "read";
+
+  permission java.lang.RuntimePermission "loadLibrary.cudart";
+};
+
+grant {
+    permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
 };

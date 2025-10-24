@@ -34,10 +34,7 @@ public class TestFoldingMultitermExtrasQuery extends SolrTestCaseJ4 {
   public static void beforeTests() throws Exception {
     Path testHome = createTempDir();
     PathUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
-    initCore(
-        "solrconfig-icucollate.xml",
-        "schema-folding-extra.xml",
-        testHome.toAbsolutePath().toString());
+    initCore("solrconfig-icucollate.xml", "schema-folding-extra.xml", testHome);
 
     int idx = 1;
     // ICUFoldingFilterFactory

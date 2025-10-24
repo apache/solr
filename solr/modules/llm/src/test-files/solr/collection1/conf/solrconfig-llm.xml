@@ -23,7 +23,7 @@
 
  <!-- Query parser used to run neural queries-->
  <queryParser name="knn_text_to_vector"
-  class="org.apache.solr.llm.texttovector.search.TextToVectorQParserPlugin" />
+  class="org.apache.solr.llm.textvectorisation.search.TextToVectorQParserPlugin" />
 
  <query>
   <filterCache class="solr.CaffeineCache" size="4096"
@@ -53,5 +53,25 @@
    <str name="df">id</str>
   </lst>
  </requestHandler>
+
+ <updateRequestProcessorChain name="textToVector">
+  <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+   <str name="inputField">_text_</str>
+   <str name="outputField">vector</str>
+   <str name="model">dummy-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="failingTextToVector">
+  <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+   <str name="inputField">_text_</str>
+   <str name="outputField">vector</str>
+   <str name="model">exception-throwing-model</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+ 
+ 
 
 </config>

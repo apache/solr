@@ -25,7 +25,7 @@ allprojects {
 
     // Inject vm options into custom javadoc rendering. We can't refer
     // to the task type because it's dynamic.
-    tasks.matching { it.name in ["renderJavadoc", "renderSiteJavadoc"] }.forEach {
+    tasks.matching { it.name in ["renderJavadoc", "renderSiteJavadoc"] }.configureEach {
         extraOpts.addAll(vmOpts.collect {"-J" + it})
     }
 

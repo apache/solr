@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,12 +23,14 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.cli.CreateTool;
 import org.apache.solr.cli.DeleteTool;
 import org.apache.solr.cli.HealthcheckTool;
 import org.apache.solr.cli.PostTool;
 import org.apache.solr.cli.SolrCLI;
+import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -61,8 +62,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     log.info("testLoadDocsIntoGettingStartedCollection initialized OK ... running test logic");
 
     String testCollectionName = "gettingstarted";
-    File defaultConfigs = new File(ExternalPaths.DEFAULT_CONFIGSET);
-    assertTrue(defaultConfigs.getAbsolutePath() + " not found!", defaultConfigs.isDirectory());
+    Path defaultConfigs = ExternalPaths.DEFAULT_CONFIGSET;
+    assertTrue(defaultConfigs + " not found!", Files.isDirectory(defaultConfigs));
 
     Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
     if (liveNodes.isEmpty())
@@ -91,7 +92,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // NOTE: not calling SolrCLI.main as the script does because it calls System.exit which is a
     // no-no in a JUnit test
 
-    CreateTool tool = new CreateTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    CreateTool tool = new CreateTool(runtime);
     CommandLine cli = SolrCLI.processCommandLineArgs(tool, args);
     log.info("Creating the '{}' collection using SolrCLI with: {}", testCollectionName, solrUrl);
     tool.runTool(cli);
@@ -111,8 +113,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
     // now index docs ...
     log.info("Created collection, now posting example docs!");
-    Path exampleDocsDir = Path.of(ExternalPaths.SOURCE_HOME, "example", "exampledocs");
-    assertTrue(exampleDocsDir.toAbsolutePath() + " not found!", Files.isDirectory(exampleDocsDir));
+    Path exampleDocsDir = ExternalPaths.SOURCE_HOME.resolve("example").resolve("exampledocs");
+    assertTrue(exampleDocsDir + " not found!", Files.isDirectory(exampleDocsDir));
 
     String[] argsForPost =
         new String[] {
@@ -122,10 +124,10 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           testCollectionName,
           "--filetypes",
           "xml",
-          exampleDocsDir.toAbsolutePath().toString()
+          exampleDocsDir.toString()
         };
 
-    PostTool postTool = new PostTool();
+    PostTool postTool = new PostTool(runtime);
     CommandLine postCli = SolrCLI.processCommandLineArgs(postTool, argsForPost);
     postTool.runTool(postCli);
 
@@ -145,33 +147,36 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     assertEquals("*:* found unexpected number of documents", expectedXmlDocCount, numFound);
 
     log.info("Running healthcheck for {}", testCollectionName);
-    doTestHealthcheck(testCollectionName, cloudClient.getClusterStateProvider().getQuorumHosts());
+    doTestHealthcheck(
+        testCollectionName, cloudClient.getClusterStateProvider().getQuorumHosts(), runtime);
 
     // verify the delete action works too
     log.info("Running delete for {}", testCollectionName);
-    doTestDeleteAction(testCollectionName, solrUrl);
+    doTestDeleteAction(testCollectionName, solrUrl, runtime);
 
     log.info("testLoadDocsIntoGettingStartedCollection succeeded ... shutting down now!");
   }
 
-  protected void doTestHealthcheck(String testCollectionName, String zkHost) throws Exception {
+  protected void doTestHealthcheck(String testCollectionName, String zkHost, ToolRuntime runtime)
+      throws Exception {
     String[] args =
         new String[] {
           "--name", testCollectionName,
           "--zk-host", zkHost
         };
-    HealthcheckTool tool = new HealthcheckTool();
+    HealthcheckTool tool = new HealthcheckTool(runtime);
     CommandLine cli = SolrCLI.processCommandLineArgs(tool, args);
     assertEquals("Healthcheck action failed!", 0, tool.runTool(cli));
   }
 
-  protected void doTestDeleteAction(String testCollectionName, String solrUrl) throws Exception {
+  protected void doTestDeleteAction(String testCollectionName, String solrUrl, ToolRuntime runtime)
+      throws Exception {
     String[] args =
         new String[] {
           "--name", testCollectionName,
           "--solr-url", solrUrl
         };
-    DeleteTool tool = new DeleteTool();
+    DeleteTool tool = new DeleteTool(runtime);
     CommandLine cli = SolrCLI.processCommandLineArgs(tool, args);
     assertEquals("Delete action failed!", 0, tool.runTool(cli));
     assertFalse(

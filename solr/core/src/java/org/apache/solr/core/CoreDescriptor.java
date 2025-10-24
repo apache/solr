@@ -54,10 +54,8 @@ public class CoreDescriptor {
   public static final String CORE_SCHEMA = "schema";
   public static final String CORE_SHARD = "shard";
   public static final String CORE_COLLECTION = "collection";
-  public static final String CORE_ROLES = "roles";
   public static final String CORE_PROPERTIES = "properties";
   public static final String CORE_LOADONSTARTUP = "loadOnStartup";
-  public static final String CORE_TRANSIENT = "transient";
   public static final String CORE_NODE_NAME = "coreNodeName";
   public static final String CORE_CONFIGSET = "configSet";
   public static final String CORE_CONFIGSET_PROPERTIES = "configSetProperties";
@@ -65,13 +63,6 @@ public class CoreDescriptor {
 
   public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE =
       "conf" + FileSystems.getDefault().getSeparator() + "solrcore.properties";
-
-  /**
-   * Whether this core was configured using a configSet that was trusted. This helps in avoiding the
-   * loading of plugins that have potential vulnerabilities, when the configSet was not uploaded
-   * from a trusted user.
-   */
-  private boolean trustedConfigSet = true;
 
   /**
    * Get the standard properties in persistable form
@@ -97,7 +88,6 @@ public class CoreDescriptor {
           CORE_SCHEMA, "schema.xml",
           CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME,
           CORE_DATADIR, "data" + FileSystems.getDefault().getSeparator(),
-          CORE_TRANSIENT, "false",
           CORE_LOADONSTARTUP, "true");
 
   private static final List<String> requiredProperties = List.of(CORE_NAME);
@@ -112,14 +102,11 @@ public class CoreDescriptor {
           CORE_PROPERTIES,
           CORE_CONFIGSET_PROPERTIES,
           CORE_LOADONSTARTUP,
-          CORE_TRANSIENT,
           CORE_CONFIGSET,
           // cloud props
           CORE_SHARD,
           CORE_COLLECTION,
-          CORE_ROLES,
-          CORE_NODE_NAME,
-          CloudDescriptor.NUM_SHARDS);
+          CORE_NODE_NAME);
 
   private final CloudDescriptor cloudDesc;
 
@@ -174,7 +161,6 @@ public class CoreDescriptor {
     this.coreProperties.setProperty(CORE_NAME, coreName);
     this.originalCoreProperties.setProperty(CORE_NAME, coreName);
     this.substitutableProperties.setProperty(SOLR_CORE_PROP_PREFIX + CORE_NAME, coreName);
-    this.trustedConfigSet = other.trustedConfigSet;
   }
 
   /**
@@ -349,11 +335,6 @@ public class CoreDescriptor {
     return Boolean.parseBoolean(stringValue);
   }
 
-  public boolean isTransient() {
-    String stringValue = coreProperties.getProperty(CORE_TRANSIENT, "false");
-    return PropertiesUtil.toBoolean(stringValue);
-  }
-
   public String getUlogDir() {
     return coreProperties.getProperty(CORE_ULOGDIR);
   }
@@ -395,14 +376,5 @@ public class CoreDescriptor {
 
   public String getConfigSetPropertiesName() {
     return coreProperties.getProperty(CORE_CONFIGSET_PROPERTIES);
-  }
-
-  public boolean isConfigSetTrusted() {
-    return trustedConfigSet;
-  }
-
-  /** TODO remove mutability */
-  public void setConfigSetTrusted(boolean trusted) {
-    this.trustedConfigSet = trusted;
   }
 }

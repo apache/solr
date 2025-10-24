@@ -40,10 +40,21 @@ These checks are described in the xref:enabling-ssl.adoc[] section.
 
 This plugin provides no additional checking beyond what has been configured via SSL properties.
 
-=== User Principal Extraction
+It is best practice to verify the actual contents of certificates issued by your trusted certificate authority before configuring authorization based on the contents.
 
-This plugin will configure the user principal for the request based on the X500 subject present in the client certificate.
-Authorization plugins will need to accept and handle the full subject name, for example:
+== User Principal Extraction
+
+This plugin will configure the user `principal` for the request based on the contents of the client certificate. Solr provides three methods for extracting the `principal`:
+
+*Simple Resolution*: Uses the full X500 subject name from the client certificate. This is the default behavior.
+
+*Path Based Resolution*: Offers greater flexibility by allowing to extract specific fields or patterns using the {solr-javadocs}/core/org/apache/solr/security/cert/PathBasedCertPrincipalResolver.html[PathBasedCertPrincipalResolver]. Here "`paths`" refers to the fields ("`.`" separated) defined in the certificate.
+
+*Custom Resolution*: If the built-in options do not meet your needs, you can add a custom class by implementing the {solr-javadocs}/core/org/apache/solr/security/cert/CertPrincipalResolver.html[`CertPrincipalResolver`]interface. This allows you to define your own logic for extracting and processing the `principal`. The custom implementation can then be referenced in your `security.json` configuration.
+
+=== Simple Principal Resolution
+
+By default, Solr uses the full subject name as the `principal`. For example:
 
 [source,text]
 ----
@@ -53,7 +64,377 @@ CN=Solr User,OU=Engineering,O=Example Inc.,C=US
 A list of possible tags that can be present in the subject name is available in https://tools.ietf.org/html/rfc5280#section-4.1.2.4[RFC-5280, Section 4.1.2.4].
 Values may have spaces, punctuation, and other characters.
 
-It is best practice to verify the actual contents of certificates issued by your trusted certificate authority before configuring authorization based on the contents.
+=== Configurable Principal Resolution
+
+Using the `PathBasedCertPrincipalResolver`, you can extract specific fields or apply filters to resolve the `principal`. For example:
+
+[source,json]
+----
+
+{
+  "authentication": {
+    "class": "solr.CertAuthPlugin",
+    "principalResolver": {
+      "class": "solr.PathBasedCertPrincipalResolver",
+      "params": {
+        "path": "subject.dn"
+      }
+    }
+  }
+}
+
+----
+
+This configuration extracts the entire Subject DN, e.g., CN=John Doe,O=Solr Corp,OU=Engineering,C=US.
+In fact, this is equivalent to the default `principalResolver` which is used if no `principalResolver` configuration is provided.
+
+You can also extract a specific field from the Subject DN:
+
+[source,json]
+----
+
+{
+  "authentication": {
+    "class": "solr.CertAuthPlugin",
+    "principalResolver": {
+      "class": "solr.PathBasedCertPrincipalResolver",
+      "params": {
+        "path": "subject.dn.CN"
+      }
+    }
+  }
+}
+
+----
+Behavior: This configuration extracts the Common Name (CN) field only, e.g., John Doe.
+
+The below configuration extracts the email address from the SAN field, e.g., user@example.com.
+
+[source,json]
+----
+
+{
+  "authentication": {
+    "class": "solr.CertAuthPlugin",
+    "principalResolver": {
+      "class": "solr.PathBasedCertPrincipalResolver",
+      "params": {
+        "path": "san.email"
+      }
+    }
+  }
+}
+
+----
+
+==== Filtered Extraction
+
+For more control, you can apply filters to extract `principals` that meet specific criteria.
+Filters use the `checkType` parameter to define matching rules and optionally support patterns for further refinement.
+When filtering matches multiple values, the first matching value is picked for the `principal`. The `values` filter represent a list of accepted values.
+
+==== Filtering with checkType
+
+The following example extracts email addresses from the `SAN` field only if they end with a specific domain:
+
+
+[source,json]
+----
+
+{
+  "authentication": {
+    "class": "solr.CertAuthPlugin",
+    "principalResolver": {
+      "class": "solr.PathBasedCertPrincipalResolver",
+      "params": {
+        "path": "san.email",
+        "filter": {
+          "checkType": "endsWith",
+          "values": ["@example.com"]
+        }
+      }
+    }
+  }
+}
+
+----
+
+The supported `checkType` options are:
+
+`equals`: Matches values exactly.
+
+`startsWith`: Matches values starting with the specified string.
+
+`endsWith`: Matches values ending with the specified string.
+
+`contains`: Matches values containing the specified string.
+
+`wildcard`: Matches any value.
+
+
+==== Combining Filters with Pattern Matching
+
+Filters can also use `extract` patterns (`after` and `before`) to refine the extracted `principal`.
+For example, given a cert with `SAN.email=eng_admin@example.com`, the following configuration resolves "admin" as the request's `principal`. This is done in 3 steps:
+
+- Read `SAN.email` fields.
+- Filter out to accept only emails ending with "@example.com" (pick the first match).
+- In the resolved email extract the string between "_" and "@".
+
+[source,json]
+----
+"principalResolver": {
+  "class": "solr.PathBasedCertPrincipalResolver",
+  "params": {
+    "path": "SAN.email",
+    "filter": {
+      "checkType": "endsWith",
+      "values": ["@example.com"]
+    },
+    "extract": {
+                 "after": "_",
+                 "before": "@",
+         }
+  }
+}
+
+----
+
+
+==== Match DNS Names Starting with a Prefix
+
+Behavior: Extracts `DNS` names like `service-api.example.com` or `service-db.example.org`:
+
+[source,json]
+----
+
+{
+  "authentication": {
+    "class": "solr.CertAuthPlugin",
+    "principalResolver": {
+      "class": "solr.PathBasedCertPrincipalResolver",
+      "params": {
+        "path": "san.dns",
+        "filter": {
+          "checkType": "startsWith",
+          "values": ["service-"]
+        }
+      }
+    }
+  }
+}
+
+----
+
+==== Match DNS Names Ending with a Specific Domain
+
+Behavior: Extract `DNS` names that end with a specific domain, such as `.example.com`:
+
+[source,json]
+----
+
+{
+  "authentication": {
+    "class": "solr.CertAuthPlugin",
+    "principalResolver": {
+      "class": "solr.PathBasedCertPrincipalResolver",
+      "params": {
+        "path": "san.dns",
+        "filter": {
+          "checkType": "endsWith",
+          "values": [".example.com"]
+        }
+      }
+    }
+  }
+}
+
+----
+
+==== Match Multiple Specific DNS Names
+
+Behavior: Extract `DNS` names if they match any value from a predefined list:
+
+[source,json]
+----
+
+{
+  "authentication": {
+    "class": "solr.CertAuthPlugin",
+    "principalResolver": {
+      "class": "solr.PathBasedCertPrincipalResolver",
+      "params": {
+        "path": "san.dns",
+        "filter": {
+          "checkType": "equals",
+          "values": ["api.example.com", "db.example.com"]
+        }
+      }
+    }
+  }
+}
+
+----
+
+
+==== Combine Filtering and Patterns
+
+Extract a portion of a `DNS` name that ends with .`example.com` but only return the portion before `.example.com`:
+
+
+[source,json]
+----
+
+{
+  "authentication": {
+    "class": "solr.CertAuthPlugin",
+    "principalResolver": {
+      "class": "solr.PathBasedCertPrincipalResolver",
+      "params": {
+        "path": "san.dns",
+        "filter": {
+          "checkType": "endsWith",
+          "values": [".example.com"]
+        },
+        "extract": {
+          "before": ".example.com"
+        }
+      }
+    }
+  }
+}
+
+----
+`Behavior`: For a DNS name like `service.example.com`, extracts only `service`.
+
+
+==== Filter and Extract with Both Prefix and Suffix
+
+Extract a portion of a DNS name that starts with `service-` and ends with `.example.com`:
+
+[source,json]
+----
+
+{
+  "authentication": {
+    "class": "solr.CertAuthPlugin",
+    "principalResolver": {
+      "class": "solr.PathBasedCertPrincipalResolver",
+      "params": {
+        "path": "san.dns",
+        "filter": {
+          "checkType": "startsWith",
+          "values": ["service-"]
+        },
+        "extract": {
+          "after": "service-",
+          "before": ".example.com"
+        }
+      }
+    }
+  }
+}
+
+----
+
+`Behavior`: For `service-api.example.com`, extracts only `api`.
+
+
+==== Summary of supported Fields
+
+==== Subject DN Fields:
+
+The list of supported fields is available in https://tools.ietf.org/html/rfc5280#section-4.1.2.4[RFC-5280, Section 4.1.2.4]. Below are most common fields:
+
+`subject.dn.CN` (Common Name)
+
+`subject.dn.O` (Organization)
+
+`subject.dn.OU` (Organizational Unit)
+
+`subject.dn.C` (Country)
+
+`subject.dn.ST` (State/Province)
+
+`subject.dn.L` (Locality)
+
+
+==== Issuer DN Fields:
+
+Same fields as Subject DN but prefixed with issuer.dn.
+
+==== SAN Fields:
+
+List of supported SAN fields is compatible with https://tools.ietf.org/html/rfc5280#section-4.2.1.6[RFC-5280, Section 4.2.1.6].
+
+`san.email` (Email addresses)
+
+`san.dns` (DNS names)
+
+`san.uri` (URIs)
+
+`san.ipaddress` (IP Addresses)
+
+`san.othername` (Other names)
+
+`san.x400address` (X400 addresses)
+
+`san.directoryname` (Directory names)
+
+`san.edipartyname` (EDI party names)
+
+`san.registeredid` (Registered IDs)
+
+
+=== Custom Principal Resolution
+
+To use a custom `principal` resolver, implement the {solr-javadocs}/core/org/apache/solr/security/cert/CertPrincipalResolver.html[`CertPrincipalResolver`]  interface in your class. The interface requires you to define how to resolve a principal from an `X.509` certificate. Here's an example of a basic custom implementation:
+
+[source,java]
+----
+package com.example.solr;
+
+import java.security.Principal;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import org.apache.solr.security.cert.CertPrincipalResolver;
+import org.apache.solr.security.cert.CertPrincipalResolver;
+
+public class CustomCertPrincipalResolver implements CertPrincipalResolver {
+
+  public CustomCertPrincipalResolver(Map<String, Object> params) {
+    // use the 'params' object for some initialization
+  }
+
+  @Override
+  public Principal resolvePrincipal(X509Certificate certificate) throws SSLPeerUnverifiedException {
+    // Custom logic to extract the principal
+    String customPrincipalName = certificate.getSubjectX500Principal().getName();
+    // Modify or process the principal name if needed
+    return new BasicUserPrincipal(customPrincipalName);
+  }
+}
+
+----
+
+*Using the Custom Resolver in security.json*
+
+Once the custom resolver class is implemented and available in your Solr classpath, reference it in the `security.json` configuration file:
+
+[source,json]
+----
+
+{
+  "authentication": {
+    "class": "solr.CertAuthPlugin",
+    "principalResolver": {
+      "class": "com.example.solr.CustomCertPrincipalResolver",
+      "params": {}
+    }
+  }
+}
+
+----
 
 == Using Certificate Auth with Clients (including SolrJ)
 

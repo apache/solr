@@ -16,7 +16,6 @@
  */
 package org.apache.solr.scripting.xslt;
 
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +28,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
@@ -42,7 +40,7 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").toAbsolutePath().toString());
+    initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr"));
   }
 
   @Override
@@ -80,11 +78,8 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
       handler.init(new NamedList<>());
       handler.handleRequestBody(req, rsp);
     }
-    StringWriter sw = new StringWriter(32000);
-    QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-    responseWriter.write(sw, req, rsp);
+    String response = req.getResponseWriter().writeToString(req, rsp);
     req.close();
-    String response = sw.toString();
     assertU(response);
     assertU(commit());
 

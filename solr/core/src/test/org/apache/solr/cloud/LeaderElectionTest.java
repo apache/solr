@@ -114,8 +114,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
               .withUrl(server.getZkAddress())
               .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
               .withConnTimeOut(TIMEOUT, TimeUnit.MILLISECONDS)
-              .withReconnectListener(onReconnect)
               .build();
+      if (onReconnect != null) {
+        zkClient.getCuratorFramework().getConnectionStateListenable().addListener(onReconnect);
+      }
       zkStateReader = new ZkStateReader(zkClient);
       elector = new LeaderElector(zkClient);
       zkController = MockSolrSource.makeSimpleMock(null, zkStateReader, zkClient);

@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -480,7 +479,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     // override global config
     if (args.get(SolrXmlConfig.SOLR_DATA_HOME) != null) {
       dataHomePath =
-          Paths.get((String) args.get(SolrXmlConfig.SOLR_DATA_HOME)).toAbsolutePath().normalize();
+          Path.of((String) args.get(SolrXmlConfig.SOLR_DATA_HOME)).toAbsolutePath().normalize();
     }
     if (dataHomePath != null) {
       log.info("{} = {}", SolrXmlConfig.SOLR_DATA_HOME, dataHomePath);

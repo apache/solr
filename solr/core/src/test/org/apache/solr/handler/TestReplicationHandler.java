@@ -23,20 +23,20 @@ import static org.apache.solr.handler.ReplicationTestHelper.createNewSolrClient;
 import static org.apache.solr.handler.ReplicationTestHelper.invokeReplicationCommand;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
@@ -48,13 +48,15 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.ReplicationApi;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -105,11 +107,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    systemSetPropertySolrDisableUrlAllowList("true");
+    systemSetPropertyEnableUrlAllowList(false);
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
     // useFactory(null); // force an FS factory.
-    leader = new SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
     leaderJetty = createAndStartJetty(leader);
     leaderClient =
@@ -117,8 +119,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
             buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     follower =
-        new SolrInstance(
-            createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
+        new SolrInstance(createTempDir("solr-instance"), "follower", leaderJetty.getLocalPort());
     follower.setUp();
     followerJetty = createAndStartJetty(follower);
     followerClient =
@@ -139,7 +140,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
     if (null != leaderJetty) {
       leaderJetty.stop();
       leaderJetty = null;
@@ -202,8 +203,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command", "details");
     params.set("_trace", "getDetails");
-    params.set("qt", ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
+    var req =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, ReplicationHandler.PATH, SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
 
     NamedList<Object> res = s.request(req);
     assertReplicationResponseSucceeded(res);
@@ -216,18 +219,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return details;
   }
 
-  private NamedList<Object> getIndexVersion(SolrClient s) throws Exception {
+  private IndexVersionResponse getIndexVersion(SolrClient s, String coreName) throws Exception {
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("command", "indexversion");
-    params.set("_trace", "getIndexVersion");
-    params.set("qt", ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
-
-    NamedList<Object> res = s.request(req);
-    assertReplicationResponseSucceeded(res);
-
-    return res;
+    final var req = new ReplicationApi.FetchIndexVersion(coreName);
+    final var response = req.process(s);
+    assertReplicationResponseSucceeded(response);
+    return response;
   }
 
   private void reloadCore(JettySolrRunner jettySolrRunner, String core) throws Exception {
@@ -235,8 +232,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", "reload");
     params.set("core", core);
-    params.set("qt", "/admin/cores");
-    QueryRequest req = new QueryRequest(params);
+    var req =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.POST, "/admin/cores", SolrRequestType.ADMIN, params);
 
     try (SolrClient adminClient = adminClient(jettySolrRunner)) {
       NamedList<Object> res = adminClient.request(req);
@@ -257,7 +255,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void testUrlAllowList() throws Exception {
     // Run another test with URL allow-list enabled and allow-list is empty.
     // Expect an exception because the leader URL is not allowed.
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
     SolrException e = expectThrows(SolrException.class, this::doTestDetails);
     assertTrue(
         e.getMessage()
@@ -353,8 +351,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     SolrClient repeaterClient = null;
     try {
       repeater =
-          new SolrInstance(
-              createTempDir("solr-instance").toFile(), "repeater", leaderJetty.getLocalPort());
+          new SolrInstance(createTempDir("solr-instance"), "repeater", leaderJetty.getLocalPort());
       repeater.setUp();
       repeaterJetty = createAndStartJetty(repeater);
       repeaterClient =
@@ -528,14 +525,18 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty.stop();
 
     // set up a subdirectory /foo/ in order to force subdir file replication
-    File leaderFooDir = new File(leader.getConfDir() + File.separator + "foo");
-    File leaderBarFile = new File(leaderFooDir, "bar.txt");
-    assertTrue("could not make dir " + leaderFooDir, leaderFooDir.mkdirs());
-    assertTrue(leaderBarFile.createNewFile());
+    Path leaderFooDir = Path.of(leader.getConfDir()).resolve("foo");
+    Path leaderBarFile = leaderFooDir.resolve("bar.txt");
+    try {
+      Files.createDirectories(leaderFooDir);
+      Files.createFile(leaderBarFile);
+    } catch (Exception e) {
+      throw new RuntimeException("could not make dir or file " + leaderFooDir, e);
+    }
 
-    File followerFooDir = new File(follower.getConfDir() + File.separator + "foo");
-    File followerBarFile = new File(followerFooDir, "bar.txt");
-    assertFalse(followerFooDir.exists());
+    Path followerFooDir = Path.of(follower.getConfDir()).resolve("foo");
+    Path followerBarFile = followerFooDir.resolve("bar.txt");
+    assertFalse(Files.exists(followerFooDir));
 
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
@@ -552,8 +553,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     SolrDocument d = ((SolrDocumentList) followerQueryRsp.get("response")).get(0);
     assertEquals("newname = 2000", d.getFieldValue("newname"));
 
-    assertTrue(followerFooDir.isDirectory());
-    assertTrue(followerBarFile.exists());
+    assertTrue(Files.isDirectory(followerFooDir));
+    assertTrue(Files.exists(followerBarFile));
 
     checkForSingleIndex(leaderJetty);
     checkForSingleIndex(followerJetty, true);
@@ -990,11 +991,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return (CachingDirectoryFactory) core.getDirectoryFactory();
   }
 
-  private void checkForSingleIndex(JettySolrRunner jetty) {
+  private void checkForSingleIndex(JettySolrRunner jetty) throws IOException {
     checkForSingleIndex(jetty, false);
   }
 
-  private void checkForSingleIndex(JettySolrRunner jetty, boolean afterReload) {
+  private void checkForSingleIndex(JettySolrRunner jetty, boolean afterReload) throws IOException {
     CoreContainer cores = jetty.getCoreContainer();
     Collection<SolrCore> theCores = cores.getCores();
     for (SolrCore core : theCores) {
@@ -1015,31 +1016,32 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         // :TODO: assert that one of the paths is a subpath of hte other
       }
       if (dirFactory instanceof StandardDirectoryFactory) {
-        System.out.println(Arrays.asList(new File(ddir).list()));
-        // we also allow one extra index dir - it may not be removed until the core is closed
-        int cnt = indexDirCount(ddir);
-        // if after reload, there may be 2 index dirs while the reloaded SolrCore closes.
-        if (afterReload) {
-          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()), 1 == cnt || 2 == cnt);
-        } else {
-          assertEquals("found:" + cnt + Arrays.asList(new File(ddir).list()), 1, cnt);
+        try (Stream<Path> files = Files.list(Path.of(ddir))) {
+          List<Path> filesList = files.toList();
+          System.out.println(filesList);
+          // we also allow one extra index dir - it may not be removed until the core is closed
+          int cnt = indexDirCount(ddir);
+          // if after reload, there may be 2 index dirs while the reloaded SolrCore closes.
+          if (afterReload) {
+            assertTrue("found:" + cnt + filesList, 1 == cnt || 2 == cnt);
+          } else {
+            assertEquals("found:" + cnt + filesList, 1, cnt);
+          }
         }
       }
     }
   }
 
-  private int indexDirCount(String ddir) {
-    String[] list =
-        new File(ddir)
-            .list(
-                new FilenameFilter() {
-                  @Override
-                  public boolean accept(File dir, String name) {
-                    File f = new File(dir, name);
-                    return f.isDirectory() && !name.startsWith("snapshot");
-                  }
-                });
-    return list.length;
+  private int indexDirCount(String ddir) throws IOException {
+    try (Stream<Path> files = Files.list(Path.of(ddir))) {
+      return (int)
+          files
+              .filter(
+                  (file) ->
+                      Files.isDirectory(file)
+                          && !file.getFileName().toString().startsWith("snapshot"))
+              .count();
+    }
   }
 
   public static void pullFromTo(JettySolrRunner srcSolr, JettySolrRunner destSolr)
@@ -1062,8 +1064,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     try {
       repeater =
-          new SolrInstance(
-              createTempDir("solr-instance").toFile(), "repeater", leaderJetty.getLocalPort());
+          new SolrInstance(createTempDir("solr-instance"), "repeater", leaderJetty.getLocalPort());
       repeater.setUp();
       repeater.copyConfigFile(CONF_DIR + "solrconfig-repeater.xml", "solrconfig.xml");
       repeaterJetty = createAndStartJetty(repeater);
@@ -1276,11 +1277,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
     assertNull(cmp);
 
-    Object version = getIndexVersion(leaderClient).get("indexversion");
+    Long version = getIndexVersion(leaderClient, DEFAULT_TEST_CORENAME).indexVersion;
 
     reloadCore(leaderJetty, DEFAULT_TEST_COLLECTION_NAME);
 
-    assertEquals(version, getIndexVersion(leaderClient).get("indexversion"));
+    assertEquals(version, getIndexVersion(leaderClient, DEFAULT_TEST_CORENAME).indexVersion);
 
     index(leaderClient, "id", docs + 10, "name", "name = 1");
     index(leaderClient, "id", docs + 20, "name", "name = 2");
@@ -1410,7 +1411,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderClient.close();
     leaderJetty.stop();
 
-    Directory dir = FSDirectory.open(Paths.get(dataDir).resolve("index"));
+    Directory dir = FSDirectory.open(Path.of(dataDir).resolve("index"));
     String[] files = dir.listAll();
     long totalBytes = 0;
     for (String file : files) {
@@ -1462,7 +1463,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void doTestIllegalFilePaths() {
     // Loop through the file=, cf=, tlogFile= params and prove that it throws exception for path
     // traversal attempts
-    String absFile = Paths.get("foo").toAbsolutePath().toString();
+    String absFile = Path.of("foo").toAbsolutePath().toString();
     List<String> illegalFilenames =
         Arrays.asList(absFile, "../dir/traversal", "illegal\rfile\nname\t");
     List<String> params =
@@ -1547,24 +1548,19 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   @Test
   public void testEmptyBackups() throws Exception {
-    final File backupDir = createTempDir().toFile();
+    final Path backupDir = createTempDir();
     final BackupStatusChecker backupStatus = new BackupStatusChecker(leaderClient);
 
-    leaderJetty.getCoreContainer().getAllowPaths().add(backupDir.toPath());
+    leaderJetty.getCoreContainer().getAllowPaths().add(backupDir);
 
     { // initial request w/o any committed docs
       final String backupName = "empty_backup1";
-      final GenericSolrRequest req =
+      final var req =
           new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
+                  SolrRequest.METHOD.POST,
                   "/replication",
-                  params(
-                      "command",
-                      "backup",
-                      "location",
-                      backupDir.getAbsolutePath(),
-                      "name",
-                      backupName))
+                  SolrRequest.SolrRequestType.ADMIN,
+                  params("command", "backup", "location", backupDir.toString(), "name", backupName))
               .setRequiresCollection(true);
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(leaderClient);
@@ -1576,24 +1572,19 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           dirName);
       assertTrue(
           dirName + " doesn't exist in expected location for backup " + backupName,
-          new File(backupDir, dirName).exists());
+          Files.exists(backupDir.resolve(dirName)));
     }
 
     index(leaderClient, "id", "1", "name", "foo");
 
     { // second backup w/uncommitted doc
       final String backupName = "empty_backup2";
-      final GenericSolrRequest req =
+      final var req =
           new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
+                  SolrRequest.METHOD.POST,
                   "/replication",
-                  params(
-                      "command",
-                      "backup",
-                      "location",
-                      backupDir.getAbsolutePath(),
-                      "name",
-                      backupName))
+                  SolrRequest.SolrRequestType.ADMIN,
+                  params("command", "backup", "location", backupDir.toString(), "name", backupName))
               .setRequiresCollection(true);
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(leaderClient);
@@ -1605,13 +1596,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           dirName);
       assertTrue(
           dirName + " doesn't exist in expected location for backup " + backupName,
-          new File(backupDir, dirName).exists());
+          Files.exists(backupDir.resolve(dirName)));
     }
 
     // confirm backups really are empty
     for (int i = 1; i <= 2; i++) {
       final String name = "snapshot.empty_backup" + i;
-      try (Directory dir = new NIOFSDirectory(new File(backupDir, name).toPath());
+      try (Directory dir = new NIOFSDirectory(backupDir.resolve(name));
           IndexReader reader = DirectoryReader.open(dir)) {
         assertEquals(name + " is not empty", 0, reader.numDocs());
       }
@@ -1679,7 +1670,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       final var statusRequest = new CoresApi.GetCoreStatus("collection1");
       while (timeSlept < TIMEOUT) {
         try {
-          final var statusResponse = statusRequest.process(adminClient).getParsed();
+          final var statusResponse = statusRequest.process(adminClient);
           assertNotNull(statusResponse.status);
           assertTrue(statusResponse.status.containsKey("collection1"));
           final var coreStatus = statusResponse.status.get("collection1");
@@ -1841,5 +1832,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertNotNull("null response from server", response);
     assertNotNull("Expected replication response to have 'status' field", response.get("status"));
     assertEquals("OK", response.get("status"));
+  }
+
+  private void assertReplicationResponseSucceeded(IndexVersionResponse response) {
+    assertNotNull("null response from server", response);
+    assertNotNull("Expected replication response to have 'status' field", response.status);
+    assertEquals("OK", response.status);
   }
 }

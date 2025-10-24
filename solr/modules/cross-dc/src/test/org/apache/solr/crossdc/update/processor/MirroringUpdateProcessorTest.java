@@ -23,8 +23,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Histogram;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
@@ -48,6 +47,8 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.crossdc.common.CrossDcConf;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
+import org.apache.solr.metrics.otel.instruments.AttributedLongHistogram;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
@@ -113,39 +114,42 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     commitUpdateCommand.openSearcher = true;
     commitUpdateCommand.waitSearcher = true;
 
+    core = mock(SolrCore.class);
+    when(core.getCoreAttributes()).thenReturn(Attributes.empty());
+
     producerMetrics =
         spy(
-            new ProducerMetrics(mock(SolrMetricsContext.class), mock(SolrCore.class)) {
-              private final Counter counterMock = mock(Counter.class);
+            new ProducerMetrics(mock(SolrMetricsContext.class), core) {
+              private final AttributedLongCounter counterMock = mock(AttributedLongCounter.class);
 
               @Override
-              public Counter getLocal() {
+              public AttributedLongCounter getLocal() {
                 return counterMock;
               }
 
               @Override
-              public Counter getLocalError() {
+              public AttributedLongCounter getLocalError() {
                 return counterMock;
               }
 
               @Override
-              public Counter getSubmitted() {
+              public AttributedLongCounter getSubmitted() {
                 return counterMock;
               }
 
               @Override
-              public Counter getDocumentTooLarge() {
+              public AttributedLongCounter getDocumentTooLarge() {
                 return counterMock;
               }
 
               @Override
-              public Counter getSubmitError() {
+              public AttributedLongCounter getSubmitError() {
                 return counterMock;
               }
 
               @Override
-              public Histogram getDocumentSize() {
-                return mock(Histogram.class);
+              public AttributedLongHistogram getDocumentSize() {
+                return mock(AttributedLongHistogram.class);
               }
             });
 
@@ -168,8 +172,6 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
             return requestMock;
           }
         };
-
-    core = mock(SolrCore.class);
     CoreDescriptor coreDesc = mock(CoreDescriptor.class);
     cloudDesc = mock(CloudDescriptor.class);
     when(cloudDesc.getShardId()).thenReturn("shard1");

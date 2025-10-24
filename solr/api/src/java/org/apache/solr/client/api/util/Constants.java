@@ -37,5 +37,14 @@ public class Constants {
 
   public static final String GENERIC_ENTITY_PROPERTY = "genericEntity";
 
-  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
+  // Swagger "extension" property name used to indicate that a request/response POJO has dynamic
+  // properties (typically handled during serialization/deserialization by Jackson's
+  // @JsonAnyGetter and @JsonAnySetter).
+  //
+  // This "extension" is utilized by our SolrJ code generation, but isn't currently handled by
+  // generators for other languages, so it should be avoided where possible in favor of defining
+  // request and response fields statically.
+  public static final String ADDTL_FIELDS_PROPERTY = "hasAdditionalFields";
+
+  public static final String JAVABIN_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
 }

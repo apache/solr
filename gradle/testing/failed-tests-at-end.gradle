@@ -34,16 +34,18 @@ def genFailInfo(def task, TestDescriptor desc) {
 }
 
 allprojects {
-  tasks.withType(Test) { Test task ->
-    afterTest { desc, result ->
-      if (result.resultType == TestResult.ResultType.FAILURE) {
-        failedTests << genFailInfo(task, desc)
+  plugins.withType(JavaPlugin).configureEach {
+    tasks.withType(Test).configureEach { Test task ->
+      afterTest { desc, result ->
+        if (result.resultType == TestResult.ResultType.FAILURE) {
+          failedTests << genFailInfo(task, desc)
+        }
       }
-    }
 
-    afterSuite { desc, result ->
-      if (result.exceptions) {
-        failedTests << genFailInfo(task, desc)
+      afterSuite { desc, result ->
+        if (result.exceptions) {
+          failedTests << genFailInfo(task, desc)
+        }
       }
     }
   }

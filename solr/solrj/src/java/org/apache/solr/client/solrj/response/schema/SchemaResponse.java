@@ -38,13 +38,12 @@ public class SchemaResponse extends SolrResponseBase {
   private static <T> Map<String, T> extractAttributeMap(NamedList<T> namedList) {
     if (namedList == null) return null;
     LinkedHashMap<String, T> result = new LinkedHashMap<>();
-    for (int i = 0; i < namedList.size(); i++) {
-      T val = namedList.getVal(i);
-      String name = namedList.getName(i);
-      if (!(val instanceof NamedList) && !(val instanceof List)) {
-        result.put(name, val);
-      }
-    }
+    namedList.forEach(
+        (name, val) -> {
+          if (!(val instanceof NamedList) && !(val instanceof List)) {
+            result.put(name, val);
+          }
+        });
 
     return result;
   }

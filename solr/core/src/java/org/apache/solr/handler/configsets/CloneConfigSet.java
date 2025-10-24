@@ -18,7 +18,6 @@
 package org.apache.solr.handler.configsets;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.admin.ConfigSetsHandler.DISABLE_CREATE_AUTH_CHECKS;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
 import jakarta.inject.Inject;
@@ -61,15 +60,6 @@ public class CloneConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Cl
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Base ConfigSet does not exist: " + requestBody.baseConfigSet);
-    }
-
-    if (!DISABLE_CREATE_AUTH_CHECKS
-        && !isTrusted(solrQueryRequest.getUserPrincipal(), coreContainer.getAuthenticationPlugin())
-        && configSetService.isConfigSetTrusted(requestBody.baseConfigSet)) {
-      throw new SolrException(
-          SolrException.ErrorCode.UNAUTHORIZED,
-          "Can't create a configset with an unauthenticated request from a trusted "
-              + ConfigSetCmds.BASE_CONFIGSET);
     }
 
     final Map<String, Object> configsetCommandMsg = new HashMap<>();

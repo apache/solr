@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
@@ -38,7 +38,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -69,7 +69,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     // when doing unsorted group collection
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
 
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
   }
 
@@ -437,7 +438,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(request, response));
       String handlerName = request.getParams().get(CommonParams.QT);
       h.getCore().execute(h.getCore().getRequestHandler(handlerName), request, response);
-      BinaryResponseWriter responseWriter = new BinaryResponseWriter();
+      JavaBinResponseWriter responseWriter = new JavaBinResponseWriter();
       responseWriter.write(out, request, response);
     } finally {
       request.close();
@@ -445,7 +446,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     }
 
     assertEquals(6, ((ResultContext) response.getResponse()).getDocList().matches());
-    new BinaryResponseParser().processResponse(new ByteArrayInputStream(out.toByteArray()), "");
+    new JavaBinResponseParser().processResponse(new ByteArrayInputStream(out.toByteArray()), "");
     out.close();
   }
 

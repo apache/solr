@@ -30,6 +30,9 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.OFFSET;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.STATUS;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.TLOG_FILE;
 
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.BatchCallback;
+import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,7 +43,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -79,6 +81,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -100,8 +103,8 @@ import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.admin.api.SnapshotBackupAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.jersey.APIConfigProvider;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -151,6 +154,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   SolrCore core;
+  private BatchCallback metricsCallback;
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
@@ -461,7 +465,7 @@ public class ReplicationHandler extends RequestHandlerBase
         if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
           currentIndexFetcher.destroy();
         }
-        currentIndexFetcher = new IndexFetcher(solrParams.toNamedList(), this, core);
+        currentIndexFetcher = new IndexFetcher(new SimpleOrderedMap<>(solrParams), this, core);
       } else {
         currentIndexFetcher = pollingIndexFetcher;
       }
@@ -514,7 +518,7 @@ public class ReplicationHandler extends RequestHandlerBase
       }
     }
     if ("file".equals(repo.createURI("x").getScheme())) {
-      core.getCoreContainer().assertPathAllowed(Paths.get(location));
+      core.getCoreContainer().assertPathAllowed(Path.of(location));
     }
 
     URI locationUri = repo.createDirectoryURI(location);
@@ -664,7 +668,7 @@ public class ReplicationHandler extends RequestHandlerBase
       }
     }
     if ("file".equals(repo.createURI("x").getScheme())) {
-      core.getCoreContainer().assertPathAllowed(Paths.get(location));
+      core.getCoreContainer().assertPathAllowed(Path.of(location));
     }
 
     // small race here before the commit point is saved
@@ -718,10 +722,14 @@ public class ReplicationHandler extends RequestHandlerBase
     List<FileMetaData> confFiles = new ArrayList<>();
     synchronized (confFileInfoCache) {
       Checksum checksum = null;
-      for (int i = 0; i < nameAndAlias.size(); i++) {
-        String cf = nameAndAlias.getName(i);
+
+      for (Map.Entry<String, String> aliasEntry : nameAndAlias) {
+        String cf = aliasEntry.getKey();
+        String aliasValue = aliasEntry.getValue();
+
         Path f = core.getResourceLoader().getConfigPath().resolve(cf);
         if (!Files.exists(f) || Files.isDirectory(f)) continue; // must not happen
+
         FileInfo info = confFileInfoCache.get(cf);
         long lastModified = 0;
         long size = 0;
@@ -731,13 +739,15 @@ public class ReplicationHandler extends RequestHandlerBase
         } catch (IOException e) {
           // proceed with zeroes for now, will probably error on checksum anyway
         }
+
         if (info == null || info.lastmodified != lastModified || info.fileMetaData.size != size) {
           if (checksum == null) checksum = new Adler32();
           info = new FileInfo(lastModified, cf, size, getCheckSum(checksum, f));
           confFileInfoCache.put(cf, info);
         }
+
         FileMetaData m = info.fileMetaData;
-        if (nameAndAlias.getVal(i) != null) m.alias = nameAndAlias.getVal(i);
+        if (aliasValue != null) m.alias = aliasValue;
         confFiles.add(m);
       }
     }
@@ -831,86 +841,112 @@ public class ReplicationHandler extends RequestHandlerBase
     }
   }
 
-  // TODO: Handle compatibility in 8.x
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
-    solrMetricsContext.gauge(
-        () ->
-            (core != null && !core.isClosed()
-                ? NumberUtils.readableSize(core.getIndexSize())
-                : parentContext.nullString()),
-        true,
-        "indexSize",
-        getCategory().toString(),
-        scope);
-    solrMetricsContext.gauge(
-        () ->
-            (core != null && !core.isClosed()
-                ? getIndexVersion().toString()
-                : parentContext.nullString()),
-        true,
-        "indexVersion",
-        getCategory().toString(),
-        scope);
-    solrMetricsContext.gauge(
-        () ->
-            (core != null && !core.isClosed()
-                ? getIndexVersion().generation
-                : parentContext.nullNumber()),
-        true,
-        GENERATION,
-        getCategory().toString(),
-        scope);
-    solrMetricsContext.gauge(
-        () -> (core != null && !core.isClosed() ? core.getIndexDir() : parentContext.nullString()),
-        true,
-        "indexPath",
-        getCategory().toString(),
-        scope);
-    solrMetricsContext.gauge(() -> isLeader, true, "isLeader", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> isFollower, true, "isFollower", getCategory().toString(), scope);
-    final MetricsMap fetcherMap =
-        new MetricsMap(
-            map -> {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    Attributes replicationAttributes =
+        Attributes.builder()
+            .putAll(attributes)
+            .put(CATEGORY_ATTR, Category.REPLICATION.toString())
+            .build();
+    super.initializeMetrics(parentContext, replicationAttributes);
+
+    ObservableLongMeasurement indexSizeMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            "solr_replication_index_size", "Size of the index in bytes", OtelUnit.BYTES);
+
+    ObservableLongMeasurement indexVersionMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            "solr_replication_index_version", "Current index version");
+
+    ObservableLongMeasurement indexGenerationMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            "solr_replication_index_generation", "Current index generation");
+
+    ObservableLongMeasurement isLeaderMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            "solr_replication_is_leader", "Whether this node is a leader (1) or not (0)");
+
+    ObservableLongMeasurement isFollowerMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            "solr_replication_is_follower", "Whether this node is a follower (1) or not (0)");
+
+    ObservableLongMeasurement replicationEnabledMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            "solr_replication_is_enabled", "Whether replication is enabled (1) or not (0)");
+
+    ObservableLongMeasurement isPollingDisabledMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            "solr_replication_is_polling_disabled", "Whether polling is disabled (1) or not (0)");
+
+    ObservableLongMeasurement isReplicatingMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            "solr_replication_is_replicating", "Whether replication is in progress (1) or not (0)");
+
+    ObservableLongMeasurement timeElapsedMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            "solr_replication_time_elapsed",
+            "Time elapsed during replication in seconds",
+            OtelUnit.SECONDS);
+
+    ObservableLongMeasurement bytesDownloadedMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            "solr_replication_downloaded_size",
+            "Total bytes downloaded during replication",
+            OtelUnit.BYTES);
+
+    ObservableLongMeasurement downloadSpeedMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            "solr_replication_download_speed", "Download speed in bytes per second");
+
+    metricsCallback =
+        solrMetricsContext.batchCallback(
+            () -> {
+              if (core != null && !core.isClosed()) {
+                indexSizeMetric.record(core.getIndexSize(), replicationAttributes);
+
+                CommitVersionInfo vInfo = getIndexVersion();
+                if (vInfo != null) {
+                  indexVersionMetric.record(vInfo.version, replicationAttributes);
+                  indexGenerationMetric.record(vInfo.generation, replicationAttributes);
+                }
+              }
+
+              isLeaderMetric.record(isLeader ? 1 : 0, replicationAttributes);
+              isFollowerMetric.record(isFollower ? 1 : 0, replicationAttributes);
+              replicationEnabledMetric.record(
+                  (isLeader && replicationEnabled.get()) ? 1 : 0, replicationAttributes);
+
               IndexFetcher fetcher = currentIndexFetcher;
               if (fetcher != null) {
-                map.put(LEADER_URL, fetcher.getLeaderCoreUrl());
-                if (getPollInterval() != null) {
-                  map.put(ReplicationAPIBase.POLL_INTERVAL, getPollInterval());
-                }
-                map.put("isPollingDisabled", isPollingDisabled());
-                map.put("isReplicating", isReplicating());
+                isPollingDisabledMetric.record(isPollingDisabled() ? 1 : 0, replicationAttributes);
+                isReplicatingMetric.record(isReplicating() ? 1 : 0, replicationAttributes);
+
                 long elapsed = fetcher.getReplicationTimeElapsed();
                 long val = fetcher.getTotalBytesDownloaded();
                 if (elapsed > 0) {
-                  map.put("timeElapsed", elapsed);
-                  map.put("bytesDownloaded", val);
-                  map.put("downloadSpeed", val / elapsed);
+                  timeElapsedMetric.record(elapsed, replicationAttributes);
+                  bytesDownloadedMetric.record(val, replicationAttributes);
+                  downloadSpeedMetric.record(val / elapsed, replicationAttributes);
                 }
-                Properties props = loadReplicationProperties();
-                addReplicationProperties(map::putNoEx, props);
               }
-            });
-    solrMetricsContext.gauge(fetcherMap, true, "fetcher", getCategory().toString(), scope);
-    solrMetricsContext.gauge(
-        () -> isLeader && includeConfFiles != null ? includeConfFiles : "",
-        true,
-        "confFilesToReplicate",
-        getCategory().toString(),
-        scope);
-    solrMetricsContext.gauge(
-        () -> isLeader ? getReplicateAfterStrings() : Collections.<String>emptyList(),
-        true,
-        REPLICATE_AFTER,
-        getCategory().toString(),
-        scope);
-    solrMetricsContext.gauge(
-        () -> isLeader && replicationEnabled.get(),
-        true,
-        "replicationEnabled",
-        getCategory().toString(),
-        scope);
+            },
+            indexSizeMetric,
+            indexVersionMetric,
+            indexGenerationMetric,
+            isLeaderMetric,
+            isFollowerMetric,
+            replicationEnabledMetric,
+            isPollingDisabledMetric,
+            isReplicatingMetric,
+            timeElapsedMetric,
+            bytesDownloadedMetric,
+            downloadSpeedMetric);
+  }
+
+  @Override
+  public void close() throws IOException {
+    IOUtils.closeQuietly(metricsCallback);
+    super.close();
   }
 
   // TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is
@@ -1485,7 +1521,7 @@ public class ReplicationHandler extends RequestHandlerBase
     return TimeUnit.MILLISECONDS.convert(readIntervalNs(interval), TimeUnit.NANOSECONDS);
   }
 
-  private Long readIntervalNs(String interval) {
+  public static Long readIntervalNs(String interval) {
     if (interval == null) return null;
     int result = 0;
     Matcher m = INTERVAL_PATTERN.matcher(interval.trim());

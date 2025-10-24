@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
@@ -97,8 +96,7 @@ class StatementImpl implements Statement {
       }
 
       Replica rep = shuffler.get(0);
-      ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-      String url = zkProps.getCoreUrl();
+      String url = rep.getCoreUrl();
       return new SolrStream(url, params);
     } catch (Exception e) {
       throw new IOException(e);

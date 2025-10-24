@@ -51,11 +51,9 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
 
-    systemSetPropertySolrDisableUrlAllowList("true");
+    systemSetPropertyEnableUrlAllowList(false);
 
-    leader =
-        new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
     leaderJetty = ReplicationTestHelper.createAndStartJetty(leader);
     leaderClient =
@@ -65,8 +63,7 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
         ReplicationTestHelper.createNewSolrClient(buildUrl(leaderJetty.getLocalPort()));
 
     follower =
-        new SolrInstance(
-            createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
+        new SolrInstance(createTempDir("solr-instance"), "follower", leaderJetty.getLocalPort());
     follower.setUp();
     followerJetty = createAndStartJetty(follower);
     followerClient =

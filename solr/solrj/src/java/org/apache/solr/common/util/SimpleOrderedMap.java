@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -24,6 +25,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.SolrParams;
 
 /**
  * <code>SimpleOrderedMap</code> is a {@link NamedList} where access by key is more important than
@@ -67,7 +70,22 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     super(nameValuePairs);
   }
 
-  // TODO override asShallowMap in Solr 10
+  /** Can convert a {@link SolrParams} and other things. */
+  public SimpleOrderedMap(MapWriter mapWriter) {
+    try {
+      mapWriter.writeMap(
+          new EntryWriter() {
+            @SuppressWarnings("unchecked")
+            @Override
+            public EntryWriter put(CharSequence k, Object v) throws IOException {
+              SimpleOrderedMap.this.add(k.toString(), (T) v);
+              return this;
+            }
+          });
+    } catch (IOException e) {
+      throw new RuntimeException(e); // impossible?
+    }
+  }
 
   @Override
   public SimpleOrderedMap<T> clone() {

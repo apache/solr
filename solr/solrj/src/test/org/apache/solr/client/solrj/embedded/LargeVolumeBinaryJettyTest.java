@@ -21,7 +21,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 
 /**
- * @see org.apache.solr.client.solrj.impl.BinaryRequestWriter
+ * @see org.apache.solr.client.solrj.impl.JavaBinRequestWriter
  * @see org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec
  */
 public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {
@@ -29,6 +29,9 @@ public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {
   public static void beforeTest() throws Exception {
     solrClientTestRule.startSolr();
 
-    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
+    solrClientTestRule
+        .newCollection()
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
+        .create();
   }
 }

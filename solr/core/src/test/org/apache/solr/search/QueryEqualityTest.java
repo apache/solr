@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.tests.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -135,6 +136,27 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       assertQueryEquals("prefix", req, "{!prefix f=$myField}asdf", "{!prefix f=foo_s}asdf");
     } finally {
       req.close();
+    }
+  }
+
+  public void testQueryFuzzy() throws Exception {
+    try (SolrQueryRequest req = req("myField", "foo_s")) {
+      assertQueryEquals("fuzzy", req, "{!fuzzy f=$myField}asdf", "{!fuzzy f=foo_s}asdf");
+      assertQueryEquals("fuzzy", req, "{!fuzzy f=$myField}asdf", "{!fuzzy f=foo_s v=asdf}");
+      FuzzyQuery q =
+          (FuzzyQuery)
+              assertQueryEqualsAndReturn("fuzzy", req, "{!fuzzy f=$myField prefixLength=10}asdf");
+      assertEquals(10, q.getPrefixLength());
+      q =
+          (FuzzyQuery)
+              assertQueryEqualsAndReturn("fuzzy", req, "{!fuzzy f=$myField maxEdits=1}asdf");
+      assertEquals(FuzzyQuery.defaultPrefixLength, q.getPrefixLength());
+      assertEquals(1, q.getMaxEdits());
+      q =
+          (FuzzyQuery)
+              assertQueryEqualsAndReturn(
+                  "fuzzy", req, "{!fuzzy f=$myField maxExpansions=4 transpositions=false}asdf");
+      assertFalse(q.getTranspositions());
     }
   }
 

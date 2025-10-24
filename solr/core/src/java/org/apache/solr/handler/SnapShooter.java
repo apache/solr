@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -80,7 +80,7 @@ public class SnapShooter {
           core.getCoreDescriptor().getInstanceDir().resolve(location).normalize().toString();
     }
     initialize(
-        new LocalFileSystemRepository(), core, Paths.get(snapDirStr).toUri(), snapshotName, null);
+        new LocalFileSystemRepository(), core, Path.of(snapDirStr).toUri(), snapshotName, null);
   }
 
   public SnapShooter(
@@ -103,7 +103,7 @@ public class SnapShooter {
     this.baseSnapDirPath = location;
     this.snapshotName = snapshotName;
     if ("file".equals(location.getScheme())) {
-      solrCore.getCoreContainer().assertPathAllowed(Paths.get(location));
+      solrCore.getCoreContainer().assertPathAllowed(Path.of(location));
     }
     if (snapshotName != null) {
       directoryName = "snapshot." + snapshotName;

@@ -17,11 +17,14 @@
 
 package org.apache.solr.opentelemetry;
 
+import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
+
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,8 +32,10 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -38,6 +43,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -57,6 +63,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .withTraceIdGenerationDisabled()
+        .withOverseer(true) // some assertions assume overseer
         .configure();
 
     assertNotEquals(
@@ -129,7 +136,11 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   public void testAdminApi() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
-    cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics"));
+    GenericSolrRequest request =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN);
+    request.setResponseParser(new InputStreamResponseParser(PROMETHEUS_METRICS_WT));
+    NamedList<Object> rsp = cloudClient.request(request);
+    ((InputStream) rsp.get("stream")).close();
     var finishedSpans = getAndClearSpans();
     assertEquals("get:/admin/metrics", finishedSpans.get(0).getName());
 
@@ -318,7 +329,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     return result;
   }
 
-  private String getRootTraceId(List<SpanData> finishedSpans) {
+  static String getRootTraceId(List<SpanData> finishedSpans) {
     assertEquals(1, finishedSpans.stream().filter(TestDistributedTracing::isRootSpan).count());
     return finishedSpans.stream()
         .filter(TestDistributedTracing::isRootSpan)

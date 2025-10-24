@@ -65,7 +65,7 @@ except:
 import scriptutil
 from consolemenu import ConsoleMenu
 from consolemenu.items import FunctionItem, SubmenuItem, ExitItem
-from scriptutil import BranchType, Version, download, run
+from scriptutil import BranchType, Version, download, run, CommitterPgp
 
 # Solr-to-Java version mapping
 java_versions = {6: 8, 7: 8, 8: 8, 9: 11, 10: 21}
@@ -307,6 +307,7 @@ class ReleaseState:
         self.set_latest_version()
         self.set_latest_lts_version()
 
+
     def set_release_version(self, version):
         self.validate_release_version(self.script_branch_type, self.script_branch, version)
         self.release_version = version
@@ -405,6 +406,7 @@ class ReleaseState:
     def get_main_version(self):
         v = Version.parse(self.latest_version)
         return "%s.%s.%s" % (v.major + 1, 0, 0)
+
 
     def validate_release_version(self, branch_type, branch, release_version):
         ver = Version.parse(release_version)
@@ -1167,20 +1169,12 @@ def configure_pgp(gpg_todo):
     id = str(input("Please enter your Apache id: (ENTER=skip) "))
     if id.strip() == '':
         return False
-    key_url = "https://home.apache.org/keys/committer/%s.asc" % id.strip()
-    committer_key = load(key_url)
-    lines = committer_key.splitlines()
-    keyid_linenum = None
-    for idx, line in enumerate(lines):
-        if line == 'ASF ID: %s' % id:
-            keyid_linenum = idx+1
-            break
-    if keyid_linenum:
-        keyid_line = lines[keyid_linenum]
-        assert keyid_line.startswith('LDAP PGP key: ')
-        gpg_fingerprint = keyid_line[14:].replace(" ", "")
-        gpg_id = gpg_fingerprint[-8:]
-        print("Found gpg key id %s on file at Apache (%s)" % (gpg_id, key_url))
+
+    committer_pgp = CommitterPgp(id.strip())
+    gpg_id = committer_pgp.get_short_fingerprint()
+    gpg_fingerprint = committer_pgp.get_fingerprint()
+    if gpg_id is not None:
+        print("Found gpg key id %s on file at Apache" % gpg_id)
     else:
         print(textwrap.dedent("""\
             Could not find your GPG key from Apache servers.

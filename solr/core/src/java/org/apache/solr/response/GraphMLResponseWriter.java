@@ -28,7 +28,12 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.handler.GraphHandler;
 import org.apache.solr.request.SolrQueryRequest;
 
-public class GraphMLResponseWriter implements QueryResponseWriter {
+/**
+ * Used with streaming expressions to export graphs to be visualized.
+ *
+ * @see <a href="http://graphml.graphdrawing.org/">GraphML</a>
+ */
+public class GraphMLResponseWriter implements TextQueryResponseWriter {
 
   @Override
   public String getContentType(SolrQueryRequest req, SolrQueryResponse res) {

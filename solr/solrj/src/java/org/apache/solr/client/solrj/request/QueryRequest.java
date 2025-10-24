@@ -17,12 +17,15 @@
 package org.apache.solr.client.solrj.request;
 
 import java.util.Objects;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
+ * For use with Solr's {@code SearchHandler}, generally at "/select". For other handlers, try {@link
+ * GenericSolrRequest}.
+ *
  * @since solr 1.3
  */
 public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> {
@@ -30,17 +33,17 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
   private final SolrParams query;
 
   public QueryRequest() {
-    super(METHOD.GET, null);
+    super(METHOD.GET, null, SolrRequestType.QUERY);
     query = SolrParams.of();
   }
 
   public QueryRequest(SolrParams q) {
-    super(METHOD.GET, null);
+    super(METHOD.GET, null, SolrRequestType.QUERY);
     query = Objects.requireNonNull(q);
   }
 
   public QueryRequest(SolrParams q, METHOD method) {
-    super(method, null);
+    super(method, null, SolrRequestType.QUERY);
     query = Objects.requireNonNull(q);
   }
 
@@ -61,17 +64,12 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
   // ---------------------------------------------------------------------------------
 
   @Override
-  protected QueryResponse createResponse(SolrClient client) {
-    return new QueryResponse(client);
+  protected QueryResponse createResponse(NamedList<Object> namedList) {
+    return new QueryResponse();
   }
 
   @Override
   public SolrParams getParams() {
     return query;
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.QUERY.toString();
   }
 }

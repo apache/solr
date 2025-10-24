@@ -140,7 +140,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
 
   @Override
   protected boolean wasCommError(Throwable rootCause) {
-    return rootCause instanceof ConnectTimeoutException
+    return super.wasCommError(rootCause)
+        || rootCause instanceof ConnectTimeoutException
         || rootCause instanceof NoHttpResponseException;
   }
 
@@ -151,8 +152,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     lbBuilder.withConnectionTimeout(
         cloudSolrClientBuilder.connectionTimeoutMillis, TimeUnit.MILLISECONDS);
     lbBuilder.withSocketTimeout(cloudSolrClientBuilder.socketTimeoutMillis, TimeUnit.MILLISECONDS);
-    lbBuilder.withRequestWriter(new BinaryRequestWriter());
-    lbBuilder.withResponseParser(new BinaryResponseParser());
+    lbBuilder.withRequestWriter(new JavaBinRequestWriter());
+    lbBuilder.withResponseParser(new JavaBinResponseParser());
 
     return lbBuilder.build();
   }

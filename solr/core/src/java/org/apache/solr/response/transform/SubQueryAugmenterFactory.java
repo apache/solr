@@ -36,6 +36,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
+import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.JoinQParserPlugin;
@@ -340,7 +341,7 @@ class SubQueryAugmenter extends DocTransformer {
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid) {
+  public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
 
     final SolrParams docWithDeprefixed =
         SolrParams.wrapDefaults(new DocRowParams(doc, prefix, separator), baseSubParams);

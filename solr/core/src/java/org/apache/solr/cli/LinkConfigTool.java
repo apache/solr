@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -47,12 +46,8 @@ public class LinkConfigTool extends ToolBase {
           .desc("Configset name in ZooKeeper.")
           .build();
 
-  public LinkConfigTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public LinkConfigTool(PrintStream stdout) {
-    super(stdout);
+  public LinkConfigTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

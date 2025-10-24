@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Locale;
@@ -31,7 +30,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -68,12 +66,8 @@ public class DeleteTool extends ToolBase {
               "Skip safety checks when deleting the configuration directory used by a collection.")
           .build();
 
-  public DeleteTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public DeleteTool(PrintStream stdout) {
-    super(stdout);
+  public DeleteTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -231,7 +225,7 @@ public class DeleteTool extends ToolBase {
       unloadRequest.setDeleteDataDir(true);
       unloadRequest.setDeleteInstanceDir(true);
       unloadRequest.setCoreName(coreName);
-      unloadRequest.setResponseParser(new NoOpResponseParser("json"));
+      unloadRequest.setResponseParser(new JsonMapResponseParser());
       response = solrClient.request(unloadRequest);
     } catch (SolrServerException sse) {
       throw new Exception("Failed to delete core '" + coreName + "' due to: " + sse.getMessage());

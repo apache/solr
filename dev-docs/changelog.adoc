@@ -1,0 +1,160 @@
+= Adding a Changelog Entry to Apache Solr
+:toc:
+:toclevels: 2
+:icons: font
+
+The project no longer maintains a monolithic *CHANGES.txt* file directly.
+Instead, we create small YAML fragments **per bug-fix or feature**, checked into
+the `solr/changelog/unreleased/ folder`. At release time these fragments are
+organized in versioned folders and collated into a human-readable *CHANGELOG.md* file.
+
+This document walks you through the workflow, explains the Gradle helpers
+available, and finishes with a concrete example fragment. We use a tool called
+[logchange](https://logchange.dev/tools/logchange/) as a gradle plugin to manage
+the changelog.
+
+== 1. Workflow Overview
+
+. Make a feature branch with a descriptive name like 'SOLR-12345-fix-memory-leak'.
+. Implement your change
+. Run `./gradlew writeChangelog`
+. Edit the generated YAML file in `changelog/unreleased/` to add a clear, user-focused description.
+. Commit the YAML fragment along with the code change.
+. Open your PR as usual.
+
+== 2. Directory Layout
+
+[source]
+----
+solr/
+└── changelog/
+    ├── unreleased/         ← new fragments live here
+    |   └── SOLR-12345-fix-memory-leak.yml
+    ├── v10.0.0/            ← changes in already released version
+    └── v10.0.1/
+----
+
+== 3. The YAML format
+
+Below is an example of a changelog yaml fragment. The full yaml format is xref:https://logchange.dev/tools/logchange/reference/#tasks[documented here], but we normally only need `title`, `type`, `authors` and `links`:
+
+[source, yaml]
+----
+title: Fix nasty bug in CoreContainer shutdown
+# added, changed, fixed, deprecated, removed, dependency_update, security, other
+type: fixed
+authors:
+  - name: John Contributor
+    nick: johngithub
+    url: https://home.apache.org/phonebook.html?uid=johnasfid
+links:
+  - name: SOLR-3333
+    url: https://issues.apache.org/jira/browse/SOLR-3333
+----
+
+=== 3.1 Tool to draft a YAML for your change
+
+We have a gradle task that bootstraps a YAML file in the `changelog/unreleased/` directory. The task will use your current branch name as a file name and also title, and will
+try to parse JIRA id from the branch name if it exists to add the `links`.
+
+Invoke the task with:
+
+[source, bash]
+----
+./gradlew writeChangelog
+----
+
+The task will use your git `user.name` as display name by default, but if you
+add your name, GitHub username, and optionally Apache ID to the
+`gradle.properties` file at the root of the Solr git checkout, this task will
+use that information. Example:
+
+[source, properties]
+----
+# Changelog generator settings (./gradlew writeChangelog)
+user.name=John Doe
+user.githubid=johngithub
+user.asfid=johnapache
+----
+
+TIP: Aliases for `writeChangelog` task are `changelog` and `newChangelog`.
+
+== 4. Writing Good Entries
+
+* **Audience** is end-users and administrators, not committers.
+* If the change is super minor, like a typo, don't bother adding a yaml file
+* Keep the entry short and focused on the user impact.
+* Choose the correct *type*:
+** `added` for new features
+** `changed` for improvements to existing code
+** `fixed` for bug fixes
+** `deprecated` for deprecated features
+** `removed` for code removed in major releases
+** `dependency_update` for updates to dependencies
+** `security` for security-related changes
+** `other` for anything else, like the build or documentation
+* Reference issues as `SOLR-12345` or GitHub `PR#123`.
+
+== 5. Changelog Validation in Pull Requests
+
+The `validate-changelog` GitHub workflow automatically checks that:
+
+. **CHANGES.txt is not edited directly** - All changes must use the YAML fragment approach
+. **A changelog entry is added** - Code changes must include a corresponding YAML file in `changelog/unreleased/`
+
+If your change does not require a changelog entry, it is still possible to merge the PR.
+
+== 6. For release managers
+
+=== 6.1 Gradle tasks for logchange
+
+The logchange gradle plugin offers some tasks, here are the two most important:
+
+[cols="1,2", options="header"]
+|===
+| Task | Purpose
+
+| `logchangeGenerate`
+| Generates changelog file `/CHANGELOG.md` based on `.yml` entries and archives (does not moves any files)
+
+| `logchangeRelease`
+| Creates a new changelog release by moving files from `changelog/unreleased/` directory to `changelog/vX.Y.Z` directory
+|===
+
+These are integrated in the Release Wizard.
+
+=== 6.2 Migration tool
+
+There is a migration tool in `dev-tools/scripts/changes2logchange.py` for one-time use during the transition.
+It will bulk convert the entire `solr/CHANGES.txt` file to files in the `changelog/` folder and versioned sub folders.
+
+The tool can also be used by a developer who needs to convert many entries from work-in-progress after the migration
+cutover. You can paste one or more entries and get them converted in the Terminal as follows:
+
+[source,bash]
+----
+cat << EOF | python3 dev-tools/scripts/changes2logchange.py -
+* SOLR-17960: Removed TikaLanguageIdentifierUpdateProcessor.
+  Use LangDetectLanguageIdentifierUpdateProcessor or
+  OpenNLPLangDetectUpdateProcessor instead. (janhoy)
+EOF
+----
+
+which will output to `stdout`:
+
+[source,yaml]
+----
+title: Removed TikaLanguageIdentifierUpdateProcessor. Use LangDetectLanguageIdentifierUpdateProcessor
+  or OpenNLPLangDetectUpdateProcessor instead.
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+- name: janhoy
+links:
+- name: SOLR-17960
+  url: https://issues.apache.org/jira/browse/SOLR-17960
+----
+
+== 7. Further Reading
+
+* xref:https://github.com/logchange/logchange[Logchange web page]
+* xref:https://keepachangelog.com/en/1.1.0/[keepachangelog.com website]

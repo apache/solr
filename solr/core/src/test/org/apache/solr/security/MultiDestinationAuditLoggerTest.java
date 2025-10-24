@@ -16,14 +16,16 @@
  */
 package org.apache.solr.security;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.Test;
 
 public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
@@ -48,9 +50,12 @@ public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
     plugins.add(conf2);
     config.put("plugins", plugins);
 
-    SolrResourceLoader loader = new SolrResourceLoader(Paths.get(""));
+    SolrResourceLoader loader = new SolrResourceLoader(Path.of(""));
     al.inform(loader);
     al.init(config);
+
+    SolrMetricsContext mockSolrMetricsContext = MockSolrMetricsContextFactory.create();
+    al.initializeMetrics(mockSolrMetricsContext, Attributes.empty());
 
     al.doAudit(new AuditEvent(AuditEvent.EventType.ANONYMOUS).setUsername("me"));
     assertEquals(

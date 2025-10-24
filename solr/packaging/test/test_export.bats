@@ -45,9 +45,8 @@ teardown() {
   assert [ -e techproducts.javabin ]
   rm techproducts.javabin
 
-  # old pattern of putting a suffix on the output that controlled the format no longer supported ;-).
-  run solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --output "${BATS_TEST_TMPDIR}/output.javabin"
-  assert [ -e ${BATS_TEST_TMPDIR}/output.javabin.json ]
+  run solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --output "${BATS_TEST_TMPDIR}/output.json"
+  assert [ -e ${BATS_TEST_TMPDIR}/output.json ]
 
   run solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --output "${BATS_TEST_TMPDIR}"
   assert [ -e ${BATS_TEST_TMPDIR}/techproducts.json ]
@@ -66,5 +65,4 @@ teardown() {
   run solr create -c COLL_NAME
   run solr export --solr-url http://localhost:${SOLR_PORT} -c COLL_NAME
   refute_output --partial 'Export complete'
-  assert_output --partial "ERROR: Couldn't initialize a HttpClusterStateProvider"
 }

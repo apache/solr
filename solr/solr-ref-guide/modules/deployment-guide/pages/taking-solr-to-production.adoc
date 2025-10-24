@@ -159,11 +159,11 @@ The installation script creates a very basic systemd service to help you get sta
 [source,bash]
 ----
 SOLR_INSTALL_DIR=/opt/solr
-SOLR_ENV=/etc/default/solr.in.sh
+SOLR_INCLUDE=/etc/default/solr.in.sh
 RUNAS=solr
 ----
 
-The `SOLR_INSTALL_DIR` and `SOLR_ENV` variables should be self-explanatory. The `RUNAS` variable sets the owner of the Solr process, such as `solr`; if you don’t set this value, the script will run Solr as **root**, which is not recommended for production. You can start Solr by doing the following as root:
+The `SOLR_INSTALL_DIR` and `SOLR_INCLUDE` variables should be self-explanatory. The `RUNAS` variable sets the owner of the Solr process, such as `solr`; if you don’t set this value, the script will run Solr as **root**, which is not recommended for production. You can start Solr by doing the following as root:
 
 [source,bash]
 ----

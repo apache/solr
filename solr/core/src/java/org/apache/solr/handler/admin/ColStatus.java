@@ -26,18 +26,17 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.solr.client.api.model.GetSegmentDataResponse;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -184,14 +183,13 @@ public class ColStatus {
         if (!leader.isActive(clusterState.getLiveNodes())) {
           continue;
         }
-        String url = ZkCoreNodeProps.getCoreUrl(leader);
+        String url = leader.getCoreUrl();
         if (url == null) {
           continue;
         }
         if (getSegments) {
           try {
             ModifiableSolrParams params = new ModifiableSolrParams();
-            params.add(CommonParams.QT, "/admin/segments");
             params.add(FIELD_INFO_PROP, "true");
             params.add(CORE_INFO_PROP, String.valueOf(withCoreInfo));
             params.add(SIZE_INFO_PROP, String.valueOf(withSizeInfo));
@@ -201,7 +199,13 @@ public class ColStatus {
             if (samplingPercent != null) {
               params.add(RAW_SIZE_SAMPLING_PERCENT_PROP, String.valueOf(samplingPercent));
             }
-            QueryRequest req = new QueryRequest(params);
+            var req =
+                new GenericSolrRequest(
+                        SolrRequest.METHOD.GET,
+                        "/admin/segments",
+                        SolrRequest.SolrRequestType.ADMIN,
+                        params)
+                    .setRequiresCollection(true);
             NamedList<Object> rsp = solrClient.requestWithBaseUrl(url, null, req).getResponse();
             final var segmentResponse =
                 SolrJacksonMapper.getObjectMapper().convertValue(rsp, GetSegmentDataResponse.class);
