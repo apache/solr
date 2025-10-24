@@ -186,7 +186,7 @@ Each YAML file complies with the schema outlined in `dev-docs/changelog.adoc`.
 
 Validates changelog folder structure and feature distribution across development branches (main, stable, release).
 Ensures all changelog/vX.Y.Z folders are identical, no released files exist in unreleased folder, and generates
-a consolidate CHANGELOG.md that shows expected versions for each unreleased change. This will resemble the CHANGES.txt
+a consolidated CHANGELOG.md that shows expected versions for each unreleased change. This will resemble the CHANGES.txt
 file we used to have on the main branch. The script also warns about the same JIRA being mentioned across files.
 
     usage: validateChangelogs.py [<options>...]
