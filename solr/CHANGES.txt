@@ -593,8 +593,6 @@ Bug Fixes
 
 * SOLR-17819: Disable http2 request cancellation for Jetty 10, the cancellation can bleed across to other requests. (Houston Putman)
 
-* SOLR-17690: Make solr CLI tools read ZK_HOST environment as documented (Jan Høydahl)
-
 Dependency Upgrades
 ---------------------
 * PR#3078: chore(deps): update apache.kafka to v3.9.0 (solrbot)
