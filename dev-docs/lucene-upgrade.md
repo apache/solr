@@ -37,13 +37,13 @@ Create a new branch locally e.g. `git checkout -b lucene940 -t origin/main` for 
 ### lockfiles update
 
 ```
-gradlew :resolveAndLockAll
+./gradlew resolveAndLockAll --write-locks
 ```
 
 ### `solr/licenses` update
 
 ```
-gradlew updateLicenses
+./gradlew updateLicenses
 
 git add solr/licenses
 ```
@@ -51,7 +51,7 @@ git add solr/licenses
 ## Code
 
 ```
-gradlew compileJava
+./gradlew compileJava
 ```
 
 * adjust for signature changes e.g.
@@ -65,15 +65,15 @@ gradlew compileJava
 ## Test
 
 ```
-gradlew compileTestJava
+./gradlew compileTestJava
 ```
 
 ```
-gradlew precommit
+./gradlew precommit
 ```
 
 ```
-gradlew test
+./gradlew test
 ```
 
 ## Finish

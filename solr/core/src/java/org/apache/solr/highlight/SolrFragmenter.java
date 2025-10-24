@@ -18,10 +18,9 @@ package org.apache.solr.highlight;
 
 import org.apache.lucene.search.highlight.Fragmenter;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-public interface SolrFragmenter extends SolrInfoBean, NamedListInitializedPlugin {
+public interface SolrFragmenter extends NamedListInitializedPlugin {
   /**
    * Return a {@link org.apache.lucene.search.highlight.Fragmenter} appropriate for this field.
    *
