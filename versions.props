@@ -1,5 +1,6 @@
-# The lines in this file needs to be lexicographically sorted.
+# Errorprone must stay on 2.31.0 on 9.x to play nice with JDK11
 # Please only add direct dependencies. Overrides of transitive versions should be called out in a comment.
+# The lines in this file needs to be lexicographically sorted.
 biz.aQute.bnd:biz.aQute.bnd.annotation=6.4.1
 com.adobe.testing:s3mock-junit4=2.17.0
 com.carrotsearch.randomizedtesting:*=2.8.3
@@ -10,7 +11,6 @@ com.github.ben-manes.caffeine:caffeine=3.1.8
 com.github.spotbugs:*=4.8.6
 com.github.stephenc.jcip:jcip-annotations=1.0-1
 com.google.cloud:google-cloud-bom=0.224.0
-# Errorprone must stay on 2.31.0 on 9.x to play nice with JDK11
 com.google.errorprone:*=2.31.0
 com.google.guava:guava=32.1.3-jre
 com.google.protobuf:*=3.25.8
@@ -27,10 +27,12 @@ dev.langchain4j:langchain4j-*=0.35.0
 io.dropwizard.metrics:*=4.2.26
 io.grpc:grpc-*=1.65.1
 io.jaegertracing:*=1.8.1
-io.netty:*=4.2.6.Final
+io.netty:netty*=4.2.6.Final
+io.netty:netty-tcnative*=2.0.73.Final
 io.opentelemetry:opentelemetry-bom=1.53.0
-io.opentracing:*=0.33.0
-io.prometheus:*=0.16.0
+io.opentracing:opentracing*=0.33.0
+io.prometheus:prometheus*=1.1.0
+io.prometheus:simpleclient*=0.16.0
 io.swagger.core.v3:*=2.2.22
 jakarta.ws.rs:jakarta.ws.rs-api=3.1.0
 junit:junit=4.13.2
@@ -67,6 +69,7 @@ org.eclipse.jetty*:*=10.0.26
 org.eclipse.jetty.toolchain:jetty-servlet-api=4.0.6
 org.glassfish.hk2*:*=3.1.1
 org.glassfish.hk2.external:jakarta.inject=2.6.1
+org.glassfish.hk2:osgi*=1.0.3
 org.glassfish.jersey*:*=3.1.11
 org.glassfish.jersey.containers:jersey-container-jetty-http=2.39.1
 org.hamcrest:*=3.0
