@@ -537,7 +537,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       // Add to the transaction log *after* successfully adding to the
       // index, if there was no error.
       // This ordering ensures that if we log it, it's definitely been
-      // added to the the index.
+      // added to the index.
       // This also ensures that if a commit sneaks in-between, that we
       // know everything in a particular
       // log version was definitely committed.
