@@ -16,6 +16,7 @@
  */
 
 import org.apache.tools.ant.util.TeeOutputStream
+import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 // This project puts together a "distribution", assembling dependencies from
 // various other projects.
@@ -275,7 +276,7 @@ task integrationTests(type: BatsTask) {
 
 task pesterTests {
   dependsOn installFullDist
-  onlyIf { Os.isFamily(Os.FAMILY_WINDOWS) }
+  onlyIf { DefaultNativePlatform.getCurrentOperatingSystem().isWindows() }
 
   def integrationTestOutput = "$buildDir/powershell-test-output"
   def solrHome = "$integrationTestOutput/solr-home"
