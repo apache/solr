@@ -36,7 +36,7 @@ task writeChangelog {
     def jiraRef = jiraMatcher ? jiraMatcher[0] : "SOLR-XXXX"
     def jiraUrl = "https://issues.apache.org/jira/browse/${jiraRef}"
     def jiraLinks = jiraMatcher ? "links:\n  - name: ${jiraRef}\n    url: ${jiraUrl}" : ""
-    def githubMatcher = gitBranch =~ /(PR|GH|GITHUB|#)?(\d+)/
+    def githubMatcher = gitBranch =~ /(PR-|GH-|GITHUB-|#)(\d+)/
     def githubRef = githubMatcher ? githubMatcher.group(2) : ""
     def githubLink = githubMatcher ? "issues:\n  - ${githubRef}" : ""
     def branchWithoutJira = gitBranch.replaceFirst(/(SOLR|LUCENE|INFRA)-\d+-/, "").replaceFirst(/(PR|GH|GITHUB|#)?(\d+)/, "").replace("-", " ").capitalize()
