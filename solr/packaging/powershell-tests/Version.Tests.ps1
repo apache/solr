@@ -41,14 +41,14 @@ Describe "Solr Version Command" {
   Context "When using --version flag" {
     It "--version returns Solr version" {
       $output = & $SolrCmd --version 2>&1
-      $output | Should -Contain "Solr version is:"
+      $output | Out-String | Should -Match "Solr version is:"
     }
   }
 
   Context "When using version as direct command" {
     It "version as direct tool call still runs" {
       $output = & $SolrCmd version 2>&1
-      $output | Should -Contain "Solr version is:"
+      $output | Out-String | Should -Match "Solr version is:"
     }
   }
 }
