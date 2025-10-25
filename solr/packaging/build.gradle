@@ -277,7 +277,7 @@ task pesterTests {
   dependsOn installFullDist
   onlyIf { Os.isFamily(Os.FAMILY_WINDOWS) }
 
-  def integrationTestOutput = "$buildDir/test-output"
+  def integrationTestOutput = "$buildDir/powershell-test-output"
   def solrHome = "$integrationTestOutput/solr-home"
   def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
   var solrPort = Integer.parseInt((String) project.findProperty('pester.port') ?: System.getProperty("pester.port", "-1"))
