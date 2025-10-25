@@ -10,7 +10,7 @@ organized in versioned folders and collated into a human-readable *CHANGELOG.md*
 
 This document walks you through the workflow, explains the Gradle helpers
 available, and finishes with a concrete example fragment. We use a tool called
-[logchange](https://logchange.dev/tools/logchange/) as a gradle plugin to manage
+https://logchange.dev/tools/logchange/[logchange] as a gradle plugin to manage
 the changelog.
 
 == 1. Workflow Overview
@@ -36,7 +36,7 @@ solr/
 
 == 3. The YAML format
 
-Below is an example of a changelog yaml fragment. The full yaml format is xref:https://logchange.dev/tools/logchange/reference/#tasks[documented here], but we normally only need `title`, `type`, `authors` and `links`:
+Below is an example of a changelog yaml fragment. The full yaml format is https://logchange.dev/tools/logchange/reference/#yaml-entry-format[documented here], but we normally only need `title`, `type`, `authors` and `links`:
 
 [source, yaml]
 ----
@@ -44,12 +44,12 @@ title: Fix nasty bug in CoreContainer shutdown
 # added, changed, fixed, deprecated, removed, dependency_update, security, other
 type: fixed
 authors:
-  - name: John Contributor
-    nick: johngithub
-    url: https://home.apache.org/phonebook.html?uid=johnasfid
+  - name: Alex Doe
+    nick: alex_githubid
+    url: https://home.apache.org/phonebook.html?uid=alex_asfid
 links:
-  - name: SOLR-3333
-    url: https://issues.apache.org/jira/browse/SOLR-3333
+  - name: SOLR-12345
+    url: https://issues.apache.org/jira/browse/SOLR-12345
 ----
 
 === 3.1 Tool to draft a YAML for your change
@@ -72,9 +72,9 @@ use that information. Example:
 [source, properties]
 ----
 # Changelog generator settings (./gradlew writeChangelog)
-user.name=John Doe
-user.githubid=johngithub
-user.asfid=johnapache
+user.name=Alex Doe
+user.githubid=alex_githubid
+user.asfid=alex_asfid
 ----
 
 TIP: Aliases for `writeChangelog` task are `changelog` and `newChangelog`.
@@ -82,7 +82,7 @@ TIP: Aliases for `writeChangelog` task are `changelog` and `newChangelog`.
 == 4. Writing Good Entries
 
 * **Audience** is end-users and administrators, not committers.
-* If the change is super minor, like a typo, don't bother adding a yaml file
+* If the change is super minor, like a typo, don't bother adding a yaml file.
 * Keep the entry short and focused on the user impact.
 * Choose the correct *type*:
 ** `added` for new features
@@ -156,5 +156,5 @@ links:
 
 == 7. Further Reading
 
-* xref:https://github.com/logchange/logchange[Logchange web page]
-* xref:https://keepachangelog.com/en/1.1.0/[keepachangelog.com website]
+* https://github.com/logchange/logchange[Logchange web page]
+* https://keepachangelog.com/en/1.1.0/[keepachangelog.com website]
