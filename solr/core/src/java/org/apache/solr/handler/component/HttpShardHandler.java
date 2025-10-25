@@ -511,7 +511,8 @@ public class HttpShardHandler extends ShardHandler {
     solrParams.set("shortCircuit", false);
     req.setParams(solrParams);
     if (req.getHttpSolrCall() != null
-        && StringUtils.isEmpty(req.getParams().get(ShardParams.SHARDS))) {
+        && StringUtils.isEmpty(req.getParams().get(ShardParams.SHARDS))
+        && !req.getCoreContainer().isZooKeeperAware()) {
       String scheme = req.getHttpSolrCall().getReq().getScheme();
       String host = req.getHttpSolrCall().getReq().getServerName();
       int port = req.getHttpSolrCall().getReq().getServerPort();
