@@ -182,6 +182,27 @@ Each YAML file complies with the schema outlined in `dev-docs/changelog.adoc`.
     # Default behavior
     python3 dev-tools/scripts/changes2logchange.py solr/CHANGES.txt
 
+### validateChangelogs.py
+
+Validates changelog folder structure and feature distribution across development branches (main, stable, release).
+Ensures all changelog/vX.Y.Z folders are identical, no released files exist in unreleased folder, and generates
+a consolidated CHANGELOG.md that shows expected versions for each unreleased change. This will resemble the CHANGES.txt
+file we used to have on the main branch. The script also warns about the same JIRA being mentioned across files.
+
+    usage: validateChangelogs.py [<options>...]
+
+    Validate Solr changelog structure across branches
+
+    options:
+        -h, --help                show this help message and exit
+        -r, --report-file PATH    File to write report to (default: stdout)
+        -c, --changelog-file PATH File to write generated CHANGELOG.md preview to
+        -w, --work-dir PATH       Working directory (default TEMP dir)
+        --fetch-remote            Fetch fresh branch list from remote
+        -f, --format {md,json}    Report output format (default: md)
+        --skip-sync-check         Skip branch in sync validation
+        --check-duplicates        Check for duplicate JIRA issues
+
 ### gitignore-gen.sh
 
 TBD

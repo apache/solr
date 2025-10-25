@@ -304,7 +304,9 @@ class SlugGenerator:
         """
         Generate a slug from issue ID and title.
 
-        Format: ISSUE-12345-short-slug or VERSION-entry-001-short-slug
+        Format: ISSUE-12345 short slug or VERSION entry 001 short slug
+        Note: Previous slug formats used dashes ("ISSUE-12345-short-slug"), but this script now uses spaces between components (e.g., "ISSUE-12345 short slug").
+        Spaces are preferred over dashes for improved readability, better preservation of word boundaries, and to avoid unnecessary character substitutions. This change also ensures that filenames remain filesystem-safe while being more human-friendly.
         Uses the actual issue ID without forcing SOLR- prefix
         Ensures filesystem-safe filenames and respects word boundaries
         Whitespace is preserved as spaces (not converted to dashes)
@@ -316,7 +318,7 @@ class SlugGenerator:
         title_slug = SlugGenerator._sanitize_filename_part(title)
 
         # Limit to reasonable length while respecting word boundaries
-        # Target max length: 50 chars for slug (leaving room for base_issue and dash)
+        # Target max length: 50 chars for slug (leaving room for base_issue and space)
         if len(title_slug) > 50:
             # Find last word/space boundary within 50 chars
             truncated = title_slug[:50]
@@ -333,7 +335,7 @@ class SlugGenerator:
                     # If no good boundary, use hard limit and clean up
                     title_slug = truncated.rstrip(' -')
 
-        return f"{base_issue}-{title_slug}"
+        return f"{base_issue} {title_slug}"
 
     @staticmethod
     def _sanitize_issue_id(issue_id: str) -> str:
@@ -360,9 +362,9 @@ class SlugGenerator:
         """
         Sanitize text for use in filenames.
         - Convert to lowercase
-        - Replace unsafe characters with dashes
-        - Convert any whitespace to space (preserved in filename)
-        - Remove multiple consecutive spaces or dashes
+        - Remove quotes, colons, backticks
+        - Replace other unsafe characters with dashes
+        - Convert any whitespace to single space
         - Strip leading/trailing spaces and dashes
         """
         # Convert to lowercase
@@ -371,17 +373,31 @@ class SlugGenerator:
         # Normalize all whitespace to single spaces
         text = re.sub(r'\s+', ' ', text)
 
-        # Replace unsafe characters with dash
+        # Remove quotes, colons, backticks entirely (don't replace with dash)
+        text = re.sub(r'["\':´`]', '', text)
+
+        # Replace other unsafe characters (from UNSAFE_CHARS_PATTERN) with dash
+        # This covers: < > " / \ | ? * and control characters
+        # Note: we already removed quotes and colons above
         text = SlugGenerator.UNSAFE_CHARS_PATTERN.sub('-', text)
 
-        # Replace other non-alphanumeric (except space and dash) with dash
-        text = re.sub(r'[^a-z0-9\s-]+', '-', text)
+        # Replace other non-alphanumeric (except space, dash, and dot) with dash
+        text = re.sub(r'[^a-z0-9\s.\-]+', '-', text)
 
         # Replace multiple consecutive dashes with single dash (but preserve spaces)
         text = re.sub(r'-+', '-', text)
 
-        # Strip leading/trailing spaces and dashes
-        text = text.strip(' -')
+        # Remove trailing dashes before we clean up space-dash sequences
+        text = text.rstrip('-')
+
+        # Handle " -" and "- " sequences: collapse to single space
+        text = re.sub(r'\s*-\s*', ' ', text)
+
+        # Replace multiple consecutive spaces with single space
+        text = re.sub(r'\s+', ' ', text)
+
+        # Strip leading/trailing spaces
+        text = text.strip(' ')
 
         return text
 

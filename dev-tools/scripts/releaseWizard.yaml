@@ -721,6 +721,67 @@ groups:
       changelog_sha: '{{ current_git_rev }}'
     persist_vars: changelog_sha
   - !Todo
+    id: sync_changelog_cherry_pick
+    title: Cherry-pick changelog to stable and unstable branches
+    description: |
+      Cherry-pick the changelog commit from the release branch to the stable and main branches.
+      This syncs both CHANGELOG.md and changelog folder changes across all active branches.
+
+      The changelog commit was created in the previous step (generate_changelog_release) and will
+      be referenced here. Cherry-pick will automatically handle conflict resolution if needed.
+    depends: persist_changelog_sha
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Cherry-pick changelog changes to other branches
+      commands:
+        - !Command
+          cmd: git checkout {{ stable_branch }}
+          comment: Checkout stable branch
+          stdout: true
+        - !Command
+          cmd: git pull --ff-only
+          tee: true
+        - !Command
+          cmd: git cherry-pick {{ persist_changelog_sha.changelog_sha }} && git push
+          comment: Cherry-pick changelog commit
+          logfile: cherry_pick_changelog_stable.log
+          tee: true
+        - !Command
+          cmd: git checkout main
+          comment: Checkout main branch
+          stdout: true
+        - !Command
+          cmd: git pull --ff-only
+          tee: true
+        - !Command
+          cmd: git cherry-pick {{ persist_changelog_sha.changelog_sha }} && git push
+          comment: Cherry-pick changelog commit
+          logfile: cherry_pick_changelog_main.log
+          tee: true
+  - !Todo
+    id: validate_changelog_structure
+    title: Validate changelog structure across branches
+    description: |
+      Validate that the changelog folder structure is correct and consistent across branches,
+      and verify that changelog entries are properly distributed (no released files in unreleased folder).
+      This ensures the CHANGELOG.md generation was successful and ready for the release.
+    depends: sync_changelog_cherry_pick
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run the changelog validation script to verify structure and distribution
+      confirm_each_command: false
+      commands:
+        - !Command
+          cmd: python3 -u dev-tools/scripts/validateChangelogs.py --report-file {{ [rc_folder, 'changelog_validation_report.txt'] | path_join }} --format md
+          logfile: validateChangelogs.log
+          tee: true
+    post_description: |
+      Review the validation report. If there are any errors, you may need to go back and fix
+      the changelog entries. If there are only warnings, you can proceed. The validation ensures:
+      - All changelog/vX.Y.Z folders are identical across branches
+      - No released files exist in the unreleased folder
+      - Warns about possible duplicates
+  - !Todo
     id: draft_release_notes
     title: Get a draft of the release notes in place
     description: |-
@@ -1721,44 +1782,6 @@ groups:
       - !Command
         cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
         logfile: commit-stable.log
-  - !Todo
-    id: sync_changelog_cherry_pick
-    title: Cherry-pick changelog to stable and unstable branches
-    description: |
-      Cherry-pick the changelog commit from the release branch to the stable and main branches.
-      This syncs both CHANGELOG.md and changelog folder changes across all active branches.
-
-      The changelog commit was created in the previous step (generate_changelog_release) and will
-      be referenced here. Cherry-pick will automatically handle conflict resolution if needed.
-    depends: generate_changelog_release
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Cherry-pick changelog changes to other branches
-      commands:
-      - !Command
-        cmd: git checkout {{ stable_branch }}
-        comment: Checkout stable branch
-        stdout: true
-      - !Command
-        cmd: git pull --ff-only
-        tee: true
-      - !Command
-        cmd: git cherry-pick {{ persist_changelog_sha.changelog_sha }} && git push
-        comment: Cherry-pick changelog commit
-        logfile: cherry_pick_changelog_stable.log
-        tee: true
-      - !Command
-        cmd: git checkout main
-        comment: Checkout main branch
-        stdout: true
-      - !Command
-        cmd: git pull --ff-only
-        tee: true
-      - !Command
-        cmd: git cherry-pick {{ persist_changelog_sha.changelog_sha }} && git push
-        comment: Cherry-pick changelog commit
-        logfile: cherry_pick_changelog_main.log
-        tee: true
   - !Todo
     id: increment_release_version
     title: Add the next version on release branch
