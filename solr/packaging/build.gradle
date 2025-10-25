@@ -273,6 +273,65 @@ task integrationTests(type: BatsTask) {
   environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
 }
 
+task pesterTests {
+  dependsOn installFullDist
+  onlyIf { Os.isFamily(Os.FAMILY_WINDOWS) }
+
+  def integrationTestOutput = "$buildDir/test-output"
+  def solrHome = "$integrationTestOutput/solr-home"
+  def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
+  var solrPort = Integer.parseInt((String) project.findProperty('pester.port') ?: System.getProperty("pester.port", "-1"))
+  while (solrPort > 64000 || solrPort < 0) { // We need room for +1000 for ZK
+    try (ServerSocket s = new ServerSocket(0)) {
+      solrPort = s.getLocalPort()
+    } catch (Exception e) {
+      println("WARN: Could not assign random port for Pester tests. Using default port 8983.")
+      solrPort = 8983
+    }
+  }
+
+  inputs.dir(distDir)
+  outputs.dir(integrationTestOutput)
+
+  doFirst {
+    delete integrationTestOutput
+    mkdir integrationTestOutput
+    mkdir solrHome
+    mkdir solrTestFailuresDir
+
+    println("Running Pester tests with Solr base port ${solrPort}")
+  }
+
+  doLast {
+    exec {
+      executable "powershell"
+      args = [
+        "-Command",
+        "& { " +
+        "Import-Module Pester -MinimumVersion 5.0; " +
+        "\$config = New-PesterConfiguration; " +
+        "\$config.Run.Path = 'powershell-tests'; " +
+        "\$config.Run.Exit = \$true; " +
+        "\$config.TestResult.OutputPath = '${integrationTestOutput}/test-results.xml'; " +
+        "\$env:SOLR_TIP = '${distDir}'; " +
+        "\$env:SOLR_HOME = '${solrHome}'; " +
+        "\$env:SOLR_PID_DIR = '${solrHome}'; " +
+        "\$env:SOLR_PORT = ${solrPort}; " +
+        "\$env:SOLR2_PORT = ${solrPort + 1}; " +
+        "\$env:SOLR3_PORT = ${solrPort + 2}; " +
+        "\$env:ZK_PORT = ${solrPort + 1000}; " +
+        "\$env:SOLR_LOGS_DIR = '${solrHome}/logs'; " +
+        "\$env:TEST_OUTPUT_DIR = '${integrationTestOutput}'; " +
+        "\$env:TEST_FAILURE_DIR = '${solrTestFailuresDir}'; " +
+        "Invoke-Pester -Configuration \$config; " +
+        "}"
+      ]
+
+      workingDir projectDir.toString()
+    }
+  }
+}
+
 class BatsTask extends Exec {
   @InputDirectory
   String testDir = 'test'

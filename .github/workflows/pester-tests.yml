@@ -1,0 +1,44 @@
+name: Powershell Pester Tests
+
+on:
+  push:
+    branches: [ main, SOLR-17508-* ]
+    paths:
+      - 'solr/packaging/powershell-tests/**'
+      - 'solr/packaging/build.gradle'
+      - 'solr/bin/solr.cmd'
+      - 'solr/bin/solr.in.cmd'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  pester-tests:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Build Solr distribution
+        run: |
+          cd solr/packaging
+          gradle installFullDist
+        shell: powershell
+
+      - name: Run Pester tests
+        run: |
+          cd solr/packaging
+          gradle pesterTests
+        shell: powershell
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: pester-test-results
+          path: solr/packaging/build/test-output/
