@@ -26,14 +26,12 @@ jobs:
 
       - name: Build Solr distribution
         run: |
-          cd solr/packaging
-          gradle installFullDist
+          .\gradlew.bat -p solr/packaging installFullDist
         shell: powershell
 
       - name: Run Pester tests
         run: |
-          cd solr/packaging
-          gradle --no-daemon pesterTests
+          .\gradlew.bat -p solr/packaging --no-daemon pesterTests
         shell: powershell
 
       - name: Upload test results
