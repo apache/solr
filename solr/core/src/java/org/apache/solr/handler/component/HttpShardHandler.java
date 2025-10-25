@@ -521,10 +521,7 @@ public class HttpShardHandler extends ShardHandler {
           String.format(Locale.ROOT, "%s://%s:%d%s/%s", scheme, host, port, context, core);
       solrParams.set(ShardParams.SHARDS, localShardUrl);
       req.setParams(solrParams);
-      return;
     }
-    throw new SolrException(
-        SolrException.ErrorCode.BAD_REQUEST, "Force Distributed cannot be enabled");
   }
 
   private static String createSliceShardsStr(final List<String> shardUrls) {

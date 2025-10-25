@@ -748,7 +748,7 @@ public class SearchHandler extends RequestHandlerBase
 
   private static void updateForcedDistributed(
       SolrQueryRequest req, ResponseBuilder rb, List<SearchComponent> components) {
-    if (!rb.isDistrib && !req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+    if (!req.getParams().getBool(ShardParams.IS_SHARD, false)) {
       for (SearchComponent component : components) {
         if (component.isForceDistributed()) {
           rb.isDistrib = true;

@@ -16,35 +16,27 @@
  */
 package org.apache.solr.handler.component;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * The DistributedCombinedQueryComponentTest class is a JUnit test suite that evaluates the
- * functionality of the CombinedQueryComponent in a Solr distributed search environment. It focuses
- * on testing the integration of combiner queries with different configurations.
+ * Contains integration tests for the combined query functionality in a SolrCloud environment. This
+ * class extends AbstractFullDistribZkTestBase to leverage the distributed testing framework. The
+ * tests cover various scenarios including single and multiple lexical queries, sorting, pagination,
+ * faceting, and highlighting similar to {@link DistributedCombinedQueryComponentTest}
  */
-public class DistributedCombinedQueryComponentTest extends BaseDistributedSearchTestCase {
+public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
 
   private static final int NUM_DOCS = 10;
   private static final String vectorField = "vector";
 
-  /**
-   * Sets up the test class by initializing the core and setting system properties. This method is
-   * executed before all test methods in the class.
-   *
-   * @throws Exception if any exception occurs during initialization
-   */
   @BeforeClass
   public static void setUpClass() throws Exception {
     initCore("solrconfig-combined-query.xml", "schema-vector-catchall.xml");
@@ -53,13 +45,11 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     System.setProperty("distribUpdateSoTimeout", "5000");
   }
 
-  /**
-   * Prepares Solr input documents for indexing, including adding sample data and vector fields.
-   * This method populates the Solr index with test data, including text, title, and vector fields.
-   * The vector fields are used to calculate cosine distance for testing purposes.
-   *
-   * @throws Exception if any error occurs during the indexing process.
-   */
+  @Override
+  protected String getCloudSolrConfig() {
+    return "solrconfig-combined-query.xml";
+  }
+
   private synchronized void prepareIndexDocs() throws Exception {
     List<SolrInputDocument> docs = new ArrayList<>();
     fixShardCount(2);
@@ -92,29 +82,12 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     // cosine distance vector1= 0.997
     docs.get(9).addField(vectorField, Arrays.asList(1.8f, 2.5f, 3.7f, 4.9f));
     del("*:*");
-    clients.sort(
-        (client1, client2) -> {
-          try {
-            if (client2 instanceof HttpSolrClient httpClient2
-                && client1 instanceof HttpSolrClient httpClient1)
-              return new URI(httpClient1.getBaseURL()).getPort()
-                  - new URI(httpClient2.getBaseURL()).getPort();
-          } catch (URISyntaxException e) {
-            throw new RuntimeException("Unable to get URI from SolrClient", e);
-          }
-          return 0;
-        });
     for (SolrInputDocument doc : docs) {
       indexDoc(doc);
     }
     commit();
   }
 
-  /**
-   * Tests a single lexical query against the Solr server using both combiner methods.
-   *
-   * @throws Exception if any exception occurs during the test execution
-   */
   @Test
   public void testSingleLexicalQuery() throws Exception {
     prepareIndexDocs();
@@ -132,20 +105,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     assertFieldValues(rsp.getResults(), id, "2");
   }
 
-  @Override
-  protected String getShardsString() {
-    if (deadServers == null) return shards;
-    Arrays.sort(shardsArr);
-    StringBuilder sb = new StringBuilder();
-    for (String shard : shardsArr) {
-      if (!sb.isEmpty()) sb.append(',');
-      sb.append(shard);
-    }
-    return sb.toString();
-  }
-
   /**
-   * Tests multiple lexical queries using the distributed solr client.
+   * Tests multiple lexical queries using the solr cloud client against control client.
    *
    * @throws Exception if any error occurs during the test execution
    */
