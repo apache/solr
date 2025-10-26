@@ -20,6 +20,8 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import java.io.IOException;
+
+import jakarta.inject.Inject;
 import org.apache.solr.client.api.endpoint.CollectionPropertyApi;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
@@ -38,6 +40,7 @@ import org.apache.solr.response.SolrQueryResponse;
  */
 public class CollectionProperty extends AdminAPIBase implements CollectionPropertyApi {
 
+  @Inject
   public CollectionProperty(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
