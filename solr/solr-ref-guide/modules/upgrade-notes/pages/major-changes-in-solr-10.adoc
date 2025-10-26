@@ -196,7 +196,7 @@ Solr 10 introduces a major overhaul by migrating from Dropwizard metrics to Open
 
 * The `/admin/metrics` API now defaults to Prometheus exposition format. You can specify `wt=prometheus` as a parameter for Prometheus format or `wt=openmetrics` for OpenMetrics exposition format with exemplars support (distributed tracing must be enabled to view exemplars).
 
-* The metrics API supports filtering by metric attributes with `name`, `category`, `core`, `collection`, `shard`, `replica_type`, and `handler` parameters. Multiple values can be comma-separated.
+* The metrics API supports filtering by metric attributes with `name`, `category`, `core`, `collection`, `shard`, and `replica_type` parameters. Multiple values can be comma-separated.
 
 * OTLP metrics exporter via gRPC or HTTP is now supported with the OpenTelemetry module. Users can enable the module to push metrics to their preferred OTLP-supported backend.
 
