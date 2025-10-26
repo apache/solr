@@ -38,93 +38,116 @@ BeforeAll {
   Write-Host "Using Solr command: $SolrCmd"
 }
 
+function Test-HelpOutput {
+  param(
+    [string[]]$Arguments,
+    [string]$ExpectedPattern,
+    [string]$TestName
+  )
+
+  Write-Host "Testing help: $TestName"
+  Write-Host "Running: $SolrCmd $($Arguments -join ' ')"
+
+  $output = & $SolrCmd @Arguments 2>&1
+  $outputStr = $output | Out-String
+
+  Write-Host "Exit Code: $LASTEXITCODE"
+  if ($outputStr.Length -gt 0) {
+    Write-Host "Output (first 500 chars): $($outputStr.Substring(0, [Math]::Min(500, $outputStr.Length)))"
+  } else {
+    Write-Host "WARNING: Output is empty!"
+  }
+
+  return $outputStr
+}
+
 Describe "Solr Help Command" {
   Context "Main help commands" {
     It "solr --help flag prints help" {
-      $output = & $SolrCmd --help 2>&1
-      $output | Out-String | Should -Match "Usage: solr COMMAND OPTIONS"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @("--help") "Usage: solr COMMAND OPTIONS" "solr --help"
+      $output | Should -Match "Usage: solr COMMAND OPTIONS"
+      $output | Should -Not -Match "ERROR"
     }
 
     It "solr with no flags prints help" {
-      $output = & $SolrCmd 2>&1
-      $output | Out-String | Should -Match "Usage: solr COMMAND OPTIONS"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @() "Usage: solr COMMAND OPTIONS" "solr (no flags)"
+      $output | Should -Match "Usage: solr COMMAND OPTIONS"
+      $output | Should -Not -Match "ERROR"
     }
   }
 
   Context "Command-specific help" {
     It "start --help flag prints help" {
-      $output = & $SolrCmd start --help 2>&1
-      $output | Out-String | Should -Match "Usage: solr start"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @("start", "--help") "Usage: solr start" "start --help"
+      $output | Should -Match "Usage: solr start"
+      $output | Should -Not -Match "ERROR"
     }
 
     It "start -h flag prints help" {
-      $output = & $SolrCmd start -h 2>&1
-      $output | Out-String | Should -Match "Usage: solr start"
-      $output | Out-String | Should -Not -Match "ERROR: Hostname is required when using the -h option!"
+      $output = Test-HelpOutput @("start", "-h") "Usage: solr start" "start -h"
+      $output | Should -Match "Usage: solr start"
+      $output | Should -Not -Match "ERROR: Hostname is required when using the -h option!"
     }
 
     It "stop --help flag prints help" {
-      $output = & $SolrCmd stop --help 2>&1
-      $output | Out-String | Should -Match "Usage: solr stop"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @("stop", "--help") "Usage: solr stop" "stop --help"
+      $output | Should -Match "Usage: solr stop"
+      $output | Should -Not -Match "ERROR"
     }
 
     It "restart --help flag prints help" {
-      $output = & $SolrCmd restart --help 2>&1
-      $output | Out-String | Should -Match "Usage: solr restart"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @("restart", "--help") "Usage: solr restart" "restart --help"
+      $output | Should -Match "Usage: solr restart"
+      $output | Should -Not -Match "ERROR"
     }
 
     It "status --help flag prints help" {
-      $output = & $SolrCmd status --help 2>&1
-      $output | Out-String | Should -Match "usage: bin/solr status"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @("status", "--help") "usage: bin/solr status" "status --help"
+      $output | Should -Match "usage: bin/solr status"
+      $output | Should -Not -Match "ERROR"
     }
 
     It "healthcheck --help flag prints help" {
-      $output = & $SolrCmd healthcheck --help 2>&1
-      $output | Out-String | Should -Match "usage: bin/solr healthcheck"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @("healthcheck", "--help") "usage: bin/solr healthcheck" "healthcheck --help"
+      $output | Should -Match "usage: bin/solr healthcheck"
+      $output | Should -Not -Match "ERROR"
     }
 
     It "create --help flag prints help" {
-      $output = & $SolrCmd create --help 2>&1
-      $output | Out-String | Should -Match "usage: bin/solr create"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @("create", "--help") "usage: bin/solr create" "create --help"
+      $output | Should -Match "usage: bin/solr create"
+      $output | Should -Not -Match "ERROR"
     }
 
     It "delete -h flag prints help" {
-      $output = & $SolrCmd delete -h 2>&1
-      $output | Out-String | Should -Match "usage: bin/solr delete"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @("delete", "-h") "usage: bin/solr delete" "delete -h"
+      $output | Should -Match "usage: bin/solr delete"
+      $output | Should -Not -Match "ERROR"
     }
 
     It "zk --help flag prints help" {
-      $output = & $SolrCmd zk --help 2>&1
-      $output | Out-String | Should -Match "usage:"
-      $output | Out-String | Should -Match "bin/solr zk ls"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @("zk", "--help") "usage:" "zk --help"
+      $output | Should -Match "usage:"
+      $output | Should -Match "bin/solr zk ls"
+      $output | Should -Not -Match "ERROR"
     }
 
     It "auth --help flag prints help" {
-      $output = & $SolrCmd auth --help 2>&1
-      $output | Out-String | Should -Match "bin/solr auth enable"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @("auth", "--help") "bin/solr auth enable" "auth --help"
+      $output | Should -Match "bin/solr auth enable"
+      $output | Should -Not -Match "ERROR"
     }
 
     It "assert --help flag prints help" {
-      $output = & $SolrCmd assert --help 2>&1
-      $output | Out-String | Should -Match "usage: bin/solr assert"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @("assert", "--help") "usage: bin/solr assert" "assert --help"
+      $output | Should -Match "usage: bin/solr assert"
+      $output | Should -Not -Match "ERROR"
     }
 
     It "post --help flag prints help" {
-      $output = & $SolrCmd post --help 2>&1
-      $output | Out-String | Should -Match "usage: bin/solr post"
-      $output | Out-String | Should -Not -Match "ERROR"
+      $output = Test-HelpOutput @("post", "--help") "usage: bin/solr post" "post --help"
+      $output | Should -Match "usage: bin/solr post"
+      $output | Should -Not -Match "ERROR"
     }
   }
 }

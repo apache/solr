@@ -313,6 +313,8 @@ task pesterTests {
         "\$config = New-PesterConfiguration; " +
         "\$config.Run.Path = 'powershell-tests'; " +
         "\$config.Run.Exit = \$true; " +
+        "\$config.Output.Verbosity = 'Diagnostic'; " +
+        "\$config.TestResult.OutputFormat = 'NUnitXml'; " +
         "\$config.TestResult.OutputPath = '${integrationTestOutput}/test-results.xml'; " +
         "\$env:SOLR_TIP = '${distDir}'; " +
         "\$env:SOLR_HOME = '${solrHome}'; " +
