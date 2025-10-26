@@ -87,6 +87,8 @@ New Features
 
 * SOLR-17815: Add parameter to regulate for ACORN-based filtering in vector search. (Anna Ruggero, Alessandro Benedetti)
 
+* SOLR-17458: Switch from Dropwizard to OpenTelemetry. This change provides native Prometheus support on the /admin/metrics API, OTLP support, exemplar support for tracing correlation with OpenMetrics format and native attributes and labels on all metrics. (Matthew Biscocho, David Smiley, Sanjay Dutt, Jude Muriithi, Luke Kot-Zaniewski, Carlos Ugarte, Kevin Liang, Bryan Jacobowitz, Adam Quigley)
+
 Improvements
 ---------------------
 
