@@ -68,17 +68,17 @@ If you want to add support for additional services or improve the support for th
 
 == Module
 
-This is provided via the `llm` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+This is provided via the `language-models` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
-== LLM Configuration
+== language model Configuration
 
-You need to register / configure the plugins provided by the LLM module that you want to use. This is done in `solrconfig.xml`. 
+You need to register / configure the plugins provided by the language model module that you want to use. This is done in `solrconfig.xml`. 
 
 * Declaration of the `knn_text_to_vector` query parser.
 +
 [source,xml]
 ----
-<queryParser name="knn_text_to_vector" class="org.apache.solr.llm.textvectorisation.search.TextToVectorQParserPlugin"/>
+<queryParser name="knn_text_to_vector" class="org.apache.solr.languagemodels.textvectorisation.search.TextToVectorQParserPlugin"/>
 ----
 
 
@@ -278,7 +278,7 @@ To vectorise textual fields of your documents at indexing time you need to confi
 [source,xml]
 ----
 <updateRequestProcessorChain name="textToVector">
-  <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+  <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
@@ -332,7 +332,7 @@ This can be done in Solr defining two update request processors chains: one that
 <processor class="solr.processorN">
    ...
   </processor>
-<processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+<processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
@@ -370,7 +370,7 @@ You still define two chains, but this time the 'vectorisation' one only includes
 [source,xml]
 ----
 <updateRequestProcessorChain name="vectorisation">
-<processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+<processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>

@@ -14,15 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
+package org.apache.solr.search.vector;
 
-import org.apache.lucene.codecs.KnnVectorsFormat;
-import org.apache.lucene.codecs.lucene102.Lucene102HnswBinaryQuantizedVectorsFormat;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.QParserPlugin;
 
-public class BinaryQuantizedDenseVectorField extends DenseVectorField {
+/** A neural query parser to run min-similarity search on Dense Vector fields. */
+public class VectorSimilarityQParserPlugin extends QParserPlugin {
+  public static final String NAME = "vectorSimilarity";
 
   @Override
-  public KnnVectorsFormat buildKnnVectorsFormat() {
-    return new Lucene102HnswBinaryQuantizedVectorsFormat(getHnswM(), getHnswEfConstruction());
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    return new VectorSimilarityQParser(qstr, localParams, params, req);
   }
 }

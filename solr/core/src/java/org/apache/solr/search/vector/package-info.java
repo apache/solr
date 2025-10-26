@@ -14,15 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
 
-import org.apache.lucene.codecs.KnnVectorsFormat;
-import org.apache.lucene.codecs.lucene102.Lucene102HnswBinaryQuantizedVectorsFormat;
-
-public class BinaryQuantizedDenseVectorField extends DenseVectorField {
-
-  @Override
-  public KnnVectorsFormat buildKnnVectorsFormat() {
-    return new Lucene102HnswBinaryQuantizedVectorsFormat(getHnswM(), getHnswEfConstruction());
-  }
-}
+/** APIs and classes for implementing Neural (Dense Retrieval) QueryParsers. */
+package org.apache.solr.search.vector;
