@@ -51,24 +51,15 @@ import org.apache.solr.security.PermissionNameProvider;
 public class MetricsHandler extends RequestHandlerBase implements PermissionNameProvider {
   final SolrMetricManager metricManager;
 
-  public static final String COMPACT_PARAM = "compact";
-  public static final String PREFIX_PARAM = "prefix";
-  public static final String REGEX_PARAM = "regex";
-  public static final String PROPERTY_PARAM = "property";
-  public static final String REGISTRY_PARAM = "registry";
-  public static final String GROUP_PARAM = "group";
-  public static final String KEY_PARAM = "key";
-  public static final String EXPR_PARAM = "expr";
-  public static final String TYPE_PARAM = "type";
   // Prometheus filtering parameters
   public static final String CATEGORY_PARAM = "category";
   public static final String CORE_PARAM = "core";
   public static final String COLLECTION_PARAM = "collection";
   public static final String SHARD_PARAM = "shard";
-  public static final String REPLICA_PARAM = "replica";
+  public static final String REPLICA_TYPE_PARAM = "replica_type";
   public static final String METRIC_NAME_PARAM = "name";
   private static final Set<String> labelFilterKeys =
-      Set.of(CATEGORY_PARAM, CORE_PARAM, COLLECTION_PARAM, SHARD_PARAM, REPLICA_PARAM);
+      Set.of(CATEGORY_PARAM, CORE_PARAM, COLLECTION_PARAM, SHARD_PARAM, REPLICA_TYPE_PARAM);
 
   public static final String PROMETHEUS_METRICS_WT = "prometheus";
   public static final String OPEN_METRICS_WT = "openmetrics";
