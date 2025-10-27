@@ -1300,7 +1300,7 @@ function start_solr() {
     "-Djava.io.tmpdir=$(cd "${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"; pwd -P)" \
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
-    "${SOLR_HOST_ADVERTISE_ARGARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
+    "${SOLR_HOST_ADVERTISE_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
     # '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
     # OOME is thrown. Program operation after OOME is unpredictable.
     "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
