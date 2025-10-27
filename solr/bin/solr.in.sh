@@ -150,7 +150,7 @@
 # set this value as narrowly as required before going to production. In
 # environments where security is not a concern, 0.0.0.0 can be used to allow
 # Solr to accept connections on all network interfaces.
-#SOLR_JETTY_HOST="127.0.0.1"
+#SOLR_HOST_BIND="127.0.0.1"
 # Sets the network interface the Embedded ZK binds to.
 #SOLR_ZOOKEEPER_EMBEDDED_HOST="127.0.0.1"
 

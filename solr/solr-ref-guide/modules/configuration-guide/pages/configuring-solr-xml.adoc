@@ -41,7 +41,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
 
   <solrcloud>
 
-    <str name="host">${host:}</str>
+    <str name="host">${solr.host.advertise:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
 
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>

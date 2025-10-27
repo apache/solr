@@ -37,6 +37,13 @@ This compatibility safeguard can be toggled with "SOLR_CLOUD_DOWNGRADE_ENABLED".
 
 Minimum Java version for Solr 10.x is Java 21.
 
+== Solr Jetty parameters
+
+The previous `SOLR_JETTY_HOST` environment variable and `-Dsolr.jetty.host` System Property are deprecated and will be removed in a future release. Please update your configuration to use `SOLR_HOST_BIND` and `-Dsolr.host.bind` instead.
+
+The previous `SOLR_HOST` and 'host' are deprecated and now use `SOLR_HOST_ADVERTISE` and `solr.host.advertise`.
+
+
 === Solr CLI and Scripts
 
 The Solr CLI has gone through some significant renovations to reduce technical debt, and now functions more consistently and predictably. Most notably, CLI commands now use unix-style options, e.g. `--help` instead of `-help`.

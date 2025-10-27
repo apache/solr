@@ -752,8 +752,8 @@ if [ $# -gt 0 ]; then
               print_usage "$SCRIPT_CMD" "Hostname is required when using the $1 option!"
               exit 1
             fi
-            SOLR_HOST="$2"
-            PASS_TO_RUN_EXAMPLE+=("--host" "$SOLR_HOST")
+            SOLR_HOST_ADVERTISE="$2"
+            PASS_TO_RUN_EXAMPLE+=("--solr.host.advertise" "$SOLR_HOST_ADVERTISE")
             shift 2
         ;;
         -m|--memory)
@@ -892,13 +892,21 @@ if $verbose ; then
   "$JAVA" -version
 fi
 
-if [ -n "${SOLR_HOST:-}" ]; then
-  SOLR_HOST_ARG=("-Dhost=$SOLR_HOST")
-elif [[ "${SOLR_JETTY_HOST:-127.0.0.1}" == "127.0.0.1" ]]; then
+# Check for deprecated SOLR_JETTY_HOST and show warning
+if [[ -n "${SOLR_JETTY_HOST:-}" && -z "${SOLR_HOST_BIND:-}" ]]; then
+  echo "WARNING: SOLR_JETTY_HOST is deprecated and will be removed in a future release."
+  echo "Please update your configuration to use SOLR_HOST_BIND instead of SOLR_JETTY_HOST."
+  SOLR_HOST_BIND="$SOLR_JETTY_HOST"
+fi
+
+
+if [ -n "${SOLR_HOST_ADVERTISE:-}" ]; then
+  SOLR_HOST_ADVERTISE_ARG=("-Dsolr.host.advertise=$SOLR_HOST_ADVERTISE")
+elif [[ "${SOLR_HOST_BIND:-127.0.0.1}" == "127.0.0.1" ]]; then
   # Jetty will only bind on localhost interface, so nodes must advertise themselves with localhost
-  SOLR_HOST_ARG=("-Dhost=localhost")
+  SOLR_HOST_ADVERTISE_ARG=("-Dsolr.host.advertise=localhost")
 else
-  SOLR_HOST_ARG=()
+  SOLR_HOST_ADVERTISE_ARG=()
 fi
 
 : "${STOP_KEY:=solrrocks}"
@@ -956,8 +964,8 @@ if [ -n "${SOLR_PORT_ADVERTISE:-}" ]; then
   SCRIPT_SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
 fi
 
-if [ -n "${SOLR_JETTY_HOST:-}" ]; then
-  SCRIPT_SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
+if [ -n "${SOLR_HOST_BIND:-}" ]; then
+  SCRIPT_SOLR_OPTS+=("-Dsolr.host.bind=$SOLR_HOST_BIND")
 fi
 
 : "${STOP_PORT:=$((SOLR_PORT - 1000))}"
@@ -1233,7 +1241,7 @@ function start_solr() {
     echo -e "    JAVA               = $JAVA"
     echo -e "    SOLR_SERVER_DIR    = $SOLR_SERVER_DIR"
     echo -e "    SOLR_HOME          = $SOLR_HOME"
-    echo -e "    SOLR_HOST          = ${SOLR_HOST:-}"
+    echo -e "    SOLR_HOST_ADVERTISE= ${SOLR_HOST_ADVERTISE:-}"
     echo -e "    SOLR_PORT          = $SOLR_PORT"
     echo -e "    STOP_PORT          = $STOP_PORT"
     echo -e "    JAVA_MEM_OPTS      = ${JAVA_MEM_OPTS[*]}"
@@ -1292,7 +1300,7 @@ function start_solr() {
     "-Djava.io.tmpdir=$(cd "${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"; pwd -P)" \
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
-    "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
+    "${SOLR_HOST_ADVERTISE_ARGARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
     # '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
     # OOME is thrown. Program operation after OOME is unpredictable.
     "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \

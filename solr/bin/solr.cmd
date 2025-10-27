@@ -243,8 +243,17 @@ IF DEFINED SOLR_AUTHENTICATION_CLIENT_BUILDER (
 )
 set "AUTHC_OPTS=%AUTHC_CLIENT_BUILDER_ARG% %SOLR_AUTHENTICATION_OPTS%"
 
-IF "%SOLR_JETTY_HOST%"=="" (
-  set "SOLR_JETTY_HOST=127.0.0.1"
+REM Check for deprecated SOLR_JETTY_HOST and show warning
+IF NOT "%SOLR_JETTY_HOST%"=="" (
+  IF "%SOLR_HOST_BIND%"=="" (
+    echo WARNING: SOLR_JETTY_HOST is deprecated and will be removed in a future release.
+    echo Please update your configuration to use SOLR_HOST_BIND instead of SOLR_JETTY_HOST.
+    set "SOLR_HOST_BIND=%SOLR_JETTY_HOST%"
+  )
+)
+
+IF "%SOLR_HOST_BIND%"=="" (
+  set "SOLR_HOST_BIND=127.0.0.1"
 )
 
 
@@ -714,14 +723,14 @@ IF "%verbose%"=="1" (
   @echo.
 )
 
-IF NOT "%SOLR_HOST%"=="" (
-  set SOLR_HOST_ARG=-Dhost=%SOLR_HOST%
-) ELSE IF "%SOLR_JETTY_HOST%"=="" (
-  set "SOLR_HOST_ARG=-Dhost=localhost"
-) ELSE IF "%SOLR_JETTY_HOST%"=="127.0.0.1" (
-  set "SOLR_HOST_ARG=-Dhost=localhost"
+IF NOT "%SOLR_HOST_ADVERTISE%"=="" (
+  set SOLR_HOST_ADVERTISE_ARG=-Dsolr.host.advertise=%SOLR_HOST_ADVERTISE%
+) ELSE IF "%SOLR_HOST_BIND%"=="" (
+  set "SOLR_HOST_ADVERTISE_ARG=-Dsolr.host.advertise=localhost"
+) ELSE IF "%SOLR_HOST_BIND%"=="127.0.0.1" (
+  set "SOLR_HOST_ADVERTISE_ARG=-Dsolr.host.advertise=localhost"
 ) ELSE (
-  set SOLR_HOST_ARG=
+  set SOLR_HOST_ADVERTISE_ARG=
 )
 
 set SCRIPT_SOLR_OPTS=
@@ -783,7 +792,7 @@ IF "%SOLR_PORT%"=="" (
         for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
           @REM j is the ip:port and k is the pid
           IF NOT "%%k"=="0" (
-            IF "%%j"=="%SOLR_JETTY_HOST%:!SOME_SOLR_PORT!" (
+            IF "%%j"=="%SOLR_HOST_BIND%:!SOME_SOLR_PORT!" (
               set found_it=1
               @echo Stopping Solr process %%k running on port !SOME_SOLR_PORT!
               IF "%STOP_PORT%"=="" (
@@ -816,7 +825,7 @@ IF "%SOLR_PORT%"=="" (
   set found_it=0
   For /f "tokens=2,5" %%M in ('netstat -nao ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
     IF NOT "%%N"=="0" (
-      IF "%%M"=="%SOLR_JETTY_HOST%:%SOLR_PORT%" (
+      IF "%%M"=="%SOLR_HOST_BIND%:%SOLR_PORT%" (
         set found_it=1
         @echo Stopping Solr process %%N running on port %SOLR_PORT%
         IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
@@ -877,14 +886,14 @@ IF DEFINED SOLR_PORT_ADVERTISE (
   set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.port.advertise=%SOLR_PORT_ADVERTISE%"
 )
 
-IF DEFINED SOLR_JETTY_HOST (
-  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.jetty.host=%SOLR_JETTY_HOST%"
+IF DEFINED SOLR_HOST_BIND (
+  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.host.bind=%SOLR_HOST_BIND%"
 )
 
 REM Make sure Solr is not running using netstat
 For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
   IF NOT "%%k"=="0" (
-    IF "%%j"=="%SOLR_JETTY_HOST%:%SOLR_PORT%" (
+    IF "%%j"=="%SOLR_HOST_BIND%:%SOLR_PORT%" (
       set "SCRIPT_ERROR=Process %%k is already listening on port %SOLR_PORT%. If this is Solr, please stop it first before starting (or use restart). If this is not Solr, then please choose a different port using -p PORT"
       goto err
     )
@@ -973,7 +982,7 @@ IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
 -Dcom.sun.management.jmxremote.port=!RMI_PORT! ^
 -Dcom.sun.management.jmxremote.rmi.port=!RMI_PORT!
 
-  IF NOT "%SOLR_HOST%"=="" set REMOTE_JMX_OPTS=!REMOTE_JMX_OPTS! -Djava.rmi.server.hostname=%SOLR_HOST%
+  IF NOT "%SOLR_HOST_ADVERTISE%"=="" set REMOTE_JMX_OPTS=!REMOTE_JMX_OPTS! -Djava.rmi.server.hostname=%SOLR_HOST_ADVERTISE%
 ) ELSE (
   set REMOTE_JMX_OPTS=
 )
@@ -1016,13 +1025,13 @@ IF "%verbose%"=="1" (
   CALL :safe_echo "    JAVA              = %JAVA%"
   CALL :safe_echo "    SOLR_SERVER_DIR   = %SOLR_SERVER_DIR%"
   CALL :safe_echo "    SOLR_HOME         = %SOLR_HOME%"
-  @echo     SOLR_HOST         = %SOLR_HOST%
-  @echo     SOLR_PORT         = %SOLR_PORT%
-  @echo     STOP_PORT         = %STOP_PORT%
-  @echo     SOLR_JAVA_MEM     = %SOLR_JAVA_MEM%
-  @echo     GC_TUNE           = !GC_TUNE!
-  @echo     GC_LOG_OPTS       = %GC_LOG_OPTS%
-  @echo     SOLR_TIMEZONE     = %SOLR_TIMEZONE%
+  @echo     SOLR_HOST_ADVERTISE = %SOLR_HOST_ADVERTISE%
+  @echo     SOLR_PORT           = %SOLR_PORT%
+  @echo     STOP_PORT           = %STOP_PORT%
+  @echo     SOLR_JAVA_MEM       = %SOLR_JAVA_MEM%
+  @echo     GC_TUNE             = !GC_TUNE!
+  @echo     GC_LOG_OPTS         = %GC_LOG_OPTS%
+  @echo     SOLR_TIMEZONE       = %SOLR_TIMEZONE%
 
   IF "%SOLR_MODE%"=="solrcloud" (
     @echo     CLOUD_MODE_OPTS   = %CLOUD_MODE_OPTS%
@@ -1073,7 +1082,7 @@ IF NOT "!CLOUD_MODE_OPTS!"=="" set "START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!"
 IF NOT "!IP_ACL_OPTS!"=="" set "START_OPTS=%START_OPTS% !IP_ACL_OPTS!"
 IF NOT "!REMOTE_JMX_OPTS!"=="" set "START_OPTS=%START_OPTS% !REMOTE_JMX_OPTS!"
 IF NOT "%SOLR_ADDL_ARGS%"=="" set "START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%"
-IF NOT "%SOLR_HOST_ARG%"=="" set "START_OPTS=%START_OPTS% %SOLR_HOST_ARG%"
+IF NOT "%SOLR_HOST_ADVERTISE_ARG%"=="" set "START_OPTS=%START_OPTS% %SOLR_HOST_ADVERTISE_ARG%"
 IF NOT "%SCRIPT_SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SCRIPT_SOLR_OPTS%"
 IF NOT "%SOLR_OPTS_INTERNAL%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS_INTERNAL%"
 IF NOT "!SECURITY_MANAGER_OPTS!"=="" set "START_OPTS=%START_OPTS% !SECURITY_MANAGER_OPTS!"
