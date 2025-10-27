@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Migrated solr.allowPaths and solr.allowUrls to modern equivalents.
+type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-17864
+    url: https://issues.apache.org/jira/browse/SOLR-17864
+issues:
+  - 17864
