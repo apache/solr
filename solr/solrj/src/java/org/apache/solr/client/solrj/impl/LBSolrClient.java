@@ -230,7 +230,7 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
-  protected static class EndpointIterator {
+  public static class EndpointIterator {
     Endpoint endpoint;
     List<Endpoint> skipped;
     int numServersTried;

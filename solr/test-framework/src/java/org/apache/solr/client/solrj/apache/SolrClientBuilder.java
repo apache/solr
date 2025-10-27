@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.apache;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -22,7 +22,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.Configurable;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.apache.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.RequestWriter;
 
 /**

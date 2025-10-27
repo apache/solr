@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.apache;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -34,7 +34,7 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
+import org.apache.solr.client.solrj.apache.HttpClientUtil.SocketFactoryRegistryProvider;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.After;
 import org.junit.Rule;

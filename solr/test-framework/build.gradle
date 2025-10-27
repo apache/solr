@@ -109,4 +109,6 @@ dependencies {
   })
   implementation libs.apache.httpcomponents.httpclient
   implementation libs.apache.httpcomponents.httpcore
+
+  testImplementation libs.apache.commons.lang3
 }

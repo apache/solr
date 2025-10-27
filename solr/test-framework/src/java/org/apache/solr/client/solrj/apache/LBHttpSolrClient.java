@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.apache;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -24,6 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 /**
