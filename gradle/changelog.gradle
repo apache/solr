@@ -32,14 +32,11 @@ task writeChangelog {
     def asfId = providers.gradleProperty("user.asfid").getOrElse(null)
     def asfIdUrl = asfId ? "\n    url: https://home.apache.org/phonebook.html?uid=${asfId}" : ""
     def gitBranch = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim()
-    def jiraMatcher = gitBranch =~ /SOLR-\d+/
+    def jiraMatcher = gitBranch.toUpperCase() =~ /SOLR-\d\d\d+/
     def jiraRef = jiraMatcher ? jiraMatcher[0] : "SOLR-XXXX"
     def jiraUrl = "https://issues.apache.org/jira/browse/${jiraRef}"
     def jiraLinks = jiraMatcher ? "links:\n  - name: ${jiraRef}\n    url: ${jiraUrl}" : ""
-    def githubMatcher = gitBranch =~ /(PR-|GH-|GITHUB-|#)(\d+)/
-    def githubRef = githubMatcher ? githubMatcher.group(2) : ""
-    def githubLink = githubMatcher ? "issues:\n  - ${githubRef}" : ""
-    def branchWithoutJira = gitBranch.replaceFirst(/(SOLR|LUCENE|INFRA)-\d+-/, "").replaceFirst(/(PR|GH|GITHUB|#)?(\d+)/, "").replace("-", " ").capitalize()
+    def branchWithoutJira = gitBranch.replaceFirst(/(?i)SOLR-\d\d\d+-/, "").replace("-", " ").capitalize()
     def fileName = "changelog/unreleased/${gitBranch}.yml"
     def file = new File(fileName)
     file.parentFile.mkdirs()
@@ -49,7 +46,6 @@ type: other # added, changed, fixed, deprecated, removed, dependency_update, sec
 authors:
   - name: ${configuredName}${nick}${asfIdUrl}
 ${jiraLinks}
-${githubLink}
 """
 
     println "Generated file: ${fileName} -- open it"
