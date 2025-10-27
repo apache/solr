@@ -26,7 +26,7 @@
   <str name="shareSchema">${shareSchema:false}</str>
   <str name="configSetBaseDir">${configSetBaseDir:configsets}</str>
   <str name="coreRootDirectory">${coreRootDirectory:.}</str>
-  <str name="allowPaths">${solr.allowPaths:}</str>
+  <str name="allowPaths">${solr.security.allow.paths:}</str>
   <str name="allowUrls">${solr.tests.security.allow.urls:}</str>
 
   <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">

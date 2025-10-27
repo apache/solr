@@ -35,7 +35,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
   <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
   <str name="sharedLib">${solr.sharedLib:}</str>
   <str name="modules">${solr.modules:}</str>
-  <str name="allowPaths">${solr.allowPaths:}</str>
+  <str name="allowPaths">${solr.security.allow.paths:}</str>
   <str name="allowUrls">${solr.security.allow.urls:}</str>
   <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
 

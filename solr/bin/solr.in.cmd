@@ -234,7 +234,7 @@ REM set SOLR_UI_EXPERIMENTAL_ENABLED=false
 REM Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 REM Sometimes it may be necessary to place a core or a backup on a different location or a different disk
 REM This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
-REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.security.allow.paths=D:\,E:\other\path
 
 REM Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
 REM To restore the old behavior, set the variable below to true
