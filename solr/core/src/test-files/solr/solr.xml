@@ -27,7 +27,7 @@
   <str name="configSetBaseDir">${configSetBaseDir:configsets}</str>
   <str name="coreRootDirectory">${coreRootDirectory:.}</str>
   <str name="allowPaths">${solr.allowPaths:}</str>
-  <str name="allowUrls">${solr.tests.allowUrls:}</str>
+  <str name="allowUrls">${solr.tests.security.allow.urls:}</str>
   <bool name="hideStackTrace">${solr.hideStackTrace:true}</bool>
   <int name="indexSearcherExecutorThreads">4</int>
 
