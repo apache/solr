@@ -1294,6 +1294,7 @@ function start_solr() {
   SCRIPT_SOLR_OPTS+=("--enable-native-access=ALL-UNNAMED")
 
   # shellcheck disable=SC2164
+  # jetty.port is required by Jetty start.jar process.
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE_ARR[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" -Dsolr.logs.dir="$SOLR_LOGS_DIR" \
     "-Dsolr.port.listen=$SOLR_PORT_LISTEN" "-Djetty.port=$SOLR_PORT_LISTEN" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
