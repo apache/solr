@@ -175,6 +175,7 @@ teardown() {
   export ZK2_PORT=$((SOLR2_PORT+1000))
 
   run solr zk ls / --recursive
+  assert_output --partial "assuming solr url is http://localhost:8983"
   refute_output --partial "aliases.json"
 
   export ZK_HOST=localhost:${ZK2_PORT}
