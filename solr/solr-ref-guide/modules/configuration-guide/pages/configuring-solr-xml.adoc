@@ -36,7 +36,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
   <str name="sharedLib">${solr.sharedLib:}</str>
   <str name="modules">${solr.modules:}</str>
   <str name="allowPaths">${solr.allowPaths:}</str>
-  <str name="allowUrls">${solr.allowUrls:}</str>
+  <str name="allowUrls">${solr.security.allow.urls:}</str>
   <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
 
   <solrcloud>
@@ -285,7 +285,7 @@ When running Solr as a user-managed cluster and using the `shards` parameter, a 
 +
 In SolrCloud mode, the allow-list is automatically configured to include all live nodes in the cluster.
 +
-The allow-list can also be configured with the `solr.allowUrls` system property in `solr.in.sh` / `solr.in.cmd`.
+The allow-list can also be configured with the `solr.security.allow.urls` system property in `solr.in.sh` / `solr.in.cmd`.
 If you need to disable this feature for backwards compatibility, you can set the system property `solr.security.allow.urls.enabled=false`.
 
 `hideStackTrace`::
