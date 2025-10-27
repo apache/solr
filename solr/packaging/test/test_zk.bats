@@ -174,11 +174,20 @@ teardown() {
   solr start --user-managed -p ${SOLR2_PORT}
   export ZK2_PORT=$((SOLR2_PORT+1000))
 
+  # Need to unset SOLR_PORT to avoid the tool being smart and look at SOLR_PORT
+  export SOLR_PORT_KEEP=$SOLR_PORT
+  unset SOLR_PORT
+
+  # First test a command that will fail
   run solr zk ls / --recursive
   assert_output --partial "assuming solr url is http://localhost:8983"
   refute_output --partial "aliases.json"
 
+  # Then set the ZK_HOST variable and test again
   export ZK_HOST=localhost:${ZK2_PORT}
   run solr zk ls / --recursive
   assert_output --partial "aliases.json"
+
+  # Restore SOLR_PORT
+  export SOLR_PORT=$SOLR_PORT_KEEP
 }
