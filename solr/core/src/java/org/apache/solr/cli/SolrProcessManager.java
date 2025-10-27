@@ -44,7 +44,10 @@ import org.apache.solr.common.util.EnvUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Class to interact with Solr OS processes */
+/**
+ * Class to interact with Solr OS processes jetty.port is for backwards compat and should be removed
+ * in Solr 11
+ */
 public class SolrProcessManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -61,10 +64,14 @@ public class SolrProcessManager {
     if (Constants.WINDOWS) {
       pidToWindowsCommandLineMap.putAll(commandLinesWindows());
     }
+
     pidProcessMap =
         ProcessHandle.allProcesses()
             .filter(p -> p.info().command().orElse("").contains("java"))
-            .filter(p -> commandLine(p).orElse("").contains("-Djetty.port="))
+            .filter(
+                p ->
+                    commandLine(p).orElse("").contains("-Dsolr.port.listen=")
+                        || commandLine(p).orElse("").contains("-Djetty.port="))
             .filter(
                 p -> !enableTestingMode || commandLine(p).orElse("").contains("-DmockSolr=true"))
             .collect(
@@ -145,7 +152,7 @@ public class SolrProcessManager {
   private Optional<Integer> parsePortFromProcess(ProcessHandle ph) {
     Optional<String> portStr =
         arguments(ph).stream()
-            .filter(a -> a.contains("-Djetty.port="))
+            .filter(a -> a.contains("-Dsolr.port.listen=") || a.contains("-Djetty.port="))
             .map(s -> s.split("=")[1])
             .findFirst();
     return portStr.isPresent() ? portStr.map(Integer::parseInt) : Optional.empty();

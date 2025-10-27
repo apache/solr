@@ -305,7 +305,8 @@ public class RunExampleTool extends ToolBase {
     String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION);
     int port =
         Integer.parseInt(
-            cli.getOptionValue(PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT", "8983")));
+            cli.getOptionValue(
+                PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983")));
     Map<String, Object> nodeStatus = startSolr(solrHomeDir, isCloudMode, cli, port, zkHost, 30);
 
     String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
@@ -519,9 +520,11 @@ public class RunExampleTool extends ToolBase {
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
     int defaultPort =
         Integer.parseInt(
-            cli.getOptionValue(PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT", "8983")));
+            cli.getOptionValue(
+                PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983")));
     if (defaultPort != 8983) {
-      // Override the old default port numbers if user has started the example overriding SOLR_PORT
+      // Override the old default port numbers if user has started the example overriding
+      // SOLR_PORT_LISTEN
       cloudPorts = new int[] {defaultPort, defaultPort + 1, defaultPort + 2, defaultPort + 3};
     }
 

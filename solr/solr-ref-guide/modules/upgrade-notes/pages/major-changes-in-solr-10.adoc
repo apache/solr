@@ -43,6 +43,8 @@ The previous `SOLR_JETTY_HOST` environment variable and `-Dsolr.jetty.host` Syst
 
 The previous `SOLR_HOST` and 'host' are deprecated and now use `SOLR_HOST_ADVERTISE` and `solr.host.advertise`.
 
+The previous `jetty.port` is deprecated and now use `solr.port.listen`.
+
 
 === Solr CLI and Scripts
 

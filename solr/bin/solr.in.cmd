@@ -85,7 +85,7 @@ REM to monitor the JVM hosting Solr; set to "false" to disable that behavior
 REM (false is recommended in production environments)
 REM set ENABLE_REMOTE_JMX_OPTS=false
 
-REM The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
+REM The script will use SOLR_PORT_LISTEN+10000 for the RMI_PORT or you can set it here
 REM set RMI_PORT=18983
 
 REM Anything you add to the SOLR_OPTS variable will be included in the java
@@ -117,7 +117,7 @@ REM Enables jetty request log for all requests
 REM set SOLR_REQUESTLOG_ENABLED=true
 
 REM Sets the port Solr binds to, default is 8983
-REM set SOLR_PORT=8983
+REM set SOLR_PORT_LISTEN=8983
 
 REM Sets the network interface the Solr binds to. To prevent administrators from
 REM accidentally exposing Solr more widely than intended, this defaults to 127.0.0.1.

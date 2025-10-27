@@ -300,8 +300,8 @@ goto err
 @echo   --host host   Specify the hostname for this Solr instance
 @echo.
 @echo   -p/--port port Specify the port to start the Solr HTTP listener on; default is 8983
-@echo                   The specified port (SOLR_PORT) will also be used to determine the stop port
-@echo                   STOP_PORT=(%%SOLR_PORT%%-1000) and JMX RMI listen port RMI_PORT=(%%SOLR_PORT%%+10000).
+@echo                   The specified port (SOLR_PORT_LISTEN) will also be used to determine the stop port
+@echo                   STOP_PORT=(%%SOLR_PORT_LISTEN%%-1000) and JMX RMI listen port RMI_PORT=(%%SOLR_PORT_LISTEN%%+10000).
 @echo                   For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985
 @echo.
 @echo   --server-dir dir Specify the Solr server directory; defaults to server
@@ -576,7 +576,7 @@ IF "%firstChar%"=="-" (
   goto invalid_cmd_line
 )
 
-set SOLR_PORT=%~2
+set SOLR_PORT_LISTEN=%~2
 set "PASS_TO_RUN_EXAMPLE=-p %~2 !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 SHIFT
@@ -765,7 +765,7 @@ IF NOT "%EXAMPLE%"=="" (
 
 set IS_RESTART=0
 IF "%SCRIPT_CMD%"=="restart" (
-  IF "%SOLR_PORT%"=="" (
+  IF "%SOLR_PORT_LISTEN%"=="" (
     set "SCRIPT_ERROR=Must specify the port when trying to restart Solr."
     goto err
   )
@@ -781,7 +781,7 @@ IF "%SCRIPT_CMD%"=="start" goto start_solr
 IF "%SOLR_STOP_WAIT%"=="" (
   set SOLR_STOP_WAIT=180
 )
-IF "%SOLR_PORT%"=="" (
+IF "%SOLR_PORT_LISTEN%"=="" (
   IF "%STOP_ALL%"=="1" (
     REM Stop all running Solr instances
     set found_it=0
@@ -823,14 +823,14 @@ IF "%SOLR_PORT%"=="" (
 ) ELSE (
   REM Stop Solr running on specific port
   set found_it=0
-  For /f "tokens=2,5" %%M in ('netstat -nao ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
+  For /f "tokens=2,5" %%M in ('netstat -nao ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT_LISTEN% "') do (
     IF NOT "%%N"=="0" (
-      IF "%%M"=="%SOLR_HOST_BIND%:%SOLR_PORT%" (
+      IF "%%M"=="%SOLR_HOST_BIND%:%SOLR_PORT_LISTEN%" (
         set found_it=1
-        @echo Stopping Solr process %%N running on port %SOLR_PORT%
-        IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
+        @echo Stopping Solr process %%N running on port %SOLR_PORT_LISTEN%
+        IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT_LISTEN% - 1000
         "%JAVA%" %SOLR_SSL_OPTS% %SOLR_TOOL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" %SOLR_JETTY_CONFIG% STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
-        del "%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
+        del "%SOLR_TIP%"\bin\solr-%SOLR_PORT_LISTEN%.port
         REM wait for the process to terminate
         CALL :wait_for_process_exit %%N !SOLR_STOP_WAIT!
         REM Kill it if it is still running after the graceful shutdown
@@ -842,7 +842,7 @@ IF "%SOLR_PORT%"=="" (
       )
     )
   )
-  if "!found_it!"=="0" echo No Solr found running on port %SOLR_PORT%
+  if "!found_it!"=="0" echo No Solr found running on port %SOLR_PORT_LISTEN%
 )
 
 IF "!IS_RESTART!"=="0" goto done
@@ -879,8 +879,8 @@ IF NOT "%TMP_SOLR_HOME%"=="%SOLR_HOME%" (
 )
 
 
-IF "%SOLR_PORT%"=="" set SOLR_PORT=8983
-IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
+IF "%SOLR_PORT_LISTEN%"=="" set SOLR_PORT_LISTEN=8983
+IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT_LISTEN% - 1000
 
 IF DEFINED SOLR_PORT_ADVERTISE (
   set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.port.advertise=%SOLR_PORT_ADVERTISE%"
@@ -891,10 +891,10 @@ IF DEFINED SOLR_HOST_BIND (
 )
 
 REM Make sure Solr is not running using netstat
-For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
+For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT_LISTEN% "') do (
   IF NOT "%%k"=="0" (
-    IF "%%j"=="%SOLR_HOST_BIND%:%SOLR_PORT%" (
-      set "SCRIPT_ERROR=Process %%k is already listening on port %SOLR_PORT%. If this is Solr, please stop it first before starting (or use restart). If this is not Solr, then please choose a different port using -p PORT"
+    IF "%%j"=="%SOLR_HOST_BIND%:%SOLR_PORT_LISTEN%" (
+      set "SCRIPT_ERROR=Process %%k is already listening on port %SOLR_PORT_LISTEN%. If this is Solr, please stop it first before starting (or use restart). If this is not Solr, then please choose a different port using -p PORT"
       goto err
     )
   )
@@ -928,8 +928,8 @@ IF "%SOLR_MODE%"=="solrcloud" (
   IF NOT "%ZK_HOST%"=="" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
   ) ELSE (
-    IF %SOLR_PORT% GTR 64535 (
-      set "SCRIPT_ERROR=ZK_HOST is not set and Solr port is %SOLR_PORT%, which would result in an invalid embedded Zookeeper port!"
+    IF %SOLR_PORT_LISTEN% GTR 64535 (
+      set "SCRIPT_ERROR=ZK_HOST is not set and Solr port is %SOLR_PORT_LISTEN%, which would result in an invalid embedded Zookeeper port!"
       goto err
     )
     IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded Zookeeper using -Dsolr.zookeeper.server.enabled
@@ -969,7 +969,7 @@ set IP_ACL_OPTS=-Dsolr.jetty.inetaccess.includes="%SOLR_IP_ALLOWLIST%" ^
 REM These are useful for attaching remove profilers like VisualVM/JConsole
 IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
   IF "!RMI_PORT!"=="" (
-    set /A RMI_PORT=%SOLR_PORT%+10000
+    set /A RMI_PORT=%SOLR_PORT_LISTEN%+10000
     IF !RMI_PORT! GTR 65535 (
       set "SCRIPT_ERROR=RMI_PORT is !RMI_PORT!, which is invalid!"
       goto err
@@ -1026,7 +1026,7 @@ IF "%verbose%"=="1" (
   CALL :safe_echo "    SOLR_SERVER_DIR   = %SOLR_SERVER_DIR%"
   CALL :safe_echo "    SOLR_HOME         = %SOLR_HOME%"
   @echo     SOLR_HOST_ADVERTISE = %SOLR_HOST_ADVERTISE%
-  @echo     SOLR_PORT           = %SOLR_PORT%
+  @echo     SOLR_PORT_LISTEN    = %SOLR_PORT_LISTEN%
   @echo     STOP_PORT           = %STOP_PORT%
   @echo     SOLR_JAVA_MEM       = %SOLR_JAVA_MEM%
   @echo     GC_TUNE             = !GC_TUNE!
@@ -1087,7 +1087,7 @@ IF NOT "%SCRIPT_SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SCRIPT_SOLR_OPTS%"
 IF NOT "%SOLR_OPTS_INTERNAL%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS_INTERNAL%"
 IF NOT "!SECURITY_MANAGER_OPTS!"=="" set "START_OPTS=%START_OPTS% !SECURITY_MANAGER_OPTS!"
 IF "%SOLR_SSL_ENABLED%"=="true" (
-  set "SSL_PORT_PROP=-Dsolr.jetty.https.port=%SOLR_PORT%"
+  set "SSL_PORT_PROP=-Dsolr.jetty.https.port=%SOLR_PORT_LISTEN%"
   set "START_OPTS=%START_OPTS% %SOLR_SSL_OPTS% !SSL_PORT_PROP!"
 )
 
@@ -1126,22 +1126,22 @@ IF NOT EXIST "%SOLR_SERVER_DIR%\tmp" (
 
 IF "%FG%"=="1" (
   REM run solr in the foreground
-  title "Solr-%SOLR_PORT%"
-  echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
+  title "Solr-%SOLR_PORT_LISTEN%"
+  echo %SOLR_PORT_LISTEN%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT_LISTEN%.port
   "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" ^
-    -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
+    -Dsolr.port.listen=%SOLR_PORT_LISTEN% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%"
 ) ELSE (
-  START /B "Solr-%SOLR_PORT%" /D "%SOLR_SERVER_DIR%" ^
+  START /B "Solr-%SOLR_PORT_LISTEN%" /D "%SOLR_SERVER_DIR%" ^
     "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.log.muteconsole ^
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" ^
-    -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
-    -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
-  echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
+    -Dsolr.port.listen=%SOLR_PORT_LISTEN% -Djetty.home="%SOLR_SERVER_DIR%" ^
+    -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT_LISTEN%-console.log"
+  echo %SOLR_PORT_LISTEN%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT_LISTEN%.port
 
   IF "!SOLR_START_WAIT!"=="" (
     set SOLR_START_WAIT=180

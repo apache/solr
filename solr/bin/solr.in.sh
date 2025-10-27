@@ -91,7 +91,7 @@
 # (false is recommended in production environments)
 #ENABLE_REMOTE_JMX_OPTS="false"
 
-# The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
+# The script will use SOLR_PORT_LISTEN+10000 for the RMI_PORT or you can set it here
 # RMI_PORT=18983
 
 # Anything you add to the SOLR_OPTS variable will be included in the java
@@ -132,7 +132,7 @@
 #SOLR_REQUESTLOG_ENABLED=true
 
 # Sets the port Solr binds to, default is 8983
-#SOLR_PORT=8983
+#SOLR_PORT_LISTEN=8983
 
 # Restrict access to solr by IP address.
 # Specify a comma-separated list of addresses or networks, for example:
