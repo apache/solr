@@ -215,7 +215,7 @@ artifacts {
   solrSlimTgz(slimDistTar)
 }
 
-tasks.register('run', JavaExec) {
+tasks.register('runDevSlim', JavaExec) {
   group = 'application'
   description = 'Starts Solr for local experimentation.  Does NOT use the bin/solr script.'
   dependsOn 'devSlim'
@@ -232,6 +232,7 @@ tasks.register('run', JavaExec) {
 
   maxHeapSize = project.findProperty('maxHeapSize') ?: '1G'
 
+  jvmArgs = [] // don't use defaults from our build that assume this is a typical build task
   jvmArgs((project.findProperty('jvmArgs') ?: '').split())
 
   systemProperty 'host', 'localhost'
