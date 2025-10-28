@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -28,21 +29,36 @@ import org.apache.solr.client.solrj.impl.SolrZkClientTimeout.SolrZkClientTimeout
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * SolrJ client class to communicate with SolrCloud using Http2SolrClient. Instances of this class
- * communicate with Zookeeper to discover Solr endpoints for SolrCloud collections, and then use the
- * {@link LBHttp2SolrClient} to issue requests.
+ * SolrJ client class to communicate with SolrCloud using an Http/2-capable Solr Client. Instances
+ * of this class communicate with Zookeeper to discover Solr endpoints for SolrCloud collections,
+ * and then use the {@link LBHttp2SolrClient} to issue requests.
  *
  * @since solr 8.0
  */
 @SuppressWarnings("serial")
 public class CloudHttp2SolrClient extends CloudSolrClient {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ClusterStateProvider stateProvider;
-  private final LBHttp2SolrClient<Http2SolrClient> lbClient;
-  private final Http2SolrClient myClient;
+  private final LBHttp2SolrClient<HttpSolrClientBase> lbClient;
+  private final HttpSolrClientBase myClient;
   private final boolean clientIsInternal;
+
+  private static final boolean JETTY_CLIENT_AVAILABLE;
+
+  static {
+    boolean jettyClientAvailable = true;
+    try {
+      Class.forName("org.eclipse.jetty.client.HttpClient");
+    } catch (ClassNotFoundException e) {
+      jettyClientAvailable = false;
+    }
+    JETTY_CLIENT_AVAILABLE = jettyClientAvailable;
+  }
 
   /**
    * Create a new client object that connects to Zookeeper and is always aware of the SolrCloud
@@ -50,7 +66,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
    * every shard in a collection, there is no single point of failure. Updates will be sent to shard
    * leaders by default.
    *
-   * @param builder a {@link Http2SolrClient.Builder} with the options used to create the client.
+   * @param builder a {@link CloudHttp2SolrClient.Builder} with the options used to create the
+   *     client.
    */
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
@@ -73,16 +90,20 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     // locks.
     this.locks = objectList(builder.parallelCacheRefreshesLocks);
 
-    this.lbClient = new LBHttp2SolrClient.Builder<Http2SolrClient>(myClient).build();
+    this.lbClient = new LBHttp2SolrClient.Builder<>(myClient).build();
   }
 
-  private Http2SolrClient createOrGetHttpClientFromBuilder(Builder builder) {
+  private HttpSolrClientBase createOrGetHttpClientFromBuilder(Builder builder) {
     if (builder.httpClient != null) {
       return builder.httpClient;
     } else if (builder.internalClientBuilder != null) {
       return builder.internalClientBuilder.build();
-    } else {
+    } else if (JETTY_CLIENT_AVAILABLE) {
+      log.debug("Using {} as the delegate http client", Http2SolrClient.class);
       return new Http2SolrClient.Builder().build();
+    } else {
+      log.debug("Using {} as the delegate http client", HttpJdkSolrClient.class);
+      return new HttpJdkSolrClient.Builder().build();
     }
   }
 
@@ -113,7 +134,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   }
 
   private ClusterStateProvider createHttp2ClusterStateProvider(
-      List<String> solrUrls, Http2SolrClient httpClient) {
+      List<String> solrUrls, HttpSolrClientBase httpClient) {
     try {
       return new Http2ClusterStateProvider<>(solrUrls, httpClient);
     } catch (Exception e) {
@@ -148,7 +169,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   }
 
   @Override
-  public LBHttp2SolrClient<Http2SolrClient> getLbClient() {
+  public LBHttp2SolrClient<?> getLbClient() {
     return lbClient;
   }
 
@@ -157,13 +178,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     return stateProvider;
   }
 
-  public Http2SolrClient getHttpClient() {
+  public HttpSolrClientBase getHttpClient() {
     return myClient;
-  }
-
-  @Override
-  protected boolean wasCommError(Throwable rootCause) {
-    return false;
   }
 
   /** Constructs {@link CloudHttp2SolrClient} instances from provided configuration. */
@@ -171,12 +187,12 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     protected Collection<String> zkHosts = new ArrayList<>();
     protected List<String> solrUrls = new ArrayList<>();
     protected String zkChroot;
-    protected Http2SolrClient httpClient;
+    protected HttpSolrClientBase httpClient;
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
     protected ClusterStateProvider stateProvider;
-    protected Http2SolrClient.Builder internalClientBuilder;
+    protected HttpSolrClientBuilderBase<?, ?> internalClientBuilder;
     private RequestWriter requestWriter;
     private ResponseParser responseParser;
     private long retryExpiryTimeNano =
@@ -368,13 +384,13 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
-     * Set the internal {@link Http2SolrClient}.
+     * Set the internal Solr HTTP client.
      *
      * <p>Note: closing the client instance is the responsibility of the caller.
      *
      * @return this
      */
-    public Builder withHttpClient(Http2SolrClient httpSolrClient) {
+    public Builder withHttpClient(HttpSolrClientBase httpSolrClient) {
       if (this.internalClientBuilder != null) {
         throw new IllegalStateException(
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
@@ -384,14 +400,14 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
-     * If provided, the CloudHttp2SolrClient will build it's internal Http2SolrClient using this
-     * builder (instead of the empty default one). Providing this builder allows users to configure
-     * the internal clients (authentication, timeouts, etc.).
+     * If provided, the CloudHttp2SolrClient will build it's internal client using this builder
+     * (instead of the empty default one). Providing this builder allows users to configure the
+     * internal clients (authentication, timeouts, etc.).
      *
      * @param internalClientBuilder the builder to use for creating the internal http client.
      * @return this
      */
-    public Builder withHttpClientBuilder(Http2SolrClient.Builder internalClientBuilder) {
+    public Builder withHttpClientBuilder(HttpSolrClientBuilderBase<?, ?> internalClientBuilder) {
       if (this.httpClient != null) {
         throw new IllegalStateException(
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
@@ -401,7 +417,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     @Deprecated(since = "9.10")
-    public Builder withInternalClientBuilder(Http2SolrClient.Builder internalClientBuilder) {
+    public Builder withInternalClientBuilder(
+        HttpSolrClientBuilderBase<?, ?> internalClientBuilder) {
       return withHttpClientBuilder(internalClientBuilder);
     }
 

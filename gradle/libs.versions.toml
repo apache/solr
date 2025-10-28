@@ -39,9 +39,8 @@ apache-kafka = "3.9.1"
 apache-log4j = "2.21.0"
 apache-lucene = "10.3.1"
 apache-opennlp = "2.5.6"
-apache-poi = "5.2.2"
 apache-rat = "0.15"
-apache-tika = "1.28.5"
+apache-tika = "3.2.3"
 apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.4"
 # @keep for version alignment
@@ -79,6 +78,8 @@ cuvs-lucene = "25.10.0"
 cybozulabs-langdetect = "1.1-20120112"
 decompose = "3.3.0"
 diffplug-spotless = "7.2.1"
+# @keep Use for dockerfile JRE version
+dockerfile-baseimage-java = "25"
 dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.39.0"
 eclipse-jetty = "12.0.27"
@@ -161,6 +162,7 @@ langchain4j = "0.35.0"
 link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "0.8.5"
 lmax-disruptor = "3.4.4"
+logchange = "1.19.10"
 ltgt-errorprone = "3.1.0"
 mockito = "5.19.0"
 morethan-jmhreport = "0.9.6"
@@ -204,7 +206,6 @@ thetaphi-forbiddenapis = "3.10"
 thisptr-jacksonjq = "0.0.13"
 threeten-bp = "1.6.8"
 undercouch-download = "5.6.0"
-xerces = "2.12.2"
 xerial-snappy = "1.1.10.8"
 
 [plugins]
@@ -216,6 +217,7 @@ jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "compose" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 littlerobots-versioncatalogupdate = { id = "nl.littlerobots.version-catalog-update", version.ref = "littlerobots-versioncatalogupdate" }
+logchange = { id = "dev.logchange", version.ref = "logchange" }
 ltgt-errorprone = { id = "net.ltgt.errorprone", version.ref = "ltgt-errorprone" }
 morethan-jmhreport = { id = "io.morethan.jmhreport", version.ref = "morethan-jmhreport" }
 nodegradle-node = { id = "com.github.node-gradle.node", version.ref = "nodegradle-node" }
@@ -294,11 +296,8 @@ apache-lucene-suggest = { module = "org.apache.lucene:lucene-suggest", version.r
 apache-lucene-testframework = { module = "org.apache.lucene:lucene-test-framework", version.ref = "apache-lucene" }
 apache-opennlp-dl = { module = "org.apache.opennlp:opennlp-dl", version.ref = "apache-opennlp" }
 apache-opennlp-tools = { module = "org.apache.opennlp:opennlp-tools", version.ref = "apache-opennlp" }
-apache-poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "apache-poi" }
-apache-poi-poi = { module = "org.apache.poi:poi", version.ref = "apache-poi" }
 apache-rat-rat = { module = "org.apache.rat:apache-rat", version.ref = "apache-rat" }
 apache-tika-core = { module = "org.apache.tika:tika-core", version.ref = "apache-tika" }
-apache-tika-parsers = { module = "org.apache.tika:tika-parsers", version.ref = "apache-tika" }
 apache-tomcat-annotationsapi = { module = "org.apache.tomcat:annotations-api", version.ref = "apache-tomcat" }
 apache-zookeeper-jute = { module = "org.apache.zookeeper:zookeeper-jute", version.ref = "apache-zookeeper" }
 apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", version.ref = "apache-zookeeper" }
@@ -524,5 +523,4 @@ tdunning-tdigest = { module = "com.tdunning:t-digest", version.ref = "tdunning-t
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 thisptr-jacksonjq = { module = "net.thisptr:jackson-jq", version.ref = "thisptr-jacksonjq" }
 threeten-bp = { module = "org.threeten:threetenbp", version.ref = "threeten-bp" }
-xerces-impl = { module = "xerces:xercesImpl", version.ref = "xerces" }
 xerial-snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "xerial-snappy" }

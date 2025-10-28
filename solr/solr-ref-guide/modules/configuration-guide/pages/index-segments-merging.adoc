@@ -141,7 +141,7 @@ Faster index updates also means shorter commit turnaround times, which means mor
 === Controlling Deleted Document Percentages
 
 When a document is deleted or updated, the document is marked as deleted but it not removed from the index until the segment is merged.
-There are two parameters that can can be adjusted when using the default `TieredMergePolicy` that influence the number of deleted documents in an index.
+There are two parameters that can be adjusted when using the default `TieredMergePolicy` that influence the number of deleted documents in an index.
 
 `forceMergeDeletesPctAllowed`::
 +
@@ -285,7 +285,7 @@ The LockFactory options specify the locking implementation to use.
 
 The set of valid lock type options depends on the xref:index-location-format.adoc[DirectoryFactory] you have configured.
 
-The values listed below are are supported by `StandardDirectoryFactory` (the default):
+The values listed below are supported by `StandardDirectoryFactory` (the default):
 
 * `native` (default) uses `NativeFSLockFactory` to specify native OS file locking.
 If a second Solr process attempts to access the directory, it will fail.

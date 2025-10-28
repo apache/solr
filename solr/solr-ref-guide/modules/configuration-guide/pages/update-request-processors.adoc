@@ -425,7 +425,7 @@ The {solr-javadocs}/modules/langid/index.html[`langid`] module provides::
 
 {solr-javadocs}/modules/langid/org/apache/solr/update/processor/LangDetectLanguageIdentifierUpdateProcessorFactory.html[LangDetectLanguageIdentifierUpdateProcessorFactory]::: Identifies the language of a set of input fields using http://code.google.com/p/language-detection.
 
-{solr-javadocs}/modules/langid/org/apache/solr/update/processor/TikaLanguageIdentifierUpdateProcessorFactory.html[TikaLanguageIdentifierUpdateProcessorFactory]::: Identifies the language of a set of input fields using Tika's LanguageIdentifier.
+{solr-javadocs}/modules/langid/org/apache/solr/update/processor/OpenNLPLangDetectUpdateProcessorFactory.html[OpenNLPLangDetectUpdateProcessorFactory]::: Identifies the language of a set of input fields using OpenNLP's language detection model.
 
 The {solr-javadocs}/modules/analysis-extras/index.html[`analysis-extras`] module provides::
 
