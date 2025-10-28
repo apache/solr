@@ -1,6 +1,5 @@
 package org.apache.solr.llm.textvectorisation.update.processor;
 
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -25,7 +24,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.llm.textvectorisation.model.SolrTextToVectorModel;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.zookeeper.common.StringUtils;
@@ -41,7 +39,8 @@ public class LazyMultiFieldTextToVectorUpdateProcessor extends TextToVectorUpdat
   private final String outputField;
   private final SolrTextToVectorModel textToVector;
   private final String[] additionalInputFields;
-  private final Map<String, SolrClient> solrClientMap = Collections.synchronizedMap(new HashMap<>());
+  private final Map<String, SolrClient> solrClientMap =
+      Collections.synchronizedMap(new HashMap<>());
 
   public LazyMultiFieldTextToVectorUpdateProcessor(
       String inputField,
@@ -65,7 +64,11 @@ public class LazyMultiFieldTextToVectorUpdateProcessor extends TextToVectorUpdat
 
     SolrInputField inputFieldContent = newDoc.get(inputField);
 
-    ArrayList<String> allFields = new ArrayList<>(Arrays.asList(additionalInputFields));
+    ArrayList<String> allFields =
+        additionalInputFields != null
+            ? new ArrayList<>(Arrays.asList(additionalInputFields))
+            : new ArrayList<>(1);
+
     allFields.add(inputField);
     Collections.reverse(allFields);
 
@@ -75,29 +78,31 @@ public class LazyMultiFieldTextToVectorUpdateProcessor extends TextToVectorUpdat
       try {
         String newDocId = newDoc.getField("id").getValue().toString();
         SolrDocument oldDoc =
-            getCurrentSolrDocFromCore(
-                cmd.getReq().getCore(), newDocId, allFields);
+            getCurrentSolrDocFromCore(cmd.getReq().getCore(), newDocId, allFields);
 
-        List<Float> targetVector = getFreshVectorIfChanged(oldDoc, allFields, contentFromNewDoc, newDocId);
+        List<Float> targetVector =
+            getFreshVectorIfChanged(oldDoc, allFields, contentFromNewDoc, newDocId);
 
         newDoc.addField(outputField, targetVector);
       } catch (RuntimeException vectorisationFailure) {
         logError(vectorisationFailure, newDoc);
       }
     }
-    if (next != null) {
-      next.processAdd(cmd);
-    }
+    if (next != null) next.processAdd(cmd);
+    //    next.processAdd(cmd);
   }
 
   @SuppressWarnings("unchecked")
   protected List<Float> getFreshVectorIfChanged(
-      SolrDocument oldDoc, ArrayList<String> allFields, String contentFromNewDoc, final String newDocId) {
+      SolrDocument oldDoc,
+      ArrayList<String> allFields,
+      String contentFromNewDoc,
+      final String newDocId) {
 
     if (oldDoc != null && oldDoc.getFieldValue(outputField) != null) {
 
       String contentOldDoc = concatenatedFieldContent(oldDoc, allFields);
-      //no need to create vector if old content is equals to new content
+      // no need to create vector if old content is equals to new content
       if (contentFromNewDoc.equals(contentOldDoc)) {
         log.info("Content for doc {} is unchanged, no new vectors are generated", newDocId);
         Object fieldValue = oldDoc.getFieldValue(outputField);
@@ -116,9 +121,11 @@ public class LazyMultiFieldTextToVectorUpdateProcessor extends TextToVectorUpdat
     return vectorAsList;
   }
 
-  protected SolrDocument getCurrentSolrDocFromCore(SolrCore core, String id, List<String> allFields) {
+  protected SolrDocument getCurrentSolrDocFromCore(
+      SolrCore core, String id, List<String> allFields) {
 
-    SolrClient solrClient = solrClientMap.computeIfAbsent(core.getName(), k -> new EmbeddedSolrServer(core));
+    SolrClient solrClient =
+        solrClientMap.computeIfAbsent(core.getName(), k -> new EmbeddedSolrServer(core));
 
     // we need to make a copy since we add an element to it
     allFields = new ArrayList<>(allFields);
@@ -136,6 +143,19 @@ public class LazyMultiFieldTextToVectorUpdateProcessor extends TextToVectorUpdat
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
     }
 
+    ModifiableSolrParams queryParams2 = new ModifiableSolrParams();
+    queryParams2.set("q", "*:*");
+
+    try {
+      QueryResponse resposne = solrClient.query(queryParams2);
+      System.out.println(resposne.toString());
+
+    } catch (SolrServerException e) {
+      throw new RuntimeException(e);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
     SolrDocumentList results = response.getResults();
     if (results.getNumFound() > 0) {
       return (results.getFirst());
@@ -144,7 +164,7 @@ public class LazyMultiFieldTextToVectorUpdateProcessor extends TextToVectorUpdat
   }
 
   protected String concatenatedFieldContent(Map<String, Object> docFields, List<String> allFields) {
-    if (additionalInputFields == null) {
+    if (allFields == null) {
       return "";
     }
 

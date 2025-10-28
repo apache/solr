@@ -51,8 +51,6 @@ public class CustomModel extends DimensionAwareEmbeddingModel {
     return Response.from(embeddings);
   }
 
-
-
   private List<Float> doEmbeddingCall(String text) {
 
     try {
@@ -64,15 +62,17 @@ public class CustomModel extends DimensionAwareEmbeddingModel {
 
       // Create HTTP client and request
 
-      HttpRequest request = HttpRequest.newBuilder()
-          .timeout(timeout)
-          .uri(URI.create(endpointUrl))
-          .header("Content-Type", "application/json")
-          .POST(HttpRequest.BodyPublishers.ofString(jsonPayload, StandardCharsets.UTF_8))
-          .build();
+      HttpRequest request =
+          HttpRequest.newBuilder()
+              .timeout(timeout)
+              .uri(URI.create(endpointUrl))
+              .header("Content-Type", "application/json")
+              .POST(HttpRequest.BodyPublishers.ofString(jsonPayload, StandardCharsets.UTF_8))
+              .build();
 
       // Send request and get response
-      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      HttpResponse<String> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       // Parse and return
       return parseFloatArray(response.body());
@@ -99,9 +99,7 @@ public class CustomModel extends DimensionAwareEmbeddingModel {
     String endpointUrl;
     private String fieldName;
 
-    public CustomModelBuilder() {
-
-    }
+    public CustomModelBuilder() {}
 
     public CustomModel build() {
       return new CustomModel(false, Duration.ofSeconds(30), endpointUrl, fieldName);

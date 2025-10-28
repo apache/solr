@@ -52,10 +52,10 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
   private static final String OUTPUT_FIELD_PARAM = "outputField";
   private static final String MODEL_NAME = "model";
 
-  private String inputField;
-  private String outputField;
-  private String modelName;
-  private SolrParams params;
+  protected String inputField;
+  protected String outputField;
+  protected String modelName;
+  protected SolrParams params;
 
   @Override
   public void init(final NamedList<?> args) {
@@ -94,7 +94,8 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
     return createTextToVectorUpdateProcessor(req, next, textToVector);
   }
 
-  protected TextToVectorUpdateProcessor createTextToVectorUpdateProcessor(SolrQueryRequest req, UpdateRequestProcessor next, SolrTextToVectorModel textToVector) {
+  TextToVectorUpdateProcessor createTextToVectorUpdateProcessor(
+      SolrQueryRequest req, UpdateRequestProcessor next, SolrTextToVectorModel textToVector) {
     return new TextToVectorUpdateProcessor(inputField, outputField, textToVector, req, next);
   }
 
