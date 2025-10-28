@@ -23,6 +23,7 @@ BeforeAll {
   # Get the Solr installation directory from environment variable
   $script:SolrTip = $env:SOLR_TIP
 
+  # Note: $SolrTip cannot be used directly in -Skip statements in tests, use $env:SOLR_TIP instead
   if (-not $SolrTip) {
     throw "SOLR_TIP environment variable is not set"
   }
@@ -89,7 +90,7 @@ Describe "Solr Zk Command" {
     }
   }
 
-  Context "Zk operations (requires running Solr with ZooKeeper)" -Skip:(-not (Test-Path (Join-Path $SolrTip "server\solr"))) {
+  Context "Zk operations (requires running Solr with ZooKeeper)" -Skip:(-not (Test-Path (Join-Path $env:SOLR_TIP "server\solr"))) {
     BeforeAll {
       # Check if Solr is running by trying to connect to the port
       $solrRunning = $false
