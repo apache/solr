@@ -4,5 +4,5 @@ type: changed
 authors:
 - name: Joshua Ouma
 links:
-- name: SOLR-15478
-  url: https://issues.apache.org/jira/browse/SOLR-15478
+- name: SOLR-15748
+  url: https://issues.apache.org/jira/browse/SOLR-15748
