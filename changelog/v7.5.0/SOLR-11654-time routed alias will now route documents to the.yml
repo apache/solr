@@ -1,0 +1,9 @@
+title: Time Routed Alias will now route documents to the ideal shard of a collection,
+  thus avoiding a hop. Usually documents were already routed well but not always.
+type: changed
+authors:
+- name: Gus Heck
+- name: David Smiley
+links:
+- name: SOLR-11654
+  url: https://issues.apache.org/jira/browse/SOLR-11654

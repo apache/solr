@@ -1,0 +1,10 @@
+title: Support for enabling basic authentication using bin/solr|bin/solr.cmd.
+type: added
+authors:
+- name: Ishan Chattopadhyaya
+- name: janhoy
+- name: Noble Paul
+- name: Hrishikesh Gadre
+links:
+- name: SOLR-8440
+  url: https://issues.apache.org/jira/browse/SOLR-8440

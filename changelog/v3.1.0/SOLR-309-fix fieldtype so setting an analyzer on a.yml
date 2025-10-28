@@ -1,0 +1,10 @@
+title: Fix FieldType so setting an analyzer on a FieldType that doesn't expect it
+  will generate an error. Practically speaking this means that Solr will now correctly
+  generate an error on initialization if the schema.xml contains an analyzer configuration
+  for a fieldType that does not use TextField.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-309
+  url: https://issues.apache.org/jira/browse/SOLR-309

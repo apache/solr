@@ -1,0 +1,8 @@
+title: 'PR-2475: Fixed node listing bug in Admin UI when different hostnames start
+  with the same front part.'
+type: fixed
+authors:
+- name: '@hgdharold'
+links:
+- name: PR#2475
+  url: https://github.com/apache/solr/pull/2475

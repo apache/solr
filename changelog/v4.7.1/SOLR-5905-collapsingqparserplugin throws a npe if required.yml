@@ -1,0 +1,7 @@
+title: CollapsingQParserPlugin throws a NPE if required 'field' param is missing.
+type: fixed
+authors:
+- name: Spyros Kapnissis
+links:
+- name: SOLR-5905
+  url: https://issues.apache.org/jira/browse/SOLR-5905

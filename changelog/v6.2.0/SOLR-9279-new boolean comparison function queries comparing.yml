@@ -1,0 +1,9 @@
+title: 'New boolean comparison function queries comparing numeric arguments: gt, gte,
+  lt, lte, eq'
+type: added
+authors:
+- name: Doug Turnbull
+- name: David Smiley
+links:
+- name: SOLR-9279
+  url: https://issues.apache.org/jira/browse/SOLR-9279

@@ -1,0 +1,8 @@
+title: Don't commit multi-part uploads that have been aborted
+type: fixed
+authors:
+- name: Tomás Fernández Löbbe
+- name: Houston Putman
+links:
+- name: SOLR-16886
+  url: https://issues.apache.org/jira/browse/SOLR-16886

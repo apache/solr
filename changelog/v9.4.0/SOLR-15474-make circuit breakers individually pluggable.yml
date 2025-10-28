@@ -1,0 +1,9 @@
+title: Make Circuit breakers individually pluggable
+type: changed
+authors:
+- name: Atri Sharma
+- name: Christine Poerschke
+- name: janhoy
+links:
+- name: SOLR-15474
+  url: https://issues.apache.org/jira/browse/SOLR-15474

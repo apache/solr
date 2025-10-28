@@ -1,0 +1,8 @@
+title: Proper error reporting if SolrCloud mode is used w/o necessary "_version_"
+  field in schema.xml
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-3745
+  url: https://issues.apache.org/jira/browse/SOLR-3745

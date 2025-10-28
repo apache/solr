@@ -1,0 +1,8 @@
+title: CachingDirectoryFactory needs to create CacheEntry's with the fullpath not
+  path.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4551
+  url: https://issues.apache.org/jira/browse/SOLR-4551

@@ -1,0 +1,8 @@
+title: Introduce Gradle parameter to skip ref-guide tasks
+type: other
+authors:
+- name: Houston Putman
+- name: Dawid Weiss
+links:
+- name: SOLR-15670
+  url: https://issues.apache.org/jira/browse/SOLR-15670

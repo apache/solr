@@ -1,0 +1,9 @@
+title: ConcurrentUpdateSolrClient creates a RemoteSolrException if the remote host
+  responded with a non-ok response (instead of a SolrException) and includes the remote
+  error message as part of the exception message
+type: other
+authors:
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-9827
+  url: https://issues.apache.org/jira/browse/SOLR-9827

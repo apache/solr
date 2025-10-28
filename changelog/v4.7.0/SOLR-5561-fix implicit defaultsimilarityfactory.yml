@@ -1,0 +1,11 @@
+title: Fix implicit DefaultSimilarityFactory initialization in IndexSchema to properly
+  specify discountOverlap option.
+type: fixed
+authors:
+- name: Isaac Hebsh
+- name: Ahmet Arslan
+- name: Vitaliy Zhovtyuk
+- name: hossman
+links:
+- name: SOLR-5561
+  url: https://issues.apache.org/jira/browse/SOLR-5561

@@ -1,0 +1,10 @@
+title: ReverseWildcardFilter didn't work for surrogate pairs (i.e. code points outside
+  of the BMP), resulting in incorrect matching. This change requires reindexing for
+  any content with such characters.
+type: fixed
+authors:
+- name: Robert Muir
+- name: yonik
+links:
+- name: SOLR-1593
+  url: https://issues.apache.org/jira/browse/SOLR-1593

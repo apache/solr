@@ -1,0 +1,10 @@
+title: Slow loading SolrCores should not hold up all other SolrCores that have finished
+  loading from serving requests.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Timothy Potter
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-7361
+  url: https://issues.apache.org/jira/browse/SOLR-7361

@@ -1,0 +1,10 @@
+title: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage
+  policy.
+type: other
+authors:
+- name: Jason Gerlowski
+- name: Benoit Vanalderweireldt
+- name: shalin
+links:
+- name: SOLR-7516
+  url: https://issues.apache.org/jira/browse/SOLR-7516

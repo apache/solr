@@ -1,0 +1,7 @@
+title: Change highlight color in UI Analysis screen
+type: other
+authors:
+- name: Cassandra Targett
+links:
+- name: SOLR-6057
+  url: https://issues.apache.org/jira/browse/SOLR-6057

@@ -1,0 +1,8 @@
+title: CachingDirectoryFactory calls close(Directory) on forceNew if the Directory
+  has a refCnt of 0, but it should call closeDirectory(CacheValue).
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4599
+  url: https://issues.apache.org/jira/browse/SOLR-4599

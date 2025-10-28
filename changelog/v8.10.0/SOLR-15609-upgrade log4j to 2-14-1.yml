@@ -1,0 +1,7 @@
+title: Upgrade log4j to 2.14.1
+type: changed
+authors:
+- name: hossman
+links:
+- name: SOLR-15609
+  url: https://issues.apache.org/jira/browse/SOLR-15609

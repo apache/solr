@@ -1,0 +1,8 @@
+title: UpdateLog will now throw an exception if it doesn't know how to serialize a
+  value.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-8866
+  url: https://issues.apache.org/jira/browse/SOLR-8866

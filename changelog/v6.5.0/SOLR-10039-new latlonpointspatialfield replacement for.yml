@@ -1,0 +1,9 @@
+title: New LatLonPointSpatialField replacement for LatLonType (and some uses of RPT).
+  Multi-value capable indexed geo lat-lon points, query by rect or circle. Efficient
+  distance sorting/boosting too.
+type: added
+authors:
+- name: David Smiley
+links:
+- name: SOLR-10039
+  url: https://issues.apache.org/jira/browse/SOLR-10039

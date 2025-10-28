@@ -1,0 +1,9 @@
+title: Unloading all cores in a SolrCloud collection will now cause the removal of
+  that collection's meta data from ZooKeeper.
+type: other
+authors:
+- name: Mark Miller
+- name: Per Steffensen
+links:
+- name: SOLR-3563
+  url: https://issues.apache.org/jira/browse/SOLR-3563

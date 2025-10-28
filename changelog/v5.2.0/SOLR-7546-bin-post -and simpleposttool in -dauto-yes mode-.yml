@@ -1,0 +1,9 @@
+title: bin/post (and SimplePostTool in -Dauto=yes mode) now sends rather than skips
+  files without a known content type, as "application/octet-stream", provided it still
+  is in the allowed filetypes setting.
+type: added
+authors:
+- name: ehatcher
+links:
+- name: SOLR-7546
+  url: https://issues.apache.org/jira/browse/SOLR-7546

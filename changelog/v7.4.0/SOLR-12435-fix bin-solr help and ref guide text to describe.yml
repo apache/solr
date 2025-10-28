@@ -1,0 +1,8 @@
+title: Fix bin/solr help and ref guide text to describe ZK_HOST in solr.in.sh/solr.in.cmd
+  as an alternative to -z cmdline param.
+type: other
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-12435
+  url: https://issues.apache.org/jira/browse/SOLR-12435

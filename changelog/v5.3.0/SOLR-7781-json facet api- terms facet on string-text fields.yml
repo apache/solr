@@ -1,0 +1,9 @@
+title: 'JSON Facet API: Terms facet on string/text fields with sub-facets caused a
+  bug that resulted in filter cache lookup misses as well as the filter cache exceeding
+  it''s configured size.'
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-7781
+  url: https://issues.apache.org/jira/browse/SOLR-7781

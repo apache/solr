@@ -1,0 +1,9 @@
+title: CloneFieldUpdateProcessorFactory now supports choosing a "dest" field name
+  based on a regex pattern and replacement init options.
+type: added
+authors:
+- name: Gus Heck
+- name: hossman
+links:
+- name: SOLR-8113
+  url: https://issues.apache.org/jira/browse/SOLR-8113

@@ -1,0 +1,7 @@
+title: New /autoscaling/history API to return past cluster events and actions.
+type: added
+authors:
+- name: ab
+links:
+- name: SOLR-11076
+  url: https://issues.apache.org/jira/browse/SOLR-11076

@@ -1,0 +1,9 @@
+title: Added factory for the new Hunspell stemmer capable of doing stemming for 99
+  languages
+type: added
+authors:
+- name: janhoy
+- name: cmale
+links:
+- name: SOLR-2769
+  url: https://issues.apache.org/jira/browse/SOLR-2769

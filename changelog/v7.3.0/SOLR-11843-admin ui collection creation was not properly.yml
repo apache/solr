@@ -1,0 +1,9 @@
+title: Admin UI collection creation was not properly handling the router.field and
+  router.name parameters. Also changed the display label in the Admin UI from routerField
+  to router.field to match the actual API.
+type: fixed
+authors:
+- name: Shawn Heisey
+links:
+- name: SOLR-11843
+  url: https://issues.apache.org/jira/browse/SOLR-11843

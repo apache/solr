@@ -1,0 +1,9 @@
+title: Fixed invalid position indexes by reimplementing PatternReplaceCharFilter.
+  This change also drops real support for boundary characters -- all input is prebuffered
+  for pattern matching.
+type: fixed
+authors:
+- name: Dawid Weiss
+links:
+- name: LUCENE-3820
+  url: https://issues.apache.org/jira/browse/LUCENE-3820

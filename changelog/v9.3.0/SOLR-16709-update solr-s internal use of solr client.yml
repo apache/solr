@@ -1,0 +1,8 @@
+title: Update Solr's internal use of Solr Client Builders to use TimeUnit parameter
+  for time specific builder methods.
+type: other
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-16709
+  url: https://issues.apache.org/jira/browse/SOLR-16709

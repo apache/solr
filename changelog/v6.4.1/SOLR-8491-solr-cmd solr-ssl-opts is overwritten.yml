@@ -1,0 +1,10 @@
+title: solr.cmd SOLR_SSL_OPTS is overwritten
+type: fixed
+authors:
+- name: Sam Yi
+- name: Andy Hind
+- name: Marcel Berteler
+- name: Kevin Risden
+links:
+- name: SOLR-8491
+  url: https://issues.apache.org/jira/browse/SOLR-8491

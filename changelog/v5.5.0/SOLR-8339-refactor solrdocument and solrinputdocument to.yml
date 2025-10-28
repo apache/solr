@@ -1,0 +1,9 @@
+title: Refactor SolrDocument and SolrInputDocument to have a common base abstract
+  class called SolrDocumentBase. Deprecated methods toSolrInputDocument and toSolrDocument
+  in ClientUtils.
+type: other
+authors:
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-8339
+  url: https://issues.apache.org/jira/browse/SOLR-8339

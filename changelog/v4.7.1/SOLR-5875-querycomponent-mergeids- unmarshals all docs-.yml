@@ -1,0 +1,10 @@
+title: QueryComponent.mergeIds() unmarshals all docs' sort field values once per doc
+  instead of once per shard.
+type: fixed
+authors:
+- name: Alexey Serba
+- name: hoss
+- name: Martin de Vries
+links:
+- name: SOLR-5875
+  url: https://issues.apache.org/jira/browse/SOLR-5875

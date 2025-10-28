@@ -1,0 +1,9 @@
+title: There is a race around SocketProxy binding to it's port the way we setup JettySolrRunner
+  and SocketProxy.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Timothy Potter
+links:
+- name: SOLR-6874
+  url: https://issues.apache.org/jira/browse/SOLR-6874

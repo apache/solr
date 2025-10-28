@@ -1,0 +1,9 @@
+title: Add links between original and new Admin UIs
+type: added
+authors:
+- name: Upayavira
+links:
+- name: SOLR-7858
+  url: https://issues.apache.org/jira/browse/SOLR-7858
+- name: SOLR-8199
+  url: https://issues.apache.org/jira/browse/SOLR-8199

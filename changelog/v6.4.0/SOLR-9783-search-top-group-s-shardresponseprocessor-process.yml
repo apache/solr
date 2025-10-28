@@ -1,0 +1,8 @@
+title: '(Search|Top)Group[s]ShardResponseProcessor.process: turned sortWithinGroup
+  null check into assert.'
+type: other
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-9783
+  url: https://issues.apache.org/jira/browse/SOLR-9783

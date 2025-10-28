@@ -1,0 +1,8 @@
+title: OldBackupDirectory timestamp field needs to be initialized to avoid NPE.
+type: fixed
+authors:
+- name: Hrishikesh Gadre
+- name: hossman
+links:
+- name: SOLR-9536
+  url: https://issues.apache.org/jira/browse/SOLR-9536

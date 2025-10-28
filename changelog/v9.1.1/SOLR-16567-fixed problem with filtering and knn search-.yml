@@ -1,0 +1,7 @@
+title: Fixed problem with filtering and KNN search, especially when using post-filters
+type: other
+authors:
+- name: Alessandro Benedetti
+links:
+- name: SOLR-16567
+  url: https://issues.apache.org/jira/browse/SOLR-16567

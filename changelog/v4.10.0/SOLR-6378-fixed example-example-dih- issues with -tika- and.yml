@@ -1,0 +1,8 @@
+title: Fixed example/example-DIH/ issues with "tika" and "solr" configurations, and
+  tidied up README.txt
+type: fixed
+authors:
+- name: Daniel Shchyokin
+links:
+- name: SOLR-6378
+  url: https://issues.apache.org/jira/browse/SOLR-6378

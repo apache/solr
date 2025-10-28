@@ -1,0 +1,8 @@
+title: Add support for CollapseQParser with PointFields.
+type: added
+authors:
+- name: Varun Thacker
+- name: Cao Manh Dat
+links:
+- name: SOLR-9994
+  url: https://issues.apache.org/jira/browse/SOLR-9994

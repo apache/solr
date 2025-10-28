@@ -1,0 +1,8 @@
+title: Check if a collection already exists before trying to create a new one.
+type: fixed
+authors:
+- name: Po Rui
+- name: Mark Miller
+links:
+- name: SOLR-4034
+  url: https://issues.apache.org/jira/browse/SOLR-4034

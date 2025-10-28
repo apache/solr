@@ -1,0 +1,7 @@
+title: Update Ref Guide build tool versions
+type: other
+authors:
+- name: Cassandra
+links:
+- name: SOLR-12786
+  url: https://issues.apache.org/jira/browse/SOLR-12786

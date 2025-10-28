@@ -1,0 +1,8 @@
+title: Feature selection and logistic regression on text
+type: added
+authors:
+- name: Cao Manh Dat
+- name: Joel Bernstein
+links:
+- name: SOLR-9252
+  url: https://issues.apache.org/jira/browse/SOLR-9252

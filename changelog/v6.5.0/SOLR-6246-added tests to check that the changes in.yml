@@ -1,0 +1,14 @@
+title: Added tests to check that the changes in LUCENE-7564 and LUCENE-7670 enable
+  AnalyzingInfixSuggester and BlendedInfixSuggester to play nicely with core reload.
+  SolrSuggester.build() now throws SolrCoreState.CoreIsClosedException when interrupted
+  by a core reload/shutdown.
+type: other
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-6246
+  url: https://issues.apache.org/jira/browse/SOLR-6246
+- name: LUCENE-7564
+  url: https://issues.apache.org/jira/browse/LUCENE-7564
+- name: LUCENE-7670
+  url: https://issues.apache.org/jira/browse/LUCENE-7670

@@ -1,0 +1,7 @@
+title: Add a field type for Estonian language to default managed_schema
+type: other
+authors:
+- name: Tomoko Uchida
+links:
+- name: SOLR-13602
+  url: https://issues.apache.org/jira/browse/SOLR-13602

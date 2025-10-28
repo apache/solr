@@ -1,0 +1,9 @@
+title: bin/solr post CLI use of options is now aligned closely with bin/post CLI tool,
+  and is consistently referenced throughout the Ref Guide and source code, and is
+  used through out our tests. The bin/post tool remains and has been tested to work.
+type: changed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-17068
+  url: https://issues.apache.org/jira/browse/SOLR-17068

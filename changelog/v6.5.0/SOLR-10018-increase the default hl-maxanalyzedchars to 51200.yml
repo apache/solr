@@ -1,0 +1,8 @@
+title: Increase the default hl.maxAnalyzedChars to 51200 for the Unified & Postings
+  Highlighter so that all highlighters now have this same default.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-10018
+  url: https://issues.apache.org/jira/browse/SOLR-10018

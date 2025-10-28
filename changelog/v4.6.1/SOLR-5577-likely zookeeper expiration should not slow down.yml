@@ -1,0 +1,10 @@
+title: Likely ZooKeeper expiration should not slow down updates a given amount, but
+  instead cut off updates after a given time.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Christine Poerschke
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-5577
+  url: https://issues.apache.org/jira/browse/SOLR-5577

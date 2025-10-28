@@ -1,0 +1,9 @@
+title: Fixed VelocityResponseWriter template loading in SolrCloud mode. For the example
+  configuration, this means /browse now works with SolrCloud.
+type: fixed
+authors:
+- name: janhoy
+- name: ehatcher
+links:
+- name: SOLR-3648
+  url: https://issues.apache.org/jira/browse/SOLR-3648

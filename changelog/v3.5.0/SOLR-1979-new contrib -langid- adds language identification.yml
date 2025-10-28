@@ -1,0 +1,10 @@
+title: New contrib "langid". Adds language identification capabilities as an Update
+  Processor, using Tika's LanguageIdentifier or Cybozu language-detection library
+type: added
+authors:
+- name: janhoy
+- name: Tommaso Teofili
+- name: gsingers
+links:
+- name: SOLR-1979
+  url: https://issues.apache.org/jira/browse/SOLR-1979

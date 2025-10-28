@@ -1,0 +1,7 @@
+title: Update commons-cli to 1.4
+type: other
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-7880
+  url: https://issues.apache.org/jira/browse/SOLR-7880

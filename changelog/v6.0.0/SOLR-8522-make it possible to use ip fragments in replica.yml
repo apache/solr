@@ -1,0 +1,9 @@
+title: Make it possible to use ip fragments in replica placement rules , such as ip_1,
+  ip_2 etc
+type: added
+authors:
+- name: Arcadius Ahouansou
+- name: noble
+links:
+- name: SOLR-8522
+  url: https://issues.apache.org/jira/browse/SOLR-8522

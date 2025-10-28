@@ -1,0 +1,8 @@
+title: bin/solr script should direct stdout/stderr when starting in the background
+  to the solr-PORT-console.log in the logs directory instead of bin.
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-6467
+  url: https://issues.apache.org/jira/browse/SOLR-6467

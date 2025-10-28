@@ -1,0 +1,7 @@
+title: Untrusted configsets cannot use &lt;lib&gt; directive due to security reasons
+type: fixed
+authors:
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-14071
+  url: https://issues.apache.org/jira/browse/SOLR-14071

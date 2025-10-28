@@ -1,0 +1,10 @@
+title: Add an optional caching option as a workaround for SOLR-6586.
+type: other
+authors:
+- name: Mark Miller
+- name: Gregory Chanan
+links:
+- name: SOLR-6747
+  url: https://issues.apache.org/jira/browse/SOLR-6747
+- name: SOLR-6586
+  url: https://issues.apache.org/jira/browse/SOLR-6586

@@ -1,0 +1,7 @@
+title: Fixed whitespace bug in parsing the fl param
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-3916
+  url: https://issues.apache.org/jira/browse/SOLR-3916

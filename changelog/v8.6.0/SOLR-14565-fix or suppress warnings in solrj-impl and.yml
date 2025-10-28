@@ -1,0 +1,7 @@
+title: Fix or suppress warnings in solrj/impl and solrj/io/graph
+type: other
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-14565
+  url: https://issues.apache.org/jira/browse/SOLR-14565

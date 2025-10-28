@@ -1,0 +1,10 @@
+title: Fixed SolrDispatchFilter to throw useful exception on startup if SLF4j logging
+  jars are missing.
+type: fixed
+authors:
+- name: Uwe Schindler
+- name: Hossman
+- name: Shawn Heisey
+links:
+- name: SOLR-5951
+  url: https://issues.apache.org/jira/browse/SOLR-5951

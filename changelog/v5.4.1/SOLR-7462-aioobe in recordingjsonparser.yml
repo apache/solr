@@ -1,0 +1,8 @@
+title: AIOOBE in RecordingJSONParser
+type: fixed
+authors:
+- name: Scott Dawson
+- name: noble
+links:
+- name: SOLR-7462
+  url: https://issues.apache.org/jira/browse/SOLR-7462

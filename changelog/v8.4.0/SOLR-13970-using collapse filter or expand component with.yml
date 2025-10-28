@@ -1,0 +1,7 @@
+title: Using Collapse filter or expand component with grouping is explicitly disallowed
+  as the combination would cause inconsistent behavior and NPEs.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-13970
+  url: https://issues.apache.org/jira/browse/SOLR-13970

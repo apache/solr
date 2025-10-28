@@ -1,0 +1,8 @@
+title: NPE in IndexSchema using IBM JDK
+type: fixed
+authors:
+- name: noble
+- name: Colvin Cowie
+links:
+- name: SOLR-9179
+  url: https://issues.apache.org/jira/browse/SOLR-9179

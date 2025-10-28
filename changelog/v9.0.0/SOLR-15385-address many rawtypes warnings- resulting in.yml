@@ -1,0 +1,12 @@
+title: Address many rawtypes warnings, resulting in several modified signatures in
+  the public API.
+type: other
+authors:
+- name: Mike Drob
+- name: David Smiley
+- name: Christine Poerschke
+links:
+- name: SOLR-15385
+  url: https://issues.apache.org/jira/browse/SOLR-15385
+- name: SOLR-15535
+  url: https://issues.apache.org/jira/browse/SOLR-15535

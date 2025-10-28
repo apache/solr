@@ -1,0 +1,8 @@
+title: The MERGEINDEXES v2 endpoint has been updated to be more REST-ful. MERGEINDEXES
+  is now available at `POST /api/cores/coreName/merge-indices`
+type: changed
+authors:
+- name: Sanjay Dutt
+links:
+- name: SOLR-16397
+  url: https://issues.apache.org/jira/browse/SOLR-16397

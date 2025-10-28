@@ -1,0 +1,8 @@
+title: BackupManager now allows ConfigSet "files" to be empty, which previously caused
+  NPEs.
+type: fixed
+authors:
+- name: Paul Blanchaert
+links:
+- name: SOLR-16877
+  url: https://issues.apache.org/jira/browse/SOLR-16877

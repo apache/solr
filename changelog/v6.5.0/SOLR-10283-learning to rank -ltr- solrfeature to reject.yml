@@ -1,0 +1,8 @@
+title: Learning to Rank (LTR) SolrFeature to reject searches with missing efi (External
+  Feature Information) used by fq.
+type: fixed
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-10283
+  url: https://issues.apache.org/jira/browse/SOLR-10283

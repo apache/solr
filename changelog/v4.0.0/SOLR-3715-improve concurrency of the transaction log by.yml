@@ -1,0 +1,8 @@
+title: improve concurrency of the transaction log by removing synchronization around
+  log record serialization.
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-3715
+  url: https://issues.apache.org/jira/browse/SOLR-3715

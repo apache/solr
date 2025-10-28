@@ -1,0 +1,10 @@
+title: JSON Facet API optimization to faceting by count on docvalue fields (or indexed
+  fields with method=dv) when there are multiple hits expected for enoug buckets.
+  For example, this more than doubled the performance of faceting 5M documents over
+  a field with 1M unique values.
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-8222
+  url: https://issues.apache.org/jira/browse/SOLR-8222

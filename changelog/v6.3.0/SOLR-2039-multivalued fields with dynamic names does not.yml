@@ -1,0 +1,9 @@
+title: Multivalued fields with dynamic names does not work properly with DIH.
+type: fixed
+authors:
+- name: K A
+- name: ruslan.shv
+- name: Cao Manh Dat
+links:
+- name: SOLR-2039
+  url: https://issues.apache.org/jira/browse/SOLR-2039

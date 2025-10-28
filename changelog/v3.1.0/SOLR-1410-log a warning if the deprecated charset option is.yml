@@ -1,0 +1,8 @@
+title: Log a warning if the deprecated charset option is used on GreekLowerCaseFilterFactory,
+  RussianStemFilterFactory, RussianLowerCaseFilterFactory or RussianLetterTokenizerFactory.
+type: other
+authors:
+- name: Robert Muir
+links:
+- name: SOLR-1410
+  url: https://issues.apache.org/jira/browse/SOLR-1410

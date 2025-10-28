@@ -1,0 +1,10 @@
+title: Introducing a system property that allows users to disable the Admin UI, which
+  is enabled by default. If you have security concerns or other reasons to disable
+  the Admin UI, you can modify `SOLR_ADMIN_UI_DISABLED` `solr.in.sh`/`solr.in.cmd`
+  at start.
+type: other
+authors:
+- name: marcussorealheis
+links:
+- name: SOLR-14014
+  url: https://issues.apache.org/jira/browse/SOLR-14014

@@ -1,0 +1,11 @@
+title: Robust support for ExpandComponent when used independently of CollapsingPostFilter.
+type: fixed
+authors:
+- name: Jörg Rathlev
+- name: Michael Gibney
+- name: Munendra S N
+links:
+- name: SOLR-13877
+  url: https://issues.apache.org/jira/browse/SOLR-13877
+- name: SOLR-7798
+  url: https://issues.apache.org/jira/browse/SOLR-7798

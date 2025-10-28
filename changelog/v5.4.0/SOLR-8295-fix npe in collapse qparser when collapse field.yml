@@ -1,0 +1,8 @@
+title: Fix NPE in collapse QParser when collapse field is missing from all docs in
+  a segment
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-8295
+  url: https://issues.apache.org/jira/browse/SOLR-8295

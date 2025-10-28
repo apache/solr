@@ -1,0 +1,8 @@
+title: ZkController can warn about shard leader conflict even after the conflict is
+  resolved.
+type: fixed
+authors:
+- name: Gregory Chanan
+links:
+- name: SOLR-5993
+  url: https://issues.apache.org/jira/browse/SOLR-5993

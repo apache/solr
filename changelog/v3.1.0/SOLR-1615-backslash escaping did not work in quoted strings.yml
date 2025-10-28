@@ -1,0 +1,8 @@
+title: Backslash escaping did not work in quoted strings for local param arguments.
+type: fixed
+authors:
+- name: Wojtek Piaseczny
+- name: yonik
+links:
+- name: SOLR-1615
+  url: https://issues.apache.org/jira/browse/SOLR-1615

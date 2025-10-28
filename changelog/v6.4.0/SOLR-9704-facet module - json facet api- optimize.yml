@@ -1,0 +1,8 @@
+title: 'Facet Module / JSON Facet API: Optimize blockChildren facets that have filters
+  specified by using those filters as acceptDocs.'
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-9704
+  url: https://issues.apache.org/jira/browse/SOLR-9704

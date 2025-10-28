@@ -1,0 +1,9 @@
+title: 'DIH Imports no longer default optimize to true, instead false. If you want
+  to force all segments to be merged into one, you can specify this parameter yourself.
+  NOTE: this can be very expensive operation and usually does not make sense for delta-imports.'
+type: other
+authors:
+- name: Robert Muir
+links:
+- name: SOLR-3142
+  url: https://issues.apache.org/jira/browse/SOLR-3142

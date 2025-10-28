@@ -1,0 +1,10 @@
+title: Add a "tombstoneConfig" option to DocBasedVersionConstraintsProcessor that
+  allows users to configure which fields/values to add to tombstone documents. This
+  can be useful to make sure tombstone documents include fields that are marked as
+  required in the schema
+type: added
+authors:
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-12373
+  url: https://issues.apache.org/jira/browse/SOLR-12373

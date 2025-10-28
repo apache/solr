@@ -1,0 +1,9 @@
+title: A bootstrap of a target cluster does not need to download the tlog files from
+  the source cluster
+type: fixed
+authors:
+- name: Amrit Sarkar
+- name: Varun Thacker
+links:
+- name: SOLR-11326
+  url: https://issues.apache.org/jira/browse/SOLR-11326

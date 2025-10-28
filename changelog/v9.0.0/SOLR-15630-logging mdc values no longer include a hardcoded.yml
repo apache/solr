@@ -1,0 +1,9 @@
+title: Logging MDC values no longer include a hardcoded prefix, allowing custom logging
+  configurations access to the plain values. The default log4j2.xml PatternLayout
+  has been updated to ensure the values are formatted with the existing prefixes.
+type: changed
+authors:
+- name: hossman
+links:
+- name: SOLR-15630
+  url: https://issues.apache.org/jira/browse/SOLR-15630

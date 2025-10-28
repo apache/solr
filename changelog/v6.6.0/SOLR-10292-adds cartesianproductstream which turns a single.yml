@@ -1,0 +1,8 @@
+title: Adds CartesianProductStream which turns a single tuple with a multi-valued
+  field into N tuples, one for each value in the multi-valued field.
+type: added
+authors:
+- name: Dennis Gove
+links:
+- name: SOLR-10292
+  url: https://issues.apache.org/jira/browse/SOLR-10292

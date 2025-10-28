@@ -1,0 +1,10 @@
+title: Fix transaction log leaks (a failure to clean up some old logs) on a shard
+  leader, or when unexpected exceptions are thrown during log recovery.
+type: fixed
+authors:
+- name: Steven Bower
+- name: Mark Miller
+- name: yonik
+links:
+- name: SOLR-4829
+  url: https://issues.apache.org/jira/browse/SOLR-4829

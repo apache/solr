@@ -1,0 +1,11 @@
+title: Introduced an issue for rolling restarts (Incompatible Java serialization).
+  This change Fixes the compatibility issue while keeping the functionality in SOLR-14095.
+type: fixed
+authors:
+- name: Andy Webb
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-14219
+  url: https://issues.apache.org/jira/browse/SOLR-14219
+- name: SOLR-14095
+  url: https://issues.apache.org/jira/browse/SOLR-14095

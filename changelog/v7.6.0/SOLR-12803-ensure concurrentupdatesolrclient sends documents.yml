@@ -1,0 +1,7 @@
+title: Ensure ConcurrentUpdateSolrClient sends documents to correct collection
+type: fixed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-12803
+  url: https://issues.apache.org/jira/browse/SOLR-12803

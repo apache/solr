@@ -1,0 +1,7 @@
+title: Setting of TMP in solr.cmd causes invisibility of Solr to JDK tools
+type: fixed
+authors:
+- name: Petr Bodnar
+links:
+- name: SOLR-12776
+  url: https://issues.apache.org/jira/browse/SOLR-12776

@@ -1,0 +1,9 @@
+title: /admin/logging handler will now propagate setLevel (log threshold) to all nodes
+  when told to. The admin UI now tells it to.
+type: changed
+authors:
+- name: Nazerke Seidan
+- name: David Smiley
+links:
+- name: SOLR-15011
+  url: https://issues.apache.org/jira/browse/SOLR-15011

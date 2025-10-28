@@ -1,0 +1,8 @@
+title: coreRootDirectory was not respected when creating new cores via CoreAdminHandler
+type: fixed
+authors:
+- name: Jesse Sipprell
+- name: Alan Woodward
+links:
+- name: SOLR-5704
+  url: https://issues.apache.org/jira/browse/SOLR-5704

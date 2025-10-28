@@ -1,0 +1,9 @@
+title: Restrict child classes from using parent logger's state
+type: other
+authors:
+- name: Jason Gerlowski
+- name: Mike Drob
+- name: Anshum Gupta
+links:
+- name: SOLR-8359
+  url: https://issues.apache.org/jira/browse/SOLR-8359

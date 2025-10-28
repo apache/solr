@@ -1,0 +1,8 @@
+title: ShowFileHandler path parameter is now validated to be relative to instance
+  conf dir in standalone mode
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-16075
+  url: https://issues.apache.org/jira/browse/SOLR-16075

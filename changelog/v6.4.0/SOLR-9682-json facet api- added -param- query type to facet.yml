@@ -1,0 +1,8 @@
+title: 'JSON Facet API: added "param" query type to facet domain filter specification
+  to obtain filters via query parameters.'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-9682
+  url: https://issues.apache.org/jira/browse/SOLR-9682

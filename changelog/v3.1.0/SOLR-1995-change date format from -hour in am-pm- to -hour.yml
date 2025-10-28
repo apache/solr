@@ -1,0 +1,9 @@
+title: Change date format from "hour in am/pm" to "hour in day" in CoreContainer and
+  SnapShooter.
+type: fixed
+authors:
+- name: Hayato Ito
+- name: koji
+links:
+- name: SOLR-1995
+  url: https://issues.apache.org/jira/browse/SOLR-1995

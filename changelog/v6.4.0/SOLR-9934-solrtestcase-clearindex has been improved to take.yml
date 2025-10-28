@@ -1,0 +1,9 @@
+title: SolrTestCase.clearIndex has been improved to take advantage of low level test
+  specific logic that clears the index metadata more completely then a normal *:*
+  DBQ can due to update versioning.
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-9934
+  url: https://issues.apache.org/jira/browse/SOLR-9934

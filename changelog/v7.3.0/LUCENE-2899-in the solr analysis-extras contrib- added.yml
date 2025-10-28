@@ -1,0 +1,18 @@
+title: 'In the Solr analysis-extras contrib, added support for the OpenNLP-based analysis
+  components in the Lucene analysis/opennlp module: tokenization, part-of-speech tagging,
+  phrase chunking, and lemmatization. Also added OpenNLP-based named entity extraction
+  as a Solr update request processor.'
+type: added
+authors:
+- name: Lance Norskog
+- name: Grant Ingersoll
+- name: Joern Kottmann
+- name: Em
+- name: Kai Gülzau
+- name: Rene Nederhand
+- name: Robert Muir
+- name: Steven Bower
+- name: Steve Rowe
+links:
+- name: LUCENE-2899
+  url: https://issues.apache.org/jira/browse/LUCENE-2899

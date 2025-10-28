@@ -1,0 +1,9 @@
+title: Resolve crypto keys file path in MiniSolrCloudCluster. This eliminates the
+  need to set the system properties `pkiHandlerPublicKeyPath` and `pkiHandlerPrivateKeyPath`
+  before starting MiniSolrCloudCluster when using the Solr test framework.
+type: changed
+authors:
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-16635
+  url: https://issues.apache.org/jira/browse/SOLR-16635

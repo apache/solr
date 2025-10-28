@@ -1,0 +1,8 @@
+title: JWT nested roles support
+type: changed
+authors:
+- name: Marco Descher
+- name: janhoy
+links:
+- name: SOLR-16230
+  url: https://issues.apache.org/jira/browse/SOLR-16230

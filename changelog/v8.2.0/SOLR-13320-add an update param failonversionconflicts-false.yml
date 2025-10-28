@@ -1,0 +1,8 @@
+title: add an update param failOnVersionConflicts=false to updates not fail when there
+  is a version conflict
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-13320
+  url: https://issues.apache.org/jira/browse/SOLR-13320

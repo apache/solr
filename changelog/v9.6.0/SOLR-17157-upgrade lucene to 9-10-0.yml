@@ -1,0 +1,8 @@
+title: Upgrade Lucene to 9.10.0
+type: dependency_update
+authors:
+- name: hossman
+- name: Christine Poerschke
+links:
+- name: SOLR-17157
+  url: https://issues.apache.org/jira/browse/SOLR-17157

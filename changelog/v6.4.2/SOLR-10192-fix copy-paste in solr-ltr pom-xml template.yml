@@ -1,0 +1,7 @@
+title: Fix copy/paste in solr-ltr pom.xml template.
+type: fixed
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-10192
+  url: https://issues.apache.org/jira/browse/SOLR-10192

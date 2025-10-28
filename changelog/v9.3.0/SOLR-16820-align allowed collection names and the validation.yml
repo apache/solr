@@ -1,0 +1,8 @@
+title: Align allowed collection names and the validation of them in the CreateCollectionAPI
+  and the PackageTool.
+type: changed
+authors:
+- name: Will White
+links:
+- name: SOLR-16820
+  url: https://issues.apache.org/jira/browse/SOLR-16820

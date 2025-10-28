@@ -1,0 +1,8 @@
+title: Add facet2D Streaming Expression
+type: added
+authors:
+- name: Nazerke Seidan
+- name: Joel Bernstein
+links:
+- name: SOLR-13047
+  url: https://issues.apache.org/jira/browse/SOLR-13047

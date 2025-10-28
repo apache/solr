@@ -1,0 +1,8 @@
+title: New ExecutePlanAction for autoscaling which executes the operations computed
+  by ComputePlanAction against the cluster.
+type: added
+authors:
+- name: shalin
+links:
+- name: SOLR-10965
+  url: https://issues.apache.org/jira/browse/SOLR-10965

@@ -1,0 +1,10 @@
+title: Schema API changes return success before all cores are updated; client application
+  can provide the optional updateTimeoutSecs parameter to cause the server handling
+  the managed schema update to block until all replicas of the same collection have
+  processed the update or until the specified timeout is reached
+type: other
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-6249
+  url: https://issues.apache.org/jira/browse/SOLR-6249

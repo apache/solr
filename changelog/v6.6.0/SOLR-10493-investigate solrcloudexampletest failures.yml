@@ -1,0 +1,7 @@
+title: Investigate SolrCloudExampleTest failures.
+type: fixed
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-10493
+  url: https://issues.apache.org/jira/browse/SOLR-10493

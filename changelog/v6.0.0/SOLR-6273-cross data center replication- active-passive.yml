@@ -1,0 +1,9 @@
+title: Cross Data Center Replication. Active/passive replication for separate SolrClouds
+  hosted on separate data centers.
+type: added
+authors:
+- name: Renaud Delbru
+- name: Yonik Seeley
+links:
+- name: SOLR-6273
+  url: https://issues.apache.org/jira/browse/SOLR-6273

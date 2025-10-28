@@ -1,0 +1,8 @@
+title: Add "collection" to UpdateParams.
+type: other
+authors:
+- name: Mark Miller
+- name: Greg Solovyev
+links:
+- name: SOLR-5987
+  url: https://issues.apache.org/jira/browse/SOLR-5987

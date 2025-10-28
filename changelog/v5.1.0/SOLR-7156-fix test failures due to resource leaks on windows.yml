@@ -1,0 +1,7 @@
+title: Fix test failures due to resource leaks on windows.
+type: other
+authors:
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-7156
+  url: https://issues.apache.org/jira/browse/SOLR-7156

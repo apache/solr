@@ -1,0 +1,7 @@
+title: Add plist (parallel list) Streaming Expression
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-12829
+  url: https://issues.apache.org/jira/browse/SOLR-12829

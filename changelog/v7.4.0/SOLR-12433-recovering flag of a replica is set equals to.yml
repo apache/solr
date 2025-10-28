@@ -1,0 +1,8 @@
+title: Recovering flag of a replica is set equals to leader even it failed to receive
+  update on recovering.
+type: fixed
+authors:
+- name: Cao Manh Dat
+links:
+- name: SOLR-12433
+  url: https://issues.apache.org/jira/browse/SOLR-12433

@@ -1,0 +1,8 @@
+title: hl.fl and tv.fl now parse field lists when they have both commas and spaces
+type: changed
+authors:
+- name: David Smiley
+- name: Yasufumi Mizoguchi
+links:
+- name: SOLR-11334
+  url: https://issues.apache.org/jira/browse/SOLR-11334

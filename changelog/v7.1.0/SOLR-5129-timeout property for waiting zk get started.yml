@@ -1,0 +1,9 @@
+title: Timeout property for waiting ZK get started.
+type: other
+authors:
+- name: Cao Manh Dat
+- name: Hrishikesh Gadre
+- name: Varun Thacker
+links:
+- name: SOLR-5129
+  url: https://issues.apache.org/jira/browse/SOLR-5129

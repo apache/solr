@@ -1,0 +1,16 @@
+title: Improve metrics reporting. This uses the dropwizard metric library, adding
+  an internal API for registering and reporting metrics from Solr components. Several
+  new metrics and an improved JMX reporter have been added
+type: added
+authors:
+- name: Alan Woodward
+- name: Jeff Wartes
+- name: Christine Poerschke
+- name: Kelvin Wong
+- name: shalin
+- name: ab
+links:
+- name: SOLR-4735
+  url: https://issues.apache.org/jira/browse/SOLR-4735
+- name: SOLR-9921
+  url: https://issues.apache.org/jira/browse/SOLR-9921

@@ -1,0 +1,10 @@
+title: SolrInfoMBean category and hierarchy cleanup. Per-component statistics are
+  now obtained from the metrics API, legacy JMX support has been replaced with SolrJmxReporter
+  functionality. Several reporter improvements (support for multiple prefix filters,
+  "enabled" flag, reuse of service clients).
+type: other
+authors:
+- name: ab
+links:
+- name: SOLR-9959
+  url: https://issues.apache.org/jira/browse/SOLR-9959

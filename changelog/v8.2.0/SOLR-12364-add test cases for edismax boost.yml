@@ -1,0 +1,8 @@
+title: Add test cases for edismax boost
+type: other
+authors:
+- name: David Smiley
+- name: Munendra S N
+links:
+- name: SOLR-12364
+  url: https://issues.apache.org/jira/browse/SOLR-12364

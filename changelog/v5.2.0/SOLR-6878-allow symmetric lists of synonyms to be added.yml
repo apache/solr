@@ -1,0 +1,12 @@
+title: Allow symmetric lists of synonyms to be added using the managed synonym REST
+  API to support legacy expand=true type mappings; previously the API only allowed
+  adding explicit mappings, with this feature you can now add a list and have the
+  mappings expanded when the update is applied
+type: other
+authors:
+- name: Timothy Potter
+- name: Vitaliy Zhovtyuk
+- name: hossman
+links:
+- name: SOLR-6878
+  url: https://issues.apache.org/jira/browse/SOLR-6878

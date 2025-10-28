@@ -1,0 +1,8 @@
+title: Improve error reporting for null documents in UpdateRequest
+type: other
+authors:
+- name: "Markus\n  Jelsma"
+- name: Alan Woodward
+links:
+- name: SOLR-8194
+  url: https://issues.apache.org/jira/browse/SOLR-8194

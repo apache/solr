@@ -1,0 +1,10 @@
+title: in the ReplicationHandler the master.commitReserveDuration sub-element is deprecated.
+  Instead please configure a direct commitReserveDuration element for use in all modes
+type: upgrade_notes
+authors:
+- name: master
+- name: slave
+- name: cloud
+links:
+- name: SOLR-10962
+  url: https://issues.apache.org/jira/browse/SOLR-10962

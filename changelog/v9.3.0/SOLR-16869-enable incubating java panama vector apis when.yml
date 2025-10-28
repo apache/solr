@@ -1,0 +1,9 @@
+title: Enable Incubating Java Panama Vector APIs when using Java 20 or 21. When run
+  using compatible hardware, Vector search will see considerable speed up.
+type: changed
+authors:
+- name: Houston Putman
+- name: Uwe Schindler
+links:
+- name: SOLR-16869
+  url: https://issues.apache.org/jira/browse/SOLR-16869

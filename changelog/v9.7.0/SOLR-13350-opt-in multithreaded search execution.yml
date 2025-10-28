@@ -1,0 +1,14 @@
+title: Opt-in multithreaded search execution
+type: added
+authors:
+- name: Ishan Chattopadhyaya
+- name: Mark Miller
+- name: Christine Poerschke
+- name: David Smiley
+- name: noble
+- name: Gus Heck
+links:
+- name: SOLR-13350
+  url: https://issues.apache.org/jira/browse/SOLR-13350
+- name: SOLR-17298
+  url: https://issues.apache.org/jira/browse/SOLR-17298

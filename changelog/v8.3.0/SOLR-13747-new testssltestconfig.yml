@@ -1,0 +1,9 @@
+title: New TestSSLTestConfig.testFailIfUserRunsTestsWithJVMThatHasKnownSSLBugs() to
+  give people running tests more visibility if/when they use a known-buggy JVM causing
+  most SSL tests to silently SKIP.
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-13747
+  url: https://issues.apache.org/jira/browse/SOLR-13747

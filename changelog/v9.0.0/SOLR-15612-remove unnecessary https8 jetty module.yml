@@ -1,0 +1,7 @@
+title: Remove unnecessary https8 jetty module
+type: other
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-15612
+  url: https://issues.apache.org/jira/browse/SOLR-15612

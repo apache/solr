@@ -1,0 +1,8 @@
+title: Reduce CPU usage by avoiding repeated costly calls to Document.getField inside
+  DocumentBuilder.toDocument for use-cases with large number of fields and copyFields.
+type: changed
+authors:
+- name: Steven Bower
+links:
+- name: SOLR-6259
+  url: https://issues.apache.org/jira/browse/SOLR-6259

@@ -1,0 +1,8 @@
+title: Add 'commitWithin' argument to the update add command. This behaves similar
+  to the global autoCommit maxTime argument except that it is set for each request.
+type: added
+authors:
+- name: ryan
+links:
+- name: SOLR-793
+  url: https://issues.apache.org/jira/browse/SOLR-793

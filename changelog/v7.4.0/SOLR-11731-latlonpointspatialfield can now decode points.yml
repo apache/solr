@@ -1,0 +1,9 @@
+title: LatLonPointSpatialField can now decode points from docValues when stored=false
+  docValues=true, albeit with maximum precision of 1.37cm
+type: changed
+authors:
+- name: Karthik Ramachandran
+- name: David Smiley
+links:
+- name: SOLR-11731
+  url: https://issues.apache.org/jira/browse/SOLR-11731

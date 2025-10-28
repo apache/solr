@@ -1,0 +1,12 @@
+title: SolrMetric registries retained references to SolrCores when closed. A change
+  of SolrMetricMAnager.registerGauge and SolrMetricProducer.initializeMetrics method
+  signatures was required to fix it. Third party components that use this API need
+  to be updated.
+type: upgrade_notes
+authors:
+- name: Eros Taborelli
+- name: Erick Erickson
+- name: ab
+links:
+- name: SOLR-11882
+  url: https://issues.apache.org/jira/browse/SOLR-11882

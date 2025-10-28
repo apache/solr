@@ -1,0 +1,7 @@
+title: Attempts to specify the parserImpl for solr.PreAnalyzedField fieldtype failed.
+type: fixed
+authors:
+- name: Mike McCandless
+links:
+- name: SOLR-5915
+  url: https://issues.apache.org/jira/browse/SOLR-5915

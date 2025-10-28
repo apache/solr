@@ -1,0 +1,7 @@
+title: SolrCloud Overseer clusterState could unexpectedly be null resulting in NPE.
+type: fixed
+authors:
+- name: Scott Blum
+links:
+- name: SOLR-8875
+  url: https://issues.apache.org/jira/browse/SOLR-8875

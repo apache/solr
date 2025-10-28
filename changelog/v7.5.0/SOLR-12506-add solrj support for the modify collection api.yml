@@ -1,0 +1,7 @@
+title: Add SolrJ support for the modify collection API.
+type: added
+authors:
+- name: shalin
+links:
+- name: SOLR-12506
+  url: https://issues.apache.org/jira/browse/SOLR-12506

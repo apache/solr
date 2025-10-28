@@ -1,0 +1,8 @@
+title: Fixed error message when numeric values can't be parsed by DOMUtils - notably
+  for plugin init params in solrconfig.xml.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-1635
+  url: https://issues.apache.org/jira/browse/SOLR-1635

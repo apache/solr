@@ -1,0 +1,9 @@
+title: Prevent class loading deadlock in TrieDateField; refactor date formatting and
+  parsing out of TrieDateField and move to static utility class DateFormatUtil.
+type: other
+authors:
+- name: Markus Heiden
+- name: Uwe Schindler
+links:
+- name: SOLR-7803
+  url: https://issues.apache.org/jira/browse/SOLR-7803

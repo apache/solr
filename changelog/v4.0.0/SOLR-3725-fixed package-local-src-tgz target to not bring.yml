@@ -1,0 +1,8 @@
+title: Fixed package-local-src-tgz target to not bring in unnecessary jars and binary
+  contents.
+type: fixed
+authors:
+- name: Michael Dodsworth
+links:
+- name: SOLR-3725
+  url: https://issues.apache.org/jira/browse/SOLR-3725

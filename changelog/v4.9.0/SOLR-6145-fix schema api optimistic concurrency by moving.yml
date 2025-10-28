@@ -1,0 +1,11 @@
+title: 'Fix Schema API optimistic concurrency by moving it out of ManagedIndexSchema.add(Copy)Fields()
+  into the consumers of those methods: CopyFieldCollectionResource, FieldCollectionResource,
+  FieldResource, and AddSchemaFieldsUpdateProcessorFactory.'
+type: fixed
+authors:
+- name: Gregory Chanan
+- name: Alexey Serba
+- name: Steve Rowe
+links:
+- name: SOLR-6145
+  url: https://issues.apache.org/jira/browse/SOLR-6145

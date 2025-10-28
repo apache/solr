@@ -1,0 +1,7 @@
+title: ExpandComponent now supports an expand.nullGroup=true option
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-14330
+  url: https://issues.apache.org/jira/browse/SOLR-14330

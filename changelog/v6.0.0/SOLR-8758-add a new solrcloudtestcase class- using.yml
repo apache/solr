@@ -1,0 +1,7 @@
+title: Add a new SolrCloudTestCase class, using MiniSolrCloudCluster
+type: other
+authors:
+- name: "Alan\n  Woodward"
+links:
+- name: SOLR-8758
+  url: https://issues.apache.org/jira/browse/SOLR-8758

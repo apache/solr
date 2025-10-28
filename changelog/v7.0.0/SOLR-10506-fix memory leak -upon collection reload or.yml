@@ -1,0 +1,10 @@
+title: Fix memory leak (upon collection reload or ZooKeeper session expiry) in ZkIndexSchemaReader.
+type: fixed
+authors:
+- name: Torsten Bøgh Köster
+- name: Christine Poerschke
+- name: Jörg Rathlev
+- name: Mike Drob
+links:
+- name: SOLR-10506
+  url: https://issues.apache.org/jira/browse/SOLR-10506

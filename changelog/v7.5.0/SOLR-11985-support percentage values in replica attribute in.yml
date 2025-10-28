@@ -1,0 +1,7 @@
+title: Support percentage values in replica attribute in autoscaling policy
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-11985
+  url: https://issues.apache.org/jira/browse/SOLR-11985

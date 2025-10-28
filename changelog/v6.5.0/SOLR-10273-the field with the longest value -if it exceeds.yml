@@ -1,0 +1,10 @@
+title: The field with the longest value (if it exceeds 4K) is moved to be last in
+  the Lucene Document in order to benefit from stored field optimizations in Lucene
+  that can avoid reading it when it's not needed. If the field is multi-valued, they
+  all move together to the end to retain order.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-10273
+  url: https://issues.apache.org/jira/browse/SOLR-10273

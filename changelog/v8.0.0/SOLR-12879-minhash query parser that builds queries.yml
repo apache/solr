@@ -1,0 +1,7 @@
+title: MinHash query parser that builds queries providing a measure of Jaccard similarity
+type: added
+authors:
+- name: Andy Hind
+links:
+- name: SOLR-12879
+  url: https://issues.apache.org/jira/browse/SOLR-12879

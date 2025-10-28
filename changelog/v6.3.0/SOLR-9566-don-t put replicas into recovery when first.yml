@@ -1,0 +1,7 @@
+title: Don't put replicas into recovery when first creating a Collection
+type: changed
+authors:
+- name: Alan Woodward
+links:
+- name: SOLR-9566
+  url: https://issues.apache.org/jira/browse/SOLR-9566

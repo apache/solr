@@ -1,0 +1,7 @@
+title: Authentication plugin is now loaded using the ResourceLoader.
+type: other
+authors:
+- name: Avi Digmi
+links:
+- name: SOLR-7703
+  url: https://issues.apache.org/jira/browse/SOLR-7703

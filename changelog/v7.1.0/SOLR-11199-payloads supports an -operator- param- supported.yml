@@ -1,0 +1,9 @@
+title: 'Payloads supports an "operator" param. Supported operators are ''or'', "phrase"
+  ( default ). A new "sum" function is also added. Example : {!payload_score f=payload_field
+  func=sum operator=or}A B C"'
+type: added
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-11199
+  url: https://issues.apache.org/jira/browse/SOLR-11199

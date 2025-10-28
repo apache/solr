@@ -1,0 +1,8 @@
+title: Custom TransientSolrCoreCache implementations no longer use the Observer/Observable
+  pattern. To notify Solr that a core has been aged out of the cache, call CoreContainer.queueCoreToClose(SolrCore).
+  See SOLR-13400 for details.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-13400
+  url: https://issues.apache.org/jira/browse/SOLR-13400

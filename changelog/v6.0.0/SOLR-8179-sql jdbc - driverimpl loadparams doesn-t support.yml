@@ -1,0 +1,9 @@
+title: SQL JDBC - DriverImpl loadParams doesn't support keys with no values in the
+  connection string
+type: other
+authors:
+- name: Kevin Risden
+- name: Joel Bernstein
+links:
+- name: SOLR-8179
+  url: https://issues.apache.org/jira/browse/SOLR-8179

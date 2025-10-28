@@ -1,0 +1,9 @@
+title: Package manager support for cluster level plugins (see SOLR-14404)
+type: added
+authors:
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-14599
+  url: https://issues.apache.org/jira/browse/SOLR-14599
+- name: SOLR-14404
+  url: https://issues.apache.org/jira/browse/SOLR-14404

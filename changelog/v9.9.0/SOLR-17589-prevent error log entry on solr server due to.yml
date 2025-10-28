@@ -1,0 +1,7 @@
+title: Prevent error log entry on solr server due to initial HEAD request from HttpJdkSolrClient.
+type: other
+authors:
+- name: Paul Blanchaert
+links:
+- name: SOLR-17589
+  url: https://issues.apache.org/jira/browse/SOLR-17589

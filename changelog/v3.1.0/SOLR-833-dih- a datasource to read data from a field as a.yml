@@ -1,0 +1,8 @@
+title: 'DIH: A DataSource to read data from a field as a reader. This can be used,
+  for example, to read XMLs residing as CLOBs or BLOBs in databases.'
+type: added
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-833
+  url: https://issues.apache.org/jira/browse/SOLR-833

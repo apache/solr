@@ -1,0 +1,7 @@
+title: The root cause should be returned to the user when a SolrCore create call fails.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4915
+  url: https://issues.apache.org/jira/browse/SOLR-4915

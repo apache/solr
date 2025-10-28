@@ -1,0 +1,10 @@
+title: Message "Lock held by this virtual machine" during startup. Solr is trying
+  to start some cores twice.
+type: fixed
+authors:
+- name: Luiz Armesto
+- name: Shawn Heisey
+- name: Erick Erickson
+links:
+- name: SOLR-11297
+  url: https://issues.apache.org/jira/browse/SOLR-11297

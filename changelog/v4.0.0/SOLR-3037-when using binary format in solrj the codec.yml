@@ -1,0 +1,8 @@
+title: When using binary format in solrj the codec screws up parameters
+type: fixed
+authors:
+- name: Sami Siren
+- name: Jörg Maier
+links:
+- name: SOLR-3037
+  url: https://issues.apache.org/jira/browse/SOLR-3037

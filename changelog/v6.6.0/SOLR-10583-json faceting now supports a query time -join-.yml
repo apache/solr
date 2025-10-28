@@ -1,0 +1,7 @@
+title: JSON Faceting now supports a query time 'join' domain change option
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-10583
+  url: https://issues.apache.org/jira/browse/SOLR-10583

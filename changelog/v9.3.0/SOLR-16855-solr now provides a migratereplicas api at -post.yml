@@ -1,0 +1,9 @@
+title: Solr now provides a MigrateReplicas API at `POST /api/cluster/replicas/migrate`
+  (v2), to move replicas off of a given set of nodes. This extends the functionality
+  of the existing ReplaceNode API.
+type: added
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16855
+  url: https://issues.apache.org/jira/browse/SOLR-16855

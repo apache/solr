@@ -1,0 +1,8 @@
+title: Fix usage of currentTimeMillis instead of nanoTime in multiple places, whitelist
+  valid uses of currentTimeMillis
+type: fixed
+authors:
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-7859
+  url: https://issues.apache.org/jira/browse/SOLR-7859

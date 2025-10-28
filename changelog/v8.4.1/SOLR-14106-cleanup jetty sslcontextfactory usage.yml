@@ -1,0 +1,9 @@
+title: Cleanup Jetty SslContextFactory usage
+type: fixed
+authors:
+- name: Ryan Rockenbaugh
+- name: Jan Hoydahl
+- name: Kevin Risden
+links:
+- name: SOLR-14106
+  url: https://issues.apache.org/jira/browse/SOLR-14106

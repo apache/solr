@@ -1,0 +1,9 @@
+title: Added TermsComponent for accessing Lucene's TermEnum capabilities. Useful for
+  auto suggest and possibly distributed search. Not distributed search compliant.
+  (gsingers) - Added mincount and maxcount options
+type: added
+authors:
+- name: Khee Chin
+links:
+- name: SOLR-877
+  url: https://issues.apache.org/jira/browse/SOLR-877

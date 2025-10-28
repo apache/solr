@@ -1,0 +1,8 @@
+title: Replace async occurrences with CommonAdminParams.ASYNC
+type: other
+authors:
+- name: Christine Poerschke
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-7710
+  url: https://issues.apache.org/jira/browse/SOLR-7710

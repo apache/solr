@@ -1,0 +1,8 @@
+title: Add a delete action to the bin/solr script to allow deleting of cores / collections
+  (with delete collection config directory from ZK)
+type: other
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-6981
+  url: https://issues.apache.org/jira/browse/SOLR-6981

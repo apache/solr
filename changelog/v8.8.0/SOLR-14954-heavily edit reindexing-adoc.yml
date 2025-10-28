@@ -1,0 +1,7 @@
+title: Heavily edit reindexing.adoc
+type: other
+authors:
+- name: Sameul García Martínez and Erick Erickson
+links:
+- name: SOLR-14954
+  url: https://issues.apache.org/jira/browse/SOLR-14954

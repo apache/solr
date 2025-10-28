@@ -1,0 +1,10 @@
+title: Work around the static Lucene BooleanQuery.maxClauseCount that causes Solr's
+  maxBooleanClauses setting behavior to be "last core wins". This patch sets BooleanQuery.maxClauseCount
+  to its maximum value, thus disabling the global check, and replaces it with specific
+  checks where desired via QueryUtils.build().
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-10921
+  url: https://issues.apache.org/jira/browse/SOLR-10921

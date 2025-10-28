@@ -1,0 +1,10 @@
+title: Add javadocs, uneven rejection and basic test coverage for the SolrTestCaseJ4.params
+  method.
+type: other
+authors:
+- name: Diego Ceccarelli
+- name: Christine Poerschke
+- name: Munendra S N
+links:
+- name: SOLR-13812
+  url: https://issues.apache.org/jira/browse/SOLR-13812

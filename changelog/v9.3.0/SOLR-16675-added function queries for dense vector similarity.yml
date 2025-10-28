@@ -1,0 +1,8 @@
+title: Added function queries for dense vector similarity.
+type: added
+authors:
+- name: Elia Porciani
+- name: Alessandro Benedetti
+links:
+- name: SOLR-16675
+  url: https://issues.apache.org/jira/browse/SOLR-16675

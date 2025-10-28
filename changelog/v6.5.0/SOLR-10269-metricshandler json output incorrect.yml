@@ -1,0 +1,7 @@
+title: MetricsHandler JSON output incorrect.
+type: fixed
+authors:
+- name: ab
+links:
+- name: SOLR-10269
+  url: https://issues.apache.org/jira/browse/SOLR-10269

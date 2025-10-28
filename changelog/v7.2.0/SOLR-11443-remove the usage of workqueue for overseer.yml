@@ -1,0 +1,8 @@
+title: Remove the usage of workqueue for Overseer.
+type: changed
+authors:
+- name: Cao Manh Dat
+- name: Scott Blum
+links:
+- name: SOLR-11443
+  url: https://issues.apache.org/jira/browse/SOLR-11443

@@ -1,0 +1,8 @@
+title: Incomplete information in replication admin page and http command response
+  when server is both master and slave i.e. when server is a repeater
+type: fixed
+authors:
+- name: Akshay Ukey
+links:
+- name: SOLR-1015
+  url: https://issues.apache.org/jira/browse/SOLR-1015

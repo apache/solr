@@ -1,0 +1,9 @@
+title: /bin/solr create script always returns exit code 0 when a collection/core already
+  exists.
+type: fixed
+authors:
+- name: Khalid Alharbi
+- name: Marius Grama
+links:
+- name: SOLR-8801
+  url: https://issues.apache.org/jira/browse/SOLR-8801

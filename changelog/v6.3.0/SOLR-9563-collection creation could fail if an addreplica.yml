@@ -1,0 +1,8 @@
+title: Collection creation could fail if an ADDREPLICA subrequest arrived at a node
+  before its local state had updated with the new collection data
+type: fixed
+authors:
+- name: Alan Woodward
+links:
+- name: SOLR-9563
+  url: https://issues.apache.org/jira/browse/SOLR-9563

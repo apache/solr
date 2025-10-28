@@ -1,0 +1,8 @@
+title: Fix TestReqParamsAPI test failures
+type: other
+authors:
+- name: noble
+- name: Varun Thacker
+links:
+- name: SOLR-7362
+  url: https://issues.apache.org/jira/browse/SOLR-7362

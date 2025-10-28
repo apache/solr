@@ -1,0 +1,11 @@
+title: Speed up creation of filters from term range queries (i.e. non-numeric range
+  queries) and use the filter cache for term range queries that are part of larger
+  queries. Some observed speedups were up to 2.5x for production of filters, and up
+  to 10x for query evaluation with embedded term range queres that resulted in filter
+  cache hits.
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-8037
+  url: https://issues.apache.org/jira/browse/SOLR-8037

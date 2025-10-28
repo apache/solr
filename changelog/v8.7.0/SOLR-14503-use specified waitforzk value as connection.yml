@@ -1,0 +1,8 @@
+title: Use specified waitForZk value as connection timeout for zookeeper in SolrDispatcherFilter.
+  Also, consume specified SOLR_WAIT_FOR_ZK in bin/solr.cmd
+type: fixed
+authors:
+- name: Colvin Cowie
+links:
+- name: SOLR-14503
+  url: https://issues.apache.org/jira/browse/SOLR-14503

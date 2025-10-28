@@ -1,0 +1,7 @@
+title: Fix 55% performance regression of FieldCache uninvert time of numeric fields.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-9837
+  url: https://issues.apache.org/jira/browse/SOLR-9837

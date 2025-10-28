@@ -1,0 +1,8 @@
+title: 'JSON Facet API: facet refinement could use UIF in phase one and DV uninversion
+  in phase 2, resulting in too much memory use.'
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-11553
+  url: https://issues.apache.org/jira/browse/SOLR-11553

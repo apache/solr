@@ -1,0 +1,8 @@
+title: Add 'port' tag support in replica placement rules
+type: added
+authors:
+- name: Adam McElwee
+- name: Noble Paul
+links:
+- name: SOLR-7668
+  url: https://issues.apache.org/jira/browse/SOLR-7668

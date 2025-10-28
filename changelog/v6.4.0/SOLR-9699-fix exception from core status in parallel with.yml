@@ -1,0 +1,9 @@
+title: fix exception from core status in parallel with core reload
+type: fixed
+authors:
+- name: Mikhail Khludnev
+links:
+- name: SOLR-9699
+  url: https://issues.apache.org/jira/browse/SOLR-9699
+- name: SOLR-4668
+  url: https://issues.apache.org/jira/browse/SOLR-4668

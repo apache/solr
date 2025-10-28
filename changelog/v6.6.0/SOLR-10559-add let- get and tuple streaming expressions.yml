@@ -1,0 +1,8 @@
+title: Add let, get and tuple Streaming Expressions
+type: added
+authors:
+- name: Dennis Gove
+- name: Joel Bernstein
+links:
+- name: SOLR-10559
+  url: https://issues.apache.org/jira/browse/SOLR-10559

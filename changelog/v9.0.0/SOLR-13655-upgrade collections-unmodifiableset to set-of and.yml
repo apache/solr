@@ -1,0 +1,7 @@
+title: Upgrade Collections.unModifiableSet to Set.of and Set.copyOf
+type: other
+authors:
+- name: Atri Sharma
+links:
+- name: SOLR-13655
+  url: https://issues.apache.org/jira/browse/SOLR-13655

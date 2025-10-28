@@ -1,0 +1,8 @@
+title: The semi-internal `/admin/cores?action=restorecore` API now has a v2 equivalent,
+  available at `POST /api/cores/coreName/restore {...}`
+type: changed
+authors:
+- name: Sayanti Dey
+links:
+- name: SOLR-16490
+  url: https://issues.apache.org/jira/browse/SOLR-16490

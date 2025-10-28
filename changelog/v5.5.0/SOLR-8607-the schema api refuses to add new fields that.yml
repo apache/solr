@@ -1,0 +1,8 @@
+title: The Schema API refuses to add new fields that match existing dynamic fields.
+type: fixed
+authors:
+- name: Jan Høydahl
+- name: Steve Rowe
+links:
+- name: SOLR-8607
+  url: https://issues.apache.org/jira/browse/SOLR-8607

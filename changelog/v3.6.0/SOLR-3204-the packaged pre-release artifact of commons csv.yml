@@ -1,0 +1,12 @@
+title: The packaged pre-release artifact of Commons CSV used the original package
+  name (org.apache.commons.csv). This created a compatibility issue as the Apache
+  Commons team works toward an official release of Commons CSV. The source of Commons
+  CSV was added under a separate package name to the Solr source code.
+type: other
+authors:
+- name: Uwe Schindler
+- name: Chris Male
+- name: Emmanuel Bourg
+links:
+- name: SOLR-3204
+  url: https://issues.apache.org/jira/browse/SOLR-3204

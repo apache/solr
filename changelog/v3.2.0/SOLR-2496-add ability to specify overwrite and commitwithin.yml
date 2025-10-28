@@ -1,0 +1,9 @@
+title: 'Add ability to specify overwrite and commitWithin as request parameters (e.g.
+  specified in the URL) when using the JSON update format, and added a simplified
+  format for specifying multiple documents. Example: [{"id":"doc1"},{"id":"doc2"}]'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-2496
+  url: https://issues.apache.org/jira/browse/SOLR-2496

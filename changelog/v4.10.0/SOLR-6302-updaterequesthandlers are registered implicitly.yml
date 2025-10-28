@@ -1,0 +1,8 @@
+title: UpdateRequestHandlers are registered implicitly /update , /update/json, /update/csv
+  , /update/json/docs
+type: added
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-6302
+  url: https://issues.apache.org/jira/browse/SOLR-6302

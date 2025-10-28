@@ -1,0 +1,7 @@
+title: Improve message for CREATECOLLECTION failure due to missing numShards
+type: other
+authors:
+- name: Anshum Gupta
+links:
+- name: SOLR-6391
+  url: https://issues.apache.org/jira/browse/SOLR-6391

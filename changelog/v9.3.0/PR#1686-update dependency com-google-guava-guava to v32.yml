@@ -1,0 +1,7 @@
+title: Update dependency com.google.guava:guava to v32
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#1686
+  url: https://github.com/apache/solr/pull/1686

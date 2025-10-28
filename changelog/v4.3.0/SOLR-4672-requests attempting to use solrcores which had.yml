@@ -1,0 +1,9 @@
+title: Requests attempting to use SolrCores which had init failures (that would be
+  reported by CoreAdmin STATUS requests) now result in 500 error responses with the
+  details about the init failure, instead of 404 error responses.
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-4672
+  url: https://issues.apache.org/jira/browse/SOLR-4672

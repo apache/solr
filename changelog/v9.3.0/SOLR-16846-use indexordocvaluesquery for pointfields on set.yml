@@ -1,0 +1,10 @@
+title: Use IndexOrDocValuesQuery for PointFields on Set queries. This improves the
+  performance in some scenarios when the set query is combined with other selective
+  queries.
+type: changed
+authors:
+- name: Tomás Fernández Löbbe
+- name: Alex Deparvu
+links:
+- name: SOLR-16846
+  url: https://issues.apache.org/jira/browse/SOLR-16846

@@ -1,0 +1,7 @@
+title: Add PUT command to ZkCli tool.
+type: added
+authors:
+- name: Roman Shaposhnik
+links:
+- name: SOLR-4972
+  url: https://issues.apache.org/jira/browse/SOLR-4972

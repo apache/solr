@@ -1,0 +1,10 @@
+title: The use case of atomic/partial updates to child documents no longer requires
+  that _root_ be stored or have docValues, and no longer requires the _nest_path_
+  field. However it now requires that the client pass a _root_ field on these updates
+  to point to the root ID.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-14923
+  url: https://issues.apache.org/jira/browse/SOLR-14923

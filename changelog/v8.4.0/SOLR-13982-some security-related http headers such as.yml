@@ -1,0 +1,11 @@
+title: Some security-related http headers such as Content-Security-Policy are now
+  set. If you have custom html served up by Solr's http server that contains inline
+  javascript, it will no longer execute in modern browsers. You can fix your JS code
+  to not run inline anymore, or edit etc/jetty.xml and weaken the CSP, or remove/alter
+  the headers with a reverse proxy.
+type: upgrade_notes
+authors:
+- name: rmuir
+links:
+- name: SOLR-13982
+  url: https://issues.apache.org/jira/browse/SOLR-13982

@@ -1,0 +1,7 @@
+title: HEAD request for managed resource returns 500 Server Error
+type: fixed
+authors:
+- name: Kevin Risden
+links:
+- name: SOLR-16274
+  url: https://issues.apache.org/jira/browse/SOLR-16274

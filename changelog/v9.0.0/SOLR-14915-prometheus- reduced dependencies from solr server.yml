@@ -1,0 +1,10 @@
+title: 'Prometheus: Reduced dependencies from Solr server down to just SolrJ. Don''t
+  add WEB-INF/lib. * Can run via gradle, "gradlew run" * Has own log4j2.xml now *
+  Was missing some dependencies in lib/; now has all except SolrJ & logging.'
+type: other
+authors:
+- name: David Smiley
+- name: Houston Putman
+links:
+- name: SOLR-14915
+  url: https://issues.apache.org/jira/browse/SOLR-14915

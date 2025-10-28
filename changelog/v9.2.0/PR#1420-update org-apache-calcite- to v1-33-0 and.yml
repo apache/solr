@@ -1,0 +1,8 @@
+title: Update org.apache.calcite:* to v1.33.0 and org.apache.calcite.avatica:* to
+  v1.23.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#1420
+  url: https://github.com/apache/solr/pull/1420

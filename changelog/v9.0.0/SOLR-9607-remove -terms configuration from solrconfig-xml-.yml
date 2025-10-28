@@ -1,0 +1,8 @@
+title: Remove /terms configuration from solrconfig.xml, as implicit definition is
+  up-to-par now
+type: other
+authors:
+- name: Alexandre Rafalovitch
+links:
+- name: SOLR-9607
+  url: https://issues.apache.org/jira/browse/SOLR-9607

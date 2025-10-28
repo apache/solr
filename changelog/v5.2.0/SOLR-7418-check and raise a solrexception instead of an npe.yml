@@ -1,0 +1,8 @@
+title: Check and raise a SolrException instead of an NPE when an invalid doc id is
+  sent to the MLTQParser.
+type: fixed
+authors:
+- name: Anshum Gupta
+links:
+- name: SOLR-7418
+  url: https://issues.apache.org/jira/browse/SOLR-7418

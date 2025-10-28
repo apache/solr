@@ -1,0 +1,8 @@
+title: ElectionContext implementations should use ZkCmdExecutor#ensureExists to ensure
+  their election paths are properly created.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5587
+  url: https://issues.apache.org/jira/browse/SOLR-5587

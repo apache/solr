@@ -1,0 +1,8 @@
+title: Add ebeAdd, ebeSubtract, ebeDivide, ebeMultiply, dotProduct and cosineSimilarity
+  Stream Evaluators
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-11321
+  url: https://issues.apache.org/jira/browse/SOLR-11321

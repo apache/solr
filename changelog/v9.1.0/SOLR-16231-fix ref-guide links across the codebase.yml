@@ -1,0 +1,7 @@
+title: Fix ref-guide links across the codebase
+type: other
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16231
+  url: https://issues.apache.org/jira/browse/SOLR-16231

@@ -1,0 +1,9 @@
+title: SolrServer classes are renamed to *SolrClient. The existing classes still exist,
+  but are deprecated.
+type: other
+authors:
+- name: Alan Woodward
+- name: Erik Hatcher
+links:
+- name: SOLR-6895
+  url: https://issues.apache.org/jira/browse/SOLR-6895

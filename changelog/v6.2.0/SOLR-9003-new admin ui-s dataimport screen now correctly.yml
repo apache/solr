@@ -1,0 +1,7 @@
+title: New Admin UI's Dataimport screen now correctly displays DIH Debug output
+type: fixed
+authors:
+- name: Alexandre Rafalovitch
+links:
+- name: SOLR-9003
+  url: https://issues.apache.org/jira/browse/SOLR-9003

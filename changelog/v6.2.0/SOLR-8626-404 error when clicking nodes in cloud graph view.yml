@@ -1,0 +1,8 @@
+title: 404 error when clicking nodes in cloud graph view in angular UI.
+type: fixed
+authors:
+- name: janhoy
+- name: Trey Grainger
+links:
+- name: SOLR-8626
+  url: https://issues.apache.org/jira/browse/SOLR-8626

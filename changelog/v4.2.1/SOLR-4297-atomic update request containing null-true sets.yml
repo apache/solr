@@ -1,0 +1,9 @@
+title: Atomic update request containing null=true sets all subsequent fields to null
+type: fixed
+authors:
+- name: Ben Pennell
+- name: Rob
+- name: shalin
+links:
+- name: SOLR-4297
+  url: https://issues.apache.org/jira/browse/SOLR-4297

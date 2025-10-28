@@ -1,0 +1,7 @@
+title: Change hard-coded keysize from 512 to 1024
+type: other
+authors:
+- name: Jeremy Martini
+links:
+- name: SOLR-9609
+  url: https://issues.apache.org/jira/browse/SOLR-9609

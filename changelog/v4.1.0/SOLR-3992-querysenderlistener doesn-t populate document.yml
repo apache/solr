@@ -1,0 +1,8 @@
+title: QuerySenderListener doesn't populate document cache.
+type: fixed
+authors:
+- name: Shotaro Kamio
+- name: yonik
+links:
+- name: SOLR-3992
+  url: https://issues.apache.org/jira/browse/SOLR-3992

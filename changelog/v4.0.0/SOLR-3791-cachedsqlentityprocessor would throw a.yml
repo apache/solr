@@ -1,0 +1,8 @@
+title: CachedSqlEntityProcessor would throw a NullPointerException when a query returns
+  a row with a NULL key.
+type: fixed
+authors:
+- name: Steffen Moelter
+links:
+- name: SOLR-3791
+  url: https://issues.apache.org/jira/browse/SOLR-3791

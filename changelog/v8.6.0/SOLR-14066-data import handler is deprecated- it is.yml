@@ -1,0 +1,9 @@
+title: Data Import Handler is deprecated. It is scheduled to be removed as of 9.0
+  and a community supported package for the same may now be used instead.
+type: other
+authors:
+- name: Ishan Chattopadhyaya
+- name: janhoy
+links:
+- name: SOLR-14066
+  url: https://issues.apache.org/jira/browse/SOLR-14066

@@ -1,0 +1,10 @@
+title: Optimize filter creation (DocSetCollector) to minimize the amount of garbage
+  produced. This resulted in up to 3x throughput when small filter creation was the
+  bottleneck, as well as orders of magnitude less garbage.
+type: changed
+authors:
+- name: Jeff Wartes
+- name: yonik
+links:
+- name: SOLR-8922
+  url: https://issues.apache.org/jira/browse/SOLR-8922

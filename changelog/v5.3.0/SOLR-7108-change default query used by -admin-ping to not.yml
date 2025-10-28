@@ -1,0 +1,8 @@
+title: Change default query used by /admin/ping to not rely on other parameters such
+  as query parser or default field.
+type: fixed
+authors:
+- name: ehatcher
+links:
+- name: SOLR-7108
+  url: https://issues.apache.org/jira/browse/SOLR-7108

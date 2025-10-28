@@ -1,0 +1,7 @@
+title: Proper handling on watcher registration failure in ZkStateReader#waitForState()
+type: other
+authors:
+- name: Hitesh Khamesra
+links:
+- name: SOLR-16450
+  url: https://issues.apache.org/jira/browse/SOLR-16450

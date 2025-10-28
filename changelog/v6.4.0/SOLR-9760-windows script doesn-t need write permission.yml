@@ -1,0 +1,7 @@
+title: Windows script doesn't need write permission
+type: fixed
+authors:
+- name: Alex Crome by Mikhail Khludnev
+links:
+- name: SOLR-9760
+  url: https://issues.apache.org/jira/browse/SOLR-9760

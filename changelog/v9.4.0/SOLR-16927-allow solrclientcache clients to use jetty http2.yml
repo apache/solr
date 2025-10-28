@@ -1,0 +1,8 @@
+title: Allow SolrClientCache clients to use Jetty HTTP2 clients
+type: changed
+authors:
+- name: Alex Deparvu
+- name: David Smiley
+links:
+- name: SOLR-16927
+  url: https://issues.apache.org/jira/browse/SOLR-16927

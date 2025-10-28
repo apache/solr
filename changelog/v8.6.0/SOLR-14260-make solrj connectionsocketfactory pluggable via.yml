@@ -1,0 +1,8 @@
+title: Make SolrJ ConnectionSocketFactory pluggable via SocketFactoryRegistryProvider
+  setting on HttpClientUtil
+type: changed
+authors:
+- name: Andy Throgmorton
+links:
+- name: SOLR-14260
+  url: https://issues.apache.org/jira/browse/SOLR-14260

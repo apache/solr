@@ -1,0 +1,9 @@
+title: CloudSolrClient was always returning SERVER_ERROR for exceptions, even when
+  a more relevant ErrorCode was available, via SolrException. Now the actual ErrorCode
+  is used when available.
+type: other
+authors:
+- name: Hrishikesh Gadre
+links:
+- name: SOLR-7243
+  url: https://issues.apache.org/jira/browse/SOLR-7243

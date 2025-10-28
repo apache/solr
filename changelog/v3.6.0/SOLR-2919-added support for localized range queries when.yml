@@ -1,0 +1,9 @@
+title: Added support for localized range queries when the analysis chain uses CollationKeyFilter
+  or ICUCollationKeyFilter.
+type: added
+authors:
+- name: Michael Sokolov
+- name: rmuir
+links:
+- name: SOLR-2919
+  url: https://issues.apache.org/jira/browse/SOLR-2919

@@ -1,0 +1,7 @@
+title: bin/solr script should support basic auth credentials provided in solr.in.sh
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-8048
+  url: https://issues.apache.org/jira/browse/SOLR-8048

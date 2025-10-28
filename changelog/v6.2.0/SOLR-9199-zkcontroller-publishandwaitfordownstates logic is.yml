@@ -1,0 +1,7 @@
+title: ZkController#publishAndWaitForDownStates logic is inefficient
+type: fixed
+authors:
+- name: Hrishikesh Gadre
+links:
+- name: SOLR-9199
+  url: https://issues.apache.org/jira/browse/SOLR-9199

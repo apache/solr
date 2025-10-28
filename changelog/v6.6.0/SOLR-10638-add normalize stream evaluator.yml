@@ -1,0 +1,7 @@
+title: Add normalize Stream Evaluator
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-10638
+  url: https://issues.apache.org/jira/browse/SOLR-10638

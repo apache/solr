@@ -1,0 +1,7 @@
+title: SolrEventListener should extend NamedListInitializedPlugin
+type: other
+authors:
+- name: noble
+links:
+- name: SOLR-1727
+  url: https://issues.apache.org/jira/browse/SOLR-1727

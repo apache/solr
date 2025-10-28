@@ -1,0 +1,8 @@
+title: Better strategy for handling empty managed data to avoid spurious warning messages
+  in the logs.
+type: other
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-6179
+  url: https://issues.apache.org/jira/browse/SOLR-6179

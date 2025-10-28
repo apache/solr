@@ -1,0 +1,8 @@
+title: expecting fl=score to return all fields is now deprecated. In solr 4.0, this
+  will only return the score.
+type: other
+authors:
+- name: ryan
+links:
+- name: SOLR-2712
+  url: https://issues.apache.org/jira/browse/SOLR-2712

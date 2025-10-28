@@ -1,0 +1,8 @@
+title: Remove Guava dependency from SolrJ
+type: other
+authors:
+- name: Ishan Chattopadhyaya
+- name: noble
+links:
+- name: SOLR-9588
+  url: https://issues.apache.org/jira/browse/SOLR-9588

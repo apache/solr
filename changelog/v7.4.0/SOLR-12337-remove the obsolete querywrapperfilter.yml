@@ -1,0 +1,10 @@
+title: Remove the obsolete QueryWrapperFilter intermediate wrapper, which also removed
+  some needless uses of SolrConstantScoreQuery as well. QWF since v5.4.0 sometimes
+  needlessly internally executed and cached the query. Affects ExpandComponent, ChildDocTransformer,
+  CurrencyFieldType, TermsQParser.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-12337
+  url: https://issues.apache.org/jira/browse/SOLR-12337

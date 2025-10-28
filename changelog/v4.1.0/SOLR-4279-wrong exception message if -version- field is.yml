@@ -1,0 +1,7 @@
+title: Wrong exception message if _version_ field is multivalued
+type: fixed
+authors:
+- name: shalin
+links:
+- name: SOLR-4279
+  url: https://issues.apache.org/jira/browse/SOLR-4279

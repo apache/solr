@@ -1,0 +1,9 @@
+title: Fixed More Like This Handler to use all fields provided in mlt.fl when used
+  with content stream. The similarity is calculated between the content stream's value
+  and all fields listed in mlt.fl.
+type: fixed
+authors:
+- name: Dawid Weiss
+links:
+- name: SOLR-5351
+  url: https://issues.apache.org/jira/browse/SOLR-5351

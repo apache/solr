@@ -1,0 +1,8 @@
+title: New solr.dns.prevent.reverse.lookup system property that can be used to prevent
+  long core (re)load delays on systems with missconfigured hostname/DNS
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-5043
+  url: https://issues.apache.org/jira/browse/SOLR-5043

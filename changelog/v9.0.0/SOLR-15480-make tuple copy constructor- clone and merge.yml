@@ -1,0 +1,10 @@
+title: Make Tuple copy constructor, clone and merge consistent w.r.t. markers (EOF,
+  EXCEPTION), field names and labels.
+type: other
+authors:
+- name: John Durham
+- name: Mike Drob
+- name: Christine Poerschke
+links:
+- name: SOLR-15480
+  url: https://issues.apache.org/jira/browse/SOLR-15480

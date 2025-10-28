@@ -1,0 +1,9 @@
+title: ReRankQueryParserPlugin checks now whether the reRankQuery parameter is present
+  and not empty.
+type: fixed
+authors:
+- name: 帅广应
+- name: Marius Grama
+links:
+- name: SOLR-6835
+  url: https://issues.apache.org/jira/browse/SOLR-6835

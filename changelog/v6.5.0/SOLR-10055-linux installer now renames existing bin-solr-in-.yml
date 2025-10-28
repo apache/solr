@@ -1,0 +1,9 @@
+title: Linux installer now renames existing bin/solr.in.* as bin/solr.in.*.orig to
+  make the installed config in /etc/defaults be the one found by default when launching
+  solr manually.
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-10055
+  url: https://issues.apache.org/jira/browse/SOLR-10055

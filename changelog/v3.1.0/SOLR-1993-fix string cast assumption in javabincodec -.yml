@@ -1,0 +1,10 @@
+title: fix String cast assumption in JavaBinCodec - specific addresses "commitWithin"
+  option on Update requests.
+type: fixed
+authors:
+- name: noble
+- name: hossman
+- name: and Maxim Valyanskiy
+links:
+- name: SOLR-1993
+  url: https://issues.apache.org/jira/browse/SOLR-1993

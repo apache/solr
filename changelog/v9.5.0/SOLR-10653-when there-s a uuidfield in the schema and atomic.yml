@@ -1,0 +1,8 @@
+title: When there's a UUIDField in the schema and atomic update touches another field
+  the error occurs when leader updates replica
+type: fixed
+authors:
+- name: Mikhail Khludnev
+links:
+- name: SOLR-10653
+  url: https://issues.apache.org/jira/browse/SOLR-10653

@@ -1,0 +1,9 @@
+title: Fix ClassCastException in Json Request API
+type: fixed
+authors:
+- name: Johannes Kloos
+- name: Jan Høydahl
+- name: Munendra S N
+links:
+- name: SOLR-13180
+  url: https://issues.apache.org/jira/browse/SOLR-13180

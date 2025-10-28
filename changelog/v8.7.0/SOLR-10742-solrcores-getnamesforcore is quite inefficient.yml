@@ -1,0 +1,8 @@
+title: 'SolrCores.getNamesForCore is quite inefficient and blocks other core operations.
+  NOTE: this experimental method has been removed'
+type: other
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-10742
+  url: https://issues.apache.org/jira/browse/SOLR-10742

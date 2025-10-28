@@ -1,0 +1,7 @@
+title: Fix bugs in SolrParams.toLocalParamsString()
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-17255
+  url: https://issues.apache.org/jira/browse/SOLR-17255

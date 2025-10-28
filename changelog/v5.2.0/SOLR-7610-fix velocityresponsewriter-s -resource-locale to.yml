@@ -1,0 +1,8 @@
+title: Fix VelocityResponseWriter's $resource.locale to accurately report locale in
+  use.
+type: fixed
+authors:
+- name: ehatcher
+links:
+- name: SOLR-7610
+  url: https://issues.apache.org/jira/browse/SOLR-7610

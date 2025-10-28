@@ -1,0 +1,8 @@
+title: Add priority Streaming Expression
+type: added
+authors:
+- name: Joel Bernstein
+- name: David Smiley
+links:
+- name: SOLR-9684
+  url: https://issues.apache.org/jira/browse/SOLR-9684

@@ -1,0 +1,8 @@
+title: Fix some bugs in 'type:range' Facet refinement when sub-facets are combined
+  with non default values for the 'other' and 'include' options.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-12516
+  url: https://issues.apache.org/jira/browse/SOLR-12516

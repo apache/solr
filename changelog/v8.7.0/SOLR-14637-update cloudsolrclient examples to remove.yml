@@ -1,0 +1,7 @@
+title: Update CloudSolrClient examples to remove deprecated method.
+type: other
+authors:
+- name: Andras Salamon
+links:
+- name: SOLR-14637
+  url: https://issues.apache.org/jira/browse/SOLR-14637

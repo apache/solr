@@ -1,0 +1,10 @@
+title: New 'stats.calcdistinct' parameter in StatsComponent returns set of distinct
+  values and their count. This can also be specified per field e.g. 'f.field.stats.calcdistinct'.
+type: added
+authors:
+- name: Elran Dvir
+links:
+- name: SOLR-5428
+  url: https://issues.apache.org/jira/browse/SOLR-5428
+- name: SOLR-5690
+  url: https://issues.apache.org/jira/browse/SOLR-5690

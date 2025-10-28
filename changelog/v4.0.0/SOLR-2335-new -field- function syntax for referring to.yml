@@ -1,0 +1,7 @@
+title: New 'field("...")' function syntax for referring to complex field names (containing
+  whitespace or special characters) in functions.
+type: added
+authors: []
+links:
+- name: SOLR-2335
+  url: https://issues.apache.org/jira/browse/SOLR-2335

@@ -1,0 +1,9 @@
+title: Adds Stream Evaluators to support evaluating values from tuples. Supports boolean,
+  numeric, and conditional evaluators. BooleanOperations have been removed in preference
+  of BooleanEvaluators.
+type: added
+authors:
+- name: Dennis Gove
+links:
+- name: SOLR-9916
+  url: https://issues.apache.org/jira/browse/SOLR-9916

@@ -1,0 +1,8 @@
+title: User defined "&lt;cache/&gt;" entries in solrconfig.xml now support enabled="true|false"
+  just like core searcher caches.
+type: changed
+authors:
+- name: hossman
+links:
+- name: SOLR-14307
+  url: https://issues.apache.org/jira/browse/SOLR-14307

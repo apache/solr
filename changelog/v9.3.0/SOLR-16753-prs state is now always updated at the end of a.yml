@@ -1,0 +1,8 @@
+title: PRS state is now always updated at the end of a splitShard.
+type: fixed
+authors:
+- name: Houston Putman
+- name: hossman
+links:
+- name: SOLR-16753
+  url: https://issues.apache.org/jira/browse/SOLR-16753

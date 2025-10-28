@@ -1,0 +1,9 @@
+title: Distributed grouping failed when rows parameter was set to 0 and sometimes
+  returned a wrong hit count as matches.
+type: fixed
+authors:
+- name: Cody Young
+- name: Martijn van Groningen
+links:
+- name: SOLR-3316
+  url: https://issues.apache.org/jira/browse/SOLR-3316

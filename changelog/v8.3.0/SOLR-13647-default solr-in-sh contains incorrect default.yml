@@ -1,0 +1,7 @@
+title: Default solr.in.sh contains incorrect default value
+type: fixed
+authors:
+- name: John Ryan
+links:
+- name: SOLR-13647
+  url: https://issues.apache.org/jira/browse/SOLR-13647

@@ -1,0 +1,9 @@
+title: The v2 "restore" API has been tweaked to be more intuitive. The top-level "restore-collection"
+  command specifier has been removed, and the API now lives at the new path `POST
+  /api/backups/backupName/restore`.
+type: changed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-16394
+  url: https://issues.apache.org/jira/browse/SOLR-16394

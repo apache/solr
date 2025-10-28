@@ -1,0 +1,10 @@
+title: shard and cluster metric reporter configuration now requires a class attribute.
+  If a reporter configures the group="shard" attribute then please also configure
+  the class="org.apache.solr.metrics.reporters.solr.SolrShardReporter" attribute.
+  If a reporter configures the group="cluster" attribute then please also configure
+  the class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter" attribute.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-11195
+  url: https://issues.apache.org/jira/browse/SOLR-11195

@@ -1,0 +1,7 @@
+title: 'Start Scripts: Allow a configurable stack size [-Xss]'
+type: other
+authors:
+- name: Steve Davids
+links:
+- name: SOLR-7831
+  url: https://issues.apache.org/jira/browse/SOLR-7831

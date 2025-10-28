@@ -1,0 +1,11 @@
+title: Autoscaling replacement using placement plugins
+type: added
+authors:
+- name: ilan
+- name: ab
+- name: noble
+links:
+- name: SOLR-14613
+  url: https://issues.apache.org/jira/browse/SOLR-14613
+- name: SOLR-15019
+  url: https://issues.apache.org/jira/browse/SOLR-15019

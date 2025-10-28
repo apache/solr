@@ -1,0 +1,10 @@
+title: The default directory factory was changed to NRTCachingDirectoryFactory which
+  wraps the StandardDirectoryFactory and caches small files for improved Near Real-time
+  (NRT) performance.
+type: added
+authors:
+- name: Mark Miller
+- name: yonik
+links:
+- name: SOLR-2702
+  url: https://issues.apache.org/jira/browse/SOLR-2702

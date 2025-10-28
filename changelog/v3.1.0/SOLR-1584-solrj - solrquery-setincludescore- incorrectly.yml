@@ -1,0 +1,8 @@
+title: SolrJ - SolrQuery.setIncludeScore() incorrectly added fl=score to the parameter
+  list instead of appending score to the existing field list.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-1584
+  url: https://issues.apache.org/jira/browse/SOLR-1584

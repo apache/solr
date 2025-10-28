@@ -1,0 +1,9 @@
+title: Add the server WEB-INF/lib directory to the classpath for the solr-exporter
+  script. Will allow the script to work when the dist/solrj-lib jars are missing in
+  the Docker image.
+type: other
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-14858
+  url: https://issues.apache.org/jira/browse/SOLR-14858

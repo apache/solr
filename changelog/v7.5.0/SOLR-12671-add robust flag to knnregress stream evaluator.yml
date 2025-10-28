@@ -1,0 +1,7 @@
+title: Add robust flag to knnRegress Stream Evaluator
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-12671
+  url: https://issues.apache.org/jira/browse/SOLR-12671

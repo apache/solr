@@ -1,0 +1,7 @@
+title: Misleading resource loading warning from Carrot2 clustering component fixed
+type: fixed
+authors:
+- name: Stanisław Osiński
+links:
+- name: SOLR-4253
+  url: https://issues.apache.org/jira/browse/SOLR-4253

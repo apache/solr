@@ -1,0 +1,8 @@
+title: Solr start script checks for cores which have failed to load as well before
+  attempting to create a core with the same name
+type: other
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-8549
+  url: https://issues.apache.org/jira/browse/SOLR-8549

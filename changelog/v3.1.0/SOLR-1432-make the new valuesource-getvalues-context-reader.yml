@@ -1,0 +1,8 @@
+title: Make the new ValueSource.getValues(context,reader) delegate to the original
+  ValueSource.getValues(reader) so custom sources will work.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-1432
+  url: https://issues.apache.org/jira/browse/SOLR-1432

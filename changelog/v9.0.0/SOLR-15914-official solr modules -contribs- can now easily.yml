@@ -1,0 +1,11 @@
+title: 'Official Solr modules (contribs) can now easily be added to shared class path
+  by environment variable ''SOLR_MODULES'' or system property ''solr.modules''. E.g:
+  SOLR_MODULES=extracting,langid'
+type: added
+authors:
+- name: janhoy
+- name: David Smiley
+- name: Houston Putman
+links:
+- name: SOLR-15914
+  url: https://issues.apache.org/jira/browse/SOLR-15914

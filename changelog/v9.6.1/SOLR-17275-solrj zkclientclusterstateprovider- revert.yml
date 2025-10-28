@@ -1,0 +1,10 @@
+title: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when
+  aliases are used.
+type: fixed
+authors:
+- name: Aparna Suresh
+links:
+- name: SOLR-17275
+  url: https://issues.apache.org/jira/browse/SOLR-17275
+- name: SOLR-17153
+  url: https://issues.apache.org/jira/browse/SOLR-17153

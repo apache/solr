@@ -1,0 +1,7 @@
+title: Configuring slowQueryThresholdMillis now logs slow requests to a separate file
+  - solr_slow_requests.log. Previously they would get logged in the solr.log file.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-11453
+  url: https://issues.apache.org/jira/browse/SOLR-11453

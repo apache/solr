@@ -1,0 +1,8 @@
+title: Narrow StreamFactory.withFunctionName clazz parameter to prevent misconfiguration
+type: other
+authors:
+- name: Jason Gerlowski
+- name: Kevin Risden
+links:
+- name: SOLR-8385
+  url: https://issues.apache.org/jira/browse/SOLR-8385

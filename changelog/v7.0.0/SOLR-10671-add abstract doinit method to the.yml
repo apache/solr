@@ -1,0 +1,8 @@
+title: Add abstract doInit method to the SolrMetricReporter base class.
+type: other
+authors:
+- name: Christine Poerschke
+- name: Anshum Gupta
+links:
+- name: SOLR-10671
+  url: https://issues.apache.org/jira/browse/SOLR-10671

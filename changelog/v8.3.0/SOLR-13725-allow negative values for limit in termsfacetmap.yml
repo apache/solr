@@ -1,0 +1,8 @@
+title: Allow negative values for limit in TermsFacetMap
+type: fixed
+authors:
+- name: Richard Walker
+- name: Munendra S N
+links:
+- name: SOLR-13725
+  url: https://issues.apache.org/jira/browse/SOLR-13725

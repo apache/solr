@@ -1,0 +1,7 @@
+title: replace LatLonType.getValueSource's QParser use
+type: other
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-8305
+  url: https://issues.apache.org/jira/browse/SOLR-8305

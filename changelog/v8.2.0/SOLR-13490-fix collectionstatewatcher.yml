@@ -1,0 +1,9 @@
+title: Fix CollectionStateWatcher/CollectionStatePredicate based APIs in ZkStateReader
+  and CloudSolrClient to be triggered on liveNode changes. Also add Predicate&lt;DocCollection&gt;
+  equivalents for callers that don't care about liveNodes.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-13490
+  url: https://issues.apache.org/jira/browse/SOLR-13490

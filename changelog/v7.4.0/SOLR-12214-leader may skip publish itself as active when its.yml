@@ -1,0 +1,7 @@
+title: Leader may skip publish itself as ACTIVE when its last published state is DOWN
+type: fixed
+authors:
+- name: Cao Manh Dat
+links:
+- name: SOLR-12214
+  url: https://issues.apache.org/jira/browse/SOLR-12214

@@ -1,0 +1,8 @@
+title: Issue with starting script with solr.home (-s) == solr
+type: fixed
+authors:
+- name: Leil Ireson
+- name: Amrit Sarkar
+links:
+- name: SOLR-11084
+  url: https://issues.apache.org/jira/browse/SOLR-11084

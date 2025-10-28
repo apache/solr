@@ -1,0 +1,9 @@
+title: Removed "apache-" prefix from Solr distribution and artifact filenames.
+type: other
+authors:
+- name: Ryan Ernst
+- name: Robert Muir
+- name: Steve Rowe
+links:
+- name: SOLR-4287
+  url: https://issues.apache.org/jira/browse/SOLR-4287

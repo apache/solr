@@ -1,0 +1,10 @@
+title: RunExecutableListener was removed for security reasons.
+type: other
+authors:
+- name: Michael Stepankin
+- name: Olga Barinova
+- name: Uwe Schindler
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-11482
+  url: https://issues.apache.org/jira/browse/SOLR-11482

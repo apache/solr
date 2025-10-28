@@ -1,0 +1,8 @@
+title: 'JWT Auth plugin: Remove deprecated parameter name jwkUrl in favour of jwksUrl
+  for the JWK Url.'
+type: removed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-15203
+  url: https://issues.apache.org/jira/browse/SOLR-15203

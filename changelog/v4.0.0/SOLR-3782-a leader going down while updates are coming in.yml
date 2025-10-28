@@ -1,0 +1,7 @@
+title: A leader going down while updates are coming in can cause shard inconsistency.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-3782
+  url: https://issues.apache.org/jira/browse/SOLR-3782

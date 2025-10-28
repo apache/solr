@@ -1,0 +1,8 @@
+title: A read API at /api/cluster/zk/* to fetch raw ZK data and view contents of a
+  ZK directory
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-13942
+  url: https://issues.apache.org/jira/browse/SOLR-13942

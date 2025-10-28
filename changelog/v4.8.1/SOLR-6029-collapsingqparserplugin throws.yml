@@ -1,0 +1,9 @@
+title: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException if elevated doc
+  has been deleted from a segment.
+type: fixed
+authors:
+- name: Greg Harris
+- name: Joel Bernstein
+links:
+- name: SOLR-6029
+  url: https://issues.apache.org/jira/browse/SOLR-6029

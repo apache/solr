@@ -1,0 +1,8 @@
+title: Core gets inaccessible after RENAME operation with special characters
+type: other
+authors:
+- name: Erik Hatcher
+- name: Erick Erickson
+links:
+- name: SOLR-8308
+  url: https://issues.apache.org/jira/browse/SOLR-8308

@@ -1,0 +1,9 @@
+title: 'New spatial BBoxField for indexing rectangles with search support for most
+  predicates. It includes extra score relevancy modes in addition to distance: score=overlapRatio|area|area2D.'
+type: added
+authors:
+- name: David Smiley
+- name: Ryan McKinley
+links:
+- name: SOLR-6183
+  url: https://issues.apache.org/jira/browse/SOLR-6183

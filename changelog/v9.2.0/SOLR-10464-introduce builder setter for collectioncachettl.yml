@@ -1,0 +1,9 @@
+title: Introduce Builder setter for collectionCacheTtl on cloud SolrClients. Deprecated
+  direct setter setCollectionCacheTTL on cloud SolrClients.
+type: changed
+authors:
+- name: Eric Pugh
+- name: David Smiley
+links:
+- name: SOLR-10464
+  url: https://issues.apache.org/jira/browse/SOLR-10464

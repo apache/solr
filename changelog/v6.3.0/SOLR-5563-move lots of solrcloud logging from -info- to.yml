@@ -1,0 +1,8 @@
+title: Move lots of SolrCloud logging from 'info' to 'debug'
+type: other
+authors:
+- name: janhoy
+- name: "Alan\n  Woodward"
+links:
+- name: SOLR-5563
+  url: https://issues.apache.org/jira/browse/SOLR-5563

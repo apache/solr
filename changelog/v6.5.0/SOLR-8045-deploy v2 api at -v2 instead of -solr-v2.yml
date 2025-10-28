@@ -1,0 +1,8 @@
+title: Deploy V2 API at /v2 instead of /solr/v2
+type: added
+authors:
+- name: Cao Manh Dat
+- name: Noble Paul
+links:
+- name: SOLR-8045
+  url: https://issues.apache.org/jira/browse/SOLR-8045

@@ -1,0 +1,7 @@
+title: Add GraphHandler and GraphMLResponseWriter to support graph visualizations
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-8972
+  url: https://issues.apache.org/jira/browse/SOLR-8972

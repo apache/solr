@@ -1,0 +1,8 @@
+title: Add checks in Streams for incoming stream order
+type: other
+authors:
+- name: Dennis Gove
+- name: Joel Bernstein
+links:
+- name: SOLR-7554
+  url: https://issues.apache.org/jira/browse/SOLR-7554

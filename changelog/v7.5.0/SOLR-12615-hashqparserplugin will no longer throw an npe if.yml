@@ -1,0 +1,10 @@
+title: HashQParserPlugin will no longer throw an NPE if the hash key field is a string
+  when there are documents with empty values. All documents with empty values ( string
+  , numeric ) will be processed by worker=0 This would fix the NPE when using the
+  search stream with partitionKeys.
+type: fixed
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-12615
+  url: https://issues.apache.org/jira/browse/SOLR-12615

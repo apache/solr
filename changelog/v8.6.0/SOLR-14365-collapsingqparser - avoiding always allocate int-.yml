@@ -1,0 +1,8 @@
+title: CollapsingQParser - Avoiding always allocate int[] and float[] with size equals
+  to number of unique values.
+type: changed
+authors:
+- name: Cao Manh Dat
+links:
+- name: SOLR-14365
+  url: https://issues.apache.org/jira/browse/SOLR-14365

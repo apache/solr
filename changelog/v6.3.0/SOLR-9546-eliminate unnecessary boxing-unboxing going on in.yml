@@ -1,0 +1,8 @@
+title: Eliminate unnecessary boxing/unboxing going on in SolrParams
+type: changed
+authors:
+- name: Pushkar Raste
+- name: noble
+links:
+- name: SOLR-9546
+  url: https://issues.apache.org/jira/browse/SOLR-9546

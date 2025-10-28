@@ -1,0 +1,9 @@
+title: A new IndexWriter must be opened on SolrCore reload when the index directory
+  has changed and the previous SolrCore's state should not be propagated.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Gregg Donovan
+links:
+- name: SOLR-4469
+  url: https://issues.apache.org/jira/browse/SOLR-4469

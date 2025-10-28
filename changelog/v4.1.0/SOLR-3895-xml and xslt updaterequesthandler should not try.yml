@@ -1,0 +1,10 @@
+title: XML and XSLT UpdateRequestHandler should not try to resolve external entities.
+  This improves speed of loading e.g. XSL-transformed XHTML documents.
+type: changed
+authors:
+- name: Martin Herfurt
+- name: uschindler
+- name: hossman
+links:
+- name: SOLR-3895
+  url: https://issues.apache.org/jira/browse/SOLR-3895

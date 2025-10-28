@@ -1,0 +1,8 @@
+title: Limit lsof port check in bin/solr to just listening ports
+type: fixed
+authors:
+- name: Upayavira
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-7635
+  url: https://issues.apache.org/jira/browse/SOLR-7635

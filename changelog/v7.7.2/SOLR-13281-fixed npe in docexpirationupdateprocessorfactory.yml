@@ -1,0 +1,8 @@
+title: Fixed NPE in DocExpirationUpdateProcessorFactory
+type: fixed
+authors:
+- name: Munendra S N
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-13281
+  url: https://issues.apache.org/jira/browse/SOLR-13281

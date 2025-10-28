@@ -1,0 +1,8 @@
+title: Add 'missing' aggregation in JSON FacetModule
+type: added
+authors:
+- name: hossman
+- name: Munendra S N
+links:
+- name: SOLR-13911
+  url: https://issues.apache.org/jira/browse/SOLR-13911

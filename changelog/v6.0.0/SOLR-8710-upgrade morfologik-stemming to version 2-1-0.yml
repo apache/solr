@@ -1,0 +1,7 @@
+title: Upgrade morfologik-stemming to version 2.1.0.
+type: other
+authors:
+- name: Dawid Weiss
+links:
+- name: SOLR-8710
+  url: https://issues.apache.org/jira/browse/SOLR-8710

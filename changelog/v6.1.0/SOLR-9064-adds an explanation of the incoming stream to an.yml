@@ -1,0 +1,7 @@
+title: Adds an explanation of the incoming stream to an UpdateStream's explanation
+type: fixed
+authors:
+- name: Dennis Gove
+links:
+- name: SOLR-9064
+  url: https://issues.apache.org/jira/browse/SOLR-9064

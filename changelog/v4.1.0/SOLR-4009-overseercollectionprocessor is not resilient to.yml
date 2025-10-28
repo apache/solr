@@ -1,0 +1,10 @@
+title: OverseerCollectionProcessor is not resilient to many error conditions and can
+  stop running on errors.
+type: fixed
+authors:
+- name: Raintung Li
+- name: milesli
+- name: Mark Miller
+links:
+- name: SOLR-4009
+  url: https://issues.apache.org/jira/browse/SOLR-4009

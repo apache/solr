@@ -1,0 +1,9 @@
+title: Fix RealTime GET to work on a cluster running CDCR when using Solr's in-place
+  updates
+type: fixed
+authors:
+- name: Amrit Sarkar
+- name: Varun Thacker
+links:
+- name: SOLR-12083
+  url: https://issues.apache.org/jira/browse/SOLR-12083

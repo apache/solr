@@ -1,0 +1,7 @@
+title: DistributedQueue can easily create too many ZooKeeper Watches.
+type: fixed
+authors:
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-6336
+  url: https://issues.apache.org/jira/browse/SOLR-6336

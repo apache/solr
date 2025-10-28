@@ -1,0 +1,9 @@
+title: Add elevateOnlyDocsMatchingQuery and collectElevatedDocsWhenCollapsing parameters
+  to query elevation.
+type: changed
+authors:
+- name: Dennis Berger
+- name: Tobias Kässmann
+links:
+- name: SOLR-15038
+  url: https://issues.apache.org/jira/browse/SOLR-15038

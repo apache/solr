@@ -1,0 +1,7 @@
+title: ZkStateReader waitForState should check clusterState before using watchers
+type: changed
+authors:
+- name: Kevin Risden
+links:
+- name: SOLR-17004
+  url: https://issues.apache.org/jira/browse/SOLR-17004

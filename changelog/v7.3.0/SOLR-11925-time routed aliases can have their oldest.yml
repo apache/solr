@@ -1,0 +1,8 @@
+title: Time Routed Aliases can have their oldest collections automatically deleted
+  via the "router.autoDeleteAge" setting.
+type: added
+authors:
+- name: David Smiley
+links:
+- name: SOLR-11925
+  url: https://issues.apache.org/jira/browse/SOLR-11925

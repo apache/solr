@@ -1,0 +1,7 @@
+title: addreplica API fails with incorrect error msg "cannot create collection"
+type: fixed
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-7172
+  url: https://issues.apache.org/jira/browse/SOLR-7172

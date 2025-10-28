@@ -1,0 +1,8 @@
+title: 'JSON Facet API: fix faceting exception on multi-valued numeric fields that
+  have docValues.'
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-8835
+  url: https://issues.apache.org/jira/browse/SOLR-8835

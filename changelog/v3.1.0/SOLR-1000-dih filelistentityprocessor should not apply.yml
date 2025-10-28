@@ -1,0 +1,7 @@
+title: DIH FileListEntityProcessor should not apply fileName filter to directory names.
+type: fixed
+authors:
+- name: Fergus McMenemie
+links:
+- name: SOLR-1000
+  url: https://issues.apache.org/jira/browse/SOLR-1000

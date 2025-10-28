@@ -1,0 +1,8 @@
+title: SystemInfoHandler now exposes more details about the JRE/VM/Java version in
+  use.
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-3970
+  url: https://issues.apache.org/jira/browse/SOLR-3970

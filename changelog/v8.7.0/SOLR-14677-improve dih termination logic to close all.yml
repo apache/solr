@@ -1,0 +1,7 @@
+title: Improve DIH termination logic to close all DataSources, EntityProcessors
+type: fixed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-14677
+  url: https://issues.apache.org/jira/browse/SOLR-14677

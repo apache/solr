@@ -1,0 +1,9 @@
+title: List of collations are wrong parsed in SpellCheckResponse causing a wrong number
+  of collation results in the response.
+type: fixed
+authors:
+- name: Bastiaan Verhoef
+- name: James Dyer
+links:
+- name: SOLR-2902
+  url: https://issues.apache.org/jira/browse/SOLR-2902

@@ -1,0 +1,9 @@
+title: Add support for custom comparators in Solr spellchecker, per LUCENE-2479
+type: added
+authors:
+- name: gsingers
+links:
+- name: SOLR-2053
+  url: https://issues.apache.org/jira/browse/SOLR-2053
+- name: LUCENE-2479
+  url: https://issues.apache.org/jira/browse/LUCENE-2479

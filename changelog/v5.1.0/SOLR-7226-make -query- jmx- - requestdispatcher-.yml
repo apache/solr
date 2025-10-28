@@ -1,0 +1,8 @@
+title: Make /query/* jmx/* , requestDispatcher/*, &lt;listener&gt; &lt;initParams&gt;
+  properties in solrconfig.xml editable
+type: added
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-7226
+  url: https://issues.apache.org/jira/browse/SOLR-7226

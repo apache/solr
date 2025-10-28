@@ -1,0 +1,7 @@
+title: Fix test only bug in UpdateRequestProcessorFactoryTest
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-7603
+  url: https://issues.apache.org/jira/browse/SOLR-7603

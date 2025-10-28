@@ -1,0 +1,7 @@
+title: RSS DIH-example not working
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-4563
+  url: https://issues.apache.org/jira/browse/SOLR-4563

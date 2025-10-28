@@ -1,0 +1,8 @@
+title: SolrCloud cluster can end up without an overseer with overseer roles
+type: fixed
+authors:
+- name: Noble Paul
+- name: Shalin Mangar
+links:
+- name: SOLR-6095
+  url: https://issues.apache.org/jira/browse/SOLR-6095

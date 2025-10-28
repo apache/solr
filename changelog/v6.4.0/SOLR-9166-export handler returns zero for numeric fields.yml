@@ -1,0 +1,8 @@
+title: Export handler returns zero for numeric fields that are not in the original
+  doc. One consequence of this change is that you must be aware that some tuples will
+  not have values if there were none in the original document.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-9166
+  url: https://issues.apache.org/jira/browse/SOLR-9166

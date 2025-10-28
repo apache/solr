@@ -1,0 +1,9 @@
+title: GraphQuery also supports string fields which are indexed=false and docValues=true.
+  Please refer to the Javadocs for DocValuesTermsQuery for it's performance characteristics.
+type: fixed
+authors:
+- name: Karthik Ramachandran
+- name: Varun Thacker
+links:
+- name: SOLR-11190
+  url: https://issues.apache.org/jira/browse/SOLR-11190

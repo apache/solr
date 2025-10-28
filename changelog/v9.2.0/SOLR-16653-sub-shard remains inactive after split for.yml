@@ -1,0 +1,8 @@
+title: sub-shard remains inactive after split for NRT+PULL collection
+type: fixed
+authors:
+- name: Hitesh Khamesra
+- name: noble
+links:
+- name: SOLR-16653
+  url: https://issues.apache.org/jira/browse/SOLR-16653

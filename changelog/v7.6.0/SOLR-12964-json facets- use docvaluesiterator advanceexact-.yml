@@ -1,0 +1,8 @@
+title: 'Json Facets: use DocValuesIterator advanceExact() instead of advance() in
+  FacetFieldProcessorByHashDV and UniqueSinglevaluedSlotAcc.'
+type: changed
+authors:
+- name: Tim Underwood
+links:
+- name: SOLR-12964
+  url: https://issues.apache.org/jira/browse/SOLR-12964

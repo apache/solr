@@ -1,0 +1,8 @@
+title: 'Make SortableTextField work with export/streaming. NOTE: requires that the
+  field have useDocValuesAsStored=true'
+type: added
+authors:
+- name: either explicit or as the default
+links:
+- name: SOLR-13261
+  url: https://issues.apache.org/jira/browse/SOLR-13261

@@ -1,0 +1,8 @@
+title: IndexSchema will now fail to initialize if there is a problem initializing
+  one of the fields or field types.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-1824
+  url: https://issues.apache.org/jira/browse/SOLR-1824

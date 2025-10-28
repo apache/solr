@@ -1,0 +1,12 @@
+title: In solrconfig.xml remove &lt;mergePolicy&gt; (and related &lt;mergeFactor&gt;
+  and &lt;maxMergeDocs&gt;) support in favor of the &lt;mergePolicyFactory&gt; element
+  introduced by SOLR-8621 in Solr 5.5.0.
+type: other
+authors:
+- name: Christine Poerschke
+- name: hossman
+links:
+- name: SOLR-8668
+  url: https://issues.apache.org/jira/browse/SOLR-8668
+- name: SOLR-8621
+  url: https://issues.apache.org/jira/browse/SOLR-8621

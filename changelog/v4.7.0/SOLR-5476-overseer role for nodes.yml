@@ -1,0 +1,7 @@
+title: Overseer Role for nodes
+type: added
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-5476
+  url: https://issues.apache.org/jira/browse/SOLR-5476

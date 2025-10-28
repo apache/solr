@@ -1,0 +1,7 @@
+title: Fix NPE in SearchHandler when shards.info and no QueryComponent configured.
+type: fixed
+authors:
+- name: Bruno Roustant
+links:
+- name: SOLR-15061
+  url: https://issues.apache.org/jira/browse/SOLR-15061

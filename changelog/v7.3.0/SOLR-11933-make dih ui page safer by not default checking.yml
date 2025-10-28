@@ -1,0 +1,7 @@
+title: Make DIH UI page safer by not default checking the clean checkbox
+type: other
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-11933
+  url: https://issues.apache.org/jira/browse/SOLR-11933

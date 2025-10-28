@@ -1,0 +1,9 @@
+title: Atomic/partial updates to nested documents now _require_ the `\_root_` field
+  to clearly show the document isn't a root document. Solr 8 would fallback on the
+  `\_route_` param but no longer.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-15064
+  url: https://issues.apache.org/jira/browse/SOLR-15064

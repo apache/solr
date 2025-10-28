@@ -1,0 +1,9 @@
+title: Introducing AffinityPlacementFactory.withCollectionShards to collocate corresponding
+  shards of two collections. eg primaryColl.shard1 will be placed to the node where
+  secondaryColl.shard1 resides, etc.
+type: added
+authors:
+- name: Mikhail Khludnev
+links:
+- name: SOLR-16837
+  url: https://issues.apache.org/jira/browse/SOLR-16837

@@ -1,0 +1,9 @@
+title: Admin UI "Nodes" view support for replica* replica names.
+type: changed
+authors:
+- name: Daniel Collins
+- name: Christine Poerschke
+- name: janhoy
+links:
+- name: SOLR-12973
+  url: https://issues.apache.org/jira/browse/SOLR-12973

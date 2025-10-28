@@ -1,0 +1,8 @@
+title: Fix HDFS tests - "Command processor" thread leak
+type: other
+authors:
+- name: Mike Drob
+- name: Kevin Risden
+links:
+- name: SOLR-16043
+  url: https://issues.apache.org/jira/browse/SOLR-16043

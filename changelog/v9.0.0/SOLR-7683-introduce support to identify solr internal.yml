@@ -1,0 +1,8 @@
+title: Introduce support to identify Solr internal request types
+type: changed
+authors:
+- name: Atri Sharma
+- name: Hrishikesh Gadre
+links:
+- name: SOLR-7683
+  url: https://issues.apache.org/jira/browse/SOLR-7683

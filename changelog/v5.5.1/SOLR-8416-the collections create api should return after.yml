@@ -1,0 +1,9 @@
+title: The collections create API should return after all replicas are active.
+type: fixed
+authors:
+- name: Michael Sun
+- name: Mark Miller
+- name: Alexey Serba
+links:
+- name: SOLR-8416
+  url: https://issues.apache.org/jira/browse/SOLR-8416

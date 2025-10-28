@@ -1,0 +1,8 @@
+title: Unloading or deleting the last replica of a shard now no longer cascades to
+  remove the shard from the clusterstate.
+type: other
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-5209
+  url: https://issues.apache.org/jira/browse/SOLR-5209

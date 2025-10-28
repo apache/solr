@@ -1,0 +1,8 @@
+title: Schema designer not handling `update.autoCreateFields` stored as a string (vs.
+  boolean) in the config overlay
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15813
+  url: https://issues.apache.org/jira/browse/SOLR-15813

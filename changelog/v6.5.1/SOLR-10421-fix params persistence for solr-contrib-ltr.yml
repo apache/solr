@@ -1,0 +1,8 @@
+title: Fix params persistence for solr/contrib/ltr (MinMax|Standard)Normalizer classes.
+type: fixed
+authors:
+- name: Jianxiong Dong
+- name: Christine Poerschke
+links:
+- name: SOLR-10421
+  url: https://issues.apache.org/jira/browse/SOLR-10421

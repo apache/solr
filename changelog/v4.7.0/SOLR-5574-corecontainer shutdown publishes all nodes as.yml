@@ -1,0 +1,8 @@
+title: CoreContainer shutdown publishes all nodes as down and waits to see that and
+  then again publishes all nodes as down.
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5574
+  url: https://issues.apache.org/jira/browse/SOLR-5574

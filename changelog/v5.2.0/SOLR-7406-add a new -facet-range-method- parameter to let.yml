@@ -1,0 +1,10 @@
+title: Add a new "facet.range.method" parameter to let users choose how to do range
+  faceting between an implementation based on filters (previous algorithm, using "facet.range.method=filter")
+  or DocValues ("facet.range.method=dv"). Input parameters and output of both methods
+  are the same.
+type: added
+authors:
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-7406
+  url: https://issues.apache.org/jira/browse/SOLR-7406

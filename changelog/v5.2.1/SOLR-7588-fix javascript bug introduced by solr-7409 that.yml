@@ -1,0 +1,10 @@
+title: Fix javascript bug introduced by SOLR-7409 that breaks the dataimport screen
+  in the admin UI.
+type: fixed
+authors:
+- name: Bill Bell
+links:
+- name: SOLR-7588
+  url: https://issues.apache.org/jira/browse/SOLR-7588
+- name: SOLR-7409
+  url: https://issues.apache.org/jira/browse/SOLR-7409

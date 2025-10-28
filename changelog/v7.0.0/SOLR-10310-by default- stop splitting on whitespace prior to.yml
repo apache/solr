@@ -1,0 +1,8 @@
+title: By default, stop splitting on whitespace prior to analysis in edismax and standard/"lucene"
+  query parsers.
+type: other
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-10310
+  url: https://issues.apache.org/jira/browse/SOLR-10310

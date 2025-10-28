@@ -1,0 +1,8 @@
+title: Enforce error-prone checks to catch all URLEqualsHashCode violations and use
+  java.net.URI instead
+type: other
+authors:
+- name: Collins Abanda
+links:
+- name: SOLR-15613
+  url: https://issues.apache.org/jira/browse/SOLR-15613

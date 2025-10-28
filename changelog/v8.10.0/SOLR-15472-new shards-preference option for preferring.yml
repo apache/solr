@@ -1,0 +1,8 @@
+title: New shards.preference option for preferring replicas based on their leader
+  status, i.e. `shards.preference=replica.leader:false` would prefer non-leader replicas.
+type: added
+authors:
+- name: wei wang
+links:
+- name: SOLR-15472
+  url: https://issues.apache.org/jira/browse/SOLR-15472

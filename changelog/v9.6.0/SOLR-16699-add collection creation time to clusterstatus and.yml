@@ -1,0 +1,9 @@
+title: Add Collection creation time to CLUSTERSTATUS and COLSTATUS API responses
+type: changed
+authors:
+- name: Julien Pilourdault
+- name: Paul McArthur
+- name: David Smiley
+links:
+- name: SOLR-16699
+  url: https://issues.apache.org/jira/browse/SOLR-16699

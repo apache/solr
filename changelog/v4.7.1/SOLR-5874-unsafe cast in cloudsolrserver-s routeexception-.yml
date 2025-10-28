@@ -1,0 +1,9 @@
+title: Unsafe cast in CloudSolrServer's RouteException. Change RouteException to handle
+  Throwable rather than Exception.
+type: fixed
+authors:
+- name: Mark Miller
+- name: David Arthur
+links:
+- name: SOLR-5874
+  url: https://issues.apache.org/jira/browse/SOLR-5874

@@ -1,0 +1,6 @@
+title: Custom AuthenticationPlugin must provide its own setup for Http2SolrClient
+  through implementing HttpClientBuilderPlugin.setup, if not internal requests can't
+  be authenticated.
+type: upgrade_notes
+authors: []
+links: []

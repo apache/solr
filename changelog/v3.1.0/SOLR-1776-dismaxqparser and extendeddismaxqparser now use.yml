@@ -1,0 +1,9 @@
+title: DismaxQParser and ExtendedDismaxQParser now use the schema.xml "defaultSearchField"
+  as the default value for the "qf" param instead of failing with an error when "qf"
+  is not specified.
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-1776
+  url: https://issues.apache.org/jira/browse/SOLR-1776

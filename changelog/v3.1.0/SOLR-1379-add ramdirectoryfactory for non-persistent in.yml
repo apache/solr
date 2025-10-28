@@ -1,0 +1,7 @@
+title: Add RAMDirectoryFactory for non-persistent in memory index storage.
+type: added
+authors:
+- name: Alex Baranov
+links:
+- name: SOLR-1379
+  url: https://issues.apache.org/jira/browse/SOLR-1379

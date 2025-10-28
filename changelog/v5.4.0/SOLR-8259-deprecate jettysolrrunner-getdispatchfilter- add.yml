@@ -1,0 +1,8 @@
+title: Deprecate JettySolrRunner.getDispatchFilter(), add .getSolrDispatchFilter()
+  and .getCoreContainer()
+type: other
+authors:
+- name: Alan Woodward
+links:
+- name: SOLR-8259
+  url: https://issues.apache.org/jira/browse/SOLR-8259

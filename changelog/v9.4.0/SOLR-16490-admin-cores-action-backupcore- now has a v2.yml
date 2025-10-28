@@ -1,0 +1,8 @@
+title: '`/admin/cores?action=backupcore` now has a v2 equivalent, available at `GET
+  /api/cores/coreName/backups`'
+type: changed
+authors:
+- name: Sanjay Dutt
+links:
+- name: SOLR-16490
+  url: https://issues.apache.org/jira/browse/SOLR-16490

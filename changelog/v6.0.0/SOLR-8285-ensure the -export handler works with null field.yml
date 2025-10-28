@@ -1,0 +1,7 @@
+title: Ensure the /export handler works with NULL field values
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-8285
+  url: https://issues.apache.org/jira/browse/SOLR-8285

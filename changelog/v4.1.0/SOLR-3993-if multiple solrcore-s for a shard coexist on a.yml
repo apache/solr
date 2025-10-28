@@ -1,0 +1,9 @@
+title: If multiple SolrCore's for a shard coexist on a node, on cluster restart, leader
+  election would stall until timeout, waiting to see all of the replicas come up.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Alexey Kudinov
+links:
+- name: SOLR-3993
+  url: https://issues.apache.org/jira/browse/SOLR-3993

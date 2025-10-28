@@ -1,0 +1,8 @@
+title: Throw an exception, instead of just a warning, when unknown atomic update operation
+  is encountered
+type: changed
+authors:
+- name: Munendra S N
+links:
+- name: SOLR-12167
+  url: https://issues.apache.org/jira/browse/SOLR-12167

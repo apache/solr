@@ -1,0 +1,7 @@
+title: Replication factor error message doesn't match constraint.
+type: other
+authors:
+- name: Patrick Hunt
+links:
+- name: SOLR-5487
+  url: https://issues.apache.org/jira/browse/SOLR-5487

@@ -1,0 +1,8 @@
+title: ConcurrentUpdateSolrServer includes a Spin Lock
+type: fixed
+authors:
+- name: Brandon Chapman
+- name: Timothy Potter
+links:
+- name: SOLR-6136
+  url: https://issues.apache.org/jira/browse/SOLR-6136

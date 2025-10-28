@@ -1,0 +1,7 @@
+title: Update dependency com.tdunning:t-digest to v3.3
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#1402
+  url: https://github.com/apache/solr/pull/1402

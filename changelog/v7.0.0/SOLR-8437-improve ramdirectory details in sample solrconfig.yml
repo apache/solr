@@ -1,0 +1,8 @@
+title: Improve RAMDirectory details in sample solrconfig files
+type: other
+authors:
+- name: Mark Miller
+- name: Varun Thacker
+links:
+- name: SOLR-8437
+  url: https://issues.apache.org/jira/browse/SOLR-8437

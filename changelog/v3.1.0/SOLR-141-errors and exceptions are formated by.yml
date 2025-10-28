@@ -1,0 +1,10 @@
+title: Errors and Exceptions are formated by ResponseWriter.
+type: other
+authors:
+- name: Mike Sokolov
+- name: Rich Cariens
+- name: Daniel Naber
+- name: ryan
+links:
+- name: SOLR-141
+  url: https://issues.apache.org/jira/browse/SOLR-141

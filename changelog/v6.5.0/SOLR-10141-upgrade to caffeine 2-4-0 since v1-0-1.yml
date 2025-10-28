@@ -1,0 +1,10 @@
+title: Upgrade to Caffeine 2.4.0 since v1.0.1 contributed to BlockCache corruption
+  because the removal listener was called more than once for some items and not at
+  all for other items.
+type: fixed
+authors:
+- name: Ben Manes
+- name: yonik
+links:
+- name: SOLR-10141
+  url: https://issues.apache.org/jira/browse/SOLR-10141

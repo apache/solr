@@ -1,0 +1,7 @@
+title: Add regexp support for TermsComponent
+type: added
+authors:
+- name: Uri Boness
+links:
+- name: SOLR-1625
+  url: https://issues.apache.org/jira/browse/SOLR-1625

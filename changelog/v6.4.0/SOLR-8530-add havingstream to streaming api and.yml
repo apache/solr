@@ -1,0 +1,7 @@
+title: Add HavingStream to Streaming API and StreamingExpressions
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-8530
+  url: https://issues.apache.org/jira/browse/SOLR-8530

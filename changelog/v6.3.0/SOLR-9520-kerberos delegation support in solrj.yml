@@ -1,0 +1,8 @@
+title: Kerberos delegation support in SolrJ
+type: added
+authors:
+- name: Ishan Chattopadhyaya
+- name: noble
+links:
+- name: SOLR-9520
+  url: https://issues.apache.org/jira/browse/SOLR-9520

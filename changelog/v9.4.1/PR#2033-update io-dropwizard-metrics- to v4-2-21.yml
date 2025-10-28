@@ -1,0 +1,7 @@
+title: Update io.dropwizard.metrics:* to v4.2.21
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#2033
+  url: https://github.com/apache/solr/pull/2033

@@ -1,0 +1,7 @@
+title: Explicitly indent results in Admin Query UI by default
+type: changed
+authors:
+- name: Olivia Falk
+links:
+- name: SOLR-15607
+  url: https://issues.apache.org/jira/browse/SOLR-15607

@@ -1,0 +1,21 @@
+title: 'XML QueryParser support (defType=xmlparser) Lucene includes a queryparser
+  that supports the creation of Lucene queries from XML. The queries supported by
+  lucene.queryparser.xml.CoreParser are now supported by the newly created solr.search.SolrCoreParser
+  and in future SolrCoreParser could support additional queries also. Example: &lt;BooleanQuery
+  fieldName="description"&gt; &lt;Clause occurs="must"&gt; &lt;TermQuery&gt;shirt&lt;/TermQuery&gt;
+  &lt;/Clause&gt; &lt;Clause occurs="mustnot"&gt; &lt;TermQuery&gt;plain&lt;/TermQuery&gt;
+  &lt;/Clause&gt; &lt;Clause occurs="should"&gt; &lt;TermQuery&gt;cotton&lt;/TermQuery&gt;
+  &lt;/Clause&gt; &lt;Clause occurs="must"&gt; &lt;BooleanQuery fieldName="size"&gt;
+  &lt;Clause occurs="should"&gt; &lt;TermsQuery&gt;S M L&lt;/TermsQuery&gt; &lt;/Clause&gt;
+  &lt;/BooleanQuery&gt; &lt;/Clause&gt; &lt;/BooleanQuery&gt;'
+type: added
+authors:
+- name: Erik Hatcher
+- name: Karl Wettin
+- name: Daniel Collins
+- name: Nathan Visagan
+- name: Ahmet Arslan
+- name: Christine Poerschke
+links:
+- name: SOLR-839
+  url: https://issues.apache.org/jira/browse/SOLR-839

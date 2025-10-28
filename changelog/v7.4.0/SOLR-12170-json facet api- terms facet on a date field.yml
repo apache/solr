@@ -1,0 +1,8 @@
+title: 'JSON Facet API: Terms facet on a date field sometimes failed with an exception
+  complaining about "Invalid Date String".'
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-12170
+  url: https://issues.apache.org/jira/browse/SOLR-12170

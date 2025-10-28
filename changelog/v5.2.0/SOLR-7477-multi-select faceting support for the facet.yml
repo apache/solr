@@ -1,0 +1,10 @@
+title: 'Multi-select faceting support for the Facet Module via the "excludeTags" parameter
+  which disregards any matching tagged filters for that facet. Example: & q=shoes
+  & fq={!tag=COLOR}color:blue & json.facet={ colors:{type:terms, field:color, excludeTags=COLOR}
+  }'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-7477
+  url: https://issues.apache.org/jira/browse/SOLR-7477

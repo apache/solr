@@ -1,0 +1,7 @@
+title: Clean up schema information REST API.
+type: other
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-4537
+  url: https://issues.apache.org/jira/browse/SOLR-4537

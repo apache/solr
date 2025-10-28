@@ -1,0 +1,8 @@
+title: Add event listener API for DIH import start and end.
+type: added
+authors:
+- name: Kay Kay
+- name: Noble Paul
+links:
+- name: SOLR-938
+  url: https://issues.apache.org/jira/browse/SOLR-938

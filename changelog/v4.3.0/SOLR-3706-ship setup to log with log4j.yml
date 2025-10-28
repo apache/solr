@@ -1,0 +1,8 @@
+title: Ship setup to log with log4j.
+type: other
+authors:
+- name: ryan
+- name: Mark Miller
+links:
+- name: SOLR-3706
+  url: https://issues.apache.org/jira/browse/SOLR-3706

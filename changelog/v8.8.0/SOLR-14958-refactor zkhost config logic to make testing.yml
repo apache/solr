@@ -1,0 +1,8 @@
+title: Refactor zkHost config logic to make testing easier and reduce risk of incorrect
+  value being used
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-14958
+  url: https://issues.apache.org/jira/browse/SOLR-14958

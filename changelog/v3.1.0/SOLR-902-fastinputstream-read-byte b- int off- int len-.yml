@@ -1,0 +1,8 @@
+title: FastInputStream#read(byte b[], int off, int len) gives incorrect results when
+  amount left to read is less than buffer size
+type: fixed
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-902
+  url: https://issues.apache.org/jira/browse/SOLR-902

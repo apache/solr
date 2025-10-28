@@ -1,0 +1,10 @@
+title: Watch /collections zk node on all nodes so that cluster state updates are more
+  efficient especially when cluster has a mix of collections in stateFormat=1 and
+  stateFormat=2.
+type: changed
+authors:
+- name: Scott Blum
+- name: shalin
+links:
+- name: SOLR-6629
+  url: https://issues.apache.org/jira/browse/SOLR-6629

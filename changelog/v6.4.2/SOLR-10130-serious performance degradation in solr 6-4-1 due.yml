@@ -1,0 +1,13 @@
+title: Serious performance degradation in Solr 6.4.1 due to the new metrics collection.
+  Default settings in solrconfig.xml /config/indexConfig/metrics have been changed
+  to turn off IndexWriter metrics collection. Directory level metrics collection has
+  been completely removed until a better design is found.
+type: fixed
+authors:
+- name: ab
+- name: ishan
+links:
+- name: SOLR-10130
+  url: https://issues.apache.org/jira/browse/SOLR-10130
+- name: SOLR-10182
+  url: https://issues.apache.org/jira/browse/SOLR-10182

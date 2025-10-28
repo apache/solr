@@ -1,0 +1,7 @@
+title: Remove optimize button from the core admin page
+type: fixed
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-12253
+  url: https://issues.apache.org/jira/browse/SOLR-12253

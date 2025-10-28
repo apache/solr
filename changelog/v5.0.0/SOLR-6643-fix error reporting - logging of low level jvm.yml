@@ -1,0 +1,8 @@
+title: Fix error reporting & logging of low level JVM Errors that occur when loading/reloading
+  a SolrCore
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-6643
+  url: https://issues.apache.org/jira/browse/SOLR-6643

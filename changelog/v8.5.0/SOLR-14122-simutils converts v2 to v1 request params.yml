@@ -1,0 +1,8 @@
+title: SimUtils converts v2 to v1 request params incorrectly.
+type: fixed
+authors:
+- name: Li Cao
+- name: ab
+links:
+- name: SOLR-14122
+  url: https://issues.apache.org/jira/browse/SOLR-14122

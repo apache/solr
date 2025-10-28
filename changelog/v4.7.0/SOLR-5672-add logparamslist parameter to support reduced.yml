@@ -1,0 +1,7 @@
+title: Add logParamsList parameter to support reduced logging.
+type: added
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-5672
+  url: https://issues.apache.org/jira/browse/SOLR-5672

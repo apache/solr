@@ -1,0 +1,8 @@
+title: CloudSolrClient could fail a request immediately following a collection creation.
+  Required double-checking the collection doesn’t exist.
+type: fixed
+authors:
+- name: Aparna Suresh
+links:
+- name: SOLR-17153
+  url: https://issues.apache.org/jira/browse/SOLR-17153

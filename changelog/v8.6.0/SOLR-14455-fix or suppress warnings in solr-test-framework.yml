@@ -1,0 +1,7 @@
+title: Fix or suppress warnings in solr/test-framework
+type: other
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-14455
+  url: https://issues.apache.org/jira/browse/SOLR-14455

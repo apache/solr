@@ -1,0 +1,8 @@
+title: Add QParser.getSortSpec, deprecate misleadingly named QParser.getSort
+type: other
+authors:
+- name: Judith Silverman
+- name: Christine Poerschke
+links:
+- name: SOLR-9627
+  url: https://issues.apache.org/jira/browse/SOLR-9627

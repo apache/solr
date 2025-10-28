@@ -1,0 +1,12 @@
+title: Fix handling of &lt;mergePolicy&gt; init arg "useCompoundFile" needed after
+  changes in LUCENE-5038
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-4934
+  url: https://issues.apache.org/jira/browse/SOLR-4934
+- name: SOLR-4941
+  url: https://issues.apache.org/jira/browse/SOLR-4941
+- name: LUCENE-5038
+  url: https://issues.apache.org/jira/browse/LUCENE-5038

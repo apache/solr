@@ -1,0 +1,9 @@
+title: Internal logic for identifying 'Solr Home' has been refactored to make testing
+  less error prone. Plugin developers using SolrPaths.locateSolrHome() or 'new SolrResourceLoader'
+  should check deprecation warnings as existing some existing functionality will be
+  removed in 9.0. See SOLR-14934 for more details.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-14934
+  url: https://issues.apache.org/jira/browse/SOLR-14934

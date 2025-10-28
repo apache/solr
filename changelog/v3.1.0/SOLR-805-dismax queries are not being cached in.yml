@@ -1,0 +1,7 @@
+title: DisMax queries are not being cached in QueryResultCache
+type: fixed
+authors:
+- name: Todd Feak
+links:
+- name: SOLR-805
+  url: https://issues.apache.org/jira/browse/SOLR-805

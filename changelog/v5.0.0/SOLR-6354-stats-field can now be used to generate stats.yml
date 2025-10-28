@@ -1,0 +1,8 @@
+title: 'stats.field can now be used to generate stats over the numeric results of
+  arbitrary functions, ie: stats.field={!func}product(price,popularity)'
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-6354
+  url: https://issues.apache.org/jira/browse/SOLR-6354

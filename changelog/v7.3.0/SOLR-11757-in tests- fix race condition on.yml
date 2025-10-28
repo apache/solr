@@ -1,0 +1,8 @@
+title: In tests, fix race condition on SolrException.ignoreException. Also ensure
+  we register "ignore_exception" in @BeforeClass (previously only @AfterClass)
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-11757
+  url: https://issues.apache.org/jira/browse/SOLR-11757

@@ -1,0 +1,8 @@
+title: 'filterCache access added to the solr query syntax. Example: description:HDTV
+  OR filter(+promotion:tv +promotion_date:[NOW/DAY TO NOW/DAY+7DAY])'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-7219
+  url: https://issues.apache.org/jira/browse/SOLR-7219

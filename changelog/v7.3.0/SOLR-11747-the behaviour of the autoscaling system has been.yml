@@ -1,0 +1,11 @@
+title: The behaviour of the autoscaling system has been modified to pause all triggers
+  from execution between the start of actions and end of cool down period. The triggers
+  will be resumed after the cool down period expires. Previously, the cool down period
+  was a fixed period started after actions for a trigger event complete and during
+  this time, all triggers continued to run but any events were rejected to be tried
+  later.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-11747
+  url: https://issues.apache.org/jira/browse/SOLR-11747

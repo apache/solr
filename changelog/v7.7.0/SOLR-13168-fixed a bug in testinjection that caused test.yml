@@ -1,0 +1,8 @@
+title: Fixed a bug in TestInjection that caused test only code to be invoked when
+  TLOG replicas recieved commits if java assertions were enabled.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-13168
+  url: https://issues.apache.org/jira/browse/SOLR-13168

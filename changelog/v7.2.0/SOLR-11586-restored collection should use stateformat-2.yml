@@ -1,0 +1,7 @@
+title: Restored collection should use stateFormat=2 instead of 1.
+type: fixed
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-11586
+  url: https://issues.apache.org/jira/browse/SOLR-11586

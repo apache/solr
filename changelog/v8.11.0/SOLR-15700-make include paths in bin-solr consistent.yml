@@ -1,0 +1,8 @@
+title: Make include paths in bin/solr consistent
+type: changed
+authors:
+- name: turnertg
+- name: janhoy
+links:
+- name: SOLR-15700
+  url: https://issues.apache.org/jira/browse/SOLR-15700

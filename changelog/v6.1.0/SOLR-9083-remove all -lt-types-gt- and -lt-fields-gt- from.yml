@@ -1,0 +1,8 @@
+title: 'Remove all &lt;types&gt; and &lt;fields&gt; from schemas. NOTE: as in the
+  JIRA I left a few in to insure the (no cost) back compat.'
+type: other
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-9083
+  url: https://issues.apache.org/jira/browse/SOLR-9083

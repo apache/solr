@@ -1,0 +1,8 @@
+title: The MemoryCircuitBreaker now uses average heap usage over the last 30 seconds
+type: changed
+authors:
+- name: janhoy
+- name: Christine Poerschke
+links:
+- name: SOLR-16968
+  url: https://issues.apache.org/jira/browse/SOLR-16968

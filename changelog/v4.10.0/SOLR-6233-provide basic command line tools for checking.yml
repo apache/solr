@@ -1,0 +1,7 @@
+title: Provide basic command line tools for checking Solr status and health.
+type: added
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-6233
+  url: https://issues.apache.org/jira/browse/SOLR-6233

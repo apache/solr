@@ -1,0 +1,9 @@
+title: Deprecate and reduce usage of ClusterState methods which may make calls to
+  ZK via the lazy collection reference.
+type: changed
+authors:
+- name: Scott Blum
+- name: shalin
+links:
+- name: SOLR-9014
+  url: https://issues.apache.org/jira/browse/SOLR-9014

@@ -1,0 +1,7 @@
+title: Unstored IntPointField returns Long type
+type: fixed
+authors:
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-9996
+  url: https://issues.apache.org/jira/browse/SOLR-9996

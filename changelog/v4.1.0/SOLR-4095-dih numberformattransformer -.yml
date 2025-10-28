@@ -1,0 +1,8 @@
+title: DIH NumberFormatTransformer & DateFormatTransformer default to the ROOT Locale
+  if none is specified. These previously used the machine's default.
+type: other
+authors:
+- name: James Dyer
+links:
+- name: SOLR-4095
+  url: https://issues.apache.org/jira/browse/SOLR-4095

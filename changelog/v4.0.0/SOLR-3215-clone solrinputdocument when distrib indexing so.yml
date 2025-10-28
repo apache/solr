@@ -1,0 +1,8 @@
+title: Clone SolrInputDocument when distrib indexing so that update processors after
+  the distrib update process do not process the document twice.
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-3215
+  url: https://issues.apache.org/jira/browse/SOLR-3215

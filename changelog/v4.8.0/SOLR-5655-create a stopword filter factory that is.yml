@@ -1,0 +1,8 @@
+title: Create a stopword filter factory that is (re)configurable, and capable of reporting
+  its configuration, via REST API.
+type: added
+authors:
+- name: Tim Potter
+links:
+- name: SOLR-5655
+  url: https://issues.apache.org/jira/browse/SOLR-5655

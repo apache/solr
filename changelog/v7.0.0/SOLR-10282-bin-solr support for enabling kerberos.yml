@@ -1,0 +1,8 @@
+title: bin/solr support for enabling Kerberos authentication
+type: added
+authors:
+- name: Ishan Chattopadhyaya
+- name: Jason Gerlowski
+links:
+- name: SOLR-10282
+  url: https://issues.apache.org/jira/browse/SOLR-10282

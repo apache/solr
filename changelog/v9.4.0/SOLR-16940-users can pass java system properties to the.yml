@@ -1,0 +1,8 @@
+title: Users can pass Java system properties to the SolrCLI via the SOLR_TOOL_OPTS
+  environment variable.
+type: changed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16940
+  url: https://issues.apache.org/jira/browse/SOLR-16940

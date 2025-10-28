@@ -1,0 +1,9 @@
+title: 'contrib/langid: When using the LangDetect implementation of langid, set the
+  random seed to 0, so that the same document is detected as the same language with
+  the same probability every time.'
+type: fixed
+authors:
+- name: Christian Moen
+links:
+- name: SOLR-3107
+  url: https://issues.apache.org/jira/browse/SOLR-3107

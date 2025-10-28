@@ -1,0 +1,7 @@
+title: Use shardsWhitelist in ReplicationHandler.
+type: fixed
+authors:
+- name: Bruno Roustant
+links:
+- name: SOLR-15217
+  url: https://issues.apache.org/jira/browse/SOLR-15217

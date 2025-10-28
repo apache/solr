@@ -1,0 +1,9 @@
+title: A new, automaton-based, implementation of suggest (autocomplete) component,
+  offering an order of magnitude smaller memory consumption compared to ternary trees
+  and jaspell and very fast lookups at runtime.
+type: added
+authors:
+- name: Dawid Weiss
+links:
+- name: SOLR-2378
+  url: https://issues.apache.org/jira/browse/SOLR-2378

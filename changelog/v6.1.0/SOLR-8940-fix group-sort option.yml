@@ -1,0 +1,7 @@
+title: Fix group.sort option
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-8940
+  url: https://issues.apache.org/jira/browse/SOLR-8940

@@ -1,0 +1,8 @@
+title: Add support for choosing the Lucene Version for Lucene components within Solr.
+type: added
+authors:
+- name: Uwe Schindler
+- name: Mark Miller
+links:
+- name: SOLR-1677
+  url: https://issues.apache.org/jira/browse/SOLR-1677

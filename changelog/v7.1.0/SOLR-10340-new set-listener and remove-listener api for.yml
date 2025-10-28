@@ -1,0 +1,7 @@
+title: New set-listener and remove-listener API for autoscaling.
+type: added
+authors:
+- name: shalin
+links:
+- name: SOLR-10340
+  url: https://issues.apache.org/jira/browse/SOLR-10340

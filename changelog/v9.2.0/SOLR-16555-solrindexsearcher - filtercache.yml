@@ -1,0 +1,9 @@
+title: SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets
+  repeatedly
+type: changed
+authors:
+- name: Kevin Risden
+- name: David Smiley
+links:
+- name: SOLR-16555
+  url: https://issues.apache.org/jira/browse/SOLR-16555

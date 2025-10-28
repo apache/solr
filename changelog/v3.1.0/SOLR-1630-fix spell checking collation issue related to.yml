@@ -1,0 +1,8 @@
+title: Fix spell checking collation issue related to token positions
+type: fixed
+authors:
+- name: rmuir
+- name: gsingers
+links:
+- name: SOLR-1630
+  url: https://issues.apache.org/jira/browse/SOLR-1630

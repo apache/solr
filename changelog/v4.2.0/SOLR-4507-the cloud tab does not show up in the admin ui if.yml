@@ -1,0 +1,8 @@
+title: The Cloud tab does not show up in the Admin UI if you set zkHost in solr.xml.
+type: fixed
+authors:
+- name: Alfonso Presa
+- name: Mark Miller
+links:
+- name: SOLR-4507
+  url: https://issues.apache.org/jira/browse/SOLR-4507

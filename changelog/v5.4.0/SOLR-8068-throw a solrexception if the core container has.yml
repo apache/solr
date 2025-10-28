@@ -1,0 +1,10 @@
+title: Throw a SolrException if the core container has initialization errors or is
+  shutting down
+type: other
+authors:
+- name: Ishan Chattopadhyaya
+- name: Noble Paul
+- name: Anshum Gupta
+links:
+- name: SOLR-8068
+  url: https://issues.apache.org/jira/browse/SOLR-8068

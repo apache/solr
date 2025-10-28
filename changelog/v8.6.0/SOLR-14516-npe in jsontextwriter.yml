@@ -1,0 +1,7 @@
+title: NPE in JsonTextWriter
+type: fixed
+authors:
+- name: noble
+links:
+- name: SOLR-14516
+  url: https://issues.apache.org/jira/browse/SOLR-14516

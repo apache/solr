@@ -1,0 +1,7 @@
+title: Added getter/setter for lastException in DIH's ContextImpl
+type: other
+authors:
+- name: ehatcher
+links:
+- name: SOLR-6829
+  url: https://issues.apache.org/jira/browse/SOLR-6829

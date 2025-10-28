@@ -1,0 +1,7 @@
+title: Forbid MessageFormat.format and MessageFormat single-arg constructor.
+type: other
+authors:
+- name: shalin
+links:
+- name: SOLR-7258
+  url: https://issues.apache.org/jira/browse/SOLR-7258

@@ -1,0 +1,9 @@
+title: Deprecate timeout related setters from SolrClients, and replace with Builder
+  based implementation
+type: other
+authors:
+- name: Jason Gerlowski
+- name: Anshum Gupta
+links:
+- name: SOLR-10456
+  url: https://issues.apache.org/jira/browse/SOLR-10456

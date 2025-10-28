@@ -1,0 +1,8 @@
+title: Improving check in TextToVectorUpdateProcessorFactory, which breaks update
+  for new dynamic fields.
+type: fixed
+authors:
+- name: Renato Haeberli
+links:
+- name: GITHUB#3426
+  url: https://github.com/apache/solr/pull/3426

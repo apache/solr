@@ -1,0 +1,10 @@
+title: Fixed bugs in BoolField that caused it to erroneously return "false" for all
+  docs depending on usage
+type: fixed
+authors:
+- name: Colvin Cowie
+- name: Dan Fox
+- name: hossman
+links:
+- name: SOLR-9490
+  url: https://issues.apache.org/jira/browse/SOLR-9490

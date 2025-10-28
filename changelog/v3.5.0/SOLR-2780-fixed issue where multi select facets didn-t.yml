@@ -1,0 +1,8 @@
+title: Fixed issue where multi select facets didn't respect group.truncate parameter.
+type: fixed
+authors:
+- name: Martijn van Groningen
+- name: Ramzi Alqrainy
+links:
+- name: SOLR-2780
+  url: https://issues.apache.org/jira/browse/SOLR-2780

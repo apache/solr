@@ -1,0 +1,8 @@
+title: factor out ShardResultTransformerUtils.[un]marshSortValue methods
+type: other
+authors:
+- name: Judith Silverman
+- name: Christine Poerschke
+links:
+- name: SOLR-9890
+  url: https://issues.apache.org/jira/browse/SOLR-9890

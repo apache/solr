@@ -1,0 +1,7 @@
+title: KnnQParser's "Pre-Filtering" behavior is now controlable via local params
+type: changed
+authors:
+- name: hossman
+links:
+- name: SOLR-16858
+  url: https://issues.apache.org/jira/browse/SOLR-16858

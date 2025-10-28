@@ -1,0 +1,7 @@
+title: Ability to create/delete/list snapshots at collection level.
+type: added
+authors:
+- name: Hrishikesh Gadre
+links:
+- name: SOLR-9326
+  url: https://issues.apache.org/jira/browse/SOLR-9326

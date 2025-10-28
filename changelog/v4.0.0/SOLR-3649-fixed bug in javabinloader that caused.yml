@@ -1,0 +1,8 @@
+title: Fixed bug in JavabinLoader that caused deleteById(List&lt;String&gt; ids) to
+  not work in SolrJ
+type: fixed
+authors:
+- name: siren
+links:
+- name: SOLR-3649
+  url: https://issues.apache.org/jira/browse/SOLR-3649

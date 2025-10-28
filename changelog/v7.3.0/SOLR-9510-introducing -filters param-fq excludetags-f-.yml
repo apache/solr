@@ -1,0 +1,8 @@
+title: introducing {!filters param=$fq excludeTags=f} query parser. Introducing {!..
+  filters=$fq excludeTags=t,q} in {!parent} and {!child}
+type: added
+authors:
+- name: Dr. Oleg Savrasov
+links:
+- name: SOLR-9510
+  url: https://issues.apache.org/jira/browse/SOLR-9510

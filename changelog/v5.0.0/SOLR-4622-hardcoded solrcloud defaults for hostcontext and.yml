@@ -1,0 +1,8 @@
+title: Hardcoded SolrCloud defaults for hostContext and hostPort that were deprecated
+  in 4.3 have been removed completely.
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-4622
+  url: https://issues.apache.org/jira/browse/SOLR-4622

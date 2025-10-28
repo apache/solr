@@ -1,0 +1,8 @@
+title: Optionally return shard info with each document in distributed search. Use
+  fl=id,[shard] to return the shard url.
+type: added
+authors:
+- name: ryan
+links:
+- name: SOLR-705
+  url: https://issues.apache.org/jira/browse/SOLR-705

@@ -1,0 +1,7 @@
+title: Add support for configurable metrics implementations.
+type: added
+authors:
+- name: ab
+links:
+- name: SOLR-10262
+  url: https://issues.apache.org/jira/browse/SOLR-10262

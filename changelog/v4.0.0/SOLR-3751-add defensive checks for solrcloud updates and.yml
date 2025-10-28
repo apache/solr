@@ -1,0 +1,8 @@
+title: Add defensive checks for SolrCloud updates and requests that ensure the local
+  state matches what we can tell the request expected.
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-3751
+  url: https://issues.apache.org/jira/browse/SOLR-3751

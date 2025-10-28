@@ -1,0 +1,8 @@
+title: Use an ArrayList in SolrPluginUtils.parseQueryStrings since we know exactly
+  how long the List will be in advance.
+type: changed
+authors:
+- name: Kay Kay
+links:
+- name: SOLR-970
+  url: https://issues.apache.org/jira/browse/SOLR-970

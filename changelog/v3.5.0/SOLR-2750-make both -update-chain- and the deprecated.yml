@@ -1,0 +1,11 @@
+title: Make both "update.chain" and the deprecated "update.param" work consistently
+  everywhere; see also SOLR-2105.
+type: other
+authors:
+- name: Mark Miller
+- name: janhoy
+links:
+- name: SOLR-2750
+  url: https://issues.apache.org/jira/browse/SOLR-2750
+- name: SOLR-2105
+  url: https://issues.apache.org/jira/browse/SOLR-2105

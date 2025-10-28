@@ -1,0 +1,8 @@
+title: Add a new system wide info admin handler that exposes the system info that
+  could previously only be retrieved using a SolrCore.
+type: added
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4943
+  url: https://issues.apache.org/jira/browse/SOLR-4943

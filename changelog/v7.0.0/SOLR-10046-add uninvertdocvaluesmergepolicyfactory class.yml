@@ -1,0 +1,8 @@
+title: Add UninvertDocValuesMergePolicyFactory class.
+type: added
+authors:
+- name: Keith Laban
+- name: Christine Poerschke
+links:
+- name: SOLR-10046
+  url: https://issues.apache.org/jira/browse/SOLR-10046

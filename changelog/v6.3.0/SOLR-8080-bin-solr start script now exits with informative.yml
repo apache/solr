@@ -1,0 +1,8 @@
+title: bin/solr start script now exits with informative message if using wrong Java
+  version
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-8080
+  url: https://issues.apache.org/jira/browse/SOLR-8080

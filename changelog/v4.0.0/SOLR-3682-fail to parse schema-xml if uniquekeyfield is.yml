@@ -1,0 +1,7 @@
+title: Fail to parse schema.xml if uniqueKeyField is multivalued
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-3682
+  url: https://issues.apache.org/jira/browse/SOLR-3682

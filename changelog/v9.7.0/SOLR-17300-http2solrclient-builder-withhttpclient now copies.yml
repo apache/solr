@@ -1,0 +1,9 @@
+title: Http2SolrClient.Builder.withHttpClient now copies HttpListenerFactory (e.g.
+  for auth, metrics, traces, etc.)
+type: changed
+authors:
+- name: Sanjay Dutt
+- name: David Smiley
+links:
+- name: SOLR-17300
+  url: https://issues.apache.org/jira/browse/SOLR-17300

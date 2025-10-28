@@ -1,0 +1,8 @@
+title: Returning non-stored docValues is incorrect for negative floats and doubles.
+type: fixed
+authors:
+- name: Ishan Chattopadhyaya
+- name: Steve Rowe
+links:
+- name: SOLR-8838
+  url: https://issues.apache.org/jira/browse/SOLR-8838

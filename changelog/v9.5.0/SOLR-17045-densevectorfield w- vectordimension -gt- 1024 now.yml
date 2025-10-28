@@ -1,0 +1,8 @@
+title: DenseVectorField w/ vectorDimension &gt; 1024 now work automatically with _default
+  configset, due to implicit use of SchemaCodecFactory.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-17045
+  url: https://issues.apache.org/jira/browse/SOLR-17045

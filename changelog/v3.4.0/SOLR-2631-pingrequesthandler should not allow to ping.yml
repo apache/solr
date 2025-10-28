@@ -1,0 +1,9 @@
+title: PingRequestHandler should not allow to ping itself using "qt" param to prevent
+  infinite loop.
+type: fixed
+authors:
+- name: Edoardo Tosca
+- name: Uwe Schindler
+links:
+- name: SOLR-2631
+  url: https://issues.apache.org/jira/browse/SOLR-2631

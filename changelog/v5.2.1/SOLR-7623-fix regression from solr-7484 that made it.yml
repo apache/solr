@@ -1,0 +1,10 @@
+title: Fix regression from SOLR-7484 that made it impossible to override SolrDispatchFilter#execute()
+  and SolrDispatchFilter#sendError(). You can now override these functions in HttpSolrCall.
+type: other
+authors:
+- name: ryan
+links:
+- name: SOLR-7623
+  url: https://issues.apache.org/jira/browse/SOLR-7623
+- name: SOLR-7484
+  url: https://issues.apache.org/jira/browse/SOLR-7484

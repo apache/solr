@@ -1,0 +1,9 @@
+title: ReRankQuery rewrite method can change the QueryResultKey causing cache misses.
+type: fixed
+authors:
+- name: Emad Nashed
+- name: Yonik Seeley
+- name: Joel Bernstein
+links:
+- name: SOLR-7689
+  url: https://issues.apache.org/jira/browse/SOLR-7689

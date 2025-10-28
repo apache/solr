@@ -1,0 +1,8 @@
+title: Improve error reporting and docs regarding Collection backup feature shared-fs
+  requirement
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-12523
+  url: https://issues.apache.org/jira/browse/SOLR-12523

@@ -1,0 +1,7 @@
+title: Solr LTR jar now included in _default configset's solrconfig.xml
+type: other
+authors:
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-12428
+  url: https://issues.apache.org/jira/browse/SOLR-12428

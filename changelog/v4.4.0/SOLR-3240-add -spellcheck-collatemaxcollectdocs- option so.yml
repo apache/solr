@@ -1,0 +1,11 @@
+title: Add "spellcheck.collateMaxCollectDocs" option so that when testing potential
+  Collations against the index, SpellCheckComponent will only collect n documents,
+  thereby estimating the hit-count. This is a performance optimization in cases where
+  exact hit-counts are unnecessary. Also, when "collateExtendedResults" is false,
+  this optimization is always made
+type: added
+authors:
+- name: James Dyer
+links:
+- name: SOLR-3240
+  url: https://issues.apache.org/jira/browse/SOLR-3240

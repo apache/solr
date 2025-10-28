@@ -1,0 +1,8 @@
+title: Fixed a NullPointerException when concurrently creating and deleting collections,
+  while accessing other collections.
+type: fixed
+authors:
+- name: Shai Erera
+links:
+- name: SOLR-7401
+  url: https://issues.apache.org/jira/browse/SOLR-7401

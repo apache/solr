@@ -1,0 +1,9 @@
+title: Adjust auth metrics asserts in tests caused by SOLR-13449
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-13453
+  url: https://issues.apache.org/jira/browse/SOLR-13453
+- name: SOLR-13449
+  url: https://issues.apache.org/jira/browse/SOLR-13449

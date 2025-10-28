@@ -1,0 +1,10 @@
+title: Remove unnecessary configset verification checks when SolrCloud merely wants
+  to know which configset a collection is using. Improves CLUSTERSTATUS times for
+  massive clusters.
+type: changed
+authors:
+- name: Mathieu Marie
+- name: David Smiley
+links:
+- name: SOLR-14340
+  url: https://issues.apache.org/jira/browse/SOLR-14340

@@ -1,0 +1,8 @@
+title: 'Replication: abortfetch command is broken if replication was started by fetchindex
+  command instead of a regular poll'
+type: fixed
+authors:
+- name: Yury Kats
+links:
+- name: SOLR-2791
+  url: https://issues.apache.org/jira/browse/SOLR-2791

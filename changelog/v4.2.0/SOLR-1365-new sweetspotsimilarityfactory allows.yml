@@ -1,0 +1,9 @@
+title: New SweetSpotSimilarityFactory allows customizable TF/IDF based Similarity
+  when you know the optimal "Sweet Spot" of values for the field length and TF scoring
+  factors.
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-1365
+  url: https://issues.apache.org/jira/browse/SOLR-1365

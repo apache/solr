@@ -1,0 +1,8 @@
+title: The splitshard api doesn't call commit on new sub shards before switching shard
+  states. Multiple bugs related to sub shard recovery and replication are also fixed.
+type: fixed
+authors:
+- name: shalin
+links:
+- name: SOLR-4997
+  url: https://issues.apache.org/jira/browse/SOLR-4997

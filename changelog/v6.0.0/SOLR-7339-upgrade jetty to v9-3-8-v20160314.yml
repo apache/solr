@@ -1,0 +1,10 @@
+title: Upgrade Jetty to v9.3.8.v20160314.
+type: other
+authors:
+- name: Gregg Donovan
+- name: shalin
+- name: Mark Miller
+- name: Steve Rowe
+links:
+- name: SOLR-7339
+  url: https://issues.apache.org/jira/browse/SOLR-7339

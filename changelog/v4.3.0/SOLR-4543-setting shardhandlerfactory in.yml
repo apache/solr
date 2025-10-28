@@ -1,0 +1,8 @@
+title: setting shardHandlerFactory in solr.xml/solr.properties does not work.
+type: fixed
+authors:
+- name: Ryan Ernst
+- name: Robert Muir
+links:
+- name: SOLR-4543
+  url: https://issues.apache.org/jira/browse/SOLR-4543

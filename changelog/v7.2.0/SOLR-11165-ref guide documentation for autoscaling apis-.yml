@@ -1,0 +1,11 @@
+title: Ref guide documentation for Autoscaling APIs, triggers, listeners, actions
+  for Solr 7.1
+type: other
+authors:
+- name: ab
+- name: Cassandra Targett
+- name: Noble Paul
+- name: shalin
+links:
+- name: SOLR-11165
+  url: https://issues.apache.org/jira/browse/SOLR-11165
