@@ -443,7 +443,8 @@ public class SolrCLI implements CLIO {
 
   /**
    * Returns the value of the option with the given name, or the value from a given system property,
-   * or the value of the deprecated option. If all values are null, then it returns the default value.
+   * or the value of the deprecated option. If all values are null, then it returns the default
+   * value.
    */
   public static String getOptionWithDeprecatedAndDefault(
       CommandLine cli, Option opt, String deprecated, String def, String sysProp) {
