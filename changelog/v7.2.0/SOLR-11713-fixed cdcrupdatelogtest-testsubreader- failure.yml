@@ -1,0 +1,8 @@
+title: Fixed CdcrUpdateLogTest.testSubReader() failure which was a test bug
+type: other
+authors:
+- name: Varun Thacker
+- name: Amrit Sarkar
+links:
+- name: SOLR-11713
+  url: https://issues.apache.org/jira/browse/SOLR-11713

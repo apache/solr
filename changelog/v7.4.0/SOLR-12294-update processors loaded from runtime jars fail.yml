@@ -1,0 +1,8 @@
+title: update processors loaded from runtime jars fail to load if they are specified
+  in an update processor chain
+type: fixed
+authors:
+- name: noble
+links:
+- name: SOLR-12294
+  url: https://issues.apache.org/jira/browse/SOLR-12294

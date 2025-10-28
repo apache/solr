@@ -1,0 +1,9 @@
+title: Log warning about multiple update request handlers
+type: fixed
+authors:
+- name: Noble Paul
+- name: Andreas Hubold
+- name: hossman
+links:
+- name: SOLR-6499
+  url: https://issues.apache.org/jira/browse/SOLR-6499

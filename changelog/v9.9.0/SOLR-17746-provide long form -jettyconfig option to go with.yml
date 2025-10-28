@@ -1,0 +1,8 @@
+title: Provide long form --jettyconfig option to go with -j in bin/solr scripts.
+type: changed
+authors:
+- name: Eric Pugh
+- name: Rahul Goswami
+links:
+- name: SOLR-17746
+  url: https://issues.apache.org/jira/browse/SOLR-17746

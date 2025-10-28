@@ -1,0 +1,8 @@
+title: Deadlock can occur in a rare race between committing and closing a SolrIndexWriter.
+type: fixed
+authors:
+- name: Erick Erickson
+- name: Mark Miller
+links:
+- name: SOLR-4400
+  url: https://issues.apache.org/jira/browse/SOLR-4400

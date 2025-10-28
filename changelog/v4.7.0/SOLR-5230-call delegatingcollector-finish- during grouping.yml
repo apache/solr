@@ -1,0 +1,8 @@
+title: Call DelegatingCollector.finish() during grouping.
+type: fixed
+authors:
+- name: Joel Bernstein
+- name: ehatcher
+links:
+- name: SOLR-5230
+  url: https://issues.apache.org/jira/browse/SOLR-5230

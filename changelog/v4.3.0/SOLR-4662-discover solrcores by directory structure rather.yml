@@ -1,0 +1,19 @@
+title: 'Discover SolrCores by directory structure rather than defining them in solr.xml.
+  Also, change the format of solr.xml to be closer to that of solrconfig.xml. This
+  version of Solr will ship the example in the old style, but you can manually try
+  the new style. Solr 4.4 will ship with the new style, and Solr 5.0 will remove support
+  for the old style. (Erick Erickson, Mark Miller) Additional Work: - SOLR-4347: Ensure
+  that newly-created cores via Admin handler are persisted in solr.xml (Erick Erickson)
+  - SOLR-1905: Cores created by the admin request handler should be persisted to solr.xml.
+  Also fixed a problem whereby properties like solr.solr.datadir would be persisted
+  to solr.xml. Also, cores that didn''t happen to be loaded were not persisted.'
+type: added
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-4662
+  url: https://issues.apache.org/jira/browse/SOLR-4662
+- name: SOLR-4347
+  url: https://issues.apache.org/jira/browse/SOLR-4347
+- name: SOLR-1905
+  url: https://issues.apache.org/jira/browse/SOLR-1905

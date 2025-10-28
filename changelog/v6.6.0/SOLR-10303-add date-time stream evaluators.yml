@@ -1,0 +1,9 @@
+title: Add date/time Stream Evaluators
+type: added
+authors:
+- name: Gethin James
+- name: Dennis Gove
+- name: Joel Bernstein
+links:
+- name: SOLR-10303
+  url: https://issues.apache.org/jira/browse/SOLR-10303

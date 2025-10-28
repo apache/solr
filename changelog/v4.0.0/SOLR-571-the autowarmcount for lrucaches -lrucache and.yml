@@ -1,0 +1,8 @@
+title: The autowarmCount for LRUCaches (LRUCache and FastLRUCache) now supports "percentages"
+  which get evaluated relative the current size of the cache when warming happens.
+type: added
+authors:
+- name: Tomás Fernández Löbbe and hossman
+links:
+- name: SOLR-571
+  url: https://issues.apache.org/jira/browse/SOLR-571

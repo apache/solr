@@ -1,0 +1,11 @@
+title: Implement a scheduled autoscaling trigger that runs on a fixed interval beginning
+  with a given start time.
+type: added
+authors:
+- name: David Smiley
+- name: Gus Heck
+- name: ab
+- name: shalin
+links:
+- name: SOLR-11066
+  url: https://issues.apache.org/jira/browse/SOLR-11066

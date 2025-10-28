@@ -1,0 +1,8 @@
+title: Remove reflection in FSHDFSUtils.java
+type: other
+authors:
+- name: Mike Drob
+- name: Kevin Risden
+links:
+- name: SOLR-7321
+  url: https://issues.apache.org/jira/browse/SOLR-7321

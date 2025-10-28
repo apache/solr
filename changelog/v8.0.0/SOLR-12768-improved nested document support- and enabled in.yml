@@ -1,0 +1,16 @@
+title: Improved nested document support, and enabled in the default schema with the
+  presence of _nest_path_. When this field is present, certain things happen automatically.
+  An internal URP is automatically used to populate it. The [child] (doc transformer)
+  will return a hierarchy with relationships; no params needed. The relationship path
+  is indexed for use in queries (can be disabled if not needed). Also, child documents
+  needn't provide a uniqueKey value as Solr will supply one automatically by concatenating
+  a path to that of the parent document's key.
+type: added
+authors:
+- name: David Smiley
+- name: Moshe Bla
+links:
+- name: SOLR-12768
+  url: https://issues.apache.org/jira/browse/SOLR-12768
+- name: SOLR-13129
+  url: https://issues.apache.org/jira/browse/SOLR-13129

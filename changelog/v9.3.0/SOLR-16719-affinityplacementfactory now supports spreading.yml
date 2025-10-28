@@ -1,0 +1,10 @@
+title: AffinityPlacementFactory now supports spreading replicas across domains within
+  the availability zone and optionally fail the request if more than a configurable
+  number of replicas need to be placed in a single domain.
+type: added
+authors:
+- name: Houston Putman
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-16719
+  url: https://issues.apache.org/jira/browse/SOLR-16719

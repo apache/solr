@@ -1,0 +1,7 @@
+title: Fix missing InterruptedException handling in ZkStateReader.java
+type: fixed
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-8779
+  url: https://issues.apache.org/jira/browse/SOLR-8779

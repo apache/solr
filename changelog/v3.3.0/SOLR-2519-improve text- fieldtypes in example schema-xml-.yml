@@ -1,0 +1,12 @@
+title: 'Improve text_* fieldTypes in example schema.xml: improve cross-language defaults
+  for text_general; break out separate English-specific fieldTypes'
+type: fixed
+authors:
+- name: Jan Høydahl
+- name: hossman
+- name: Robert Muir
+- name: yonik
+- name: Mike McCandless
+links:
+- name: SOLR-2519
+  url: https://issues.apache.org/jira/browse/SOLR-2519

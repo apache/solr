@@ -1,0 +1,8 @@
+title: QueryElevationComponent is now supported with distributed search.
+type: added
+authors:
+- name: Mark Miller
+- name: yonik
+links:
+- name: SOLR-2949
+  url: https://issues.apache.org/jira/browse/SOLR-2949

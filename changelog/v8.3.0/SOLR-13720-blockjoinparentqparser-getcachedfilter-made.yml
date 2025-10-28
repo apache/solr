@@ -1,0 +1,8 @@
+title: BlockJoinParentQParser.getCachedFilter()made public for accessing from QParser
+  plugins
+type: changed
+authors:
+- name: Stanislav Livotov
+links:
+- name: SOLR-13720
+  url: https://issues.apache.org/jira/browse/SOLR-13720

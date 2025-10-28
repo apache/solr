@@ -1,0 +1,8 @@
+title: Fixed the fallback behavior of [raw] and [xml] transformers when an incompatble
+  'wt' was specified, the field value was lost if documentCache was not used.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-12108
+  url: https://issues.apache.org/jira/browse/SOLR-12108

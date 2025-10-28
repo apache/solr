@@ -1,0 +1,9 @@
+title: Solr-core's Maven configuration includes test-only Hadoop dependencies as indirect
+  compile-time dependencies.
+type: other
+authors:
+- name: Chris Collins
+- name: Steve Rowe
+links:
+- name: SOLR-5173
+  url: https://issues.apache.org/jira/browse/SOLR-5173

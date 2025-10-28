@@ -1,0 +1,7 @@
+title: Added optional capability to log what ids are in a response
+type: added
+authors:
+- name: Scott Stults
+links:
+- name: SOLR-3825
+  url: https://issues.apache.org/jira/browse/SOLR-3825

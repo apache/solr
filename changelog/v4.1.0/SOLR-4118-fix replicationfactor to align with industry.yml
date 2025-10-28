@@ -1,0 +1,11 @@
+title: Fix replicationFactor to align with industry usage. replicationFactor now means
+  the total number of copies of a document stored in the collection (or the total
+  number of physical indexes for a single logical slice of the collection). For example
+  if replicationFactor=3 then for a given shard there will be a total of 3 replicas
+  (one of which will normally be designated as the leader.)
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-4118
+  url: https://issues.apache.org/jira/browse/SOLR-4118

@@ -1,0 +1,7 @@
+title: In ConnectionManager, we should catch and only log exceptions from BeforeReconnect.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5731
+  url: https://issues.apache.org/jira/browse/SOLR-5731

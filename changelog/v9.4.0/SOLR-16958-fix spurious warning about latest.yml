@@ -1,0 +1,7 @@
+title: Fix spurious warning about LATEST luceneMatchVersion
+type: fixed
+authors:
+- name: Colvin Cowie
+links:
+- name: SOLR-16958
+  url: https://issues.apache.org/jira/browse/SOLR-16958

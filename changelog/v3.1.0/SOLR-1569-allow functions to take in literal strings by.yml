@@ -1,0 +1,8 @@
+title: Allow functions to take in literal strings by modifying the FunctionQParser
+  and adding LiteralValueSource
+type: added
+authors:
+- name: gsingers
+links:
+- name: SOLR-1569
+  url: https://issues.apache.org/jira/browse/SOLR-1569

@@ -1,0 +1,8 @@
+title: 'In autoscaling policies, use an explicit ''put : on-each-node'' to specify
+  the rules is applied on each node'
+type: changed
+authors:
+- name: noble
+links:
+- name: SOLR-13329
+  url: https://issues.apache.org/jira/browse/SOLR-13329

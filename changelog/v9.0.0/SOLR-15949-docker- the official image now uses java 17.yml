@@ -1,0 +1,9 @@
+title: 'Docker: the official image now uses Java 17 provided by Eclipse Temurin. Formerly
+  it was Java 11 from OpenJDK.'
+type: other
+authors:
+- name: janhoy
+- name: David Smiley
+links:
+- name: SOLR-15949
+  url: https://issues.apache.org/jira/browse/SOLR-15949

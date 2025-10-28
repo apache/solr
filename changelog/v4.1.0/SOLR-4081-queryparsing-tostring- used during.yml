@@ -1,0 +1,10 @@
+title: QueryParsing.toString, used during debugQuery=true, did not correctly handle
+  ExtendedQueries such as WrappedQuery (used when cache=false), spatial queries, and
+  frange queries.
+type: fixed
+authors:
+- name: Eirik Lygre
+- name: yonik
+links:
+- name: SOLR-4081
+  url: https://issues.apache.org/jira/browse/SOLR-4081

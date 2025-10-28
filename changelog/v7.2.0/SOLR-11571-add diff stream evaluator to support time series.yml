@@ -1,0 +1,8 @@
+title: Add diff Stream Evaluator to support time series differencing
+type: added
+authors:
+- name: Mathew Skaria
+- name: Joel Bernstein
+links:
+- name: SOLR-11571
+  url: https://issues.apache.org/jira/browse/SOLR-11571

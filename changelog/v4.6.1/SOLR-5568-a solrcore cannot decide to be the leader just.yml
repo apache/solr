@@ -1,0 +1,8 @@
+title: A SolrCore cannot decide to be the leader just because the cluster state says
+  no other SolrCore's are active.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5568
+  url: https://issues.apache.org/jira/browse/SOLR-5568

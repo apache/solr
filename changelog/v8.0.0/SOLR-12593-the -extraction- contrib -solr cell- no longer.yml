@@ -1,0 +1,11 @@
+title: The "extraction" contrib (Solr Cell) no longer does any date parsing, and thus
+  no longer has the "date.formats" configuration. To ensure date strings are properly
+  parsed, use ParseDateFieldUpdateProcessorFactory (an URP) commonly registered with
+  the name "parse-date" in "schemaless mode".
+type: upgrade_notes
+authors:
+- name: David Smiley
+- name: Bar Rotstein
+links:
+- name: SOLR-12593
+  url: https://issues.apache.org/jira/browse/SOLR-12593

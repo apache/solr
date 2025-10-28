@@ -1,0 +1,8 @@
+title: Support replication on startup of master with new index.
+type: added
+authors:
+- name: Noble Paul
+- name: Akshay Ukey
+links:
+- name: SOLR-820
+  url: https://issues.apache.org/jira/browse/SOLR-820

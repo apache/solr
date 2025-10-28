@@ -1,0 +1,12 @@
+title: Solr's default behavior when dealing with 'maxBooleanClauses' has changed to
+  reduce the risk of exponential query expansion when dealing with pathological query
+  strings. A default upper limit of 1024 clauses (The same default prior to Solr 7.0)
+  is now enforced at the node level, and can be overridden in solr.xml. The identically
+  named solrconfig.xml setting is still available for limiting the size of 'explicit'
+  boolean query strings, but this per-collection limit is still ristricted by the
+  upper-bound of the global limit in solr.xml. See SOLR-13336 for more details.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-13336
+  url: https://issues.apache.org/jira/browse/SOLR-13336

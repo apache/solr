@@ -1,0 +1,8 @@
+title: Jaegertracer-Configurator is now deprecated. From v10.0 we'll only support
+  OpenTelemetry
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-16534
+  url: https://issues.apache.org/jira/browse/SOLR-16534

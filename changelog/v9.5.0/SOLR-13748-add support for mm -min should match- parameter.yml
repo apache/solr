@@ -1,0 +1,7 @@
+title: Add support for mm (min should match) parameter to bool query parser
+type: changed
+authors:
+- name: Andrey Bozhko
+links:
+- name: SOLR-13748
+  url: https://issues.apache.org/jira/browse/SOLR-13748

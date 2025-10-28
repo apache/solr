@@ -1,0 +1,9 @@
+title: Speed up single-valued and multi-valued "fc" faceting. Typical improvement
+  is 5%, but can be much greater (up to 10x faster) when facet.offset is very large
+  (deep paging).
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-2092
+  url: https://issues.apache.org/jira/browse/SOLR-2092

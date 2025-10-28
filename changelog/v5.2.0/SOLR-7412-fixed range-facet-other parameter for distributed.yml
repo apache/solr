@@ -1,0 +1,8 @@
+title: Fixed range.facet.other parameter for distributed requests.
+type: fixed
+authors:
+- name: Will Miller
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-7412
+  url: https://issues.apache.org/jira/browse/SOLR-7412

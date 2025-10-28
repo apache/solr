@@ -1,0 +1,8 @@
+title: NPE on omitHeader=true is fixed by sending omitHeader=false to shard searches
+type: fixed
+authors:
+- name: Munendra S N
+- name: Mikhail Khludnev
+links:
+- name: SOLR-13509
+  url: https://issues.apache.org/jira/browse/SOLR-13509

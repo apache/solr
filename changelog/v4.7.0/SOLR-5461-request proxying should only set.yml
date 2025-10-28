@@ -1,0 +1,8 @@
+title: Request proxying should only set con.setDoOutput(true) if the request is a
+  post.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5461
+  url: https://issues.apache.org/jira/browse/SOLR-5461

@@ -1,0 +1,9 @@
+title: Transaction log was not flushed at the end of update requests with softCommit
+  specified, which could lead to data loss if the server were killed immediately after
+  the update finished.
+type: fixed
+authors:
+- name: Jeffery Yuan
+links:
+- name: SOLR-6776
+  url: https://issues.apache.org/jira/browse/SOLR-6776

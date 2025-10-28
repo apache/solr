@@ -1,0 +1,10 @@
+title: 'UninvertingReader wrapping is now a bit more lightweight: Does not create
+  FieldInfo for fields that can''t be uninverted (saves mem) and can avoid wrapping
+  the reader altogether if there''s nothing to uninvert. IndexSchema.getUninversionMap
+  refactored to getUninversionMapper and no longer merges FieldInfos.'
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-12782
+  url: https://issues.apache.org/jira/browse/SOLR-12782

@@ -1,0 +1,10 @@
+title: Circuit breakers may now be configured in a "soft" or "warnOnly" mode in order
+  to more easily test out new thresholds. Soft breakers will log out a message on
+  each relevant request when tripped, but will not otherwise impact or short circuit
+  the requests.
+type: added
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-17277
+  url: https://issues.apache.org/jira/browse/SOLR-17277

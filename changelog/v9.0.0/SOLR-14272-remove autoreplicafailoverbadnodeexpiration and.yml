@@ -1,0 +1,8 @@
+title: Remove autoReplicaFailoverBadNodeExpiration and autoReplicaFailoverWorkLoopDelay
+  for 9.0 as it was deprecated in 7.1
+type: other
+authors:
+- name: Anshum Gupta
+links:
+- name: SOLR-14272
+  url: https://issues.apache.org/jira/browse/SOLR-14272

@@ -1,0 +1,7 @@
+title: Improve Admin UI Dashboard legibility
+type: changed
+authors:
+- name: "Felix Buenemann via\n  steffkes"
+links:
+- name: SOLR-4529
+  url: https://issues.apache.org/jira/browse/SOLR-4529

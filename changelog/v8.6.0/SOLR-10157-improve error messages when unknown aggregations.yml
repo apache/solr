@@ -1,0 +1,8 @@
+title: Improve error messages when unknown aggregations are specified in the request
+type: other
+authors:
+- name: hossman
+- name: Munendra S N
+links:
+- name: SOLR-10157
+  url: https://issues.apache.org/jira/browse/SOLR-10157

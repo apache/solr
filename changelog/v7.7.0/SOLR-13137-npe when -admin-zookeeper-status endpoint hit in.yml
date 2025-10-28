@@ -1,0 +1,7 @@
+title: NPE when /admin/zookeeper/status endpoint hit in standalone mode
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-13137
+  url: https://issues.apache.org/jira/browse/SOLR-13137

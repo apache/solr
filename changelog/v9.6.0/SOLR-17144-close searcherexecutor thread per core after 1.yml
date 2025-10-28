@@ -1,0 +1,8 @@
+title: Close searcherExecutor thread per core after 1 minute
+type: changed
+authors:
+- name: Pierre Salagnac
+- name: Christine Poerschke
+links:
+- name: SOLR-17144
+  url: https://issues.apache.org/jira/browse/SOLR-17144

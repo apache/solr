@@ -1,0 +1,7 @@
+title: ChildDocTransformerFactory uses perSegFilter cache
+type: changed
+authors:
+- name: Bence Szabo
+links:
+- name: SOLR-15067
+  url: https://issues.apache.org/jira/browse/SOLR-15067

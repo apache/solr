@@ -1,0 +1,7 @@
+title: Support ranges in the probability Stream Evaluator
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-11674
+  url: https://issues.apache.org/jira/browse/SOLR-11674

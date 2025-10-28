@@ -1,0 +1,17 @@
+title: Block joins. Documents and their sub-documents must be indexed as a block.
+  {!parent which=&lt;allParents&gt;}&lt;someChildren&gt; takes in a query that matches
+  child documents and results in matches on their parents. {!child of=&lt;allParents&gt;}&lt;someParents&gt;
+  takes in a query that matches some parent documents and results in matches on their
+  children.
+type: added
+authors:
+- name: Mikhail Khludnev
+- name: Vadim Kirilchuk
+- name: Alan Woodward
+- name: Tom Burton-West
+- name: Mike McCandless
+- name: hossman
+- name: yonik
+links:
+- name: SOLR-3076
+  url: https://issues.apache.org/jira/browse/SOLR-3076

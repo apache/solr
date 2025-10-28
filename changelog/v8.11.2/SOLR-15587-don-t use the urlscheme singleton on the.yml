@@ -1,0 +1,8 @@
+title: Don't use the UrlScheme singleton on the client-side to determine cluster's
+  scheme, only get from ClusterState provider impl
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15587
+  url: https://issues.apache.org/jira/browse/SOLR-15587

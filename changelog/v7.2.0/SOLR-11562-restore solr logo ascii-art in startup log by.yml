@@ -1,0 +1,8 @@
+title: Restore Solr logo ASCII-art in startup log by removing unnecessary default
+  confdir logging
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-11562
+  url: https://issues.apache.org/jira/browse/SOLR-11562

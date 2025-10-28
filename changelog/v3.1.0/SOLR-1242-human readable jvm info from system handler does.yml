@@ -1,0 +1,9 @@
+title: Human readable JVM info from system handler does integer cutoff rounding, even
+  when dealing with GB. Fixed to round to one decimal place.
+type: fixed
+authors:
+- name: Jay Hill
+- name: Mark Miller
+links:
+- name: SOLR-1242
+  url: https://issues.apache.org/jira/browse/SOLR-1242

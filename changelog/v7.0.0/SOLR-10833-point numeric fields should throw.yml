@@ -1,0 +1,10 @@
+title: Point numeric fields should throw SolrException(BAD_REQUEST) for malformed
+  numbers in queries. Trie numeric fields should throw SolrException(BAD_REQUEST)
+  for malformed docValues range queries.
+type: fixed
+authors:
+- name: hossman
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-10833
+  url: https://issues.apache.org/jira/browse/SOLR-10833

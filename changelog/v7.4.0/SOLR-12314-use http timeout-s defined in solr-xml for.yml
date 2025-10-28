@@ -1,0 +1,9 @@
+title: Use http timeout's defined in solr.xml for creating ConcurrentUpdateSolrClient
+  during indexing requests between leader and replica
+type: fixed
+authors:
+- name: Mark Miller
+- name: Varun Thacker
+links:
+- name: SOLR-12314
+  url: https://issues.apache.org/jira/browse/SOLR-12314

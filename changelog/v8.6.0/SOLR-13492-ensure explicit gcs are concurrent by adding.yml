@@ -1,0 +1,9 @@
+title: Ensure explicit GCs are concurrent by adding '+ExplicitGCInvokesConcurrent'.
+type: other
+authors:
+- name: Guna Sekhar Dora
+- name: Shawn Heisey
+- name: Munendra S N
+links:
+- name: SOLR-13492
+  url: https://issues.apache.org/jira/browse/SOLR-13492

@@ -1,0 +1,9 @@
+title: Stop the leader from trying to rejoin the election on session expiration and
+  harden our zk reconnect code path.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Anshum Gupta
+links:
+- name: SOLR-13489
+  url: https://issues.apache.org/jira/browse/SOLR-13489

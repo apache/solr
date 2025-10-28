@@ -1,0 +1,9 @@
+title: In distributed i.e. multi-shard cloud mode returned dense vector 'fl' fields
+  are now a list of numbers instead of strings.
+type: fixed
+authors:
+- name: Qais Qadri
+- name: Christine Poerschke
+links:
+- name: SOLR-16952
+  url: https://issues.apache.org/jira/browse/SOLR-16952

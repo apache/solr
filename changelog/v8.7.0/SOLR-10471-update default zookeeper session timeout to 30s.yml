@@ -1,0 +1,8 @@
+title: Update default Zookeeper session timeout to 30s in bin/solr and bin/solr.cmd
+type: other
+authors:
+- name: Michael Braun
+- name: Markus Jelsma
+links:
+- name: SOLR-10471
+  url: https://issues.apache.org/jira/browse/SOLR-10471

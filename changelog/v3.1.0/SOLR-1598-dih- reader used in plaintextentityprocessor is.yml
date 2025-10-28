@@ -1,0 +1,7 @@
+title: 'DIH: Reader used in PlainTextEntityProcessor is not explicitly closed'
+type: fixed
+authors:
+- name: Sascha Szott
+links:
+- name: SOLR-1598
+  url: https://issues.apache.org/jira/browse/SOLR-1598

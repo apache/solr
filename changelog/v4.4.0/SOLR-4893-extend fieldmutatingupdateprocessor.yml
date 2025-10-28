@@ -1,0 +1,11 @@
+title: Extend FieldMutatingUpdateProcessor.ConfigurableFieldNameSelector to enable
+  checking whether a field matches any schema field. To select field names that don't
+  match any fields or dynamic fields in the schema, add &lt;bool name="fieldNameMatchesSchemaField"&gt;false&lt;/bool&gt;
+  to an update processor's configuration in solrconfig.xml.
+type: added
+authors:
+- name: Steve Rowe
+- name: hossman
+links:
+- name: SOLR-4893
+  url: https://issues.apache.org/jira/browse/SOLR-4893

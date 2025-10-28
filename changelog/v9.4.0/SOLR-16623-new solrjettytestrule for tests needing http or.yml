@@ -1,0 +1,8 @@
+title: new SolrJettyTestRule for tests needing HTTP or Jetty.
+type: other
+authors:
+- name: David Smiley
+- name: Joshua Ouma
+links:
+- name: SOLR-16623
+  url: https://issues.apache.org/jira/browse/SOLR-16623

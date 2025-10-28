@@ -1,0 +1,8 @@
+title: VersionInfo caused an unhandled NPE when trying to determine the max value
+  for the version field.
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-7866
+  url: https://issues.apache.org/jira/browse/SOLR-7866

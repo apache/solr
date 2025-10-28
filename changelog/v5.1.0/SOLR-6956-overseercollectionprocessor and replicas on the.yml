@@ -1,0 +1,10 @@
+title: OverseerCollectionProcessor and replicas on the overseer node can sometimes
+  operate on stale cluster state due to overseer holding the state update lock for
+  a long time.
+type: fixed
+authors:
+- name: Mark Miller
+- name: shalin
+links:
+- name: SOLR-6956
+  url: https://issues.apache.org/jira/browse/SOLR-6956

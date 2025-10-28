@@ -1,0 +1,8 @@
+title: ReplicationHandler#loadReplicationProperties still uses Files rather than the
+  Directory to try and read the replication properties files.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4484
+  url: https://issues.apache.org/jira/browse/SOLR-4484

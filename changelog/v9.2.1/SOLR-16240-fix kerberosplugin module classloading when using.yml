@@ -1,0 +1,9 @@
+title: Fix KerberosPlugin module classloading when using the hadoop-auth module. Plugins
+  in modules/packages that require the Thread contextClassLoader on startup should
+  now work.
+type: fixed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16240
+  url: https://issues.apache.org/jira/browse/SOLR-16240

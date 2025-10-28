@@ -1,0 +1,8 @@
+title: revise BasicDistributedZkTest.test logic w.r.t. 'commitWithin did not work
+  on some nodes'
+type: other
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-7774
+  url: https://issues.apache.org/jira/browse/SOLR-7774

@@ -1,0 +1,8 @@
+title: 'DIH: Reduce memory consumption during delta import by removing keys when used'
+type: changed
+authors:
+- name: Ricky Leung
+- name: Noble Paul
+links:
+- name: SOLR-846
+  url: https://issues.apache.org/jira/browse/SOLR-846

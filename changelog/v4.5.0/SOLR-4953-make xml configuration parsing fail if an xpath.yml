@@ -1,0 +1,10 @@
+title: Make XML Configuration parsing fail if an xpath matches multiple nodes when
+  only a single value or plugin instance is expected.
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-4953
+  url: https://issues.apache.org/jira/browse/SOLR-4953
+- name: SOLR-5108
+  url: https://issues.apache.org/jira/browse/SOLR-5108

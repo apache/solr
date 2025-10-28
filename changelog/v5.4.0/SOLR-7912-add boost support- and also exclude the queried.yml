@@ -1,0 +1,7 @@
+title: Add boost support, and also exclude the queried document in MoreLikeThis QParser
+type: added
+authors:
+- name: Jens Wille
+links:
+- name: SOLR-7912
+  url: https://issues.apache.org/jira/browse/SOLR-7912

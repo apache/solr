@@ -1,0 +1,47 @@
+title: 'Add HSQLDB Jar to example-DIH, unzip database and update instructions. ==================
+  Release 1.3.0 ================== Upgrading from Solr 1.2 -----------------------
+  IMPORTANT UPGRADE NOTE: In a master/slave configuration, all searchers/slaves should
+  be upgraded before the master! If the master were to be updated first, the older
+  searchers would not be able to read the new index format. The Porter snowball based
+  stemmers in Lucene were updated (LUCENE-1142), and are not guaranteed to be backward
+  compatible at the index level (the stem of certain words may have changed). Re-indexing
+  is recommended. Older Apache Solr installations can be upgraded by replacing the
+  relevant war file with the new version. No changes to configuration files should
+  be needed. This version of Solr contains a new version of Lucene implementing an
+  updated index format. This version of Solr/Lucene can still read and update indexes
+  in the older formats, and will convert them to the new format on the first index
+  change. Be sure to backup your index before upgrading in case you need to downgrade.
+  Solr now recognizes HTTP Request headers related to HTTP Caching (see RFC 2616 sec13)
+  and will by default respond with "304 Not Modified" when appropriate. This should
+  only affect users who access Solr via an HTTP Cache, or via a Web-browser that has
+  an internal cache, but if you wish to suppress this behavior an ''&lt;httpCaching
+  never304="true"/&gt;'' option can be added to your solrconfig.xml. See the wiki
+  (or the example solrconfig.xml) for more details... http://wiki.apache.org/solr/SolrConfigXml#HTTPCaching
+  In Solr 1.2, DateField did not enforce the canonical representation of the ISO 8601
+  format when parsing incoming data, and did not generation the canonical format when
+  generating dates from "Date Math" strings (particularly as it pertains to milliseconds
+  ending in trailing zeros). As a result equivalent dates could not always be compared
+  properly. This problem is corrected in Solr 1.3, but DateField users that might
+  have been affected by indexing inconsistent formats of equivalent dates (ie: 1995-12-31T23:59:59Z
+  vs 1995-12-31T23:59:59.000Z) may want to consider reindexing to correct these inconsistencies.
+  Users who depend on some of the "broken" behavior of DateField in Solr 1.2 (specificly:
+  accepting any input that ends in a ''Z'') should consider using the LegacyDateField
+  class as a possible alternative. Users that desire 100% backwards compatibility
+  should consider using the Solr 1.2 version of DateField. Due to some changes in
+  the lifecycle of TokenFilterFactories, users of Solr 1.2 who have written Java code
+  which constructs new instances of StopFilterFactory, SynonymFilterFactory, or EnglishProterFilterFactory
+  will need to modify their code by adding a line like the following prior to using
+  the factory object... factory.inform(SolrCore.getSolrCore().getSolrConfig().getResourceLoader());
+  These lifecycle changes do not affect people who use Solr "out of the box" or who
+  have developed their own TokenFilterFactory plugins. More info can be found in SOLR-594.
+  The python client that used to ship with Solr is no longer included in the distribution'
+type: other
+authors:
+- name: see client/python/README.txt
+links:
+- name: SOLR-1369
+  url: https://issues.apache.org/jira/browse/SOLR-1369
+- name: LUCENE-1142
+  url: https://issues.apache.org/jira/browse/LUCENE-1142
+- name: SOLR-594
+  url: https://issues.apache.org/jira/browse/SOLR-594

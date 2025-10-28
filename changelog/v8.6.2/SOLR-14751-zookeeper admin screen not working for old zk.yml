@@ -1,0 +1,7 @@
+title: Zookeeper Admin screen not working for old ZK versions
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-14751
+  url: https://issues.apache.org/jira/browse/SOLR-14751

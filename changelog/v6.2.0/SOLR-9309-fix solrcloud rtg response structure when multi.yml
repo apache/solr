@@ -1,0 +1,7 @@
+title: Fix SolrCloud RTG response structure when multi ids requested but only 1 found
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-9309
+  url: https://issues.apache.org/jira/browse/SOLR-9309

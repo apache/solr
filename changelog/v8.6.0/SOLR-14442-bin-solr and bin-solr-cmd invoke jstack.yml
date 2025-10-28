@@ -1,0 +1,9 @@
+title: bin/solr and bin\solr.cmd invoke jstack &lt;SOLR_PID&gt; before forceful termination,
+  if jstack is available. Also, bin\solr.cmd executes forceful termination even port
+  is unbinded already
+type: changed
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-14442
+  url: https://issues.apache.org/jira/browse/SOLR-14442

@@ -1,0 +1,7 @@
+title: Update dependency org.semver4j:semver4j to v4.3.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#1451
+  url: https://github.com/apache/solr/pull/1451

@@ -1,0 +1,7 @@
+title: fix comma handling in terms component.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-11289
+  url: https://issues.apache.org/jira/browse/SOLR-11289

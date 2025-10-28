@@ -1,0 +1,8 @@
+title: Cleanup solrconfig.xmls under solr/example/example-DIH/solr (removed obsolete
+  clustering handler sections).
+type: other
+authors:
+- name: Dawid Weiss
+links:
+- name: SOLR-8294
+  url: https://issues.apache.org/jira/browse/SOLR-8294

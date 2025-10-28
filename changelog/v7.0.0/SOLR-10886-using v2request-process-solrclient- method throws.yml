@@ -1,0 +1,8 @@
+title: Using V2Request.process(solrClient) method throws NPE if the API returns an
+  error
+type: fixed
+authors:
+- name: Cao Manh Dat
+links:
+- name: SOLR-10886
+  url: https://issues.apache.org/jira/browse/SOLR-10886

@@ -1,0 +1,10 @@
+title: SolrJ and the server can now recognize some standard Java system properties
+  like for an HTTP proxy. This is only for the Apache HttpClient based SolrJ communication,
+  not Jetty.
+type: changed
+authors:
+- name: Shawn Heisey
+- name: David Smiley
+links:
+- name: SOLR-12848
+  url: https://issues.apache.org/jira/browse/SOLR-12848

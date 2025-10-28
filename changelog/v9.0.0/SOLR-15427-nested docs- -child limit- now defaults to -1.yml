@@ -1,0 +1,8 @@
+title: 'Nested docs: [child limit=...] now defaults to -1 which is interpreted as
+  unlimited.'
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-15427
+  url: https://issues.apache.org/jira/browse/SOLR-15427

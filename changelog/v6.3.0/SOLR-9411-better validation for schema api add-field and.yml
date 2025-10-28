@@ -1,0 +1,8 @@
+title: Better validation for Schema API add-field and add-dynamic-field
+type: fixed
+authors:
+- name: janhoy
+- name: Steve Rowe
+links:
+- name: SOLR-9411
+  url: https://issues.apache.org/jira/browse/SOLR-9411

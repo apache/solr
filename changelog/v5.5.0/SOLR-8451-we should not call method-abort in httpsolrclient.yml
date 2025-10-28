@@ -1,0 +1,8 @@
+title: We should not call method.abort in HttpSolrClient or HttpSolrCall#remoteQuery
+  and HttpSolrCall#remoteQuery should not close streams.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-8451
+  url: https://issues.apache.org/jira/browse/SOLR-8451

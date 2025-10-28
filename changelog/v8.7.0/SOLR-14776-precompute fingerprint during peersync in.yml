@@ -1,0 +1,9 @@
+title: Precompute fingerprint during PeerSync in parallel with fetching fingerprint
+  from replicas.
+type: changed
+authors:
+- name: Cao Manh Dat
+- name: Mike Drob
+links:
+- name: SOLR-14776
+  url: https://issues.apache.org/jira/browse/SOLR-14776

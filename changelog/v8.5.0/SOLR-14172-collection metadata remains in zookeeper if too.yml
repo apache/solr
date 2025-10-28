@@ -1,0 +1,11 @@
+title: Collection metadata remains in zookeeper if too many shards are requested.
+  This also fixes a bug where an inability to assign a node based on existing autoscaling
+  policy resulted in a server error instead of a bad request.
+type: fixed
+authors:
+- name: Andras Salamon
+- name: Kevin Risden
+- name: shalin
+links:
+- name: SOLR-14172
+  url: https://issues.apache.org/jira/browse/SOLR-14172

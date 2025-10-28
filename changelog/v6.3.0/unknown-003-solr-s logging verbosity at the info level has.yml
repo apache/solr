@@ -1,0 +1,6 @@
+title: Solr's logging verbosity at the INFO level has been greatly reduced, and you
+  may need to update the log configs to use the DEBUG level to see all the logging
+  messages you used to see at INFO level before.
+type: upgrade_notes
+authors: []
+links: []

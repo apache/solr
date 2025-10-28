@@ -1,0 +1,10 @@
+title: Leader no longer puts replicas in recovery in case of a failed update, when
+  minRF isn't achieved.
+type: other
+authors:
+- name: Jessica Cheng
+- name: Timothy Potter
+- name: Anshum Gupta
+links:
+- name: SOLR-8034
+  url: https://issues.apache.org/jira/browse/SOLR-8034

@@ -1,0 +1,10 @@
+title: Time Routed Aliases now have a preemptiveCreateMath option to preemptively
+  and asynchronously create the next collection in advance as new data gets within
+  this time window of the end.
+type: added
+authors:
+- name: Gus Heck
+- name: David Smiley
+links:
+- name: SOLR-12357
+  url: https://issues.apache.org/jira/browse/SOLR-12357

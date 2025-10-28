@@ -1,0 +1,7 @@
+title: Rename ConfigSolr to NodeConfig, and decouple it from xml representation
+type: other
+authors:
+- name: Alan Woodward
+links:
+- name: SOLR-7160
+  url: https://issues.apache.org/jira/browse/SOLR-7160

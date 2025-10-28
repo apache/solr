@@ -1,0 +1,9 @@
+title: Support for stream.url or stream.file pointing to gzipped data. It's detected
+  by either a content encoding header or file extension.
+type: changed
+authors:
+- name: Andrew Lundgren
+- name: Jan Høydahl
+links:
+- name: SOLR-10981
+  url: https://issues.apache.org/jira/browse/SOLR-10981

@@ -1,0 +1,8 @@
+title: Add SkipExistingDocumentsProcessor that skips duplicate inserts and ignores
+  updates to missing docs
+type: added
+authors:
+- name: Tim Owen
+links:
+- name: SOLR-9918
+  url: https://issues.apache.org/jira/browse/SOLR-9918

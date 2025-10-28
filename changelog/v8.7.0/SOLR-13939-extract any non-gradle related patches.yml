@@ -1,0 +1,8 @@
+title: 'Extract any non-gradle related patches (deprecations, URL fixes, etc.) from
+  gradle effort. NOTE: this will be in several separate commits/pushes.'
+type: other
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-13939
+  url: https://issues.apache.org/jira/browse/SOLR-13939

@@ -1,0 +1,9 @@
+title: Start the Overseer before actions that need the overseer on init and when reconnecting
+  after zk expiration and improve init logic.
+type: fixed
+authors:
+- name: Scott Blum
+- name: Mark Miller
+links:
+- name: SOLR-8696
+  url: https://issues.apache.org/jira/browse/SOLR-8696

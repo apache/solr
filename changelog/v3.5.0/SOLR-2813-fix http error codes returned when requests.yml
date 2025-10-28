@@ -1,0 +1,8 @@
+title: Fix HTTP error codes returned when requests contain strings that can not be
+  parsed as numbers for Trie fields.
+type: fixed
+authors:
+- name: Jeff Crump and hossman
+links:
+- name: SOLR-2813
+  url: https://issues.apache.org/jira/browse/SOLR-2813

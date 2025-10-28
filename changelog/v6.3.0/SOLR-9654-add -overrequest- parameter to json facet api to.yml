@@ -1,0 +1,8 @@
+title: Add "overrequest" parameter to JSON Facet API to control amount of overrequest
+  on a distributed terms facet.
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-9654
+  url: https://issues.apache.org/jira/browse/SOLR-9654

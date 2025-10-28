@@ -1,0 +1,9 @@
+title: Jetty's RequestLog is enabled by default. If you don't want these logs, you
+  can disable via SOLR_REQUESTLOG_ENABLED=false.
+type: other
+authors:
+- name: rmuir
+- name: janhoy
+links:
+- name: SOLR-14142
+  url: https://issues.apache.org/jira/browse/SOLR-14142

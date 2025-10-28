@@ -1,0 +1,7 @@
+title: Remove several deprecated methods that were exposed to plugin writers
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-10801
+  url: https://issues.apache.org/jira/browse/SOLR-10801

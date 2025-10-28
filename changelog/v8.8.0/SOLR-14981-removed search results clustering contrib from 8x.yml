@@ -1,0 +1,8 @@
+title: Removed search results clustering contrib from 8x (due to Carrot2 incompatibility
+  with Java 1.8).
+type: other
+authors:
+- name: Dawid Weiss
+links:
+- name: SOLR-14981
+  url: https://issues.apache.org/jira/browse/SOLR-14981

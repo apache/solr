@@ -1,0 +1,7 @@
+title: managed-schema is now syntax highlighted in cloud-&gt;Tree view
+type: fixed
+authors:
+- name: Alexandre Rafalovitch
+links:
+- name: SOLR-8645
+  url: https://issues.apache.org/jira/browse/SOLR-8645

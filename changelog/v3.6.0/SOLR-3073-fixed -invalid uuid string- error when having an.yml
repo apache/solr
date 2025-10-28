@@ -1,0 +1,9 @@
+title: Fixed 'Invalid UUID string' error when having an UUID field as the unique key
+  and executing a distributed grouping request.
+type: fixed
+authors:
+- name: Devon Krisman
+- name: Martijn van Groningen
+links:
+- name: SOLR-3073
+  url: https://issues.apache.org/jira/browse/SOLR-3073

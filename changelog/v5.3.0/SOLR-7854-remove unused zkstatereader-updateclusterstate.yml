@@ -1,0 +1,7 @@
+title: Remove unused ZkStateReader.updateClusterState(false) method.
+type: other
+authors:
+- name: Scott Blum
+links:
+- name: SOLR-7854
+  url: https://issues.apache.org/jira/browse/SOLR-7854

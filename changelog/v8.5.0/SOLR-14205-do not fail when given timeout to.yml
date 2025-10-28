@@ -1,0 +1,7 @@
+title: Do not fail when given timeout to connectionImpl.isValid() = 0
+type: fixed
+authors:
+- name: Nick Vercammen
+links:
+- name: SOLR-14205
+  url: https://issues.apache.org/jira/browse/SOLR-14205

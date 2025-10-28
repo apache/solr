@@ -1,0 +1,7 @@
+title: Add weibullDistribution Stream Evaluator
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-11398
+  url: https://issues.apache.org/jira/browse/SOLR-11398

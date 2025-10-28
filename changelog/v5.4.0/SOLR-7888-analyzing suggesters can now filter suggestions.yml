@@ -1,0 +1,8 @@
+title: Analyzing suggesters can now filter suggestions by a context field
+type: added
+authors:
+- name: Arcadius Ahouansou
+- name: janhoy
+links:
+- name: SOLR-7888
+  url: https://issues.apache.org/jira/browse/SOLR-7888

@@ -1,0 +1,8 @@
+title: Upgrade to commons-codec 1.9 for better BeiderMorseFilter performance.
+type: other
+authors:
+- name: Thomas Champagne
+- name: Shawn Heisey
+links:
+- name: SOLR-5613
+  url: https://issues.apache.org/jira/browse/SOLR-5613

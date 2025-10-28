@@ -1,0 +1,8 @@
+title: SolrCore#reload needs to pass the deletion policy to the next SolrCore through
+  its constructor rather than setting a field after.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4617
+  url: https://issues.apache.org/jira/browse/SOLR-4617

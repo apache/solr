@@ -1,0 +1,8 @@
+title: DataImportHandler (DIH) JdbcDataSource supports multiple resultsets per query
+type: other
+authors:
+- name: Kristine Jetzke
+- name: Mark Waddle
+links:
+- name: SOLR-2199
+  url: https://issues.apache.org/jira/browse/SOLR-2199

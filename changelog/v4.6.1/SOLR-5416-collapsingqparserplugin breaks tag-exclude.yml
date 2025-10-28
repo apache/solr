@@ -1,0 +1,8 @@
+title: CollapsingQParserPlugin breaks Tag/Exclude Faceting
+type: fixed
+authors:
+- name: David Boychuck
+- name: Joel Bernstein
+links:
+- name: SOLR-5416
+  url: https://issues.apache.org/jira/browse/SOLR-5416

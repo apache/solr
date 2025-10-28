@@ -1,0 +1,9 @@
+title: LanguageIdentifierUpdateProcessor ignores all but the first value of multiValued
+  string fields.
+type: fixed
+authors:
+- name: Andreas Hubold
+- name: Vitaliy Zhovtyuk
+links:
+- name: SOLR-5598
+  url: https://issues.apache.org/jira/browse/SOLR-5598

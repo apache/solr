@@ -1,0 +1,7 @@
+title: Write string keys in Maps as extern strings in the javabin format.
+type: changed
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-808
+  url: https://issues.apache.org/jira/browse/SOLR-808

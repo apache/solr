@@ -1,0 +1,8 @@
+title: Deprecated and converted the PostingsSolrHighlighter to extend UnifiedSolrHighlighter
+  and thus no longer use the PostingsHighlighter. It should behave mostly the same.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-10700
+  url: https://issues.apache.org/jira/browse/SOLR-10700

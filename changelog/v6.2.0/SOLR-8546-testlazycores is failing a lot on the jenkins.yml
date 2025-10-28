@@ -1,0 +1,7 @@
+title: TestLazyCores is failing a lot on the Jenkins cluster.
+type: fixed
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-8546
+  url: https://issues.apache.org/jira/browse/SOLR-8546

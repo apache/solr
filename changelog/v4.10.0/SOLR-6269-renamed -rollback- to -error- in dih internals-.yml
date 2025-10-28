@@ -1,0 +1,10 @@
+title: Renamed "rollback" to "error" in DIH internals, including renaming onRollback
+  to onError introduced in SOLR-6258.
+type: other
+authors:
+- name: ehatcher
+links:
+- name: SOLR-6269
+  url: https://issues.apache.org/jira/browse/SOLR-6269
+- name: SOLR-6258
+  url: https://issues.apache.org/jira/browse/SOLR-6258

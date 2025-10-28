@@ -1,0 +1,8 @@
+title: Replica placement plugins should use container plugins API / configs.
+type: other
+authors:
+- name: ab
+- name: ilan
+links:
+- name: SOLR-15016
+  url: https://issues.apache.org/jira/browse/SOLR-15016

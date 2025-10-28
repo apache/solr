@@ -1,0 +1,7 @@
+title: SignificantTermsQParserPlugin's name is now 'significantTerms' and its old
+  name 'sigificantTerms' is deprecated.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-12395
+  url: https://issues.apache.org/jira/browse/SOLR-12395

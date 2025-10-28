@@ -1,0 +1,11 @@
+title: Recovery after ZK session expiration should happen in parallel for all cores
+  using the thread-pool managed by ZkContainer instead of a single thread.
+type: fixed
+authors:
+- name: Jessica Cheng Mallet
+- name: Timothy Potter
+- name: shalin
+- name: Mark Miller
+links:
+- name: SOLR-7503
+  url: https://issues.apache.org/jira/browse/SOLR-7503

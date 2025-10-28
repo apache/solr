@@ -1,0 +1,9 @@
+title: Fix server list caching in CloudSolrServer when using more than one collection
+  list with the same instance.
+type: fixed
+authors:
+- name: Grzegorz Sobczyk
+- name: Mark Miller
+links:
+- name: SOLR-3920
+  url: https://issues.apache.org/jira/browse/SOLR-3920

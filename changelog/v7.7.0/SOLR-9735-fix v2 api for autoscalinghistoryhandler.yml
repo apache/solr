@@ -1,0 +1,7 @@
+title: Fix v2 API for AutoscalingHistoryHandler.
+type: fixed
+authors:
+- name: ab
+links:
+- name: SOLR-9735
+  url: https://issues.apache.org/jira/browse/SOLR-9735

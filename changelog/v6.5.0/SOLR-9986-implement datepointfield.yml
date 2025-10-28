@@ -1,0 +1,8 @@
+title: Implement DatePointField
+type: added
+authors:
+- name: Cao Manh Dat
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-9986
+  url: https://issues.apache.org/jira/browse/SOLR-9986

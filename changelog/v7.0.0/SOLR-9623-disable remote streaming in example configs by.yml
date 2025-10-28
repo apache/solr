@@ -1,0 +1,9 @@
+title: Disable remote streaming in example configs by default. Adjust Upload Limit
+  defaults
+type: other
+authors:
+- name: janhoy
+- name: yonik
+links:
+- name: SOLR-9623
+  url: https://issues.apache.org/jira/browse/SOLR-9623

@@ -1,0 +1,9 @@
+title: CoreAdminHandler Reload throws NPE on null core name instead of a bad request
+  error.
+type: fixed
+authors:
+- name: Jellyfrog
+- name: Edward Ribeiro
+links:
+- name: SOLR-7529
+  url: https://issues.apache.org/jira/browse/SOLR-7529

@@ -1,0 +1,11 @@
+title: Fixed a bug with the behavior of BoolField that caused documents w/o a value
+  for the field to act as if the value were true in functions if no other documents
+  in the same index segment had a value of true.
+type: fixed
+authors:
+- name: Robert Muir
+- name: hossman
+- name: yonik
+links:
+- name: SOLR-5231
+  url: https://issues.apache.org/jira/browse/SOLR-5231

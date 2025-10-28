@@ -1,0 +1,9 @@
+title: Added EnumFieldType, a non-Trie-based version of EnumField, and deprecated
+  EnumField in favor of EnumFieldType.
+type: other
+authors:
+- name: hossman
+- name: Steve Rowe
+links:
+- name: SOLR-11023
+  url: https://issues.apache.org/jira/browse/SOLR-11023

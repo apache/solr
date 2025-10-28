@@ -1,0 +1,8 @@
+title: UpdateLog metrics are not initialized on core reload.
+type: fixed
+authors:
+- name: ab
+- name: Steve Rowe
+links:
+- name: SOLR-11929
+  url: https://issues.apache.org/jira/browse/SOLR-11929

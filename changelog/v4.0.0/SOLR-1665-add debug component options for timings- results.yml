@@ -1,0 +1,9 @@
+title: Add debug component options for timings, results and query info only
+type: added
+authors:
+- name: gsingers
+- name: hossman
+- name: yonik
+links:
+- name: SOLR-1665
+  url: https://issues.apache.org/jira/browse/SOLR-1665

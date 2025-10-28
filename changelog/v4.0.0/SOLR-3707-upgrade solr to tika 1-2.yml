@@ -1,0 +1,7 @@
+title: Upgrade Solr to Tika 1.2
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-3707
+  url: https://issues.apache.org/jira/browse/SOLR-3707

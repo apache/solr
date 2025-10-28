@@ -1,0 +1,9 @@
+title: The modify collection API should wait for the modified properties to show up
+  in the cluster state.
+type: fixed
+authors:
+- name: Cao Manh Dat
+- name: shalin
+links:
+- name: SOLR-9484
+  url: https://issues.apache.org/jira/browse/SOLR-9484

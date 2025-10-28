@@ -1,0 +1,10 @@
+title: The Official Solr Dockerfile has been cleaned up. The SOLR_DOWNLOAD_SERVER
+  arg is now the only way to specify where to download Solr from. If the url includes
+  "apache.org", then GPG checks will be computed, otherwise the GPG checks will be
+  skipped.
+type: changed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16748
+  url: https://issues.apache.org/jira/browse/SOLR-16748

@@ -1,0 +1,9 @@
+title: The clusterstatus API now returns the config set used to create a collection
+  inside a 'configName' key.
+type: fixed
+authors:
+- name: Shai Erera
+- name: shalin
+links:
+- name: SOLR-7385
+  url: https://issues.apache.org/jira/browse/SOLR-7385

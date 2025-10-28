@@ -1,0 +1,7 @@
+title: Add a test module for solr-test-framework
+type: other
+authors:
+- name: Alan Woodward
+links:
+- name: SOLR-8961
+  url: https://issues.apache.org/jira/browse/SOLR-8961

@@ -1,0 +1,8 @@
+title: CSVResponseWriter now supports pseudo fields.
+type: added
+authors:
+- name: ryan
+- name: nihed mbarek
+links:
+- name: SOLR-4671
+  url: https://issues.apache.org/jira/browse/SOLR-4671

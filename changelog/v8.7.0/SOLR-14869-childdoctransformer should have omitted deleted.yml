@@ -1,0 +1,8 @@
+title: ChildDocTransformer should have omitted deleted child documents.
+type: fixed
+authors:
+- name: Bar Rotstein
+- name: David Smiley
+links:
+- name: SOLR-14869
+  url: https://issues.apache.org/jira/browse/SOLR-14869

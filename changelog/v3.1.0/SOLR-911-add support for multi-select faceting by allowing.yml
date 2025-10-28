@@ -1,0 +1,9 @@
+title: Add support for multi-select faceting by allowing filters to be tagged and
+  facet commands to exclude certain filters. This patch also added the ability to
+  change the output key for facets in the response, and optimized distributed faceting
+  refinement by lowering parsing overhead and by making requests and responses smaller.
+type: added
+authors: []
+links:
+- name: SOLR-911
+  url: https://issues.apache.org/jira/browse/SOLR-911

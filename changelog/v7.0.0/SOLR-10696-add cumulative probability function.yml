@@ -1,0 +1,7 @@
+title: Add cumulative probability function
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-10696
+  url: https://issues.apache.org/jira/browse/SOLR-10696

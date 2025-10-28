@@ -1,0 +1,9 @@
+title: IndexSchema.getResourceLoader was being used to load non-schema things, which
+  can be a memory leak if "shareSchema" and other circumstances occur. Furthermore
+  it's reference to SolrConfig was removed.
+type: fixed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-13253
+  url: https://issues.apache.org/jira/browse/SOLR-13253

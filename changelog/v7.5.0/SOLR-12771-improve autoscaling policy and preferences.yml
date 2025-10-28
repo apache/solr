@@ -1,0 +1,8 @@
+title: Improve Autoscaling Policy and Preferences documentation.
+type: other
+authors:
+- name: hossman
+- name: Steve Rowe
+links:
+- name: SOLR-12771
+  url: https://issues.apache.org/jira/browse/SOLR-12771

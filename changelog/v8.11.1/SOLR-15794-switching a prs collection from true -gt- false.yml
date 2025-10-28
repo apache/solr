@@ -1,0 +1,8 @@
+title: Switching a PRS collection from true -&gt; false -&gt; true results in INACTIVE
+  replicas
+type: fixed
+authors:
+- name: noble
+links:
+- name: SOLR-15794
+  url: https://issues.apache.org/jira/browse/SOLR-15794

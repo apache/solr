@@ -1,0 +1,8 @@
+title: Fix many test and test-framework classes to not fail on After/AfterClass cleanup
+  if assumptions fail in Before/BeforeClass setup
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-13574
+  url: https://issues.apache.org/jira/browse/SOLR-13574

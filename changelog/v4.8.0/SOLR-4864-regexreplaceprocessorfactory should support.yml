@@ -1,0 +1,9 @@
+title: RegexReplaceProcessorFactory should support pattern capture group substitution
+  in replacement string.
+type: added
+authors:
+- name: Sunil Srinivasan
+- name: Jack Krupansky
+links:
+- name: SOLR-4864
+  url: https://issues.apache.org/jira/browse/SOLR-4864

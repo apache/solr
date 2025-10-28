@@ -1,0 +1,8 @@
+title: Add REST API methods, via Restlet integration, for reading schema elements,
+  at /schema/fields/, /schema/dynamicfields/, /schema/fieldtypes/, and /schema/copyfields/.
+type: added
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-4503
+  url: https://issues.apache.org/jira/browse/SOLR-4503

@@ -1,0 +1,8 @@
+title: DELETENODE, REPLACENODE should pass down the 'async' param to subcommands
+type: fixed
+authors:
+- name: shalin
+- name: noble
+links:
+- name: SOLR-9461
+  url: https://issues.apache.org/jira/browse/SOLR-9461

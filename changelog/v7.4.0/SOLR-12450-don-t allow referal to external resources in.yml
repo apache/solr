@@ -1,0 +1,8 @@
+title: Don't allow referal to external resources in various config files (CVE-2018-8026).
+type: fixed
+authors:
+- name: Yuyang Xiao
+- name: Uwe Schindler
+links:
+- name: SOLR-12450
+  url: https://issues.apache.org/jira/browse/SOLR-12450

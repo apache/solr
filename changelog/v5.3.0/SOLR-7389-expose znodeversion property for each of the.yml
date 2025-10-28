@@ -1,0 +1,8 @@
+title: Expose znodeVersion property for each of the collections returned for the clusterstatus
+  operation in the collections API
+type: added
+authors:
+- name: Marius Grama
+links:
+- name: SOLR-7389
+  url: https://issues.apache.org/jira/browse/SOLR-7389

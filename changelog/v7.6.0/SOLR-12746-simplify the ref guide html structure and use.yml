@@ -1,0 +1,9 @@
+title: Simplify the Ref Guide HTML structure and use semantic HTML tags where possible.
+  Adds new template files for Asciidoctor HTML conversion. Building the HTML version
+  now requires the Slim gem.
+type: other
+authors:
+- name: Cassandra Targett
+links:
+- name: SOLR-12746
+  url: https://issues.apache.org/jira/browse/SOLR-12746

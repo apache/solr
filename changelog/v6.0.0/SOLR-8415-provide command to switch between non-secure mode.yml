@@ -1,0 +1,8 @@
+title: Provide command to switch between non/secure mode in ZK
+type: added
+authors:
+- name: Mike Drob
+- name: Gregory Chanan
+links:
+- name: SOLR-8415
+  url: https://issues.apache.org/jira/browse/SOLR-8415

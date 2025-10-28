@@ -1,0 +1,8 @@
+title: Don't persist base_url in ZK as the URL scheme is variable, compute from node_name
+  instead when reading state back from ZK.
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-12182
+  url: https://issues.apache.org/jira/browse/SOLR-12182

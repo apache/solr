@@ -1,0 +1,8 @@
+title: Fixed distributed processing of facet.field/facet.pivot sub requests to prevent
+  requesting unneccessary and excessive '0' count terms from each shard
+type: changed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-11711
+  url: https://issues.apache.org/jira/browse/SOLR-11711

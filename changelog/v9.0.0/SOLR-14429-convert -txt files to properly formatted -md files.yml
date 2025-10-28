@@ -1,0 +1,8 @@
+title: Convert .txt files to properly formatted .md files.
+type: other
+authors:
+- name: Tomoko Uchida
+- name: Uwe Schindler
+links:
+- name: SOLR-14429
+  url: https://issues.apache.org/jira/browse/SOLR-14429

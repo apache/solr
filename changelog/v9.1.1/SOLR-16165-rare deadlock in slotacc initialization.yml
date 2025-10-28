@@ -1,0 +1,8 @@
+title: Rare Deadlock in SlotAcc initialization
+type: fixed
+authors:
+- name: Justin Sweeney
+- name: noble
+links:
+- name: SOLR-16165
+  url: https://issues.apache.org/jira/browse/SOLR-16165

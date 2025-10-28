@@ -1,0 +1,7 @@
+title: Spelling mistakes in the Java source
+type: fixed
+authors:
+- name: Hrishikesh Gadre
+links:
+- name: SOLR-6624
+  url: https://issues.apache.org/jira/browse/SOLR-6624

@@ -1,0 +1,10 @@
+title: Add TypeTokenFilterFactory that creates TypeTokenFilter that filters tokens
+  based on their TypeAttribute.
+type: added
+authors:
+- name: "Tommaso Teofili via\n  Uwe Schindler"
+links:
+- name: SOLR-3054
+  url: https://issues.apache.org/jira/browse/SOLR-3054
+- name: LUCENE-3671
+  url: https://issues.apache.org/jira/browse/LUCENE-3671

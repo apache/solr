@@ -1,0 +1,12 @@
+title: AtomicUpdateRequestProcessor can cause wrong/old values to be set under concurrent
+  updates for the same document. Multithreaded test for AtomicUpdateRequestProcessor
+  was also beefed up and fixed.
+type: fixed
+authors:
+- name: Ishan Chattopadhyaya
+- name: Noble Paul
+- name: Amrit Sarkar
+- name: shalin
+links:
+- name: SOLR-10734
+  url: https://issues.apache.org/jira/browse/SOLR-10734

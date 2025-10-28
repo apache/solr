@@ -1,0 +1,9 @@
+title: A slow "live docs" implementation was being used instead of a bitset. Affects
+  classic faceting enum method, JSON Facets enum method, UnInvertedField faceting,
+  GraphTermsQParser, JoinQParser.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-12366
+  url: https://issues.apache.org/jira/browse/SOLR-12366

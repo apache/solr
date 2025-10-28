@@ -1,0 +1,9 @@
+title: 'Parameter substitution / macro expansion across entire request. Substitution
+  can contain further expansions and default values are supported. Example: q=price:[
+  ${low:0} TO ${high} ]&low=100&high=200'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-7212
+  url: https://issues.apache.org/jira/browse/SOLR-7212

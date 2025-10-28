@@ -1,0 +1,11 @@
+title: Add CloudSolrClient helper method to connect to a ZK ensemble.
+type: other
+authors:
+- name: Varun Thacker
+- name: Furkan KAMACI
+- name: Shawn Heisey
+- name: Mark Miller
+- name: Erick Erickson
+links:
+- name: SOLR-5852
+  url: https://issues.apache.org/jira/browse/SOLR-5852

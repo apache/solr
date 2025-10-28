@@ -1,0 +1,7 @@
+title: JSON Facet API limit:0 did not always work correctly.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-8206
+  url: https://issues.apache.org/jira/browse/SOLR-8206

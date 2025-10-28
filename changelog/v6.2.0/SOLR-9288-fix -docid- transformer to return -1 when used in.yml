@@ -1,0 +1,7 @@
+title: Fix [docid] transformer to return -1 when used in RTG with uncommitted doc
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-9288
+  url: https://issues.apache.org/jira/browse/SOLR-9288

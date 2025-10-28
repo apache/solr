@@ -1,0 +1,7 @@
+title: Cleanup deleted core when node start
+type: fixed
+authors:
+- name: Cao Manh Dat
+links:
+- name: SOLR-12066
+  url: https://issues.apache.org/jira/browse/SOLR-12066

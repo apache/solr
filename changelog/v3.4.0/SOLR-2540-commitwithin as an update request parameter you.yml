@@ -1,0 +1,8 @@
+title: CommitWithin as an Update Request parameter You can now specify &commitWithin=N
+  (ms) on the update request
+type: added
+authors:
+- name: janhoy
+links:
+- name: SOLR-2540
+  url: https://issues.apache.org/jira/browse/SOLR-2540

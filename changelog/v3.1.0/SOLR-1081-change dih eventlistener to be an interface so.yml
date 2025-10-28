@@ -1,0 +1,9 @@
+title: Change DIH EventListener to be an interface so that components such as an EntityProcessor
+  or a Transformer can act as an event listener.
+type: other
+authors:
+- name: Noble Paul
+- name: shalin
+links:
+- name: SOLR-1081
+  url: https://issues.apache.org/jira/browse/SOLR-1081

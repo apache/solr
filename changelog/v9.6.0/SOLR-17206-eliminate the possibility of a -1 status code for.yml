@@ -1,0 +1,8 @@
+title: Eliminate the possibility of a -1 status code for SolrCloud update requests
+  that are distributed.
+type: fixed
+authors:
+- name: Paul McArthur
+links:
+- name: SOLR-17206
+  url: https://issues.apache.org/jira/browse/SOLR-17206

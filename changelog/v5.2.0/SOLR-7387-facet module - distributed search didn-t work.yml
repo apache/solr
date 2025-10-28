@@ -1,0 +1,8 @@
+title: Facet Module - distributed search didn't work when sorting terms facet by min,
+  max, avg, or unique functions.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-7387
+  url: https://issues.apache.org/jira/browse/SOLR-7387

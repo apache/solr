@@ -1,0 +1,10 @@
+title: Kerberos plugin to pass original user principal to avoid 403 on nodes not hosting
+  a collection
+type: fixed
+authors:
+- name: adfel
+- name: Ishan Chattopadhyaya
+- name: noble
+links:
+- name: SOLR-13619
+  url: https://issues.apache.org/jira/browse/SOLR-13619

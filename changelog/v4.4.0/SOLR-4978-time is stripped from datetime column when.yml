@@ -1,0 +1,9 @@
+title: Time is stripped from datetime column when imported into Solr date field if
+  convertType=true.
+type: fixed
+authors:
+- name: Bill Au
+- name: shalin
+links:
+- name: SOLR-4978
+  url: https://issues.apache.org/jira/browse/SOLR-4978

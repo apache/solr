@@ -1,0 +1,7 @@
+title: Coordinator node does not have the correct collection/core in MDCLoggingContext
+type: fixed
+authors:
+- name: Patson Luk
+links:
+- name: SOLR-16861
+  url: https://issues.apache.org/jira/browse/SOLR-16861

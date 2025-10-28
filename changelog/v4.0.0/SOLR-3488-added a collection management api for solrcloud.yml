@@ -1,0 +1,10 @@
+title: Added a Collection management API for SolrCloud.
+type: added
+authors:
+- name: Tommaso Teofili
+- name: Sami Siren
+- name: yonik
+- name: Mark Miller
+links:
+- name: SOLR-3488
+  url: https://issues.apache.org/jira/browse/SOLR-3488

@@ -1,0 +1,11 @@
+title: Windows script (solr.cmd) didn't work properly with directory containing spaces.
+  Adding quotations to fix
+type: fixed
+authors:
+- name: Uwe Schindler
+- name: janhoy
+- name: Tomas Fernandez-Lobbe
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-10735
+  url: https://issues.apache.org/jira/browse/SOLR-10735

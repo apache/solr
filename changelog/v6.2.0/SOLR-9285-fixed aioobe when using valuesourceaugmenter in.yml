@@ -1,0 +1,7 @@
+title: Fixed AIOOBE when using ValueSourceAugmenter in single node RTG
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-9285
+  url: https://issues.apache.org/jira/browse/SOLR-9285

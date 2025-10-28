@@ -1,0 +1,7 @@
+title: Reduce INFO level logging from CachingDirectoryFactory
+type: other
+authors:
+- name: Shawn Heisey
+links:
+- name: SOLR-4200
+  url: https://issues.apache.org/jira/browse/SOLR-4200

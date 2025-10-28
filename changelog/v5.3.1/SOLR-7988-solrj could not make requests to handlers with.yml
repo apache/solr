@@ -1,0 +1,8 @@
+title: SolrJ could not make requests to handlers with '/admin/' prefix
+type: fixed
+authors:
+- name: noble
+- name: ludovic Boutros
+links:
+- name: SOLR-7988
+  url: https://issues.apache.org/jira/browse/SOLR-7988

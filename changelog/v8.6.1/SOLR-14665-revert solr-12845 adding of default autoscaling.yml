@@ -1,0 +1,15 @@
+title: Revert SOLR-12845 adding of default autoscaling cluster policy, due to performance
+  issues.
+type: fixed
+authors:
+- name: Ishan Chattopadhyaya
+- name: Houston Putman
+- name: Gus Heck
+- name: ab
+links:
+- name: SOLR-14665
+  url: https://issues.apache.org/jira/browse/SOLR-14665
+- name: SOLR-14706
+  url: https://issues.apache.org/jira/browse/SOLR-14706
+- name: SOLR-12845
+  url: https://issues.apache.org/jira/browse/SOLR-12845

@@ -1,0 +1,7 @@
+title: CoreDescriptor now takes a Path for its instance directory, rather than a String
+type: other
+authors:
+- name: Alan Woodward
+links:
+- name: SOLR-8336
+  url: https://issues.apache.org/jira/browse/SOLR-8336

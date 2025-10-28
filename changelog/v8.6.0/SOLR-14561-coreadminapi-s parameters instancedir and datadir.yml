@@ -1,0 +1,9 @@
+title: CoreAdminAPI's parameters instanceDir and dataDir are now validated, and must
+  be relative to either SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml
+  config 'allowPaths', controlled by system property 'solr.allowPaths' that allows
+  you to add other allowed paths when needed.
+type: changed
+authors: []
+links:
+- name: SOLR-14561
+  url: https://issues.apache.org/jira/browse/SOLR-14561

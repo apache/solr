@@ -1,0 +1,7 @@
+title: Add pairSort Stream Evaluator
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-12840
+  url: https://issues.apache.org/jira/browse/SOLR-12840

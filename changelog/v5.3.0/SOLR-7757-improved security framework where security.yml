@@ -1,0 +1,10 @@
+title: Improved security framework where security components can be edited/reloaded,
+  Solr now watches /security.json. Components can choose to make their config editable
+type: added
+authors:
+- name: Noble Paul
+- name: Anshum Gupta
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-7757
+  url: https://issues.apache.org/jira/browse/SOLR-7757

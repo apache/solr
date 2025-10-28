@@ -1,0 +1,8 @@
+title: The shareSchema solr.xml option now supports SolrCloud. shareSchema is useful
+  when you have many cores per node and large schemas.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-14040
+  url: https://issues.apache.org/jira/browse/SOLR-14040

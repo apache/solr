@@ -1,0 +1,8 @@
+title: Avoid redundant `FilterQuery` caching, e.g. via `filter($query)` syntax.
+type: changed
+authors:
+- name: Michael Gibney
+- name: David Smiley
+links:
+- name: SOLR-16002
+  url: https://issues.apache.org/jira/browse/SOLR-16002

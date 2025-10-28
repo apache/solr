@@ -1,0 +1,7 @@
+title: 'Velocity: Link to admin page broken'
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-3660
+  url: https://issues.apache.org/jira/browse/SOLR-3660

@@ -1,0 +1,9 @@
+title: Introduce 'rows' and 'offset' parameter in FacetStream
+type: added
+authors:
+- name: Joel Bernstein
+- name: Amrit Sarkar
+- name: Varun Thacker
+links:
+- name: SOLR-12795
+  url: https://issues.apache.org/jira/browse/SOLR-12795

@@ -1,0 +1,11 @@
+title: IndexWriter.addDocument will now throw an IllegalArgumentException if a Term
+  to be indexed exceeds IndexWriter.MAX_TERM_LENGTH. To recreate previous behavior
+  of silently ignoring these terms, use LengthFilter in your Analyzer.
+type: other
+authors:
+- name: hossman
+- name: Mike McCandless
+- name: Varun Thacker
+links:
+- name: LUCENE-5472
+  url: https://issues.apache.org/jira/browse/LUCENE-5472

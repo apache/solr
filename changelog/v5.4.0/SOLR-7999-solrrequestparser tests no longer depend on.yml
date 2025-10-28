@@ -1,0 +1,8 @@
+title: SolrRequestParser tests no longer depend on external URLs that may fail to
+  work.
+type: other
+authors:
+- name: Uwe Schindler
+links:
+- name: SOLR-7999
+  url: https://issues.apache.org/jira/browse/SOLR-7999

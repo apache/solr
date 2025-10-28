@@ -1,0 +1,8 @@
+title: stats.field now supports individual local params for 'countDistinct' and 'distinctValues'.
+  'calcdistinct' is still supported as an alias for both options
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-7461
+  url: https://issues.apache.org/jira/browse/SOLR-7461

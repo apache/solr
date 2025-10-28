@@ -1,0 +1,10 @@
+title: Enhanced pivot faceting to use local-params in the same way that regular field
+  value faceting can. This means support for excluding a filter query, using a different
+  output key, and specifying 'threads' to do facet.method=fcs concurrently. PivotFacetHelper
+  now extends SimpleFacet and the getFacetImplementation() extension hook was removed.
+type: added
+authors:
+- name: dsmiley
+links:
+- name: SOLR-2255
+  url: https://issues.apache.org/jira/browse/SOLR-2255

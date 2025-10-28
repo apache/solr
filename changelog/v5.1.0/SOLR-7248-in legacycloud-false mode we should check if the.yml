@@ -1,0 +1,10 @@
+title: In legacyCloud=false mode we should check if the core was hosted on the same
+  node before registering it
+type: fixed
+authors:
+- name: Varun Thacker
+- name: Noble Paul
+- name: Mark Miller
+links:
+- name: SOLR-7248
+  url: https://issues.apache.org/jira/browse/SOLR-7248

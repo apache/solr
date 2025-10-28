@@ -1,0 +1,9 @@
+title: Fix the core restore functionality to allow restoring multiple times on the
+  same core
+type: fixed
+authors:
+- name: Johannes Brucher
+- name: Varun Thacker
+links:
+- name: SOLR-8449
+  url: https://issues.apache.org/jira/browse/SOLR-8449

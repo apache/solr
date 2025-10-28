@@ -1,0 +1,7 @@
+title: Update commons-cli to 1.7
+type: dependency_update
+authors:
+- name: Eric Pugh
+links:
+- name: GITHUB#2408
+  url: https://github.com/apache/solr/pull/2408

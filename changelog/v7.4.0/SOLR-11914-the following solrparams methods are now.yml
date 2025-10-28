@@ -1,0 +1,9 @@
+title: 'The following SolrParams methods are now deprecated: toSolrParams (use NamedList.toSolrParams
+  instead), toMap, toMultiMap, toFilteredSolrParams, getAll. The latter ones have
+  no direct replacement but are easy to implement yourself as-needed.'
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-11914
+  url: https://issues.apache.org/jira/browse/SOLR-11914

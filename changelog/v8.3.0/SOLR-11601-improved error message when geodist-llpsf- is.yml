@@ -1,0 +1,8 @@
+title: Improved error message when geodist(llpsf) is used with arguments referring
+  to a LatLonPointSpatialField.
+type: changed
+authors:
+- name: Amrit Sarkar
+links:
+- name: SOLR-11601
+  url: https://issues.apache.org/jira/browse/SOLR-11601

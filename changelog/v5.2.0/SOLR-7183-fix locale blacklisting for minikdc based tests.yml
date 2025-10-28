@@ -1,0 +1,8 @@
+title: Fix Locale blacklisting for Minikdc based tests.
+type: other
+authors:
+- name: Ishan Chattopadhyaya
+- name: hossman
+links:
+- name: SOLR-7183
+  url: https://issues.apache.org/jira/browse/SOLR-7183

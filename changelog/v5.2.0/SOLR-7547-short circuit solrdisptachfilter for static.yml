@@ -1,0 +1,8 @@
+title: Short circuit SolrDisptachFilter for static content request. Right now it creates
+  a new HttpSolrCall object and tries to process it.
+type: changed
+authors:
+- name: Anshum Gupta
+links:
+- name: SOLR-7547
+  url: https://issues.apache.org/jira/browse/SOLR-7547

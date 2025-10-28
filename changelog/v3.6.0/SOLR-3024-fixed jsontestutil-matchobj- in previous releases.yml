@@ -1,0 +1,8 @@
+title: Fixed JSONTestUtil.matchObj, in previous releases it was not respecting the
+  'delta' arg
+type: fixed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-3024
+  url: https://issues.apache.org/jira/browse/SOLR-3024

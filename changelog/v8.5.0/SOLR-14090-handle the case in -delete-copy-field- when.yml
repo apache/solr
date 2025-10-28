@@ -1,0 +1,8 @@
+title: Handle the case in `delete-copy-field` when source is a dynamic field
+type: fixed
+authors:
+- name: Frank Iversen
+- name: Munendra S N
+links:
+- name: SOLR-14090
+  url: https://issues.apache.org/jira/browse/SOLR-14090

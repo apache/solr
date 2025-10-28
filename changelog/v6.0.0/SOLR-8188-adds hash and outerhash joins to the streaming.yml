@@ -1,0 +1,7 @@
+title: Adds Hash and OuterHash Joins to the Streaming API and Streaming Expressions
+type: added
+authors:
+- name: Dennis Gove
+links:
+- name: SOLR-8188
+  url: https://issues.apache.org/jira/browse/SOLR-8188

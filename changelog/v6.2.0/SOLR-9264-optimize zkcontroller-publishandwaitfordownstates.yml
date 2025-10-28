@@ -1,0 +1,9 @@
+title: Optimize ZkController.publishAndWaitForDownStates to not read all collection
+  states and watch relevant collections instead.
+type: changed
+authors:
+- name: Hrishikesh Gadre
+- name: shalin
+links:
+- name: SOLR-9264
+  url: https://issues.apache.org/jira/browse/SOLR-9264

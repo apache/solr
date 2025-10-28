@@ -1,0 +1,9 @@
+title: Hardened the behavior of TokenizerChain when null arguments are used in constructor.
+  This prevents NPEs in some code paths.
+type: fixed
+authors:
+- name: Konstantin Gribov
+- name: hossman
+links:
+- name: SOLR-7765
+  url: https://issues.apache.org/jira/browse/SOLR-7765

@@ -1,0 +1,11 @@
+title: CDCR bootstrap does not replicate index to the replicas of target cluster.
+type: fixed
+authors:
+- name: Krzysztof Watral
+- name: Amrit Sarkar
+- name: Tim
+- name: Tdspringsteen
+- name: shalin
+links:
+- name: SOLR-13141
+  url: https://issues.apache.org/jira/browse/SOLR-13141

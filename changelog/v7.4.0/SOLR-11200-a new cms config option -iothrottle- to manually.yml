@@ -1,0 +1,8 @@
+title: A new CMS config option 'ioThrottle' to manually enable/disable ConcurrentMergeSchedule.doAutoIOThrottle.
+type: added
+authors:
+- name: Amrit Sarkar
+- name: Nawab Zada Asad iqbal
+links:
+- name: SOLR-11200
+  url: https://issues.apache.org/jira/browse/SOLR-11200

@@ -1,0 +1,8 @@
+title: post.jar no longer ignores -Dparams when -Durl is used.
+type: fixed
+authors:
+- name: Alexandre Rafalovitch
+- name: ehatcher
+links:
+- name: SOLR-4217
+  url: https://issues.apache.org/jira/browse/SOLR-4217

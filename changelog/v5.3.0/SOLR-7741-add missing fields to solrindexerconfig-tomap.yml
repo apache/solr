@@ -1,0 +1,8 @@
+title: Add missing fields to SolrIndexerConfig.toMap
+type: fixed
+authors:
+- name: Mike Drob
+- name: Christine Poerschke
+links:
+- name: SOLR-7741
+  url: https://issues.apache.org/jira/browse/SOLR-7741

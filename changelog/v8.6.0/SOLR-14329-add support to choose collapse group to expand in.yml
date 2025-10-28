@@ -1,0 +1,8 @@
+title: Add support to choose collapse group to expand in ExpandComponent based on
+  cost
+type: changed
+authors:
+- name: Munendra S N
+links:
+- name: SOLR-14329
+  url: https://issues.apache.org/jira/browse/SOLR-14329

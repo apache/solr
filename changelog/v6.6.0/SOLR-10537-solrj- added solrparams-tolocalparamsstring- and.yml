@@ -1,0 +1,7 @@
+title: 'SolrJ: Added SolrParams.toLocalParamsString() and ClientUtils.encodeLocalParamVal.'
+type: added
+authors:
+- name: David Smiley
+links:
+- name: SOLR-10537
+  url: https://issues.apache.org/jira/browse/SOLR-10537

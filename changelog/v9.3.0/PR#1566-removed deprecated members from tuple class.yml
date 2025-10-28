@@ -1,0 +1,7 @@
+title: Removed deprecated members from Tuple class
+type: other
+authors:
+- name: janhoy
+links:
+- name: PR#1566
+  url: https://github.com/apache/solr/pull/1566

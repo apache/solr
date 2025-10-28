@@ -1,0 +1,10 @@
+title: Due to LUCENE-1906, Solr's tokenizer should use Tokenizer.correctOffset() instead
+  of CharStream.correctOffset().
+type: other
+authors:
+- name: Uwe Schindler
+links:
+- name: SOLR-1423
+  url: https://issues.apache.org/jira/browse/SOLR-1423
+- name: LUCENE-1906
+  url: https://issues.apache.org/jira/browse/LUCENE-1906

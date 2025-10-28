@@ -1,0 +1,7 @@
+title: Ability to specify overwrite=false on the URL for XML updates.
+type: added
+authors:
+- name: Sami Siren
+links:
+- name: SOLR-3036
+  url: https://issues.apache.org/jira/browse/SOLR-3036

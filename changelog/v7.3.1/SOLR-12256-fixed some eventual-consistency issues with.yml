@@ -1,0 +1,7 @@
+title: Fixed some eventual-consistency issues with collection aliases by using ZooKeeper.sync().
+type: fixed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-12256
+  url: https://issues.apache.org/jira/browse/SOLR-12256

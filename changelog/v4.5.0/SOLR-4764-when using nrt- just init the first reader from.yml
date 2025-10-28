@@ -1,0 +1,8 @@
+title: When using NRT, just init the first reader from IndexWriter.
+type: fixed
+authors:
+- name: Robert Muir
+- name: Mark Miller
+links:
+- name: SOLR-4764
+  url: https://issues.apache.org/jira/browse/SOLR-4764

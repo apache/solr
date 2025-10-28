@@ -1,0 +1,8 @@
+title: Adds Streaming to the admin page under the collections section. Includes ability
+  to see graphically the expression explanation
+type: added
+authors:
+- name: Dennis Gove
+links:
+- name: SOLR-8918
+  url: https://issues.apache.org/jira/browse/SOLR-8918

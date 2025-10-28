@@ -1,0 +1,8 @@
+title: Remove unnecessary checked exception for CloudSolrClient constructors, improve
+  javadocs for CloudSolrClient constructors.
+type: other
+authors:
+- name: Steve Davids
+links:
+- name: SOLR-6390
+  url: https://issues.apache.org/jira/browse/SOLR-6390

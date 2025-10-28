@@ -1,0 +1,8 @@
+title: SolrMetricReporterTest failure
+type: fixed
+authors:
+- name: Erick Erickson
+- name: David Smiley
+links:
+- name: SOLR-12733
+  url: https://issues.apache.org/jira/browse/SOLR-12733

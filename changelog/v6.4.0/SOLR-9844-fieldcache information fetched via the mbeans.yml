@@ -1,0 +1,9 @@
+title: FieldCache information fetched via the mbeans handler or seen via the UI now
+  displays the total size used. The individual cache entries in the response are now
+  formatted better as well.
+type: added
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-9844
+  url: https://issues.apache.org/jira/browse/SOLR-9844

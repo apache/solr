@@ -1,0 +1,9 @@
+title: Solr stops printing stacktraces in log and output
+type: other
+authors:
+- name: janhoy
+- name: hossman
+- name: Markus Jelsma
+links:
+- name: SOLR-7436
+  url: https://issues.apache.org/jira/browse/SOLR-7436

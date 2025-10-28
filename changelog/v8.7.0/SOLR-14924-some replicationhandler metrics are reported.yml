@@ -1,0 +1,7 @@
+title: Some ReplicationHandler metrics are reported using incorrect types.
+type: fixed
+authors:
+- name: ab
+links:
+- name: SOLR-14924
+  url: https://issues.apache.org/jira/browse/SOLR-14924

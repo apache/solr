@@ -1,0 +1,9 @@
+title: Proxied responses should propagate all headers rather than the first one for
+  each key.
+type: fixed
+authors:
+- name: Patrick Hunt
+- name: Mark Miller
+links:
+- name: SOLR-5445
+  url: https://issues.apache.org/jira/browse/SOLR-5445

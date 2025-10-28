@@ -1,0 +1,9 @@
+title: Splitshard collections API now supports splitting into more than 2 sub-shards
+  directly i.e. by providing a numSubShards parameter
+type: added
+authors:
+- name: Christine Poerschke
+- name: Anshum Gupta
+links:
+- name: SOLR-5004
+  url: https://issues.apache.org/jira/browse/SOLR-5004

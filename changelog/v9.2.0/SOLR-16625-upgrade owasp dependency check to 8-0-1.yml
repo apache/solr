@@ -1,0 +1,7 @@
+title: Upgrade OWASP dependency check to 8.0.1
+type: dependency_update
+authors:
+- name: Kevin Risden
+links:
+- name: SOLR-16625
+  url: https://issues.apache.org/jira/browse/SOLR-16625

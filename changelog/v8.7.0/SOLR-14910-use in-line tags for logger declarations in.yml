@@ -1,0 +1,8 @@
+title: Use in-line tags for logger declarations in Gradle ValidateLogCalls that are
+  non-standard, change //logok to //nowarn
+type: other
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-14910
+  url: https://issues.apache.org/jira/browse/SOLR-14910

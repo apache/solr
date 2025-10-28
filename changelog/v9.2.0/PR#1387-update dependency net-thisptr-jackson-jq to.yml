@@ -1,0 +1,7 @@
+title: Update dependency net.thisptr:jackson-jq to v0.0.13
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#1387
+  url: https://github.com/apache/solr/pull/1387

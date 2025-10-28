@@ -1,0 +1,8 @@
+title: Make stale state notification work without failing the requests
+type: other
+authors:
+- name: Noble Paul
+- name: shalin
+links:
+- name: SOLR-7130
+  url: https://issues.apache.org/jira/browse/SOLR-7130

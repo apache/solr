@@ -1,0 +1,7 @@
+title: Cleanup replicasMetTragicEvent after all types of exception
+type: fixed
+authors:
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-13229
+  url: https://issues.apache.org/jira/browse/SOLR-13229

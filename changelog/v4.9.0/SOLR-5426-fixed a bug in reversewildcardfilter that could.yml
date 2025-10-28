@@ -1,0 +1,10 @@
+title: Fixed a bug in ReverseWildCardFilter that could cause InvalidTokenOffsetsException
+  when highlighting.
+type: fixed
+authors:
+- name: Uwe Schindler
+- name: Arun Kumar
+- name: hossman
+links:
+- name: SOLR-5426
+  url: https://issues.apache.org/jira/browse/SOLR-5426

@@ -1,0 +1,10 @@
+title: '{!collapse}: if you attempt to use CollapseQParser on a field that is multi-valued,
+  you will now get an error. Previously, the collapsing behavior was unreliable and
+  undefined despite no explicit error.'
+type: added
+authors:
+- name: Munendra S N
+- name: David Smiley
+links:
+- name: SOLR-6280
+  url: https://issues.apache.org/jira/browse/SOLR-6280

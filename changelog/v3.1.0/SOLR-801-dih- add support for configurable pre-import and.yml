@@ -1,0 +1,8 @@
+title: 'DIH: Add support for configurable pre-import and post-import delete query
+  per root-entity.'
+type: added
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-801
+  url: https://issues.apache.org/jira/browse/SOLR-801

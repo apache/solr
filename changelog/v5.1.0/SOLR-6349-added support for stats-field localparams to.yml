@@ -1,0 +1,11 @@
+title: 'Added support for stats.field localparams to enable/disable individual stats
+  to limit the amount of computation done and the amount of data returned. eg: stats.field={!min=true
+  max=true}field_name'
+type: added
+authors:
+- name: Tomas Fernandez-Lobbe
+- name: Xu Zhang
+- name: hossman
+links:
+- name: SOLR-6349
+  url: https://issues.apache.org/jira/browse/SOLR-6349

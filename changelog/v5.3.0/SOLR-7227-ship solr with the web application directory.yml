@@ -1,0 +1,9 @@
+title: Ship Solr with the Web application directory exploded into server/solr-webapp,
+  solr.war is no longer included in the distribution bundles.
+type: other
+authors:
+- name: Timothy Potter
+- name: Uwe Schindler
+links:
+- name: SOLR-7227
+  url: https://issues.apache.org/jira/browse/SOLR-7227

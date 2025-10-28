@@ -1,0 +1,9 @@
+title: Fix NullPointerException when cores are loaded in parallel and switch schema.xml
+  to managed-scheme.
+type: fixed
+authors:
+- name: Alan Woodward
+- name: Mikhail Khludnev
+links:
+- name: SOLR-9554
+  url: https://issues.apache.org/jira/browse/SOLR-9554

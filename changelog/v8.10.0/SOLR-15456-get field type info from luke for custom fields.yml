@@ -1,0 +1,8 @@
+title: Get field type info from luke for custom fields instead of defaulting to String
+  in Parallel SQL
+type: changed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15456
+  url: https://issues.apache.org/jira/browse/SOLR-15456

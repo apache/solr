@@ -1,0 +1,8 @@
+title: ord & rord functions give confusing errors with PointFields.
+type: other
+authors:
+- name: hossman
+- name: Steve Rowe
+links:
+- name: SOLR-10919
+  url: https://issues.apache.org/jira/browse/SOLR-10919

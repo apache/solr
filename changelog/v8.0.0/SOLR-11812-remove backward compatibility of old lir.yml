@@ -1,0 +1,7 @@
+title: Remove backward compatibility of old LIR implementation in 8.0
+type: other
+authors:
+- name: Cao Manh Dat
+links:
+- name: SOLR-11812
+  url: https://issues.apache.org/jira/browse/SOLR-11812

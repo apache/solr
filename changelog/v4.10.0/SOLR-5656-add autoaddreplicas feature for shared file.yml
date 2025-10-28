@@ -1,0 +1,8 @@
+title: Add autoAddReplicas feature for shared file systems.
+type: added
+authors:
+- name: Mark Miller
+- name: Gregory Chanan
+links:
+- name: SOLR-5656
+  url: https://issues.apache.org/jira/browse/SOLR-5656

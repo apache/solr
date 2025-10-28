@@ -1,0 +1,8 @@
+title: Refactored TestReplicationHandler to remove hardcoded port numbers
+type: other
+authors:
+- name: hossman
+- name: Akshay Ukey
+links:
+- name: SOLR-959
+  url: https://issues.apache.org/jira/browse/SOLR-959

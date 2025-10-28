@@ -1,0 +1,9 @@
+title: Overseer queue needs a hard cap (maximum size) that clients respect
+type: fixed
+authors:
+- name: Scott Blum
+- name: Joshua Humphries
+- name: Noble Paul
+links:
+- name: SOLR-11423
+  url: https://issues.apache.org/jira/browse/SOLR-11423

@@ -1,0 +1,9 @@
+title: The core reload after replication if config files have changed can fail due
+  to a race condition.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Hossman
+links:
+- name: SOLR-4709
+  url: https://issues.apache.org/jira/browse/SOLR-4709

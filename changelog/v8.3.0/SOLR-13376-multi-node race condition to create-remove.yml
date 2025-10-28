@@ -1,0 +1,8 @@
+title: Multi-node race condition to create/remove nodeLost markers.
+type: fixed
+authors:
+- name: hoss
+- name: ab
+links:
+- name: SOLR-13376
+  url: https://issues.apache.org/jira/browse/SOLR-13376

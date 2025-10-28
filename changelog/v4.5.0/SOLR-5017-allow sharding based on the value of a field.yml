@@ -1,0 +1,7 @@
+title: Allow sharding based on the value of a field
+type: added
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-5017
+  url: https://issues.apache.org/jira/browse/SOLR-5017

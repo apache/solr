@@ -1,0 +1,7 @@
+title: Replaced commons-fileupload dependency with using Jetty's facilities.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-14461
+  url: https://issues.apache.org/jira/browse/SOLR-14461

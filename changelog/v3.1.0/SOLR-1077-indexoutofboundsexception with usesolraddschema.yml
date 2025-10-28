@@ -1,0 +1,8 @@
+title: IndexOutOfBoundsException with useSolrAddSchema in DIH XPathEntityProcessor.
+type: fixed
+authors:
+- name: Sam Keen
+- name: Noble Paul
+links:
+- name: SOLR-1077
+  url: https://issues.apache.org/jira/browse/SOLR-1077

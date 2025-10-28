@@ -1,0 +1,7 @@
+title: Fix position of OOM killer script when starting Solr in the background
+type: fixed
+authors:
+- name: "Jurian Broertjes via\n  Timothy Potter"
+links:
+- name: SOLR-8145
+  url: https://issues.apache.org/jira/browse/SOLR-8145

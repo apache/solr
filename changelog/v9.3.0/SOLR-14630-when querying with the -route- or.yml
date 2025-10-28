@@ -1,0 +1,13 @@
+title: When querying with the `_route_` or `shards.preference` parameter and if there
+  are multiple replicas for a collection on the receiving node, there was sometimes
+  an extra HTTP hop or the non-intended replica may receive the request. SolrJ will
+  now form the URL directly to the intended replica of the collection (and not the
+  collection itself).
+type: changed
+authors:
+- name: Pierre Salagnac
+- name: Ivan Djurasevic
+- name: Jason Baik
+links:
+- name: SOLR-14630
+  url: https://issues.apache.org/jira/browse/SOLR-14630

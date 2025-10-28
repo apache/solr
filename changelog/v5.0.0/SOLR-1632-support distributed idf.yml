@@ -1,0 +1,13 @@
+title: Support Distributed IDF
+type: added
+authors:
+- name: Andrzej Bialecki
+- name: Mark Miller
+- name: Yonik Seeley
+- name: Robert Muir
+- name: Markus Jelsma
+- name: Vitaliy Zhovtyuk
+- name: Anshum Gupta
+links:
+- name: SOLR-1632
+  url: https://issues.apache.org/jira/browse/SOLR-1632

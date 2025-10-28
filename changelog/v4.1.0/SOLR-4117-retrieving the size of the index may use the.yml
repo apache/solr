@@ -1,0 +1,8 @@
+title: Retrieving the size of the index may use the wrong index dir if you are replicating.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Markus Jelsma
+links:
+- name: SOLR-4117
+  url: https://issues.apache.org/jira/browse/SOLR-4117

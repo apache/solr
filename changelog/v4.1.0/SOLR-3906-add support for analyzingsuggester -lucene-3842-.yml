@@ -1,0 +1,10 @@
+title: Add support for AnalyzingSuggester (LUCENE-3842), where the underlying analyzed
+  form used for suggestions is separate from the returned text.
+type: added
+authors:
+- name: Robert Muir
+links:
+- name: SOLR-3906
+  url: https://issues.apache.org/jira/browse/SOLR-3906
+- name: LUCENE-3842
+  url: https://issues.apache.org/jira/browse/LUCENE-3842

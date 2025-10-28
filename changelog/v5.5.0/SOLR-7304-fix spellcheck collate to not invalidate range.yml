@@ -1,0 +1,7 @@
+title: Fix Spellcheck Collate to not invalidate range queries.
+type: fixed
+authors:
+- name: James Dyer
+links:
+- name: SOLR-7304
+  url: https://issues.apache.org/jira/browse/SOLR-7304

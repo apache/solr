@@ -1,0 +1,9 @@
+title: Add "welcome-file-list" to solr.war so admin UI works correctly in servlet
+  containers such as WebSphere that do not use a default list
+type: fixed
+authors:
+- name: Jay R. Jaeger
+- name: hossman
+links:
+- name: SOLR-2676
+  url: https://issues.apache.org/jira/browse/SOLR-2676

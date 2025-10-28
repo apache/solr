@@ -1,0 +1,7 @@
+title: Fix edismax replacement of all whitespace characters with spaces
+type: fixed
+authors:
+- name: Yuriy Koval
+links:
+- name: SOLR-14703
+  url: https://issues.apache.org/jira/browse/SOLR-14703

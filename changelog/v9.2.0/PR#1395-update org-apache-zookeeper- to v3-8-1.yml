@@ -1,0 +1,7 @@
+title: Update org.apache.zookeeper:* to v3.8.1
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#1395
+  url: https://github.com/apache/solr/pull/1395

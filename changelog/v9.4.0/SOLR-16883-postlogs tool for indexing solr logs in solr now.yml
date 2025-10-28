@@ -1,0 +1,9 @@
+title: 'Postlogs tool for indexing Solr logs in Solr now supported on Windows by converting
+  it to a Solr CLI command: `bin/solr postlogs`. `bin/postlogs` script marked deprected.'
+type: changed
+authors:
+- name: Eric Pugh
+- name: Will White
+links:
+- name: SOLR-16883
+  url: https://issues.apache.org/jira/browse/SOLR-16883

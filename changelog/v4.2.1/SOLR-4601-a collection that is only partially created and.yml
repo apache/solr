@@ -1,0 +1,8 @@
+title: A Collection that is only partially created and then deleted will leave pre
+  allocated shard information in ZooKeeper.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4601
+  url: https://issues.apache.org/jira/browse/SOLR-4601

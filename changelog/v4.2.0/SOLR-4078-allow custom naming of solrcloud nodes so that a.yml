@@ -1,0 +1,8 @@
+title: Allow custom naming of SolrCloud nodes so that a new host:port combination
+  can take over for a previous shard.
+type: added
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4078
+  url: https://issues.apache.org/jira/browse/SOLR-4078

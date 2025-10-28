@@ -1,0 +1,7 @@
+title: CoreAdminRequest.createCore fails because name parameter isn't set
+type: fixed
+authors:
+- name: Sean Colombo
+links:
+- name: SOLR-803
+  url: https://issues.apache.org/jira/browse/SOLR-803

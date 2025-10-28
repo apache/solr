@@ -1,0 +1,8 @@
+title: Solr HDFS snapshot export fails due to FileNotFoundException error when using
+  MR1 instead of yarn.
+type: fixed
+authors:
+- name: Hrishikesh
+links:
+- name: SOLR-10360
+  url: https://issues.apache.org/jira/browse/SOLR-10360

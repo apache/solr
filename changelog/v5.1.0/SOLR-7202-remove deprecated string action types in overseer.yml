@@ -1,0 +1,10 @@
+title: Remove deprecated string action types in Overseer and OverseerCollectionProcessor
+  - "deletecollection", "createcollection", "reloadcollection", "removecollection",
+  "removeshard".
+type: other
+authors:
+- name: Varun Thacker
+- name: shalin
+links:
+- name: SOLR-7202
+  url: https://issues.apache.org/jira/browse/SOLR-7202

@@ -1,0 +1,8 @@
+title: 'JSON Facet API: min/max aggregations are now supported on single-valued date
+  fields.'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-11316
+  url: https://issues.apache.org/jira/browse/SOLR-11316

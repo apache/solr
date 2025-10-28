@@ -1,0 +1,8 @@
+title: Improved error handling if an &lt;analyzer&gt; contains both an explicit class
+  attribute, as well as nested factories.
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-3683
+  url: https://issues.apache.org/jira/browse/SOLR-3683

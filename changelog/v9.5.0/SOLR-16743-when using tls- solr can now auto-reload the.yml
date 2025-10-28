@@ -1,0 +1,10 @@
+title: When using TLS, Solr can now auto-reload the keystore and truststore without
+  the need to restart the process. This is enabled by default when running with TLS
+  and can be disabled or configured in solr.in.sh
+type: added
+authors:
+- name: Houston Putman
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-16743
+  url: https://issues.apache.org/jira/browse/SOLR-16743

@@ -1,0 +1,10 @@
+title: Support "Accept-Encoding" header to enable response gzip compression
+type: changed
+authors:
+- name: Matthew Sporleder
+- name: Houston Putman
+- name: Shawn Heisey
+- name: Jan Høydahl
+links:
+- name: SOLR-11752
+  url: https://issues.apache.org/jira/browse/SOLR-11752

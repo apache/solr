@@ -1,0 +1,8 @@
+title: Improved memory usage, build time, and performance of SynonymFilterFactory.
+type: changed
+authors:
+- name: Mike McCandless
+- name: Robert Muir
+links:
+- name: LUCENE-3233
+  url: https://issues.apache.org/jira/browse/LUCENE-3233

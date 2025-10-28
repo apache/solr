@@ -1,0 +1,8 @@
+title: Admin UI's Schema screen now works for fields with stored=false and some content
+  indexed
+type: fixed
+authors:
+- name: Alexandre Rafalovitch
+links:
+- name: SOLR-8715
+  url: https://issues.apache.org/jira/browse/SOLR-8715

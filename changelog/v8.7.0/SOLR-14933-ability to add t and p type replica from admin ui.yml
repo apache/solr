@@ -1,0 +1,7 @@
+title: Ability to add T and P type replica from admin UI
+type: changed
+authors:
+- name: Sayan Das
+links:
+- name: SOLR-14933
+  url: https://issues.apache.org/jira/browse/SOLR-14933

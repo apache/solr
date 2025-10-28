@@ -1,0 +1,8 @@
+title: When a new leader syncs, we need to ask all shards to sync back, not just those
+  that are active.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-3813
+  url: https://issues.apache.org/jira/browse/SOLR-3813

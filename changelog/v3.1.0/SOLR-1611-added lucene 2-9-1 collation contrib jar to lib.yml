@@ -1,0 +1,7 @@
+title: Added Lucene 2.9.1 collation contrib jar to lib
+type: other
+authors:
+- name: shalin
+links:
+- name: SOLR-1611
+  url: https://issues.apache.org/jira/browse/SOLR-1611

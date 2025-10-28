@@ -1,0 +1,7 @@
+title: 'FastCharStream: re-use the READ_PAST_EOF exception.'
+type: changed
+authors:
+- name: Michael Braun
+links:
+- name: SOLR-11314
+  url: https://issues.apache.org/jira/browse/SOLR-11314

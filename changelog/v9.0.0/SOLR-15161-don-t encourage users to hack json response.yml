@@ -1,0 +1,8 @@
+title: Don't encourage users to hack JSON response mimetype by documenting in examples
+  how to specify wt=json use mimetype of text/plain.
+type: changed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-15161
+  url: https://issues.apache.org/jira/browse/SOLR-15161

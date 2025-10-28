@@ -1,0 +1,8 @@
+title: bin/solr export tool now supports JSON export format as well as the existing
+  JSON With Lines format.
+type: changed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-16782
+  url: https://issues.apache.org/jira/browse/SOLR-16782

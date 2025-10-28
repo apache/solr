@@ -1,0 +1,9 @@
+title: eDismax lowercaseOperators now defaults to "false" for luceneMatchVersion &gt;=
+  7.0.0
+type: other
+authors:
+- name: janhoy
+- name: David Smiley
+links:
+- name: SOLR-4646
+  url: https://issues.apache.org/jira/browse/SOLR-4646

@@ -1,0 +1,8 @@
+title: Added new parameter `backupConfigset` to collection Backup to optionally skip
+  backing up configsets.
+type: added
+authors:
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-16844
+  url: https://issues.apache.org/jira/browse/SOLR-16844

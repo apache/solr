@@ -1,0 +1,7 @@
+title: print errors from solr.cmd
+type: other
+authors:
+- name: Gopikannan Venugopalsamy
+links:
+- name: SOLR-9745
+  url: https://issues.apache.org/jira/browse/SOLR-9745

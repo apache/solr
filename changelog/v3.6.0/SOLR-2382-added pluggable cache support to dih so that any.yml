@@ -1,0 +1,14 @@
+title: Added pluggable cache support to DIH so that any Entity can be made cache-able
+  by adding the "cacheImpl" parameter. Include "SortedMapBackedCache" to provide in-memory
+  caching (as previously this was the only option when using CachedSqlEntityProcessor).
+  Users can provide their own implementations of DIHCache for other caching strategies.
+  Deprecate CachedSqlEntityProcessor in favor of specifing "cacheImpl" with SqlEntityProcessor.
+  Make SolrWriter implement DIHWriter and allow the possibility of pluggable Writers
+  (DIH writing to something other than Solr).
+type: added
+authors:
+- name: James Dyer
+- name: Noble Paul
+links:
+- name: SOLR-2382
+  url: https://issues.apache.org/jira/browse/SOLR-2382

@@ -1,0 +1,8 @@
+title: Fix ClassCastException in SystemInfoHandler.getSecurityInfo.
+type: fixed
+authors:
+- name: Nikolay Ivanov
+- name: Christine Poerschke
+links:
+- name: SOLR-15073
+  url: https://issues.apache.org/jira/browse/SOLR-15073

@@ -1,0 +1,9 @@
+title: Use of timeAllowed can cause incomplete filters to be cached and incorrect
+  results to be returned on subsequent requests.
+type: fixed
+authors:
+- name: Erick Erickson
+- name: yonik
+links:
+- name: SOLR-7990
+  url: https://issues.apache.org/jira/browse/SOLR-7990

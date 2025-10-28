@@ -1,0 +1,8 @@
+title: Backup and restore command really supports picking one of a few repositories
+  by repository parameter
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-11556
+  url: https://issues.apache.org/jira/browse/SOLR-11556

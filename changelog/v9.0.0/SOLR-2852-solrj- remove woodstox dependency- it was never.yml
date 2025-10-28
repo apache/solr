@@ -1,0 +1,8 @@
+title: 'SolrJ: remove Woodstox dependency. It was never truly required there. Software
+  doing lots of XML processing can choose to add it or alternatives if they wish.'
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-2852
+  url: https://issues.apache.org/jira/browse/SOLR-2852

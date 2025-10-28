@@ -1,0 +1,11 @@
+title: In preparation for REST API requests that can modify the schema, a "managed
+  schema" is introduced. Add '&lt;schemaFactory class="ManagedSchemaFactory" mutable="true"/&gt;'
+  to solrconfig.xml in order to use it, and to enable schema modifications via REST
+  API requests.
+type: added
+authors:
+- name: Steve Rowe
+- name: Robert Muir
+links:
+- name: SOLR-4658
+  url: https://issues.apache.org/jira/browse/SOLR-4658

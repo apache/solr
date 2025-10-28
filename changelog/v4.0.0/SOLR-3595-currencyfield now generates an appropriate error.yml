@@ -1,0 +1,9 @@
+title: CurrencyField now generates an appropriate error on schema init if it is configured
+  as multiValued - this has never been properly supported, but previously failed silently
+  in odd ways.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-3595
+  url: https://issues.apache.org/jira/browse/SOLR-3595

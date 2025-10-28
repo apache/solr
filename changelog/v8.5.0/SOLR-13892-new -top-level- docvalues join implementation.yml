@@ -1,0 +1,8 @@
+title: New "top-level" docValues join implementation
+type: changed
+authors:
+- name: Jason Gerlowski
+- name: Joel Bernstein
+links:
+- name: SOLR-13892
+  url: https://issues.apache.org/jira/browse/SOLR-13892

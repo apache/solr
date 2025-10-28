@@ -1,0 +1,9 @@
+title: 'Docker: Solr has capability to build functionally-identical local and official
+  Docker image.'
+type: other
+authors:
+- name: hossman
+- name: Houston Putman
+links:
+- name: SOLR-15335
+  url: https://issues.apache.org/jira/browse/SOLR-15335

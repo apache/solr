@@ -1,0 +1,7 @@
+title: add "removeregex" as an atomic update operation
+type: added
+authors:
+- name: Vitaliy Zhovtyuk
+links:
+- name: SOLR-5992
+  url: https://issues.apache.org/jira/browse/SOLR-5992

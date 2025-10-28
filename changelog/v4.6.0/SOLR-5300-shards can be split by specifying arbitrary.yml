@@ -1,0 +1,8 @@
+title: Shards can be split by specifying arbitrary number of hash ranges within the
+  shard's hash range.
+type: added
+authors:
+- name: shalin
+links:
+- name: SOLR-5300
+  url: https://issues.apache.org/jira/browse/SOLR-5300

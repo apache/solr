@@ -1,0 +1,8 @@
+title: Embedded ZK Server used for zkRun should advertise itself on specific bound
+  interfaces instead of generically on localhost.
+type: other
+authors:
+- name: Mike Drob
+links:
+- name: SOLR-16150
+  url: https://issues.apache.org/jira/browse/SOLR-16150

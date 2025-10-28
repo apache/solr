@@ -1,0 +1,10 @@
+title: Atomic update on boolean fields doesn't reflect when value starts with "1",
+  "t" or "T"
+type: fixed
+authors:
+- name: Rahul Goswami
+- name: Justin Sweeney
+- name: David Smiley
+links:
+- name: SOLR-16360
+  url: https://issues.apache.org/jira/browse/SOLR-16360

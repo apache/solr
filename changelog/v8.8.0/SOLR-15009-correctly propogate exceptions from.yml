@@ -1,0 +1,7 @@
+title: Correctly propogate exceptions from DirectoryFactory.exists
+type: fixed
+authors:
+- name: Mike Drob
+links:
+- name: SOLR-15009
+  url: https://issues.apache.org/jira/browse/SOLR-15009

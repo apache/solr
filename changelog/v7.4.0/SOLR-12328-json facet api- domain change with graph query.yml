@@ -1,0 +1,9 @@
+title: 'JSON Facet API: Domain change with graph query.'
+type: added
+authors:
+- name: Daniel Meehl
+- name: Kevin Watters
+- name: yonik
+links:
+- name: SOLR-12328
+  url: https://issues.apache.org/jira/browse/SOLR-12328

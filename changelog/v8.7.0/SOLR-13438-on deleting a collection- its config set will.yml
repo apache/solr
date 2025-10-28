@@ -1,0 +1,8 @@
+title: On deleting a collection, its config set will also be deleted iff it has been
+  auto-created, and not used by any other collection
+type: changed
+authors:
+- name: Anderson Dorow
+links:
+- name: SOLR-13438
+  url: https://issues.apache.org/jira/browse/SOLR-13438

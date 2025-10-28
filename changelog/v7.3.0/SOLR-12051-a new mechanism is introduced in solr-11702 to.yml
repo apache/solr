@@ -1,0 +1,17 @@
+title: A new mechanism is introduced in SOLR-11702 to maintain consistency in SolrCloud
+  between leader and replicas. This mechanism lets Solr know whether a replica is
+  in-sync with the leader or not, even when the leader is not live. If all the replicas
+  who participate in the leader election are out-of-sync with previous leader, the
+  election will pause until a timeout (named "leaderVoteWait") before allowing an
+  out-of-sync replica to become leader. Note that the new leader still needs to contains
+  more updates than any other active replicas in the same shard. Therefore by increasing
+  leaderVoteWait will increase the consistency (over availability) of the system.
+  The default value of leaderVoteWait is 180,000 ms (3 minutes) and it can be adjusted
+  in the "solrcloud" section of the solr.xml
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-12051
+  url: https://issues.apache.org/jira/browse/SOLR-12051
+- name: SOLR-11702
+  url: https://issues.apache.org/jira/browse/SOLR-11702

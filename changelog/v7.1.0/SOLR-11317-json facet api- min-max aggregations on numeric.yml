@@ -1,0 +1,8 @@
+title: 'JSON Facet API: min/max aggregations on numeric fields are now typed better
+  so int/long fields return an appropriate integral type rather than a double.'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-11317
+  url: https://issues.apache.org/jira/browse/SOLR-11317

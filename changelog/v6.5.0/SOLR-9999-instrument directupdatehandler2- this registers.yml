@@ -1,0 +1,8 @@
+title: Instrument DirectUpdateHandler2. This registers existing statistics under metrics
+  API and adds more metrics to track the rates of update and delete commands.
+type: added
+authors:
+- name: ab
+links:
+- name: SOLR-9999
+  url: https://issues.apache.org/jira/browse/SOLR-9999

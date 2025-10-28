@@ -1,0 +1,7 @@
+title: Make ReRankQParserPlugin's private ReRankWeight a public class of its own.
+type: other
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-9410
+  url: https://issues.apache.org/jira/browse/SOLR-9410

@@ -1,0 +1,8 @@
+title: Fixed typo in distributed grouping parameters.
+type: fixed
+authors:
+- name: Martijn van Groningen
+- name: Grant Ingersoll
+links:
+- name: SOLR-3052
+  url: https://issues.apache.org/jira/browse/SOLR-3052

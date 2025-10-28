@@ -1,0 +1,9 @@
+title: Add option to have Overseer assign generic node names so that new addresses
+  can host shards without naming confusion.
+type: added
+authors:
+- name: Mark Miller
+- name: Anshum Gupta
+links:
+- name: SOLR-4655
+  url: https://issues.apache.org/jira/browse/SOLR-4655

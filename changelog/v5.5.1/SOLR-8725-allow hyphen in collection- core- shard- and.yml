@@ -1,0 +1,8 @@
+title: Allow hyphen in collection, core, shard, and alias name as the non-first character
+  (Anshum Gupta)
+type: fixed
+authors:
+- name: from 6.0
+links:
+- name: SOLR-8725
+  url: https://issues.apache.org/jira/browse/SOLR-8725

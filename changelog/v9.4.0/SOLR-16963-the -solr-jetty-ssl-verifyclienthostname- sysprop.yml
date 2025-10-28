@@ -1,0 +1,10 @@
+title: The "solr.jetty.ssl.verifyClientHostName" sysProp and "SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION"
+  envVar have been fixed, and the setting once again tells the server to check the
+  originating client hostname against the client certificate when doing mTLS.
+type: fixed
+authors:
+- name: Houston Putman
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-16963
+  url: https://issues.apache.org/jira/browse/SOLR-16963

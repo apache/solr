@@ -1,0 +1,8 @@
+title: Regular expression queries starting with escaped forward slash caused an exception.
+type: fixed
+authors:
+- name: Scott Blum
+- name: yonik
+links:
+- name: SOLR-8605
+  url: https://issues.apache.org/jira/browse/SOLR-8605

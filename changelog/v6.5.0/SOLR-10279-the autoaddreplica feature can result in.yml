@@ -1,0 +1,11 @@
+title: The autoAddReplica feature can result in SolrCores being assigned new shards
+  when using legacyCloud=false and will also fail on a state check when taking over
+  a core registration with a new core.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Hrishikesh Gadre
+- name: Patrick Dvorack
+links:
+- name: SOLR-10279
+  url: https://issues.apache.org/jira/browse/SOLR-10279

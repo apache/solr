@@ -1,0 +1,7 @@
+title: Make HttpShardHandlerFactory.getReplicaListTransformer more extensible.
+type: other
+authors:
+- name: Ramsey Haddad
+links:
+- name: SOLR-10173
+  url: https://issues.apache.org/jira/browse/SOLR-10173

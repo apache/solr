@@ -1,0 +1,7 @@
+title: Index replication interactions with IndexWriter can cause deadlock.
+type: fixed
+authors:
+- name: Xunlong
+links:
+- name: SOLR-9278
+  url: https://issues.apache.org/jira/browse/SOLR-9278

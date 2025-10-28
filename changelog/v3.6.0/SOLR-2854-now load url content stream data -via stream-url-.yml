@@ -1,0 +1,8 @@
+title: Now load URL content stream data (via stream.url) when called for during request
+  handling, rather than loading URL content streams automatically regardless of use.
+type: added
+authors:
+- name: David Smiley and Ryan McKinley
+links:
+- name: SOLR-2854
+  url: https://issues.apache.org/jira/browse/SOLR-2854

@@ -1,0 +1,8 @@
+title: Upgrade to Tika 1.16.
+type: other
+authors:
+- name: Tim Allison
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-10335
+  url: https://issues.apache.org/jira/browse/SOLR-10335

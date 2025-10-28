@@ -1,0 +1,8 @@
+title: Add ability to specify replica types when creating collections in Admin UI.
+type: added
+authors:
+- name: Richard Goodman
+- name: Eric Pugh
+links:
+- name: SOLR-14319
+  url: https://issues.apache.org/jira/browse/SOLR-14319

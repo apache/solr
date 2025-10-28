@@ -1,0 +1,8 @@
+title: When a core is registering with ZooKeeper, the timeout to find the leader in
+  the cluster state is 30 seconds rather than leaderVoteWait + extra time.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4245
+  url: https://issues.apache.org/jira/browse/SOLR-4245

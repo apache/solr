@@ -1,0 +1,8 @@
+title: Add zkClientTimeout to solr.xml so that it's obvious how to change it and so
+  that you can change it with a system property.
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-3599
+  url: https://issues.apache.org/jira/browse/SOLR-3599

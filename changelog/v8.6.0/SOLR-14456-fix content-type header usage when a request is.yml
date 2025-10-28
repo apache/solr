@@ -1,0 +1,8 @@
+title: Fix Content-Type header usage when a request is forwarded from Solr node to
+  Solr node with compression enabled
+type: fixed
+authors:
+- name: samuelgmartinez
+links:
+- name: SOLR-14456
+  url: https://issues.apache.org/jira/browse/SOLR-14456

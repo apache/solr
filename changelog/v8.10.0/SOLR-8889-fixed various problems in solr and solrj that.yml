@@ -1,0 +1,11 @@
+title: Fixed various problems in Solr and SolrJ that could cause deleteById commands
+  with "_route_" information to processed by the wrong shard, and/or fail when forwarded
+  to replicas from the shard leader.
+type: fixed
+authors:
+- name: Dan Fox
+- name: Yuki Yano
+- name: hossman
+links:
+- name: SOLR-8889
+  url: https://issues.apache.org/jira/browse/SOLR-8889

@@ -1,0 +1,8 @@
+title: Schema Designer UI
+type: added
+authors:
+- name: Timothy Potter
+- name: Kiran Chitturi
+links:
+- name: SOLR-15277
+  url: https://issues.apache.org/jira/browse/SOLR-15277

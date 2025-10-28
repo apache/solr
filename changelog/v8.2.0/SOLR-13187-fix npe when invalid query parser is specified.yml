@@ -1,0 +1,11 @@
+title: Fix NPE when invalid query parser is specified and return 400 error code.
+type: fixed
+authors:
+- name: Cesar Rodriguez
+- name: Marek
+- name: Charles Sanders
+- name: Munendra S N
+- name: Mikhail Khludnev
+links:
+- name: SOLR-13187
+  url: https://issues.apache.org/jira/browse/SOLR-13187

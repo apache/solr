@@ -1,0 +1,8 @@
+title: realtime-get, efficiently retrieves the latest stored fields for specified
+  documents, even if they are not yet searchable (i.e. without reopening a searcher)
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-2656
+  url: https://issues.apache.org/jira/browse/SOLR-2656

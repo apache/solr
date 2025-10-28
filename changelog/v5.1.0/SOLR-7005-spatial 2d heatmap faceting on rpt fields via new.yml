@@ -1,0 +1,8 @@
+title: Spatial 2D heatmap faceting on RPT fields via new facet.heatmap with PNG and
+  2D int array formats.
+type: added
+authors:
+- name: David Smiley
+links:
+- name: SOLR-7005
+  url: https://issues.apache.org/jira/browse/SOLR-7005

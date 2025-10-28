@@ -1,0 +1,9 @@
+title: Fix broken behavior with shared libraries in resource loader for solr.xml plugins.
+type: fixed
+authors:
+- name: Ryan Ernst
+- name: Robert Muir
+- name: Uwe Schindler
+links:
+- name: SOLR-4652
+  url: https://issues.apache.org/jira/browse/SOLR-4652

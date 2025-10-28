@@ -1,0 +1,9 @@
+title: (experimental) New spatial RptWithGeometrySpatialField, based on CompositeSpatialStrategy,
+  which blends RPT indexes for speed with serialized geometry for accuracy. Includes
+  a Lucene segment based in-memory shape cache.
+type: added
+authors:
+- name: David Smiley
+links:
+- name: SOLR-7379
+  url: https://issues.apache.org/jira/browse/SOLR-7379

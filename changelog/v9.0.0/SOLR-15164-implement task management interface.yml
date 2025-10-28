@@ -1,0 +1,9 @@
+title: Implement Task Management Interface
+type: added
+authors:
+- name: Atri Sharma
+- name: with extensive review and perf testing by Anshum Gupta
+- name: Mike Drob and Houston Putman
+links:
+- name: SOLR-15164
+  url: https://issues.apache.org/jira/browse/SOLR-15164

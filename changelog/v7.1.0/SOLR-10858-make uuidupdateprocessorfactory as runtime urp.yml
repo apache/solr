@@ -1,0 +1,8 @@
+title: Make UUIDUpdateProcessorFactory as Runtime URP
+type: added
+authors:
+- name: Amit Sarkar
+- name: noble
+links:
+- name: SOLR-10858
+  url: https://issues.apache.org/jira/browse/SOLR-10858

@@ -1,0 +1,10 @@
+title: Add Streaming Expressions tests for parameter substitution
+type: other
+authors:
+- name: Joel Bernstein
+- name: Cao Manh Dat
+- name: Dennis Gove
+- name: Kevin Risden
+links:
+- name: SOLR-8458
+  url: https://issues.apache.org/jira/browse/SOLR-8458

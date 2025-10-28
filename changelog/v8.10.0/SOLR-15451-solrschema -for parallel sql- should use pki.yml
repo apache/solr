@@ -1,0 +1,8 @@
+title: SolrSchema (for Parallel SQL) should use PKI principal for internal request
+  to /admin/luke to get table metadata
+type: changed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15451
+  url: https://issues.apache.org/jira/browse/SOLR-15451

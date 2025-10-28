@@ -1,0 +1,8 @@
+title: Force upgrade of Apache POI dependency in Solr Cell to version 3.10.1 to fix
+  CVE-2014-3529 and CVE-2014-3574.
+type: other
+authors:
+- name: Uwe Schindler
+links:
+- name: SOLR-6388
+  url: https://issues.apache.org/jira/browse/SOLR-6388

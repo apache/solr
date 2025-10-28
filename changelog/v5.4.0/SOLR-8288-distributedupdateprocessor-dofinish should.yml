@@ -1,0 +1,8 @@
+title: DistributedUpdateProcessor#doFinish should explicitly check and ensure it does
+  not try to put itself into LIR.
+type: changed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-8288
+  url: https://issues.apache.org/jira/browse/SOLR-8288

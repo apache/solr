@@ -1,0 +1,7 @@
+title: Remove BadApple and AwaitsFix annotations that link to closed JIRAs
+type: other
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-12017
+  url: https://issues.apache.org/jira/browse/SOLR-12017

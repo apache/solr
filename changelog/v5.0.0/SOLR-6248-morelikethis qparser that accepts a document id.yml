@@ -1,0 +1,9 @@
+title: MoreLikeThis QParser that accepts a document id and returns documents that
+  have similar content. It works in standalone/cloud mode and shares logic with the
+  Lucene MoreLikeThis class
+type: added
+authors:
+- name: Anshum Gupta
+links:
+- name: SOLR-6248
+  url: https://issues.apache.org/jira/browse/SOLR-6248

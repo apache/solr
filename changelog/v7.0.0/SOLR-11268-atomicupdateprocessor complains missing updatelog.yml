@@ -1,0 +1,8 @@
+title: AtomicUpdateProcessor complains missing UpdateLog
+type: fixed
+authors:
+- name: noble
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-11268
+  url: https://issues.apache.org/jira/browse/SOLR-11268

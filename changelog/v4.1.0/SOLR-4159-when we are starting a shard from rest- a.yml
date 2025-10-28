@@ -1,0 +1,8 @@
+title: When we are starting a shard from rest, a potential leader should not consider
+  its last published state when deciding if it can be the new leader.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4159
+  url: https://issues.apache.org/jira/browse/SOLR-4159

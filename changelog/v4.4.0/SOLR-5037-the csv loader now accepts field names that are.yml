@@ -1,0 +1,9 @@
+title: The CSV loader now accepts field names that are not in the schema.
+type: fixed
+authors:
+- name: gsingers
+- name: ehatcher
+- name: Steve Rowe
+links:
+- name: SOLR-5037
+  url: https://issues.apache.org/jira/browse/SOLR-5037

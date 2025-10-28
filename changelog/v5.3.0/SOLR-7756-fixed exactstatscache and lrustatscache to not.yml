@@ -1,0 +1,9 @@
+title: Fixed ExactStatsCache and LRUStatsCache to not throw an NPE when a term is
+  not present on a shard.
+type: fixed
+authors:
+- name: Varun Thacker
+- name: Anshum Gupta
+links:
+- name: SOLR-7756
+  url: https://issues.apache.org/jira/browse/SOLR-7756

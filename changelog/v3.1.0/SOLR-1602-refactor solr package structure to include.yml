@@ -1,0 +1,10 @@
+title: Refactor SOLR package structure to include o.a.solr.response and move QueryResponseWriters
+  in there
+type: other
+authors:
+- name: Chris A. Mattmann
+- name: ryan
+- name: hoss
+links:
+- name: SOLR-1602
+  url: https://issues.apache.org/jira/browse/SOLR-1602

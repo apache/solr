@@ -1,0 +1,8 @@
+title: WordDelimiterFilter now supports a splitOnNumerics option, as well as a list
+  of protected terms.
+type: added
+authors:
+- name: Dan Rosher
+links:
+- name: SOLR-876
+  url: https://issues.apache.org/jira/browse/SOLR-876

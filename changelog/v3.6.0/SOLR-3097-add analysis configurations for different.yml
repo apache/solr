@@ -1,0 +1,10 @@
+title: Add analysis configurations for different languages to the example.
+type: other
+authors:
+- name: Christian Moen
+- name: Robert Muir
+links:
+- name: SOLR-3097
+  url: https://issues.apache.org/jira/browse/SOLR-3097
+- name: SOLR-3105
+  url: https://issues.apache.org/jira/browse/SOLR-3105

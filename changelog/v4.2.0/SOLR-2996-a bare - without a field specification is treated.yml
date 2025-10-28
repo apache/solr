@@ -1,0 +1,11 @@
+title: A bare * without a field specification is treated as *:* by the lucene and
+  edismax query parsers.
+type: other
+authors:
+- name: hossman
+- name: Jan Høydahl
+- name: Alan Woodward
+- name: yonik
+links:
+- name: SOLR-2996
+  url: https://issues.apache.org/jira/browse/SOLR-2996

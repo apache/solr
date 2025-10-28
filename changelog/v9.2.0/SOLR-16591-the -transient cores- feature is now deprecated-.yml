@@ -1,0 +1,9 @@
+title: The "Transient Cores" feature is now deprecated. In solr.xml "&lt;transientCoreCacheFactory&gt;"
+  no longer works; it wasn't documented either. Some internals were changed as well
+  to simplify the standard case of having no transient cores.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-16591
+  url: https://issues.apache.org/jira/browse/SOLR-16591

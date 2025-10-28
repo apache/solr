@@ -1,0 +1,8 @@
+title: Fix false positive race condition in `/health?requireHealthyCores=true` during
+  core loading
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-17200
+  url: https://issues.apache.org/jira/browse/SOLR-17200

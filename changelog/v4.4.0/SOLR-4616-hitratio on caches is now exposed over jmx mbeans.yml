@@ -1,0 +1,7 @@
+title: HitRatio on caches is now exposed over JMX MBeans as a float.
+type: fixed
+authors:
+- name: Greg Bowyer
+links:
+- name: SOLR-4616
+  url: https://issues.apache.org/jira/browse/SOLR-4616

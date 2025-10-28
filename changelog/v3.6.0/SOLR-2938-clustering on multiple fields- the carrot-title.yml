@@ -1,0 +1,8 @@
+title: Clustering on multiple fields. The carrot.title and carrot.snippet can now
+  take comma- or space-separated lists of field names to cluster
+type: fixed
+authors:
+- name: Stanislaw Osinski
+links:
+- name: SOLR-2938
+  url: https://issues.apache.org/jira/browse/SOLR-2938

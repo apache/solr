@@ -1,0 +1,7 @@
+title: UIMAToSolrMapper wrongly instantiates Type with reflection.
+type: fixed
+authors:
+- name: Tommaso Teofili
+links:
+- name: SOLR-2581
+  url: https://issues.apache.org/jira/browse/SOLR-2581

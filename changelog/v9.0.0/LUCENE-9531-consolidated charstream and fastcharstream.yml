@@ -1,0 +1,8 @@
+title: 'Consolidated CharStream and FastCharStream classes: these have been moved
+  from each query parser package to org.apache.lucene.queryparser.charstream'
+type: other
+authors:
+- name: Dawid Weiss
+links:
+- name: LUCENE-9531
+  url: https://issues.apache.org/jira/browse/LUCENE-9531

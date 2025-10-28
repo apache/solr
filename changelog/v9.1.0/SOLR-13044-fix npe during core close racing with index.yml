@@ -1,0 +1,8 @@
+title: Fix NPE during core close racing with index replication check.
+type: fixed
+authors:
+- name: David Smiley
+- name: hossman
+links:
+- name: SOLR-13044
+  url: https://issues.apache.org/jira/browse/SOLR-13044

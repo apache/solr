@@ -1,0 +1,8 @@
+title: Do not fetch non-stored fields
+type: fixed
+authors:
+- name: Nikolay Khitrin
+- name: Erick Erickson
+links:
+- name: SOLR-12598
+  url: https://issues.apache.org/jira/browse/SOLR-12598

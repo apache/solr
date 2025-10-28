@@ -1,0 +1,7 @@
+title: Remove dead, unused log rotation code from SolrCLI
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-15728
+  url: https://issues.apache.org/jira/browse/SOLR-15728

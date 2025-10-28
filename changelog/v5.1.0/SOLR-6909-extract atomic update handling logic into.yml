@@ -1,0 +1,9 @@
+title: Extract atomic update handling logic into AtomicUpdateDocumentMerger class
+  and enable subclassing.
+type: added
+authors:
+- name: Steve Davids
+- name: yonik
+links:
+- name: SOLR-6909
+  url: https://issues.apache.org/jira/browse/SOLR-6909

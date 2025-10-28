@@ -1,0 +1,9 @@
+title: CommonGramsFilterFactory/CommonGramsQueryFilterFactory for speeding up phrase
+  queries containing common words by indexing n-grams and using them at query time.
+type: added
+authors:
+- name: Tom Burton-West
+- name: Jason Rutherglen
+links:
+- name: SOLR-908
+  url: https://issues.apache.org/jira/browse/SOLR-908

@@ -1,0 +1,7 @@
+title: Hardened MDC logging; sometimes info was absent
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-14351
+  url: https://issues.apache.org/jira/browse/SOLR-14351

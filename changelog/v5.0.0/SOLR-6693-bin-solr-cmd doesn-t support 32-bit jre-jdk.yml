@@ -1,0 +1,10 @@
+title: bin\solr.cmd doesn't support 32-bit JRE/JDK running on Windows due to parenthesis
+  in JAVA_HOME.
+type: fixed
+authors:
+- name: Timothy Potter
+- name: Christopher Hewitt
+- name: Jan Høydahl
+links:
+- name: SOLR-6693
+  url: https://issues.apache.org/jira/browse/SOLR-6693

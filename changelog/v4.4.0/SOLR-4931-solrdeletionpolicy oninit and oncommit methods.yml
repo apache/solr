@@ -1,0 +1,8 @@
+title: SolrDeletionPolicy onInit and onCommit methods changed to override exact signatures
+  (with generics) from IndexDeletionPolicy
+type: other
+authors:
+- name: shalin
+links:
+- name: SOLR-4931
+  url: https://issues.apache.org/jira/browse/SOLR-4931

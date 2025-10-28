@@ -1,0 +1,9 @@
+title: Fixed ZkClientClusterStateProvider to prevent risk of leaking ZkStateReader/threads
+  when processing concurrent requests during shutdown. This primarily affected tests,
+  but may have also caused odd errors/delays when restart/shutting down solr nodes.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-13393
+  url: https://issues.apache.org/jira/browse/SOLR-13393

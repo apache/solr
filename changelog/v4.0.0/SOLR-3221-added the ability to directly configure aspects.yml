@@ -1,0 +1,12 @@
+title: Added the ability to directly configure aspects of the concurrency and thread-pooling
+  used within distributed search in solr. This allows for finer grained controlled
+  and can be tuned by end users to target their own specific requirements. This builds
+  on the work of the HttpCommComponent and uses the same configuration block to configure
+  the thread pool. The default configuration has the same behaviour as solr 3.5, favouring
+  throughput over latency. More information can be found on the wiki (http://wiki.apache.org/solr/SolrConfigXml)
+type: added
+authors:
+- name: Greg Bowyer
+links:
+- name: SOLR-3221
+  url: https://issues.apache.org/jira/browse/SOLR-3221

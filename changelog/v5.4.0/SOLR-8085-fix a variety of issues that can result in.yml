@@ -1,0 +1,8 @@
+title: Fix a variety of issues that can result in replicas getting out of sync.
+type: fixed
+authors:
+- name: yonik
+- name: Mark Miller
+links:
+- name: SOLR-8085
+  url: https://issues.apache.org/jira/browse/SOLR-8085

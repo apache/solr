@@ -1,0 +1,7 @@
+title: OTEL configurator NPE when SOLR_HOST not set
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-16997
+  url: https://issues.apache.org/jira/browse/SOLR-16997

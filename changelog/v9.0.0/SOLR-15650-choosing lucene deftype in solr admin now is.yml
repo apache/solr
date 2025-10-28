@@ -1,0 +1,8 @@
+title: Choosing lucene defType in Solr Admin now is passed explicitly through UI,
+  not relying on default solrconfig.xml behavior.
+type: changed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-15650
+  url: https://issues.apache.org/jira/browse/SOLR-15650

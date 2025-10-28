@@ -1,0 +1,7 @@
+title: CloudSolrServer - ZK timeout arguments passed to ZkStateReader are flipped.
+type: fixed
+authors:
+- name: Ricardo Merizalde
+links:
+- name: SOLR-5349
+  url: https://issues.apache.org/jira/browse/SOLR-5349

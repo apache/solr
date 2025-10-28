@@ -1,0 +1,8 @@
+title: Support add/update/delete field types in Admin UI Schema page.
+type: added
+authors:
+- name: Ahmet Can Kepenek
+- name: Eric Pugh
+links:
+- name: SOLR-16005
+  url: https://issues.apache.org/jira/browse/SOLR-16005

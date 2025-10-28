@@ -1,0 +1,8 @@
+title: Fix SignatureUpdateProcessor "all fields" mode to use all fields of each document
+  instead of the fields specified by the first document indexed
+type: fixed
+authors:
+- name: Spyros Kapnissis
+links:
+- name: SOLR-3200
+  url: https://issues.apache.org/jira/browse/SOLR-3200

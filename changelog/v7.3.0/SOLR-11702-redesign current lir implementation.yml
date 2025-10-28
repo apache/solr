@@ -1,0 +1,8 @@
+title: Redesign current LIR implementation
+type: added
+authors:
+- name: Cao Manh Dat
+- name: shalin
+links:
+- name: SOLR-11702
+  url: https://issues.apache.org/jira/browse/SOLR-11702

@@ -1,0 +1,9 @@
+title: Solr's zkcli scripts now able to find the metrics libraries, which it couldn't
+  earlier
+type: fixed
+authors:
+- name: kiran
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-10302
+  url: https://issues.apache.org/jira/browse/SOLR-10302

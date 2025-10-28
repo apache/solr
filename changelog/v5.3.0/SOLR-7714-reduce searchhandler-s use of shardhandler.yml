@@ -1,0 +1,8 @@
+title: Reduce SearchHandler's use of ShardHandler objects across shards in a search,
+  from one for each shard and the federator, to just one for the federator.
+type: changed
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-7714
+  url: https://issues.apache.org/jira/browse/SOLR-7714

@@ -1,0 +1,8 @@
+title: Allow CharTokenizer-derived tokenizers and KeywordTokenizer to configure the
+  max token length.
+type: other
+authors:
+- name: Amrit Sarkar
+links:
+- name: LUCENE-7705
+  url: https://issues.apache.org/jira/browse/LUCENE-7705

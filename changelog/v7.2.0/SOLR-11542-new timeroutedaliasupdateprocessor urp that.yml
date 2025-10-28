@@ -1,0 +1,8 @@
+title: New TimeRoutedAliasUpdateProcessor URP that routes documents to another collection
+  in the same Alias defined set based on a time field (currently an internal feature).
+type: added
+authors:
+- name: David Smiley
+links:
+- name: SOLR-11542
+  url: https://issues.apache.org/jira/browse/SOLR-11542

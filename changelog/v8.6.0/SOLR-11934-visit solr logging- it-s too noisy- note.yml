@@ -1,0 +1,8 @@
+title: Visit Solr logging, it's too noisy. Note particularly that the messages for
+  opening a new searcher have changed and include the autowarm time.
+type: other
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-11934
+  url: https://issues.apache.org/jira/browse/SOLR-11934

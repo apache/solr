@@ -1,0 +1,8 @@
+title: Fail when parsing an invalid custom permission definition from security.json
+type: changed
+authors:
+- name: janhoy
+- name: Uwe Schindler
+links:
+- name: SOLR-16907
+  url: https://issues.apache.org/jira/browse/SOLR-16907

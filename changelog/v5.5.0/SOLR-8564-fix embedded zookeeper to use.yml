@@ -1,0 +1,6 @@
+title: Fix Embedded ZooKeeper to use &lt;solrHome&gt;/zoo_data for it's data directory
+type: fixed
+authors: []
+links:
+- name: SOLR-8564
+  url: https://issues.apache.org/jira/browse/SOLR-8564

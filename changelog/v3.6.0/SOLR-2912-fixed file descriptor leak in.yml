@@ -1,0 +1,8 @@
+title: Fixed File descriptor leak in ShowFileRequestHandler
+type: fixed
+authors:
+- name: Michael Ryan
+- name: shalin
+links:
+- name: SOLR-2912
+  url: https://issues.apache.org/jira/browse/SOLR-2912

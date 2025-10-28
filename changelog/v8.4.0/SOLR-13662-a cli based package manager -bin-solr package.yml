@@ -1,0 +1,10 @@
+title: A CLI based Package Manager ("bin/solr package help" for more details).
+type: added
+authors:
+- name: Ishan Chattopadhyaya
+- name: noble
+- name: David Smiley
+- name: Jan Hoydahl
+links:
+- name: SOLR-13662
+  url: https://issues.apache.org/jira/browse/SOLR-13662

@@ -1,0 +1,8 @@
+title: Update commons-io dependency to the latest 2.4 version
+type: other
+authors:
+- name: Steve Rowe
+- name: Shawn Heisey
+links:
+- name: SOLR-6578
+  url: https://issues.apache.org/jira/browse/SOLR-6578

@@ -1,0 +1,8 @@
+title: Switch trie numeric/date fields to points in data-driven-enabled example and
+  test schemas.
+type: other
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-10761
+  url: https://issues.apache.org/jira/browse/SOLR-10761

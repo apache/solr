@@ -1,0 +1,13 @@
+title: Added UnifiedSolrHighlighter, a highlighter adapter for Lucene's UnifiedHighlighter.
+  The adapter is a derivative of the PostingsSolrHighlighter, supporting mostly the
+  same parameters with some differences. Introduced "hl.method" parameter which can
+  be set to original|fastVector|postings|unified to pick the highlighter at runtime
+  without the need to modify solrconfig from the default configuration. hl.useFastVectorHighlighter
+  is now considered deprecated in lieu of hl.method=fastVector.
+type: added
+authors:
+- name: Timothy Rodriguez
+- name: David Smiley
+links:
+- name: SOLR-9708
+  url: https://issues.apache.org/jira/browse/SOLR-9708

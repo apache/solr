@@ -1,0 +1,7 @@
+title: Fixed NPE when using non-numeric range query in deleteByQuery
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-9235
+  url: https://issues.apache.org/jira/browse/SOLR-9235

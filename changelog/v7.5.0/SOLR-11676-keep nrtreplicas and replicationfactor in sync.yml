@@ -1,0 +1,8 @@
+title: Keep nrtReplicas and replicationFactor in sync while creating a collection
+  and modifying a collection
+type: fixed
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-11676
+  url: https://issues.apache.org/jira/browse/SOLR-11676

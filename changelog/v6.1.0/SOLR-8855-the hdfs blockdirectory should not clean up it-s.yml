@@ -1,0 +1,7 @@
+title: The HDFS BlockDirectory should not clean up it's cache on shutdown.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-8855
+  url: https://issues.apache.org/jira/browse/SOLR-8855

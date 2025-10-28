@@ -1,0 +1,10 @@
+title: Enhance assertJQ to allow individual tests to specify the tolerance delta used
+  in numeric equalities. This allows for slight variance in asserting score comparisons
+  in unit tests.
+type: other
+authors:
+- name: David Smiley
+- name: Chris Hostetter
+links:
+- name: SOLR-2451
+  url: https://issues.apache.org/jira/browse/SOLR-2451

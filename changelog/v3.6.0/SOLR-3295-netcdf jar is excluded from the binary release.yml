@@ -1,0 +1,9 @@
+title: netcdf jar is excluded from the binary release (and disabled in ivy.xml) because
+  it requires java 6. If you want to parse this content with extracting request handler
+  and are willing to use java 6, just add the jar.
+type: other
+authors:
+- name: rmuir
+links:
+- name: SOLR-3295
+  url: https://issues.apache.org/jira/browse/SOLR-3295

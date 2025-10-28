@@ -1,0 +1,7 @@
+title: Fix or suppress warnings in apache/solr/update
+type: other
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-14545
+  url: https://issues.apache.org/jira/browse/SOLR-14545

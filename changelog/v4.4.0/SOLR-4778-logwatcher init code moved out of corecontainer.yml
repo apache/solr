@@ -1,0 +1,7 @@
+title: LogWatcher init code moved out of CoreContainer
+type: other
+authors:
+- name: Alan Woodward
+links:
+- name: SOLR-4778
+  url: https://issues.apache.org/jira/browse/SOLR-4778

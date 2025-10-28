@@ -1,0 +1,7 @@
+title: 'Prometheus Exporter: Use HTTP2 Solr clients.'
+type: changed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16404
+  url: https://issues.apache.org/jira/browse/SOLR-16404

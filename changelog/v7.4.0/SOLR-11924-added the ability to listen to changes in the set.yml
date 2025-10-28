@@ -1,0 +1,9 @@
+title: Added the ability to listen to changes in the set of active collections in
+  a cloud in the ZkStateReader, through the CloudCollectionsListener.
+type: added
+authors:
+- name: Houston Putman
+- name: Dennis Gove
+links:
+- name: SOLR-11924
+  url: https://issues.apache.org/jira/browse/SOLR-11924

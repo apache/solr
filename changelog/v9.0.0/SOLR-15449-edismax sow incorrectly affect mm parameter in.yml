@@ -1,0 +1,9 @@
+title: Edismax sow incorrectly affect mm parameter in multi field search
+type: fixed
+authors:
+- name: Alessandro Benedetti
+- name: Michael Gibney
+- name: David Smiley
+links:
+- name: SOLR-15449
+  url: https://issues.apache.org/jira/browse/SOLR-15449

@@ -1,0 +1,8 @@
+title: Due to the introduction of LIR redesign since Solr 7.3 (SOLR-11702) and the
+  removing of old LIR implementation in Solr 8. Rolling updates are not possible unless
+  all nodes must be on Solr 7.3 or higher. If not updates can be lost.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-11702
+  url: https://issues.apache.org/jira/browse/SOLR-11702

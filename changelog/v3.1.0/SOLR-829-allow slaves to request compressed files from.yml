@@ -1,0 +1,9 @@
+title: Allow slaves to request compressed files from master during replication
+type: added
+authors:
+- name: Simon Collins
+- name: Noble Paul
+- name: Akshay Ukey
+links:
+- name: SOLR-829
+  url: https://issues.apache.org/jira/browse/SOLR-829

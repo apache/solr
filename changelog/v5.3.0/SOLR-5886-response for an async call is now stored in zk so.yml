@@ -1,0 +1,9 @@
+title: Response for an async call is now stored in zk so that it can be returned by
+  the REQUESTSTATUS API. Also, the number of stored (failed and successful) responses
+  are now restricted to 10,000 each as a safety net.
+type: added
+authors:
+- name: Anshum Gupta
+links:
+- name: SOLR-5886
+  url: https://issues.apache.org/jira/browse/SOLR-5886

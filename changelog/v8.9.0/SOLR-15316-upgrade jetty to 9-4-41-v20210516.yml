@@ -1,0 +1,8 @@
+title: Upgrade Jetty to 9.4.41.v20210516
+type: other
+authors:
+- name: janhoy
+- name: Mike Drob
+links:
+- name: SOLR-15316
+  url: https://issues.apache.org/jira/browse/SOLR-15316

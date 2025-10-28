@@ -1,0 +1,9 @@
+title: Provide a cluster_id label for all metrics exposed by the Solr Prometheus Exporter,
+  making it possible to filter Grafana board by cluster
+type: changed
+authors:
+- name: janhoy
+- name: Houston Putman
+links:
+- name: SOLR-16340
+  url: https://issues.apache.org/jira/browse/SOLR-16340

@@ -1,0 +1,9 @@
+title: UpdateLog lazy creates VersionBucket large array, and VersionBucket do not
+  keep the highest version anymore. This optimization reduces the memory usage, specially
+  when the SolrCore is not used for indexing
+type: changed
+authors:
+- name: Bruno Roustant
+links:
+- name: SOLR-17036
+  url: https://issues.apache.org/jira/browse/SOLR-17036

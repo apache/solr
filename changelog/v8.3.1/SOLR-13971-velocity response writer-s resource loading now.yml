@@ -1,0 +1,9 @@
+title: Velocity response writer's resource loading now possible only through startup
+  parameters.
+type: fixed
+authors:
+- name: Ishan Chattopadhyaya
+- name: David Smiley
+links:
+- name: SOLR-13971
+  url: https://issues.apache.org/jira/browse/SOLR-13971

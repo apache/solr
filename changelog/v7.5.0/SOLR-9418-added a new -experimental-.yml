@@ -1,0 +1,10 @@
+title: Added a new (experimental) PhrasesIdentificationComponent for identifying potential
+  phrases in query input based on overlapping shingles in the index.
+type: added
+authors:
+- name: Akash Mehta
+- name: Trey Grainger
+- name: hossman
+links:
+- name: SOLR-9418
+  url: https://issues.apache.org/jira/browse/SOLR-9418

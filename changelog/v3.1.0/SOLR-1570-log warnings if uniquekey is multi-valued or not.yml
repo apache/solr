@@ -1,0 +1,8 @@
+title: Log warnings if uniqueKey is multi-valued or not stored
+type: other
+authors:
+- name: hossman
+- name: shalin
+links:
+- name: SOLR-1570
+  url: https://issues.apache.org/jira/browse/SOLR-1570

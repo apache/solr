@@ -1,0 +1,9 @@
+title: Snapshots numberToKeep param only keeps n-1 backups.
+type: fixed
+authors:
+- name: Mathias H.
+- name: Ramana
+- name: Varun Thacker
+links:
+- name: SOLR-6214
+  url: https://issues.apache.org/jira/browse/SOLR-6214

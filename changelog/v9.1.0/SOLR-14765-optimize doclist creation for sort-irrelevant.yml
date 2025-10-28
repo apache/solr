@@ -1,0 +1,11 @@
+title: Optimize DocList creation for sort-irrelevant cases. This issue also reworks
+  the building and caching of liveDocs in SolrIndexSearcher, and refines/clarifies
+  the effect of `useFilterForSortedQuery`
+type: changed
+authors:
+- name: Michael Gibney
+- name: Mike Drob
+- name: David Smiley
+links:
+- name: SOLR-14765
+  url: https://issues.apache.org/jira/browse/SOLR-14765

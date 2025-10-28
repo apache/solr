@@ -1,0 +1,11 @@
+title: Python client cannot parse proxied response when served by Tomcat.
+type: fixed
+authors:
+- name: Patrick Hunt
+- name: Gregory Chanan
+- name: Vamsee Yarlagadda
+- name: Romain Rigaux
+- name: Mark Miller
+links:
+- name: SOLR-5442
+  url: https://issues.apache.org/jira/browse/SOLR-5442

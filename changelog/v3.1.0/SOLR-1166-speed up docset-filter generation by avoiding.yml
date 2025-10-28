@@ -1,0 +1,8 @@
+title: Speed up docset/filter generation by avoiding top-level score() call and iterating
+  over leaf readers with TermDocs.
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-1166
+  url: https://issues.apache.org/jira/browse/SOLR-1166

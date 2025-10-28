@@ -1,0 +1,8 @@
+title: Distributed pivot facet refinement was broken due to a single correlation counter
+  used across multiple requests as if it was private to each request.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-7614
+  url: https://issues.apache.org/jira/browse/SOLR-7614

@@ -1,0 +1,7 @@
+title: Removed redundant lines for handling lists in JSON reponse writers.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-12333
+  url: https://issues.apache.org/jira/browse/SOLR-12333

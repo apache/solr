@@ -1,0 +1,10 @@
+title: Specialized faceting for fields which are declared as multi-valued in the schema
+  but are actually single-valued.
+type: changed
+authors:
+- name: Adrien Grand
+links:
+- name: LUCENE-5300
+  url: https://issues.apache.org/jira/browse/LUCENE-5300
+- name: LUCENE-5304
+  url: https://issues.apache.org/jira/browse/LUCENE-5304

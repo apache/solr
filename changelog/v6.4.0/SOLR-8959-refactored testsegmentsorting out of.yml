@@ -1,0 +1,7 @@
+title: Refactored TestSegmentSorting out of TestMiniSolrCloudCluster
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-8959
+  url: https://issues.apache.org/jira/browse/SOLR-8959

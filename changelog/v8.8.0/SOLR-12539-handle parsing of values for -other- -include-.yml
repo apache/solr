@@ -1,0 +1,9 @@
+title: Handle parsing of values for 'other', 'include', and 'excludeTags' in JSON
+  facets when specified as comma-separated values with extra spaces
+type: fixed
+authors:
+- name: hossman
+- name: Munendra S N
+links:
+- name: SOLR-12539
+  url: https://issues.apache.org/jira/browse/SOLR-12539
