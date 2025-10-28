@@ -172,6 +172,11 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * The deprecated transient Solr cores capability has been removed.  (SOLR-17932)
 
+* TikaLanguageIdentifierUpdateProcessor, which was deprecated in 9.10, has been removed. Users should use LangDetectLanguageIdentifierUpdateProcessor or OpenNLPLangDetectUpdateProcessor instead for language detection. (SOLR-17960)
+
+* LocalTikaExtractionBackend, which was deprecated in 9.10, has been removed. The 'tikaserver' extraction backend is now the only supported backend for the ExtractingRequestHandler, and the default. Users must configure a Tika Server URL via the `tikaserver.url` parameter. (SOLR-17961)
++
++NOTE: The previous parse-context-based configuration (`parseContext.config`) is no longer supported. Tika parser-specific properties must now be configured directly on the Tika Server itself, rather than through Solr configuration. Please refer to the Tika Server documentation for details on how to set these properties.
 
 === Security
 
@@ -189,7 +194,7 @@ Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-lif
 
 === Docker
 
-The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 24 (noble) from Ubuntu 22 (jammy).
+The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 24 (noble) from Ubuntu 22 (jammy). The Docker base image is `eclipse-temurin:25-jre-noble`.
 
 === Miscellaneous
 
