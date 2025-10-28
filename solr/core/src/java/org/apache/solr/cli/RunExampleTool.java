@@ -290,7 +290,7 @@ public class RunExampleTool extends ToolBase {
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
     boolean isCloudMode = cli.hasOption('c');
-    String zkHost = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "z", "zkHost", null);
+    String zkHost = SolrCLI.getCliOptionOrPropValue(cli, SolrCLI.OPTION_ZKHOST, "zkHost", null);
     int port =
         Integer.parseInt(
             cli.getOptionValue('p', System.getenv().getOrDefault("SOLR_PORT", "8983")));
@@ -565,7 +565,7 @@ public class RunExampleTool extends ToolBase {
     }
 
     // deal with extra args passed to the script to run the example
-    String zkHost = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "z", "zkHost", null);
+    String zkHost = SolrCLI.getCliOptionOrPropValue(cli, SolrCLI.OPTION_ZKHOST, "zkHost", null);
 
     // start the first node (most likely with embedded ZK)
     Map<String, Object> nodeStatus =

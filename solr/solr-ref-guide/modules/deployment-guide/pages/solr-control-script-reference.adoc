@@ -557,13 +557,10 @@ Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper co
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `localhost:9983`
+|Optional |Default: `localhost:9983` if env var `ZK_HOST` is not set.
 |===
 +
 ZooKeeper connection string.
-If you are running Solr on a port other than 8983, you will have to specify the ZooKeeper connection string.
-By default, this will be the Solr port + 1000.
-This parameter is unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `bin/solr healthcheck -z localhost:2181`
 
@@ -1282,6 +1279,17 @@ Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost] [-s 
 NOTE: Solr should have been started at least once before issuing these commands to initialize ZooKeeper with the znodes Solr expects.
 Once ZooKeeper is initialized, Solr doesn't need to be running on any node to use these commands.
 
+=== ZooKeeper Connection String
+
+All `bin/solr zk` sub-commands require a ZooKeeper connection string to function. You can provide this in three ways, in order of precedence:
+
+1. Explicitly pass the `-z` or `--zk-host` option: `bin/solr zk <command> -z <zkHost>`
+2. Set the `ZK_HOST` environment variable: `export ZK_HOST=<zkHost>`
+3. Define `ZK_HOST` in `solr.in.sh` (or `solr.in.cmd` on Windows)
+4. If none are provided, the tools will default to `localhost:2181`
+
+This means if you have `ZK_HOST` configured in your environment, you do not need to pass the `-z` option to every command.
+
 === Upload a Configuration Set
 
 Use the `zk upconfig` command to upload one of the pre-configured configuration sets or a customized configuration set to ZooKeeper.
@@ -1329,11 +1337,10 @@ An absolute path may be supplied instead.
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Is not required if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1401,11 +1408,10 @@ In either case, _pre-existing configurations at the destination will be overwrit
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1485,11 +1491,10 @@ If `<dest>` ends in a slash character it names a directory.
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1568,11 +1573,10 @@ The path is assumed to be a ZooKeeper node, no `zk:` prefix is necessary.
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1626,11 +1630,10 @@ The `zk:` prefix is assumed.
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1681,11 +1684,10 @@ The path on ZooKeeper to list.
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1730,11 +1732,10 @@ A leading slash is assumed if not present.
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
