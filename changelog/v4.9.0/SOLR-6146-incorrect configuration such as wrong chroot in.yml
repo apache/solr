@@ -1,0 +1,10 @@
+title: Incorrect configuration such as wrong chroot in zk server address can cause
+  CloudSolrServer to leak resources.
+type: fixed
+authors:
+- name: Jessica Cheng
+- name: Varun Thacker
+- name: shalin
+links:
+- name: SOLR-6146
+  url: https://issues.apache.org/jira/browse/SOLR-6146

@@ -1,0 +1,7 @@
+title: v2 APIs no longer return the incorrect content-type when 'wt=json' specified
+type: fixed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-17317
+  url: https://issues.apache.org/jira/browse/SOLR-17317

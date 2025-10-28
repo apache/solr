@@ -1,0 +1,10 @@
+title: Fix 'bq' parsing in edismax. Please note that this required reverting the negative
+  boost support added by SOLR-3278
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-3823
+  url: https://issues.apache.org/jira/browse/SOLR-3823
+- name: SOLR-3278
+  url: https://issues.apache.org/jira/browse/SOLR-3278

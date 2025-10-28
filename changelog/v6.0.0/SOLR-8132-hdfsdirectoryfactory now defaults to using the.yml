@@ -1,0 +1,7 @@
+title: HDFSDirectoryFactory now defaults to using the global block cache.
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-8132
+  url: https://issues.apache.org/jira/browse/SOLR-8132

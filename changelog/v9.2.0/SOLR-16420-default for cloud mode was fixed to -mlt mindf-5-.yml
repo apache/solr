@@ -1,0 +1,8 @@
+title: Default for cloud mode was fixed to `{!mlt mindf=5}` to comply with Reference
+  Guide
+type: fixed
+authors:
+- name: Mikhail Khludnev
+links:
+- name: SOLR-16420
+  url: https://issues.apache.org/jira/browse/SOLR-16420

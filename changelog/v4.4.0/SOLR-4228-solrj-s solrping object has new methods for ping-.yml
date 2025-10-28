@@ -1,0 +1,9 @@
+title: SolrJ's SolrPing object has new methods for ping, enable, and disable.
+type: added
+authors:
+- name: Shawn Heisey
+- name: hossman
+- name: Steve Rowe
+links:
+- name: SOLR-4228
+  url: https://issues.apache.org/jira/browse/SOLR-4228

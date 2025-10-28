@@ -1,0 +1,7 @@
+title: Auto configure tracer without a &lt;tracerConfig&gt; tag in solr.xml
+type: changed
+authors:
+- name: Alex Deparvu
+links:
+- name: SOLR-16938
+  url: https://issues.apache.org/jira/browse/SOLR-16938

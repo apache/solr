@@ -1,0 +1,9 @@
+title: CollapsingQParserPlugin scores incorrectly when multiple sort criteria are
+  used
+type: fixed
+authors:
+- name: Brandon Chapman
+- name: Joel Bernstein
+links:
+- name: SOLR-5408
+  url: https://issues.apache.org/jira/browse/SOLR-5408

@@ -1,0 +1,8 @@
+title: 'A number of v2 "replica" endpoints have been updated to be more REST-ful,
+  and hopefully, intuitive. ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop
+  {"value": $val}` DELETEREPLICAPROP is now `DELETE /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop`'
+type: changed
+authors: []
+links:
+- name: SOLR-16392
+  url: https://issues.apache.org/jira/browse/SOLR-16392

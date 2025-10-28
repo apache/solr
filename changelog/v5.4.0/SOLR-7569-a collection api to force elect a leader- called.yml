@@ -1,0 +1,11 @@
+title: A collection API to force elect a leader, called FORCELEADER, when all replicas
+  in a shard are down
+type: added
+authors:
+- name: Ishan Chattopadhyaya
+- name: Mark Miller
+- name: shalin
+- name: noble
+links:
+- name: SOLR-7569
+  url: https://issues.apache.org/jira/browse/SOLR-7569

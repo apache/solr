@@ -1,0 +1,7 @@
+title: Fix contrib/ltr Normalizer persistence after solr core reload or restart.
+type: fixed
+authors:
+- name: Yuki Yano
+links:
+- name: SOLR-11163
+  url: https://issues.apache.org/jira/browse/SOLR-11163

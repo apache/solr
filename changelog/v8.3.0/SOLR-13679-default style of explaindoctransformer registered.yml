@@ -1,0 +1,8 @@
+title: Default style of ExplainDocTransformer registered via solrconfig.xml should
+  be same as default style of ExplainDocTransformer registered in defaultFactories
+type: fixed
+authors:
+- name: Munendra S N
+links:
+- name: SOLR-13679
+  url: https://issues.apache.org/jira/browse/SOLR-13679

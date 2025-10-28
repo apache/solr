@@ -1,0 +1,9 @@
+title: Add support for MoreLikeThis queries and responses in SolrJ client.
+type: added
+authors:
+- name: Maurice Jumelet
+- name: Bill Mitchell
+- name: Cao Manh Dat
+links:
+- name: SOLR-1085
+  url: https://issues.apache.org/jira/browse/SOLR-1085

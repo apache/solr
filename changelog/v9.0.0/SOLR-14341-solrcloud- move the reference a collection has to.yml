@@ -1,0 +1,10 @@
+title: 'SolrCloud: move the reference a collection has to a configSet in ZooKeeper
+  from the collections/collectionName into its state.json. For many-collection clusters,
+  this is an optimization when the cluster status is fetched.'
+type: other
+authors:
+- name: Nazerke Seidan
+- name: David Smiley
+links:
+- name: SOLR-14341
+  url: https://issues.apache.org/jira/browse/SOLR-14341

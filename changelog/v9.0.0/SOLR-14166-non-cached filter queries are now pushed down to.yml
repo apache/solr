@@ -1,0 +1,8 @@
+title: Non-cached filter queries are now pushed down to Lucene, possibly benefiting
+  from TwoPhaseIterator, which can make a big difference for some queries.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-14166
+  url: https://issues.apache.org/jira/browse/SOLR-14166

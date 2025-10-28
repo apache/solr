@@ -1,0 +1,8 @@
+title: Standardize Builder method names on SolrClient's to use the with pattern, deprecating
+  the use of set or bare property name.
+type: changed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-16590
+  url: https://issues.apache.org/jira/browse/SOLR-16590

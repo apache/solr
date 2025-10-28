@@ -1,0 +1,9 @@
+title: v2 API error messages list the URL request path as /solr/____v2/... when the
+  original path was /v2/...
+type: added
+authors:
+- name: Cao Manh Dat
+- name: noble
+links:
+- name: SOLR-10406
+  url: https://issues.apache.org/jira/browse/SOLR-10406

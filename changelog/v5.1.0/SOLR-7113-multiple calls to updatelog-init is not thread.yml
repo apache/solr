@@ -1,0 +1,9 @@
+title: Multiple calls to UpdateLog#init is not thread safe with respect to the HDFS
+  FileSystem client object usage.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Vamsee Yarlagadda
+links:
+- name: SOLR-7113
+  url: https://issues.apache.org/jira/browse/SOLR-7113

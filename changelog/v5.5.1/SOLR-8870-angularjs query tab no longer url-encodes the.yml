@@ -1,0 +1,9 @@
+title: AngularJS Query tab no longer URL-encodes the /select part of the request,
+  fixing possible 404 issue when Solr is behind a proxy. Also, now supports old-style
+  &qt param when handler not prefixed with "/"
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-8870
+  url: https://issues.apache.org/jira/browse/SOLR-8870

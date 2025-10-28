@@ -1,0 +1,7 @@
+title: Using HDFS's FileSystem.newInstance does not guarantee a new instance.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-7286
+  url: https://issues.apache.org/jira/browse/SOLR-7286

@@ -1,0 +1,9 @@
+title: When a core is registering in ZooKeeper it may not wait long enough to find
+  the leader due to how long the potential leader waits to see replicas.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Alain Rogister
+links:
+- name: SOLR-4158
+  url: https://issues.apache.org/jira/browse/SOLR-4158

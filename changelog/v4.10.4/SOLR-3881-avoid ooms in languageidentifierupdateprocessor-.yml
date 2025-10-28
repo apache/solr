@@ -1,0 +1,13 @@
+title: 'Avoid OOMs in LanguageIdentifierUpdateProcessor: - Added langid.maxFieldValueChars
+  and langid.maxTotalChars params to limit input, by default 10k and 20k chars, respectively.
+  - Moved input concatenation to Tika implementation; the langdetect implementation
+  instead appends each input piece via the langdetect API.'
+type: fixed
+authors:
+- name: Vitaliy Zhovtyuk
+- name: Tomás Fernández Löbbe
+- name: Rob Tulloh
+- name: Steve Rowe
+links:
+- name: SOLR-3881
+  url: https://issues.apache.org/jira/browse/SOLR-3881

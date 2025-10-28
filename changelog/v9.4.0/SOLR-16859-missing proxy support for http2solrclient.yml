@@ -1,0 +1,7 @@
+title: Missing Proxy support for Http2SolrClient
+type: fixed
+authors:
+- name: Alex Deparvu
+links:
+- name: SOLR-16859
+  url: https://issues.apache.org/jira/browse/SOLR-16859

@@ -1,0 +1,12 @@
+title: 'Fixed a bug in how default/appends/invariants params were affecting the set
+  of all "keys" found in the request parameters, resulting in some key=value param
+  pairs being duplicated. This was noticeably affecting some areas of the code where
+  iteration was done over the set of all params: - literal.* in ExtractingRequestHandler
+  - facet.* in FacetComponent - spellcheck.[dictionary name].* and spellcheck.collateParam.*
+  in SpellCheckComponent - olap.* in AnalyticsComponent'
+type: fixed
+authors:
+- name: Alexandre Rafalovitch & hossman
+links:
+- name: SOLR-6780
+  url: https://issues.apache.org/jira/browse/SOLR-6780

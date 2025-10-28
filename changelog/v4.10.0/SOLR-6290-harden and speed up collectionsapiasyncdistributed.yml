@@ -1,0 +1,8 @@
+title: Harden and speed up CollectionsAPIAsyncDistributedZkTest.
+type: other
+authors:
+- name: Mark Miller
+- name: shalin
+links:
+- name: SOLR-6290
+  url: https://issues.apache.org/jira/browse/SOLR-6290

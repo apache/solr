@@ -1,0 +1,9 @@
+title: DefaultSolrHighlighter now re-uses the document's term vectors instance when
+  highlighting more than one field. Applies to the standard and FVH highlighters.
+type: changed
+authors:
+- name: David Smiley
+- name: Daniel Debray
+links:
+- name: SOLR-5855
+  url: https://issues.apache.org/jira/browse/SOLR-5855

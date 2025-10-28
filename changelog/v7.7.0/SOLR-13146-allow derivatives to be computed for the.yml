@@ -1,0 +1,7 @@
+title: Allow derivatives to be computed for the oscillate Stream Evaluator
+type: changed
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-13146
+  url: https://issues.apache.org/jira/browse/SOLR-13146

@@ -1,0 +1,8 @@
+title: '"ant example" makes no sense anymore - should be "ant server"'
+type: other
+authors:
+- name: Ramkumar Aiyengar
+- name: Timothy Potter
+links:
+- name: SOLR-6926
+  url: https://issues.apache.org/jira/browse/SOLR-6926

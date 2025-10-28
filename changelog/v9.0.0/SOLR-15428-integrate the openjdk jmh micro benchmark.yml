@@ -1,0 +1,8 @@
+title: Integrate the OpenJDK JMH micro benchmark framework for micro benchmarks and
+  performance comparisons and investigation.
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-15428
+  url: https://issues.apache.org/jira/browse/SOLR-15428

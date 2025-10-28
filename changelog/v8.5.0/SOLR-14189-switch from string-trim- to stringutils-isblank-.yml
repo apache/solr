@@ -1,0 +1,7 @@
+title: Switch from String.trim() to StringUtils.isBlank() in query parsers
+type: fixed
+authors:
+- name: Andy Webb
+links:
+- name: SOLR-14189
+  url: https://issues.apache.org/jira/browse/SOLR-14189

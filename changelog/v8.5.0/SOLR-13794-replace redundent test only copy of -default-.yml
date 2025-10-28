@@ -1,0 +1,8 @@
+title: Replace redundent test only copy of '_default' configset with SolrTestCase
+  logic to correctly set 'solr.default.confdir' system property
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-13794
+  url: https://issues.apache.org/jira/browse/SOLR-13794

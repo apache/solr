@@ -1,0 +1,9 @@
+title: Look for solr.xml in Zookeeper by default in SolrCloud mode. If not found,
+  it will be loaded from $SOLR_HOME/solr.xml as before. Sysprop solr.solrxml.location
+  is now gone.
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-7735
+  url: https://issues.apache.org/jira/browse/SOLR-7735

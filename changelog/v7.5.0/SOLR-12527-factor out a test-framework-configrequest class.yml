@@ -1,0 +1,7 @@
+title: factor out a test-framework/ConfigRequest class
+type: other
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-12527
+  url: https://issues.apache.org/jira/browse/SOLR-12527

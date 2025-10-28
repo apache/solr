@@ -1,0 +1,8 @@
+title: Log individual updates (adds and deletes) at the FINE level before adding to
+  the index. Fix a null pointer exception in logging when there was no unique key.
+type: added
+authors:
+- name: David Smiley
+links:
+- name: SOLR-2615
+  url: https://issues.apache.org/jira/browse/SOLR-2615

@@ -1,0 +1,7 @@
+title: MoreLikeThisHandler doesn't work with alternate qparsers.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-2107
+  url: https://issues.apache.org/jira/browse/SOLR-2107

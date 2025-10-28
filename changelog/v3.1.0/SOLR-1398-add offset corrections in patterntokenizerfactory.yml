@@ -1,0 +1,8 @@
+title: Add offset corrections in PatternTokenizerFactory.
+type: fixed
+authors:
+- name: Anders Melchiorsen
+- name: koji
+links:
+- name: SOLR-1398
+  url: https://issues.apache.org/jira/browse/SOLR-1398

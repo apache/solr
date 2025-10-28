@@ -1,0 +1,7 @@
+title: Avoid XPath in parsing elevate.xml
+type: other
+authors:
+- name: Haythem Khiri
+links:
+- name: SOLR-16369
+  url: https://issues.apache.org/jira/browse/SOLR-16369

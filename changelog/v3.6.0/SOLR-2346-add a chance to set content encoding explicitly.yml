@@ -1,0 +1,9 @@
+title: Add a chance to set content encoding explicitly via content type of stream
+  for extracting request handler. This is convenient when Tika's auto detector cannot
+  detect encoding, especially the text file is too short to detect encoding.
+type: added
+authors:
+- name: koji
+links:
+- name: SOLR-2346
+  url: https://issues.apache.org/jira/browse/SOLR-2346

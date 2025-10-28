@@ -1,0 +1,10 @@
+title: Initialize the highest value for all version buckets with the max value from
+  the index or recent updates to avoid unnecessary lookups to the index to check for
+  reordered updates when processing new documents.
+type: changed
+authors:
+- name: Timothy Potter
+- name: yonik
+links:
+- name: SOLR-7332
+  url: https://issues.apache.org/jira/browse/SOLR-7332

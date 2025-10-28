@@ -1,0 +1,7 @@
+title: AbstractDistribZkTestBase can sometimes fail to shut down its ZKServer
+type: other
+authors:
+- name: Alan Woodward
+links:
+- name: SOLR-8253
+  url: https://issues.apache.org/jira/browse/SOLR-8253

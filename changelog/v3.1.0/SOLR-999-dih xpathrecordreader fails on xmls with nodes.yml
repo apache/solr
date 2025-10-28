@@ -1,0 +1,8 @@
+title: DIH XPathRecordReader fails on XMLs with nodes mixed with CDATA content.
+type: fixed
+authors:
+- name: Fergus McMenemie
+- name: Noble Paul
+links:
+- name: SOLR-999
+  url: https://issues.apache.org/jira/browse/SOLR-999

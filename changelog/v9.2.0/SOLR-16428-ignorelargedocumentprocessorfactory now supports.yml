@@ -1,0 +1,11 @@
+title: IgnoreLargeDocumentProcessorFactory now supports a "permissive" mode, where
+  it logs and skips offending documents but doesn't short-circuit the entire batch
+  or return a 4xx error. This mode can be enabled by setting the `permissiveMode`
+  boolean option to `true` in your solrconfig.xml's IgnoreLargeDocumentProcessorFactory
+  declaration.
+type: changed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-16428
+  url: https://issues.apache.org/jira/browse/SOLR-16428

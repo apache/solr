@@ -1,0 +1,8 @@
+title: Improve Solr JDBC Driver to support SQL Clients like DBVisualizer
+type: added
+authors:
+- name: Kevin Risden
+- name: Joel Bernstein
+links:
+- name: SOLR-8502
+  url: https://issues.apache.org/jira/browse/SOLR-8502

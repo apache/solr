@@ -1,0 +1,7 @@
+title: Nullpointer exception in AuditEvent when initialized from AuthorizationContext
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-14198
+  url: https://issues.apache.org/jira/browse/SOLR-14198

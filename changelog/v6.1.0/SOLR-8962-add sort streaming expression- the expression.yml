@@ -1,0 +1,8 @@
+title: Add sort Streaming Expression. The expression takes a single input stream and
+  a comparator and outputs tuples in stable order of the comparator.
+type: added
+authors:
+- name: Dennis Gove
+links:
+- name: SOLR-8962
+  url: https://issues.apache.org/jira/browse/SOLR-8962

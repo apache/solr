@@ -1,0 +1,7 @@
+title: In Admin UI, enable scrolling for overflowing Versions and JVM property values
+type: fixed
+authors:
+- name: Alexandre Rafalovitch
+links:
+- name: SOLR-8911
+  url: https://issues.apache.org/jira/browse/SOLR-8911

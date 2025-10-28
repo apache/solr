@@ -1,0 +1,7 @@
+title: Fixed QueryElevationComponent sorting when used with Grouping
+type: fixed
+authors:
+- name: Michael Garski
+links:
+- name: SOLR-3936
+  url: https://issues.apache.org/jira/browse/SOLR-3936

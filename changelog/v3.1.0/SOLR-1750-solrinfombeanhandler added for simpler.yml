@@ -1,0 +1,9 @@
+title: SolrInfoMBeanHandler added for simpler programmatic access to info currently
+  available from registry.jsp and stats.jsp
+type: added
+authors:
+- name: ehatcher
+- name: hossman
+links:
+- name: SOLR-1750
+  url: https://issues.apache.org/jira/browse/SOLR-1750

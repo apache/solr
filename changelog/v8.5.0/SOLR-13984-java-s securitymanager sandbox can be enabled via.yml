@@ -1,0 +1,7 @@
+title: Java's SecurityManager sandbox can be enabled via environment variable, SOLR_SECURITY_MANAGER_ENABLED=true.
+type: changed
+authors:
+- name: rmuir
+links:
+- name: SOLR-13984
+  url: https://issues.apache.org/jira/browse/SOLR-13984

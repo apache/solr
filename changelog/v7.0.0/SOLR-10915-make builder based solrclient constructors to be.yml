@@ -1,0 +1,10 @@
+title: Make builder based SolrClient constructors to be the only valid way to construct
+  client objects and increase the visibility of builder elements to be protected so
+  extending the builder, and the clients is possible.
+type: other
+authors:
+- name: Jason Gerlowski
+- name: Anshum Gupta
+links:
+- name: SOLR-10915
+  url: https://issues.apache.org/jira/browse/SOLR-10915

@@ -1,0 +1,7 @@
+title: DataImportHandler should write BigInteger and BigDecimal values as strings.
+type: fixed
+authors:
+- name: Anand Sengamalai
+links:
+- name: SOLR-6165
+  url: https://issues.apache.org/jira/browse/SOLR-6165

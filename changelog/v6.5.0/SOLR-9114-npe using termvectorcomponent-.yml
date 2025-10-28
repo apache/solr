@@ -1,0 +1,8 @@
+title: NPE using TermVectorComponent, MoreLikeThisComponent in combination with ExactStatsCache
+type: fixed
+authors:
+- name: Cao Manh Dat
+- name: Varun Thacker
+links:
+- name: SOLR-9114
+  url: https://issues.apache.org/jira/browse/SOLR-9114

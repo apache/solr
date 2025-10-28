@@ -1,0 +1,9 @@
+title: 'lucene/solr query syntax to give any query clause a constant score. General
+  Form: &lt;clause&gt;^=&lt;constant_score&gt; Example: (color:blue color:green)^=2.0
+  text:shoes'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-7218
+  url: https://issues.apache.org/jira/browse/SOLR-7218

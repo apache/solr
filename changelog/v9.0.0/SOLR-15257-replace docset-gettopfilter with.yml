@@ -1,0 +1,12 @@
+title: Replace DocSet.getTopFilter with DocSet.makeQuery. Create DocSetQuery which
+  is a Query and DocSetProducer.
+type: changed
+authors:
+- name: Collins Abanda
+- name: Mike Drob
+- name: Tim Potter
+- name: David Smiley
+- name: Michael Gibney
+links:
+- name: SOLR-15257
+  url: https://issues.apache.org/jira/browse/SOLR-15257

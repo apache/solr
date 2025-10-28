@@ -1,0 +1,9 @@
+title: Allow JSON atomic updates to use multiple modifiers or a modifier like 'set'
+  as a field name if child docs are not enabled.
+type: changed
+authors:
+- name: Calvin Smith
+- name: David Smiley
+links:
+- name: SOLR-17274
+  url: https://issues.apache.org/jira/browse/SOLR-17274

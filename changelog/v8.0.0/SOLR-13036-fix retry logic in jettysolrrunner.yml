@@ -1,0 +1,7 @@
+title: Fix retry logic in JettySolrRunner
+type: other
+authors:
+- name: Gus Heck
+links:
+- name: SOLR-13036
+  url: https://issues.apache.org/jira/browse/SOLR-13036

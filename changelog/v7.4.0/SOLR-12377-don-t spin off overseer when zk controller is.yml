@@ -1,0 +1,7 @@
+title: Don't spin off overseer when Zk controller is closed
+type: fixed
+authors:
+- name: Mikhail Khludnev
+links:
+- name: SOLR-12377
+  url: https://issues.apache.org/jira/browse/SOLR-12377

@@ -1,0 +1,7 @@
+title: Avoid waiting for the leader to see the down state if that leader is not live.
+type: other
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-6592
+  url: https://issues.apache.org/jira/browse/SOLR-6592

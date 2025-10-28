@@ -1,0 +1,8 @@
+title: ZkController.publishAndWaitForDownStates can return before all local cores
+  are marked as 'down' if multiple replicas with the same core name exist in the cluster.
+type: fixed
+authors:
+- name: shalin
+links:
+- name: SOLR-6665
+  url: https://issues.apache.org/jira/browse/SOLR-6665

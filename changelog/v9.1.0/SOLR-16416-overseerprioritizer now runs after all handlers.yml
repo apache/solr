@@ -1,0 +1,8 @@
+title: OverseerPrioritizer now runs after all handlers are registered, and retries
+  on failures.
+type: fixed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16416
+  url: https://issues.apache.org/jira/browse/SOLR-16416

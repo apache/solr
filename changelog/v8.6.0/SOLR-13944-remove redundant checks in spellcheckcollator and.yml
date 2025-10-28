@@ -1,0 +1,10 @@
+title: Remove redundant checks in SpellCheckCollator and add tests for spellcheck
+  with collapse
+type: other
+authors:
+- name: Stefan
+- name: Munendra S N
+- name: Tomas Eduardo Fernandez Lobbe
+links:
+- name: SOLR-13944
+  url: https://issues.apache.org/jira/browse/SOLR-13944

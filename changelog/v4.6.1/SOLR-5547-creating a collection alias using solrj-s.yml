@@ -1,0 +1,9 @@
+title: Creating a collection alias using SolrJ's CollectionAdminRequest sets the alias
+  name and the collections to alias to the same value.
+type: fixed
+authors:
+- name: Aaron Schram
+- name: Mark Miller
+links:
+- name: SOLR-5547
+  url: https://issues.apache.org/jira/browse/SOLR-5547

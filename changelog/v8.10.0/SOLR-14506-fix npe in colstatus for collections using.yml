@@ -1,0 +1,8 @@
+title: Fix NPE in COLSTATUS for collections using implicit routing.
+type: fixed
+authors:
+- name: Austin Weidler
+- name: ab
+links:
+- name: SOLR-14506
+  url: https://issues.apache.org/jira/browse/SOLR-14506

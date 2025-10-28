@@ -1,0 +1,8 @@
+title: Collections API validation errors should cause an exception on clients and
+  otherwise act as validation errors with the Core Admin API.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4576
+  url: https://issues.apache.org/jira/browse/SOLR-4576

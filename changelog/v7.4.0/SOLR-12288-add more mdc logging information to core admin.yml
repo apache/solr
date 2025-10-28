@@ -1,0 +1,7 @@
+title: Add more MDC logging information to core admin requests
+type: other
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-12288
+  url: https://issues.apache.org/jira/browse/SOLR-12288

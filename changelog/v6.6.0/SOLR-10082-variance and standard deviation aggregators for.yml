@@ -1,0 +1,9 @@
+title: 'Variance and Standard Deviation aggregators for the JSON Facet API. Example:
+  json.facet={x:"stddev(field1)", y:"variance(field2)"}'
+type: added
+authors:
+- name: Rustam Hashimov
+- name: yonik
+links:
+- name: SOLR-10082
+  url: https://issues.apache.org/jira/browse/SOLR-10082

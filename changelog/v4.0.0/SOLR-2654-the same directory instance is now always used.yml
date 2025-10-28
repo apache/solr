@@ -1,0 +1,8 @@
+title: The same Directory instance is now always used across a SolrCore so that it's
+  easier to add other DirectoryFactory's without static caching hacks.
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-2654
+  url: https://issues.apache.org/jira/browse/SOLR-2654

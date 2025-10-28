@@ -1,0 +1,7 @@
+title: TaggerRequestHandler should not error on an empty index
+type: changed
+authors:
+- name: Trey Grainger
+links:
+- name: SOLR-14396
+  url: https://issues.apache.org/jira/browse/SOLR-14396

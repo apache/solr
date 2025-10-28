@@ -1,0 +1,8 @@
+title: Harden the 'leader requests replica to recover' code path.
+type: other
+authors:
+- name: Mark Miller
+- name: yonik
+links:
+- name: SOLR-4254
+  url: https://issues.apache.org/jira/browse/SOLR-4254

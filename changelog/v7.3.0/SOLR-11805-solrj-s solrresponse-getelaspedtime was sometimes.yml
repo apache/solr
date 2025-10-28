@@ -1,0 +1,7 @@
+title: SolrJ's SolrResponse.getElaspedTime was sometimes a millisecond off.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-11805
+  url: https://issues.apache.org/jira/browse/SOLR-11805

@@ -1,0 +1,10 @@
+title: security rules made more foolproof by asking the requesthandler about the well
+  known permission name. The APIs are also modified to ue 'index' as the unique identifier
+  instead of name. Name is an optional attribute now and only to be used when specifying
+  well-known permissions
+type: other
+authors:
+- name: noble
+links:
+- name: SOLR-8842
+  url: https://issues.apache.org/jira/browse/SOLR-8842

@@ -1,0 +1,8 @@
+title: Convert tests that extend LuceneTestCase and use MiniSolrCloudCluster to instead
+  extend SolrCloudTestCase.
+type: other
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-10916
+  url: https://issues.apache.org/jira/browse/SOLR-10916

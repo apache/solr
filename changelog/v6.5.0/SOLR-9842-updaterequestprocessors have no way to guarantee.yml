@@ -1,0 +1,8 @@
+title: UpdateRequestProcessors have no way to guarantee the closing of resources used
+  for a request.
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-9842
+  url: https://issues.apache.org/jira/browse/SOLR-9842

@@ -1,0 +1,12 @@
+title: ConcurrentUpdateSolrServer#blockUntilFinished can return before all previously
+  added updates have finished. This could cause distributed updates meant for replicas
+  to be lost.
+type: fixed
+authors:
+- name: Markus Jelsma
+- name: Timothy Potter
+- name: Joel Bernstein
+- name: Mark Miller
+links:
+- name: SOLR-4260
+  url: https://issues.apache.org/jira/browse/SOLR-4260

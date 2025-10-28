@@ -1,0 +1,8 @@
+title: example/files improvements - added language detection and faceting, added title
+  field, relocated .js files.
+type: other
+authors:
+- name: Esther Quansah and Erik Hatcher
+links:
+- name: SOLR-7900
+  url: https://issues.apache.org/jira/browse/SOLR-7900

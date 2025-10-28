@@ -1,0 +1,9 @@
+title: Parallel SQL now uses Apache Calcite as its SQL framework. As part of this
+  change the default aggregation mode has been changed to facet rather than map_reduce.
+  There has also been changes to the SQL aggregate response and some SQL syntax changes.
+  Consult the documentation for full details.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-8593
+  url: https://issues.apache.org/jira/browse/SOLR-8593

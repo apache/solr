@@ -1,0 +1,13 @@
+title: 'SolrCore persistence bugs if defining SolrCores in solr.xml. (Mark Miller,
+  Yago Riveiro) * SOLR-5306: Extra collection creation parameters like collection.configName
+  are not being respected.'
+type: fixed
+authors:
+- name: Mark Miller
+- name: Liang Tianyu
+- name: Nathan Neulinger
+links:
+- name: SOLR-5317
+  url: https://issues.apache.org/jira/browse/SOLR-5317
+- name: SOLR-5306
+  url: https://issues.apache.org/jira/browse/SOLR-5306

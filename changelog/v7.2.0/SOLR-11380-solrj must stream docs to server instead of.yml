@@ -1,0 +1,7 @@
+title: SolrJ must stream docs to server instead of writing to a buffer first
+type: other
+authors:
+- name: noble
+links:
+- name: SOLR-11380
+  url: https://issues.apache.org/jira/browse/SOLR-11380

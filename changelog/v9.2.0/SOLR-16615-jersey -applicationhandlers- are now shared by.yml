@@ -1,0 +1,8 @@
+title: Jersey 'ApplicationHandlers' are now shared by compatible cores where possible
+type: changed
+authors:
+- name: Jason Gerlowski
+- name: Houston Putman
+links:
+- name: SOLR-16615
+  url: https://issues.apache.org/jira/browse/SOLR-16615

@@ -1,0 +1,9 @@
+title: A distributed search request with fl=score, didn't match the behavior of a
+  non-distributed request since it only returned the id,score fields instead of all
+  fields in addition to score.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-1587
+  url: https://issues.apache.org/jira/browse/SOLR-1587

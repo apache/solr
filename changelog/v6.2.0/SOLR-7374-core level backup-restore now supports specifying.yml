@@ -1,0 +1,10 @@
+title: Core level Backup/Restore now supports specifying the directory implementation
+  to use via the "repository" parameter.
+type: added
+authors:
+- name: Hrishikesh Gadre
+- name: Varun Thacker
+- name: Mark Miller
+links:
+- name: SOLR-7374
+  url: https://issues.apache.org/jira/browse/SOLR-7374

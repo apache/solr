@@ -1,0 +1,8 @@
+title: Add optional gradle property to run docker tests in parallel
+type: other
+authors:
+- name: hossman
+- name: Houston Putman
+links:
+- name: SOLR-14857
+  url: https://issues.apache.org/jira/browse/SOLR-14857

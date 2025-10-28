@@ -1,0 +1,8 @@
+title: The SolrCLI now uses a smarter default for the Solr URL if none is provided,
+  using the same envVars used when running Solr.
+type: changed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16941
+  url: https://issues.apache.org/jira/browse/SOLR-16941

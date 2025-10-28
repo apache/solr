@@ -1,0 +1,13 @@
+title: 'All example configs shipped with Solr explicitly use ManagedIndexSchemaFactory,
+  the schema file will be called managed-schema instead of schema.xml . It is not
+  advised to use hand edit the managed-schema. You should use the schema APIs instead
+  ( /&lt;collection&gt;/schema ) . If you do not want this behaviour in the example
+  configs, before you start solr rename managed-schema to schema.xml and change the
+  schemaFactory in solrconfig.xml file to explicitly use ClassicIndexSchemaFactory
+  instead : &lt;schemaFactory class="ClassicIndexSchemaFactory"/&gt;'
+type: other
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-8387
+  url: https://issues.apache.org/jira/browse/SOLR-8387

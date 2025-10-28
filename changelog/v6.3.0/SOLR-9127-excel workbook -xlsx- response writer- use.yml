@@ -1,0 +1,8 @@
+title: Excel workbook (.xlsx) response writer. use 'wt=xlsx'
+type: added
+authors:
+- name: Tony Moriarty
+- name: noble
+links:
+- name: SOLR-9127
+  url: https://issues.apache.org/jira/browse/SOLR-9127

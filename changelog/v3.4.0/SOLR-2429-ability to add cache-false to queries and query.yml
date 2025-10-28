@@ -1,0 +1,13 @@
+title: Ability to add cache=false to queries and query filters to avoid using the
+  filterCache or queryCache. A cost may also be specified and is used to order the
+  evaluation of non-cached filters from least to greatest cost . For very expensive
+  query filters (cost &gt;= 100) if the query implements the PostFilter interface,
+  it will be used to obtain a Collector that is checked only for documents that match
+  the main query and all other filters. The "frange" query now implements the PostFilter
+  interface.
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-2429
+  url: https://issues.apache.org/jira/browse/SOLR-2429

@@ -1,0 +1,9 @@
+title: update.autoCreateFields must be set via Config API command 'set-user-property',
+  but 'bin/solr create' tells users to use the default action 'set-property', which
+  fails because the property is not editable.
+type: fixed
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-12481
+  url: https://issues.apache.org/jira/browse/SOLR-12481

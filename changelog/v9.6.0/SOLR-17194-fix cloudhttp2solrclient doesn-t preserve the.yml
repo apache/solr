@@ -1,0 +1,11 @@
+title: Fix CloudHttp2SolrClient doesn't preserve the passed httpClient to Http2ClusterStateProvider
+  when using the internalClientBuilder
+type: fixed
+authors:
+- name: Eric Pugh
+- name: Lamine Idjeraoui
+- name: Houston Putman
+- name: Anshum Gupta
+links:
+- name: SOLR-17194
+  url: https://issues.apache.org/jira/browse/SOLR-17194

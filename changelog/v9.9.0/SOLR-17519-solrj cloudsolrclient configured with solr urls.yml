@@ -1,0 +1,11 @@
+title: SolrJ CloudSolrClient configured with Solr URLs can fail to request cluster
+  state if its current live nodes list is stale. CloudSolrClient now retains the initial
+  configured list of passed URLs as backup used for fetching cluster state when all
+  live nodes have failed.
+type: fixed
+authors:
+- name: Matthew Biscocho
+- name: Houston Putman
+links:
+- name: SOLR-17519
+  url: https://issues.apache.org/jira/browse/SOLR-17519

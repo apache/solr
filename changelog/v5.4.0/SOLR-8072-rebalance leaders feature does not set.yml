@@ -1,0 +1,8 @@
+title: Rebalance leaders feature does not set CloudDescriptor#isLeader to false when
+  bumping leaders.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-8072
+  url: https://issues.apache.org/jira/browse/SOLR-8072

@@ -1,0 +1,10 @@
+title: Support InPlace DV updates for a field that does not yet exist in any documents
+type: changed
+authors:
+- name: hossman
+- name: Simon Willnauer
+- name: Adrien Grand
+- name: Munendra S N
+links:
+- name: SOLR-12368
+  url: https://issues.apache.org/jira/browse/SOLR-12368

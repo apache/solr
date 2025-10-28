@@ -1,0 +1,7 @@
+title: 'Maven build: Make solrj tests run separately from solr-core.'
+type: other
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-3780
+  url: https://issues.apache.org/jira/browse/SOLR-3780

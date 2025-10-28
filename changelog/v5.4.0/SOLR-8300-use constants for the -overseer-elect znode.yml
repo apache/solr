@@ -1,0 +1,7 @@
+title: Use constants for the /overseer_elect znode
+type: other
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-8300
+  url: https://issues.apache.org/jira/browse/SOLR-8300

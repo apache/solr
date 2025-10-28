@@ -1,0 +1,8 @@
+title: 'SimplePostTool: Mode for crawling/posting web pages See https://solr.apache.org/guide/solr/latest/indexing-guide/post-tool.html
+  for examples'
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-3691
+  url: https://issues.apache.org/jira/browse/SOLR-3691

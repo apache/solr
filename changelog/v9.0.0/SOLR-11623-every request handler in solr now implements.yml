@@ -1,0 +1,10 @@
+title: Every request handler in Solr now implements PermissionNameProvider to explicitly
+  decide on what security permissions are required to access the handler
+type: changed
+authors:
+- name: janhoy
+- name: Hrishikesh Gadre
+- name: David Smiley
+links:
+- name: SOLR-11623
+  url: https://issues.apache.org/jira/browse/SOLR-11623

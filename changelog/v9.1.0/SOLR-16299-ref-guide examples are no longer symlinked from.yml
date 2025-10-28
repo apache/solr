@@ -1,0 +1,8 @@
+title: Ref-guide examples are no longer symlinked from SolrJ, they live in the ref-guide
+  module
+type: other
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16299
+  url: https://issues.apache.org/jira/browse/SOLR-16299

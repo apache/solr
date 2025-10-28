@@ -1,0 +1,8 @@
+title: Fix REPLACENODE to not use source node when choosing a target node for new
+  replicas
+type: fixed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-15795
+  url: https://issues.apache.org/jira/browse/SOLR-15795

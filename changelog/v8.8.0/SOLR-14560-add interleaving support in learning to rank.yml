@@ -1,0 +1,8 @@
+title: Add interleaving support in Learning To Rank.
+type: added
+authors:
+- name: Alessandro Benedetti
+- name: Christine Poerschke
+links:
+- name: SOLR-14560
+  url: https://issues.apache.org/jira/browse/SOLR-14560

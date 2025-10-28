@@ -1,0 +1,8 @@
+title: Many small fixes to Angular UI
+type: fixed
+authors:
+- name: Upayavira
+- name: Alexandre Rafalovitch
+links:
+- name: SOLR-7666
+  url: https://issues.apache.org/jira/browse/SOLR-7666

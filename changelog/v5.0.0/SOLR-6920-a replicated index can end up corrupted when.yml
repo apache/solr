@@ -1,0 +1,9 @@
+title: A replicated index can end up corrupted when small files end up with the same
+  file name and size.
+type: fixed
+authors:
+- name: Varun Thacker
+- name: Mark Miller
+links:
+- name: SOLR-6920
+  url: https://issues.apache.org/jira/browse/SOLR-6920

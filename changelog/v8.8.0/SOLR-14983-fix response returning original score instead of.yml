@@ -1,0 +1,10 @@
+title: Fix response returning original score instead of reranked score due to query
+  and filter combining.
+type: fixed
+authors:
+- name: Krishan Goyal
+- name: Jason Baik
+- name: Christine Poerschke
+links:
+- name: SOLR-14983
+  url: https://issues.apache.org/jira/browse/SOLR-14983

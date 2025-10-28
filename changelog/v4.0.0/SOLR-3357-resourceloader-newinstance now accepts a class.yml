@@ -1,0 +1,8 @@
+title: ResourceLoader.newInstance now accepts a Class representation of the expected
+  instance type
+type: other
+authors:
+- name: Chris Male
+links:
+- name: SOLR-3357
+  url: https://issues.apache.org/jira/browse/SOLR-3357

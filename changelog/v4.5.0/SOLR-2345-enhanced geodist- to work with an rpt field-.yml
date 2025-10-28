@@ -1,0 +1,8 @@
+title: Enhanced geodist() to work with an RPT field, provided that the field is referenced
+  via 'sfield' and the query point is constant.
+type: added
+authors:
+- name: David Smiley
+links:
+- name: SOLR-2345
+  url: https://issues.apache.org/jira/browse/SOLR-2345

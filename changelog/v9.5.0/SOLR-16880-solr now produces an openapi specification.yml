@@ -1,0 +1,9 @@
+title: Solr now produces an OpenAPI Specification artifact on releases ("solr-openapi-x.y.z.json")
+  that covers Solr's v2 APIs.
+type: other
+authors:
+- name: Jason Gerlowski
+- name: Houston Putman
+links:
+- name: SOLR-16880
+  url: https://issues.apache.org/jira/browse/SOLR-16880

@@ -1,0 +1,10 @@
+title: edismax fails to correctly parse a fielded query wrapped by parens. This regression
+  was introduced in 3.6.
+type: fixed
+authors:
+- name: Bernd Fehling
+- name: Jan Høydahl
+- name: yonik
+links:
+- name: SOLR-3377
+  url: https://issues.apache.org/jira/browse/SOLR-3377

@@ -1,0 +1,9 @@
+title: Raw json output for fields stopped working in 5.3.0 when requested fields do
+  not include the unique key field name.
+type: fixed
+authors:
+- name: Bill Bell
+- name: Ryan McKinley
+links:
+- name: SOLR-7993
+  url: https://issues.apache.org/jira/browse/SOLR-7993

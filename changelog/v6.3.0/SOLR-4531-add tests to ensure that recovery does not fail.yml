@@ -1,0 +1,8 @@
+title: Add tests to ensure that recovery does not fail on corrupted tlogs.
+type: other
+authors:
+- name: Simon Scofield
+- name: Cao Manh Dat
+links:
+- name: SOLR-4531
+  url: https://issues.apache.org/jira/browse/SOLR-4531

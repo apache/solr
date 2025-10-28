@@ -1,0 +1,8 @@
+title: Use coreDescriptor.getInstanceDir() instead of getRawInstanceDir() in the SnapShooter
+  to avoid problems when solr.solr.home is a symbolic link.
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-5956
+  url: https://issues.apache.org/jira/browse/SOLR-5956

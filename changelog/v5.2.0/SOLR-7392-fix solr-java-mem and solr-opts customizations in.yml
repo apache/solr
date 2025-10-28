@@ -1,0 +1,8 @@
+title: Fix SOLR_JAVA_MEM and SOLR_OPTS customizations in solr.in.sh being ignored
+type: fixed
+authors:
+- name: Ramkumar Aiyengar
+- name: Ere Maijala
+links:
+- name: SOLR-7392
+  url: https://issues.apache.org/jira/browse/SOLR-7392

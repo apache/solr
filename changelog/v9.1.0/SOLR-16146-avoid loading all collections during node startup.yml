@@ -1,0 +1,7 @@
+title: Avoid loading all collections during node startup
+type: changed
+authors:
+- name: noble
+links:
+- name: SOLR-16146
+  url: https://issues.apache.org/jira/browse/SOLR-16146

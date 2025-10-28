@@ -1,0 +1,8 @@
+title: Improved error messages when adding a document that does not contain exactly
+  one value for the uniqueKey field
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-1695
+  url: https://issues.apache.org/jira/browse/SOLR-1695

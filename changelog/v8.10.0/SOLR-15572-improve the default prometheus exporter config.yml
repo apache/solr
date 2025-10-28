@@ -1,0 +1,7 @@
+title: Improve the default Prometheus exporter config performance.
+type: changed
+authors:
+- name: ab
+links:
+- name: SOLR-15572
+  url: https://issues.apache.org/jira/browse/SOLR-15572

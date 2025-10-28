@@ -1,0 +1,10 @@
+title: shards.tolerant=true is broken for group queries
+type: fixed
+authors:
+- name: Russell Black
+- name: Martijn van Groningen
+- name: Jabouille jean Charles
+- name: Ryan McKinley
+links:
+- name: SOLR-3369
+  url: https://issues.apache.org/jira/browse/SOLR-3369

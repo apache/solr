@@ -1,0 +1,8 @@
+title: Return proper error code for bad input in case of inplace updates
+type: fixed
+authors:
+- name: Tomas Eduardo Fernandez Lobbe
+- name: Munendra S N
+links:
+- name: SOLR-10860
+  url: https://issues.apache.org/jira/browse/SOLR-10860

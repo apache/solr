@@ -1,0 +1,7 @@
+title: Allowing configuring maxMergeSizeMB and maxCachedMB when using NRTCachingDirectoryFactory.
+type: added
+authors:
+- name: Andy Laird
+links:
+- name: SOLR-3531
+  url: https://issues.apache.org/jira/browse/SOLR-3531

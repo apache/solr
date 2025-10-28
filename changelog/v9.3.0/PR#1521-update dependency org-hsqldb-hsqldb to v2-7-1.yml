@@ -1,0 +1,7 @@
+title: Update dependency org.hsqldb:hsqldb to v2.7.1
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#1521
+  url: https://github.com/apache/solr/pull/1521

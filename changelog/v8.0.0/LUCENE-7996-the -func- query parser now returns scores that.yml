@@ -1,0 +1,9 @@
+title: The 'func' query parser now returns scores that are equal to 0 when a negative
+  value is produced. This change is due to the fact that Lucene now requires scores
+  to be positive.
+type: upgrade_notes
+authors:
+- name: Adrien Grand
+links:
+- name: LUCENE-7996
+  url: https://issues.apache.org/jira/browse/LUCENE-7996

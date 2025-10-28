@@ -1,0 +1,8 @@
+title: Prevent against failure during failed snapshot cleanup from swallowing the
+  actual cause for the snapshot to fail.
+type: fixed
+authors:
+- name: thelabdude
+links:
+- name: SOLR-9954
+  url: https://issues.apache.org/jira/browse/SOLR-9954

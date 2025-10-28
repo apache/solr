@@ -1,0 +1,8 @@
+title: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can
+  be displayed when using Internet Explorer 11
+type: changed
+authors:
+- name: jafurrer
+links:
+- name: SOLR-14120
+  url: https://issues.apache.org/jira/browse/SOLR-14120

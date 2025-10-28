@@ -1,0 +1,7 @@
+title: Fix a potential null pointer error in the distributed FacetComponent
+type: fixed
+authors:
+- name: David Bowen
+links:
+- name: SOLR-802
+  url: https://issues.apache.org/jira/browse/SOLR-802

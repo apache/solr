@@ -1,0 +1,9 @@
+title: Fix bug that could theoretically allow multiple recoveries to run briefly at
+  the same time if the recovery thread join call was interrupted.
+type: fixed
+authors:
+- name: Per Steffensen
+- name: Mark Miller
+links:
+- name: SOLR-3721
+  url: https://issues.apache.org/jira/browse/SOLR-3721

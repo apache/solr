@@ -1,0 +1,9 @@
+title: Add ability to roll up core level metrics to be node level metrics for a RequestHandler
+  via configuration.
+type: added
+authors:
+- name: Justin Sweeney
+- name: David Smiley
+links:
+- name: SOLR-15007
+  url: https://issues.apache.org/jira/browse/SOLR-15007

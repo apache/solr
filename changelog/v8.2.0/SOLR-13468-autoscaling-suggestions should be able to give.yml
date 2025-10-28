@@ -1,0 +1,8 @@
+title: autoscaling/suggestions should be able to give suggestions from config sent
+  as a payload
+type: changed
+authors:
+- name: noble
+links:
+- name: SOLR-13468
+  url: https://issues.apache.org/jira/browse/SOLR-13468

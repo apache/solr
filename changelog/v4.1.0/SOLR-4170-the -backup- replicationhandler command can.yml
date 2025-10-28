@@ -1,0 +1,9 @@
+title: The 'backup' ReplicationHandler command can sometimes use a stale index directory
+  rather than the current one.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Marcin Rzewucki
+links:
+- name: SOLR-4170
+  url: https://issues.apache.org/jira/browse/SOLR-4170

@@ -1,0 +1,8 @@
+title: Core lib directories were not being recognized unless the solrconfig included
+  a &lt;lib&gt; directive.
+type: fixed
+authors:
+- name: Thomas Mortagne
+links:
+- name: SOLR-15017
+  url: https://issues.apache.org/jira/browse/SOLR-15017

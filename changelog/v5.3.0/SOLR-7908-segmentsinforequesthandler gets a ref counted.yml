@@ -1,0 +1,9 @@
+title: SegmentsInfoRequestHandler gets a ref counted IndexWriter and does not properly
+  release it.
+type: fixed
+authors:
+- name: Mark Miller
+- name: shalin
+links:
+- name: SOLR-7908
+  url: https://issues.apache.org/jira/browse/SOLR-7908

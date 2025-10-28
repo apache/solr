@@ -1,0 +1,9 @@
+title: Deprecated LatLonType, GeoHashField, SpatialPointVectorFieldType, and SpatialTermQueryPrefixTreeFieldType.
+  Instead, switch to LatLonPointSpatialField or SpatialRecursivePrefixTreeFieldType
+  or RptWithGeometrySpatialField.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-10729
+  url: https://issues.apache.org/jira/browse/SOLR-10729

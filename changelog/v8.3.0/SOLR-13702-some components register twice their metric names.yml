@@ -1,0 +1,7 @@
+title: Some components register twice their metric names
+type: changed
+authors:
+- name: janhoy
+links:
+- name: SOLR-13702
+  url: https://issues.apache.org/jira/browse/SOLR-13702

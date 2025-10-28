@@ -1,0 +1,10 @@
+title: fix SolrPluginUtils.docListToSolrDocumentList to respect the list of fields
+  specified. This fix also deprecates DocumentBuilder.loadStoredFields which is not
+  used anywhere in Solr, and was fundamentally broken/bizarre.
+type: fixed
+authors:
+- name: hossman
+- name: Ahmet Arslan
+links:
+- name: SOLR-3074
+  url: https://issues.apache.org/jira/browse/SOLR-3074

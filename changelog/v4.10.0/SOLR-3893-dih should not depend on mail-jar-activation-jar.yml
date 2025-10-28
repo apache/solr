@@ -1,0 +1,8 @@
+title: DIH should not depend on mail.jar,activation.jar
+type: other
+authors:
+- name: Timothy Potter
+- name: Steve Rowe
+links:
+- name: SOLR-3893
+  url: https://issues.apache.org/jira/browse/SOLR-3893

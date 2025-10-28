@@ -1,0 +1,8 @@
+title: PULL replicas stop replicating after collection RELOAD
+type: fixed
+authors:
+- name: Samuel Tatipamula
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-11794
+  url: https://issues.apache.org/jira/browse/SOLR-11794

@@ -1,0 +1,9 @@
+title: Dedicated query coordinator nodes in the solr cluster
+type: added
+authors:
+- name: noble
+- name: Hitesh Khamesra
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-15715
+  url: https://issues.apache.org/jira/browse/SOLR-15715

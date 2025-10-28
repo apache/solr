@@ -1,0 +1,8 @@
+title: IndexOutOfBoundsException in DIH SolrWriter.getResourceAsString when size of
+  data-config.xml is a multiple of 1024 bytes.
+type: fixed
+authors:
+- name: Herb Jiang
+links:
+- name: SOLR-1053
+  url: https://issues.apache.org/jira/browse/SOLR-1053

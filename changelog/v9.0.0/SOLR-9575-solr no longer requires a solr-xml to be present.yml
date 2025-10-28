@@ -1,0 +1,9 @@
+title: Solr no longer requires a solr.xml to be present in $SOLR_HOME. If one is not
+  found, Solr will load the one in $SOLR_TIP/server/solr/solr.xml. Solr also does
+  not require a zoo.cfg in $SOLR_HOME if started with embedded zookeeper.
+type: changed
+authors:
+- name: janhoy
+links:
+- name: SOLR-9575
+  url: https://issues.apache.org/jira/browse/SOLR-9575

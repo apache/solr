@@ -1,0 +1,7 @@
+title: Lower the AffinityPlacementPlugin's default minimalFreeDiskGB to 5 GB
+type: other
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16915
+  url: https://issues.apache.org/jira/browse/SOLR-16915

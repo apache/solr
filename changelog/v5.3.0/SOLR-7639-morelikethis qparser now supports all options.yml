@@ -1,0 +1,7 @@
+title: MoreLikeThis QParser now supports all options provided by the MLT Handler i.e.
+  mintf, mindf, minwl, maxwl, maxqt, and maxntp.
+type: added
+authors: []
+links:
+- name: SOLR-7639
+  url: https://issues.apache.org/jira/browse/SOLR-7639

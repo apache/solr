@@ -1,0 +1,9 @@
+title: The throttling mechanism used to limit the rate of autoscaling events processed
+  has been removed. This deprecates the 'actionThrottlePeriodSeconds' setting in the
+  set-properties Autoscaling API which is now a no-op. Use the 'triggerCooldownPeriodSeconds'
+  instead to pause event processing.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-11748
+  url: https://issues.apache.org/jira/browse/SOLR-11748

@@ -1,0 +1,9 @@
+title: MultiAuthPlugin should send non-AJAX anonymous requests to the plugin that
+  allows anonymous requests
+type: fixed
+authors:
+- name: Timothy Potter
+- name: Eric Pugh
+links:
+- name: SOLR-15766
+  url: https://issues.apache.org/jira/browse/SOLR-15766

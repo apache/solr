@@ -1,0 +1,9 @@
+title: Fix a couple of ugly issues around SolrIndexWriter close and rollback as well
+  as how SolrIndexWriter manages its ref counted directory instance.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Gregory Chanan
+links:
+- name: SOLR-6002
+  url: https://issues.apache.org/jira/browse/SOLR-6002

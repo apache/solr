@@ -1,0 +1,9 @@
+title: Fix DocumentAnalysisRequestHandler to correctly use EmptyEntityResolver to
+  prevent loading of external entities like UpdateRequestHandler does.
+type: fixed
+authors:
+- name: Hossman
+- name: Uwe Schindler
+links:
+- name: SOLR-4881
+  url: https://issues.apache.org/jira/browse/SOLR-4881

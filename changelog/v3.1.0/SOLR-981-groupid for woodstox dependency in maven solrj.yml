@@ -1,0 +1,7 @@
+title: groupId for Woodstox dependency in maven solrj changed to org.codehaus.woodstox
+type: other
+authors:
+- name: Tim Taranov
+links:
+- name: SOLR-981
+  url: https://issues.apache.org/jira/browse/SOLR-981

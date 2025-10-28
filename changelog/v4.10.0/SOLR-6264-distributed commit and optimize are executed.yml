@@ -1,0 +1,8 @@
+title: Distributed commit and optimize are executed serially across all replicas.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Timothy Potter
+links:
+- name: SOLR-6264
+  url: https://issues.apache.org/jira/browse/SOLR-6264

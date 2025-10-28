@@ -1,0 +1,8 @@
+title: Mismatched Docvalues segments cause exception in Sorting/Faceting. Solr now
+  uninverts per segment to avoid such exceptions.
+type: fixed
+authors:
+- name: Keith Laban
+links:
+- name: SOLR-10047
+  url: https://issues.apache.org/jira/browse/SOLR-10047

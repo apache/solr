@@ -1,0 +1,7 @@
+title: JettySolrRunner QueuedThreadPool's configuration code is never executed.
+type: fixed
+authors:
+- name: dweiss
+links:
+- name: SOLR-6208
+  url: https://issues.apache.org/jira/browse/SOLR-6208

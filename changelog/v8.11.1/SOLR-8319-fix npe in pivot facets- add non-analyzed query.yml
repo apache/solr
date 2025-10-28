@@ -1,0 +1,8 @@
+title: Fix NPE in pivot facets, add non-Analyzed query method in FieldType.
+type: fixed
+authors:
+- name: Houston Putman
+- name: Isabelle Giguere
+links:
+- name: SOLR-8319
+  url: https://issues.apache.org/jira/browse/SOLR-8319

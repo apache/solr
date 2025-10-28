@@ -1,0 +1,9 @@
+title: Added support in SolrJ to easily interact with range facets. The range facet
+  response can be parsed and is retrievable from the QueryResponse class. The SolrQuery
+  class has convenient methods for using range facets.
+type: added
+authors:
+- name: Martijn van Groningen
+links:
+- name: SOLR-2523
+  url: https://issues.apache.org/jira/browse/SOLR-2523

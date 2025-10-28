@@ -1,0 +1,9 @@
+title: Add contrib/ltr NeuralNetworkModel class.
+type: added
+authors:
+- name: Michael A. Alcorn
+- name: Yuki Yano
+- name: Christine Poerschke
+links:
+- name: SOLR-11597
+  url: https://issues.apache.org/jira/browse/SOLR-11597

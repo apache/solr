@@ -1,0 +1,8 @@
+title: NPE can occur when doing Atomic Update using Add Distinct on documents with
+  a null field value.
+type: fixed
+authors:
+- name: puneetSharma
+links:
+- name: SOLR-17721
+  url: https://issues.apache.org/jira/browse/SOLR-17721

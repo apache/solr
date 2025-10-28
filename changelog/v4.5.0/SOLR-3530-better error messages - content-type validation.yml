@@ -1,0 +1,8 @@
+title: Better error messages / Content-Type validation in SolrJ.
+type: changed
+authors:
+- name: Mark Miller
+- name: hossman
+links:
+- name: SOLR-3530
+  url: https://issues.apache.org/jira/browse/SOLR-3530

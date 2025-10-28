@@ -1,0 +1,8 @@
+title: Fixed behavior and handling of 'unset' logging levels in /admin/info/logging
+  API and related Admin UI
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-16771
+  url: https://issues.apache.org/jira/browse/SOLR-16771

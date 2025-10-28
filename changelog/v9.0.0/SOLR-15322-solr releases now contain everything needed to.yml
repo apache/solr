@@ -1,0 +1,8 @@
+title: Solr releases now contain everything needed to build runnable docker images
+type: other
+authors:
+- name: Houston Putman
+- name: hossman
+links:
+- name: SOLR-15322
+  url: https://issues.apache.org/jira/browse/SOLR-15322

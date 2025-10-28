@@ -1,0 +1,11 @@
+title: ClassCastException in SolrResponseBase.getQTime on update response from CloudSolrClient
+  when parallelUpdates is enabled (default) and multiple docs are sent as a single
+  update.
+type: fixed
+authors:
+- name: kevin
+- name: hossman
+- name: shalin
+links:
+- name: SOLR-6547
+  url: https://issues.apache.org/jira/browse/SOLR-6547

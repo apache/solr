@@ -1,0 +1,7 @@
+title: All ZkCmdExecutor's should be initialized with the zk client timeout.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5586
+  url: https://issues.apache.org/jira/browse/SOLR-5586

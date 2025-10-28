@@ -1,0 +1,9 @@
+title: fixed WordDelimiterFilter for certain combinations of options where it would
+  output incorrect tokens.
+type: fixed
+authors:
+- name: Robert Muir
+- name: Chris Male
+links:
+- name: SOLR-1706
+  url: https://issues.apache.org/jira/browse/SOLR-1706

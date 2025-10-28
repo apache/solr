@@ -1,0 +1,8 @@
+title: bin\solr.cmd delete and healthcheck now works again; fixed continuation chars
+  ^
+type: fixed
+authors:
+- name: Luis Goes
+links:
+- name: SOLR-10369
+  url: https://issues.apache.org/jira/browse/SOLR-10369

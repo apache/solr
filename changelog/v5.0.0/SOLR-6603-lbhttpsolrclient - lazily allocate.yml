@@ -1,0 +1,7 @@
+title: LBHttpSolrClient - lazily allocate skipped-zombie-servers list.
+type: changed
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-6603
+  url: https://issues.apache.org/jira/browse/SOLR-6603

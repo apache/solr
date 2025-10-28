@@ -1,0 +1,9 @@
+title: Recovery strategy for leader partitioned from replica case. Hardening recovery
+  scenarios after the leader receives an error trying to forward an update request
+  to a replica.
+type: other
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-5495
+  url: https://issues.apache.org/jira/browse/SOLR-5495

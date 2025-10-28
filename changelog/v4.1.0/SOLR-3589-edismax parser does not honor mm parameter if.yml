@@ -1,0 +1,8 @@
+title: Edismax parser does not honor mm parameter if analyzer splits a token.
+type: fixed
+authors:
+- name: Tom Burton-West
+- name: Robert Muir
+links:
+- name: SOLR-3589
+  url: https://issues.apache.org/jira/browse/SOLR-3589

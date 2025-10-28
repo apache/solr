@@ -1,0 +1,8 @@
+title: Add drill Streaming Expression for efficient and accurate high cardinality
+  aggregation.
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-14481
+  url: https://issues.apache.org/jira/browse/SOLR-14481

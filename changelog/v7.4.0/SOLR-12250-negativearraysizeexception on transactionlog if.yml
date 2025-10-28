@@ -1,0 +1,8 @@
+title: NegativeArraySizeException on TransactionLog if previous document more than
+  1.9GB
+type: fixed
+authors:
+- name: Cao Manh Dat
+links:
+- name: SOLR-12250
+  url: https://issues.apache.org/jira/browse/SOLR-12250

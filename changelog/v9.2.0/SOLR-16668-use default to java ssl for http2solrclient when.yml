@@ -1,0 +1,7 @@
+title: Use default to Java SSL for Http2SolrClient when none is provided
+type: fixed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16668
+  url: https://issues.apache.org/jira/browse/SOLR-16668

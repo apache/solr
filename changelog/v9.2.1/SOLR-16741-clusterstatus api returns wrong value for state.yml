@@ -1,0 +1,7 @@
+title: CLUSTERSTATUS API returns wrong value for state ,leader for PRS collections
+type: fixed
+authors:
+- name: noble
+links:
+- name: SOLR-16741
+  url: https://issues.apache.org/jira/browse/SOLR-16741

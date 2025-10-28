@@ -1,0 +1,8 @@
+title: When a replica becomes a leader, only peer sync with other replicas that last
+  published an ACTIVE state.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5650
+  url: https://issues.apache.org/jira/browse/SOLR-5650

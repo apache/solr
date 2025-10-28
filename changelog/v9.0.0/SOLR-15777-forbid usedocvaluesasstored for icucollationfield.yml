@@ -1,0 +1,8 @@
+title: Forbid useDocValuesAsStored for ICUCollationField (warn for luceneMatchVersion
+  &lt; 9.0.0).
+type: other
+authors:
+- name: Michael Gibney
+links:
+- name: SOLR-15777
+  url: https://issues.apache.org/jira/browse/SOLR-15777

@@ -1,0 +1,9 @@
+title: SolrInputField and SolrInputDocument are now consistently backed by Collections
+  passed in to setValue/setField, and defensively copy values from Collections passed
+  to addValue/addField
+type: fixed
+authors:
+- name: Tom Switzer
+links:
+- name: SOLR-3628
+  url: https://issues.apache.org/jira/browse/SOLR-3628

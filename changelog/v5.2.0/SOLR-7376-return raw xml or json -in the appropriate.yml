@@ -1,0 +1,8 @@
+title: Return raw XML or JSON (in the appropriate writer) using DocumentTransformers.
+  ?fl=id,name,json_s:[json],xml_s:[xml]
+type: added
+authors:
+- name: ryan
+links:
+- name: SOLR-7376
+  url: https://issues.apache.org/jira/browse/SOLR-7376

@@ -1,0 +1,8 @@
+title: The overseerstatus collection API instruments amILeader and ZK state update
+  calls.
+type: added
+authors:
+- name: shalin
+links:
+- name: SOLR-6196
+  url: https://issues.apache.org/jira/browse/SOLR-6196

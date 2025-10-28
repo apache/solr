@@ -1,0 +1,9 @@
+title: Spatial fields like RPT can now be configured to use Spatial4j registered shape
+  formats e.g. via format="GeoJSON".
+type: added
+authors:
+- name: ryan
+- name: David Smiley
+links:
+- name: SOLR-8859
+  url: https://issues.apache.org/jira/browse/SOLR-8859

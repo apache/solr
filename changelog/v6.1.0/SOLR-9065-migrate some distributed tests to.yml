@@ -1,0 +1,11 @@
+title: Migrate some distributed tests to SolrCloudTestCase.
+type: other
+authors:
+- name: Alan Woodward
+links:
+- name: SOLR-9065
+  url: https://issues.apache.org/jira/browse/SOLR-9065
+- name: SOLR-9072
+  url: https://issues.apache.org/jira/browse/SOLR-9072
+- name: SOLR-9132
+  url: https://issues.apache.org/jira/browse/SOLR-9132

@@ -1,0 +1,8 @@
+title: Fix MaxSizeAutoCommitTest failures
+type: fixed
+authors:
+- name: Rupa Shankar
+- name: Anshum Gupta
+links:
+- name: SOLR-12475
+  url: https://issues.apache.org/jira/browse/SOLR-12475

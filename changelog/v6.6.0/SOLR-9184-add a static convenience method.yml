@@ -1,0 +1,9 @@
+title: Add a static convenience method ModifiableSolrParams#of(SolrParams) which returns
+  the same instance if it already is modifiable, otherwise creates a new ModifiableSolrParams
+  instance.
+type: changed
+authors:
+- name: Jörg Rathlev
+links:
+- name: SOLR-9184
+  url: https://issues.apache.org/jira/browse/SOLR-9184

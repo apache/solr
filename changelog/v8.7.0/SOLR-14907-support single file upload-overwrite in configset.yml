@@ -1,0 +1,7 @@
+title: Support single file upload/overwrite in configSet API.
+type: added
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-14907
+  url: https://issues.apache.org/jira/browse/SOLR-14907

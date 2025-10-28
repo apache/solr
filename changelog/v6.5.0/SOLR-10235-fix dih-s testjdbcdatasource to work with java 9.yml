@@ -1,0 +1,12 @@
+title: Fix DIH's TestJdbcDataSource to work with Java 9 and other Java runtimes that
+  do not use the same DriverManager implementation like Oracle's original one. The
+  test now uses a fully implemented Driver instance returning a mock connection. The
+  test also works correct now if other drivers were installed before test execution
+  (e.g., through IDE).
+type: other
+authors:
+- name: hossman
+- name: Uwe Schindler
+links:
+- name: SOLR-10235
+  url: https://issues.apache.org/jira/browse/SOLR-10235

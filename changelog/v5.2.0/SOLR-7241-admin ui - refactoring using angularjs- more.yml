@@ -1,0 +1,20 @@
+title: Admin UI - Refactoring using AngularJS. More functionality moving the Admin
+  UI to Angular JS
+type: added
+authors:
+- name: Upayavira
+links:
+- name: SOLR-7241
+  url: https://issues.apache.org/jira/browse/SOLR-7241
+- name: SOLR-7263
+  url: https://issues.apache.org/jira/browse/SOLR-7263
+- name: SOLR-7279
+  url: https://issues.apache.org/jira/browse/SOLR-7279
+- name: SOLR-7300
+  url: https://issues.apache.org/jira/browse/SOLR-7300
+- name: SOLR-7396
+  url: https://issues.apache.org/jira/browse/SOLR-7396
+- name: SOLR-7397
+  url: https://issues.apache.org/jira/browse/SOLR-7397
+- name: SOLR-7492
+  url: https://issues.apache.org/jira/browse/SOLR-7492

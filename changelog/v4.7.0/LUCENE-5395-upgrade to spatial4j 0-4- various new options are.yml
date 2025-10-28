@@ -1,0 +1,8 @@
+title: Upgrade to Spatial4j 0.4. Various new options are now exposed automatically
+  for an RPT field type. See Spatial4j CHANGES & javadocs. https://github.com/spatial4j/spatial4j/blob/master/CHANGES.md
+type: added
+authors:
+- name: David Smiley
+links:
+- name: LUCENE-5395
+  url: https://issues.apache.org/jira/browse/LUCENE-5395

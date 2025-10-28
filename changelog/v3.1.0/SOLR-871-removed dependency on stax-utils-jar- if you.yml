@@ -1,0 +1,8 @@
+title: Removed dependency on stax-utils.jar. If you using solr.jar and running java
+  6, you can also remove woodstox and geronimo.
+type: other
+authors:
+- name: ryan
+links:
+- name: SOLR-871
+  url: https://issues.apache.org/jira/browse/SOLR-871

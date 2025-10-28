@@ -1,0 +1,8 @@
+title: Switch RTimer to use nanoTime (improves accuracy of QTime, and other times
+  returned by Solr handlers)
+type: other
+authors:
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-7678
+  url: https://issues.apache.org/jira/browse/SOLR-7678

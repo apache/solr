@@ -1,0 +1,9 @@
+title: JSON Facet "functions" now support an extended "type:func" syntax, similar
+  to other types of facets. This also allows additional local params to be specified
+  for if the aggregation function can take advantage of them.
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-12567
+  url: https://issues.apache.org/jira/browse/SOLR-12567

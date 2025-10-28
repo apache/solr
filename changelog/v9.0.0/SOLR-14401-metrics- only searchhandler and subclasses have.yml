@@ -1,0 +1,12 @@
+title: 'Metrics: Only SearchHandler and subclasses have "local" metrics now. It''s
+  now tracked as if it''s another handler with a "[shard]" suffix, e.g. "/select[shard]".
+  There are no longer ".distrib." named metrics; all metrics are assumed to be such
+  except "[shard]". The default Prometheus exporter config splits that component to
+  a new label named "internal". The sample Grafana dashboard now filters to include
+  or exclude this.'
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-14401
+  url: https://issues.apache.org/jira/browse/SOLR-14401

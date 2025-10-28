@@ -1,0 +1,7 @@
+title: Admin UI - Threads Screen missing Icon
+type: fixed
+authors:
+- name: steffkes
+links:
+- name: SOLR-5297
+  url: https://issues.apache.org/jira/browse/SOLR-5297

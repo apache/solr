@@ -1,0 +1,9 @@
+title: A V2 request referencing a collection or alias may fail to resolve it if it
+  was just recently created. Now we sync with ZooKeeper and try one more time. V1
+  partially did this but only for aliases; now it does both.
+type: fixed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-12258
+  url: https://issues.apache.org/jira/browse/SOLR-12258

@@ -1,0 +1,7 @@
+title: Add addAll Stream Evaluator
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-11019
+  url: https://issues.apache.org/jira/browse/SOLR-11019

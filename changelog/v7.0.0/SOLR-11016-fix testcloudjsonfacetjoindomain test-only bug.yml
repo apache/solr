@@ -1,0 +1,7 @@
+title: Fix TestCloudJSONFacetJoinDomain test-only bug
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-11016
+  url: https://issues.apache.org/jira/browse/SOLR-11016

@@ -1,0 +1,7 @@
+title: asserting hasNext() contract in JdbcDataSource in DataImportHandler
+type: other
+authors:
+- name: Kristine Jetzke
+links:
+- name: SOLR-9256
+  url: https://issues.apache.org/jira/browse/SOLR-9256

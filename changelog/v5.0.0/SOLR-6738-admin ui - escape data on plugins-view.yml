@@ -1,0 +1,7 @@
+title: Admin UI - Escape Data on Plugins-View
+type: fixed
+authors:
+- name: steffkes
+links:
+- name: SOLR-6738
+  url: https://issues.apache.org/jira/browse/SOLR-6738

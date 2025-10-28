@@ -1,0 +1,7 @@
+title: Make SplitShardCmd#checkDiskSpace disableable through a system property.
+type: changed
+authors:
+- name: Haythem Khiri
+links:
+- name: SOLR-16353
+  url: https://issues.apache.org/jira/browse/SOLR-16353

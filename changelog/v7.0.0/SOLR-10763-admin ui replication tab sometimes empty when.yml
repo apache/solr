@@ -1,0 +1,8 @@
+title: Admin UI replication tab sometimes empty when failed replications
+type: fixed
+authors:
+- name: janhoy
+- name: Bojan Vitnik
+links:
+- name: SOLR-10763
+  url: https://issues.apache.org/jira/browse/SOLR-10763

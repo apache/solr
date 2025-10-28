@@ -1,0 +1,8 @@
+title: Load cores in an order that makes collections available sooner and reduces
+  leaderVoteWait timeouts in large SolrCloud clusters.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-14342
+  url: https://issues.apache.org/jira/browse/SOLR-14342

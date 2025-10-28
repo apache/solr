@@ -1,0 +1,9 @@
+title: Collect aggregated metrics from nodes and shard leaders in overseer.
+type: added
+authors:
+- name: ab
+links:
+- name: SOLR-9857
+  url: https://issues.apache.org/jira/browse/SOLR-9857
+- name: SOLR-9858
+  url: https://issues.apache.org/jira/browse/SOLR-9858

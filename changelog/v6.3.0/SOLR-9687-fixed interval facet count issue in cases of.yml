@@ -1,0 +1,9 @@
+title: Fixed Interval Facet count issue in cases of open/close intervals on the same
+  values
+type: fixed
+authors:
+- name: Andy Chillrud
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-9687
+  url: https://issues.apache.org/jira/browse/SOLR-9687

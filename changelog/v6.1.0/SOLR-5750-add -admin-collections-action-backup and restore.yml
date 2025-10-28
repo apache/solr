@@ -1,0 +1,9 @@
+title: Add /admin/collections?action=BACKUP and RESTORE assuming access to a shared
+  file system.
+type: added
+authors:
+- name: Varun Thacker
+- name: David Smiley
+links:
+- name: SOLR-5750
+  url: https://issues.apache.org/jira/browse/SOLR-5750

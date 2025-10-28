@@ -1,0 +1,8 @@
+title: Make lucene-jars-to-solr fail if copying any of the jars fails, and update
+  clean to remove the jars in that directory
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-1891
+  url: https://issues.apache.org/jira/browse/SOLR-1891

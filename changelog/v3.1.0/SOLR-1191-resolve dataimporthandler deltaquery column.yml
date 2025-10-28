@@ -1,0 +1,10 @@
+title: resolve DataImportHandler deltaQuery column against pk when pk has a prefix
+  (e.g. pk="book.id" deltaQuery="select id from ..."). More useful error reporting
+  when no match found (previously failed with a NullPointerException in log and no
+  clear user feedback).
+type: fixed
+authors:
+- name: gthb
+links:
+- name: SOLR-1191
+  url: https://issues.apache.org/jira/browse/SOLR-1191

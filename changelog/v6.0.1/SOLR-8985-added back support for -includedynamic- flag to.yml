@@ -1,0 +1,7 @@
+title: Added back support for 'includeDynamic' flag to /schema/fields endpoint
+type: other
+authors:
+- name: noble
+links:
+- name: SOLR-8985
+  url: https://issues.apache.org/jira/browse/SOLR-8985

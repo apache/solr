@@ -1,0 +1,8 @@
+title: Use IndexReader.reopen to save resources by re-using parts of the index that
+  haven't changed.
+type: changed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-374
+  url: https://issues.apache.org/jira/browse/SOLR-374

@@ -1,0 +1,8 @@
+title: Allow a client application to request the minium achieved replication factor
+  for an update request (single or batch) by sending an optional parameter "min_rf".
+type: added
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-5468
+  url: https://issues.apache.org/jira/browse/SOLR-5468

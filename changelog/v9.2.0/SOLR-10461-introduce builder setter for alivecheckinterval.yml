@@ -1,0 +1,10 @@
+title: Introduce Builder setter for aliveCheckInterval on load balanced SolrClients.
+  Deprecated direct setter setAliveCheckInterval on SolrClients.
+type: changed
+authors:
+- name: Eric Pugh
+- name: David Smiley
+- name: Alex Deparvu
+links:
+- name: SOLR-10461
+  url: https://issues.apache.org/jira/browse/SOLR-10461

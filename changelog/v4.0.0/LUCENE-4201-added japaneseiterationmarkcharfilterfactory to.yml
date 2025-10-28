@@ -1,0 +1,9 @@
+title: Added JapaneseIterationMarkCharFilterFactory to normalize Japanese iteration
+  marks.
+type: added
+authors:
+- name: Robert Muir
+- name: Christian Moen
+links:
+- name: LUCENE-4201
+  url: https://issues.apache.org/jira/browse/LUCENE-4201

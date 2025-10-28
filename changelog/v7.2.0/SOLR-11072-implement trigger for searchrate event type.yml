@@ -1,0 +1,7 @@
+title: Implement trigger for searchRate event type.
+type: added
+authors:
+- name: ab
+links:
+- name: SOLR-11072
+  url: https://issues.apache.org/jira/browse/SOLR-11072

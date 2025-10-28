@@ -1,0 +1,11 @@
+title: 'Solr JSON Request API: - HTTP search requests can have a JSON body. - JSON
+  request can also be passed via the "json" parameter. - Smart merging of multiple
+  JSON parameters: ruery parameters starting with "json." will be merged into the
+  JSON request. - Legacy query parameters can also be passed in the "params" block
+  of the JSON request.'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-7216
+  url: https://issues.apache.org/jira/browse/SOLR-7216

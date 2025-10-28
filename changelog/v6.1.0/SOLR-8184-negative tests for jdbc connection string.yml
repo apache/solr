@@ -1,0 +1,9 @@
+title: Negative tests for JDBC Connection String
+type: other
+authors:
+- name: Susheel Kumar
+- name: Jason Gerlowski
+- name: Kevin Risden
+links:
+- name: SOLR-8184
+  url: https://issues.apache.org/jira/browse/SOLR-8184

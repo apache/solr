@@ -1,0 +1,10 @@
+title: Fixed DOMUtil so that code doing attribute validation will automatically ignore
+  nodes in the reserved "xml" prefix - in particular this fixes some bugs related
+  to xinclude and fieldTypes.
+type: fixed
+authors:
+- name: Amit Nithian
+- name: hossman
+links:
+- name: SOLR-3087
+  url: https://issues.apache.org/jira/browse/SOLR-3087

@@ -1,0 +1,9 @@
+title: avoid possible RejectedExecutionException w/autoCommit by making SolreCore
+  close the UpdateHandler before closing the SearchExecutor.
+type: fixed
+authors:
+- name: NarasimhaRaju
+- name: hossman
+links:
+- name: SOLR-2008
+  url: https://issues.apache.org/jira/browse/SOLR-2008

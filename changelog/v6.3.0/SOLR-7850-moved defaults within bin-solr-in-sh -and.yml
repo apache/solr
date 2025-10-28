@@ -1,0 +1,9 @@
+title: Moved defaults within bin/solr.in.sh (and bin/solr.in.cmd on Windows) to bin/solr
+  (and bin/solr.cmd) such that the default state of these files is to set nothing.
+  This makes Solr work better with Docker.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-7850
+  url: https://issues.apache.org/jira/browse/SOLR-7850

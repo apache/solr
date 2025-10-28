@@ -1,0 +1,8 @@
+title: Upgrade Apache Calcite to 1.27.0.
+type: changed
+authors:
+- name: Mark Miller
+- name: Timothy Potter
+links:
+- name: SOLR-15461
+  url: https://issues.apache.org/jira/browse/SOLR-15461

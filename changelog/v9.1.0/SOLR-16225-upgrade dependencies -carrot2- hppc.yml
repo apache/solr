@@ -1,0 +1,7 @@
+title: Upgrade dependencies (Carrot2, HPPC)
+type: changed
+authors:
+- name: Dawid Weiss
+links:
+- name: SOLR-16225
+  url: https://issues.apache.org/jira/browse/SOLR-16225

@@ -1,0 +1,8 @@
+title: Add support for globbing in field names to highlight. For example, hl.fl=*_text
+  will highlight all fieldnames ending with _text.
+type: added
+authors:
+- name: Lars Kotthoff
+links:
+- name: SOLR-540
+  url: https://issues.apache.org/jira/browse/SOLR-540

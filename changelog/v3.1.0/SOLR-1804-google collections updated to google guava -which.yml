@@ -1,0 +1,8 @@
+title: Google collections updated to Google Guava (which is a superset of collections
+  and contains bug fixes)
+type: other
+authors:
+- name: gsingers
+links:
+- name: SOLR-1804
+  url: https://issues.apache.org/jira/browse/SOLR-1804

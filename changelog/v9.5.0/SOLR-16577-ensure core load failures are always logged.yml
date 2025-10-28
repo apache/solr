@@ -1,0 +1,8 @@
+title: Ensure core load failures are always logged.
+type: changed
+authors:
+- name: Haythem Khiri
+- name: David Smiley
+links:
+- name: SOLR-16577
+  url: https://issues.apache.org/jira/browse/SOLR-16577

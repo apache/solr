@@ -1,0 +1,8 @@
+title: The /update/json and /update/csv URLs were restored to aid in the migration
+  of existing clients.
+type: other
+authors:
+- name: yonik
+links:
+- name: SOLR-2857
+  url: https://issues.apache.org/jira/browse/SOLR-2857

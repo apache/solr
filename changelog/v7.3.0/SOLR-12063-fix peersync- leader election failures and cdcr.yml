@@ -1,0 +1,9 @@
+title: Fix PeerSync, Leader Election failures and CDCR checkpoint inconsistencies
+  on a cluster running CDCR
+type: fixed
+authors:
+- name: Amrit Sarkar
+- name: Varun Thacker
+links:
+- name: SOLR-12063
+  url: https://issues.apache.org/jira/browse/SOLR-12063

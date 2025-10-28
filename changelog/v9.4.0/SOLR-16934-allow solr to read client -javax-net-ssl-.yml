@@ -1,0 +1,7 @@
+title: Allow Solr to read client (javax.net.ssl.*) trustStores and keyStores via SecurityManager.
+type: fixed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16934
+  url: https://issues.apache.org/jira/browse/SOLR-16934

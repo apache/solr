@@ -1,0 +1,8 @@
+title: Upgrade Jetty to 9.4.48.v20220622
+type: other
+authors:
+- name: Chris Sabelstrom
+- name: janhoy
+links:
+- name: SOLR-16332
+  url: https://issues.apache.org/jira/browse/SOLR-16332

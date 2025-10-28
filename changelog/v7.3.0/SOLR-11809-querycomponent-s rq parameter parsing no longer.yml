@@ -1,0 +1,6 @@
+title: QueryComponent's rq parameter parsing no longer considers the defType parameter.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-11809
+  url: https://issues.apache.org/jira/browse/SOLR-11809

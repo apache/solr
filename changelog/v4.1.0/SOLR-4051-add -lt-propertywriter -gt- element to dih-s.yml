@@ -1,0 +1,12 @@
+title: Add &lt;propertyWriter /&gt; element to DIH's data-config.xml file, allowing
+  the user to specify the location, filename and Locale for the "data-config.properties"
+  file. Alternatively, users can specify their own property writer implementation
+  for greater control. This new configuration element is optional, and defaults mimic
+  prior behavior. The one exception is that the "root" locale is default. Previously
+  it was the machine's default locale.
+type: added
+authors:
+- name: James Dyer
+links:
+- name: SOLR-4051
+  url: https://issues.apache.org/jira/browse/SOLR-4051

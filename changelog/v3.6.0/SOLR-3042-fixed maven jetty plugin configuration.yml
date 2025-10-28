@@ -1,0 +1,7 @@
+title: Fixed Maven Jetty plugin configuration.
+type: fixed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-3042
+  url: https://issues.apache.org/jira/browse/SOLR-3042

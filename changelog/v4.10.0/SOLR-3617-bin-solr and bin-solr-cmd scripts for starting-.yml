@@ -1,0 +1,8 @@
+title: bin/solr and bin/solr.cmd scripts for starting, stopping, and running Solr
+  examples
+type: added
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-3617
+  url: https://issues.apache.org/jira/browse/SOLR-3617

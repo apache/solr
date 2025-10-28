@@ -1,0 +1,7 @@
+title: Triggers should be able to restore state from old instances when taking over.
+type: fixed
+authors:
+- name: shalin
+links:
+- name: SOLR-10602
+  url: https://issues.apache.org/jira/browse/SOLR-10602

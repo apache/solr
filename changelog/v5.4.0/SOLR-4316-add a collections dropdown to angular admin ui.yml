@@ -1,0 +1,8 @@
+title: Add a collections dropdown to angular admin UI
+type: added
+authors:
+- name: Upayavira
+- name: Shalin Shekhar Mangar
+links:
+- name: SOLR-4316
+  url: https://issues.apache.org/jira/browse/SOLR-4316

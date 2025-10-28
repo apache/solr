@@ -1,0 +1,12 @@
+title: CloudSolrClient.connect() throws a more useful exception if the cluster is
+  not ready, and can now take an optional timeout argument to wait for the cluster.
+type: added
+authors:
+- name: Alan Woodward
+- name: shalin
+- name: yonik
+- name: Mark Miller
+- name: Vitaliy Zhovtyuk
+links:
+- name: SOLR-4044
+  url: https://issues.apache.org/jira/browse/SOLR-4044

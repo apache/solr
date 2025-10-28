@@ -1,0 +1,8 @@
+title: Atomic updates and realtime-get do not work with non-stored docvalues.
+type: fixed
+authors:
+- name: Ishan Chattopadhyaya
+- name: yonik
+links:
+- name: SOLR-8276
+  url: https://issues.apache.org/jira/browse/SOLR-8276

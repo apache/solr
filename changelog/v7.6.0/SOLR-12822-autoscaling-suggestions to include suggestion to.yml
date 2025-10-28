@@ -1,0 +1,7 @@
+title: /autoscaling/suggestions to include suggestion to add-replica for lost replicas
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-12822
+  url: https://issues.apache.org/jira/browse/SOLR-12822

@@ -1,0 +1,8 @@
+title: post.sh from exampledocs directory has been removed as there no longer is a
+  default update URL.
+type: other
+authors:
+- name: Anshum Gupta
+links:
+- name: SOLR-6861
+  url: https://issues.apache.org/jira/browse/SOLR-6861

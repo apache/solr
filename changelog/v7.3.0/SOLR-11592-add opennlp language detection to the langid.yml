@@ -1,0 +1,8 @@
+title: Add OpenNLP language detection to the langid contrib.
+type: added
+authors:
+- name: Koji
+- name: Steve Rowe
+links:
+- name: SOLR-11592
+  url: https://issues.apache.org/jira/browse/SOLR-11592

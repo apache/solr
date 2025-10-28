@@ -1,0 +1,13 @@
+title: Remove the restriction of adding json by only wrapping it in an array in a
+  new path /update/json/docs
+type: added
+authors:
+- name: Noble Paul
+- name: hossman
+- name: Yonik Seeley
+- name: Steve Rowe
+links:
+- name: SOLR-6294
+  url: https://issues.apache.org/jira/browse/SOLR-6294
+- name: SOLR-6437
+  url: https://issues.apache.org/jira/browse/SOLR-6437

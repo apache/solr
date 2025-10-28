@@ -1,0 +1,7 @@
+title: Modernize the DIH example config sets.
+type: other
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-5937
+  url: https://issues.apache.org/jira/browse/SOLR-5937

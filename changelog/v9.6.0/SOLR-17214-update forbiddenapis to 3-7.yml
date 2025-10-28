@@ -1,0 +1,7 @@
+title: Update forbiddenapis to 3.7
+type: dependency_update
+authors:
+- name: hossman
+links:
+- name: SOLR-17214
+  url: https://issues.apache.org/jira/browse/SOLR-17214

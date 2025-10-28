@@ -1,0 +1,7 @@
+title: Set versions for all Antora build tools
+type: other
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16264
+  url: https://issues.apache.org/jira/browse/SOLR-16264

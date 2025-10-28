@@ -1,0 +1,9 @@
+title: Add a distrib.singlePass parameter to make EXECUTE_QUERY phase fetch all fields
+  and skip GET_FIELDS.
+type: added
+authors:
+- name: Gregg Donovan
+- name: shalin
+links:
+- name: SOLR-5768
+  url: https://issues.apache.org/jira/browse/SOLR-5768

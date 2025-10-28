@@ -1,0 +1,9 @@
+title: CommonsHttpSolrServer.addFile could not be used to send multiple files in a
+  single request.
+type: fixed
+authors:
+- name: Stephan Günther
+- name: hossman
+links:
+- name: SOLR-2230
+  url: https://issues.apache.org/jira/browse/SOLR-2230

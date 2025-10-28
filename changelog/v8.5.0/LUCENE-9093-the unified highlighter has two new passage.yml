@@ -1,0 +1,11 @@
+title: The Unified highlighter has two new passage sizing parameters, hl.fragAlignRatio
+  and hl.fragsizeIsMinimum, with defaults that aim to better center matches in fragments
+  than previously. See the ref guide. Regardless of the settings, the passages may
+  be sized differently than before.
+type: changed
+authors:
+- name: Nándor Mátravölgyi
+- name: David Smiley
+links:
+- name: LUCENE-9093
+  url: https://issues.apache.org/jira/browse/LUCENE-9093

@@ -1,0 +1,7 @@
+title: Add Canberra, Chebyshev, Earth Movers and Manhattan Distance Stream Evaluators
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-11339
+  url: https://issues.apache.org/jira/browse/SOLR-11339

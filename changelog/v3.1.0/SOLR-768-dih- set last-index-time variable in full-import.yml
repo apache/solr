@@ -1,0 +1,8 @@
+title: 'DIH: Set last_index_time variable in full-import command.'
+type: added
+authors:
+- name: Wojtek Piaseczny
+- name: Noble Paul
+links:
+- name: SOLR-768
+  url: https://issues.apache.org/jira/browse/SOLR-768

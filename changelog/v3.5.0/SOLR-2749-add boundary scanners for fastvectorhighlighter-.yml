@@ -1,0 +1,9 @@
+title: Add boundary scanners for FastVectorHighlighter. &lt;boundaryScanner/&gt; can
+  be specified with a name in solrconfig.xml, and use hl.boundaryScanner=name parameter
+  to specify the named &lt;boundaryScanner/&gt;.
+type: added
+authors:
+- name: koji
+links:
+- name: SOLR-2749
+  url: https://issues.apache.org/jira/browse/SOLR-2749

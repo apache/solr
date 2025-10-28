@@ -1,0 +1,11 @@
+title: Fixed DataImportHandler ZKAwarePropertiesWriter implementation so import works
+  fine with SolrCloud clusters
+type: fixed
+authors:
+- name: Deniz Durmus
+- name: James Dyer
+- name: Erick Erickson
+- name: shalin
+links:
+- name: SOLR-4112
+  url: https://issues.apache.org/jira/browse/SOLR-4112

@@ -1,0 +1,11 @@
+title: sort wouldn't work correctly with distributed searching for some field types
+  such as legacy numeric types
+type: fixed
+authors:
+- name: Rob Muir
+- name: Mike McCandless
+links:
+- name: LUCENE-5399
+  url: https://issues.apache.org/jira/browse/LUCENE-5399
+- name: SOLR-5354
+  url: https://issues.apache.org/jira/browse/SOLR-5354

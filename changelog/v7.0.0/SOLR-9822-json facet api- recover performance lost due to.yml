@@ -1,0 +1,12 @@
+title: 'JSON Facet API: Recover performance lost due to the DocValues transition to
+  an iterator API (LUCENE-7407). This only fixes calculating counts for single-valued
+  string fields from the FieldCache, resulting in up to 56% better throughput for
+  those cases.'
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-9822
+  url: https://issues.apache.org/jira/browse/SOLR-9822
+- name: LUCENE-7407
+  url: https://issues.apache.org/jira/browse/LUCENE-7407

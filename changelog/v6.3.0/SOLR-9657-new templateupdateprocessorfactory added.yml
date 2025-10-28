@@ -1,0 +1,7 @@
+title: New TemplateUpdateProcessorFactory added
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-9657
+  url: https://issues.apache.org/jira/browse/SOLR-9657

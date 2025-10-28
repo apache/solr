@@ -1,0 +1,8 @@
+title: When a leader is elected and asks replicas to sync back to him and that fails,
+  we should ask those nodes to recovery asynchronously rather than synchronously.
+type: changed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-3837
+  url: https://issues.apache.org/jira/browse/SOLR-3837

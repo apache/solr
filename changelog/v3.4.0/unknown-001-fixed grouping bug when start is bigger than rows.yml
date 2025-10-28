@@ -1,0 +1,7 @@
+title: Fixed grouping bug when start is bigger than rows and format is simple that
+  zero documents are returned even if there are documents to display.
+type: fixed
+authors:
+- name: Martijn van Groningen
+- name: Nikhil Chhaochharia
+links: []

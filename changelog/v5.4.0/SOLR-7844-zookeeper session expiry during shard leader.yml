@@ -1,0 +1,9 @@
+title: Zookeeper session expiry during shard leader election can cause multiple leaders.
+type: fixed
+authors:
+- name: Mike Roberts
+- name: Mark Miller
+- name: Jessica Cheng
+links:
+- name: SOLR-7844
+  url: https://issues.apache.org/jira/browse/SOLR-7844

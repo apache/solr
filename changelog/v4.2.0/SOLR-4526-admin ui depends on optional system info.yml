@@ -1,0 +1,7 @@
+title: Admin UI depends on optional system info
+type: changed
+authors:
+- name: "Felix Buenemann via\n  steffkes"
+links:
+- name: SOLR-4526
+  url: https://issues.apache.org/jira/browse/SOLR-4526

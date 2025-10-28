@@ -1,0 +1,8 @@
+title: bin/solr export tool limit property was off by 1. Now limit results exported
+  to the exact number.
+type: fixed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-16765
+  url: https://issues.apache.org/jira/browse/SOLR-16765

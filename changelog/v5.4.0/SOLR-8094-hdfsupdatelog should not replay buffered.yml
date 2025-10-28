@@ -1,0 +1,8 @@
+title: HdfsUpdateLog should not replay buffered documents as a replacement to dropping
+  them.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-8094
+  url: https://issues.apache.org/jira/browse/SOLR-8094

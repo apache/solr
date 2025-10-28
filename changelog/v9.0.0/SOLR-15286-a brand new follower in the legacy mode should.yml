@@ -1,0 +1,9 @@
+title: A brand new follower in the legacy mode should wait to replicate index before
+  reporting healthy
+type: changed
+authors:
+- name: Pushkar Raste
+- name: Anshum Gupta
+links:
+- name: SOLR-15286
+  url: https://issues.apache.org/jira/browse/SOLR-15286

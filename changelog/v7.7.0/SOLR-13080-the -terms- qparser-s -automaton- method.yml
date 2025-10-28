@@ -1,0 +1,10 @@
+title: The "terms" QParser's "automaton" method semi-required that the input terms/IDs
+  be sorted. This query parser now does this. Unclear if this is a perf issue or actual
+  bug.
+type: fixed
+authors:
+- name: Daniel Lowe
+- name: David Smiley
+links:
+- name: SOLR-13080
+  url: https://issues.apache.org/jira/browse/SOLR-13080

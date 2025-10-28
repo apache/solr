@@ -1,0 +1,8 @@
+title: Allow solr.xml to be stored in ZooKeeper.
+type: added
+authors:
+- name: Mark Miller
+- name: Erick Erickson
+links:
+- name: SOLR-4718
+  url: https://issues.apache.org/jira/browse/SOLR-4718

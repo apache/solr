@@ -1,0 +1,10 @@
+title: 'The default configset no longer has the following: - Library inclusions (&lt;lib
+  ../&gt;) for extraction, solr-cell libs, clustering, velocity, LTR and language
+  identifier - /browse, /tvrh and /update/extract handlers - TermVector component'
+type: upgrade_notes
+authors:
+- name: if someone wants it
+- name: can be added using config APIs
+links:
+- name: SOLR-13978
+  url: https://issues.apache.org/jira/browse/SOLR-13978

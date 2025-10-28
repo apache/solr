@@ -1,0 +1,7 @@
+title: Fix explanation of select() streaming expression that uses replace() operation
+type: fixed
+authors:
+- name: Ahmet Can Kepenek
+links:
+- name: SOLR-9661
+  url: https://issues.apache.org/jira/browse/SOLR-9661

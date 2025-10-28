@@ -1,0 +1,9 @@
+title: Authentication and Authorization plugins now work in standalone mode if security.json
+  is placed in SOLR_HOME on every node. Editing config through API is supported but
+  affects only that one node.
+type: added
+authors:
+- name: janhoy
+links:
+- name: SOLR-9481
+  url: https://issues.apache.org/jira/browse/SOLR-9481

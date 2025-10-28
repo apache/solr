@@ -1,0 +1,8 @@
+title: 'contrib/clustering: Typo in param name fixed: "carrot.fragzise" changed to
+  "carrot.fragSize"'
+type: fixed
+authors:
+- name: Stanislaw Osinski
+links:
+- name: SOLR-2692
+  url: https://issues.apache.org/jira/browse/SOLR-2692

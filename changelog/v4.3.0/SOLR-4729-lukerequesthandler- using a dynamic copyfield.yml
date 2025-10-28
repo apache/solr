@@ -1,0 +1,10 @@
+title: 'LukeRequestHandler: Using a dynamic copyField source that is not also a dynamic
+  field triggers error message ''undefined field: "(glob)"''.'
+type: fixed
+authors:
+- name: Adam Hahn
+- name: hossman
+- name: Steve Rowe
+links:
+- name: SOLR-4729
+  url: https://issues.apache.org/jira/browse/SOLR-4729

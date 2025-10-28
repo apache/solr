@@ -1,0 +1,7 @@
+title: SolrDispatchFilter#sendError can get a SolrCore that it does not close.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5460
+  url: https://issues.apache.org/jira/browse/SOLR-5460

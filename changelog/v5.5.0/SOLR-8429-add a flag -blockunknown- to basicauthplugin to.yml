@@ -1,0 +1,7 @@
+title: Add a flag 'blockUnknown' to BasicAuthPlugin to block unauthenticated requests
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-8429
+  url: https://issues.apache.org/jira/browse/SOLR-8429

@@ -1,0 +1,8 @@
+title: Report solr.xml's coreRootDirectory property via System Settings API, when
+  set
+type: changed
+authors:
+- name: Alexandre Rafalovitch
+links:
+- name: SOLR-14878
+  url: https://issues.apache.org/jira/browse/SOLR-14878

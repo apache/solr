@@ -1,0 +1,8 @@
+title: Allow Solr to load index from arbitrary directory in dataDir
+type: added
+authors:
+- name: Noble Paul
+- name: Akshay Ukey
+links:
+- name: SOLR-658
+  url: https://issues.apache.org/jira/browse/SOLR-658

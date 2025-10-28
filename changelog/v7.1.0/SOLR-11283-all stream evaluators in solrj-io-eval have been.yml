@@ -1,0 +1,10 @@
+title: all Stream Evaluators in solrj.io.eval have been refactored to have a simplier
+  and more robust structure. This simplifies and condenses the code required to implement
+  a new Evaluator and makes it much easier for evaluators to handle differing data
+  types (primitives, objects, arrays, lists, and so forth).
+type: upgrade_notes
+authors:
+- name: Dennis Gove
+links:
+- name: SOLR-11283
+  url: https://issues.apache.org/jira/browse/SOLR-11283

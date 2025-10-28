@@ -1,0 +1,9 @@
+title: Fixing NullPointerException failure by TestManagedSchemaThreadSafety adding
+  check for Zookeeper session expiration
+type: other
+authors:
+- name: Steve Rowe
+- name: Mikhail Khludnev
+links:
+- name: SOLR-9983
+  url: https://issues.apache.org/jira/browse/SOLR-9983

@@ -1,0 +1,11 @@
+title: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked
+  as not live AKA zombies instead of the full list of cores. This list is potentially
+  as long as the number of cores. When there are many cores, this leads to high CPU
+  and memory usage.
+type: changed
+authors:
+- name: Gilles Bellaton
+- name: David Smiley
+links:
+- name: SOLR-17084
+  url: https://issues.apache.org/jira/browse/SOLR-17084

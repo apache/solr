@@ -1,0 +1,9 @@
+title: All filters that match all documents in the index now share the same memory
+  (DocSet).
+type: changed
+authors:
+- name: Michael Sun
+- name: yonik
+links:
+- name: SOLR-9764
+  url: https://issues.apache.org/jira/browse/SOLR-9764

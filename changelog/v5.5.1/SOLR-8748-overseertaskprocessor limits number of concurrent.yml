@@ -1,0 +1,9 @@
+title: OverseerTaskProcessor limits number of concurrent tasks to just 10 even though
+  the thread pool size is 100. The limit has now been increased to 100.
+type: fixed
+authors:
+- name: Scott Blum
+- name: shalin
+links:
+- name: SOLR-8748
+  url: https://issues.apache.org/jira/browse/SOLR-8748

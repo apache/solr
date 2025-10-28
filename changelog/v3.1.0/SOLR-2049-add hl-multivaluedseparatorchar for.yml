@@ -1,0 +1,9 @@
+title: Add hl.multiValuedSeparatorChar for FastVectorHighlighter, per LUCENE-2603.
+type: added
+authors:
+- name: koji
+links:
+- name: SOLR-2049
+  url: https://issues.apache.org/jira/browse/SOLR-2049
+- name: LUCENE-2603
+  url: https://issues.apache.org/jira/browse/LUCENE-2603

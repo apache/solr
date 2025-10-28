@@ -1,0 +1,8 @@
+title: add maxBooleanClauses (default to 1024) setting to solr.xml, reverting previous
+  effective value of Integer.MAX_VALUE-1, to restrict risk of pathalogical query expansion.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-13336
+  url: https://issues.apache.org/jira/browse/SOLR-13336

@@ -1,0 +1,10 @@
+title: Make it possible to configure a host whitelist for distributed search
+type: added
+authors:
+- name: Christine Poerschke
+- name: janhoy
+- name: Erick Erickson
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-12770
+  url: https://issues.apache.org/jira/browse/SOLR-12770

@@ -1,0 +1,9 @@
+title: After a failed connection during construction of SolrZkClient attempt to retry
+  until a connection can be made.
+type: fixed
+authors:
+- name: Keith Laban
+- name: Dennis Gove
+links:
+- name: SOLR-8599
+  url: https://issues.apache.org/jira/browse/SOLR-8599

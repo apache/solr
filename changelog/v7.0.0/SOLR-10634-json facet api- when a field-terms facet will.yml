@@ -1,0 +1,10 @@
+title: 'JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
+  and there are no nested facets, aggregations are computed in the first collection
+  phase so that the second phase which would normally involve calculating the domain
+  for the bucket can be skipped entirely, leading to large performance improvements.'
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-10634
+  url: https://issues.apache.org/jira/browse/SOLR-10634

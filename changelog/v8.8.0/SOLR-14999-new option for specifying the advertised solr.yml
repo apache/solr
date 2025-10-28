@@ -1,0 +1,8 @@
+title: New option for specifying the advertised Solr Port (hostPort). Still defaults
+  to "jetty.port".
+type: other
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-14999
+  url: https://issues.apache.org/jira/browse/SOLR-14999

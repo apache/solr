@@ -1,0 +1,11 @@
+title: IndexFetcher now fetches only those files (from master/leader) that are different.
+  This differential fetching now speeds up recovery times when full index replication
+  is needed, but only a few segments diverge.
+type: changed
+authors:
+- name: Ishan Chattopadhyaya
+- name: Shaun Sabo
+- name: John Gallagher
+links:
+- name: SOLR-11920
+  url: https://issues.apache.org/jira/browse/SOLR-11920

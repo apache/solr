@@ -1,0 +1,7 @@
+title: Add toggle to disable auto-refresh of Logging page in the UI
+type: other
+authors:
+- name: "Tommy Marshment-Howell via\n  Cassandra Targett"
+links:
+- name: SOLR-11897
+  url: https://issues.apache.org/jira/browse/SOLR-11897

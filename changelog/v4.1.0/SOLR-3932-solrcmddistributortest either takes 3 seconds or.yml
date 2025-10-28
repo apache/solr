@@ -1,0 +1,8 @@
+title: SolrCmdDistributorTest either takes 3 seconds or 3 minutes.
+type: other
+authors:
+- name: yonik
+- name: Mark Miller
+links:
+- name: SOLR-3932
+  url: https://issues.apache.org/jira/browse/SOLR-3932

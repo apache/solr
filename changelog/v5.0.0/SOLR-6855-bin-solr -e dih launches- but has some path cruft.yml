@@ -1,0 +1,9 @@
+title: bin/solr -e dih launches, but has some path cruft issues preventing some of
+  the imports don't work
+type: other
+authors:
+- name: Hossman
+- name: Timothy Potter
+links:
+- name: SOLR-6855
+  url: https://issues.apache.org/jira/browse/SOLR-6855

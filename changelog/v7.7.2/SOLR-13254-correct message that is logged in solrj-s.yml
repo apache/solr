@@ -1,0 +1,8 @@
+title: Correct message that is logged in solrj's ConnectionManager when an exception
+  occurred while reconnecting to ZooKeeper.
+type: fixed
+authors:
+- name: hu xiaodong
+links:
+- name: SOLR-13254
+  url: https://issues.apache.org/jira/browse/SOLR-13254

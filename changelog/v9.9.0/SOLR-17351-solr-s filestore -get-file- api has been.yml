@@ -1,0 +1,12 @@
+title: Solr's filestore "get-file" API has been decomposed into several separate endpoints.
+  Traditional file-fetching is now available at `GET /api/cluster/filestore/files/some/path.txt`
+  and metadata fetching (and directory listing) is now available at `GET /api/cluster/filestore/metadata/some/path.txt`.
+  SolrJ now offers request and response bindings for these APIs in `org.apache.solr.client.solrj.request.FileStoreApi`.
+  The older form of this endpoint (`GET /api/node/files`) is deprecated and is slated
+  to be removed.
+type: changed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-17351
+  url: https://issues.apache.org/jira/browse/SOLR-17351

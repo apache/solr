@@ -1,0 +1,8 @@
+title: Javac/ ivy path warnings with morfologik fixed by upgrading to Morfologik 1.5.5
+type: other
+authors:
+- name: Robert Muir
+- name: Dawid Weiss
+links:
+- name: SOLR-4106
+  url: https://issues.apache.org/jira/browse/SOLR-4106

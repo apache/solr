@@ -1,0 +1,9 @@
+title: Jetty threads' contextClassLoaders are set to the Solr core's resourceLoader's
+  classLoader. This allows for custom plugins and Solr modules to rely on 3rd part
+  dependencies that use the thread contextClassLoader.
+type: changed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16131
+  url: https://issues.apache.org/jira/browse/SOLR-16131

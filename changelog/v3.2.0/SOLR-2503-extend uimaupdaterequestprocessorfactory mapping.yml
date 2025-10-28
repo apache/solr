@@ -1,0 +1,8 @@
+title: extend UIMAUpdateRequestProcessorFactory mapping function to map feature value
+  to dynamicField.
+type: added
+authors:
+- name: koji
+links:
+- name: SOLR-2503
+  url: https://issues.apache.org/jira/browse/SOLR-2503

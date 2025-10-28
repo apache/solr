@@ -1,0 +1,8 @@
+title: Add IgnoreLargeDocumentProcessFactory
+type: added
+authors:
+- name: Cao Manh Dat
+- name: David Smiley
+links:
+- name: SOLR-12278
+  url: https://issues.apache.org/jira/browse/SOLR-12278

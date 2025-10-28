@@ -1,0 +1,8 @@
+title: new @RandomizeSSL annotation for more fine grained control of SSL testing
+type: other
+authors:
+- name: hossman
+- name: sarowe
+links:
+- name: SOLR-9107
+  url: https://issues.apache.org/jira/browse/SOLR-9107

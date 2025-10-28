@@ -1,0 +1,10 @@
+title: Allow current single core deployments to be specified by solr.xml
+type: added
+authors:
+- name: Mark Miller
+- name: noble
+links:
+- name: SOLR-1621
+  url: https://issues.apache.org/jira/browse/SOLR-1621
+- name: SOLR-1722
+  url: https://issues.apache.org/jira/browse/SOLR-1722

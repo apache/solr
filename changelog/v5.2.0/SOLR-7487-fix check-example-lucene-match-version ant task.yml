@@ -1,0 +1,10 @@
+title: Fix check-example-lucene-match-version Ant task to check luceneMatchVersion
+  in solr/server/solr/configsets instead of example and harden error checking / validation
+  logic.
+type: other
+authors:
+- name: hossman
+- name: Timothy Potter
+links:
+- name: SOLR-7487
+  url: https://issues.apache.org/jira/browse/SOLR-7487

@@ -1,0 +1,7 @@
+title: Add regress and predict Stream Evaluators
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-10622
+  url: https://issues.apache.org/jira/browse/SOLR-10622

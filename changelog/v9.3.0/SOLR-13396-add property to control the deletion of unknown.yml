@@ -1,0 +1,13 @@
+title: Add property to control the deletion of unknown cores. The default setting
+  is to not delete unknown cores. This is a change to behaviour introduced in Solr
+  7.3.1 by SOLR-12066. To continue using the previous behaviour, Solr can be started
+  with the system property `solr.deleteUnknownCores` set to `true`.
+type: upgrade_notes
+authors:
+- name: Colvin Cowie
+- name: janhoy
+links:
+- name: SOLR-13396
+  url: https://issues.apache.org/jira/browse/SOLR-13396
+- name: SOLR-12066
+  url: https://issues.apache.org/jira/browse/SOLR-12066

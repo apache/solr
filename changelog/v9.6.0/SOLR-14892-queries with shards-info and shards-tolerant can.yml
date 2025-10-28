@@ -1,0 +1,9 @@
+title: Queries with shards.info and shards.tolerant can yield multiple null keys in
+  place of shard names
+type: fixed
+authors:
+- name: Mathieu Marie
+- name: David Smiley
+links:
+- name: SOLR-14892
+  url: https://issues.apache.org/jira/browse/SOLR-14892

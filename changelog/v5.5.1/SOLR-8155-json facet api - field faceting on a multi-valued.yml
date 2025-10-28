@@ -1,0 +1,11 @@
+title: JSON Facet API - field faceting on a multi-valued string field without docValues
+  (i.e. UnInvertedField implementation), but with a prefix or with a sort other than
+  count, resulted in incorrect results. This has been fixed, and facet.prefix support
+  for facet.method=uif has been enabled.
+type: fixed
+authors:
+- name: Mikhail Khludnev
+- name: yonik
+links:
+- name: SOLR-8155
+  url: https://issues.apache.org/jira/browse/SOLR-8155

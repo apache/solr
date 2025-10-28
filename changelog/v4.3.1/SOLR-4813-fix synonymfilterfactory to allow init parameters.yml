@@ -1,0 +1,9 @@
+title: Fix SynonymFilterFactory to allow init parameters for tokenizer factory used
+  when parsing synonyms file.
+type: fixed
+authors:
+- name: Shingo Sasaki
+- name: hossman
+links:
+- name: SOLR-4813
+  url: https://issues.apache.org/jira/browse/SOLR-4813

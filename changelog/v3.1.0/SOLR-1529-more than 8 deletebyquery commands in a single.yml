@@ -1,0 +1,8 @@
+title: More than 8 deleteByQuery commands in a single request caused an error to be
+  returned, although the deletes were still executed.
+type: fixed
+authors:
+- name: asmodean
+links:
+- name: SOLR-1529
+  url: https://issues.apache.org/jira/browse/SOLR-1529

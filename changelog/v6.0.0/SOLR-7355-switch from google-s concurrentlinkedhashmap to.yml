@@ -1,0 +1,8 @@
+title: Switch from Google's ConcurrentLinkedHashMap to Caffeine. Only affects HDFS
+  support.
+type: other
+authors:
+- name: Ben Manes
+links:
+- name: SOLR-7355
+  url: https://issues.apache.org/jira/browse/SOLR-7355

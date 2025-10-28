@@ -1,0 +1,8 @@
+title: 'DIH: DateFormatTransformer does not work correctly with non-default locale
+  dates'
+type: fixed
+authors:
+- name: tommy chheng
+links:
+- name: SOLR-1762
+  url: https://issues.apache.org/jira/browse/SOLR-1762

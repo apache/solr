@@ -1,0 +1,9 @@
+title: Until now, the CREATE command of Collections API returned status 0 even in
+  case of failure. Now, the status code will be non-zero in case of failures
+type: upgrade_notes
+authors:
+- name: e.g. 4xx
+- name: 5xx
+links:
+- name: SOLR-5970
+  url: https://issues.apache.org/jira/browse/SOLR-5970

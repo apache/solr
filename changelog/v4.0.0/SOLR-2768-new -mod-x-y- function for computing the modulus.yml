@@ -1,0 +1,7 @@
+title: new "mod(x,y)" function for computing the modulus of two value sources.
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-2768
+  url: https://issues.apache.org/jira/browse/SOLR-2768

@@ -1,0 +1,9 @@
+title: Get rid of blacklist/whitelist terminology JWTAuthPlugin parameter 'algWhitelist'
+  is now 'algAllowlist' Environment variables SOLR_IP_WHITELIST and SOLR_IP_BLACKLIST
+  are no longer supported, but replaced with SOLR_IP_ALLOWLIST and SOLR_IP_DENYLIST.
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-15809
+  url: https://issues.apache.org/jira/browse/SOLR-15809

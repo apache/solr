@@ -1,0 +1,7 @@
+title: Clean up mention of trie fields in documentation and source comments.
+type: other
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-11324
+  url: https://issues.apache.org/jira/browse/SOLR-11324

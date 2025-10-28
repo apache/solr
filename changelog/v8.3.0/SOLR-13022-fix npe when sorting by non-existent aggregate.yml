@@ -1,0 +1,8 @@
+title: Fix NPE when sorting by non-existent aggregate function in JSON Facet
+type: fixed
+authors:
+- name: hossman
+- name: Munendra S N
+links:
+- name: SOLR-13022
+  url: https://issues.apache.org/jira/browse/SOLR-13022

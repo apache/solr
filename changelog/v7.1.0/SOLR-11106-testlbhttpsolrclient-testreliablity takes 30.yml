@@ -1,0 +1,8 @@
+title: TestLBHttpSolrClient.testReliablity takes 30 seconds because of the wrong server
+  name
+type: other
+authors:
+- name: Kensho Hirasawa
+links:
+- name: SOLR-11106
+  url: https://issues.apache.org/jira/browse/SOLR-11106

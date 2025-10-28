@@ -1,0 +1,8 @@
+title: MoveReplicaSuggester must check if the target becomes more 'loaded' than the
+  source if an operation is performed
+type: fixed
+authors:
+- name: noble
+links:
+- name: SOLR-11026
+  url: https://issues.apache.org/jira/browse/SOLR-11026

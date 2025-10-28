@@ -1,0 +1,9 @@
+title: Admin UI (angular) now works with Kerberos, by excluding serving of /solr/libs/*
+  through SolrDispatchFilter.
+type: fixed
+authors:
+- name: Cassandra Targett
+- name: Amrit Sarkar
+links:
+- name: SOLR-9516
+  url: https://issues.apache.org/jira/browse/SOLR-9516

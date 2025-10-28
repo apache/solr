@@ -1,0 +1,8 @@
+title: Streamline ConfigSet modification logic.
+type: changed
+authors:
+- name: Houston Putman
+- name: Liu Huajin
+links:
+- name: SOLR-17418
+  url: https://issues.apache.org/jira/browse/SOLR-17418

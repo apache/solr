@@ -1,0 +1,7 @@
+title: Add per-stage RequestHandler metrics.
+type: added
+authors:
+- name: ab
+links:
+- name: SOLR-11778
+  url: https://issues.apache.org/jira/browse/SOLR-11778

@@ -1,0 +1,10 @@
+title: Added several new distance based functions, including Great Circle (haversine),
+  Manhattan, Euclidean and String (using the StringDistance methods in the Lucene
+  spellchecker). Also added geohash(), deg() and rad() convenience functions. See
+  https://solr.apache.org/guide/solr/latest/query-guide/function-queries.html
+type: added
+authors:
+- name: gsingers
+links:
+- name: SOLR-1302
+  url: https://issues.apache.org/jira/browse/SOLR-1302

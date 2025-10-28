@@ -1,0 +1,36 @@
+title: Grouping / Field collapsing using the Lucene grouping contrib. The search result
+  can be grouped by field and query.
+type: added
+authors:
+- name: Martijn van Groningen
+- name: Emmanuel Keller
+- name: Shalin Shekhar Mangar
+- name: Koji Sekiguchi
+- name: Iván de Prado
+- name: Ryan McKinley
+- name: Marc Sturlese
+- name: Peter Karich
+- name: Bojan Smid
+- name: Charles Hornberger
+- name: Dieter Grad
+- name: Dmitry Lihachev
+- name: Doug Steigerwald
+- name: Karsten Sperling
+- name: Michael Gundlach
+- name: Oleg Gnatovskiy
+- name: Thomas Traeger
+- name: Harish Agarwal
+- name: yonik
+- name: Michael McCandless
+- name: Bill Bell
+links:
+- name: SOLR-2524
+  url: https://issues.apache.org/jira/browse/SOLR-2524
+- name: SOLR-236
+  url: https://issues.apache.org/jira/browse/SOLR-236
+- name: SOLR-237
+  url: https://issues.apache.org/jira/browse/SOLR-237
+- name: SOLR-1773
+  url: https://issues.apache.org/jira/browse/SOLR-1773
+- name: SOLR-1311
+  url: https://issues.apache.org/jira/browse/SOLR-1311

@@ -1,0 +1,9 @@
+title: 'v2 API: many API command specification properties are typed "number" but should
+  instead be typed "integer"'
+type: fixed
+authors:
+- name: Steve Rowe
+- name: Cao Manh Dat
+links:
+- name: SOLR-10412
+  url: https://issues.apache.org/jira/browse/SOLR-10412

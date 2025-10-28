@@ -1,0 +1,9 @@
+title: post.jar reports back detailed error in case of error responses.
+type: other
+authors:
+- name: Sameer Maggon
+- name: shalin
+- name: Uwe Schindler
+links:
+- name: SOLR-5940
+  url: https://issues.apache.org/jira/browse/SOLR-5940

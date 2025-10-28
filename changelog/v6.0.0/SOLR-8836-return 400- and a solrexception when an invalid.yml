@@ -1,0 +1,8 @@
+title: Return 400, and a SolrException when an invalid json is provided to the update
+  handler instead of 500.
+type: other
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-8836
+  url: https://issues.apache.org/jira/browse/SOLR-8836

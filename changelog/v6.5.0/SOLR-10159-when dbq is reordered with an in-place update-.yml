@@ -1,0 +1,8 @@
+title: When DBQ is reordered with an in-place update, upon whose updated value the
+  DBQ is based on, the DBQ fails due to excessive caching in DeleteByQueryWrapper
+type: fixed
+authors:
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-10159
+  url: https://issues.apache.org/jira/browse/SOLR-10159

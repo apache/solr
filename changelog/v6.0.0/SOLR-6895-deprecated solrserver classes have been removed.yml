@@ -1,0 +1,8 @@
+title: Deprecated SolrServer classes have been removed
+type: other
+authors:
+- name: Alan Woodward
+- name: Erik Hatcher
+links:
+- name: SOLR-6895
+  url: https://issues.apache.org/jira/browse/SOLR-6895

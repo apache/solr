@@ -1,0 +1,8 @@
+title: bin/solr script needs to pass -DnumShards=1 for boostrapping collection1 when
+  starting Solr in cloud mode.
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-6447
+  url: https://issues.apache.org/jira/browse/SOLR-6447

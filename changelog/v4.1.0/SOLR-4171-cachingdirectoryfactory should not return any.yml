@@ -1,0 +1,8 @@
+title: CachingDirectoryFactory should not return any directories after it has been
+  closed.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4171
+  url: https://issues.apache.org/jira/browse/SOLR-4171

@@ -1,0 +1,10 @@
+title: Fixed an integer overflow bug in the HyperLogLog code used by the 'cardinality'
+  option of stats.field to prevent ArrayIndexOutOfBoundsException in a distributed
+  search when a large precision is selected and a large number of values exist in
+  each shard
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-7954
+  url: https://issues.apache.org/jira/browse/SOLR-7954

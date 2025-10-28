@@ -1,0 +1,8 @@
+title: Fix ClassCastException when using the /sql handler count() function with single-shard
+  collections
+type: fixed
+authors:
+- name: Minoru Osuka
+links:
+- name: SOLR-9141
+  url: https://issues.apache.org/jira/browse/SOLR-9141

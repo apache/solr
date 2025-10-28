@@ -1,0 +1,7 @@
+title: SearchGroupShardResponseProcessor (initialCapacity) tweaks
+type: other
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-8555
+  url: https://issues.apache.org/jira/browse/SOLR-8555

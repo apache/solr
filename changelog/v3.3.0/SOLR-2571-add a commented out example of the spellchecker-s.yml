@@ -1,0 +1,8 @@
+title: Add a commented out example of the spellchecker's thresholdTokenFrequency parameter
+  to the example solrconfig.xml, and also add a unit test for this feature.
+type: other
+authors:
+- name: James Dyer
+links:
+- name: SOLR-2571
+  url: https://issues.apache.org/jira/browse/SOLR-2571

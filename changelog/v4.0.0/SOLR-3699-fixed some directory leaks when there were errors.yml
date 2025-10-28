@@ -1,0 +1,8 @@
+title: Fixed some Directory leaks when there were errors during SolrCore or SolrIndexWriter
+  initialization.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-3699
+  url: https://issues.apache.org/jira/browse/SOLR-3699

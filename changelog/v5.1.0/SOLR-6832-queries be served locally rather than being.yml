@@ -1,0 +1,8 @@
+title: Queries be served locally rather than being forwarded to another replica.
+type: added
+authors:
+- name: Sachin Goyal
+- name: Timothy Potter
+links:
+- name: SOLR-6832
+  url: https://issues.apache.org/jira/browse/SOLR-6832

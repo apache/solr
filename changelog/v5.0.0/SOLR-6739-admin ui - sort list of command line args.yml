@@ -1,0 +1,7 @@
+title: Admin UI - Sort list of command line args
+type: other
+authors:
+- name: steffkes
+links:
+- name: SOLR-6739
+  url: https://issues.apache.org/jira/browse/SOLR-6739

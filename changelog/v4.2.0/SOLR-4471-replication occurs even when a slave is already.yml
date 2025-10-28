@@ -1,0 +1,8 @@
+title: Replication occurs even when a slave is already up to date.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Andre Charton
+links:
+- name: SOLR-4471
+  url: https://issues.apache.org/jira/browse/SOLR-4471

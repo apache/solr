@@ -1,0 +1,7 @@
+title: fix replication problem on follower restart
+type: fixed
+authors:
+- name: Martin Anzinger and Peter Kroiss
+links:
+- name: SOLR-17306
+  url: https://issues.apache.org/jira/browse/SOLR-17306

@@ -1,0 +1,8 @@
+title: Fix for deleting zookeeper nodes with same path length. Only the first zk-node
+  was removed.
+type: fixed
+authors:
+- name: Michael Aleythe
+links:
+- name: SOLR-14961
+  url: https://issues.apache.org/jira/browse/SOLR-14961

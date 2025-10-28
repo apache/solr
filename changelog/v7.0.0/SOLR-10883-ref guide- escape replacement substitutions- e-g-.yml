@@ -1,0 +1,9 @@
+title: 'Ref guide: Escape replacement substitutions, e.g. =&gt; to right arrow, so
+  that they are rendered visibly in the PDF. Also add .adoc file checks to the top-level
+  validate target, including for the invisible substitutions PDF problem.'
+type: other
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-10883
+  url: https://issues.apache.org/jira/browse/SOLR-10883

@@ -1,0 +1,7 @@
+title: Long core names break web gui appearance and functionality
+type: fixed
+authors:
+- name: steffkes
+links:
+- name: SOLR-4079
+  url: https://issues.apache.org/jira/browse/SOLR-4079

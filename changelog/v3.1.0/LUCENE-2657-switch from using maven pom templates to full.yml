@@ -1,0 +1,7 @@
+title: Switch from using Maven POM templates to full POMs when generating Maven artifacts
+type: other
+authors:
+- name: Steven Rowe
+links:
+- name: LUCENE-2657
+  url: https://issues.apache.org/jira/browse/LUCENE-2657

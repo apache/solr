@@ -1,0 +1,7 @@
+title: Spellcheck NPE if invalid dictionary name is provided
+type: fixed
+authors:
+- name: Kevin Risden
+links:
+- name: SOLR-16168
+  url: https://issues.apache.org/jira/browse/SOLR-16168

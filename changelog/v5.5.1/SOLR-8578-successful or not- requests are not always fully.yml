@@ -1,0 +1,8 @@
+title: Successful or not, requests are not always fully consumed by Solrj clients
+  and we count on HttpClient or the JVM.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-8578
+  url: https://issues.apache.org/jira/browse/SOLR-8578

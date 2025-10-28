@@ -1,0 +1,8 @@
+title: Core Admin UI gives no feedback if "Add Core" fails
+type: fixed
+authors:
+- name: steffkes
+- name: hossman
+links:
+- name: SOLR-3679
+  url: https://issues.apache.org/jira/browse/SOLR-3679

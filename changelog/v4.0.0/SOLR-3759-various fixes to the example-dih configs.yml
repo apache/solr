@@ -1,0 +1,8 @@
+title: Various fixes to the example-DIH configs
+type: fixed
+authors:
+- name: Ahmet Arslan
+- name: hossman
+links:
+- name: SOLR-3759
+  url: https://issues.apache.org/jira/browse/SOLR-3759

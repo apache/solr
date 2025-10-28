@@ -1,0 +1,10 @@
+title: The paths of the v2 "ZooKeeper read" APIs have been tweaked slightly to be
+  more intuitive. "get node data" is now available at `GET /api/cluster/zookeeper/data/&lt;path&gt;`,
+  and "list node children" is now available at `GET /api/cluster/zookeeper/children/&lt;path&gt;`
+type: changed
+authors:
+- name: Jason Gerlowski
+- name: Joshua Ouma
+links:
+- name: SOLR-16488
+  url: https://issues.apache.org/jira/browse/SOLR-16488

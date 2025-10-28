@@ -1,0 +1,11 @@
+title: CloudSolrServer can now route updates locally and no longer relies on inter-node
+  update forwarding.
+type: added
+authors:
+- name: Joel Bernstein
+- name: Shikhar Bhushan
+- name: Stephen Riesenberg
+- name: Mark Miller
+links:
+- name: SOLR-4816
+  url: https://issues.apache.org/jira/browse/SOLR-4816

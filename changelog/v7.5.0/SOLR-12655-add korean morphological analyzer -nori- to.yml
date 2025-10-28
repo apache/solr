@@ -1,0 +1,8 @@
+title: Add Korean morphological analyzer ("nori") to default distribution. This also
+  adds examples for configuration in Solr's schema.
+type: added
+authors:
+- name: Uwe Schindler
+links:
+- name: SOLR-12655
+  url: https://issues.apache.org/jira/browse/SOLR-12655

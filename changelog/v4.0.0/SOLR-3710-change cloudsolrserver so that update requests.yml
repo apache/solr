@@ -1,0 +1,8 @@
+title: Change CloudSolrServer so that update requests are only sent to leaders by
+  default.
+type: changed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-3710
+  url: https://issues.apache.org/jira/browse/SOLR-3710

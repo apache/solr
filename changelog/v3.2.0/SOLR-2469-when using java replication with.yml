@@ -1,0 +1,8 @@
+title: When using java replication with replicateAfter=startup, the first commit point
+  on server startup is never removed.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-2469
+  url: https://issues.apache.org/jira/browse/SOLR-2469

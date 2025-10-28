@@ -1,0 +1,8 @@
+title: SolrDispatchFilter should throw java.lang.Error back even if wrapped in another
+  exception.
+type: other
+authors:
+- name: Miklos Christine
+links:
+- name: SOLR-6161
+  url: https://issues.apache.org/jira/browse/SOLR-6161

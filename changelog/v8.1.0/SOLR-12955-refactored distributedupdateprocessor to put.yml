@@ -1,0 +1,9 @@
+title: Refactored DistributedUpdateProcessor to put SolrCloud functionality into a
+  subclass.
+type: other
+authors:
+- name: Bar Rotstein
+- name: David Smiley
+links:
+- name: SOLR-12955
+  url: https://issues.apache.org/jira/browse/SOLR-12955

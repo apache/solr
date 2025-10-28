@@ -1,0 +1,13 @@
+title: 'Improve logging by adding node name in MDC in SolrCloud mode and adding MDC
+  to all thread pools. A new MDCAwareThreadPoolExecutor is introduced and usages of
+  Executors#newFixedThreadPool, #newSingleThreadExecutor, #newCachedThreadPool as
+  well as ThreadPoolExecutor directly is now forbidden in Solr. MDC keys are now exposed
+  in thread names automatically so that a thread dump can give hints on what the thread
+  was doing. Uncaught exceptions thrown by tasks in the pool are logged along with
+  submitter''s stack trace.'
+type: other
+authors:
+- name: shalin
+links:
+- name: SOLR-7381
+  url: https://issues.apache.org/jira/browse/SOLR-7381

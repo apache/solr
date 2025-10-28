@@ -1,0 +1,11 @@
+title: (6.0 bug) For years &lt;= 1582, date math (round,add,sub) introduced error.
+  Range faceting on such dates was also affected. With this fixed, this is the first
+  release range faceting works on BC years.
+type: fixed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-9080
+  url: https://issues.apache.org/jira/browse/SOLR-9080
+- name: SOLR-9085
+  url: https://issues.apache.org/jira/browse/SOLR-9085

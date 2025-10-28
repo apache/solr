@@ -1,0 +1,9 @@
+title: Added support for clustering in contrib/clustering. See http://wiki.apache.org/solr/ClusteringComponent
+  for more info.
+type: added
+authors:
+- name: gsingers
+- name: Stanislaw Osinski
+links:
+- name: SOLR-769
+  url: https://issues.apache.org/jira/browse/SOLR-769

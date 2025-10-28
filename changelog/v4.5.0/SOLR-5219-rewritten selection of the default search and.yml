@@ -1,0 +1,7 @@
+title: Rewritten selection of the default search and document clustering algorithms.
+type: added
+authors:
+- name: Dawid Weiss
+links:
+- name: SOLR-5219
+  url: https://issues.apache.org/jira/browse/SOLR-5219

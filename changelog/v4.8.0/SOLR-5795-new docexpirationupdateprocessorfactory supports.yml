@@ -1,0 +1,9 @@
+title: New DocExpirationUpdateProcessorFactory supports computing an expiration date
+  for documents from the "TTL" expression, as well as automatically deleting expired
+  documents on a periodic basis.
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-5795
+  url: https://issues.apache.org/jira/browse/SOLR-5795

@@ -1,0 +1,8 @@
+title: score local parameter for block join query parser {!parent}
+type: added
+authors:
+- name: Andrey Kudryavtsev
+- name: Mikhail Khludnev
+links:
+- name: SOLR-5882
+  url: https://issues.apache.org/jira/browse/SOLR-5882

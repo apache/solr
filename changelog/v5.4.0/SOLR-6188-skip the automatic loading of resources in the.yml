@@ -1,0 +1,9 @@
+title: Skip the automatic loading of resources in the "lib" subdirectory by SolrResourceLoader,
+  but only if we are loading resources from the solr home directory. Fixes the inability
+  to use ICU analysis components with a "solr." prefix on the classname.
+type: fixed
+authors:
+- name: Shawn Heisey
+links:
+- name: SOLR-6188
+  url: https://issues.apache.org/jira/browse/SOLR-6188

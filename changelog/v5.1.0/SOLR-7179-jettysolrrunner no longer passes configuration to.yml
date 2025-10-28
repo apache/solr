@@ -1,0 +1,8 @@
+title: JettySolrRunner no longer passes configuration to SolrDispatchFilter via system
+  properties, but instead uses a Properties object in the servlet context
+type: other
+authors:
+- name: Alan Woodward
+links:
+- name: SOLR-7179
+  url: https://issues.apache.org/jira/browse/SOLR-7179

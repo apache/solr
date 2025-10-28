@@ -1,0 +1,8 @@
+title: Add a few utility commands to the DIH admin page such as full import, delta
+  import, status, reload config.
+type: added
+authors:
+- name: Ahmed Hammad
+links:
+- name: SOLR-910
+  url: https://issues.apache.org/jira/browse/SOLR-910

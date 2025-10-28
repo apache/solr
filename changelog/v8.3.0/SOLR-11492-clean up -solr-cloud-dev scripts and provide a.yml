@@ -1,0 +1,8 @@
+title: Clean up /solr/cloud-dev scripts and provide a single well documented script
+type: other
+authors:
+- name: Gus Heck
+- name: Robert Bunch
+links:
+- name: SOLR-11492
+  url: https://issues.apache.org/jira/browse/SOLR-11492

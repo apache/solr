@@ -1,0 +1,9 @@
+title: If a partial update (aka atomic update) is attempted on a document that has
+  child docs, then ensure the schema supports it (_root_ stored/docValues) by throwing
+  an exception.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-13728
+  url: https://issues.apache.org/jira/browse/SOLR-13728

@@ -1,0 +1,9 @@
+title: During node shutdown pausing of updates and waiting for in-flight update requests
+  to finish before closing cores is no longer SolrCloud specific.
+type: other
+authors:
+- name: Christine Poerschke
+- name: David Smiley
+links:
+- name: SOLR-15486
+  url: https://issues.apache.org/jira/browse/SOLR-15486

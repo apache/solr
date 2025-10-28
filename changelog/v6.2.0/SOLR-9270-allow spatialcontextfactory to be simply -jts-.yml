@@ -1,0 +1,9 @@
+title: Allow spatialContextFactory to be simply "JTS". And if any spatial params include
+  the old Spatial4j package "com.spatial4j.core" it is rewritten to "org.locationtech.spatial4j"
+  with a warning.
+type: added
+authors:
+- name: David Smiley
+links:
+- name: SOLR-9270
+  url: https://issues.apache.org/jira/browse/SOLR-9270

@@ -1,0 +1,9 @@
+title: Make sharedLib configurable through system property. Also allow multiple paths,
+  separated by comma. See Reference Guide 'format-of-solr-xml.adoc' and comment in
+  'solr.in.sh' for details
+type: changed
+authors:
+- name: janhoy
+links:
+- name: SOLR-14281
+  url: https://issues.apache.org/jira/browse/SOLR-14281

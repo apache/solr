@@ -1,0 +1,8 @@
+title: Fix edismax to respect query operators when literal colons are used in query
+  string.
+type: fixed
+authors:
+- name: Juan Grande
+links:
+- name: SOLR-3261
+  url: https://issues.apache.org/jira/browse/SOLR-3261

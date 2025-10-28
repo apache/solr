@@ -1,0 +1,8 @@
+title: JWT Token authentication plugin with OpenID Connect implicit flow login through
+  Admin UI
+type: added
+authors:
+- name: janhoy
+links:
+- name: SOLR-12121
+  url: https://issues.apache.org/jira/browse/SOLR-12121

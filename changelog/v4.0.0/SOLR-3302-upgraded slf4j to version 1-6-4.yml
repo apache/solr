@@ -1,0 +1,7 @@
+title: Upgraded SLF4j to version 1.6.4
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-3302
+  url: https://issues.apache.org/jira/browse/SOLR-3302

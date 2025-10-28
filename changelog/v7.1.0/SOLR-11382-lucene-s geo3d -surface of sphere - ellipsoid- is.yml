@@ -1,0 +1,9 @@
+title: Lucene's Geo3D (surface of sphere & ellipsoid) is now supported on spatial
+  RPT fields by setting spatialContextFactory="Geo3D". Furthermore, this is the first
+  time Solr has out of the box support for polygons.
+type: added
+authors:
+- name: David Smiley
+links:
+- name: SOLR-11382
+  url: https://issues.apache.org/jira/browse/SOLR-11382

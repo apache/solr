@@ -1,0 +1,9 @@
+title: Allow auto-commit to be set with system properties in data_driven_schema_configs
+  and enable auto soft-commits for the bin/solr -e cloud example using the Config
+  API.
+type: other
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-7582
+  url: https://issues.apache.org/jira/browse/SOLR-7582

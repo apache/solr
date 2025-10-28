@@ -1,0 +1,10 @@
+title: Provide an option to limit the maximum number of cores that can be created
+  on a node by the Auto Add Replica feature. For this you can set a "maxCoresPerNode"
+  property via the Cluster Property API
+type: added
+authors:
+- name: Varun Thacker
+- name: Mark Miller
+links:
+- name: SOLR-7117
+  url: https://issues.apache.org/jira/browse/SOLR-7117

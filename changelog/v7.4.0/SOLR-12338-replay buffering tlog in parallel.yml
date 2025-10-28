@@ -1,0 +1,8 @@
+title: Replay buffering tlog in parallel.
+type: changed
+authors:
+- name: Cao Manh Dat
+- name: David Smiley
+links:
+- name: SOLR-12338
+  url: https://issues.apache.org/jira/browse/SOLR-12338

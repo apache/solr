@@ -1,0 +1,10 @@
+title: On Windows, when the war is not extracted, the zkcli.bat script will print
+  a helpful message indicating that the war must be unzipped instead of a java error
+  about a missing class.
+type: other
+authors:
+- name: shalin
+- name: Shawn Heisey
+links:
+- name: SOLR-6120
+  url: https://issues.apache.org/jira/browse/SOLR-6120

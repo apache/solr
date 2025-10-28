@@ -1,0 +1,9 @@
+title: Fixed TestManagedSchemaAPI failures which exposed race conditions in the schema
+  API
+type: fixed
+authors:
+- name: Varun Thacker
+- name: noble
+links:
+- name: SOLR-9088
+  url: https://issues.apache.org/jira/browse/SOLR-9088

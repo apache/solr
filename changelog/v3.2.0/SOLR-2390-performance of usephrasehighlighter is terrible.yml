@@ -1,0 +1,8 @@
+title: Performance of usePhraseHighlighter is terrible on very large Documents, regardless
+  of hl.maxDocCharsToAnalyze.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-2390
+  url: https://issues.apache.org/jira/browse/SOLR-2390

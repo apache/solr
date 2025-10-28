@@ -1,0 +1,8 @@
+title: BinaryResponseWriter (javabin format) should directly copy from BytesRef to
+  output
+type: changed
+authors:
+- name: noble
+links:
+- name: SOLR-12885
+  url: https://issues.apache.org/jira/browse/SOLR-12885

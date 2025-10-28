@@ -1,0 +1,8 @@
+title: 'Do not log error when trying to consume non-existing input stream due to Expect:
+  100-continue'
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-14250
+  url: https://issues.apache.org/jira/browse/SOLR-14250

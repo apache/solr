@@ -1,0 +1,8 @@
+title: MiniSolrCloudCluster needs to use a thread-safe list to keep track of its child
+  nodes
+type: fixed
+authors:
+- name: Alan Woodward
+links:
+- name: SOLR-8255
+  url: https://issues.apache.org/jira/browse/SOLR-8255

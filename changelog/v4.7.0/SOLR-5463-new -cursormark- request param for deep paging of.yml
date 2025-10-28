@@ -1,0 +1,8 @@
+title: new 'cursorMark' request param for deep paging of sorted result sets
+type: added
+authors:
+- name: sarowe
+- name: hossman
+links:
+- name: SOLR-5463
+  url: https://issues.apache.org/jira/browse/SOLR-5463

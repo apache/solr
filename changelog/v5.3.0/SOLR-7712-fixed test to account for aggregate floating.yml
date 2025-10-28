@@ -1,0 +1,7 @@
+title: fixed test to account for aggregate floating point precision loss
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-7712
+  url: https://issues.apache.org/jira/browse/SOLR-7712

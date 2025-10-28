@@ -1,0 +1,7 @@
+title: intern() strings in DocCollection to reduce memory footprint
+type: changed
+authors:
+- name: noble
+links:
+- name: SOLR-16328
+  url: https://issues.apache.org/jira/browse/SOLR-16328

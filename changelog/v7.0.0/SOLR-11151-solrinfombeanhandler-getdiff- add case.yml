@@ -1,0 +1,8 @@
+title: 'SolrInfoMBeanHandler.getDiff() ADD case non-functional: NPE when a bean value
+  goes from null -&gt; non-null.'
+type: fixed
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-11151
+  url: https://issues.apache.org/jira/browse/SOLR-11151

@@ -1,0 +1,8 @@
+title: Expose IndexWriterConfig's ramPerThreadHardLimitMB through solrconfig.xml
+type: changed
+authors:
+- name: Ishan Chattopadhyaya
+- name: Munendra S N
+links:
+- name: SOLR-12554
+  url: https://issues.apache.org/jira/browse/SOLR-12554

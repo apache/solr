@@ -1,0 +1,8 @@
+title: Fix a few places that were failing to pass dimensional values settings when
+  copying a FieldInfo
+type: fixed
+authors:
+- name: "Ishan Chattopadhyaya via\n  Mike McCandless"
+links:
+- name: SOLR-8525
+  url: https://issues.apache.org/jira/browse/SOLR-8525

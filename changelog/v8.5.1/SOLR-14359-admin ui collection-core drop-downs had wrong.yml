@@ -1,0 +1,10 @@
+title: Admin UI collection/core drop-downs had wrong placeholder text. Fixed by upgrading
+  angular-chosen This fix was incomplete, see SOLR-14411 for the followup
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-14359
+  url: https://issues.apache.org/jira/browse/SOLR-14359
+- name: SOLR-14411
+  url: https://issues.apache.org/jira/browse/SOLR-14411

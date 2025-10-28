@@ -1,0 +1,10 @@
+title: The "name" parameter in ADDREPLICA Collections API call has be deprecated.
+  One cannot specify the core name for a replica
+type: other
+authors:
+- name: Varun Thacker
+- name: noble
+- name: Erick Erickson
+links:
+- name: SOLR-7499
+  url: https://issues.apache.org/jira/browse/SOLR-7499

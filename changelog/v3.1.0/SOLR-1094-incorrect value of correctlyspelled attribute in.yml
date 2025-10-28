@@ -1,0 +1,8 @@
+title: Incorrect value of correctlySpelled attribute in some cases
+type: fixed
+authors:
+- name: David Smiley
+- name: Mark Miller
+links:
+- name: SOLR-1094
+  url: https://issues.apache.org/jira/browse/SOLR-1094

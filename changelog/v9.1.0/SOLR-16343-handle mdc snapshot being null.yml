@@ -1,0 +1,7 @@
+title: Handle MDC snapshot being null
+type: fixed
+authors:
+- name: Dee Moore
+links:
+- name: SOLR-16343
+  url: https://issues.apache.org/jira/browse/SOLR-16343

@@ -1,0 +1,8 @@
+title: Date faceting now respects facet.mincount limiting
+type: fixed
+authors:
+- name: Uri Boness
+- name: Raiko Eckstein
+links:
+- name: SOLR-343
+  url: https://issues.apache.org/jira/browse/SOLR-343

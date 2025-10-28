@@ -1,0 +1,9 @@
+title: Replicate after startup option would not replicate until the IndexWriter was
+  lazily opened.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Gregg Donovan
+links:
+- name: SOLR-4380
+  url: https://issues.apache.org/jira/browse/SOLR-4380

@@ -1,0 +1,7 @@
+title: PeerSync doesn't count all connect failures as success.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5588
+  url: https://issues.apache.org/jira/browse/SOLR-5588

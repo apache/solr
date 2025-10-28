@@ -1,0 +1,8 @@
+title: Support managing all named components in solrconfig such as requestHandler,
+  queryParser, queryResponseWriter, valueSourceParser, transformer, queryConverter
+type: added
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-7083
+  url: https://issues.apache.org/jira/browse/SOLR-7083

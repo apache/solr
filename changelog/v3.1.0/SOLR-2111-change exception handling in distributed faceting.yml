@@ -1,0 +1,10 @@
+title: Change exception handling in distributed faceting to work more like non-distributed
+  faceting, change facet_counts/exception from a String to a List&lt;String&gt; to
+  enable listing all exceptions that happened, and prevent an exception in one facet
+  command from affecting another facet command.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-2111
+  url: https://issues.apache.org/jira/browse/SOLR-2111

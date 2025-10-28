@@ -1,0 +1,10 @@
+title: New faceting method with better performance and smaller memory usage for multi-valued
+  fields with many unique values but relatively few values per document. Controllable
+  via the facet.method parameter - "fc" is the new default method and "enum" is the
+  original method.
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-475
+  url: https://issues.apache.org/jira/browse/SOLR-475

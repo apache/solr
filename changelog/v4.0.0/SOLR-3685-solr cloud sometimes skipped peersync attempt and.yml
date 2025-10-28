@@ -1,0 +1,10 @@
+title: Solr Cloud sometimes skipped peersync attempt and replicated instead due to
+  tlog flags not being cleared when no updates were buffered during a previous replication.
+type: fixed
+authors:
+- name: Markus Jelsma
+- name: Mark Miller
+- name: yonik
+links:
+- name: SOLR-3685
+  url: https://issues.apache.org/jira/browse/SOLR-3685

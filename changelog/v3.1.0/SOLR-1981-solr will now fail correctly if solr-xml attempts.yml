@@ -1,0 +1,8 @@
+title: Solr will now fail correctly if solr.xml attempts to specify multiple cores
+  that have the same name
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-1981
+  url: https://issues.apache.org/jira/browse/SOLR-1981

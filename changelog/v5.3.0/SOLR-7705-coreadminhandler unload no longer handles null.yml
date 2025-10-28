@@ -1,0 +1,9 @@
+title: CoreAdminHandler Unload no longer handles null core name and throws NPE instead
+  of a bad request error.
+type: fixed
+authors:
+- name: John Call
+- name: Edward Ribeiro
+links:
+- name: SOLR-7705
+  url: https://issues.apache.org/jira/browse/SOLR-7705

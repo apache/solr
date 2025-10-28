@@ -1,0 +1,7 @@
+title: Fix or suppress 14 resource leak warnings in apache/solr/core
+type: other
+authors:
+- name: "Andras Salaman via\n  Erick Erickson"
+links:
+- name: SOLR-14226
+  url: https://issues.apache.org/jira/browse/SOLR-14226

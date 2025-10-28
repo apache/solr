@@ -1,0 +1,12 @@
+title: Routed Aliases now use collection properties rather than core properties to
+  identify collections that belong to the alias by default. This should be invisible
+  and fully backwards compatible from within solr, and existing routed alias collections
+  with core based properties will continue to work, but new collections created will
+  not add a property to core.properties anymoore so any external code that inspected
+  core.properties will not find the 'routedAliasName' key in new cores belonging to
+  routed aliases.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-13420
+  url: https://issues.apache.org/jira/browse/SOLR-13420

@@ -1,0 +1,8 @@
+title: Cross-collection join fixed to ignore documents that do not contain value in
+  "from" field
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-15482
+  url: https://issues.apache.org/jira/browse/SOLR-15482

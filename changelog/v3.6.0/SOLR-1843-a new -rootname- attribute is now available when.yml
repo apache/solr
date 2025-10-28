@@ -1,0 +1,11 @@
+title: A new "rootName" attribute is now available when configuring &lt;jmx/&gt; in
+  solrconfig.xml. If this attribute is set, Solr will use it as the root name for
+  all MBeans Solr exposes via JMX. The default root name is "solr" followed by the
+  core name.
+type: added
+authors:
+- name: Constantijn Visinescu
+- name: hossman
+links:
+- name: SOLR-1843
+  url: https://issues.apache.org/jira/browse/SOLR-1843

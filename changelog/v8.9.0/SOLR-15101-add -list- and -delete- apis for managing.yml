@@ -1,0 +1,9 @@
+title: Add "list" and "delete" APIs for managing incremental backups
+type: changed
+authors:
+- name: Jason Gerlowski
+- name: shalin
+- name: Cao Manh Dat
+links:
+- name: SOLR-15101
+  url: https://issues.apache.org/jira/browse/SOLR-15101

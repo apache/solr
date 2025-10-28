@@ -1,0 +1,8 @@
+title: Return HTTP error on POST requests with no Content-Type.
+type: other
+authors:
+- name: Ryan Ernst
+- name: Uwe Schindler
+links:
+- name: SOLR-5517
+  url: https://issues.apache.org/jira/browse/SOLR-5517

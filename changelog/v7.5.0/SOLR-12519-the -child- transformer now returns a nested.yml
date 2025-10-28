@@ -1,0 +1,10 @@
+title: The [child] transformer now returns a nested child doc structure (attached
+  as fields if provided this way) provided the schema has the _nest_path_ field. This
+  is part of a broader enhancement of nested docs.
+type: added
+authors:
+- name: Moshe Bla
+- name: David Smiley
+links:
+- name: SOLR-12519
+  url: https://issues.apache.org/jira/browse/SOLR-12519

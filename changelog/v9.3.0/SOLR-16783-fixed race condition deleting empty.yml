@@ -1,0 +1,8 @@
+title: Fixed race condition deleting empty `clusterstate.json` file that could prevent
+  Solr 9 instances from starting with a NoNodeException
+type: fixed
+authors:
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-16783
+  url: https://issues.apache.org/jira/browse/SOLR-16783

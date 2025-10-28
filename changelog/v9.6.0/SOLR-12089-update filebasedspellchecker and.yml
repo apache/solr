@@ -1,0 +1,9 @@
+title: Update FileBasedSpellChecker and IndexBasedSpellChecker to accept accuracy
+  parameter as float; deprecate `breakSugestionTieBreaker` parameter in favor of `breakSuggestionTieBreaker`
+  in WordBreakSolrSpellChecker
+type: other
+authors:
+- name: Andrey Bozhko
+links:
+- name: SOLR-12089
+  url: https://issues.apache.org/jira/browse/SOLR-12089

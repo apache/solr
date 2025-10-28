@@ -1,0 +1,7 @@
+title: Sort directions (asc, desc) are now case insensitive
+type: other
+authors:
+- name: Shawn Heisey
+links:
+- name: SOLR-4458
+  url: https://issues.apache.org/jira/browse/SOLR-4458

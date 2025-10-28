@@ -1,0 +1,8 @@
+title: map-reduce contrib script to set classpath for convenience refers to example
+  rather than server.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-7810
+  url: https://issues.apache.org/jira/browse/SOLR-7810

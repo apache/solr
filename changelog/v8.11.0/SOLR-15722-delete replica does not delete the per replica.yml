@@ -1,0 +1,7 @@
+title: Delete Replica does not delete the Per replica state
+type: fixed
+authors:
+- name: noble
+links:
+- name: SOLR-15722
+  url: https://issues.apache.org/jira/browse/SOLR-15722

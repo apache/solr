@@ -1,0 +1,8 @@
+title: Solr 7 Admin UI (Cloud &gt; Graph) should reflect the Replica type to give
+  a more accurate representation of the cluster.
+type: added
+authors:
+- name: Rhoit Singh
+links:
+- name: SOLR-11578
+  url: https://issues.apache.org/jira/browse/SOLR-11578

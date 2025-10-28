@@ -1,0 +1,7 @@
+title: Removed some very old dead code.
+type: other
+authors:
+- name: Chris A. Mattmann
+links:
+- name: SOLR-1588
+  url: https://issues.apache.org/jira/browse/SOLR-1588

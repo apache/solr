@@ -1,0 +1,9 @@
+title: Function query parser can now parse multiple comma separated value sources.
+  It also now fails if there is extra unexpected text after parsing the functions,
+  instead of silently ignoring it. This allows expressions like q=dist(2,vector(1,2),$pt)&pt=3,4
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-2133
+  url: https://issues.apache.org/jira/browse/SOLR-2133

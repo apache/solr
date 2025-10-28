@@ -1,0 +1,9 @@
+title: org.apache.solr.util.SolrPluginUtils.IdentityRegenerator has been removed,
+  please use the identical org.apache.solr.search.NoOpRegenerator instead.
+type: upgrade_notes
+authors:
+- name: David Smiley
+- name: Christine Poerschke
+links:
+- name: SOLR-13515
+  url: https://issues.apache.org/jira/browse/SOLR-13515

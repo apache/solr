@@ -1,0 +1,8 @@
+title: JavabinLoader should avoid creating String Objects and create UTF8CharSequence
+  fields from byte[]
+type: changed
+authors:
+- name: noble
+links:
+- name: SOLR-12983
+  url: https://issues.apache.org/jira/browse/SOLR-12983

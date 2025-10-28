@@ -1,0 +1,10 @@
+title: Do not allow to use absolute URIs for including other files in solrconfig.xml
+  and schema parsing (CVE-2018-8010).
+type: fixed
+authors:
+- name: Ananthesh
+- name: Ishan Chattopadhyaya
+- name: Uwe Schindler
+links:
+- name: SOLR-12316
+  url: https://issues.apache.org/jira/browse/SOLR-12316

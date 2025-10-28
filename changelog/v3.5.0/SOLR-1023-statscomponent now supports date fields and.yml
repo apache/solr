@@ -1,0 +1,10 @@
+title: StatsComponent now supports date fields and string fields.
+type: added
+authors:
+- name: Chris Male
+- name: Mark Holland
+- name: Gunnlaugur Thor Briem
+- name: Ryan McKinley
+links:
+- name: SOLR-1023
+  url: https://issues.apache.org/jira/browse/SOLR-1023

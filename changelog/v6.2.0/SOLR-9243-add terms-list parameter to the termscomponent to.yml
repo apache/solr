@@ -1,0 +1,8 @@
+title: Add terms.list parameter to the TermsComponent to fetch the docFreq for a list
+  of terms
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-9243
+  url: https://issues.apache.org/jira/browse/SOLR-9243

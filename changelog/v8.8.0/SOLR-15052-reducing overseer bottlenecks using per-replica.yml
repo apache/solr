@@ -1,0 +1,8 @@
+title: Reducing overseer bottlenecks using per-replica states
+type: added
+authors:
+- name: noble
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-15052
+  url: https://issues.apache.org/jira/browse/SOLR-15052

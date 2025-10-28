@@ -1,0 +1,8 @@
+title: /update/json/docs path can now save the underlying json doc asa string field
+  and better support added to the default example
+type: added
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-6633
+  url: https://issues.apache.org/jira/browse/SOLR-6633

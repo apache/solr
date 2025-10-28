@@ -1,0 +1,12 @@
+title: If you explicitly use BM25SimilarityFactory in your schema, the absolute scoring
+  will be lower due to SOLR-13025. But ordering of documents will not change in the
+  normal case. Use LegacyBM25SimilarityFactory if you need to force the old 6.x/7.x
+  scoring. Note that if you have not specified any similarity in schema or use the
+  default SchemaSimilarityFactory, then LegacyBM25Similarity is automatically selected
+  for 'luceneMatchVersion' &lt; 8.0.0. See also explanation in Reference Guide chapter
+  "Other Schema Elements".
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-13025
+  url: https://issues.apache.org/jira/browse/SOLR-13025

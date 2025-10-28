@@ -1,0 +1,10 @@
+title: SolrjNamedThreadFactory is deprecated in favor of SolrNamedThreadFactory. DefaultSolrThreadFactory
+  is removed from solr-core in favor of SolrNamedThreadFactory in solrj package and
+  all solr-core classes now use SolrNamedThreadFactory.
+type: other
+authors:
+- name: Andras Salamon
+- name: shalin
+links:
+- name: SOLR-9909
+  url: https://issues.apache.org/jira/browse/SOLR-9909

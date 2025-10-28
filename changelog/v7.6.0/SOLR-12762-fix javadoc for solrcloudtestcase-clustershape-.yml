@@ -1,0 +1,8 @@
+title: Fix javadoc for SolrCloudTestCase.clusterShape() method and add a method that
+  validates only against Active slices
+type: other
+authors:
+- name: Anshum Gupta
+links:
+- name: SOLR-12762
+  url: https://issues.apache.org/jira/browse/SOLR-12762

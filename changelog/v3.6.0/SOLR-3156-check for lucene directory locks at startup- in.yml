@@ -1,0 +1,8 @@
+title: Check for Lucene directory locks at startup. In previous versions this check
+  was only performed during modifying (e.g. adding and deleting documents) the index.
+type: other
+authors:
+- name: Luca Cavanna
+links:
+- name: SOLR-3156
+  url: https://issues.apache.org/jira/browse/SOLR-3156

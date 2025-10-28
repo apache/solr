@@ -1,0 +1,11 @@
+title: SolrCloud request proxying does not work on Tomcat and perhaps other non Jetty
+  containers.
+type: fixed
+authors:
+- name: Po Rui
+- name: Yago Riveiro
+links:
+- name: SOLR-4716
+  url: https://issues.apache.org/jira/browse/SOLR-4716
+- name: SOLR-4584
+  url: https://issues.apache.org/jira/browse/SOLR-4584

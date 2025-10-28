@@ -1,0 +1,8 @@
+title: Replication pooling is optimized based on hard and soft commit settings for
+  a given collection
+type: changed
+authors:
+- name: Justin Sweeney
+links:
+- name: SOLR-16487
+  url: https://issues.apache.org/jira/browse/SOLR-16487

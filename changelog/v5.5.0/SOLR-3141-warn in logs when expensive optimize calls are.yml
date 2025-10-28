@@ -1,0 +1,8 @@
+title: Warn in logs when expensive optimize calls are made
+type: other
+authors:
+- name: yonik
+- name: janhoy
+links:
+- name: SOLR-3141
+  url: https://issues.apache.org/jira/browse/SOLR-3141

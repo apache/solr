@@ -1,0 +1,9 @@
+title: Fix grouping failure for date field in solrcloud
+type: fixed
+authors:
+- name: Erick Erickson
+- name: Munendra S N
+- name: Vitaly Lavrov
+links:
+- name: SOLR-9802
+  url: https://issues.apache.org/jira/browse/SOLR-9802

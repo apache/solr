@@ -1,0 +1,7 @@
+title: Add support for binary files in ZooKeeper.
+type: added
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-4234
+  url: https://issues.apache.org/jira/browse/SOLR-4234

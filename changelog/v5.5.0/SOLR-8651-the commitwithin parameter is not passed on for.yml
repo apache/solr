@@ -1,0 +1,8 @@
+title: The commitWithin parameter is not passed on for deleteById in UpdateRequest
+  in distributed queries
+type: fixed
+authors:
+- name: Jessica Cheng Mallet
+links:
+- name: SOLR-8651
+  url: https://issues.apache.org/jira/browse/SOLR-8651

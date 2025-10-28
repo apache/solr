@@ -1,0 +1,8 @@
+title: JSON Facet API now uses hyper-log-log++ for determining the number of buckets
+  when merging requests from a multi-shard distributed request.
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-10548
+  url: https://issues.apache.org/jira/browse/SOLR-10548

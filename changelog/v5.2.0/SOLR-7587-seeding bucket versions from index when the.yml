@@ -1,0 +1,11 @@
+title: Seeding bucket versions from index when the firstSearcher event fires has a
+  race condition that leads to an infinite wait on VersionInfo's ReentrantReadWriteLock
+  because the read-lock acquired during a commit cannot be upgraded to a write-lock
+  needed to block updates; solution is to move the call out of the firstSearcher event
+  path and into the SolrCore constructor.
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-7587
+  url: https://issues.apache.org/jira/browse/SOLR-7587

@@ -1,0 +1,7 @@
+title: 'DIH: Alias the ''dataimporter'' namespace to a shorter name ''dih''.'
+type: other
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-1027
+  url: https://issues.apache.org/jira/browse/SOLR-1027

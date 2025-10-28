@@ -1,0 +1,8 @@
+title: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking
+  circuit breaker implementation
+type: added
+authors:
+- name: Atri Sharma
+links:
+- name: SOLR-14588
+  url: https://issues.apache.org/jira/browse/SOLR-14588

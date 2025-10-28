@@ -1,0 +1,8 @@
+title: Pre-populating values into search parameters on the query page of solr admin
+type: changed
+authors:
+- name: jafurrer
+- name: daniel6691
+links:
+- name: SOLR-6152
+  url: https://issues.apache.org/jira/browse/SOLR-6152

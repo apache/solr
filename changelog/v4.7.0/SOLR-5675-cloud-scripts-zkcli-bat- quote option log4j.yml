@@ -1,0 +1,6 @@
+title: 'cloud-scripts/zkcli.bat: quote option log4j (Günther Ruck via steffkes'
+type: fixed
+authors: []
+links:
+- name: SOLR-5675
+  url: https://issues.apache.org/jira/browse/SOLR-5675

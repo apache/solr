@@ -1,0 +1,8 @@
+title: Make default response format JSON (wt=json), and also indent text responses
+  formats (indent=on) by default
+type: other
+authors:
+- name: Trey Grainger & Cassandra Targett
+links:
+- name: SOLR-10494
+  url: https://issues.apache.org/jira/browse/SOLR-10494

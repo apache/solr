@@ -1,0 +1,11 @@
+title: HttpSolrCall now maintains internal request count (_forwardedCount) for remote
+  queries and limits them to the number of replicas. This avoids making too many cascading
+  calls to remote servers, which, if not restricted, can bring down nodes containing
+  the said collection
+type: fixed
+authors:
+- name: Kesharee Nandan Vishwakarma
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-13793
+  url: https://issues.apache.org/jira/browse/SOLR-13793

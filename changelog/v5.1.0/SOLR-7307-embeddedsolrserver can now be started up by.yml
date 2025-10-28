@@ -1,0 +1,9 @@
+title: EmbeddedSolrServer can now be started up by passing a path to a solr home directory,
+  or a NodeConfig object
+type: added
+authors:
+- name: Alan Woodward
+- name: Mike Drob
+links:
+- name: SOLR-7307
+  url: https://issues.apache.org/jira/browse/SOLR-7307

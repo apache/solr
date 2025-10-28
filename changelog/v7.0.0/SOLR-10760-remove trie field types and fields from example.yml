@@ -1,0 +1,11 @@
+title: Remove trie field types and fields from example schemas.
+type: other
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-10760
+  url: https://issues.apache.org/jira/browse/SOLR-10760
+- name: SOLR-11315
+  url: https://issues.apache.org/jira/browse/SOLR-11315
+- name: SOLR-11313
+  url: https://issues.apache.org/jira/browse/SOLR-11313

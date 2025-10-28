@@ -1,0 +1,8 @@
+title: Upgrade Jetty to 9.4.19.v20190610.
+type: upgrade_notes
+authors:
+- name: Erick Erickson
+- name: Cao Manh Dat
+links:
+- name: SOLR-13541
+  url: https://issues.apache.org/jira/browse/SOLR-13541

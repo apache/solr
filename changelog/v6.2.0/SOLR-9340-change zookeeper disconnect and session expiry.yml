@@ -1,0 +1,8 @@
+title: Change ZooKeeper disconnect and session expiry related logging from INFO to
+  WARN to make debugging easier
+type: other
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-9340
+  url: https://issues.apache.org/jira/browse/SOLR-9340

@@ -1,0 +1,8 @@
+title: JSON Facet API allBuckets:true did not work correctly when faceting on a multi-valued
+  field with sub-facets / facet functions.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-8192
+  url: https://issues.apache.org/jira/browse/SOLR-8192

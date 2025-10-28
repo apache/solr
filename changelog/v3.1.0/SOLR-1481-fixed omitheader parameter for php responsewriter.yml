@@ -1,0 +1,7 @@
+title: Fixed omitHeader parameter for PHP ResponseWriter.
+type: fixed
+authors:
+- name: Jun Ohtani
+links:
+- name: SOLR-1481
+  url: https://issues.apache.org/jira/browse/SOLR-1481

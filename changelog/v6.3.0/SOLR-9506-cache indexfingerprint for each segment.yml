@@ -1,0 +1,9 @@
+title: cache IndexFingerprint for each segment
+type: changed
+authors:
+- name: Pushkar Raste
+- name: yonik
+- name: noble
+links:
+- name: SOLR-9506
+  url: https://issues.apache.org/jira/browse/SOLR-9506

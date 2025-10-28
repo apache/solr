@@ -1,0 +1,7 @@
+title: Make UpdateHandler support other prefixes (besides hdfs:/)
+type: changed
+authors:
+- name: Kevin Risden
+links:
+- name: SOLR-13359
+  url: https://issues.apache.org/jira/browse/SOLR-13359

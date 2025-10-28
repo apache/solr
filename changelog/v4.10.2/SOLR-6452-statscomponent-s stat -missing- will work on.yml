@@ -1,0 +1,8 @@
+title: StatsComponent's stat 'missing' will work on fields with docValues=true and
+  indexed=false
+type: fixed
+authors:
+- name: Xu Zhang
+links:
+- name: SOLR-6452
+  url: https://issues.apache.org/jira/browse/SOLR-6452

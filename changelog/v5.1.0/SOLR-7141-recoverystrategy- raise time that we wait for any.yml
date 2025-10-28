@@ -1,0 +1,8 @@
+title: 'RecoveryStrategy: Raise time that we wait for any updates from the leader
+  before they saw the recovery state to have finished.'
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-7141
+  url: https://issues.apache.org/jira/browse/SOLR-7141

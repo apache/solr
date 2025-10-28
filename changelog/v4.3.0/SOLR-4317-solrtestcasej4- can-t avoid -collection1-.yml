@@ -1,0 +1,8 @@
+title: 'SolrTestCaseJ4: Can''t avoid "collection1" convention'
+type: other
+authors:
+- name: Tricia Jenkins
+- name: Erick Erickson
+links:
+- name: SOLR-4317
+  url: https://issues.apache.org/jira/browse/SOLR-4317

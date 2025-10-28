@@ -1,0 +1,8 @@
+title: Add support for PointFields to {!graphTerms} query that is internally used
+  by some graph traversal streaming expressions.
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-10845
+  url: https://issues.apache.org/jira/browse/SOLR-10845

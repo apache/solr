@@ -1,0 +1,7 @@
+title: Schema now throws exception on illegal field parameters.
+type: fixed
+authors:
+- name: Robert Muir
+links:
+- name: SOLR-4641
+  url: https://issues.apache.org/jira/browse/SOLR-4641

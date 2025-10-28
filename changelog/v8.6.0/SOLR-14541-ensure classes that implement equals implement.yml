@@ -1,0 +1,9 @@
+title: Ensure classes that implement equals implement hashCode or suppress warnings
+type: other
+authors:
+- name: gezapeti
+- name: Ilan Ginsburg
+- name: Erick Erickson
+links:
+- name: SOLR-14541
+  url: https://issues.apache.org/jira/browse/SOLR-14541

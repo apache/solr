@@ -1,0 +1,10 @@
+title: Return proper error when invalid parentFilter is passed in ChildDocTransformer
+type: fixed
+authors:
+- name: Johannes Kloos
+- name: Munendra S N
+- name: David Smiley
+- name: Mikhail Khludnev
+links:
+- name: SOLR-13199
+  url: https://issues.apache.org/jira/browse/SOLR-13199

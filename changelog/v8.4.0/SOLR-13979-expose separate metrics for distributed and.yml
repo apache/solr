@@ -1,0 +1,7 @@
+title: Expose separate metrics for distributed and non-distributed requests.
+type: changed
+authors:
+- name: ab
+links:
+- name: SOLR-13979
+  url: https://issues.apache.org/jira/browse/SOLR-13979

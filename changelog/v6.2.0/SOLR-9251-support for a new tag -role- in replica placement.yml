@@ -1,0 +1,7 @@
+title: Support for a new tag 'role' in replica placement rules
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-9251
+  url: https://issues.apache.org/jira/browse/SOLR-9251

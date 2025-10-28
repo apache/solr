@@ -1,0 +1,7 @@
+title: Raise Collections API timeout to 3 minutes from one minute.
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5585
+  url: https://issues.apache.org/jira/browse/SOLR-5585

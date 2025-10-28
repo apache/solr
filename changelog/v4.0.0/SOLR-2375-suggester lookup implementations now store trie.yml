@@ -1,0 +1,8 @@
+title: Suggester Lookup implementations now store trie data and load it back on init.
+  This means that large tries don't have to be rebuilt on every commit or core reload.
+type: other
+authors:
+- name: ab
+links:
+- name: SOLR-2375
+  url: https://issues.apache.org/jira/browse/SOLR-2375

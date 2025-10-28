@@ -1,0 +1,9 @@
+title: bin/solr stop should stop if there is only one node running or generate an
+  error message prompting the user to be explicit about which of multiple nodes to
+  stop using the -p or -all options
+type: other
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-7018
+  url: https://issues.apache.org/jira/browse/SOLR-7018

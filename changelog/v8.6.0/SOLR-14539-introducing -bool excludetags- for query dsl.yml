@@ -1,0 +1,7 @@
+title: Introducing {!bool excludeTags=...} for Query DSL.
+type: changed
+authors:
+- name: Mikhail Khludnev
+links:
+- name: SOLR-14539
+  url: https://issues.apache.org/jira/browse/SOLR-14539

@@ -1,0 +1,7 @@
+title: Allow running examples as root on Linux with -force option
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-10223
+  url: https://issues.apache.org/jira/browse/SOLR-10223

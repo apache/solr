@@ -1,0 +1,9 @@
+title: Fix debug related NullPointerException in solr/contrib/ltr OriginalScoreFeature
+  class.
+type: fixed
+authors:
+- name: Vitezslav Zak
+- name: Christine Poerschke
+links:
+- name: SOLR-10383
+  url: https://issues.apache.org/jira/browse/SOLR-10383

@@ -1,0 +1,10 @@
+title: Collections API will sometimes use a node more than once, even when more unused
+  nodes are available.
+type: fixed
+authors:
+- name: Eric Falcao
+- name: Brett Hoerner
+- name: Mark Miller
+links:
+- name: SOLR-4321
+  url: https://issues.apache.org/jira/browse/SOLR-4321

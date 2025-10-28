@@ -1,0 +1,8 @@
+title: You should be able to set the update log directory with the CoreAdmin API the
+  same way as the data directory.
+type: added
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4124
+  url: https://issues.apache.org/jira/browse/SOLR-4124

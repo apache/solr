@@ -1,0 +1,7 @@
+title: Added support for facet.missing in /browse field and pivot faceting.
+type: other
+authors:
+- name: ehatcher
+links:
+- name: SOLR-2168
+  url: https://issues.apache.org/jira/browse/SOLR-2168

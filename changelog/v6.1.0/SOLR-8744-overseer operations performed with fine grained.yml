@@ -1,0 +1,8 @@
+title: Overseer operations performed with fine grained mutual exclusion
+type: changed
+authors:
+- name: noble
+- name: Scott Blum
+links:
+- name: SOLR-8744
+  url: https://issues.apache.org/jira/browse/SOLR-8744

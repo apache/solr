@@ -1,0 +1,8 @@
+title: Fix directory/file check in S3Repository
+type: fixed
+authors:
+- name: Houston Putman
+- name: Hakan Özler
+links:
+- name: SOLR-16670
+  url: https://issues.apache.org/jira/browse/SOLR-16670

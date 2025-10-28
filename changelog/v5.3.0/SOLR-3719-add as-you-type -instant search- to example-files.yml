@@ -1,0 +1,8 @@
+title: Add as-you-type "instant search" to example/files /browse.
+type: other
+authors:
+- name: Esther Quansah
+- name: ehatcher
+links:
+- name: SOLR-3719
+  url: https://issues.apache.org/jira/browse/SOLR-3719

@@ -1,0 +1,8 @@
+title: Remove unused SolrSortField interface.
+type: other
+authors:
+- name: yonik
+- name: Connor Warrington
+links:
+- name: SOLR-7162
+  url: https://issues.apache.org/jira/browse/SOLR-7162

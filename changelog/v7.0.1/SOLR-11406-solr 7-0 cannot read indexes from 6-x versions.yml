@@ -1,0 +1,8 @@
+title: Solr 7.0 cannot read indexes from 6.x versions.
+type: fixed
+authors:
+- name: Shawn Heisey
+- name: Steve Rowe
+links:
+- name: SOLR-11406
+  url: https://issues.apache.org/jira/browse/SOLR-11406

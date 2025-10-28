@@ -1,0 +1,9 @@
+title: Rename getSortWithinGroup to getWithinGroupSort in search.grouping.Command
+  class.
+type: other
+authors:
+- name: Judith Silverman
+- name: Christine Poerschke
+links:
+- name: SOLR-10394
+  url: https://issues.apache.org/jira/browse/SOLR-10394

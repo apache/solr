@@ -1,0 +1,8 @@
+title: Upgrade semver library to fix versioning constraint bugs in the PackageManager.
+type: fixed
+authors:
+- name: Houston Putman
+- name: Kevin Risden
+links:
+- name: SOLR-15854
+  url: https://issues.apache.org/jira/browse/SOLR-15854

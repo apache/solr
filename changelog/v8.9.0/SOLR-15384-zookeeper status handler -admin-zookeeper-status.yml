@@ -1,0 +1,7 @@
+title: Zookeeper Status handler /admin/zookeeper/status not queryable from SolrJ
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-15384
+  url: https://issues.apache.org/jira/browse/SOLR-15384

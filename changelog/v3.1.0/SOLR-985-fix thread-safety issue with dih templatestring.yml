@@ -1,0 +1,8 @@
+title: Fix thread-safety issue with DIH TemplateString for concurrent imports with
+  multiple cores.
+type: fixed
+authors:
+- name: Ryuuichi Kumai
+links:
+- name: SOLR-985
+  url: https://issues.apache.org/jira/browse/SOLR-985

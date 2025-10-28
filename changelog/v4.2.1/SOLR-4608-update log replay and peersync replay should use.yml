@@ -1,0 +1,9 @@
+title: Update Log replay and PeerSync replay should use the default processor chain
+  to update the index.
+type: fixed
+authors:
+- name: Ludovic Boutros
+- name: yonik
+links:
+- name: SOLR-4608
+  url: https://issues.apache.org/jira/browse/SOLR-4608

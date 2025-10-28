@@ -1,0 +1,10 @@
+title: Fix a race condition in the CDCR bootstrap process which could lead to bootstraps
+  cancelling itself
+type: fixed
+authors:
+- name: Amrit Sarkar
+- name: shalin
+- name: Varun Thacker
+links:
+- name: SOLR-11278
+  url: https://issues.apache.org/jira/browse/SOLR-11278

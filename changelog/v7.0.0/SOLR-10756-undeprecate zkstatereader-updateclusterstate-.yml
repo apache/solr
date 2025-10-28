@@ -1,0 +1,10 @@
+title: Undeprecate ZkStateReader.updateClusterState(), mark as @lucene.internal, and
+  rename to forciblyRefreshAllClusterStateSlow().
+type: other
+authors:
+- name: hossman
+- name: shalin
+- name: Steve Rowe
+links:
+- name: SOLR-10756
+  url: https://issues.apache.org/jira/browse/SOLR-10756

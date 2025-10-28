@@ -1,0 +1,7 @@
+title: On Java 7 raise permgen for running tests.
+type: other
+authors:
+- name: Uwe Schindler
+links:
+- name: SOLR-5022
+  url: https://issues.apache.org/jira/browse/SOLR-5022

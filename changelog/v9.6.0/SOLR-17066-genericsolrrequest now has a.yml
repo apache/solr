@@ -1,0 +1,8 @@
+title: GenericSolrRequest now has a `setRequiresCollection` setter that allows it
+  to specify whether it should make use of the client-level default collection/core.
+type: other
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-17066
+  url: https://issues.apache.org/jira/browse/SOLR-17066

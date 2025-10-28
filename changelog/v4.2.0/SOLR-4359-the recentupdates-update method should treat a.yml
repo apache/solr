@@ -1,0 +1,8 @@
+title: The RecentUpdates#update method should treat a problem reading the next record
+  the same as a problem parsing the record - log the exception and break.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4359
+  url: https://issues.apache.org/jira/browse/SOLR-4359

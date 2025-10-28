@@ -1,0 +1,8 @@
+title: ManagedIndexSchema doesn't persist uniqueKey tag after calling addFields method.
+type: fixed
+authors:
+- name: Jun Ohtani
+- name: Steve Rowe
+links:
+- name: SOLR-5000
+  url: https://issues.apache.org/jira/browse/SOLR-5000

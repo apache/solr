@@ -1,0 +1,8 @@
+title: Admin UI now correctly supports multiple DIH handler end-points
+type: fixed
+authors:
+- name: Upayavira
+- name: Alexandre Rafalovitch
+links:
+- name: SOLR-8993
+  url: https://issues.apache.org/jira/browse/SOLR-8993

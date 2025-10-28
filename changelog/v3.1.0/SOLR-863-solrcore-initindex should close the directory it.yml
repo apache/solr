@@ -1,0 +1,8 @@
+title: SolrCore.initIndex should close the directory it gets for clearing the lock
+  and use the DirectoryFactory.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-863
+  url: https://issues.apache.org/jira/browse/SOLR-863

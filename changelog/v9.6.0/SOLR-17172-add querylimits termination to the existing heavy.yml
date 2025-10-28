@@ -1,0 +1,9 @@
+title: Add QueryLimits termination to the existing heavy SearchComponent-s. This allows
+  query limits (e.g. timeAllowed, cpuAllowed) to terminate expensive operations within
+  components if limits are exceeded.
+type: changed
+authors:
+- name: Andrzej Bialecki
+links:
+- name: SOLR-17172
+  url: https://issues.apache.org/jira/browse/SOLR-17172

@@ -1,0 +1,9 @@
+title: Refactor LatchWatcher.await to protect against spurious wakeup
+type: added
+authors:
+- name: Tomás Fernández Löbbe
+- name: David Smiley
+- name: Dawid Weiss
+links:
+- name: SOLR-11782
+  url: https://issues.apache.org/jira/browse/SOLR-11782

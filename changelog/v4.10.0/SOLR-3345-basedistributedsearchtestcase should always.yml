@@ -1,0 +1,8 @@
+title: BaseDistributedSearchTestCase should always ignore QTime.
+type: other
+authors:
+- name: Vamsee Yarlagadda
+- name: Benson Margulies
+links:
+- name: SOLR-3345
+  url: https://issues.apache.org/jira/browse/SOLR-3345

@@ -1,0 +1,8 @@
+title: UpdateXmlMessages duplicate data when data is removed and then added in the
+  same message
+type: fixed
+authors:
+- name: Alex Deparvu
+links:
+- name: SOLR-16160
+  url: https://issues.apache.org/jira/browse/SOLR-16160

@@ -1,0 +1,8 @@
+title: Creating a new core via the HTTP API that results in a transient being unloaded
+  results in a " Too many close [count:-1]" error.
+type: fixed
+authors:
+- name: Olivier Soyez
+links:
+- name: SOLR-5388
+  url: https://issues.apache.org/jira/browse/SOLR-5388

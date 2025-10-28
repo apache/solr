@@ -1,0 +1,8 @@
+title: More explicit lexical resources location logged if Carrot2 clustering extension
+  is used. Fixed solr. impl. of IResource and IResourceLookup.
+type: other
+authors:
+- name: Dawid Weiss
+links:
+- name: SOLR-2862
+  url: https://issues.apache.org/jira/browse/SOLR-2862

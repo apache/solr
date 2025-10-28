@@ -1,0 +1,8 @@
+title: Temporary ZK election or connection loss should not stall indexing due to leader
+  initiated recovery
+type: added
+authors:
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-7245
+  url: https://issues.apache.org/jira/browse/SOLR-7245

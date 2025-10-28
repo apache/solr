@@ -1,0 +1,9 @@
+title: Schema Designer now correctly manages trust of the ConfigSets it is managing.
+type: fixed
+authors:
+- name: Ishan Chattopadhyaya
+- name: Skay
+- name: Houston Putman
+links:
+- name: SOLR-16777
+  url: https://issues.apache.org/jira/browse/SOLR-16777

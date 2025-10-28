@@ -1,0 +1,7 @@
+title: Add distance Stream Evaluator
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-10663
+  url: https://issues.apache.org/jira/browse/SOLR-10663

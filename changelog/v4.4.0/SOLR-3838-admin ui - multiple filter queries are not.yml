@@ -1,0 +1,7 @@
+title: Admin UI - Multiple filter queries are not supported in Query UI
+type: changed
+authors:
+- name: steffkes
+links:
+- name: SOLR-3838
+  url: https://issues.apache.org/jira/browse/SOLR-3838

@@ -1,0 +1,8 @@
+title: Remove default="true" from HtmlEncoder in example solrconfig.xml, because html
+  encoding confuses non-ascii users.
+type: other
+authors:
+- name: koji
+links:
+- name: SOLR-2528
+  url: https://issues.apache.org/jira/browse/SOLR-2528

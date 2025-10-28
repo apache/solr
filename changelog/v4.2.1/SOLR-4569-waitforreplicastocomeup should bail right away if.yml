@@ -1,0 +1,8 @@
+title: waitForReplicasToComeUp should bail right away if it doesn't see the expected
+  slice in the clusterstate rather than waiting.
+type: changed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4569
+  url: https://issues.apache.org/jira/browse/SOLR-4569

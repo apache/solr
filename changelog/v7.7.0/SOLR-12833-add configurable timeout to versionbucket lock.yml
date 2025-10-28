@@ -1,0 +1,8 @@
+title: Add configurable timeout to VersionBucket lock.
+type: changed
+authors:
+- name: Jeffery Yuan
+- name: Mark Miller
+links:
+- name: SOLR-12833
+  url: https://issues.apache.org/jira/browse/SOLR-12833

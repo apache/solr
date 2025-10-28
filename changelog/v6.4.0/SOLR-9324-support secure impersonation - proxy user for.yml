@@ -1,0 +1,8 @@
+title: Support Secure Impersonation / Proxy User for solr authentication
+type: added
+authors:
+- name: Gregory Chanan
+- name: Hrishikesh Gadre
+links:
+- name: SOLR-9324
+  url: https://issues.apache.org/jira/browse/SOLR-9324

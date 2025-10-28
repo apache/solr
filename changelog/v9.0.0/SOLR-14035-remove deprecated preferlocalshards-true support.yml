@@ -1,0 +1,8 @@
+title: Remove deprecated preferLocalShards=true support in favour of the shards.preference=replica.location:local
+  alternative.
+type: removed
+authors:
+- name: Alex Bulygin
+links:
+- name: SOLR-14035
+  url: https://issues.apache.org/jira/browse/SOLR-14035

@@ -1,0 +1,7 @@
+title: contrib/analytics FieldFacetAccumulator now throws IOException instead of SolrException
+type: other
+authors:
+- name: Scott Stults
+links:
+- name: SOLR-8147
+  url: https://issues.apache.org/jira/browse/SOLR-8147

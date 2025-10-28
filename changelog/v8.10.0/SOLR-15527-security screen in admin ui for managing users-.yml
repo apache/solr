@@ -1,0 +1,7 @@
+title: Security screen in Admin UI for managing users, roles, and permissions
+type: added
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15527
+  url: https://issues.apache.org/jira/browse/SOLR-15527

@@ -1,0 +1,10 @@
+title: When using min_rf, shard leader skipped bad replicas instead of marking them
+  for recovery, this could create inconsistencies between replicas of the same shard.
+  min_rf parameter is now deprecated, and even if provided replicas that don't ack
+  an update from the leader will be marked for recovery.
+type: fixed
+authors:
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-12767
+  url: https://issues.apache.org/jira/browse/SOLR-12767

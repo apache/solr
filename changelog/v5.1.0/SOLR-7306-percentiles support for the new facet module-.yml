@@ -1,0 +1,10 @@
+title: 'Percentiles support for the new facet module. Percentiles can be calculated
+  for all facet buckets and field faceting can sort by percentile values. Examples:
+  json.facet={ median_age : "percentile(age,50)" } json.facet={ salary_percentiles
+  : "percentile(salary,25,50,75)" }'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-7306
+  url: https://issues.apache.org/jira/browse/SOLR-7306

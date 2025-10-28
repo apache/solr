@@ -1,0 +1,8 @@
+title: '"Contrib Modules" have been renamed to "Modules" and have been moved from
+  "contrib/" to "modules/".'
+type: other
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-15917
+  url: https://issues.apache.org/jira/browse/SOLR-15917
