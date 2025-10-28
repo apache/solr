@@ -930,4 +930,22 @@ public class SolrCLI implements CLIO {
       CLIO.out(String.valueOf(message));
     }
   }
+
+  /**
+   * Get the value of the specified CLI option with fallback to system property and default value.
+   *
+   * @param cli the command line
+   * @param option the commons cli {@link Option}
+   * @param sysprop the system property to fall back to
+   * @param defaultValue the default value. Use null if no default value is desired
+   * @return the value of the option or system property or the default value
+   */
+  public static String getCliOptionOrPropValue(
+      CommandLine cli, Option option, String sysprop, String defaultValue) {
+    String value = cli.getOptionValue(option);
+    if (value == null) {
+      value = EnvUtils.getProperty(sysprop, defaultValue);
+    }
+    return value;
+  }
 }
