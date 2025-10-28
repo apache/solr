@@ -36,29 +36,29 @@ BeforeAll {
 
   Write-Host "Using Solr installation at: $SolrTip"
   Write-Host "Using Solr command: $SolrCmd"
-}
 
-function Test-HelpOutput {
-  param(
-    [string[]]$Arguments,
-    [string]$ExpectedPattern,
-    [string]$TestName
-  )
+  function Test-HelpOutput {
+    param(
+      [string[]]$Arguments,
+      [string]$ExpectedPattern,
+      [string]$TestName
+    )
 
-  Write-Host "Testing help: $TestName"
-  Write-Host "Running: $SolrCmd $($Arguments -join ' ')"
+    Write-Host "Testing help: $TestName"
+    Write-Host "Running: $SolrCmd $($Arguments -join ' ')"
 
-  $output = & $SolrCmd @Arguments 2>&1
-  $outputStr = $output | Out-String
+    $output = & $SolrCmd @Arguments 2>&1
+    $outputStr = $output | Out-String
 
-  Write-Host "Exit Code: $LASTEXITCODE"
-  if ($outputStr.Length -gt 0) {
-    Write-Host "Output (first 500 chars): $($outputStr.Substring(0, [Math]::Min(500, $outputStr.Length)))"
-  } else {
-    Write-Host "WARNING: Output is empty!"
+    Write-Host "Exit Code: $LASTEXITCODE"
+    if ($outputStr.Length -gt 0) {
+      Write-Host "Output (first 500 chars): $($outputStr.Substring(0, [Math]::Min(500, $outputStr.Length)))"
+    } else {
+      Write-Host "WARNING: Output is empty!"
+    }
+
+    return $outputStr
   }
-
-  return $outputStr
 }
 
 Describe "Solr Help Command" {
