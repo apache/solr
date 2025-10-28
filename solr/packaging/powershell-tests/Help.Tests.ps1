@@ -66,13 +66,13 @@ Describe "Solr Help Command" {
     It "solr --help flag prints help" {
       $output = Test-HelpOutput @("--help") "Usage: solr COMMAND OPTIONS" "solr --help"
       $output | Should -Match "Usage: solr COMMAND OPTIONS"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
 
     It "solr with no flags prints help" {
       $output = Test-HelpOutput @() "Usage: solr COMMAND OPTIONS" "solr (no flags)"
       $output | Should -Match "Usage: solr COMMAND OPTIONS"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
   }
 
@@ -80,7 +80,7 @@ Describe "Solr Help Command" {
     It "start --help flag prints help" {
       $output = Test-HelpOutput @("start", "--help") "Usage: solr start" "start --help"
       $output | Should -Match "Usage: solr start"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
 
     It "start -h flag prints help" {
@@ -92,62 +92,62 @@ Describe "Solr Help Command" {
     It "stop --help flag prints help" {
       $output = Test-HelpOutput @("stop", "--help") "Usage: solr stop" "stop --help"
       $output | Should -Match "Usage: solr stop"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
 
     It "restart --help flag prints help" {
       $output = Test-HelpOutput @("restart", "--help") "Usage: solr restart" "restart --help"
       $output | Should -Match "Usage: solr restart"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
 
     It "status --help flag prints help" {
       $output = Test-HelpOutput @("status", "--help") "usage: bin/solr status" "status --help"
       $output | Should -Match "usage: bin/solr status"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
 
     It "healthcheck --help flag prints help" {
       $output = Test-HelpOutput @("healthcheck", "--help") "usage: bin/solr healthcheck" "healthcheck --help"
       $output | Should -Match "usage: bin/solr healthcheck"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
 
     It "create --help flag prints help" {
       $output = Test-HelpOutput @("create", "--help") "usage: bin/solr create" "create --help"
       $output | Should -Match "usage: bin/solr create"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
 
     It "delete -h flag prints help" {
       $output = Test-HelpOutput @("delete", "-h") "usage: bin/solr delete" "delete -h"
       $output | Should -Match "usage: bin/solr delete"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
 
     It "zk --help flag prints help" {
       $output = Test-HelpOutput @("zk", "--help") "usage:" "zk --help"
       $output | Should -Match "usage:"
       $output | Should -Match "bin/solr zk ls"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
 
     It "auth --help flag prints help" {
       $output = Test-HelpOutput @("auth", "--help") "bin/solr auth enable" "auth --help"
       $output | Should -Match "bin/solr auth enable"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
 
     It "assert --help flag prints help" {
       $output = Test-HelpOutput @("assert", "--help") "usage: bin/solr assert" "assert --help"
       $output | Should -Match "usage: bin/solr assert"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
 
     It "post --help flag prints help" {
       $output = Test-HelpOutput @("post", "--help") "usage: bin/solr post" "post --help"
       $output | Should -Match "usage: bin/solr post"
-      $output | Should -Not -Match "ERROR"
+      $output | Should -Not -cmatch "ERROR"
     }
   }
 }
