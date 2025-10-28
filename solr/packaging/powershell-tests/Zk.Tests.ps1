@@ -109,43 +109,50 @@ Describe "Solr Zk Command" {
       }
     }
 
-    It "listing out files" -Skip:(-not $SolrRunning) {
+    It "listing out files" {
+      if (-not $script:SolrRunning) { Set-ItResult -Skipped -Because "Solr is not running"; return }
       Start-Sleep -Seconds 1
       $output = Test-CommandOutput @("zk", "ls", "/", "-z", "localhost:$ZK_PORT", "--recursive") "zk ls / -z localhost:$ZK_PORT --recursive"
       $output | Should -Match "aliases\.json"
     }
 
-    It "connecting via solr-url" -Skip:(-not $SolrRunning) {
+    It "connecting via solr-url" {
+      if (-not $script:SolrRunning) { Set-ItResult -Skipped -Because "Solr is not running"; return }
       Start-Sleep -Seconds 1
       $output = Test-CommandOutput @("zk", "ls", "/", "--solr-url", "http://localhost:$SOLR_PORT") "zk ls / --solr-url http://localhost:$SOLR_PORT"
       $output | Should -Match "aliases\.json"
     }
 
-    It "connecting via -s flag" -Skip:(-not $SolrRunning) {
+    It "connecting via -s flag" {
+      if (-not $script:SolrRunning) { Set-ItResult -Skipped -Because "Solr is not running"; return }
       Start-Sleep -Seconds 1
       $output = Test-CommandOutput @("zk", "ls", "/", "-s", "http://localhost:$SOLR_PORT") "zk ls / -s http://localhost:$SOLR_PORT"
       $output | Should -Match "aliases\.json"
     }
 
-    It "connecting via default (localhost)" -Skip:(-not $SolrRunning) {
+    It "connecting via default (localhost)" {
+      if (-not $script:SolrRunning) { Set-ItResult -Skipped -Because "Solr is not running"; return }
       Start-Sleep -Seconds 1
       $output = Test-CommandOutput @("zk", "ls", "/") "zk ls /"
       $output | Should -Match "aliases\.json"
     }
 
-    It "connecting via -z flag" -Skip:(-not $SolrRunning) {
+    It "connecting via -z flag" {
+      if (-not $script:SolrRunning) { Set-ItResult -Skipped -Because "Solr is not running"; return }
       Start-Sleep -Seconds 1
       $output = Test-CommandOutput @("zk", "ls", "/", "-z", "localhost:$ZK_PORT") "zk ls / -z localhost:$ZK_PORT"
       $output | Should -Match "aliases\.json"
     }
 
-    It "connecting via --zk-host flag" -Skip:(-not $SolrRunning) {
+    It "connecting via --zk-host flag" {
+      if (-not $script:SolrRunning) { Set-ItResult -Skipped -Because "Solr is not running"; return }
       Start-Sleep -Seconds 1
       $output = Test-CommandOutput @("zk", "ls", "/", "--zk-host", "localhost:$ZK_PORT") "zk ls / --zk-host localhost:$ZK_PORT"
       $output | Should -Match "aliases\.json"
     }
 
-    It "copying files around" -Skip:(-not $SolrRunning) {
+    It "copying files around" {
+      if (-not $script:SolrRunning) { Set-ItResult -Skipped -Because "Solr is not running"; return }
       $testFile = "testfile_$([System.IO.Path]::GetRandomFileName()).txt"
       try {
         # Create test file
@@ -168,7 +175,8 @@ Describe "Solr Zk Command" {
       }
     }
 
-    It "upconfig" -Skip:(-not $SolrRunning) {
+    It "upconfig" {
+      if (-not $script:SolrRunning) { Set-ItResult -Skipped -Because "Solr is not running"; return }
       $sourceConfigsetDir = Join-Path $SolrTip "server\solr\configsets\sample_techproducts_configs"
       if (Test-Path $sourceConfigsetDir) {
         $output = Test-CommandOutput @("zk", "upconfig", "-d", $sourceConfigsetDir, "-n", "techproducts_ps_test", "-z", "localhost:$ZK_PORT") "zk upconfig"
@@ -179,7 +187,8 @@ Describe "Solr Zk Command" {
       }
     }
 
-    It "downconfig" -Skip:(-not $SolrRunning) {
+    It "downconfig" {
+      if (-not $script:SolrRunning) { Set-ItResult -Skipped -Because "Solr is not running"; return }
       $tempDir = [System.IO.Path]::GetTempPath()
       $downloadDir = Join-Path $tempDir "downconfig_$([System.IO.Path]::GetRandomFileName())"
       New-Item -ItemType Directory -Path $downloadDir -Force | Out-Null
