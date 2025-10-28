@@ -53,6 +53,7 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
     loadModel("dummy-model.json"); // preparation
 
     addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."), "textToVector");
+
     addWithChain(
         sdoc("id", "98", "_text_", "Kakaroth is a saiyan grown up on planet Earth."),
         "textToVector");
@@ -71,7 +72,7 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
     restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
   }
 
-  private SolrQuery getSolrQuery() {
+  protected SolrQuery getSolrQuery() {
     final String solrQuery = "*:*";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);

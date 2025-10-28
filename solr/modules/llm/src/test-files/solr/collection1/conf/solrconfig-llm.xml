@@ -43,7 +43,7 @@
    <str name="dir">${solr.data.dir:}</str>
   </updateLog>
  </updateHandler>
- 
+
  <!-- Query request handler managing models and features -->
  <requestHandler name="/query" class="solr.SearchHandler">
   <lst name="defaults">
@@ -63,6 +63,16 @@
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="textToVectorLazyMultiField">
+  <processor class="solr.llm.textvectorisation.update.processor.LazyMultiFieldTextToVectorUpdateProcessorFactory">
+   <str name="inputField">_text_</str>
+   <str name="outputField">vector</str>
+   <str name="additionalInputFields">text2_s</str>
+   <str name="model">dummy-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+  </updateRequestProcessorChain>
+
  <updateRequestProcessorChain name="failingTextToVector">
   <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
@@ -71,7 +81,7 @@
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>
- 
- 
+
+
 
 </config>

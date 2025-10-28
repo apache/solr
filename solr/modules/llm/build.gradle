@@ -24,6 +24,9 @@ dependencies {
   implementation platform(project(':platform'))
   implementation project(':solr:core')
   implementation project(':solr:solrj')
+  implementation libs.fasterxml.jackson.core.databind
+  implementation libs.fasterxml.jackson.core.annotations
+  implementation libs.fasterxml.jackson.core.core
 
   implementation libs.apache.lucene.core
 
