@@ -1,0 +1,9 @@
+title: SolrTestCaseJ4.getNextAvailablePort() has been deprecated (and will be removed
+  in 9.0) since it is fundementally flawed. Users with tests that depend on this method
+  should restructure them.
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-13869
+  url: https://issues.apache.org/jira/browse/SOLR-13869

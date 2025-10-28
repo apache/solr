@@ -1,0 +1,8 @@
+title: When recovery is cancelled, any call to the leader to wait to see the replica
+  in the right state for recovery should be aborted.
+type: changed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5884
+  url: https://issues.apache.org/jira/browse/SOLR-5884

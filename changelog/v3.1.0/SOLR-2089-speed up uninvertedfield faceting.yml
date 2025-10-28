@@ -1,0 +1,9 @@
+title: Speed up UnInvertedField faceting (facet.method=fc for multi-valued fields)
+  when facet.limit is both high, and a high enough percentage of the number of unique
+  terms in the field. Extreme cases yield speedups over 3x.
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-2089
+  url: https://issues.apache.org/jira/browse/SOLR-2089

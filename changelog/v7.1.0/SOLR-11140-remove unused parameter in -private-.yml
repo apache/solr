@@ -1,0 +1,8 @@
+title: Remove unused parameter in (private) SolrMetricManager.prepareCloudPlugins
+  method.
+type: other
+authors:
+- name: Omar Abdelnabi
+links:
+- name: SOLR-11140
+  url: https://issues.apache.org/jira/browse/SOLR-11140

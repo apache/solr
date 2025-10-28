@@ -1,0 +1,11 @@
+title: The preferred Content-Type for XML was changed to application/xml. XMLResponseWriter
+  now only delivers using this type; updating documents and analyzing documents is
+  still supported using text/xml as Content-Type, too. If you have clients that are
+  hardcoded on text/xml as Content-Type, you have to change them.
+type: other
+authors:
+- name: uschindler
+- name: rmuir
+links:
+- name: SOLR-2391
+  url: https://issues.apache.org/jira/browse/SOLR-2391

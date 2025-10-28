@@ -1,0 +1,8 @@
+title: Rename numReplicas to replicationFactor in Collections API.
+type: other
+authors:
+- name: yonik
+- name: Mark Miller
+links:
+- name: SOLR-3845
+  url: https://issues.apache.org/jira/browse/SOLR-3845

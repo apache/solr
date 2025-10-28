@@ -1,0 +1,9 @@
+title: 'Fix: SPLITSHARD can cause data loss on a failure to commit after the sub-shards
+  are active and a rollback is done to make parent shard active again'
+type: fixed
+authors:
+- name: Ishan Chattopadhyaya
+- name: ab
+links:
+- name: SOLR-13945
+  url: https://issues.apache.org/jira/browse/SOLR-13945

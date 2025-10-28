@@ -1,0 +1,11 @@
+title: Support Gradle build, remove Ant support from trunk
+type: other
+authors:
+- name: Dawid Weiss
+- name: Erick Erickson
+- name: Uwe Schindler et.al.
+links:
+- name: LUCENE-9077
+  url: https://issues.apache.org/jira/browse/LUCENE-9077
+- name: LUCENE-9433
+  url: https://issues.apache.org/jira/browse/LUCENE-9433

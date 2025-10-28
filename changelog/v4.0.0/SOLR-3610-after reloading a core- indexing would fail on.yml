@@ -1,0 +1,9 @@
+title: After reloading a core, indexing would fail on any newly added fields to the
+  schema.
+type: fixed
+authors:
+- name: Brent Mills
+- name: rmuir
+links:
+- name: SOLR-3610
+  url: https://issues.apache.org/jira/browse/SOLR-3610

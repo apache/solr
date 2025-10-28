@@ -1,0 +1,8 @@
+title: Cutover tests to using 'q.op' and 'df' instead of schema 'defaultOperator'
+  and 'defaultSearchField'
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-7041
+  url: https://issues.apache.org/jira/browse/SOLR-7041

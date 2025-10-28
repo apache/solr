@@ -1,0 +1,9 @@
+title: 'JSON Facet API: repeated values in a numeric points field with docValues enabled
+  were double counted.'
+type: fixed
+authors:
+- name: Hossman
+- name: yonik
+links:
+- name: SOLR-11363
+  url: https://issues.apache.org/jira/browse/SOLR-11363

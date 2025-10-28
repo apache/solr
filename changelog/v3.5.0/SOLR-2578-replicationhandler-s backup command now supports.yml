@@ -1,0 +1,8 @@
+title: ReplicationHandler's backup command now supports a 'numberToKeep' request param
+  that can be used to delete all but the most recent N backups.
+type: added
+authors:
+- name: James Dyer
+links:
+- name: SOLR-2578
+  url: https://issues.apache.org/jira/browse/SOLR-2578

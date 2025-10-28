@@ -1,0 +1,8 @@
+title: Display all custom distributed stages in debug output.
+type: fixed
+authors:
+- name: Torsten Bøgh Köster
+- name: Christine Poerschke
+links:
+- name: SOLR-17337
+  url: https://issues.apache.org/jira/browse/SOLR-17337

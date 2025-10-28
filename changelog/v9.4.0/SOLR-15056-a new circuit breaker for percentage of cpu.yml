@@ -1,0 +1,13 @@
+title: A new Circuit breaker for percentage of CPU utilization is added. The former
+  "CPU" circuit breaker is now more correctly named LoadAverageCircuitBreaker as it
+  trips on system load average which is not a percentage. Users of legacy CircuitBreakerManager
+  are not affected by this change.
+type: added
+authors:
+- name: Walter Underwood
+- name: janhoy
+- name: Christine Poerschke
+- name: Atri Sharma
+links:
+- name: SOLR-15056
+  url: https://issues.apache.org/jira/browse/SOLR-15056

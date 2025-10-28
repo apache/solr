@@ -1,0 +1,8 @@
+title: Implement TriggerListener API
+type: added
+authors:
+- name: ab
+- name: shalin
+links:
+- name: SOLR-10996
+  url: https://issues.apache.org/jira/browse/SOLR-10996

@@ -1,0 +1,8 @@
+title: Add a test to make sure that a leader always recovers from log on startup.
+type: other
+authors:
+- name: Cao Manh Dat
+- name: shalin
+links:
+- name: SOLR-5041
+  url: https://issues.apache.org/jira/browse/SOLR-5041

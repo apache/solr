@@ -1,0 +1,6 @@
+title: Improve ExecutePlanAction error handling.
+type: fixed
+authors: []
+links:
+- name: SOLR-13828
+  url: https://issues.apache.org/jira/browse/SOLR-13828

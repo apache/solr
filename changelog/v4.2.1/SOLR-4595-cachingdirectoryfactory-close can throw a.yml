@@ -1,0 +1,7 @@
+title: CachingDirectoryFactory#close can throw a concurrent modification exception.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4595
+  url: https://issues.apache.org/jira/browse/SOLR-4595

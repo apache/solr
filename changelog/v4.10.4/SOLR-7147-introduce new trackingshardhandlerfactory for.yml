@@ -1,0 +1,9 @@
+title: Introduce new TrackingShardHandlerFactory for monitoring what requests are
+  sent to shards during tests.
+type: other
+authors:
+- name: hossman
+- name: shalin
+links:
+- name: SOLR-7147
+  url: https://issues.apache.org/jira/browse/SOLR-7147

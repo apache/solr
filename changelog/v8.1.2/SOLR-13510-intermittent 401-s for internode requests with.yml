@@ -1,0 +1,8 @@
+title: Intermittent 401's for internode requests with basicauth enabled
+type: fixed
+authors:
+- name: Cao Manh Dat
+- name: Colvin Cowie
+links:
+- name: SOLR-13510
+  url: https://issues.apache.org/jira/browse/SOLR-13510

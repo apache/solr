@@ -1,0 +1,9 @@
+title: Possible to set solr.data.home property as root dir for all data
+type: added
+authors:
+- name: janhoy
+- name: Shawn Heisey
+- name: Mark Miller
+links:
+- name: SOLR-6671
+  url: https://issues.apache.org/jira/browse/SOLR-6671

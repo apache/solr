@@ -1,0 +1,8 @@
+title: PeerSync alreadyInSync check is not backwards compatible and results in full
+  replication during a rolling restart
+type: other
+authors:
+- name: Tim Owen
+links:
+- name: SOLR-9915
+  url: https://issues.apache.org/jira/browse/SOLR-9915

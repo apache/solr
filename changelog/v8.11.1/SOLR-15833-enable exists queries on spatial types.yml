@@ -1,0 +1,8 @@
+title: Enable exists queries on spatial types.
+type: fixed
+authors:
+- name: Mike Drob
+- name: Houston Putman
+links:
+- name: SOLR-15833
+  url: https://issues.apache.org/jira/browse/SOLR-15833

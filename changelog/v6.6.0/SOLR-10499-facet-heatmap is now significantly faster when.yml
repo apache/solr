@@ -1,0 +1,9 @@
+title: facet.heatmap is now significantly faster when the docset (base query) matches
+  everything and there are no deleted docs. It's also faster when the docset matches
+  a small fraction of the index or none.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-10499
+  url: https://issues.apache.org/jira/browse/SOLR-10499

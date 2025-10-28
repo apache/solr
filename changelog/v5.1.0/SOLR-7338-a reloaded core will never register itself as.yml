@@ -1,0 +1,10 @@
+title: A reloaded core will never register itself as active after a ZK session expiration
+type: fixed
+authors:
+- name: Mark Miller
+- name: Timothy Potter
+links:
+- name: SOLR-7338
+  url: https://issues.apache.org/jira/browse/SOLR-7338
+- name: SOLR-6583
+  url: https://issues.apache.org/jira/browse/SOLR-6583

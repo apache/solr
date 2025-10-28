@@ -1,0 +1,8 @@
+title: Solr Admin UI Solr now sets the HTTP header X-Frame-Options to DENY to avoid
+  clickjacking.
+type: other
+authors:
+- name: yonik
+links:
+- name: SOLR-7966
+  url: https://issues.apache.org/jira/browse/SOLR-7966

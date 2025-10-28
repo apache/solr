@@ -1,0 +1,7 @@
+title: Allow SolrIndexWriter to close without waiting for merges
+type: added
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-6125
+  url: https://issues.apache.org/jira/browse/SOLR-6125

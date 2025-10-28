@@ -1,0 +1,9 @@
+title: The TokenizerFactory API has changed to explicitly return a Tokenizer rather
+  then a TokenStream (that may be or may not be a Tokenizer). This change is required
+  to take advantage of the Token reuse improvements in lucene 2.9.
+type: other
+authors:
+- name: ryan
+links:
+- name: SOLR-1377
+  url: https://issues.apache.org/jira/browse/SOLR-1377

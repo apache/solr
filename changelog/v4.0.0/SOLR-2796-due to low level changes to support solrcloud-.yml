@@ -1,0 +1,7 @@
+title: Due to low level changes to support SolrCloud, the uniqueKey field can no longer
+  be populated via &lt;copyField/&gt; or &lt;field default=...&gt; in the schema.xml.
+type: other
+authors: []
+links:
+- name: SOLR-2796
+  url: https://issues.apache.org/jira/browse/SOLR-2796

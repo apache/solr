@@ -1,0 +1,8 @@
+title: Fix RawResponseWriter to respect 'base' writer
+type: fixed
+authors:
+- name: Steve Davids
+- name: hossman
+links:
+- name: SOLR-4406
+  url: https://issues.apache.org/jira/browse/SOLR-4406

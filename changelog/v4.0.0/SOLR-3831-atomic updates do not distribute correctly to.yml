@@ -1,0 +1,8 @@
+title: Atomic updates do not distribute correctly to other nodes.
+type: fixed
+authors:
+- name: Jim Musil
+- name: Mark Miller
+links:
+- name: SOLR-3831
+  url: https://issues.apache.org/jira/browse/SOLR-3831

@@ -1,0 +1,7 @@
+title: Add Correlation Stream Evaluator
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-10582
+  url: https://issues.apache.org/jira/browse/SOLR-10582

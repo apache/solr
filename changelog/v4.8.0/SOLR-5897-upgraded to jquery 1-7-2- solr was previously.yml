@@ -1,0 +1,8 @@
+title: Upgraded to jQuery 1.7.2, Solr was previously using 1.4.3, the file was mistakenly
+  named 1.7.2
+type: fixed
+authors:
+- name: steffkes
+links:
+- name: SOLR-5897
+  url: https://issues.apache.org/jira/browse/SOLR-5897

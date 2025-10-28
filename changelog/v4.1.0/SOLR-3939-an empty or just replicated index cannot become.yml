@@ -1,0 +1,10 @@
+title: An empty or just replicated index cannot become the leader of a shard after
+  a leader goes down.
+type: fixed
+authors:
+- name: Joel Bernstein
+- name: yonik
+- name: Mark Miller
+links:
+- name: SOLR-3939
+  url: https://issues.apache.org/jira/browse/SOLR-3939

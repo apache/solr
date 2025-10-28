@@ -1,0 +1,10 @@
+title: User specified replicationFactor and maxShardsPerNode is used when specified
+  during a restore operation. A user can now specify nrtReplicas/tlogReplicas/pullReplicas
+  while restoring the collection. Specifying replicationFactor or nrtReplicas have
+  the same effect and only one can be specified
+type: fixed
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-12489
+  url: https://issues.apache.org/jira/browse/SOLR-12489

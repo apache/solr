@@ -1,0 +1,9 @@
+title: Disabled suggester component from techproduct solrconfig.xml since it caused
+  long startup times on large indexes even when it wasn't used.
+type: fixed
+authors:
+- name: yonik
+- name: hossman
+links:
+- name: SOLR-6679
+  url: https://issues.apache.org/jira/browse/SOLR-6679

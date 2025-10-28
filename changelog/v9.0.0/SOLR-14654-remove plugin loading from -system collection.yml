@@ -1,0 +1,7 @@
+title: Remove plugin loading from .system collection
+type: removed
+authors:
+- name: noble
+links:
+- name: SOLR-14654
+  url: https://issues.apache.org/jira/browse/SOLR-14654

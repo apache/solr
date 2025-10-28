@@ -1,0 +1,34 @@
+title: 'SolrCloud - added shared/central config and core/shard management via zookeeper,
+  built-in load balancing, and distributed indexing. (Jamie Johnson, Sami Siren, Ted
+  Dunning, yonik, Mark Miller) Additional Work: - SOLR-2324: SolrCloud solr.xml parameters
+  are not persisted by CoreContainer. (Massimo Schiavon, Mark Miller) - SOLR-2287:
+  Allow users to query by multiple, compatible collections with SolrCloud. (Soheb
+  Mahmood, Alex Cowell, Mark Miller) - SOLR-2622: ShowFileRequestHandler does not
+  work in SolrCloud mode. (Stefan Matheis, Mark Miller) - SOLR-3108: Error in SolrCloud''s
+  replica lookup code when replica''s are hosted in same Solr instance. (Bruno Dumon,
+  Sami Siren, Mark Miller) - SOLR-3080: Remove shard info from zookeeper when SolrCore
+  is explicitly unloaded. (yonik, Mark Miller, siren) - SOLR-3437: Recovery issues
+  a spurious commit to the cluster. (Trym R. Møller via Mark Miller) - SOLR-2822:
+  Skip update processors already run on other nodes'
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-1873
+  url: https://issues.apache.org/jira/browse/SOLR-1873
+- name: SOLR-2358
+  url: https://issues.apache.org/jira/browse/SOLR-2358
+- name: SOLR-2324
+  url: https://issues.apache.org/jira/browse/SOLR-2324
+- name: SOLR-2287
+  url: https://issues.apache.org/jira/browse/SOLR-2287
+- name: SOLR-2622
+  url: https://issues.apache.org/jira/browse/SOLR-2622
+- name: SOLR-3108
+  url: https://issues.apache.org/jira/browse/SOLR-3108
+- name: SOLR-3080
+  url: https://issues.apache.org/jira/browse/SOLR-3080
+- name: SOLR-3437
+  url: https://issues.apache.org/jira/browse/SOLR-3437
+- name: SOLR-2822
+  url: https://issues.apache.org/jira/browse/SOLR-2822

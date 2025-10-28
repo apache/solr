@@ -1,0 +1,8 @@
+title: Change `frange` to default to `cost=100` so default behavior is to PostFilter
+  if user specifies `cache=false`
+type: changed
+authors:
+- name: hossman
+links:
+- name: SOLR-11641
+  url: https://issues.apache.org/jira/browse/SOLR-11641

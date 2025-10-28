@@ -1,0 +1,7 @@
+title: Cloud Node does not have Core, the admin UI cannot be displayed properly.
+type: fixed
+authors:
+- name: Shiming Li
+links:
+- name: SOLR-16439
+  url: https://issues.apache.org/jira/browse/SOLR-16439

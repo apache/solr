@@ -1,0 +1,8 @@
+title: System property to control whether base_url is stored in state.json to enable
+  back-compat with older SolrJ versions.
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15145
+  url: https://issues.apache.org/jira/browse/SOLR-15145

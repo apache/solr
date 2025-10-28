@@ -1,0 +1,8 @@
+title: SimplePostTool and therefore the bin/post script cannot upload files larger
+  than 2.1GB.
+type: fixed
+authors:
+- name: shalin
+links:
+- name: SOLR-8494
+  url: https://issues.apache.org/jira/browse/SOLR-8494

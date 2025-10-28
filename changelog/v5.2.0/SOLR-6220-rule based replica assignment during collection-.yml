@@ -1,0 +1,8 @@
+title: Rule Based Replica Assignment during collection, shard creation and replica
+  creation
+type: added
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-6220
+  url: https://issues.apache.org/jira/browse/SOLR-6220

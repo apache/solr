@@ -1,0 +1,8 @@
+title: Allow Collection API and Config Set API to be done in a distributed fashion
+  without going through Overseer
+type: other
+authors:
+- name: Ilan Ginzburg
+links:
+- name: SOLR-15146
+  url: https://issues.apache.org/jira/browse/SOLR-15146

@@ -1,0 +1,7 @@
+title: ShardSplitTest should extend AbstractFullDistribZkTestBase instead of BasicDistributedZkTest.
+type: other
+authors:
+- name: shalin
+links:
+- name: SOLR-12656
+  url: https://issues.apache.org/jira/browse/SOLR-12656

@@ -1,0 +1,7 @@
+title: Use default idleTimeout instead of 0 for HTTP2 requests.
+type: fixed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-13887
+  url: https://issues.apache.org/jira/browse/SOLR-13887

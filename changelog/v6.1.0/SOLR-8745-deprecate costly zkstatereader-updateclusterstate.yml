@@ -1,0 +1,8 @@
+title: Deprecate costly ZkStateReader.updateClusterState(), replace with a narrow
+  forceUpdateCollection(collection)
+type: changed
+authors:
+- name: Scott Blum
+links:
+- name: SOLR-8745
+  url: https://issues.apache.org/jira/browse/SOLR-8745

@@ -1,0 +1,7 @@
+title: Add temporal graph query to the nodes Streaming Expression
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-15132
+  url: https://issues.apache.org/jira/browse/SOLR-15132

@@ -1,0 +1,9 @@
+title: HTMLStripCharFilter sometimes threw a "Mark Invalid" exception.
+type: fixed
+authors:
+- name: Julien Coloos
+- name: hossman
+- name: yonik
+links:
+- name: SOLR-1283
+  url: https://issues.apache.org/jira/browse/SOLR-1283

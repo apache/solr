@@ -1,0 +1,8 @@
+title: Add 2 arg variant of vectorSimilarity() function
+type: changed
+authors:
+- name: Sanjay Dutt
+- name: hossman
+links:
+- name: SOLR-17164
+  url: https://issues.apache.org/jira/browse/SOLR-17164

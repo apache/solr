@@ -1,0 +1,9 @@
+title: Admin pages could stall waiting for localhost name resolution if reverse DNS
+  wasn't configured; this was changed so the DNS resolution is attempted only once
+  the first time an admin page is loaded.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-1517
+  url: https://issues.apache.org/jira/browse/SOLR-1517

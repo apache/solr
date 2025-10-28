@@ -1,0 +1,7 @@
+title: Refactor some methods in MiniSolrCloudCluster tests
+type: other
+authors:
+- name: "Steve Davids via\n  Erick Erickson"
+links:
+- name: SOLR-6483
+  url: https://issues.apache.org/jira/browse/SOLR-6483

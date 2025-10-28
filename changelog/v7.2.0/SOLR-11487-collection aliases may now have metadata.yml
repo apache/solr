@@ -1,0 +1,8 @@
+title: Collection Aliases may now have metadata (currently an internal feature).
+type: added
+authors:
+- name: Gus Heck
+- name: David Smiley
+links:
+- name: SOLR-11487
+  url: https://issues.apache.org/jira/browse/SOLR-11487

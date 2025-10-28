@@ -1,0 +1,8 @@
+title: Assign explicit useDocValuesAsStored values to all points field types in schema-point.xml/TestPointFields.
+type: other
+authors:
+- name: hossman
+- name: Steve Rowe
+links:
+- name: SOLR-10438
+  url: https://issues.apache.org/jira/browse/SOLR-10438

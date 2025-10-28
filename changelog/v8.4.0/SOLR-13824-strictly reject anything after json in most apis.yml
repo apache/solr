@@ -1,0 +1,8 @@
+title: Strictly reject anything after JSON in most APIs
+type: other
+authors:
+- name: Mikhail Khludnev
+- name: Munendra S N
+links:
+- name: SOLR-13824
+  url: https://issues.apache.org/jira/browse/SOLR-13824

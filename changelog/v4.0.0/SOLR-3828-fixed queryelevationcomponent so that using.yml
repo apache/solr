@@ -1,0 +1,9 @@
+title: Fixed QueryElevationComponent so that using 'markExcludes' does not modify
+  the result set or ranking of 'excluded' documents relative to not using elevation
+  at all.
+type: fixed
+authors:
+- name: Alexey Serba
+links:
+- name: SOLR-3828
+  url: https://issues.apache.org/jira/browse/SOLR-3828

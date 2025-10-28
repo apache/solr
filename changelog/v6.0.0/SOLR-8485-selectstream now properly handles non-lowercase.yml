@@ -1,0 +1,8 @@
+title: SelectStream now properly handles non-lowercase and/or quoted select field
+  names
+type: fixed
+authors:
+- name: Dennis Gove
+links:
+- name: SOLR-8485
+  url: https://issues.apache.org/jira/browse/SOLR-8485

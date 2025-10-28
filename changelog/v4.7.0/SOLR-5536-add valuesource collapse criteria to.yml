@@ -1,0 +1,7 @@
+title: Add ValueSource collapse criteria to CollapsingQParsingPlugin
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-5536
+  url: https://issues.apache.org/jira/browse/SOLR-5536

@@ -1,0 +1,9 @@
+title: Fixed inconsistent results format of subquery transformer for distributed search
+  (multi-shard).
+type: fixed
+authors:
+- name: Munendra S N
+- name: Mikhail Khludnev
+links:
+- name: SOLR-12096
+  url: https://issues.apache.org/jira/browse/SOLR-12096

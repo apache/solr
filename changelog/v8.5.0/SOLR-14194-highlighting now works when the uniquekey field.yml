@@ -1,0 +1,9 @@
+title: Highlighting now works when the uniqueKey field is not stored but has docValues.
+  And the original highlighter can now highlight text fields from docValues.
+type: changed
+authors:
+- name: Andrzej Wislowski
+- name: David Smiley
+links:
+- name: SOLR-14194
+  url: https://issues.apache.org/jira/browse/SOLR-14194

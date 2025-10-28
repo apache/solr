@@ -1,0 +1,8 @@
+title: Add SolrTestCaseJ4.SuppressSSL annotation to disable SSL (instead of static
+  boolean).
+type: other
+authors:
+- name: Robert Muir
+links:
+- name: SOLR-5771
+  url: https://issues.apache.org/jira/browse/SOLR-5771

@@ -1,0 +1,9 @@
+title: UninvertDocValuesMergePolicy was removed because it's incompatible with Lucene
+  9.
+type: other
+authors:
+- name: David Smiley
+- name: Christine Poerschke
+links:
+- name: SOLR-15356
+  url: https://issues.apache.org/jira/browse/SOLR-15356

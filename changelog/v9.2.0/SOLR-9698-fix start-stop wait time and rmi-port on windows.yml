@@ -1,0 +1,7 @@
+title: Fix start/stop wait time and RMI_PORT on Windows
+type: fixed
+authors:
+- name: Colvin Cowie
+links:
+- name: SOLR-9698
+  url: https://issues.apache.org/jira/browse/SOLR-9698

@@ -1,0 +1,8 @@
+title: CloudSolrServer's RouteResponse and RouteException should be publicly accessible.
+type: fixed
+authors:
+- name: Mark Miller
+- name: shalin
+links:
+- name: SOLR-5899
+  url: https://issues.apache.org/jira/browse/SOLR-5899

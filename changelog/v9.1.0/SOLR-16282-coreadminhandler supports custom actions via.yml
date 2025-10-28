@@ -1,0 +1,8 @@
+title: CoreAdminHandler supports custom actions via solr.xml configuration.
+type: added
+authors:
+- name: Artem Abeleshev
+- name: Christine Poerschke
+links:
+- name: SOLR-16282
+  url: https://issues.apache.org/jira/browse/SOLR-16282

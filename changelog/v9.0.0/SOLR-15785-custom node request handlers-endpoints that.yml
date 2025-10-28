@@ -1,0 +1,9 @@
+title: Custom node request handlers/endpoints that weren't in packages can now be
+  located in JARs in solr-home/lib, not just WEB-INF/lib.
+type: changed
+authors:
+- name: Nazerke Seidan
+- name: David Smiley
+links:
+- name: SOLR-15785
+  url: https://issues.apache.org/jira/browse/SOLR-15785

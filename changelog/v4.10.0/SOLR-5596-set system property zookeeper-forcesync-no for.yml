@@ -1,0 +1,7 @@
+title: Set system property zookeeper.forceSync=no for Solr test cases.
+type: other
+authors:
+- name: shalin
+links:
+- name: SOLR-5596
+  url: https://issues.apache.org/jira/browse/SOLR-5596

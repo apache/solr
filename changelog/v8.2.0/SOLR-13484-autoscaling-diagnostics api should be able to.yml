@@ -1,0 +1,8 @@
+title: autoscaling/diagnostics API should be able to give diagnostics output from
+  config sent as a payload
+type: changed
+authors:
+- name: noble
+links:
+- name: SOLR-13484
+  url: https://issues.apache.org/jira/browse/SOLR-13484

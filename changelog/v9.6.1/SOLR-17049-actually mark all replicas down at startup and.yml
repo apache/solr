@@ -1,0 +1,9 @@
+title: Actually mark all replicas down at startup and truly wait for them. This includes
+  replicas that might not exist anymore locally.
+type: fixed
+authors:
+- name: Houston Putman
+- name: Vincent Primault
+links:
+- name: SOLR-17049
+  url: https://issues.apache.org/jira/browse/SOLR-17049

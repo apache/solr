@@ -1,0 +1,8 @@
+title: ZKStateReader.aliases should be volatile to ensure all threads see the latest
+  aliases.
+type: fixed
+authors:
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-5620
+  url: https://issues.apache.org/jira/browse/SOLR-5620

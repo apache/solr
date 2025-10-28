@@ -1,0 +1,9 @@
+title: Fixed a bug in JSON Faceting that could cause incorrect counts/stats when using
+  non default sort options. This also adds a new configurable "overrefine" option.
+type: fixed
+authors:
+- name: Yonik Seeley
+- name: hossman
+links:
+- name: SOLR-12343
+  url: https://issues.apache.org/jira/browse/SOLR-12343

@@ -1,0 +1,9 @@
+title: When update.distrib is set to skip update processors before the distributed
+  update processor, always include the log update processor so forwarded updates will
+  still be logged.
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-4246
+  url: https://issues.apache.org/jira/browse/SOLR-4246

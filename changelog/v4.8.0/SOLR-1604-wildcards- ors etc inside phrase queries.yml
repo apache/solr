@@ -1,0 +1,7 @@
+title: Wildcards, ORs etc inside Phrase Queries.
+type: added
+authors:
+- name: Ahmet Arslan
+links:
+- name: SOLR-1604
+  url: https://issues.apache.org/jira/browse/SOLR-1604

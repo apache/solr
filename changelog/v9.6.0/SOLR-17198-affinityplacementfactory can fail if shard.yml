@@ -1,0 +1,8 @@
+title: AffinityPlacementFactory can fail if Shard leadership changes occur while it
+  is collecting metrics.
+type: fixed
+authors:
+- name: Paul McArthur
+links:
+- name: SOLR-17198
+  url: https://issues.apache.org/jira/browse/SOLR-17198

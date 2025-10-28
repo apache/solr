@@ -1,0 +1,8 @@
+title: A new admin UI to display and execute suggestions
+type: added
+authors:
+- name: Apoorv Bhawsar
+- name: noble
+links:
+- name: SOLR-11648
+  url: https://issues.apache.org/jira/browse/SOLR-11648

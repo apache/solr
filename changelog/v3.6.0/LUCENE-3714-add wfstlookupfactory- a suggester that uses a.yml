@@ -1,0 +1,10 @@
+title: Add WFSTLookupFactory, a suggester that uses a weighted FST for more fine-grained
+  suggestions.
+type: added
+authors:
+- name: Mike McCandless
+- name: Dawid Weiss
+- name: Robert Muir
+links:
+- name: LUCENE-3714
+  url: https://issues.apache.org/jira/browse/LUCENE-3714

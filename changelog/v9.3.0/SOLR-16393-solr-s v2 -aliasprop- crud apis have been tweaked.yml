@@ -1,0 +1,12 @@
+title: Solr's v2 "aliasprop" CRUD APIs have been tweaked slightly to be more intuitive.
+  Alias property modification is now available at `PUT /api/aliases/aliasName/properties`
+  (for bulk modification) and `PUT /api/aliases/aliasName/properties/propName` (for
+  single property updates). Additionally new APIs have been added for listing properties
+  (`GET /api/aliases/aliasName/properties`), fetching single property values (`GET
+  /api/aliases/aliasName/properties/propName`), and property deletion (`DELETE /api/aliases/aliasName/properties/propName`).
+type: changed
+authors:
+- name: Alex Deparvu
+links:
+- name: SOLR-16393
+  url: https://issues.apache.org/jira/browse/SOLR-16393

@@ -1,0 +1,9 @@
+title: SchemaManager waits correctly for replicas to be notified of a new change
+type: fixed
+authors:
+- name: sarowe
+- name: Noble Paul
+- name: Varun Thacker
+links:
+- name: SOLR-8662
+  url: https://issues.apache.org/jira/browse/SOLR-8662

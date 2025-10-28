@@ -1,0 +1,8 @@
+title: Allow case insensitive Hunspell stemming
+type: other
+authors:
+- name: janhoy
+- name: rmuir
+links:
+- name: SOLR-2792
+  url: https://issues.apache.org/jira/browse/SOLR-2792

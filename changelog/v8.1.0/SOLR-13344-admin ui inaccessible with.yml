@@ -1,0 +1,8 @@
+title: Admin UI inaccessible with RuleBasedAuthorizationPlugin
+type: fixed
+authors:
+- name: janhoy
+- name: Jason Gerlowski
+links:
+- name: SOLR-13344
+  url: https://issues.apache.org/jira/browse/SOLR-13344

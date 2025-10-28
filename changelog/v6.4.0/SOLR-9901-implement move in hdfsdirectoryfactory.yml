@@ -1,0 +1,7 @@
+title: Implement move in HdfsDirectoryFactory.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-9901
+  url: https://issues.apache.org/jira/browse/SOLR-9901

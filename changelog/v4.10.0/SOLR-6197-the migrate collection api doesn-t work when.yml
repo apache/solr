@@ -1,0 +1,8 @@
+title: The MIGRATE collection API doesn't work when legacyCloud=false is set in cluster
+  properties.
+type: fixed
+authors:
+- name: shalin
+links:
+- name: SOLR-6197
+  url: https://issues.apache.org/jira/browse/SOLR-6197

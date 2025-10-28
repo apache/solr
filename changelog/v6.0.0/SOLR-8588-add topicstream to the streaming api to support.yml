@@ -1,0 +1,8 @@
+title: Add TopicStream to the streaming API to support publish/subscribe messaging
+type: added
+authors:
+- name: Joel Bernstein
+- name: Kevin Risden
+links:
+- name: SOLR-8588
+  url: https://issues.apache.org/jira/browse/SOLR-8588

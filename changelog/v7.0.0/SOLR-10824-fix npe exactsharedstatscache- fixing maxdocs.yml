@@ -1,0 +1,8 @@
+title: fix NPE ExactSharedStatsCache, fixing maxdocs skew for terms which are absent
+  at one of shards when using one of Exact*StatsCache
+type: fixed
+authors:
+- name: Mikhail Khludnev
+links:
+- name: SOLR-10824
+  url: https://issues.apache.org/jira/browse/SOLR-10824

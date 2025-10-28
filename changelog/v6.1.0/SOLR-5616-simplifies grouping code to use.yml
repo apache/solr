@@ -1,0 +1,10 @@
+title: Simplifies grouping code to use ResponseBuilder.needDocList() to determine
+  if it needs to generate a doc list for grouped results.
+type: other
+authors:
+- name: Steven Bower
+- name: Keith Laban
+- name: Dennis Gove
+links:
+- name: SOLR-5616
+  url: https://issues.apache.org/jira/browse/SOLR-5616

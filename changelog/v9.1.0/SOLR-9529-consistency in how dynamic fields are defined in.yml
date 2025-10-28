@@ -1,0 +1,8 @@
+title: Consistency in how dynamic fields are defined in sample schema.xml files
+type: other
+authors:
+- name: Eric Pugh
+- name: Trey Grainger
+links:
+- name: SOLR-9529
+  url: https://issues.apache.org/jira/browse/SOLR-9529

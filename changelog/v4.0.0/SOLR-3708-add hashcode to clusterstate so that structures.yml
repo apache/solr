@@ -1,0 +1,8 @@
+title: Add hashCode to ClusterState so that structures built based on the ClusterState
+  can be easily cached.
+type: changed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-3708
+  url: https://issues.apache.org/jira/browse/SOLR-3708

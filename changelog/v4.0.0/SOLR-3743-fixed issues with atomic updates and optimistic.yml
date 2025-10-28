@@ -1,0 +1,8 @@
+title: Fixed issues with atomic updates and optimistic concurrency in conjunction
+  with stored copyField targets by making real-time get never return copyField targets.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-3743
+  url: https://issues.apache.org/jira/browse/SOLR-3743

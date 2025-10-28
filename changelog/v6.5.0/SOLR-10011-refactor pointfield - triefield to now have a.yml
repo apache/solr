@@ -1,0 +1,11 @@
+title: Refactor PointField & TrieField to now have a common base class, NumericFieldType.
+  The TrieField.TrieTypes and PointField.PointTypes are now consolidated to NumericFieldType.NumberType.
+  This refactoring also fixes a bug whereby PointFields were not using DocValues for
+  range queries for indexed=false, docValues=true fields.
+type: other
+authors:
+- name: Ishan Chattopadhyaya
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-10011
+  url: https://issues.apache.org/jira/browse/SOLR-10011

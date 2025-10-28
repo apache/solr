@@ -1,0 +1,8 @@
+title: CollapsingQParserPlugin should make elevated documents the group head.
+type: other
+authors:
+- name: David Boychuck
+- name: Joel Bernstein
+links:
+- name: SOLR-5773
+  url: https://issues.apache.org/jira/browse/SOLR-5773

@@ -1,0 +1,8 @@
+title: Download Config button in Schema Designer screen should not require user to
+  re-login when already authenticated
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15620
+  url: https://issues.apache.org/jira/browse/SOLR-15620

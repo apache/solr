@@ -1,0 +1,10 @@
+title: The query parsers igain, significantTerms, and tlogit (used by streaming expressions
+  by the same name) might throw a NullPointerException if the referenced field had
+  no indexed data in some shards. The fix included an optimization to use Solr's cached
+  AtomicReader instead of re-calculating.
+type: fixed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-10836
+  url: https://issues.apache.org/jira/browse/SOLR-10836

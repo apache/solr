@@ -1,0 +1,11 @@
+title: Can't query against negative float or double values when indexed="false" docValues="true"
+  multiValued="false".
+type: changed
+authors:
+- name: hossman
+- name: Ishan Chattopadhyaya
+- name: yonik
+- name: Steve Rowe
+links:
+- name: SOLR-8082
+  url: https://issues.apache.org/jira/browse/SOLR-8082

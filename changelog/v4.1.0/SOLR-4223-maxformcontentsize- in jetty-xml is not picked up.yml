@@ -1,0 +1,8 @@
+title: '"maxFormContentSize" in jetty.xml is not picked up by jetty 8 so set it via
+  solr webapp context file.'
+type: fixed
+authors:
+- name: shalin
+links:
+- name: SOLR-4223
+  url: https://issues.apache.org/jira/browse/SOLR-4223

@@ -1,0 +1,8 @@
+title: timeAllowed parameter is allowed to have 0 value
+type: upgrade_notes
+authors:
+- name: Houston Putman
+- name: Mikhail Khludnev
+links:
+- name: SOLR-13904
+  url: https://issues.apache.org/jira/browse/SOLR-13904

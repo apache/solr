@@ -1,0 +1,8 @@
+title: Make the poll queue time a leader uses when distributing updates to replicas
+  configurable and use knowledge that a batch is being processed to poll efficiently.
+type: changed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-7333
+  url: https://issues.apache.org/jira/browse/SOLR-7333

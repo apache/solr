@@ -1,0 +1,9 @@
+title: Solr slave is doing full replication (entire index) of index after master restart.
+type: fixed
+authors:
+- name: Lior Sapir
+- name: Mark Miller
+- name: shalin
+links:
+- name: SOLR-9036
+  url: https://issues.apache.org/jira/browse/SOLR-9036

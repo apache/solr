@@ -1,0 +1,8 @@
+title: In the Cloud/tree section of the Admin UI, fix metadata panel and force an
+  horizontal scrollbar for the tree
+type: changed
+authors:
+- name: Richard Goodman
+links:
+- name: SOLR-13907
+  url: https://issues.apache.org/jira/browse/SOLR-13907

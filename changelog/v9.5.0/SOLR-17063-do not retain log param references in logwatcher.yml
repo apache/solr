@@ -1,0 +1,7 @@
+title: Do not retain log param references in LogWatcher
+type: changed
+authors:
+- name: Michael Gibney
+links:
+- name: SOLR-17063
+  url: https://issues.apache.org/jira/browse/SOLR-17063

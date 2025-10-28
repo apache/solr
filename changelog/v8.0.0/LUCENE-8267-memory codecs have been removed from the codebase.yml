@@ -1,0 +1,9 @@
+title: Memory codecs have been removed from the codebase (MemoryPostings, MemoryDocValues).
+  If you used postingsFormat="Memory" or docValuesFormat="Memory" then either remove
+  it to use the default or experiment with one of the others.
+type: upgrade_notes
+authors:
+- name: Dawid Weiss
+links:
+- name: LUCENE-8267
+  url: https://issues.apache.org/jira/browse/LUCENE-8267

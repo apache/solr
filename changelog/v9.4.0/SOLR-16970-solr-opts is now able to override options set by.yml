@@ -1,0 +1,8 @@
+title: SOLR_OPTS is now able to override options set by the Solr control scripts,
+  "bin/solr" and "bin/solr.cmd".
+type: changed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16970
+  url: https://issues.apache.org/jira/browse/SOLR-16970

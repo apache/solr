@@ -1,0 +1,7 @@
+title: Remove deprecated options in SSLTestConfig
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-10791
+  url: https://issues.apache.org/jira/browse/SOLR-10791

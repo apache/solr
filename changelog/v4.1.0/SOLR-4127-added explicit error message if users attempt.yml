@@ -1,0 +1,8 @@
+title: Added explicit error message if users attempt Atomic document updates with
+  either updateLog or DistribUpdateProcessor.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-4127
+  url: https://issues.apache.org/jira/browse/SOLR-4127

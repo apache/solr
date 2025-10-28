@@ -1,0 +1,8 @@
+title: On reconnect, ZkController cancels election on first context rather than latest.
+type: fixed
+authors:
+- name: Gregory Chanan
+- name: Mark Miller
+links:
+- name: SOLR-5689
+  url: https://issues.apache.org/jira/browse/SOLR-5689

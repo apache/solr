@@ -1,0 +1,8 @@
+title: Using bin/solr to copy a file from ZK to local fails if the local filename
+  does not have a path.
+type: fixed
+authors:
+- name: Shawn Heisey
+links:
+- name: SOLR-16686
+  url: https://issues.apache.org/jira/browse/SOLR-16686

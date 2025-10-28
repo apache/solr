@@ -1,0 +1,9 @@
+title: DebugComponent track output should be returned as a JSON object rather than
+  a list
+type: added
+authors:
+- name: Christine Poerschke
+- name: Alan Woodward
+links:
+- name: SOLR-6064
+  url: https://issues.apache.org/jira/browse/SOLR-6064

@@ -1,0 +1,10 @@
+title: Configure SecureRandom non blocking for tests.
+type: other
+authors:
+- name: Mihaly Toth
+- name: hossman
+- name: Ishan Chattopadhyaya
+- name: Mark Miller
+links:
+- name: SOLR-10338
+  url: https://issues.apache.org/jira/browse/SOLR-10338

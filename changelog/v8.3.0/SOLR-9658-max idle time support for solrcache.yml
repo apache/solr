@@ -1,0 +1,8 @@
+title: Max idle time support for SolrCache implementations.
+type: changed
+authors:
+- name: hoss
+- name: ab
+links:
+- name: SOLR-9658
+  url: https://issues.apache.org/jira/browse/SOLR-9658

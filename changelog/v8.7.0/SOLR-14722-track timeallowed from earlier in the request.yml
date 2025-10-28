@@ -1,0 +1,7 @@
+title: Track timeAllowed from earlier in the request lifecycle.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-14722
+  url: https://issues.apache.org/jira/browse/SOLR-14722

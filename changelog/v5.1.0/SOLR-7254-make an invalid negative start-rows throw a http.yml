@@ -1,0 +1,10 @@
+title: Make an invalid negative start/rows throw a HTTP 400 error (Bad Request) instead
+  of causing a 500 error.
+type: fixed
+authors:
+- name: Ramkumar Aiyengar
+- name: Hrishikesh Gadre
+- name: yonik
+links:
+- name: SOLR-7254
+  url: https://issues.apache.org/jira/browse/SOLR-7254

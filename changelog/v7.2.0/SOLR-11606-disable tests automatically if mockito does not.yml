@@ -1,0 +1,8 @@
+title: Disable tests automatically if Mockito does not work with Java runtime (Java
+  10).
+type: other
+authors:
+- name: Uwe Schindler
+links:
+- name: SOLR-11606
+  url: https://issues.apache.org/jira/browse/SOLR-11606

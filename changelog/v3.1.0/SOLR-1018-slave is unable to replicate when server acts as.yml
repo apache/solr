@@ -1,0 +1,9 @@
+title: Slave is unable to replicate when server acts as repeater (as both master and
+  slave)
+type: fixed
+authors:
+- name: Akshay Ukey
+- name: Noble Paul
+links:
+- name: SOLR-1018
+  url: https://issues.apache.org/jira/browse/SOLR-1018

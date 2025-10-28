@@ -1,0 +1,7 @@
+title: SolrCloud should distribute updates via streaming rather than buffering.
+type: changed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5232
+  url: https://issues.apache.org/jira/browse/SOLR-5232

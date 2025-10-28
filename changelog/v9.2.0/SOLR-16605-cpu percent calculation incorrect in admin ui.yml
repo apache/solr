@@ -1,0 +1,7 @@
+title: CPU percent calculation incorrect in admin UI cloud-&gt;nodes tab
+type: fixed
+authors:
+- name: Shawn Heisey
+links:
+- name: SOLR-16605
+  url: https://issues.apache.org/jira/browse/SOLR-16605

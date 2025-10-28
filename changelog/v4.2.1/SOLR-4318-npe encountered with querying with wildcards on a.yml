@@ -1,0 +1,8 @@
+title: NPE encountered with querying with wildcards on a field that uses the DefaultAnalyzer
+  (i.e. no analysis chain defined).
+type: fixed
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-4318
+  url: https://issues.apache.org/jira/browse/SOLR-4318

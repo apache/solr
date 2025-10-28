@@ -1,0 +1,10 @@
+title: 'Return FunctionQuery as pseudo field. The solr ''fl'' param now supports functions.
+  For example: fl=id,sum(x,y) -- NOTE: only functions with fast random access are
+  recommended.'
+type: added
+authors:
+- name: yonik
+- name: ryan
+links:
+- name: SOLR-1298
+  url: https://issues.apache.org/jira/browse/SOLR-1298

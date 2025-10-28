@@ -1,0 +1,7 @@
+title: Clean up some more remnants of supporting old and new style solr.xml in tests
+type: other
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-9277
+  url: https://issues.apache.org/jira/browse/SOLR-9277

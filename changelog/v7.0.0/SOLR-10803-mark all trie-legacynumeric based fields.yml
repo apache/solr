@@ -1,0 +1,7 @@
+title: Mark all Trie/LegacyNumeric based fields @deprecated in Solr7.
+type: other
+authors:
+- name: Steve Rowe
+links:
+- name: SOLR-10803
+  url: https://issues.apache.org/jira/browse/SOLR-10803

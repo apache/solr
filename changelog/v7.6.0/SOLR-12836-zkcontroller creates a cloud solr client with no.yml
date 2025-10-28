@@ -1,0 +1,8 @@
+title: ZkController creates a cloud solr client with no connection or read timeouts.
+  Now the http client created by the update shard handler is used instead.
+type: fixed
+authors:
+- name: shalin
+links:
+- name: SOLR-12836
+  url: https://issues.apache.org/jira/browse/SOLR-12836

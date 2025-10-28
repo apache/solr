@@ -1,0 +1,10 @@
+title: SolrIndexSearcher#doc() completely ignores field filters unless lazy field
+  loading is enabled.
+type: fixed
+authors:
+- name: Caleb Rackliffe
+- name: David Smiley
+- name: shalin
+links:
+- name: SOLR-8858
+  url: https://issues.apache.org/jira/browse/SOLR-8858

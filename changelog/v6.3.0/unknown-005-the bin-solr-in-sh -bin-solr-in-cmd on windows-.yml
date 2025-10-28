@@ -1,0 +1,6 @@
+title: The bin/solr.in.sh (bin/solr.in.cmd on Windows) is now completely commented
+  by default. Previously, this wasn't so, which had the effect of masking existing
+  environment variables.
+type: upgrade_notes
+authors: []
+links: []

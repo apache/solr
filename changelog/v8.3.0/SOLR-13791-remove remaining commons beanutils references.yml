@@ -1,0 +1,8 @@
+title: Remove remaining Commons BeanUtils references.
+type: other
+authors:
+- name: Andras Salamon
+- name: Christine Poerschke
+links:
+- name: SOLR-13791
+  url: https://issues.apache.org/jira/browse/SOLR-13791

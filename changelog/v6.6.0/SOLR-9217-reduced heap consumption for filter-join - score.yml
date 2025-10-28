@@ -1,0 +1,8 @@
+title: Reduced heap consumption for filter({!join ... score=...})
+type: changed
+authors:
+- name: Andrey Kudryavtsev
+- name: Gopikannan Venugopalsamy
+links:
+- name: SOLR-9217
+  url: https://issues.apache.org/jira/browse/SOLR-9217

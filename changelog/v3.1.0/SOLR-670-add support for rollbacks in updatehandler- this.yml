@@ -1,0 +1,9 @@
+title: Add support for rollbacks in UpdateHandler. This allows user to rollback all
+  changes since the last commit.
+type: added
+authors:
+- name: Noble Paul
+- name: koji
+links:
+- name: SOLR-670
+  url: https://issues.apache.org/jira/browse/SOLR-670

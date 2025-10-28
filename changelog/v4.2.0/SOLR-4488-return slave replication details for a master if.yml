@@ -1,0 +1,8 @@
+title: Return slave replication details for a master if the master has also acted
+  like a slave.
+type: added
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-4488
+  url: https://issues.apache.org/jira/browse/SOLR-4488

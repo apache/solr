@@ -1,0 +1,12 @@
+title: The export handler does not limit users to 4 sort fields and is now unlimited.
+  However the speed at which we can export is directly proportional to the number
+  of sort fields specified. This change also allows streaming expressions to group
+  by on more than 4 fields.
+type: changed
+authors:
+- name: Aroop Ganguly
+- name: Amrit Sarkar
+- name: Varun Thacker
+links:
+- name: SOLR-11598
+  url: https://issues.apache.org/jira/browse/SOLR-11598

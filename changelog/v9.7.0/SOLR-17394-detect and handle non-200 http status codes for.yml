@@ -1,0 +1,7 @@
+title: Detect and handle non-200 HTTP status codes for requests made by IndexFetcher
+type: fixed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-17394
+  url: https://issues.apache.org/jira/browse/SOLR-17394

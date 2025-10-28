@@ -1,0 +1,8 @@
+title: Implement Closeable on TupleStream
+type: other
+authors:
+- name: Kevin Risden
+- name: Joel Bernstein
+links:
+- name: SOLR-8190
+  url: https://issues.apache.org/jira/browse/SOLR-8190

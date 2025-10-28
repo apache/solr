@@ -1,0 +1,7 @@
+title: The search Streaming Expression should work in non-SolrCloud mode
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-10274
+  url: https://issues.apache.org/jira/browse/SOLR-10274

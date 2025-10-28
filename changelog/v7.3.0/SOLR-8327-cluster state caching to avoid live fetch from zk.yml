@@ -1,0 +1,11 @@
+title: Cluster state caching to avoid live fetch from ZK of cluster state for forwarding
+  requests on nodes that do not host any replica of the collection
+type: changed
+authors:
+- name: Jessica Cheng Mallet
+- name: John Gallagher
+- name: Noble Paul
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-8327
+  url: https://issues.apache.org/jira/browse/SOLR-8327

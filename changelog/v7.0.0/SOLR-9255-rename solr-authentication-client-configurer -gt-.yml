@@ -1,0 +1,7 @@
+title: Rename SOLR_AUTHENTICATION_CLIENT_CONFIGURER -&gt; SOLR_AUTHENTICATION_CLIENT_BUILDER
+type: changed
+authors:
+- name: janhoy
+links:
+- name: SOLR-9255
+  url: https://issues.apache.org/jira/browse/SOLR-9255

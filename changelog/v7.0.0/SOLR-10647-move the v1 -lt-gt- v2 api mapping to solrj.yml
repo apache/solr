@@ -1,0 +1,7 @@
+title: Move the V1 &lt;-&gt; V2 API mapping to SolrJ
+type: other
+authors:
+- name: noble
+links:
+- name: SOLR-10647
+  url: https://issues.apache.org/jira/browse/SOLR-10647

@@ -1,0 +1,10 @@
+title: Request ID's ('rid') are now added by default to distributed search requests,
+  and can be used to correlate logs from the receiving coordinator node with those
+  from downstream shard requests. This can be disabled by providing a disableRequestId=true
+  request parameter.
+type: changed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-14566
+  url: https://issues.apache.org/jira/browse/SOLR-14566

@@ -1,0 +1,10 @@
+title: Add Java client that uses Apache Http Components http client (4.x).
+type: added
+authors:
+- name: Chantal Ackermann
+- name: Ryan McKinley
+- name: Yonik Seeley
+- name: siren
+links:
+- name: SOLR-2020
+  url: https://issues.apache.org/jira/browse/SOLR-2020

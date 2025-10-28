@@ -1,0 +1,8 @@
+title: HttpSolrCall.getAuthCtx().new AuthorizationContext() {...}.getParams() sometimes
+  throws java.lang.NullPointerException
+type: fixed
+authors:
+- name: hu xiaodong
+links:
+- name: SOLR-10630
+  url: https://issues.apache.org/jira/browse/SOLR-10630

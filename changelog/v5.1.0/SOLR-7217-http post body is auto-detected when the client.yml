@@ -1,0 +1,9 @@
+title: HTTP POST body is auto-detected when the client is curl and the content type
+  is form data (curl's default), allowing users to use curl to send JSON or XML without
+  having to specify the content type.
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-7217
+  url: https://issues.apache.org/jira/browse/SOLR-7217

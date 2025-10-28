@@ -1,0 +1,10 @@
+title: Ensure that only the valid ZooKeeper registered leader can put a replica into
+  Leader Initiated Recovery.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Jessica Cheng
+- name: Anshum Gupta
+links:
+- name: SOLR-8069
+  url: https://issues.apache.org/jira/browse/SOLR-8069

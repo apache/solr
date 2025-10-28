@@ -1,0 +1,7 @@
+title: Fixed NullPointerException in HighlightComponent.
+type: fixed
+authors:
+- name: zengjie
+links:
+- name: SOLR-8340
+  url: https://issues.apache.org/jira/browse/SOLR-8340

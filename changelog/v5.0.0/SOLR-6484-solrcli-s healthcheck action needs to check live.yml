@@ -1,0 +1,8 @@
+title: SolrCLI's healthcheck action needs to check live nodes as part of reporting
+  the status of a replica
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-6484
+  url: https://issues.apache.org/jira/browse/SOLR-6484

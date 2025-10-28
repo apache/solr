@@ -1,0 +1,8 @@
+title: Jetty's use of CESU-8 for code points outside the BMP resulted in invalid output
+  from the serialized PHP writer.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-1091
+  url: https://issues.apache.org/jira/browse/SOLR-1091

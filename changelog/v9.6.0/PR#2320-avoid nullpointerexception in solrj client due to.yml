@@ -1,0 +1,8 @@
+title: Avoid NullPointerException in SolrJ client due to missing EnvToSyspropMappings.properties
+  file
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: PR#2320
+  url: https://github.com/apache/solr/pull/2320

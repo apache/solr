@@ -1,0 +1,7 @@
+title: '[AngularUI] In Cloud-&gt;Tree file view area, collapse metadata by default'
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-9358
+  url: https://issues.apache.org/jira/browse/SOLR-9358

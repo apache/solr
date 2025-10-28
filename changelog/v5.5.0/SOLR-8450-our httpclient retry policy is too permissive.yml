@@ -1,0 +1,8 @@
+title: Our HttpClient retry policy is too permissive.
+type: fixed
+authors:
+- name: Mark Miller
+- name: shalin
+links:
+- name: SOLR-8450
+  url: https://issues.apache.org/jira/browse/SOLR-8450

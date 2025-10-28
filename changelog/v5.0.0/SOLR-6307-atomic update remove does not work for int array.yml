@@ -1,0 +1,8 @@
+title: Atomic update remove does not work for int array or date array
+type: fixed
+authors:
+- name: Anurag Sharma
+- name: noble
+links:
+- name: SOLR-6307
+  url: https://issues.apache.org/jira/browse/SOLR-6307

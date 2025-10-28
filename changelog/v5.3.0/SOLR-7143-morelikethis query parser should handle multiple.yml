@@ -1,0 +1,8 @@
+title: MoreLikeThis Query parser should handle multiple field names
+type: fixed
+authors:
+- name: Jens Wille
+- name: Anshum Gupta
+links:
+- name: SOLR-7143
+  url: https://issues.apache.org/jira/browse/SOLR-7143

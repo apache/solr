@@ -1,0 +1,8 @@
+title: Fix QueryResponse to deal with the "expanded" section when using the XMLResponseParser
+type: fixed
+authors:
+- name: Varun Thacker
+- name: Joel Bernstein
+links:
+- name: SOLR-6709
+  url: https://issues.apache.org/jira/browse/SOLR-6709

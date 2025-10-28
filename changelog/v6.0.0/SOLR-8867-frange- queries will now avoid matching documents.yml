@@ -1,0 +1,9 @@
+title: '{!frange} queries will now avoid matching documents without a value in the
+  numeric field. For more complex functions, FunctionValues.exists() must also return
+  true for the document to match.'
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-8867
+  url: https://issues.apache.org/jira/browse/SOLR-8867

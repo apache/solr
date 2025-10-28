@@ -1,0 +1,8 @@
+title: Propagate request level basic auth creds from the top-level async CollectionAdminRequest
+  to internally used async requests, such as async status checking
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15575
+  url: https://issues.apache.org/jira/browse/SOLR-15575

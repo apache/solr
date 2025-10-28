@@ -1,0 +1,8 @@
+title: bin/solr start script fails to detect solr on non-default port and then after
+  30s tails wrong log file
+type: fixed
+authors:
+- name: janhoy
+links:
+- name: SOLR-6646
+  url: https://issues.apache.org/jira/browse/SOLR-6646

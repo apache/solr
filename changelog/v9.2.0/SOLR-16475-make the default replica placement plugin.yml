@@ -1,0 +1,8 @@
+title: Make the default replica placement plugin configurable as system property on
+  startup
+type: changed
+authors:
+- name: janhoy
+links:
+- name: SOLR-16475
+  url: https://issues.apache.org/jira/browse/SOLR-16475

@@ -1,0 +1,7 @@
+title: Upgrade to zookeeper 3.6.2
+type: other
+authors:
+- name: odidev
+links:
+- name: SOLR-14876
+  url: https://issues.apache.org/jira/browse/SOLR-14876

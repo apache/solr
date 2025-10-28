@@ -1,0 +1,7 @@
+title: DIH DateFormatTransformer can cache the format objects.
+type: changed
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-1098
+  url: https://issues.apache.org/jira/browse/SOLR-1098

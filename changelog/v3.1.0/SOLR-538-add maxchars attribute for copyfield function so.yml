@@ -1,0 +1,10 @@
+title: Add maxChars attribute for copyField function so that the length limit for
+  destination can be specified.
+type: added
+authors:
+- name: Georgios Stamatis
+- name: Lars Kotthoff
+- name: Chris Harris
+links:
+- name: SOLR-538
+  url: https://issues.apache.org/jira/browse/SOLR-538

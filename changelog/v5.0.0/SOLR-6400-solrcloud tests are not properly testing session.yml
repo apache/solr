@@ -1,0 +1,7 @@
+title: SolrCloud tests are not properly testing session expiration.
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-6400
+  url: https://issues.apache.org/jira/browse/SOLR-6400

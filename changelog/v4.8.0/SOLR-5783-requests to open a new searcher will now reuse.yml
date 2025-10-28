@@ -1,0 +1,10 @@
+title: Requests to open a new searcher will now reuse the current registered searcher
+  (w/o additional warming) if possible in situations where the underlying index has
+  not changed. This reduces overhead in situations such as deletes that do not modify
+  the index, and/or redundant commits.
+type: changed
+authors:
+- name: hossman
+links:
+- name: SOLR-5783
+  url: https://issues.apache.org/jira/browse/SOLR-5783

@@ -1,0 +1,9 @@
+title: Synchronize ZK connect/disconnect handling so that they are processed in linear
+  order
+type: fixed
+authors:
+- name: noble
+- name: Varun Thacker
+links:
+- name: SOLR-11590
+  url: https://issues.apache.org/jira/browse/SOLR-11590

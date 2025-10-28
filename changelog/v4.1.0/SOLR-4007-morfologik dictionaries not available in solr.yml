@@ -1,0 +1,9 @@
+title: Morfologik dictionaries not available in Solr field type due to class loader
+  lookup problems.
+type: fixed
+authors:
+- name: Lance Norskog
+- name: Dawid Weiss
+links:
+- name: SOLR-4007
+  url: https://issues.apache.org/jira/browse/SOLR-4007

@@ -1,0 +1,9 @@
+title: Velocity and Velocity Tools were both upgraded as part of this release. Velocity
+  upgraded from 1.7 to 2.0. Please see https://velocity.apache.org/engine/2.0/upgrading.html
+  about upgrading. Velocity Tools upgraded from 2.0 to 3.0. For more details, please
+  see https://velocity.apache.org/tools/3.0/upgrading.html for details about the upgrade.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-13335
+  url: https://issues.apache.org/jira/browse/SOLR-13335

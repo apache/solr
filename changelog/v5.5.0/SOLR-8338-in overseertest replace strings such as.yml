@@ -1,0 +1,8 @@
+title: in OverseerTest replace strings such as "collection1" and "state" with variable
+  or enum equivalent
+type: other
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-8338
+  url: https://issues.apache.org/jira/browse/SOLR-8338

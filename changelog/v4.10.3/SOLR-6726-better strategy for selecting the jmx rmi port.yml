@@ -1,0 +1,8 @@
+title: better strategy for selecting the JMX RMI port based on SOLR_PORT in bin/solr
+  script
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-6726
+  url: https://issues.apache.org/jira/browse/SOLR-6726

@@ -1,0 +1,11 @@
+title: Solr does not unregister all mbeans upon exception in constructor causing memory
+  leaks.
+type: fixed
+authors:
+- name: tom liu
+- name: Sharath Babu
+- name: Cyrille Roy
+- name: shalin
+links:
+- name: SOLR-2927
+  url: https://issues.apache.org/jira/browse/SOLR-2927

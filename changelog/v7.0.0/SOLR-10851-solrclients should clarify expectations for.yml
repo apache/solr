@@ -1,0 +1,7 @@
+title: SolrClients should clarify expectations for solrServerUrl parameter
+type: other
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-10851
+  url: https://issues.apache.org/jira/browse/SOLR-10851

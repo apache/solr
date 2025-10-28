@@ -1,0 +1,11 @@
+title: Race condition in PRS state updates
+type: fixed
+authors:
+- name: noble
+- name: Justin Sweeney
+- name: Patson Luk
+- name: Hitesh Khamesra
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-16414
+  url: https://issues.apache.org/jira/browse/SOLR-16414

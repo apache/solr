@@ -1,0 +1,8 @@
+title: PreAnalyzedUpdateProcessorFactory allows using the functionality of PreAnalyzedField
+  with other field types. See javadoc for details and examples.
+type: added
+authors:
+- name: Andrzej Bialecki
+links:
+- name: SOLR-4648
+  url: https://issues.apache.org/jira/browse/SOLR-4648

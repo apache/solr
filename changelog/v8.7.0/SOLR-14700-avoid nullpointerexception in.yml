@@ -1,0 +1,10 @@
+title: Avoid NullPointerException in TupleStream.getShards() when streamContext is
+  null.
+type: fixed
+authors:
+- name: Mads Bondo Dydensborg
+- name: Christine Poerschke
+- name: Mike Drob
+links:
+- name: SOLR-14700
+  url: https://issues.apache.org/jira/browse/SOLR-14700

@@ -1,0 +1,9 @@
+title: Integrate Apache Calcite into the SQLHandler
+type: added
+authors:
+- name: Kevin Risden
+- name: Cao Manh Dat
+- name: Joel Bernstein
+links:
+- name: SOLR-8593
+  url: https://issues.apache.org/jira/browse/SOLR-8593

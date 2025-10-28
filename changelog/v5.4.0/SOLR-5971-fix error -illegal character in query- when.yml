@@ -1,0 +1,9 @@
+title: Fix error 'Illegal character in query' when proxying request.
+type: fixed
+authors:
+- name: Uwe Schindler
+- name: Ishan Chattopadhyaya
+- name: Eric Bus
+links:
+- name: SOLR-5971
+  url: https://issues.apache.org/jira/browse/SOLR-5971

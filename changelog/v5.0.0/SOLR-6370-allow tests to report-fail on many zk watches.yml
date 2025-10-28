@@ -1,0 +1,8 @@
+title: Allow tests to report/fail on many ZK watches being parallelly requested on
+  the same data
+type: other
+authors:
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-6370
+  url: https://issues.apache.org/jira/browse/SOLR-6370

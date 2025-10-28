@@ -1,0 +1,8 @@
+title: It would be nice if the Graph section of the Cloud tab in the Admin UI could
+  give some more information about the replicas of a collection
+type: changed
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-11558
+  url: https://issues.apache.org/jira/browse/SOLR-11558

@@ -1,0 +1,8 @@
+title: Creating a core.properties fails if the parent of core.properties is a symlinked
+  dierctory
+type: fixed
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-10719
+  url: https://issues.apache.org/jira/browse/SOLR-10719

@@ -1,0 +1,9 @@
+title: In-place update fails when resolving from Tlog if schema has a required field
+type: fixed
+authors:
+- name: Justin Deoliveira
+- name: janhoy
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-11876
+  url: https://issues.apache.org/jira/browse/SOLR-11876

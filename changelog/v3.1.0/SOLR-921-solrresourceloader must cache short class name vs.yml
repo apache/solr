@@ -1,0 +1,8 @@
+title: SolrResourceLoader must cache short class name vs fully qualified classname
+type: changed
+authors:
+- name: Noble Paul
+- name: hossman
+links:
+- name: SOLR-921
+  url: https://issues.apache.org/jira/browse/SOLR-921

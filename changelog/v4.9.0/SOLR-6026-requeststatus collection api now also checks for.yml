@@ -1,0 +1,7 @@
+title: REQUESTSTATUS Collection API now also checks for submitted tasks which are
+  yet to begin execution.
+type: other
+authors: []
+links:
+- name: SOLR-6026
+  url: https://issues.apache.org/jira/browse/SOLR-6026

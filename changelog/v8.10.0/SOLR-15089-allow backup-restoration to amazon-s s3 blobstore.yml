@@ -1,0 +1,11 @@
+title: Allow backup/restoration to Amazon's S3 blobstore
+type: added
+authors:
+- name: Andy Throgmorton
+- name: Houston Putman
+- name: Jason Gerlowski
+- name: Pierre Salagnac
+- name: Mike Drob
+links:
+- name: SOLR-15089
+  url: https://issues.apache.org/jira/browse/SOLR-15089

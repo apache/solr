@@ -1,0 +1,7 @@
+title: New interface PluginInfoInitialized for all types of plugin
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-1326
+  url: https://issues.apache.org/jira/browse/SOLR-1326

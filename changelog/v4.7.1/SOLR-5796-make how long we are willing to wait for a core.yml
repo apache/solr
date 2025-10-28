@@ -1,0 +1,8 @@
+title: Make how long we are willing to wait for a core to see the ZK advertised leader
+  in its local state configurable.
+type: other
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-5796
+  url: https://issues.apache.org/jira/browse/SOLR-5796

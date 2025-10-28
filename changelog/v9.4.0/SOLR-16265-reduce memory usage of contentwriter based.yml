@@ -1,0 +1,9 @@
+title: reduce memory usage of ContentWriter based requests in Http2SolrClient
+type: changed
+authors:
+- name: Alex Deparvu
+- name: Kevin Risden
+- name: David Smiley
+links:
+- name: SOLR-16265
+  url: https://issues.apache.org/jira/browse/SOLR-16265

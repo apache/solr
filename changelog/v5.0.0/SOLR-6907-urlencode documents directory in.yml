@@ -1,0 +1,8 @@
+title: URLEncode documents directory in MorphlineMapperTest to handle spaces etc.
+  in file name.
+type: fixed
+authors:
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-6907
+  url: https://issues.apache.org/jira/browse/SOLR-6907

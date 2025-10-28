@@ -1,0 +1,7 @@
+title: Upgraded to Lucene 2.9-dev (r724059) to get access to Arabic public constructors
+type: other
+authors:
+- name: gsingers
+links:
+- name: SOLR-819
+  url: https://issues.apache.org/jira/browse/SOLR-819

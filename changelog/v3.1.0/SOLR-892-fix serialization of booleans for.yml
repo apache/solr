@@ -1,0 +1,7 @@
+title: Fix serialization of booleans for PHPSerializedResponseWriter
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-892
+  url: https://issues.apache.org/jira/browse/SOLR-892

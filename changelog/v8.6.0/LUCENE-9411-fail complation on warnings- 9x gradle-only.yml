@@ -1,0 +1,8 @@
+title: Fail complation on warnings, 9x gradle-only
+type: other
+authors:
+- name: Erick Erickson
+- name: Dawid Weiss
+links:
+- name: LUCENE-9411
+  url: https://issues.apache.org/jira/browse/LUCENE-9411

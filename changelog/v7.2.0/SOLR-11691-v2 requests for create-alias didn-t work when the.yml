@@ -1,0 +1,11 @@
+title: V2 requests for create-alias didn't work when the collections param was an
+  array.
+type: fixed
+authors:
+- name: Jason Gerlowski
+- name: Gus Heck
+- name: David Smiley
+- name: noble
+links:
+- name: SOLR-11691
+  url: https://issues.apache.org/jira/browse/SOLR-11691

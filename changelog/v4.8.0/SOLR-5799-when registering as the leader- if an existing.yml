@@ -1,0 +1,8 @@
+title: When registering as the leader, if an existing ephemeral registration exists,
+  wait a short time to see if it goes away.
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5799
+  url: https://issues.apache.org/jira/browse/SOLR-5799

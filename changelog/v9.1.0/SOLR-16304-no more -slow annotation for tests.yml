@@ -1,0 +1,7 @@
+title: No more @Slow annotation for tests!
+type: other
+authors:
+- name: Mike Drob
+links:
+- name: SOLR-16304
+  url: https://issues.apache.org/jira/browse/SOLR-16304

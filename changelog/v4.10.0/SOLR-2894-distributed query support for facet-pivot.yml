@@ -1,0 +1,13 @@
+title: Distributed query support for facet.pivot
+type: added
+authors:
+- name: Dan Cooper
+- name: Erik Hatcher
+- name: Chris Russell
+- name: Andrew Muldowney
+- name: Brett Lucey
+- name: Mark Miller
+- name: hossman
+links:
+- name: SOLR-2894
+  url: https://issues.apache.org/jira/browse/SOLR-2894

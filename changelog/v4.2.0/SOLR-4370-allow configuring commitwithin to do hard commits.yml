@@ -1,0 +1,8 @@
+title: Allow configuring commitWithin to do hard commits.
+type: added
+authors:
+- name: Mark Miller
+- name: Senthuran Sivananthan
+links:
+- name: SOLR-4370
+  url: https://issues.apache.org/jira/browse/SOLR-4370

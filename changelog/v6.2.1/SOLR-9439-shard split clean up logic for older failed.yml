@@ -1,0 +1,9 @@
+title: Shard split clean up logic for older failed splits is faulty. The delete shard
+  API has also been made more resilient against failures resulting from non-existent
+  cores.
+type: fixed
+authors:
+- name: shalin
+links:
+- name: SOLR-9439
+  url: https://issues.apache.org/jira/browse/SOLR-9439

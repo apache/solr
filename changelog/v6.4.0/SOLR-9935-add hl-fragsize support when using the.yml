@@ -1,0 +1,8 @@
+title: Add hl.fragsize support when using the UnifiedHighlighter to avoid snippets/Passages
+  that are too small. Defaults to 70.
+type: added
+authors:
+- name: David Smiley
+links:
+- name: SOLR-9935
+  url: https://issues.apache.org/jira/browse/SOLR-9935

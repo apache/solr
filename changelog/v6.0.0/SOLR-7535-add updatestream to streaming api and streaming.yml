@@ -1,0 +1,8 @@
+title: Add UpdateStream to Streaming API and Streaming Expression
+type: added
+authors:
+- name: Jason Gerlowski
+- name: Joel Bernstein
+links:
+- name: SOLR-7535
+  url: https://issues.apache.org/jira/browse/SOLR-7535

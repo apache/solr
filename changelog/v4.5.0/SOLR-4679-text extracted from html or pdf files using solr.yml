@@ -1,0 +1,14 @@
+title: Text extracted from HTML or PDF files using Solr Cell was missing ignorable
+  whitespace, which is inserted by TIKA for convenience to support plain text extraction
+  without using the HTML elements. This bug resulted in glued words.
+type: fixed
+authors:
+- name: hossman
+- name: Uwe Schindler
+links:
+- name: SOLR-4679
+  url: https://issues.apache.org/jira/browse/SOLR-4679
+- name: SOLR-4908
+  url: https://issues.apache.org/jira/browse/SOLR-4908
+- name: SOLR-5124
+  url: https://issues.apache.org/jira/browse/SOLR-5124

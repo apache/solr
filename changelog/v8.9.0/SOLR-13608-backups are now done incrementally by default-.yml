@@ -1,0 +1,11 @@
+title: Backups are now done incrementally by default. Multiple backups can be stored
+  at the same location, and each backup will only upload those files that are new
+  since the last backup.
+type: changed
+authors:
+- name: Jason Gerlowski
+- name: shalin
+- name: Cao Manh Dat
+links:
+- name: SOLR-13608
+  url: https://issues.apache.org/jira/browse/SOLR-13608

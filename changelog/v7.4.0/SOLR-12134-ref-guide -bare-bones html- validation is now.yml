@@ -1,0 +1,8 @@
+title: ref-guide 'bare-bones html' validation is now part of 'ant documentation' and
+  validates javadoc links locally.
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-12134
+  url: https://issues.apache.org/jira/browse/SOLR-12134

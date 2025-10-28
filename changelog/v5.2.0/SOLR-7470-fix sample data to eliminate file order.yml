@@ -1,0 +1,8 @@
+title: Fix sample data to eliminate file order dependency for successful indexing,
+  also fixed SolrCloudExampleTest to help catch this in the future.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-7470
+  url: https://issues.apache.org/jira/browse/SOLR-7470

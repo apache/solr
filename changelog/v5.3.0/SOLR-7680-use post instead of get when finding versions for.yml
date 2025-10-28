@@ -1,0 +1,8 @@
+title: Use POST instead of GET when finding versions for mismatches with CloudInspectUtil
+  for tests
+type: other
+authors:
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-7680
+  url: https://issues.apache.org/jira/browse/SOLR-7680

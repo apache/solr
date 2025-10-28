@@ -1,0 +1,11 @@
+title: Add distributed search support for search result clustering.
+type: added
+authors:
+- name: Brad Giaccio
+- name: Dawid Weiss
+- name: Stanislaw Osinski
+- name: rmuir
+- name: koji
+links:
+- name: SOLR-2282
+  url: https://issues.apache.org/jira/browse/SOLR-2282

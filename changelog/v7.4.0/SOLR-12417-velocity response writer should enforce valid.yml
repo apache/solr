@@ -1,0 +1,8 @@
+title: velocity response writer should enforce valid function name for v.json parameter
+type: fixed
+authors:
+- name: Mano Kovacs
+- name: yonik
+links:
+- name: SOLR-12417
+  url: https://issues.apache.org/jira/browse/SOLR-12417

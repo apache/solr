@@ -1,0 +1,8 @@
+title: In our leader election algorithm, if on connection loss we found we did not
+  create our election node, we should retry, not throw an exception.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-3835
+  url: https://issues.apache.org/jira/browse/SOLR-3835

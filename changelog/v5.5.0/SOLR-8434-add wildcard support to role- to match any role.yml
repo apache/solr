@@ -1,0 +1,7 @@
+title: Add wildcard support to role, to match any role in RuleBasedAuthorizationPlugin
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-8434
+  url: https://issues.apache.org/jira/browse/SOLR-8434

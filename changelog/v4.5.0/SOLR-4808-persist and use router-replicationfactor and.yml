@@ -1,0 +1,9 @@
+title: Persist and use router,replicationFactor and maxShardsPerNode at Collection
+  and Shard level
+type: added
+authors:
+- name: Noble Paul
+- name: Shalin Mangar
+links:
+- name: SOLR-4808
+  url: https://issues.apache.org/jira/browse/SOLR-4808

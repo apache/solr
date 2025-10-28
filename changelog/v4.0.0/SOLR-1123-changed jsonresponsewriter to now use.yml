@@ -1,0 +1,10 @@
+title: Changed JSONResponseWriter to now use application/json as its Content-Type
+  by default. However the Content-Type can be overwritten and is set to text/plain
+  in the example configuration.
+type: other
+authors:
+- name: Uri Boness
+- name: Chris Male
+links:
+- name: SOLR-1123
+  url: https://issues.apache.org/jira/browse/SOLR-1123

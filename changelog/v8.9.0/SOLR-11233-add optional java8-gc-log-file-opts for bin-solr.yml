@@ -1,0 +1,8 @@
+title: Add optional JAVA8_GC_LOG_FILE_OPTS for bin/solr.
+type: changed
+authors:
+- name: Pranav Murugappan
+- name: Christine Poerschke
+links:
+- name: SOLR-11233
+  url: https://issues.apache.org/jira/browse/SOLR-11233

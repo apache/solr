@@ -1,0 +1,9 @@
+title: StatsStream implement ParallelMetricsRollup to allow for tiered computation
+  of SQL metrics over collection aliases backed by many collections, potentially with
+  many shards in each
+type: changed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15499
+  url: https://issues.apache.org/jira/browse/SOLR-15499

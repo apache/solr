@@ -1,0 +1,8 @@
+title: VelocityResponseWriter has been hardened - only trusted configsets can render
+  configset provided templates and rendering templates from request parameters has
+  been removed.
+type: fixed
+authors: []
+links:
+- name: SOLR-14025
+  url: https://issues.apache.org/jira/browse/SOLR-14025

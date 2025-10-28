@@ -1,0 +1,7 @@
+title: Set finite default timeouts for select and update.
+type: other
+authors:
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-6324
+  url: https://issues.apache.org/jira/browse/SOLR-6324

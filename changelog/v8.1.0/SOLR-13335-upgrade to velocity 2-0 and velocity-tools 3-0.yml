@@ -1,0 +1,7 @@
+title: Upgrade to velocity 2.0 and velocity-tools 3.0
+type: other
+authors:
+- name: Kevin Risden
+links:
+- name: SOLR-13335
+  url: https://issues.apache.org/jira/browse/SOLR-13335

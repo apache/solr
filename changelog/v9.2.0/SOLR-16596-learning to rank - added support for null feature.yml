@@ -1,0 +1,8 @@
+title: Learning To Rank - Added support for null feature values in multiple additive
+  trees models
+type: added
+authors:
+- name: Anna Ruggero
+links:
+- name: SOLR-16596
+  url: https://issues.apache.org/jira/browse/SOLR-16596

@@ -1,0 +1,8 @@
+title: Fix SchemaCodecFactory to get PostingsFormat and DocValues from field.
+type: fixed
+authors:
+- name: Bruno Roustant
+- name: David Smiley
+links:
+- name: SOLR-17121
+  url: https://issues.apache.org/jira/browse/SOLR-17121

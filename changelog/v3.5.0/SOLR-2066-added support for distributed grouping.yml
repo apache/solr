@@ -1,0 +1,11 @@
+title: Added support for distributed grouping.
+type: added
+authors:
+- name: Martijn van Groningen
+- name: Jasper van Veghel
+- name: Matt Beaumont
+links:
+- name: SOLR-2066
+  url: https://issues.apache.org/jira/browse/SOLR-2066
+- name: SOLR-2776
+  url: https://issues.apache.org/jira/browse/SOLR-2776

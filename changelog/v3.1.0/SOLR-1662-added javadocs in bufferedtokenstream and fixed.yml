@@ -1,0 +1,8 @@
+title: Added Javadocs in BufferedTokenStream and fixed incorrect cloning in TestBufferedTokenStream
+type: fixed
+authors:
+- name: Robert Muir
+- name: Uwe Schindler
+links:
+- name: SOLR-1662
+  url: https://issues.apache.org/jira/browse/SOLR-1662

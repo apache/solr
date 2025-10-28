@@ -1,0 +1,19 @@
+title: '* SOLR-7049: Move work done by the LIST Collections API call to the Collections
+  Handler (Varun Thacker via Anshum Gupta). * SOLR-7116: Distributed facet refinement
+  requests would needlessly compute other types of faceting that have already been
+  computed. (David Smiley, Hossman) * SOLR-7239: improved performance of min & max
+  in StatsComponent, as well as situations where local params disable all stats (hossman)
+  * SOLR-7050: realtime get should internally load only fields specified in fl.'
+type: changed
+authors:
+- name: yonik
+- name: Noble Paul
+links:
+- name: SOLR-7049
+  url: https://issues.apache.org/jira/browse/SOLR-7049
+- name: SOLR-7116
+  url: https://issues.apache.org/jira/browse/SOLR-7116
+- name: SOLR-7239
+  url: https://issues.apache.org/jira/browse/SOLR-7239
+- name: SOLR-7050
+  url: https://issues.apache.org/jira/browse/SOLR-7050

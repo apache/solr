@@ -1,0 +1,8 @@
+title: Eliminate deprecation warnings in some JSPs.
+type: other
+authors:
+- name: Bernd Fehling
+- name: hossman
+links:
+- name: SOLR-2629
+  url: https://issues.apache.org/jira/browse/SOLR-2629

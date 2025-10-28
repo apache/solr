@@ -1,0 +1,9 @@
+title: Removed CollectionsHandler#createNodeIfNotExists. All calls made to this method
+  now call ZkCmdExecutor#ensureExists as they were doing the same thing. Also ZkCmdExecutor#ensureExists
+  now respects the CreateMode passed to it.
+type: other
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-7541
+  url: https://issues.apache.org/jira/browse/SOLR-7541

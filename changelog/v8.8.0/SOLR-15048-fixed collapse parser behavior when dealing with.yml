@@ -1,0 +1,9 @@
+title: Fixed collapse parser behavior when dealing with docs boosted by QueryElevationComponent
+  that are in the null group to treat them consistently regardless of collapse field
+  type or group head selector.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-15048
+  url: https://issues.apache.org/jira/browse/SOLR-15048

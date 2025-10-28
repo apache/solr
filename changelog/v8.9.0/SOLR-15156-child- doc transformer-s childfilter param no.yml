@@ -1,0 +1,9 @@
+title: '[child] doc transformer''s childFilter param no longer applies query syntax
+  escaping. It was inconsistent with other Solr options. It did this escaping since
+  8.0 but not prior.'
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-15156
+  url: https://issues.apache.org/jira/browse/SOLR-15156

@@ -1,0 +1,9 @@
+title: The configuration for hiding sensitive sysProp information has been joined
+  under `-Dsolr.hiddenSysProps` and `SOLR_HIDDEN_SYS_PROPS`.
+type: fixed
+authors:
+- name: Houston Putman
+- name: David Smiley
+links:
+- name: SOLR-16809
+  url: https://issues.apache.org/jira/browse/SOLR-16809

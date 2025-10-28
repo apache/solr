@@ -1,0 +1,8 @@
+title: CLUSTERSTATUS should check if the node hosting a replica is live when reporting
+  replica status
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-6481
+  url: https://issues.apache.org/jira/browse/SOLR-6481

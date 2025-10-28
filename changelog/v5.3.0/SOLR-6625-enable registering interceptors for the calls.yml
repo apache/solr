@@ -1,0 +1,11 @@
+title: Enable registering interceptors for the calls made using HttpClient and make
+  the request object available at the interceptor context
+type: other
+authors:
+- name: Ishan Chattopadhyay
+- name: Gregory Chanan
+- name: noble
+- name: Anshum Gupta
+links:
+- name: SOLR-6625
+  url: https://issues.apache.org/jira/browse/SOLR-6625

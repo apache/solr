@@ -1,0 +1,8 @@
+title: SolrCore#reload should not call preRegister and publish a DOWN state to ZooKeeper.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Jared Rodriguez
+links:
+- name: SOLR-4805
+  url: https://issues.apache.org/jira/browse/SOLR-4805

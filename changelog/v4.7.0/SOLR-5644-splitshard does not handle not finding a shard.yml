@@ -1,0 +1,8 @@
+title: SplitShard does not handle not finding a shard leader well.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Anshum Gupta
+links:
+- name: SOLR-5644
+  url: https://issues.apache.org/jira/browse/SOLR-5644

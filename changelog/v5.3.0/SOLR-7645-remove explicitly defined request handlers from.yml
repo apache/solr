@@ -1,0 +1,9 @@
+title: Remove explicitly defined request handlers from example and test solrconfig's
+  that are already defined implicitly, such as /admin/ping, /admin/system, and several
+  others.
+type: other
+authors:
+- name: ehatcher
+links:
+- name: SOLR-7645
+  url: https://issues.apache.org/jira/browse/SOLR-7645

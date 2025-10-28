@@ -1,0 +1,8 @@
+title: Highlighter only highlights values from the first field value in a multivalued
+  field when term positions (term vectors) are stored.
+type: fixed
+authors:
+- name: Chris Harris
+links:
+- name: SOLR-1624
+  url: https://issues.apache.org/jira/browse/SOLR-1624

@@ -1,0 +1,9 @@
+title: Partial results from shard queries needlessly discarded for queries without
+  sort field
+type: fixed
+authors:
+- name: Michael Kosten
+- name: Eric Pugh
+links:
+- name: SOLR-15595
+  url: https://issues.apache.org/jira/browse/SOLR-15595

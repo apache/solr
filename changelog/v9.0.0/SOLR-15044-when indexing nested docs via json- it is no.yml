@@ -1,0 +1,9 @@
+title: When indexing nested docs via JSON, it is no longer necessary to provide child
+  doc IDs. This was already working for XML & "javabin"/SolrJ. Previously, omitting
+  the ID would be confused for a partial/atomic update.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-15044
+  url: https://issues.apache.org/jira/browse/SOLR-15044

@@ -1,0 +1,9 @@
+title: Optimistic locking. If a _version_ is provided with an update that does not
+  match the version in the index, an HTTP 409 error (Conflict) will result.
+type: added
+authors:
+- name: Per Steffensen
+- name: yonik
+links:
+- name: SOLR-3178
+  url: https://issues.apache.org/jira/browse/SOLR-3178

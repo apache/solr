@@ -1,0 +1,7 @@
+title: Add core name to periodic delete related log messages
+type: other
+authors:
+- name: Bence Szabo
+links:
+- name: SOLR-16632
+  url: https://issues.apache.org/jira/browse/SOLR-16632

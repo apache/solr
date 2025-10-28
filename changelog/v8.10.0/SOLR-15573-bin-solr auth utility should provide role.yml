@@ -1,0 +1,9 @@
+title: bin/solr auth utility should provide role bindings for `security-read` and
+  `config-edit` by default to protect the security and schema designer screens in
+  the Admin UI
+type: other
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15573
+  url: https://issues.apache.org/jira/browse/SOLR-15573

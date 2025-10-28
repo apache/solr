@@ -1,0 +1,8 @@
+title: Using Schema/Config API breaks the File-Upload of Config Set File
+type: fixed
+authors:
+- name: Steffen Moldenhauer
+- name: Kevin Risden
+links:
+- name: SOLR-16110
+  url: https://issues.apache.org/jira/browse/SOLR-16110

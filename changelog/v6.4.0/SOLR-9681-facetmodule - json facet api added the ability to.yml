@@ -1,0 +1,9 @@
+title: 'FacetModule / JSON Facet API added the ability to add filters directly to
+  any facet command. The filters are applied after any domain change operations. Example:
+  { type:terms, field:category, filter:"user:yonik" }'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-9681
+  url: https://issues.apache.org/jira/browse/SOLR-9681

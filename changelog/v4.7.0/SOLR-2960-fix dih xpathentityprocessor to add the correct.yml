@@ -1,0 +1,8 @@
+title: fix DIH XPathEntityProcessor to add the correct number of "null" placeholders
+  for multi-valued fields
+type: changed
+authors:
+- name: Michael Watts
+links:
+- name: SOLR-2960
+  url: https://issues.apache.org/jira/browse/SOLR-2960

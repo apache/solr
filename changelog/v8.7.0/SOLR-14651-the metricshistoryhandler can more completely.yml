@@ -1,0 +1,8 @@
+title: The MetricsHistoryHandler can more completely disable itself when you tell
+  it to. Also, it now shuts down more thoroughly.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-14651
+  url: https://issues.apache.org/jira/browse/SOLR-14651

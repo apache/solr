@@ -1,0 +1,8 @@
+title: Factor out SearchGroupsResultTransformer.[de]serializeOneSearchGroup methods.
+type: other
+authors:
+- name: Christine Poerschke
+- name: Diego Ceccarelli
+links:
+- name: SOLR-13585
+  url: https://issues.apache.org/jira/browse/SOLR-13585

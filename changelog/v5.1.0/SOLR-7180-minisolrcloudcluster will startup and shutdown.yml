@@ -1,0 +1,9 @@
+title: MiniSolrCloudCluster will startup and shutdown its jetties in parallel
+type: other
+authors:
+- name: Alan Woodward
+- name: Tomás Fernández Löbbe
+- name: Vamsee Yarlagadda
+links:
+- name: SOLR-7180
+  url: https://issues.apache.org/jira/browse/SOLR-7180

@@ -1,0 +1,7 @@
+title: Make collection deletion more robust.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-8551
+  url: https://issues.apache.org/jira/browse/SOLR-8551

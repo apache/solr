@@ -1,0 +1,16 @@
+title: '- Refactor SSLConfig so that SSLTestConfig can provide SSLContexts using a
+  NullSecureRandom to prevent SSL tests from blocking on entropy starved machines.
+  - SSLTestConfig: Alternate (pseudo random) NullSecureRandom for Constants.SUN_OS.
+  - SSLTestConfig: Replace NullSecureRandom w/ NotSecurePseudoRandom. - Change SSLTestConfig
+  to use a keystore file that is included as a resource in the test-framework jar
+  so users subclassing SolrTestCaseJ4 don''t need to preserve magic paths.'
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-5776
+  url: https://issues.apache.org/jira/browse/SOLR-5776
+- name: SOLR-9068
+  url: https://issues.apache.org/jira/browse/SOLR-9068
+- name: SOLR-8970
+  url: https://issues.apache.org/jira/browse/SOLR-8970

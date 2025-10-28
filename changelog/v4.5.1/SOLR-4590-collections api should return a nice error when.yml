@@ -1,0 +1,8 @@
+title: Collections API should return a nice error when not in SolrCloud mode.
+type: fixed
+authors:
+- name: Anshum Gupta
+- name: Mark Miller
+links:
+- name: SOLR-4590
+  url: https://issues.apache.org/jira/browse/SOLR-4590

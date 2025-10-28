@@ -1,0 +1,8 @@
+title: The solr (lucene syntax) query parser lost top-level boost values and top-level
+  phrase slops on queries produced by nested sub-parsers.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-4625
+  url: https://issues.apache.org/jira/browse/SOLR-4625

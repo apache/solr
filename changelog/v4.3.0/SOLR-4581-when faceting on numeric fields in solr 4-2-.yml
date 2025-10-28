@@ -1,0 +1,10 @@
+title: When faceting on numeric fields in Solr 4.2, negative values (constraints)
+  were sorted incorrectly.
+type: fixed
+authors:
+- name: Alexander Buhr
+- name: shalin
+- name: yonik
+links:
+- name: SOLR-4581
+  url: https://issues.apache.org/jira/browse/SOLR-4581

@@ -1,0 +1,11 @@
+title: Introduce Builder setter withTheseParamNamesInTheUrl for queryParams, renaming
+  them to urlParamNames to clarify they are parameter names, not the values. Deprecated
+  direct setter setQueryParams and addQueryParams on SolrClients.
+type: changed
+authors:
+- name: Eric Pugh
+- name: David Smiley
+- name: Alex Deparvu
+links:
+- name: SOLR-10452
+  url: https://issues.apache.org/jira/browse/SOLR-10452

@@ -1,0 +1,9 @@
+title: '"inc" atomic update doesn''t respect default field value'
+type: fixed
+authors:
+- name: hoss
+- name: Amrit Sarkar
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-9838
+  url: https://issues.apache.org/jira/browse/SOLR-9838

@@ -1,0 +1,8 @@
+title: Remove unnecessary call to fetch and watch live nodes in ZkStateReader cluster
+  watcher.
+type: fixed
+authors:
+- name: Jessica Cheng
+links:
+- name: SOLR-5255
+  url: https://issues.apache.org/jira/browse/SOLR-5255

@@ -1,0 +1,7 @@
+title: Fix or suppress 11 resource leak warnings in apache/solr/cloud
+type: other
+authors:
+- name: "Andras Salaman via\n  Erick Erickson"
+links:
+- name: SOLR-14485
+  url: https://issues.apache.org/jira/browse/SOLR-14485

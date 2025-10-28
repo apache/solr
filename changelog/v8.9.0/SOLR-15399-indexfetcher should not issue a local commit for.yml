@@ -1,0 +1,8 @@
+title: IndexFetcher should not issue a local commit for PULL replicas when leader's
+  version is zero
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15399
+  url: https://issues.apache.org/jira/browse/SOLR-15399

@@ -1,0 +1,8 @@
+title: Write a test which asserts that requests to stateFormat=2 collection succeed
+  on a node even after all local replicas of that collection have been removed.
+type: other
+authors:
+- name: Scott Blum
+links:
+- name: SOLR-7870
+  url: https://issues.apache.org/jira/browse/SOLR-7870

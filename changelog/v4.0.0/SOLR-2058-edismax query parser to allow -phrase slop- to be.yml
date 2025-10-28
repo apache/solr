@@ -1,0 +1,10 @@
+title: Edismax query parser to allow "phrase slop" to be specified per-field on the
+  pf/pf2/pf3 parameters using optional "FieldName~slop^boost" syntax. The prior "FieldName^boost"
+  syntax is still accepted. In such cases the value on the "ps" parameter serves as
+  the default slop.
+type: added
+authors:
+- name: Ron Mayer
+links:
+- name: SOLR-2058
+  url: https://issues.apache.org/jira/browse/SOLR-2058

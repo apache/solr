@@ -1,0 +1,7 @@
+title: CloudSolrClient.collectionStateCache is unbounded
+type: fixed
+authors:
+- name: noble
+links:
+- name: SOLR-9334
+  url: https://issues.apache.org/jira/browse/SOLR-9334

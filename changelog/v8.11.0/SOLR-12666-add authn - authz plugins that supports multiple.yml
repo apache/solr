@@ -1,0 +1,9 @@
+title: Add authn & authz plugins that supports multiple authentication schemes, such
+  as Bearer and Basic
+type: added
+authors:
+- name: Timothy Potter
+- name: janhoy
+links:
+- name: SOLR-12666
+  url: https://issues.apache.org/jira/browse/SOLR-12666

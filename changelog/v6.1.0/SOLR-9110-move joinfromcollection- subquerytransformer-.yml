@@ -1,0 +1,8 @@
+title: Move JoinFromCollection- SubQueryTransformer- BlockJoinFacet- Distrib Tests
+  to SolrCloudTestCase
+type: other
+authors:
+- name: Mikhail Khludnev
+links:
+- name: SOLR-9110
+  url: https://issues.apache.org/jira/browse/SOLR-9110

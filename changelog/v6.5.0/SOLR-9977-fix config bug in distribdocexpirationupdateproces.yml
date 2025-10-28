@@ -1,0 +1,8 @@
+title: Fix config bug in DistribDocExpirationUpdateProcessorTest that allowed false
+  assumptions about when index version changes
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-9977
+  url: https://issues.apache.org/jira/browse/SOLR-9977

@@ -1,0 +1,8 @@
+title: The SolrException.log() helper method has been fixed to correctly passes the
+  Throwable to the Logger w/o stringification
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-15628
+  url: https://issues.apache.org/jira/browse/SOLR-15628

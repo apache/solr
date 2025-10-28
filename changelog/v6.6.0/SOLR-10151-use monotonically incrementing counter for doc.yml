@@ -1,0 +1,8 @@
+title: Use monotonically incrementing counter for doc ids in TestRecovery.
+type: other
+authors:
+- name: Peter Szantai-Kis
+- name: Mano Kovacs
+links:
+- name: SOLR-10151
+  url: https://issues.apache.org/jira/browse/SOLR-10151

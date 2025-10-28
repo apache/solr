@@ -1,0 +1,8 @@
+title: The Schema API should return non-zero status when there are failures.
+type: fixed
+authors:
+- name: Noble Paul
+- name: Steve Rowe
+links:
+- name: SOLR-11631
+  url: https://issues.apache.org/jira/browse/SOLR-11631

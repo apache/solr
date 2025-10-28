@@ -1,0 +1,8 @@
+title: In 'langid' contrib, the LanguageIdentifierUpdateProcessor base class changed
+  some method signatures. If you have a custom language identifier implementation
+  you will need to adapt your code.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-11774
+  url: https://issues.apache.org/jira/browse/SOLR-11774

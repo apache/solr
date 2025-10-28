@@ -1,0 +1,8 @@
+title: Fixed group.facet=true to work with negative facet.limit
+type: fixed
+authors:
+- name: Chris van der Merwe
+- name: hossman
+links:
+- name: SOLR-3956
+  url: https://issues.apache.org/jira/browse/SOLR-3956

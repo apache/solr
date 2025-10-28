@@ -1,0 +1,7 @@
+title: Make FastVectorHighlighter use of SolrEncoder.
+type: added
+authors:
+- name: koji
+links:
+- name: SOLR-2030
+  url: https://issues.apache.org/jira/browse/SOLR-2030

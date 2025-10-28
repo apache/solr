@@ -1,0 +1,8 @@
+title: WordDelimiterFilter didn't adjust the start offset of single tokens that started
+  with delimiters, leading to incorrect highlighting.
+type: fixed
+authors:
+- name: Stefan Oestreicher
+links:
+- name: SOLR-751
+  url: https://issues.apache.org/jira/browse/SOLR-751

@@ -1,0 +1,9 @@
+title: 'bin/auth creates reasonable roles and permissions for security: ''search'',
+  ''index'', ''admin'', and ''superadmin'' and assigns user superadmin role.'
+type: added
+authors:
+- name: Eric Pugh
+- name: janhoy
+links:
+- name: SOLR-15771
+  url: https://issues.apache.org/jira/browse/SOLR-15771

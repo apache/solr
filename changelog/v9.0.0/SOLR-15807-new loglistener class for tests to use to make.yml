@@ -1,0 +1,8 @@
+title: New LogListener class for tests to use to make assertions about what Log messages
+  should or should not be produced by a test
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-15807
+  url: https://issues.apache.org/jira/browse/SOLR-15807

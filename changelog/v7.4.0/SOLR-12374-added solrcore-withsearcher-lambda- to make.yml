@@ -1,0 +1,8 @@
+title: Added SolrCore.withSearcher(lambda) to make grabbing the searcher easier than
+  the more awkward RefCounted API.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-12374
+  url: https://issues.apache.org/jira/browse/SOLR-12374

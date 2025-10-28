@@ -1,0 +1,10 @@
+title: Requests to a Collection that does not exist on the receiving node should be
+  proxied to a suitable node.
+type: added
+authors:
+- name: Mark Miller
+- name: Po Rui
+- name: yonik
+links:
+- name: SOLR-4210
+  url: https://issues.apache.org/jira/browse/SOLR-4210

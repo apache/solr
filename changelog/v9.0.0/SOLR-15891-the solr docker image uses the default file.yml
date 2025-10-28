@@ -1,0 +1,8 @@
+title: The Solr Docker image uses the default file permissions from the tarball artifact
+type: other
+authors:
+- name: Houston Putman
+- name: janhoy
+links:
+- name: SOLR-15891
+  url: https://issues.apache.org/jira/browse/SOLR-15891

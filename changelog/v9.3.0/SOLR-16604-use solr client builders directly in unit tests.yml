@@ -1,0 +1,8 @@
+title: Use Solr Client Builders directly in unit tests instead of delegating to SolrTestCaseJ4.
+type: other
+authors:
+- name: Eric Pugh
+- name: David Smiley
+links:
+- name: SOLR-16604
+  url: https://issues.apache.org/jira/browse/SOLR-16604

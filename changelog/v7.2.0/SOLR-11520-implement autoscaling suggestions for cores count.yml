@@ -1,0 +1,7 @@
+title: Implement autoscaling suggestions for cores count violations
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-11520
+  url: https://issues.apache.org/jira/browse/SOLR-11520

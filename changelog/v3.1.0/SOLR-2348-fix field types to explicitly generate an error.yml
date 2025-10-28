@@ -1,0 +1,8 @@
+title: Fix field types to explicitly generate an error if you attempt to get a ValueSource
+  for a multiValued field.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-2348
+  url: https://issues.apache.org/jira/browse/SOLR-2348

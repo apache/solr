@@ -1,0 +1,8 @@
+title: Remove lucene-libs from module packaging. The lucene libraries will be included
+  in lib/ with all other dependencies.
+type: other
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-15924
+  url: https://issues.apache.org/jira/browse/SOLR-15924

@@ -1,0 +1,8 @@
+title: Improve CheckIndex to work against HdfsDirectory
+type: added
+authors:
+- name: Mike Drob
+- name: Gregory Chanan
+links:
+- name: SOLR-7928
+  url: https://issues.apache.org/jira/browse/SOLR-7928

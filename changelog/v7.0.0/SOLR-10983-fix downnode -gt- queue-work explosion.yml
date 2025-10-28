@@ -1,0 +1,8 @@
+title: Fix DOWNNODE -&gt; queue-work explosion
+type: fixed
+authors:
+- name: Scott Blum
+- name: Joshua Humphries
+links:
+- name: SOLR-10983
+  url: https://issues.apache.org/jira/browse/SOLR-10983

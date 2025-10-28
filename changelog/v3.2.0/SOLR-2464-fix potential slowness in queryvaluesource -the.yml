@@ -1,0 +1,8 @@
+title: Fix potential slowness in QueryValueSource (the query() function) when the
+  query is very sparse and may not match any documents in a segment.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-2464
+  url: https://issues.apache.org/jira/browse/SOLR-2464

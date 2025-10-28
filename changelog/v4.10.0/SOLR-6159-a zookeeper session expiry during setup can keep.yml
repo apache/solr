@@ -1,0 +1,9 @@
+title: A ZooKeeper session expiry during setup can keep LeaderElector from joining
+  elections.
+type: fixed
+authors:
+- name: Steven Bower
+- name: shalin
+links:
+- name: SOLR-6159
+  url: https://issues.apache.org/jira/browse/SOLR-6159

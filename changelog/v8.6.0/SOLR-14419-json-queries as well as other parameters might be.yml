@@ -1,0 +1,8 @@
+title: json.queries as well as other parameters might be referred via {"param":"ref"}
+  in Query DSL
+type: changed
+authors:
+- name: Mikhail Khludnev
+links:
+- name: SOLR-14419
+  url: https://issues.apache.org/jira/browse/SOLR-14419

@@ -1,0 +1,8 @@
+title: Accessing Admin UI files in SolrCloud mode logs warnings.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Phil John
+links:
+- name: SOLR-4573
+  url: https://issues.apache.org/jira/browse/SOLR-4573

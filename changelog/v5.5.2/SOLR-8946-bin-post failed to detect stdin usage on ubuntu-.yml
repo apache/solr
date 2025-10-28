@@ -1,0 +1,7 @@
+title: bin/post failed to detect stdin usage on Ubuntu; maybe other unixes.
+type: fixed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-8946
+  url: https://issues.apache.org/jira/browse/SOLR-8946

@@ -1,0 +1,9 @@
+title: Add domain size and numBuckets to facet telemetry info (facet debug info for
+  the new Facet Module).
+type: added
+authors:
+- name: Michael Sun
+- name: yonik
+links:
+- name: SOLR-8312
+  url: https://issues.apache.org/jira/browse/SOLR-8312

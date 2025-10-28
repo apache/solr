@@ -1,0 +1,8 @@
+title: Stop the HDFS lease recovery retries in HdfsTransactionLog on close and try
+  to avoid lease recovery on closed files.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-7092
+  url: https://issues.apache.org/jira/browse/SOLR-7092

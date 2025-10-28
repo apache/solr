@@ -1,0 +1,11 @@
+title: Several v2 "command" APIs have been tweaked to be more intuitive. "FORCELEADER"
+  is now available at `POST /api/collections/cName/shards/sName/force-leader`, "RELOAD"
+  is now available at `POST /api/collections/cName/reload`, "SYNCSHARD" is now available
+  at `POST /api/collections/cName/shards/sName/sync-shard`, and "RENAME" is now available
+  at `POST /api/collections/cName/rename`.
+type: changed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-16398
+  url: https://issues.apache.org/jira/browse/SOLR-16398

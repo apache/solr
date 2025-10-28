@@ -1,0 +1,8 @@
+title: Requests aren't distributed evenly if the collection isn't present locally.
+type: fixed
+authors:
+- name: Jeff Wartes
+- name: shalin
+links:
+- name: SOLR-7493
+  url: https://issues.apache.org/jira/browse/SOLR-7493

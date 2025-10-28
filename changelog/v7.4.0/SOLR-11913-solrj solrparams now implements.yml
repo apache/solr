@@ -1,0 +1,9 @@
+title: SolrJ SolrParams now implements Iterable&lt;Map.Entry&lt;String, String[]&gt;&gt;
+  and also has a stream() method using it for convenience.
+type: added
+authors:
+- name: David Smiley
+- name: Tapan Vaishnav
+links:
+- name: SOLR-11913
+  url: https://issues.apache.org/jira/browse/SOLR-11913

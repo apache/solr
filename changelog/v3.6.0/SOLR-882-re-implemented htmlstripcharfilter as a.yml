@@ -1,0 +1,44 @@
+title: 'Re-implemented HTMLStripCharFilter as a JFlex-generated scanner and moved
+  it to lucene/contrib/analyzers/common/. See below for a list of bug fixes and other
+  changes. To get the same behavior as HTMLStripCharFilter in Solr version 3.5 and
+  earlier (including the bugs), use LegacyHTMLStripCharFilter, which is the previous
+  implementation. Behavior changes from the previous version: - Known offset bugs
+  are fixed. - The "Mark invalid" exceptions reported in SOLR-1283 are no longer triggered
+  (the bug is still present in LegacyHTMLStripCharFilter). - The character entity
+  "&apos;" is now always properly decoded. - More cases of &lt;script&gt; tags are
+  now properly stripped. - CDATA sections are now handled properly. - Valid tag name
+  characters now include the supplementary Unicode characters from Unicode character
+  classes [:ID_Start:] and [:ID_Continue:]. - Uppercase character entities "&QUOT;",
+  "&COPY;", "&GT;", "&LT;", "&REG;", and "&AMP;" are now recognized and handled as
+  if they were in lowercase. - The REPLACEMENT CHARACTER U+FFFD is now used to replace
+  numeric character entities for unpaired UTF-16 low and high surrogates (in the range
+  [U+D800-U+DFFF]). - Properly paired numeric character entities for UTF-16 surrogates
+  are now converted to the corresponding code units. - Opening tags with unbalanced
+  quotation marks are now properly stripped. - Literal "&lt;" and "&gt;" characters
+  in opening tags, regardless of whether they appear inside quotation marks, now inhibit
+  recognition (and stripping) of the tags. The only exception to this is for values
+  of event-handler attributes, e.g. "onClick", "onLoad", "onSelect". - A newline ''\n''
+  is substituted instead of a space for stripped HTML markup. - Nothing is substituted
+  for opening and closing inline tags - they are simply removed. The list of inline
+  tags is (case insensitively): &lt;a&gt;, &lt;abbr&gt;, &lt;acronym&gt;, &lt;b&gt;,
+  &lt;basefont&gt;, &lt;bdo&gt;, &lt;big&gt;, &lt;cite&gt;, &lt;code&gt;, &lt;dfn&gt;,
+  &lt;em&gt;, &lt;font&gt;, &lt;i&gt;, &lt;img&gt;, &lt;input&gt;, &lt;kbd&gt;, &lt;label&gt;,
+  &lt;q&gt;, &lt;s&gt;, &lt;samp&gt;, &lt;select&gt;, &lt;small&gt;, &lt;span&gt;,
+  &lt;strike&gt;, &lt;strong&gt;, &lt;sub&gt;, &lt;sup&gt;, &lt;textarea&gt;, &lt;tt&gt;,
+  &lt;u&gt;, and &lt;var&gt;. - HTMLStripCharFilterFactory now handles HTMLStripCharFilter''s
+  "escapedTags" feature: opening and closing tags with the given names, including
+  any attributes and their values, are left intact in the output.'
+type: fixed
+authors:
+- name: Steve Rowe
+links:
+- name: LUCENE-3690
+  url: https://issues.apache.org/jira/browse/LUCENE-3690
+- name: LUCENE-2208
+  url: https://issues.apache.org/jira/browse/LUCENE-2208
+- name: SOLR-882
+  url: https://issues.apache.org/jira/browse/SOLR-882
+- name: SOLR-42
+  url: https://issues.apache.org/jira/browse/SOLR-42
+- name: SOLR-1283
+  url: https://issues.apache.org/jira/browse/SOLR-1283

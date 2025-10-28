@@ -1,0 +1,8 @@
+title: When using a shared filesystem we should store data dir and tlog dir locations
+  in the cluster state.
+type: added
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-8913
+  url: https://issues.apache.org/jira/browse/SOLR-8913

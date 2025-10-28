@@ -1,0 +1,9 @@
+title: Error message is incorrect for linkconfig in ZkCLI.
+type: fixed
+authors:
+- name: Vamsee Yarlagadda
+- name: Adam Hahn
+- name: Mark Miller
+links:
+- name: SOLR-4072
+  url: https://issues.apache.org/jira/browse/SOLR-4072

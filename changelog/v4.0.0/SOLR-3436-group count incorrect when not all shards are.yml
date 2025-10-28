@@ -1,0 +1,8 @@
+title: Group count incorrect when not all shards are queried in the second pass.
+type: fixed
+authors:
+- name: Francois Perron
+- name: Martijn van Groningen
+links:
+- name: SOLR-3436
+  url: https://issues.apache.org/jira/browse/SOLR-3436

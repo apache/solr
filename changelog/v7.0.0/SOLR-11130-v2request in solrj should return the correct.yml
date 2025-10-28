@@ -1,0 +1,8 @@
+title: V2Request in SolrJ should return the correct collection name so that the request
+  is forwarded to the correct node
+type: fixed
+authors:
+- name: noble
+links:
+- name: SOLR-11130
+  url: https://issues.apache.org/jira/browse/SOLR-11130

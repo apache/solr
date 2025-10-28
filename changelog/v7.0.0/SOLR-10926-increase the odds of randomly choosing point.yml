@@ -1,0 +1,9 @@
+title: Increase the odds of randomly choosing point fields in our SolrTestCaseJ4 numeric
+  type randomization.
+type: other
+authors:
+- name: hossman
+- name: Steve Rowe
+links:
+- name: SOLR-10926
+  url: https://issues.apache.org/jira/browse/SOLR-10926

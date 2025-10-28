@@ -1,0 +1,13 @@
+title: Grouping is broken on docValues-only fields (non-stored, non-indexed)
+type: fixed
+authors:
+- name: Erick Ericsson
+- name: Adrien Grand
+- name: Munendra S N
+- name: Scott Stults
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-12248
+  url: https://issues.apache.org/jira/browse/SOLR-12248
+- name: SOLR-4647
+  url: https://issues.apache.org/jira/browse/SOLR-4647

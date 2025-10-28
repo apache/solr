@@ -1,0 +1,8 @@
+title: Correct SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE example comments in solr.in.sh
+  and solr.in.cmd files
+type: fixed
+authors:
+- name: Aren Cambre
+links:
+- name: SOLR-14584
+  url: https://issues.apache.org/jira/browse/SOLR-14584

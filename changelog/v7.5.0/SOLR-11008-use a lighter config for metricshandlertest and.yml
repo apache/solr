@@ -1,0 +1,8 @@
+title: Use a lighter config for MetricsHandlerTest and ensure the core is up before
+  the test starts
+type: other
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-11008
+  url: https://issues.apache.org/jira/browse/SOLR-11008

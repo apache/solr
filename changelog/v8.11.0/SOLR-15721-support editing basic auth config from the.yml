@@ -1,0 +1,7 @@
+title: Support editing Basic auth config from the security UI when using the MultiAuthPlugin
+type: added
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15721
+  url: https://issues.apache.org/jira/browse/SOLR-15721

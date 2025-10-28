@@ -1,0 +1,8 @@
+title: Fix VelocityResponseWriter template encoding issue. Templates must be UTF-8
+  encoded.
+type: fixed
+authors:
+- name: Erik Hatcher
+links:
+- name: SOLR-7972
+  url: https://issues.apache.org/jira/browse/SOLR-7972

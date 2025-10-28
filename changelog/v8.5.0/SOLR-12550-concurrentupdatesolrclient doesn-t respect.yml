@@ -1,0 +1,8 @@
+title: ConcurrentUpdateSolrClient doesn't respect timeouts for commits and optimize.
+type: fixed
+authors:
+- name: Marc A. Morissette
+- name: Bérénice MAUREL
+links:
+- name: SOLR-12550
+  url: https://issues.apache.org/jira/browse/SOLR-12550

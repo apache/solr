@@ -1,0 +1,8 @@
+title: Avoiding commits on leader when recovering a non-leader replica and avoiding
+  incorrectly replicating an empty core
+type: changed
+authors:
+- name: Justin Sweeney
+links:
+- name: SOLR-16689
+  url: https://issues.apache.org/jira/browse/SOLR-16689

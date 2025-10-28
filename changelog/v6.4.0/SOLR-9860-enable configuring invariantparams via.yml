@@ -1,0 +1,8 @@
+title: Enable configuring invariantParams via HttpSolrClient.Builder
+type: added
+authors:
+- name: Hrishikesh Gadre
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-9860
+  url: https://issues.apache.org/jira/browse/SOLR-9860

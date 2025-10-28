@@ -1,0 +1,10 @@
+title: Support for SOLR-5473 in solr admin UI
+type: added
+authors:
+- name: Timothy Potter
+- name: Noble Paul
+links:
+- name: SOLR-5810
+  url: https://issues.apache.org/jira/browse/SOLR-5810
+- name: SOLR-5473
+  url: https://issues.apache.org/jira/browse/SOLR-5473

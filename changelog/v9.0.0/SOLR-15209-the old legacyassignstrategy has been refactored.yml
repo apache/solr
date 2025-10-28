@@ -1,0 +1,9 @@
+title: The old LegacyAssignStrategy has been refactored into the SimplePlacementPlugin.
+  This is still the default placement policy for Solr.
+type: changed
+authors:
+- name: Houston Putman
+- name: Ilan Ginzburg
+links:
+- name: SOLR-15209
+  url: https://issues.apache.org/jira/browse/SOLR-15209

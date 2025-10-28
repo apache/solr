@@ -1,0 +1,7 @@
+title: Change public setter for CollectionAdminRequest.action to protected.
+type: fixed
+authors:
+- name: Anshum Gupta
+links:
+- name: SOLR-6899
+  url: https://issues.apache.org/jira/browse/SOLR-6899

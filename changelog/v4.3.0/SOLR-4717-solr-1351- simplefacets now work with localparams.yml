@@ -1,0 +1,11 @@
+title: '/SOLR-1351: SimpleFacets now work with localParams allowing faceting on the
+  same field multiple ways'
+type: added
+authors:
+- name: ryan
+- name: Uri Boness
+links:
+- name: SOLR-4717
+  url: https://issues.apache.org/jira/browse/SOLR-4717
+- name: SOLR-1351
+  url: https://issues.apache.org/jira/browse/SOLR-1351

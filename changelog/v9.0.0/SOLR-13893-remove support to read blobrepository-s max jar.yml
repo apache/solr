@@ -1,0 +1,10 @@
+title: Remove support to read BlobRepository's max jar size from deprecated `runtme.lib.size`
+  system property
+type: removed
+authors:
+- name: Erick Erickson
+- name: Kesharee Nandan Vishwakarma
+- name: Munendra S N
+links:
+- name: SOLR-13893
+  url: https://issues.apache.org/jira/browse/SOLR-13893

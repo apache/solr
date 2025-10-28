@@ -1,0 +1,9 @@
+title: HttpShardHandler now uses a default of 100k as maxConnections (10k previously)
+  and default maxConnectionsPerHost as 100k (20 previously). They are now consisent
+  with the UpdateShardHandler defaults.
+type: changed
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-10697
+  url: https://issues.apache.org/jira/browse/SOLR-10697

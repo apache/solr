@@ -1,0 +1,7 @@
+title: Add HyphenationCompoundWordTokenFilterFactory.
+type: added
+authors:
+- name: PB
+links:
+- name: SOLR-1984
+  url: https://issues.apache.org/jira/browse/SOLR-1984

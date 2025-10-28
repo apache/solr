@@ -1,0 +1,11 @@
+title: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals()
+  method
+type: changed
+authors:
+- name: Aroop Ganguly
+- name: Tomás Fernández Löbbe
+- name: Noble Paul
+- name: Anshum Gupta
+links:
+- name: SOLR-14316
+  url: https://issues.apache.org/jira/browse/SOLR-14316

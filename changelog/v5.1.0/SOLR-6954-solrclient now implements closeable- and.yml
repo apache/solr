@@ -1,0 +1,10 @@
+title: SolrClient now implements Closeable, and shutdown() has been deprecated in
+  favour of close().
+type: added
+authors:
+- name: Mark Miller
+- name: Tomás Fernández Löbbe
+- name: "Alan\n  Woodward"
+links:
+- name: SOLR-6954
+  url: https://issues.apache.org/jira/browse/SOLR-6954

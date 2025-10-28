@@ -1,0 +1,9 @@
+title: XPathEntityProcessor should reinitialize the XPathRecordReader instance if
+  the 'forEach' or 'xpath' attributes are templates & it is not a root entity
+type: fixed
+authors:
+- name: Cao Manh Dat
+- name: noble
+links:
+- name: SOLR-2094
+  url: https://issues.apache.org/jira/browse/SOLR-2094

@@ -1,0 +1,10 @@
+title: retrieving docValues as stored values was sped up by using the proper leaf
+  reader rather than ask for a global view. In extreme cases, this leads to a 100x
+  speedup.
+type: changed
+authors:
+- name: Takahiro Ishikawa
+- name: yonik
+links:
+- name: SOLR-9592
+  url: https://issues.apache.org/jira/browse/SOLR-9592

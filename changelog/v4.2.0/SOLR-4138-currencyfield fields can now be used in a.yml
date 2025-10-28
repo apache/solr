@@ -1,0 +1,11 @@
+title: CurrencyField fields can now be used in a ValueSources to get the "raw" value
+  (using the default number of fractional digits) in the default currency of the field
+  type. There is also a new currency(field,[CODE]) function for generating a ValueSource
+  of the "natural" value, converted to an optionally specified currency to override
+  the default for the field type.
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-4138
+  url: https://issues.apache.org/jira/browse/SOLR-4138

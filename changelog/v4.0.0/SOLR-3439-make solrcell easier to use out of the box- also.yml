@@ -1,0 +1,13 @@
+title: Make SolrCell easier to use out of the box. Also improves "/browse" to display
+  rich-text documents correctly, along with facets for author and content_type. With
+  the new "content" field, highlighting of body is supported. See also SOLR-3672 for
+  easier posting of a whole directory structure.
+type: other
+authors:
+- name: Jack Krupansky
+- name: janhoy
+links:
+- name: SOLR-3439
+  url: https://issues.apache.org/jira/browse/SOLR-3439
+- name: SOLR-3672
+  url: https://issues.apache.org/jira/browse/SOLR-3672

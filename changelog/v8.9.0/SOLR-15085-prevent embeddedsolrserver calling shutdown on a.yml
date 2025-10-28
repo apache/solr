@@ -1,0 +1,8 @@
+title: Prevent EmbeddedSolrServer calling shutdown on a CoreContainer that was passed
+  to it.
+type: changed
+authors:
+- name: Tim Owen
+links:
+- name: SOLR-15085
+  url: https://issues.apache.org/jira/browse/SOLR-15085

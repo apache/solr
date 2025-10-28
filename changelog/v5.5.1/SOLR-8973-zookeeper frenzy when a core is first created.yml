@@ -1,0 +1,9 @@
+title: Zookeeper frenzy when a core is first created.
+type: fixed
+authors:
+- name: Janmejay Singh
+- name: Scott Blum
+- name: shalin
+links:
+- name: SOLR-8973
+  url: https://issues.apache.org/jira/browse/SOLR-8973

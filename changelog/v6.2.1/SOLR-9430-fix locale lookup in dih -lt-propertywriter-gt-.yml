@@ -1,0 +1,10 @@
+title: Fix locale lookup in DIH &lt;propertyWriter/&gt; to use BCP47 language tags
+  to be consistent with other places in Solr. Language names still work for backwards
+  compatibility.
+type: fixed
+authors:
+- name: Uwe Schindler
+- name: Boris Steiner
+links:
+- name: SOLR-9430
+  url: https://issues.apache.org/jira/browse/SOLR-9430

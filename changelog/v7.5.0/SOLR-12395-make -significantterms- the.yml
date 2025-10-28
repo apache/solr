@@ -1,0 +1,9 @@
+title: Make 'significantTerms' the SignificantTermsQParserPlugin's name and deprecate
+  its old 'sigificantTerms' name.
+type: fixed
+authors:
+- name: Tobias Kässmann
+- name: Christine Poerschke
+links:
+- name: SOLR-12395
+  url: https://issues.apache.org/jira/browse/SOLR-12395

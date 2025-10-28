@@ -1,0 +1,7 @@
+title: Partial State on Schema-Browser UI is not defined for Dynamic Fields & Types
+type: fixed
+authors:
+- name: steffkes
+links:
+- name: SOLR-3917
+  url: https://issues.apache.org/jira/browse/SOLR-3917

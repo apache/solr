@@ -1,0 +1,7 @@
+title: Metrics API should ensure consistent placeholders for missing values.
+type: changed
+authors:
+- name: ab
+links:
+- name: SOLR-14683
+  url: https://issues.apache.org/jira/browse/SOLR-14683

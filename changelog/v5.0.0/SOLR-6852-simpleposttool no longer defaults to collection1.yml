@@ -1,0 +1,8 @@
+title: SimplePostTool no longer defaults to collection1 making core/collection/update
+  URL mandatory.
+type: other
+authors:
+- name: Anshum Gupta
+links:
+- name: SOLR-6852
+  url: https://issues.apache.org/jira/browse/SOLR-6852

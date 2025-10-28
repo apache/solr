@@ -1,0 +1,9 @@
+title: Fixed offset bugs in TrimFilter, WordDelimiterFilter, and HyphenatedWordsFilter
+  where they would create invalid offsets in some situations, leading to problems
+  in highlighting.
+type: fixed
+authors:
+- name: Robert Muir
+links:
+- name: LUCENE-3717
+  url: https://issues.apache.org/jira/browse/LUCENE-3717

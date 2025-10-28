@@ -1,0 +1,7 @@
+title: zkcli.sh should honor JAVA_HOME
+type: fixed
+authors:
+- name: Roman Shaposhnik
+links:
+- name: SOLR-4796
+  url: https://issues.apache.org/jira/browse/SOLR-4796

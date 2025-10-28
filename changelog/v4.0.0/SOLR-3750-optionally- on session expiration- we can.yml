@@ -1,0 +1,9 @@
+title: Optionally, on session expiration, we can explicitly wait some time before
+  running the leader sync process so that we are sure every node participates.
+type: other
+authors:
+- name: Per Steffensen
+- name: Mark Miller
+links:
+- name: SOLR-3750
+  url: https://issues.apache.org/jira/browse/SOLR-3750

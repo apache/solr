@@ -1,0 +1,7 @@
+title: Fix ClassCastException and AIOOBE in TestSolrConfigHandlerConcurrent.
+type: other
+authors:
+- name: shalin
+links:
+- name: SOLR-12680
+  url: https://issues.apache.org/jira/browse/SOLR-12680

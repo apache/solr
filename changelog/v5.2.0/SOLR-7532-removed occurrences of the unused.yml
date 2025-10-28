@@ -1,0 +1,8 @@
+title: Removed occurrences of the unused 'commitIntervalLowerBound' property for updateHandler
+  elements from Solr configuration.
+type: other
+authors:
+- name: Marius Grama
+links:
+- name: SOLR-7532
+  url: https://issues.apache.org/jira/browse/SOLR-7532

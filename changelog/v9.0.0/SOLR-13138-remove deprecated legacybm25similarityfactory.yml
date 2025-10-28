@@ -1,0 +1,8 @@
+title: Remove deprecated LegacyBM25SimilarityFactory class.
+type: removed
+authors:
+- name: Christine Poerschke
+- name: janhoy
+links:
+- name: SOLR-13138
+  url: https://issues.apache.org/jira/browse/SOLR-13138

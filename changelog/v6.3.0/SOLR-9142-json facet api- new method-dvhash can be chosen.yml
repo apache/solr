@@ -1,0 +1,7 @@
+title: 'JSON Facet API: new method=dvhash can be chosen for fields with high cardinality.'
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-9142
+  url: https://issues.apache.org/jira/browse/SOLR-9142

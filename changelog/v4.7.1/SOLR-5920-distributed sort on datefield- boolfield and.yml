@@ -1,0 +1,11 @@
+title: Distributed sort on DateField, BoolField and BCD{Int,Long,Str}Field returns
+  string cast exception
+type: fixed
+authors:
+- name: Eric Bus
+- name: AJ Lemke
+- name: hossman
+- name: Steve Rowe
+links:
+- name: SOLR-5920
+  url: https://issues.apache.org/jira/browse/SOLR-5920

@@ -1,0 +1,7 @@
+title: JavabinCodec implements PushWriter interface
+type: other
+authors:
+- name: noble
+links:
+- name: SOLR-9739
+  url: https://issues.apache.org/jira/browse/SOLR-9739

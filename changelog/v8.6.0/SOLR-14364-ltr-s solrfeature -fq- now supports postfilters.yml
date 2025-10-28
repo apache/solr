@@ -1,0 +1,7 @@
+title: LTR's SolrFeature "fq" now supports PostFilters (e.g. collapse).
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-14364
+  url: https://issues.apache.org/jira/browse/SOLR-14364

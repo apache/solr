@@ -1,0 +1,9 @@
+title: v2 equivalents of the "Core Admin" `LISTSNAPSHOT`, `CREATESNAPSHOT`, and `DELETESNAPSHOT`
+  commands are now available at `GET /api/cores/coreName/snapshots`, `POST /api/cores/coreName/snapshots/snapshotName`,
+  and `DELETE /api/cores/coreName/snapshots/snapshotName`, respectively
+type: changed
+authors:
+- name: John Durham
+links:
+- name: SOLR-16462
+  url: https://issues.apache.org/jira/browse/SOLR-16462

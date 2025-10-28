@@ -1,0 +1,13 @@
+title: Add option to plugin a merged segment warmer into solrconfig.xml. Info about
+  segments warmed in the background is available via infostream.
+type: added
+authors:
+- name: Mark Miller
+- name: Ryan Ernst
+- name: Mike McCandless
+- name: Robert Muir
+links:
+- name: SOLR-4761
+  url: https://issues.apache.org/jira/browse/SOLR-4761
+- name: SOLR-4976
+  url: https://issues.apache.org/jira/browse/SOLR-4976

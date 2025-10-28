@@ -1,0 +1,9 @@
+title: Make the processing of Collection API calls multi-threaded.
+type: changed
+authors:
+- name: Anshum Gupta
+- name: shalin
+- name: Noble Paul
+links:
+- name: SOLR-5681
+  url: https://issues.apache.org/jira/browse/SOLR-5681

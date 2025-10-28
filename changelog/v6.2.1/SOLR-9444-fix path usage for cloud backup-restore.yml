@@ -1,0 +1,9 @@
+title: Fix path usage for cloud backup/restore.
+type: fixed
+authors:
+- name: Hrishikesh Gadre
+- name: Uwe Schindler
+- name: Varun Thacker
+links:
+- name: SOLR-9444
+  url: https://issues.apache.org/jira/browse/SOLR-9444

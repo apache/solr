@@ -1,0 +1,6 @@
+title: Create/delete fields/dynamic fields/copy fields via schema tab on Angular UI
+type: added
+authors: []
+links:
+- name: SOLR-8139
+  url: https://issues.apache.org/jira/browse/SOLR-8139

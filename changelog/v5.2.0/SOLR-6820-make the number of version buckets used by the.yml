@@ -1,0 +1,12 @@
+title: Make the number of version buckets used by the UpdateLog configurable as increasing
+  beyond the default 256 has been shown to help with high volume indexing performance
+  in SolrCloud; helps overcome a limitation where Lucene uses the request thread to
+  perform expensive index housekeeping work.
+type: other
+authors:
+- name: Mark Miller
+- name: yonik
+- name: Timothy Potter
+links:
+- name: SOLR-6820
+  url: https://issues.apache.org/jira/browse/SOLR-6820

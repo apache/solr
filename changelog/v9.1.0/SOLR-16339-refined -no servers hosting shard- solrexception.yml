@@ -1,0 +1,7 @@
+title: Refined "no servers hosting shard" SolrException wording.
+type: other
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-16339
+  url: https://issues.apache.org/jira/browse/SOLR-16339

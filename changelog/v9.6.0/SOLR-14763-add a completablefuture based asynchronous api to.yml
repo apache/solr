@@ -1,0 +1,9 @@
+title: Add a CompletableFuture based asynchronous API to Http2SolrClient, HttpJdkSolrClient
+  and LBHttp2SolrClient. The previous asynchronous API is deprecated.
+type: changed
+authors:
+- name: Rishi Sankar
+- name: James Dyer
+links:
+- name: SOLR-14763
+  url: https://issues.apache.org/jira/browse/SOLR-14763

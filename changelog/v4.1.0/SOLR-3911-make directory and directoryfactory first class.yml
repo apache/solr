@@ -1,0 +1,21 @@
+title: 'Make Directory and DirectoryFactory first class so that the majority of Solr''s
+  features work with any custom implementations. (Mark Miller) Additional Work: -
+  SOLR-4032: Files larger than an internal buffer size fail to replicate. (Mark Miller,
+  Markus Jelsma) - SOLR-4033: Consistently use the solrconfig.xml lockType everywhere.
+  (Mark Miller, Markus Jelsma) - SOLR-4144: Replication using too much RAM. (yonik,
+  Markus Jelsma) - SOLR-4187: NPE on Directory release'
+type: added
+authors:
+- name: Mark Miller
+- name: Markus Jelsma
+links:
+- name: SOLR-3911
+  url: https://issues.apache.org/jira/browse/SOLR-3911
+- name: SOLR-4032
+  url: https://issues.apache.org/jira/browse/SOLR-4032
+- name: SOLR-4033
+  url: https://issues.apache.org/jira/browse/SOLR-4033
+- name: SOLR-4144
+  url: https://issues.apache.org/jira/browse/SOLR-4144
+- name: SOLR-4187
+  url: https://issues.apache.org/jira/browse/SOLR-4187

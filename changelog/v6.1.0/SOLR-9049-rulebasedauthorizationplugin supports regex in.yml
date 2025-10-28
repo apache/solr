@@ -1,0 +1,8 @@
+title: 'RuleBasedAuthorizationPlugin supports regex in param values eg: "command"
+  : "REGEX:(i?)create"'
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-9049
+  url: https://issues.apache.org/jira/browse/SOLR-9049

@@ -1,0 +1,8 @@
+title: CoreContainer#remove throws NPE rather than returning null when a SolrCore
+  does not exist in core discovery mode.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5494
+  url: https://issues.apache.org/jira/browse/SOLR-5494

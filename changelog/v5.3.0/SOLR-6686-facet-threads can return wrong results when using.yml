@@ -1,0 +1,9 @@
+title: facet.threads can return wrong results when using facet.prefix multiple times
+  on same field.
+type: fixed
+authors:
+- name: Michael Ryan
+- name: Tim Underwood
+links:
+- name: SOLR-6686
+  url: https://issues.apache.org/jira/browse/SOLR-6686

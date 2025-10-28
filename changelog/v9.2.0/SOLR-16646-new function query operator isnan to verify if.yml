@@ -1,0 +1,7 @@
+title: New function query operator isnan to verify if value is NaN
+type: added
+authors:
+- name: Gabriel Magno
+links:
+- name: SOLR-16646
+  url: https://issues.apache.org/jira/browse/SOLR-16646

@@ -1,0 +1,9 @@
+title: bin/solr's '-noprompt' option no longer works for examples
+type: fixed
+authors:
+- name: hossman
+- name: janhoy
+- name: Houston Putman
+links:
+- name: SOLR-16755
+  url: https://issues.apache.org/jira/browse/SOLR-16755

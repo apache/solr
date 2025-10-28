@@ -1,0 +1,9 @@
+title: The default value of `autoReplicaFailoverWaitAfterExpiration` has been increased
+  to 120 seconds from the earlier default of 30 seconds. This affects how soon Solr
+  adds new replicas to replace the replicas on nodes which have either crashed or
+  shutdown.
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-12067
+  url: https://issues.apache.org/jira/browse/SOLR-12067

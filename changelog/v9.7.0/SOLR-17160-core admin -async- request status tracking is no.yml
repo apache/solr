@@ -1,0 +1,10 @@
+title: Core Admin "async" request status tracking is no longer capped at 100; it's
+  10k. Statuses are now removed 5 minutes after the read of a completed/failed status.
+  Helps collection async backup/restore and other operations scale to 100+ shards.
+type: changed
+authors:
+- name: Pierre Salagnac
+- name: David Smiley
+links:
+- name: SOLR-17160
+  url: https://issues.apache.org/jira/browse/SOLR-17160

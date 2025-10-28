@@ -1,0 +1,9 @@
+title: TimeRoutedAlias URP now auto-creates new collections on the fly according to
+  alias metadata rules that sets the time interval for each collection. An internal
+  Overseer command "ROUTEDALIAS_CREATECOLL" was created to facilitate this.
+type: added
+authors:
+- name: David Smiley
+links:
+- name: SOLR-11653
+  url: https://issues.apache.org/jira/browse/SOLR-11653

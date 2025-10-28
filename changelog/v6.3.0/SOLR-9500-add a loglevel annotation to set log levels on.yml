@@ -1,0 +1,7 @@
+title: Add a LogLevel annotation to set log levels on specific tests
+type: other
+authors:
+- name: "Alan\n  Woodward"
+links:
+- name: SOLR-9500
+  url: https://issues.apache.org/jira/browse/SOLR-9500

@@ -1,0 +1,9 @@
+title: Apply highlighting to hl.alternateField by default for Default and FastVectorHighlighter.
+  Turn off with hl.highlightAlternate=false
+type: added
+authors:
+- name: janhoy
+- name: David Smiley
+links:
+- name: SOLR-8583
+  url: https://issues.apache.org/jira/browse/SOLR-8583

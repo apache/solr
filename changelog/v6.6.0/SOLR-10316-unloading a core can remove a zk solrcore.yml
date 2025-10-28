@@ -1,0 +1,8 @@
+title: Unloading a core can remove a ZK SolrCore registration entry for the wrong
+  SolrCore.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-10316
+  url: https://issues.apache.org/jira/browse/SOLR-10316

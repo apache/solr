@@ -1,0 +1,7 @@
+title: Simplify verbose MatcherAssert.assertThat usage in tests
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-17217
+  url: https://issues.apache.org/jira/browse/SOLR-17217

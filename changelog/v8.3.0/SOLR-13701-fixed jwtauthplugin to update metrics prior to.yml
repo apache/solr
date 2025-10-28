@@ -1,0 +1,8 @@
+title: Fixed JWTAuthPlugin to update metrics prior to continuing w/other filters or
+  returning error
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-13701
+  url: https://issues.apache.org/jira/browse/SOLR-13701

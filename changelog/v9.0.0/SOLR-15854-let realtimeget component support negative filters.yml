@@ -1,0 +1,7 @@
+title: Let RealtimeGet component support negative filters
+type: fixed
+authors:
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-15854
+  url: https://issues.apache.org/jira/browse/SOLR-15854

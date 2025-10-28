@@ -1,0 +1,9 @@
+title: A trailing + or - caused the edismax parser to throw an exception.
+type: fixed
+authors:
+- name: Fiona Tay
+- name: Jan Høydahl
+- name: yonik
+links:
+- name: SOLR-4480
+  url: https://issues.apache.org/jira/browse/SOLR-4480

@@ -1,0 +1,8 @@
+title: Real-time get sometimes fails to retrieve stored fields from docValues.
+type: fixed
+authors:
+- name: Ishan Chattopadhyaya
+- name: yonik
+links:
+- name: SOLR-8865
+  url: https://issues.apache.org/jira/browse/SOLR-8865

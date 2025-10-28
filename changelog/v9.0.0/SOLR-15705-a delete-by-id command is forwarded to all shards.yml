@@ -1,0 +1,10 @@
+title: A delete-by-id command is forwarded to all shards when using the CompositeId
+  router with a router field and the route is missing from the command.
+type: changed
+authors:
+- name: Michael Kosten
+- name: David Smiley
+- name: Eric Pugh
+links:
+- name: SOLR-15705
+  url: https://issues.apache.org/jira/browse/SOLR-15705

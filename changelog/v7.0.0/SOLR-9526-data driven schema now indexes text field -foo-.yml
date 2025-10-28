@@ -1,0 +1,22 @@
+title: Data driven schema now indexes text field "foo" as both "foo" (text_general)
+  and as "foo_str" (string) to facilitate both search and faceting. AddSchemaFieldsUpdateProcessor
+  now has the ability to add a "copyField" to the type mappings, with an optional
+  maxChars limitation. You can also define one typeMappings as default. This also
+  solves issues SOLR-8495, SOLR-6966, and SOLR-7058
+type: added
+authors:
+- name: janhoy
+- name: Steve Rowe
+- name: hossman
+- name: Alexandre Rafalovitch
+- name: Shawn Heisey
+- name: Cao Manh Dat
+links:
+- name: SOLR-9526
+  url: https://issues.apache.org/jira/browse/SOLR-9526
+- name: SOLR-8495
+  url: https://issues.apache.org/jira/browse/SOLR-8495
+- name: SOLR-6966
+  url: https://issues.apache.org/jira/browse/SOLR-6966
+- name: SOLR-7058
+  url: https://issues.apache.org/jira/browse/SOLR-7058

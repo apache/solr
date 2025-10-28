@@ -1,0 +1,7 @@
+title: Fix NullPointerException in QueryComponent
+type: fixed
+authors:
+- name: Vincent Primault
+links:
+- name: SOLR-17209
+  url: https://issues.apache.org/jira/browse/SOLR-17209

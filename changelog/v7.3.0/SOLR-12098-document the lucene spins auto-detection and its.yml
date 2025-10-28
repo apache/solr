@@ -1,0 +1,8 @@
+title: Document the Lucene spins auto-detection and its effect on CMS dynamic defaults.
+type: other
+authors:
+- name: Cassandra Targett
+- name: shalin
+links:
+- name: SOLR-12098
+  url: https://issues.apache.org/jira/browse/SOLR-12098

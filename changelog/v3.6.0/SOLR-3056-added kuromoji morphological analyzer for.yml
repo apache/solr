@@ -1,0 +1,11 @@
+title: Added Kuromoji morphological analyzer for Japanese. See the 'text_ja' fieldtype
+  in the example to get started.
+type: added
+authors:
+- name: Christian Moen
+- name: Masaru Hasegawa
+links:
+- name: LUCENE-3305
+  url: https://issues.apache.org/jira/browse/LUCENE-3305
+- name: SOLR-3056
+  url: https://issues.apache.org/jira/browse/SOLR-3056

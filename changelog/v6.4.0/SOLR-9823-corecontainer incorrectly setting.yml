@@ -1,0 +1,7 @@
+title: CoreContainer incorrectly setting MDCLoggingContext for core
+type: fixed
+authors:
+- name: Jessica Cheng Mallet
+links:
+- name: SOLR-9823
+  url: https://issues.apache.org/jira/browse/SOLR-9823

@@ -1,0 +1,8 @@
+title: Avoid weird off-by-one errors with Angular's 'chosen' select box directive
+  for the security and schema-designer screens in Admin UI
+type: fixed
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-15774
+  url: https://issues.apache.org/jira/browse/SOLR-15774

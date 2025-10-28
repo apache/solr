@@ -1,0 +1,9 @@
+title: SolrCLI should check for existence before creating a new core/collection, more
+  user-friendly error reporting (no stack trace), and the ability to pass a directory
+  when using bin/solr to create a core or collection
+type: other
+authors:
+- name: Timothy Potter
+links:
+- name: SOLR-6867
+  url: https://issues.apache.org/jira/browse/SOLR-6867

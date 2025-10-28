@@ -1,0 +1,8 @@
+title: By default slave doesn't commit empty index when completely new index appears
+  on master. See Upgrade Notes to find a way to get back to the previous behavior.
+type: fixed
+authors:
+- name: Mikhail Khludnev
+links:
+- name: SOLR-11673
+  url: https://issues.apache.org/jira/browse/SOLR-11673

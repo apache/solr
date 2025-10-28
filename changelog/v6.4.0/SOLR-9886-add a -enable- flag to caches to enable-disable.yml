@@ -1,0 +1,8 @@
+title: Add a 'enable' flag to caches to enable/disable them
+type: added
+authors:
+- name: Pushkar Raste
+- name: noble
+links:
+- name: SOLR-9886
+  url: https://issues.apache.org/jira/browse/SOLR-9886

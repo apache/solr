@@ -1,0 +1,8 @@
+title: Introduce support for k nearest neighbors search
+type: added
+authors:
+- name: Alessandro Benedetti
+- name: Elia Porciani
+links:
+- name: SOLR-15880
+  url: https://issues.apache.org/jira/browse/SOLR-15880

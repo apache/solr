@@ -1,0 +1,11 @@
+title: Scope ZK election nodes by session to prevent elections from interfering with
+  each other and other small LeaderElector improvements.
+type: fixed
+authors:
+- name: Scott Blum
+- name: "Alan\n  Woodward"
+links:
+- name: SOLR-8697
+  url: https://issues.apache.org/jira/browse/SOLR-8697
+- name: SOLR-8837
+  url: https://issues.apache.org/jira/browse/SOLR-8837

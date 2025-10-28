@@ -1,0 +1,8 @@
+title: Update processors can now be top-level components and they can be specified
+  in request to create a new custom update chain
+type: added
+authors:
+- name: Noble Paul
+links:
+- name: SOLR-6892
+  url: https://issues.apache.org/jira/browse/SOLR-6892

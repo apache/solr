@@ -1,0 +1,8 @@
+title: New OpenTelemetry (OTEL) module with OTLP/gRPC trace exporter. See ref.guide.
+type: added
+authors:
+- name: janhoy
+- name: David Smiley
+links:
+- name: SOLR-16532
+  url: https://issues.apache.org/jira/browse/SOLR-16532

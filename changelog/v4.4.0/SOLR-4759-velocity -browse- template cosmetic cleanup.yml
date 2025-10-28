@@ -1,0 +1,8 @@
+title: Velocity (/browse) template cosmetic cleanup.
+type: other
+authors:
+- name: Mark Bennett
+- name: ehatcher
+links:
+- name: SOLR-4759
+  url: https://issues.apache.org/jira/browse/SOLR-4759

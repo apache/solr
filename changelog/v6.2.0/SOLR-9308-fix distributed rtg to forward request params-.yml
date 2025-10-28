@@ -1,0 +1,8 @@
+title: Fix distributed RTG to forward request params, fixes fq and non-default fl
+  params
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-9308
+  url: https://issues.apache.org/jira/browse/SOLR-9308

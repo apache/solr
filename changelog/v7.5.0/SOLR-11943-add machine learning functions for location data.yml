@@ -1,0 +1,7 @@
+title: Add machine learning functions for location data
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-11943
+  url: https://issues.apache.org/jira/browse/SOLR-11943

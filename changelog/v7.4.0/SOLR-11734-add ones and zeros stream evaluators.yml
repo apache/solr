@@ -1,0 +1,7 @@
+title: Add ones and zeros Stream Evaluators
+type: added
+authors:
+- name: Joel Bernstein
+links:
+- name: SOLR-11734
+  url: https://issues.apache.org/jira/browse/SOLR-11734

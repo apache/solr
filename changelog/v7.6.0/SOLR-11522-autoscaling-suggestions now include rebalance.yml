@@ -1,0 +1,8 @@
+title: /autoscaling/suggestions now include rebalance options as well even if there
+  are no violations
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-11522
+  url: https://issues.apache.org/jira/browse/SOLR-11522

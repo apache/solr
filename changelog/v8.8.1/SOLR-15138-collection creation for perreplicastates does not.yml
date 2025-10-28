@@ -1,0 +1,11 @@
+title: Collection creation for PerReplicaStates does not scale to large collections
+  as well as regular collections
+type: fixed
+authors:
+- name: Mike Drob
+- name: Ilan Ginzburg
+- name: noble
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-15138
+  url: https://issues.apache.org/jira/browse/SOLR-15138

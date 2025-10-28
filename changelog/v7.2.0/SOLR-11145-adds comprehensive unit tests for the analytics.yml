@@ -1,0 +1,7 @@
+title: Adds comprehensive unit tests for the Analytics Component v2
+type: other
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-11145
+  url: https://issues.apache.org/jira/browse/SOLR-11145

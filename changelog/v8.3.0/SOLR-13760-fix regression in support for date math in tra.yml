@@ -1,0 +1,9 @@
+title: Fix regression in support for Date math in TRA start date that was introduced
+  by SOLR-13375
+type: fixed
+authors: []
+links:
+- name: SOLR-13760
+  url: https://issues.apache.org/jira/browse/SOLR-13760
+- name: SOLR-13375
+  url: https://issues.apache.org/jira/browse/SOLR-13375

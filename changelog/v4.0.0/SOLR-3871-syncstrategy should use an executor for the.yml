@@ -1,0 +1,7 @@
+title: SyncStrategy should use an executor for the threads it creates to request recoveries.
+type: other
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-3871
+  url: https://issues.apache.org/jira/browse/SOLR-3871

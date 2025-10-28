@@ -1,0 +1,9 @@
+title: Pooled SSL connections were not being re-used
+type: fixed
+authors:
+- name: Alan Woodward
+- name: Mikhail Khludnev
+- name: hossman
+links:
+- name: SOLR-9604
+  url: https://issues.apache.org/jira/browse/SOLR-9604

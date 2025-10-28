@@ -1,0 +1,8 @@
+title: Solr collection backup on HDFS can only be manipulated by the Solr process
+  owner.
+type: fixed
+authors:
+- name: Hrishikesh Gadre
+links:
+- name: SOLR-9441
+  url: https://issues.apache.org/jira/browse/SOLR-9441

@@ -1,0 +1,10 @@
+title: The response format has changed slightly for ReplicationHandler error-cases.
+  All errors now have a non-200 'status' field, a 'message' field giving more details
+  on the error, and an optional 'exception' field.
+type: changed
+authors:
+- name: Shalin Mangar
+- name: Jason Gerlowski
+links:
+- name: SOLR-6117
+  url: https://issues.apache.org/jira/browse/SOLR-6117

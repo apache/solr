@@ -1,0 +1,8 @@
+title: Make DocSet implement Accountable to estimate memory usage.
+type: other
+authors:
+- name: yonik
+- name: shalin
+links:
+- name: SOLR-7371
+  url: https://issues.apache.org/jira/browse/SOLR-7371

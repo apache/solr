@@ -1,0 +1,8 @@
+title: Fix typos in org.apache.solr.core package
+type: other
+authors:
+- name: Andrey Bozhko
+- name: Marcus Eagan
+links:
+- name: PR#1629
+  url: https://github.com/apache/solr/pull/1629

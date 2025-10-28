@@ -1,0 +1,8 @@
+title: Multiple CopyField should not limit to first maxChars
+type: fixed
+authors:
+- name: Fredrik Rodland
+- name: Kevin Risden
+links:
+- name: SOLR-16502
+  url: https://issues.apache.org/jira/browse/SOLR-16502

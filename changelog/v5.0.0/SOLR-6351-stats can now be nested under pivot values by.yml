@@ -1,0 +1,10 @@
+title: Stats can now be nested under pivot values by adding a 'stats' local param
+  to facet.pivot which refers to a 'tag' local param in one or more stats.field params.
+type: added
+authors:
+- name: hossman
+- name: Vitaliy Zhovtyuk
+- name: Steve Molloy
+links:
+- name: SOLR-6351
+  url: https://issues.apache.org/jira/browse/SOLR-6351

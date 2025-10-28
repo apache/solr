@@ -1,0 +1,7 @@
+title: Migrate remaining managed-schema files to be managed-schema.xml.
+type: other
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-16331
+  url: https://issues.apache.org/jira/browse/SOLR-16331

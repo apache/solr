@@ -1,0 +1,8 @@
+title: 'An #EQUAL function for replica in autoscaling policy to equally distribute
+  replicas'
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-12495
+  url: https://issues.apache.org/jira/browse/SOLR-12495

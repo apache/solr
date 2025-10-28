@@ -1,0 +1,8 @@
+title: Solr fails to start on Windows with obscure errors when using relative path.
+type: fixed
+authors:
+- name: Alexandre Rafalovitch
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-8073
+  url: https://issues.apache.org/jira/browse/SOLR-8073

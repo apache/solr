@@ -1,0 +1,9 @@
+title: Socket and Connection configuration are ignored in HttpSolrServer when passing
+  in HttpClient.
+type: fixed
+authors:
+- name: Patanachai Tangchaisin
+- name: shalin
+links:
+- name: SOLR-6245
+  url: https://issues.apache.org/jira/browse/SOLR-6245

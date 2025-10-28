@@ -1,0 +1,12 @@
+title: Solr now uses Log4J 2.11 . The log4j configuration is now in log4j2.xml rather
+  than log4j.properties files. This is a server side change only and clients using
+  SolrJ won't need any changes. Clients can still use any logging implementation which
+  is compatible with SLF4J. We now let log4j2 handle rotation of solr logs at startup,
+  and bin/solr start scripts will no longer attempt this nor move existing console
+  or GC logs into logs/archived either
+type: upgrade_notes
+authors:
+- name: SOLR-12144
+links:
+- name: SOLR-7887
+  url: https://issues.apache.org/jira/browse/SOLR-7887

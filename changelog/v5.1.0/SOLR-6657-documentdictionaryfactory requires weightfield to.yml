@@ -1,0 +1,7 @@
+title: DocumentDictionaryFactory requires weightField to be mandatory, but it shouldn't
+type: fixed
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-6657
+  url: https://issues.apache.org/jira/browse/SOLR-6657

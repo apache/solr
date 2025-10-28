@@ -1,0 +1,9 @@
+title: Support async parameter in MODIFYCOLLECTION
+type: fixed
+authors:
+- name: Nazerke Seidan
+- name: Christine Poerschke
+- name: David Smiley
+links:
+- name: SOLR-15311
+  url: https://issues.apache.org/jira/browse/SOLR-15311

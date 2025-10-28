@@ -1,0 +1,8 @@
+title: Fix duplicates issue in Atomic updates with add-distinct
+type: fixed
+authors:
+- name: Thomas Corthals
+- name: Munendra S N
+links:
+- name: SOLR-14550
+  url: https://issues.apache.org/jira/browse/SOLR-14550

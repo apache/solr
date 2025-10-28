@@ -1,0 +1,7 @@
+title: Move JWT Authentication plugin to module 'jwt-auth'
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-15907
+  url: https://issues.apache.org/jira/browse/SOLR-15907

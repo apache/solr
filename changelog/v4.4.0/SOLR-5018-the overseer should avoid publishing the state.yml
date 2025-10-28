@@ -1,0 +1,8 @@
+title: The Overseer should avoid publishing the state for collections that do not
+  exist under the /collections zk node.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-5018
+  url: https://issues.apache.org/jira/browse/SOLR-5018

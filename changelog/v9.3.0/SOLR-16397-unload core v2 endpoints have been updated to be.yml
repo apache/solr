@@ -1,0 +1,8 @@
+title: Unload core v2 endpoints have been updated to be more REST-ful. UNLOAD is now
+  available at `POST /api/cores/coreName/unload`
+type: changed
+authors:
+- name: Sanjay Dutt
+links:
+- name: SOLR-16397
+  url: https://issues.apache.org/jira/browse/SOLR-16397

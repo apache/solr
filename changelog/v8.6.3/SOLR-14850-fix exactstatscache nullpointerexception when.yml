@@ -1,0 +1,7 @@
+title: Fix ExactStatsCache NullPointerException when shards.tolerant=true.
+type: fixed
+authors:
+- name: Yevhen Tienkaiev
+links:
+- name: SOLR-14850
+  url: https://issues.apache.org/jira/browse/SOLR-14850

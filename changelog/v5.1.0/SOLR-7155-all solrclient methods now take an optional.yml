@@ -1,0 +1,10 @@
+title: All SolrClient methods now take an optional 'collection' argument
+type: added
+authors:
+- name: Alan Woodward
+- name: Shawn Heisey
+links:
+- name: SOLR-7155
+  url: https://issues.apache.org/jira/browse/SOLR-7155
+- name: SOLR-7201
+  url: https://issues.apache.org/jira/browse/SOLR-7201

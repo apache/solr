@@ -1,0 +1,7 @@
+title: The javadoc of RandomSortField is not readable
+type: other
+authors:
+- name: Nicolas Lalevée
+links:
+- name: SOLR-789
+  url: https://issues.apache.org/jira/browse/SOLR-789

@@ -1,0 +1,9 @@
+title: The IgnoreCommitOptimizeUpdateProcessor blocks commit requests from replicas
+  needing to recover.
+type: fixed
+authors:
+- name: Jessica Cheng Mallet
+- name: Timothy Potter
+links:
+- name: SOLR-7266
+  url: https://issues.apache.org/jira/browse/SOLR-7266

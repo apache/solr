@@ -1,0 +1,7 @@
+title: Fix contrib/ltr custom inner class feature/normaliser/model persistence.
+type: fixed
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-11931
+  url: https://issues.apache.org/jira/browse/SOLR-11931

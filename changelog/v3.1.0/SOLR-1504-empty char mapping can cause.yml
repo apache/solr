@@ -1,0 +1,8 @@
+title: empty char mapping can cause ArrayIndexOutOfBoundsException in analysis.jsp
+  and co.
+type: fixed
+authors:
+- name: koji
+links:
+- name: SOLR-1504
+  url: https://issues.apache.org/jira/browse/SOLR-1504

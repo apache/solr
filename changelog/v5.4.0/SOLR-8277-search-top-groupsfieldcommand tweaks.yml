@@ -1,0 +1,7 @@
+title: (Search|Top)GroupsFieldCommand tweaks
+type: other
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-8277
+  url: https://issues.apache.org/jira/browse/SOLR-8277

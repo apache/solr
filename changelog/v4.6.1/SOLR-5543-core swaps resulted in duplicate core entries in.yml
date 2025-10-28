@@ -1,0 +1,9 @@
+title: Core swaps resulted in duplicate core entries in solr.xml when using solr.xml
+  persistence.
+type: fixed
+authors:
+- name: Bill Bell
+- name: Alan Woodward
+links:
+- name: SOLR-5543
+  url: https://issues.apache.org/jira/browse/SOLR-5543

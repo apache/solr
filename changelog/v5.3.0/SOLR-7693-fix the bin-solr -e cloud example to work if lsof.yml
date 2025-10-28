@@ -1,0 +1,9 @@
+title: Fix the bin/solr -e cloud example to work if lsof is not installed on the local
+  machine by waiting for 10 seconds before starting the second node.
+type: fixed
+authors:
+- name: hossman
+- name: Timothy Potter
+links:
+- name: SOLR-7693
+  url: https://issues.apache.org/jira/browse/SOLR-7693

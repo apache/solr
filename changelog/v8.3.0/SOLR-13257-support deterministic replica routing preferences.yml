@@ -1,0 +1,8 @@
+title: Support deterministic replica routing preferences for better cache usage
+type: added
+authors:
+- name: Michael Gibney
+- name: Tomás Fernández Löbbe
+links:
+- name: SOLR-13257
+  url: https://issues.apache.org/jira/browse/SOLR-13257

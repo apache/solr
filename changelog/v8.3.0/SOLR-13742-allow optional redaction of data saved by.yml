@@ -1,0 +1,7 @@
+title: Allow optional redaction of data saved by 'bin/solr autoscaling -save'.
+type: changed
+authors:
+- name: ab
+links:
+- name: SOLR-13742
+  url: https://issues.apache.org/jira/browse/SOLR-13742

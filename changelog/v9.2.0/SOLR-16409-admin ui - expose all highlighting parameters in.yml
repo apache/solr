@@ -1,0 +1,7 @@
+title: Admin UI - Expose all highlighting parameters in the Query UI
+type: added
+authors:
+- name: Jeanie Lam
+links:
+- name: SOLR-16409
+  url: https://issues.apache.org/jira/browse/SOLR-16409

@@ -1,0 +1,8 @@
+title: update permissions were failing node recovery
+type: fixed
+authors:
+- name: noble
+- name: Anshum Gupta
+links:
+- name: SOLR-8355
+  url: https://issues.apache.org/jira/browse/SOLR-8355

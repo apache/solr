@@ -1,0 +1,8 @@
+title: 500 error code on breaching timeAllowed by core and distributed (fsv) search,
+  old and json facets
+type: fixed
+authors:
+- name: Mikhail Khludnev
+links:
+- name: SOLR-9882
+  url: https://issues.apache.org/jira/browse/SOLR-9882

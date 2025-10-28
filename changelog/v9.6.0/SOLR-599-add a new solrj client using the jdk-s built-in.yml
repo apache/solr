@@ -1,0 +1,7 @@
+title: Add a new SolrJ client using the JDK’s built-in Http Client.
+type: added
+authors:
+- name: James Dyer
+links:
+- name: SOLR-599
+  url: https://issues.apache.org/jira/browse/SOLR-599

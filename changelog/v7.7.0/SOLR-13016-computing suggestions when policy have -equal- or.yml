@@ -1,0 +1,7 @@
+title: Computing suggestions when policy have "#EQUAL" or "#ALL" rules take too long
+type: changed
+authors:
+- name: noble
+links:
+- name: SOLR-13016
+  url: https://issues.apache.org/jira/browse/SOLR-13016

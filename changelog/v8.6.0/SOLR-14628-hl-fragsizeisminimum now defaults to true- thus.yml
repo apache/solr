@@ -1,0 +1,9 @@
+title: hl.fragsizeIsMinimum now defaults to true, thus fragments size like previous
+  to Solr 8.5 and addresses a significant performance regression.
+type: fixed
+authors:
+- name: David Smiley
+- name: Michal Hlavac
+links:
+- name: SOLR-14628
+  url: https://issues.apache.org/jira/browse/SOLR-14628

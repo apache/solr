@@ -1,0 +1,8 @@
+title: Support Facet.field on a non-DocValued, single-value, int field
+type: fixed
+authors:
+- name: Varun Thacker
+- name: Scott Stults
+links:
+- name: SOLR-7495
+  url: https://issues.apache.org/jira/browse/SOLR-7495

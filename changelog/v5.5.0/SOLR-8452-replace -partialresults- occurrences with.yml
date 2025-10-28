@@ -1,0 +1,7 @@
+title: replace "partialResults" occurrences with SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
+type: other
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-8452
+  url: https://issues.apache.org/jira/browse/SOLR-8452

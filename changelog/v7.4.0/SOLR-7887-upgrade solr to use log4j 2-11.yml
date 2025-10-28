@@ -1,0 +1,12 @@
+title: Upgrade Solr to use Log4J 2.11
+type: added
+authors:
+- name: Tim Potter
+- name: Keith Laban
+- name: Shawn Heisey
+- name: Ralph Goers
+- name: Erick Erickson
+- name: Varun Thacker
+links:
+- name: SOLR-7887
+  url: https://issues.apache.org/jira/browse/SOLR-7887

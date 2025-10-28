@@ -1,0 +1,9 @@
+title: Dynamically add fields to schema.
+type: added
+authors:
+- name: Steve Rowe
+- name: Robert Muir
+- name: yonik
+links:
+- name: SOLR-3251
+  url: https://issues.apache.org/jira/browse/SOLR-3251

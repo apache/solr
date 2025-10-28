@@ -1,0 +1,9 @@
+title: Allow fromIndex parameter to JoinQParserPlugin to refer to a single-sharded
+  collection that has a replica on all nodes where there is a replica in the to index
+type: added
+authors:
+- name: Jack Lo
+- name: Timothy Potter
+links:
+- name: SOLR-4905
+  url: https://issues.apache.org/jira/browse/SOLR-4905

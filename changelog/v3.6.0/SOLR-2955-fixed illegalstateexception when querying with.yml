@@ -1,0 +1,9 @@
+title: Fixed IllegalStateException when querying with group.sort=score desc in sharded
+  environment.
+type: fixed
+authors:
+- name: Steffen Elberg Godskesen
+- name: Martijn van Groningen
+links:
+- name: SOLR-2955
+  url: https://issues.apache.org/jira/browse/SOLR-2955

@@ -1,0 +1,9 @@
+title: 'The configuration file for log4j2.xml is now in ../server/resources/log4j2.xml.
+  All other copies have been removed. WINDOWS USERS: This JIRA corrects a bug in the
+  start scripts that put example logs under ...\server, solr.log is now under ...\example.'
+type: upgrade_notes
+authors:
+- name: Erick Erickson
+links:
+- name: SOLR-12008
+  url: https://issues.apache.org/jira/browse/SOLR-12008

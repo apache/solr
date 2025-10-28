@@ -1,0 +1,8 @@
+title: Added StatsComponentTest
+type: other
+authors:
+- name: Rafał Kuć
+- name: gsingers
+links:
+- name: SOLR-1276
+  url: https://issues.apache.org/jira/browse/SOLR-1276

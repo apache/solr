@@ -1,0 +1,8 @@
+title: SolrParams.toMultiMap() does not handle arrays
+type: fixed
+authors:
+- name: Thomas Scheffler
+- name: Noble Paul
+links:
+- name: SOLR-7508
+  url: https://issues.apache.org/jira/browse/SOLR-7508

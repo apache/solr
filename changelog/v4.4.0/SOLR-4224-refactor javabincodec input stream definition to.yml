@@ -1,0 +1,7 @@
+title: Refactor JavaBinCodec input stream definition to enhance reuse.
+type: other
+authors:
+- name: phunt
+links:
+- name: SOLR-4224
+  url: https://issues.apache.org/jira/browse/SOLR-4224

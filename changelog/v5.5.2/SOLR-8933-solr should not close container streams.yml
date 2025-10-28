@@ -1,0 +1,9 @@
+title: Solr should not close container streams.
+type: other
+authors:
+- name: Mike Drob
+- name: Uwe Schindler
+- name: Mark Miller
+links:
+- name: SOLR-8933
+  url: https://issues.apache.org/jira/browse/SOLR-8933

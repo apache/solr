@@ -1,0 +1,11 @@
+title: Solr's schema now uses DelegatingAnalyzerWrapper. This uses less heap for cached
+  TokenStreamComponents because it caches per FieldType not per Field, so indexes
+  with many fields of same type just use one TokenStream per thread.
+type: changed
+authors:
+- name: Shay Banon
+- name: Uwe Schindler
+- name: Robert Muir
+links:
+- name: LUCENE-5803
+  url: https://issues.apache.org/jira/browse/LUCENE-5803

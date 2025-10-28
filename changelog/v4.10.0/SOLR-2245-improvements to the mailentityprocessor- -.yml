@@ -1,0 +1,11 @@
+title: 'Improvements to the MailEntityProcessor: - Support for server-side date filtering
+  if using GMail; requires new dependency on the Sun Gmail Java mail extensions -
+  Support for using the last_index_time from the previous run as the value for the
+  fetchMailsSince filter.'
+type: added
+authors:
+- name: Peter Sturge
+- name: Timothy Potter
+links:
+- name: SOLR-2245
+  url: https://issues.apache.org/jira/browse/SOLR-2245

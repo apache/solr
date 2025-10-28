@@ -1,0 +1,8 @@
+title: Solr eats OutOfMemoryError exceptions in many cases.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Daniel Collins
+links:
+- name: SOLR-4992
+  url: https://issues.apache.org/jira/browse/SOLR-4992

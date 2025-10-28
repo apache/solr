@@ -1,0 +1,9 @@
+title: We should use System.nanoTime rather than System.currentTimeMillis when calculating
+  elapsed time.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Ramkumar Aiyengar
+links:
+- name: SOLR-5734
+  url: https://issues.apache.org/jira/browse/SOLR-5734

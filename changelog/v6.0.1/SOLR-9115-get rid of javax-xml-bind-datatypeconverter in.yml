@@ -1,0 +1,7 @@
+title: Get rid of javax.xml.bind.DatatypeConverter in SimplePostTool for Java 9 compatibility.
+type: other
+authors:
+- name: Uwe Schindler
+links:
+- name: SOLR-9115
+  url: https://issues.apache.org/jira/browse/SOLR-9115

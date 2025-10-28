@@ -1,0 +1,8 @@
+title: SolrIndexSearcher.getIndexFingerprint uses dubious synchronization
+type: fixed
+authors:
+- name: Mike Drob
+- name: noble
+links:
+- name: SOLR-9524
+  url: https://issues.apache.org/jira/browse/SOLR-9524

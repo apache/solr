@@ -1,0 +1,7 @@
+title: HDFSSyncSliceTest and SyncSliceTest started failing frequently
+type: other
+authors:
+- name: Kevin Risden
+links:
+- name: SOLR-13886
+  url: https://issues.apache.org/jira/browse/SOLR-13886

@@ -1,0 +1,12 @@
+title: 'Various log tidying now happens at Solr startup: Old solr_log_&lt;date&gt;
+  and solr_gc_log_&lt;date&gt; files are removed, avoiding disks to fill up, solr.log.X
+  files are rotated, preserving solr.log from last run in solr.log.1, solr.log.1 =&gt;
+  solr.log.2 etc solr-*-console.log files are moved into $SOLR_LOGS_DIR/archived/
+  instead of being overwritten Last JVM garbage collection log solr_gc.log is moved
+  into $SOLR_LOGS_DIR/archived/'
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-9570
+  url: https://issues.apache.org/jira/browse/SOLR-9570

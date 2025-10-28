@@ -1,0 +1,8 @@
+title: disambiguate the replication command names. 'snappull' becomes 'fetchindex'
+  'abortsnappull' becomes 'abortfetch'
+type: added
+authors:
+- name: noble
+links:
+- name: SOLR-1216
+  url: https://issues.apache.org/jira/browse/SOLR-1216

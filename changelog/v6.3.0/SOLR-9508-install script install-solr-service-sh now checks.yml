@@ -1,0 +1,8 @@
+title: Install script install_solr_service.sh now checks existence of tools. New option
+  -n to avoid starting service after installation
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-9508
+  url: https://issues.apache.org/jira/browse/SOLR-9508

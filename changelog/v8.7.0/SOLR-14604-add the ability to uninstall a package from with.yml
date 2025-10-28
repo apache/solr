@@ -1,0 +1,7 @@
+title: Add the ability to uninstall a package from with the Package CLI.
+type: added
+authors:
+- name: MarcusSorealheis
+links:
+- name: SOLR-14604
+  url: https://issues.apache.org/jira/browse/SOLR-14604

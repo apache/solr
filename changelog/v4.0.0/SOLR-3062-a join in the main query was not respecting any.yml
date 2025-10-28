@@ -1,0 +1,11 @@
+title: A join in the main query was not respecting any filters pushed down to it via
+  acceptDocs since LUCENE-1536.
+type: fixed
+authors:
+- name: Mike Hugo
+- name: yonik
+links:
+- name: SOLR-3062
+  url: https://issues.apache.org/jira/browse/SOLR-3062
+- name: LUCENE-1536
+  url: https://issues.apache.org/jira/browse/LUCENE-1536

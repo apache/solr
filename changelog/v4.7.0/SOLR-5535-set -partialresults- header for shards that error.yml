@@ -1,0 +1,8 @@
+title: Set "partialResults" header for shards that error out if shards.tolerant is
+  specified.
+type: added
+authors:
+- name: Steve Davids
+links:
+- name: SOLR-5535
+  url: https://issues.apache.org/jira/browse/SOLR-5535

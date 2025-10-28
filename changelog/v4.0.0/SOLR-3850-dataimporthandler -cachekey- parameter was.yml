@@ -1,0 +1,7 @@
+title: DataImportHandler "cacheKey" parameter was incorrectly renamed "cachePk"
+type: fixed
+authors:
+- name: James Dyer
+links:
+- name: SOLR-3850
+  url: https://issues.apache.org/jira/browse/SOLR-3850

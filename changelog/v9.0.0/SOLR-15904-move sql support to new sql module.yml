@@ -1,0 +1,7 @@
+title: Move SQL support to new sql module
+type: added
+authors:
+- name: Kevin Risden
+links:
+- name: SOLR-15904
+  url: https://issues.apache.org/jira/browse/SOLR-15904

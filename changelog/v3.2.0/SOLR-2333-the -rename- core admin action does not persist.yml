@@ -1,0 +1,8 @@
+title: The "rename" core admin action does not persist the new name to solr.xml
+type: fixed
+authors:
+- name: Rasmus Hahn
+- name: Paul R. Brown
+links:
+- name: SOLR-2333
+  url: https://issues.apache.org/jira/browse/SOLR-2333

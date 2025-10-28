@@ -1,0 +1,8 @@
+title: HdfsLock may fail to close a FileSystem instance if it cannot immediately obtain
+  an index lock.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-8015
+  url: https://issues.apache.org/jira/browse/SOLR-8015

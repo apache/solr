@@ -1,0 +1,11 @@
+title: Add support for arbitrary ranges in JSON facet's Range facets.
+type: added
+authors:
+- name: Apoorv Bhawsar
+- name: Munendra S N
+- name: Mikhail Khludnev
+- name: Ishan Chattopadhyaya
+- name: Jan Høydahl
+links:
+- name: SOLR-13272
+  url: https://issues.apache.org/jira/browse/SOLR-13272

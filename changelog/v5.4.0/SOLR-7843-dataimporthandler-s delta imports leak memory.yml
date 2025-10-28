@@ -1,0 +1,8 @@
+title: DataImportHandler's delta imports leak memory because the delta keys are kept
+  in memory and not cleared after the process is finished.
+type: fixed
+authors:
+- name: Pablo Lozano
+links:
+- name: SOLR-7843
+  url: https://issues.apache.org/jira/browse/SOLR-7843

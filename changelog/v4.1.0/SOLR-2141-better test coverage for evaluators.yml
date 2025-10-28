@@ -1,0 +1,7 @@
+title: Better test coverage for Evaluators
+type: other
+authors:
+- name: James Dyer
+links:
+- name: SOLR-2141
+  url: https://issues.apache.org/jira/browse/SOLR-2141

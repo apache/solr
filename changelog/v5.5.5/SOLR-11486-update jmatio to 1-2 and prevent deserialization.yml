@@ -1,0 +1,8 @@
+title: Update jmatio to 1.2 and prevent deserialization inside Matlab files.
+type: other
+authors:
+- name: Uwe Schindler
+- name: Steve Rowe
+links:
+- name: SOLR-11486
+  url: https://issues.apache.org/jira/browse/SOLR-11486

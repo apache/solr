@@ -1,0 +1,7 @@
+title: Re-structure and clarify Security chapters in Ref Guide
+type: other
+authors:
+- name: janhoy
+links:
+- name: SOLR-13371
+  url: https://issues.apache.org/jira/browse/SOLR-13371

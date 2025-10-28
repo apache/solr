@@ -1,0 +1,8 @@
+title: Reordering of object allocations in ConcurrentLRUCache to eliminate (an extremely
+  small) potential for deadlock.
+type: fixed
+authors:
+- name: gabriele renzi
+links:
+- name: SOLR-1538
+  url: https://issues.apache.org/jira/browse/SOLR-1538

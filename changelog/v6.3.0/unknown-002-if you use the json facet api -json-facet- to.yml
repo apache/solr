@@ -1,0 +1,6 @@
+title: If you use the JSON Facet API (json.facet) to facet on a numeric field and
+  if you use mincount=0 or if you set the prefix, then you will now get an error as
+  these options are incompatible with numeric faceting.
+type: upgrade_notes
+authors: []
+links: []

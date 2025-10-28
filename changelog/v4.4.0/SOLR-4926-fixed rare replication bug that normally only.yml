@@ -1,0 +1,9 @@
+title: Fixed rare replication bug that normally only manifested when using compound
+  file format.
+type: fixed
+authors:
+- name: yonik
+- name: Mark Miller
+links:
+- name: SOLR-4926
+  url: https://issues.apache.org/jira/browse/SOLR-4926

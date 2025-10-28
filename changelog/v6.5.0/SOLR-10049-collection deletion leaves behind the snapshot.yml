@@ -1,0 +1,7 @@
+title: Collection deletion leaves behind the snapshot metadata
+type: fixed
+authors:
+- name: Hrishikesh Gadre
+links:
+- name: SOLR-10049
+  url: https://issues.apache.org/jira/browse/SOLR-10049

@@ -1,0 +1,8 @@
+title: SolrClientNodeStateProvider always retries on requesting metrics from other
+  nodes
+type: fixed
+authors:
+- name: Cao Manh Dat
+links:
+- name: SOLR-13449
+  url: https://issues.apache.org/jira/browse/SOLR-13449

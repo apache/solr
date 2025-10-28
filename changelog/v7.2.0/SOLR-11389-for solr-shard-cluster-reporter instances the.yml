@@ -1,0 +1,8 @@
+title: For Solr(Shard|Cluster)Reporter instances the SolrMetricManager.registerReporter
+  method is now called after the SolrCore or CoreContainer has been set for the instance.
+type: other
+authors:
+- name: Christine Poerschke
+links:
+- name: SOLR-11389
+  url: https://issues.apache.org/jira/browse/SOLR-11389

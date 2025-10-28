@@ -1,0 +1,9 @@
+title: JSON Facet API numBuckets was not consistent between distributed and non-distributed
+  requests when there was a mincount &gt; 1. This has been corrected by changing numBuckets
+  cardinality processing to ignore mincount &gt; 1 for non-distributed requests.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-10552
+  url: https://issues.apache.org/jira/browse/SOLR-10552

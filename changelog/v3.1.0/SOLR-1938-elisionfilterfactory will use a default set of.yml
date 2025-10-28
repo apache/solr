@@ -1,0 +1,8 @@
+title: ElisionFilterFactory will use a default set of French contractions if you do
+  not supply a custom articles file.
+type: other
+authors:
+- name: rmuir
+links:
+- name: SOLR-1938
+  url: https://issues.apache.org/jira/browse/SOLR-1938

@@ -1,0 +1,11 @@
+title: group.limit=-1 was not supported for grouping in distributed mode.
+type: fixed
+authors:
+- name: Cao Manh Dat
+- name: Lance Norskog
+- name: Webster Homer
+- name: hossman
+- name: yonik
+links:
+- name: SOLR-4164
+  url: https://issues.apache.org/jira/browse/SOLR-4164

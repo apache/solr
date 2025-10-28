@@ -1,0 +1,10 @@
+title: Commit to all nodes in a collection in parallel rather than locally and then
+  to all other nodes.
+type: changed
+authors:
+- name: hossman
+- name: Ricardo Merizalde
+- name: Mark Miller
+links:
+- name: SOLR-4923
+  url: https://issues.apache.org/jira/browse/SOLR-4923

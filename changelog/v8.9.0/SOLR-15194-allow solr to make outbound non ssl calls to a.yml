@@ -1,0 +1,8 @@
+title: Allow Solr to make outbound non SSL calls to a JWT IDP via -Dsolr.auth.jwt.allowOutboundHttp=true
+  property.
+type: changed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-15194
+  url: https://issues.apache.org/jira/browse/SOLR-15194

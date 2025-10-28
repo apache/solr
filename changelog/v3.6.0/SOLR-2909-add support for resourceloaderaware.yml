@@ -1,0 +1,8 @@
+title: Add support for ResourceLoaderAware tokenizerFactories in synonym filter factories.
+type: fixed
+authors:
+- name: Tom Klonikowski
+- name: Jun Ohtani
+links:
+- name: SOLR-2909
+  url: https://issues.apache.org/jira/browse/SOLR-2909

@@ -1,0 +1,9 @@
+title: Leader recovery process can select the wrong leader if all replicas for a shard
+  are down and trying to recover as well as lose updates that should have been recovered.
+type: fixed
+authors:
+- name: Timothy Potter
+- name: Mark Miller
+links:
+- name: SOLR-5552
+  url: https://issues.apache.org/jira/browse/SOLR-5552

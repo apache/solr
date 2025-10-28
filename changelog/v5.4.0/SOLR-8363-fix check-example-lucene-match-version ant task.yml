@@ -1,0 +1,8 @@
+title: Fix check-example-lucene-match-version Ant task and addVersion.py script to
+  check and update luceneMatchVersion under solr/example/ configs as well logic.
+type: other
+authors:
+- name: Varun Thacker
+links:
+- name: SOLR-8363
+  url: https://issues.apache.org/jira/browse/SOLR-8363

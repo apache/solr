@@ -1,0 +1,9 @@
+title: zkcli script can perfrom the CLUSTERPROP command without a running Solr cluster
+type: added
+authors:
+- name: Hrishikesh Gadre
+- name: Per Steffensen
+- name: Noble Paul
+links:
+- name: SOLR-7176
+  url: https://issues.apache.org/jira/browse/SOLR-7176

@@ -1,0 +1,8 @@
+title: Make the ConfigSetService pluggable/configurable via &lt;string name="configSetService"
+  /&gt; in solr.xml
+type: changed
+authors:
+- name: baisui
+links:
+- name: SOLR-15100
+  url: https://issues.apache.org/jira/browse/SOLR-15100

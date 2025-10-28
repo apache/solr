@@ -1,0 +1,11 @@
+title: Disable ClusteringComponent by default in collection1 example. The solr.clustering.enabled
+  system property needs to be set to 'true' to enable the clustering contrib (reverts
+  SOLR-4708).
+type: other
+authors:
+- name: Dawid Weiss
+links:
+- name: SOLR-5323
+  url: https://issues.apache.org/jira/browse/SOLR-5323
+- name: SOLR-4708
+  url: https://issues.apache.org/jira/browse/SOLR-4708
