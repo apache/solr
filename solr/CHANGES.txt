@@ -255,10 +255,6 @@ Deprecation Removals
 
 * SOLR-17771: Remove `CloudSolrClient.Builder`. (James Dyer)
 
-* SOLR-17962: The deprecated SolrClient implementations based on Apache HttpClient are removed from Solrj,
-  thus the related dependencies are no longer present.  They temporarily live on in the test framework.
-  (David Smiley)
-
 Dependency Upgrades
 ---------------------
 
