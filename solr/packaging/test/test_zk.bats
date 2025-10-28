@@ -170,24 +170,22 @@ teardown() {
 
 @test "env var ZK_HOST is honored" {
   sleep 1
-  # Start on solr2 port to verify that the fallback 9983 fails
-  solr start --user-managed -p ${SOLR2_PORT}
-  export ZK2_PORT=$((SOLR2_PORT+1000))
 
   # Need to unset SOLR_PORT to avoid the tool being smart and look at SOLR_PORT
   export SOLR_PORT_KEEP=$SOLR_PORT
   unset SOLR_PORT
 
-  # First test a command that will fail
+  # First test a command that will fail (no ZK_HOST set, no SOLR_PORT)
   run solr zk ls / --recursive
   assert_output --partial "assuming solr url is http://localhost:8983"
   refute_output --partial "aliases.json"
 
   # Then set the ZK_HOST variable and test again
-  export ZK_HOST=localhost:${ZK2_PORT}
+  export ZK_HOST=localhost:${ZK_PORT}
   run solr zk ls / --recursive
   assert_output --partial "aliases.json"
 
   # Restore SOLR_PORT
   export SOLR_PORT=$SOLR_PORT_KEEP
+  unset ZK_HOST
 }
