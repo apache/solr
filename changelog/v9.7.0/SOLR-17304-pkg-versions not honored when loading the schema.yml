@@ -1,7 +1,0 @@
-title: PKG_VERSIONS not honored when loading the schema plugins
-type: fixed
-authors:
-- name: '#2471'
-links:
-- name: SOLR-17304
-  url: https://issues.apache.org/jira/browse/SOLR-17304
