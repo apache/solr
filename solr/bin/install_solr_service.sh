@@ -71,6 +71,8 @@ for command in "grep -E \"^NAME=\" /etc/os-release" \
       distro=Debian
     elif [[ ${distro_string,,} == *"red hat"* ]]; then
       distro=RedHat
+    elif [[ ${distro_string,,} == *"amazon"* ]]; then
+      distro=RedHat
     elif [[ ${distro_string,,} == *"centos"* ]]; then
       distro=CentOS
     elif [[ ${distro_string,,} == *"ubuntu"* ]]; then
