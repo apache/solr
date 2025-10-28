@@ -37,7 +37,7 @@ import org.apache.solr.rest.ManagedResourceStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Managed Resource wrapper for the the {@link TextToVectorModelStore} to expose it via REST */
+/** Managed Resource wrapper for the {@link TextToVectorModelStore} to expose it via REST */
 @ThreadSafe
 public class ManagedTextToVectorModelStore extends ManagedResource
     implements ManagedResource.ChildResourceSupport {

@@ -386,7 +386,7 @@ SOLR_AUTH_TYPE="basic"
 SOLR_AUTHENTICATION_OPTS="-Dsolr.security.auth.basicauth.credentials=solr:SolrRocks"
 ----
 
-This tells the `bin/solr` command line to to use "basic" as the type of authentication, and to pass credentials with the user-name "solr" and password "SolrRocks".
+This tells the `bin/solr` command line to use "basic" as the type of authentication, and to pass credentials with the user-name "solr" and password "SolrRocks".
 
 Alternatively, the `SOLR_AUTHENTICATION_OPTS` can take a path to a configuration file, as in:
 
