@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Sync up port and host variable naming.
+title: Sync up various system properties related to Solr's Jetty process for ports and hosts
 type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Eric Pugh
