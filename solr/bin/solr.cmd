@@ -1139,7 +1139,7 @@ IF "%FG%"=="1" (
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.log.muteconsole ^
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" ^
-    -Dsolr.port.listen=%SOLR_PORT_LISTEN% -Djetty.port=%SOLR_PORT_LISTEN% -Djetty.home="%SOLR_SERVER_DIR%" ^
+    -Dsolr.port.listen=%SOLR_PORT_LISTEN% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT_LISTEN%-console.log"
   echo %SOLR_PORT_LISTEN%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT_LISTEN%.port
 
