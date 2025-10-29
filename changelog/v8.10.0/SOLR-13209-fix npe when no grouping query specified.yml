@@ -2,6 +2,7 @@ title: Fix NPE when no grouping query specified
 type: fixed
 authors:
 - name: Collins Abanda
+- name: Mike Drob
 links:
 - name: SOLR-13209
   url: https://issues.apache.org/jira/browse/SOLR-13209

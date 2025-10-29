@@ -1,0 +1,9 @@
+title: Added a DirectSolrConnection class. This lets you access solr using the standard
+  request/response formats, but does not require an HTTP connection. It is designed
+  for embedded applications.
+type: added
+authors:
+- name: ryan
+links:
+- name: SOLR-212
+  url: https://issues.apache.org/jira/browse/SOLR-212

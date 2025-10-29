@@ -6,6 +6,7 @@ title: Prometheus Metric Exporter not threadsafe. This changes the prometheus ex
 type: fixed
 authors:
 - name: Danyal Prout
+- name: shalin
 links:
 - name: SOLR-13234
   url: https://issues.apache.org/jira/browse/SOLR-13234

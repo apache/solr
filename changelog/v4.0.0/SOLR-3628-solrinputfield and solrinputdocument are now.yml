@@ -4,6 +4,7 @@ title: SolrInputField and SolrInputDocument are now consistently backed by Colle
 type: fixed
 authors:
 - name: Tom Switzer
+- name: hossman
 links:
 - name: SOLR-3628
   url: https://issues.apache.org/jira/browse/SOLR-3628

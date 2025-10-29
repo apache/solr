@@ -1,0 +1,10 @@
+title: QueryElevationComponent only works if the uniqueKey field is implemented using
+  StrField. In previous versions of Solr no warning or error would be generated if
+  you attempted to use QueryElevationComponent, it would just fail in unexpected ways.
+  This has been changed so that it will fail with a clear error message on initialization.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-1558
+  url: https://issues.apache.org/jira/browse/SOLR-1558

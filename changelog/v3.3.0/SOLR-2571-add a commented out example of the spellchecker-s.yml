@@ -3,6 +3,7 @@ title: Add a commented out example of the spellchecker's thresholdTokenFrequency
 type: other
 authors:
 - name: James Dyer
+- name: rmuir
 links:
 - name: SOLR-2571
   url: https://issues.apache.org/jira/browse/SOLR-2571

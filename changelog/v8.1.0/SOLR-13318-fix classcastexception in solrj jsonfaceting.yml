@@ -2,6 +2,7 @@ title: Fix ClassCastException in SolrJ JsonFaceting classes
 type: fixed
 authors:
 - name: Munendra S N
+- name: Jason Gerlowski
 links:
 - name: SOLR-13318
   url: https://issues.apache.org/jira/browse/SOLR-13318

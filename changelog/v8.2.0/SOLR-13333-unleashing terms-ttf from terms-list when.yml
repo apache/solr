@@ -2,6 +2,7 @@ title: unleashing terms.ttf from terms.list when distrib=false
 type: fixed
 authors:
 - name: Munendra S N
+- name: Mikhail Khludnev
 links:
 - name: SOLR-13333
   url: https://issues.apache.org/jira/browse/SOLR-13333

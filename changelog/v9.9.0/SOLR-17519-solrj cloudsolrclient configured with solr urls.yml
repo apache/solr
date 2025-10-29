@@ -5,6 +5,7 @@ title: SolrJ CloudSolrClient configured with Solr URLs can fail to request clust
 type: fixed
 authors:
 - name: Matthew Biscocho
+- name: David Smiley
 - name: Houston Putman
 links:
 - name: SOLR-17519

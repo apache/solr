@@ -2,6 +2,7 @@ title: TrieDoubleField and TrieLongField now override toNativeType
 type: fixed
 authors:
 - name: Ishan Chattopadhyaya
+- name: Christine Poerschke
 links:
 - name: SOLR-8287
   url: https://issues.apache.org/jira/browse/SOLR-8287

@@ -3,6 +3,7 @@ title: Added ability to verify that spell checking collations have actual result
 type: added
 authors:
 - name: James Dyer
+- name: gsingers
 links:
 - name: SOLR-2010
   url: https://issues.apache.org/jira/browse/SOLR-2010

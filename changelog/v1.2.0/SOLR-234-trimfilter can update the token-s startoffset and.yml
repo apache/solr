@@ -1,0 +1,8 @@
+title: TrimFilter can update the Token's startOffset and endOffset if updateOffsets="true".
+  By default the Token offsets are unchanged.
+type: added
+authors:
+- name: ryan
+links:
+- name: SOLR-234
+  url: https://issues.apache.org/jira/browse/SOLR-234

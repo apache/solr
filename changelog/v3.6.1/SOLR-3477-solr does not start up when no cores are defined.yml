@@ -1,0 +1,8 @@
+title: SOLR does not start up when no cores are defined
+type: fixed
+authors:
+- name: Tomás Fernández Löbbe
+- name: tommaso
+links:
+- name: SOLR-3477
+  url: https://issues.apache.org/jira/browse/SOLR-3477

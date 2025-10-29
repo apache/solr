@@ -3,6 +3,7 @@ title: Fix SignatureUpdateProcessor "all fields" mode to use all fields of each 
 type: fixed
 authors:
 - name: Spyros Kapnissis
+- name: hossman
 links:
 - name: SOLR-3200
   url: https://issues.apache.org/jira/browse/SOLR-3200

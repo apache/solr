@@ -2,6 +2,7 @@ title: Add a QParserPlugin for Lucene's SimpleQueryParser.
 type: added
 authors:
 - name: Jack Conradson
+- name: shalin
 links:
 - name: SOLR-5447
   url: https://issues.apache.org/jira/browse/SOLR-5447

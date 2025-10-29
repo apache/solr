@@ -3,6 +3,7 @@ title: SolrResourceLoader will report any encoding errors, rather than silently 
 type: other
 authors:
 - name: blargy
+- name: rmuir
 links:
 - name: SOLR-2003
   url: https://issues.apache.org/jira/browse/SOLR-2003

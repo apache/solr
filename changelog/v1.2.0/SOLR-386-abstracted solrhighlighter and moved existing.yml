@@ -1,0 +1,10 @@
+title: Abstracted SolrHighlighter and moved existing implementation to DefaultSolrHighlighter.
+  Adjusted SolrCore and solrconfig.xml so that highlighter is configurable via a class
+  attribute. Allows users to use their own highlighter implementation.
+type: added
+authors:
+- name: Tricia Williams
+- name: klaas
+links:
+- name: SOLR-386
+  url: https://issues.apache.org/jira/browse/SOLR-386

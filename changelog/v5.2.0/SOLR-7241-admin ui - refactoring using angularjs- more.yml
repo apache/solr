@@ -3,6 +3,7 @@ title: Admin UI - Refactoring using AngularJS. More functionality moving the Adm
 type: added
 authors:
 - name: Upayavira
+- name: Erick
 links:
 - name: SOLR-7241
   url: https://issues.apache.org/jira/browse/SOLR-7241

@@ -3,6 +3,7 @@ title: Added missing context info to log message if IOException occurs in proces
 type: fixed
 authors:
 - name: Steven Bower
+- name: hossman
 links:
 - name: SOLR-6380
   url: https://issues.apache.org/jira/browse/SOLR-6380

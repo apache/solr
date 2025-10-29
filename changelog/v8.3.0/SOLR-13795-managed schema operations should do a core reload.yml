@@ -2,6 +2,7 @@ title: Managed schema operations should do a core reload in Solr standalone mode
 type: changed
 authors:
 - name: Thomas Wöckinger
+- name: David Smiley
 links:
 - name: SOLR-13795
   url: https://issues.apache.org/jira/browse/SOLR-13795

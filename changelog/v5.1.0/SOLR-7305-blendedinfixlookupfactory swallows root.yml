@@ -2,6 +2,7 @@ title: BlendedInfixLookupFactory swallows root IOException when it occurs.
 type: fixed
 authors:
 - name: Stephan Lagraulet
+- name: shalin
 links:
 - name: SOLR-7305
   url: https://issues.apache.org/jira/browse/SOLR-7305

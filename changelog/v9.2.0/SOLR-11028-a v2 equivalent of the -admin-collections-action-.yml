@@ -3,6 +3,7 @@ title: A v2 equivalent of the `/admin/collections?action= REPLACE` command is no
 type: changed
 authors:
 - name: Joshua Ouma
+- name: Jason Gerlowski
 links:
 - name: SOLR-11028
   url: https://issues.apache.org/jira/browse/SOLR-11028

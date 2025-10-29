@@ -3,6 +3,7 @@ title: In the Cloud/tree section of the Admin UI, fix metadata panel and force a
 type: changed
 authors:
 - name: Richard Goodman
+- name: Tomás Fernández Löbbe
 links:
 - name: SOLR-13907
   url: https://issues.apache.org/jira/browse/SOLR-13907

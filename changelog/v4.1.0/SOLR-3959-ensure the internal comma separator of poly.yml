@@ -2,6 +2,7 @@ title: Ensure the internal comma separator of poly fields is escaped for CSVResp
 type: fixed
 authors:
 - name: Areek Zillur
+- name: Robert Muir
 links:
 - name: SOLR-3959
   url: https://issues.apache.org/jira/browse/SOLR-3959

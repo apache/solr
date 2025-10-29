@@ -2,6 +2,7 @@ title: Simple UI for issuing SQL queries
 type: added
 authors:
 - name: Michael Suzuki
+- name: Eric Pugh
 links:
 - name: SOLR-8138
   url: https://issues.apache.org/jira/browse/SOLR-8138

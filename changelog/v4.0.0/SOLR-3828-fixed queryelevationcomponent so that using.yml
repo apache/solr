@@ -4,6 +4,7 @@ title: Fixed QueryElevationComponent so that using 'markExcludes' does not modif
 type: fixed
 authors:
 - name: Alexey Serba
+- name: hossman
 links:
 - name: SOLR-3828
   url: https://issues.apache.org/jira/browse/SOLR-3828

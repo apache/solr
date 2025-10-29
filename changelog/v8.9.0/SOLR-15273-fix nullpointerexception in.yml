@@ -4,6 +4,7 @@ title: Fix NullPointerException in StoredFieldsShardResponseProcessor that happe
 type: fixed
 authors:
 - name: limingnihao
+- name: Christine Poerschke
 links:
 - name: SOLR-15273
   url: https://issues.apache.org/jira/browse/SOLR-15273

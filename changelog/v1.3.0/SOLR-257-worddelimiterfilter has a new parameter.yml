@@ -1,0 +1,8 @@
+title: WordDelimiterFilter has a new parameter splitOnCaseChange, which can be set
+  to 0 to disable splitting "PowerShot" =&gt; "Power" "Shot".
+type: added
+authors:
+- name: klaas
+links:
+- name: SOLR-257
+  url: https://issues.apache.org/jira/browse/SOLR-257

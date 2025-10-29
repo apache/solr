@@ -1,0 +1,8 @@
+title: Fix WordDelimiterFilter handling of offsets for synonyms or other injected
+  tokens that can break highlighting.
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-331
+  url: https://issues.apache.org/jira/browse/SOLR-331

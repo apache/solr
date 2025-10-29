@@ -3,6 +3,7 @@ title: '`/admin/cores?action=backupcore` now has a v2 equivalent, available at `
 type: changed
 authors:
 - name: Sanjay Dutt
+- name: Jason Gerlowski
 links:
 - name: SOLR-16490
   url: https://issues.apache.org/jira/browse/SOLR-16490

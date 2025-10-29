@@ -3,6 +3,7 @@ title: 'KerberosPlugin: Using multiple nodes on same machine leads clients to fe
 type: fixed
 authors:
 - name: Ishan Chattopadhyaya
+- name: noble
 links:
 - name: SOLR-8373
   url: https://issues.apache.org/jira/browse/SOLR-8373

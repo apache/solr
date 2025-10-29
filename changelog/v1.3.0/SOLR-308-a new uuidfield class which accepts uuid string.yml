@@ -1,0 +1,9 @@
+title: A new UUIDField class which accepts UUID string values, as well as the special
+  value of "NEW" which triggers generation of a new random UUID.
+type: added
+authors:
+- name: Thomas Peuss
+- name: hossman
+links:
+- name: SOLR-308
+  url: https://issues.apache.org/jira/browse/SOLR-308

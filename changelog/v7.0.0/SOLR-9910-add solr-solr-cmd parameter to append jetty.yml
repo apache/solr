@@ -2,6 +2,7 @@ title: Add solr/solr.cmd parameter to append jetty parameters to the start scrip
 type: added
 authors:
 - name: Mano Kovacs
+- name: Mark Miller
 links:
 - name: SOLR-9910
   url: https://issues.apache.org/jira/browse/SOLR-9910

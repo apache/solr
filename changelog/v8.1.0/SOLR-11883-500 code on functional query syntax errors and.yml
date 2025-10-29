@@ -2,6 +2,7 @@ title: 500 code on functional query syntax errors and parameter dereferencing er
 type: fixed
 authors:
 - name: Munendra S N
+- name: Mikhail Khludnev
 links:
 - name: SOLR-11883
   url: https://issues.apache.org/jira/browse/SOLR-11883

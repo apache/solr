@@ -2,6 +2,7 @@ title: Add support for Lucene's FreeTextSuggester.
 type: added
 authors:
 - name: Areek Zillur
+- name: Robert Muir
 links:
 - name: SOLR-5631
   url: https://issues.apache.org/jira/browse/SOLR-5631

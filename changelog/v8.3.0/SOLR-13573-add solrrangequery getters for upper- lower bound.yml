@@ -2,6 +2,7 @@ title: Add SolrRangeQuery getters for upper, lower bound
 type: other
 authors:
 - name: Brian Rhees
+- name: Jason Gerlowski
 links:
 - name: SOLR-13573
   url: https://issues.apache.org/jira/browse/SOLR-13573

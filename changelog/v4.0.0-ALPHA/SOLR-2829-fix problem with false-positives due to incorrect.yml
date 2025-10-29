@@ -1,0 +1,9 @@
+title: Fix problem with false-positives due to incorrect equals methods.
+type: fixed
+authors:
+- name: Yonik Seeley
+- name: Hossman
+- name: "Erick Erickson.\n  Marc Tinnemeyer caught the bug"
+links:
+- name: SOLR-2829
+  url: https://issues.apache.org/jira/browse/SOLR-2829

@@ -2,6 +2,7 @@ title: IndexFetcher does not need to call isIndexStale if full copy is already n
 type: changed
 authors:
 - name: Stephan Lagraulet
+- name: Varun Thacker
 links:
 - name: SOLR-7324
   url: https://issues.apache.org/jira/browse/SOLR-7324

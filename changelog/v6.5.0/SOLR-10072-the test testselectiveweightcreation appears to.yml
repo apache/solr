@@ -2,6 +2,7 @@ title: The test TestSelectiveWeightCreation appears to be unreliable.
 type: other
 authors:
 - name: Michael Nilsson
+- name: Mark Miller
 links:
 - name: SOLR-10072
   url: https://issues.apache.org/jira/browse/SOLR-10072

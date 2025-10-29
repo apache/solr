@@ -1,0 +1,12 @@
+title: 'Added CapitalizationFilterFactory that creates tokens with normalized capitalization.
+  This filter is useful for facet display, but will not work with a prefix query.
+  (ryan) SOLR-468: Change to the semantics to keep the original token, not the token
+  in the Map. Also switched to use Lucene''s new reusable token capabilities.'
+type: added
+authors:
+- name: gsingers
+links:
+- name: SOLR-248
+  url: https://issues.apache.org/jira/browse/SOLR-248
+- name: SOLR-468
+  url: https://issues.apache.org/jira/browse/SOLR-468

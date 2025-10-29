@@ -1,0 +1,7 @@
+title: Add proper support for Long and Doubles in sorting, etc.
+type: fixed
+authors:
+- name: gsingers
+links:
+- name: SOLR-324
+  url: https://issues.apache.org/jira/browse/SOLR-324

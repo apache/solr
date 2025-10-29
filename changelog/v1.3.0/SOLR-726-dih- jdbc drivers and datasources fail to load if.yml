@@ -1,0 +1,10 @@
+title: 'DIH: Jdbc Drivers and DataSources fail to load if placed in multicore sharedLib
+  or core''s lib directory.'
+type: fixed
+authors:
+- name: Walter Ferrara
+- name: Noble Paul
+- name: shalin
+links:
+- name: SOLR-726
+  url: https://issues.apache.org/jira/browse/SOLR-726

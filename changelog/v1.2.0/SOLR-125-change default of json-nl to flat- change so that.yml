@@ -1,0 +1,9 @@
+title: 'Change default of json.nl to flat, change so that json.nl only affects items
+  where order matters (facet constraint listings). Fix JSON output bug for null values.
+  Internal JAVA API: change most uses of NamedList to SimpleOrderedMap.'
+type: other
+authors:
+- name: yonik
+links:
+- name: SOLR-125
+  url: https://issues.apache.org/jira/browse/SOLR-125

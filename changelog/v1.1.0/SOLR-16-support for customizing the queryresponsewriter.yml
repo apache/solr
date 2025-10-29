@@ -1,0 +1,8 @@
+title: Support for customizing the QueryResponseWriter per request SOLR-16
+type: added
+authors:
+- name: Mike Baranczak
+- name: hossman
+links:
+- name: SOLR-16
+  url: https://issues.apache.org/jira/browse/SOLR-16

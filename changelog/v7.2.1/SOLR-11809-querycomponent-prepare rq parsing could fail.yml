@@ -2,8 +2,8 @@ title: 'QueryComponent.prepare rq parsing could fail under SOLR 7.2.0 - fix: Que
   rq parameter parsing no longer considers the defType parameter.'
 type: fixed
 authors:
-- name: "Christine Poerschke and David Smiley in response to bug report/analysis\n\
-    \  from Dariusz Wojtas and Diego Ceccarelli"
+- name: Christine Poerschke and David Smiley in response to bug report
+- name: "analysis\n  from Dariusz Wojtas and Diego Ceccarelli"
 links:
 - name: SOLR-11809
   url: https://issues.apache.org/jira/browse/SOLR-11809

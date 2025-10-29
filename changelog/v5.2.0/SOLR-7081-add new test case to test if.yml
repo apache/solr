@@ -2,6 +2,7 @@ title: Add new test case to test if create/delete/re-create collections work.
 type: other
 authors:
 - name: Christine Poerschke
+- name: Ramkumar Aiyengar
 links:
 - name: SOLR-7081
   url: https://issues.apache.org/jira/browse/SOLR-7081

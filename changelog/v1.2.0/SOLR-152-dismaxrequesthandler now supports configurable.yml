@@ -1,0 +1,11 @@
+title: DisMaxRequestHandler now supports configurable alternate behavior when q is
+  not specified. A "q.alt" param can be specified using SolrQueryParser syntax as
+  a mechanism for specifying what query the dismax handler should execute if the main
+  user query (q) is blank.
+type: added
+authors:
+- name: Ryan McKinley
+- name: hossman
+links:
+- name: SOLR-152
+  url: https://issues.apache.org/jira/browse/SOLR-152

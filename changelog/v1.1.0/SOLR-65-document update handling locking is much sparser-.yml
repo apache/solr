@@ -1,0 +1,8 @@
+title: Document update handling locking is much sparser, allowing performance gains
+  through multiple threads. Large commits also might be faster SOLR-65
+type: other
+authors:
+- name: klaas
+links:
+- name: SOLR-65
+  url: https://issues.apache.org/jira/browse/SOLR-65

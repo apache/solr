@@ -1,0 +1,9 @@
+title: Use fsync on replicated index and configuration files
+type: other
+authors:
+- name: yonik
+- name: Noble Paul
+- name: shalin
+links:
+- name: SOLR-1068
+  url: https://issues.apache.org/jira/browse/SOLR-1068

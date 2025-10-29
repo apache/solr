@@ -1,0 +1,9 @@
+title: 'Simplify JSON update format for deletes as well as allow version specification
+  for optimistic locking. Examples: - {"delete":"myid"} - {"delete":["id1","id2","id3"]}
+  - {"delete":{"id":"myid", "_version_":123456789}}'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-3508
+  url: https://issues.apache.org/jira/browse/SOLR-3508

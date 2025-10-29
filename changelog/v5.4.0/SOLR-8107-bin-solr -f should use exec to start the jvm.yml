@@ -2,6 +2,7 @@ title: bin/solr -f should use exec to start the JVM
 type: fixed
 authors:
 - name: Martijn Koster
+- name: Timothy Potter
 links:
 - name: SOLR-8107
   url: https://issues.apache.org/jira/browse/SOLR-8107

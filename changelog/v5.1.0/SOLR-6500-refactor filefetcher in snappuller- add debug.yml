@@ -2,6 +2,7 @@ title: Refactor FileFetcher in SnapPuller, add debug logging.
 type: other
 authors:
 - name: Ramkumar Aiyengar
+- name: Mark Miller
 links:
 - name: SOLR-6500
   url: https://issues.apache.org/jira/browse/SOLR-6500

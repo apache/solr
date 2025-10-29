@@ -2,6 +2,7 @@ title: Reduced noise in test output by ensuring the properties file can be writt
 type: other
 authors:
 - name: Gunnlaugur Thor Briem
+- name: rmuir
 links:
 - name: SOLR-2367
   url: https://issues.apache.org/jira/browse/SOLR-2367

@@ -4,6 +4,7 @@ title: bin/solr and bin\solr.cmd invoke jstack &lt;SOLR_PID&gt; before forceful 
 type: changed
 authors:
 - name: Christine Poerschke
+- name: Mikhail Khludnev
 links:
 - name: SOLR-14442
   url: https://issues.apache.org/jira/browse/SOLR-14442

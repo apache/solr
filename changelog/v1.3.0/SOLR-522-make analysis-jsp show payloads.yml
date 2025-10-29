@@ -1,0 +1,8 @@
+title: Make analysis.jsp show payloads.
+type: added
+authors:
+- name: Tricia Williams
+- name: yonik
+links:
+- name: SOLR-522
+  url: https://issues.apache.org/jira/browse/SOLR-522

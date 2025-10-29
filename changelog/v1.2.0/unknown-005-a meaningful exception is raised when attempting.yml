@@ -1,0 +1,7 @@
+title: A meaningful exception is raised when attempting to add a doc missing a unique
+  id if it is declared in the schema and allowDups=false.
+type: other
+authors:
+- name: ryan
+- name: klaas
+links: []

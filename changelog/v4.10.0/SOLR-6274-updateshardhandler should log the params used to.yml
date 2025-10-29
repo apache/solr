@@ -2,6 +2,7 @@ title: UpdateShardHandler should log the params used to configure its HttpClient
 type: other
 authors:
 - name: Ramkumar Aiyengar
+- name: Mark Miller
 links:
 - name: SOLR-6274
   url: https://issues.apache.org/jira/browse/SOLR-6274

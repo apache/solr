@@ -3,6 +3,7 @@ title: Fix edismax to respect query operators when literal colons are used in qu
 type: fixed
 authors:
 - name: Juan Grande
+- name: hossman
 links:
 - name: SOLR-3261
   url: https://issues.apache.org/jira/browse/SOLR-3261

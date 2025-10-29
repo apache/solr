@@ -1,0 +1,10 @@
+title: Plugin initialization now supports SolrCore and ResourceLoader "Aware" plugins.
+  Plugins that implement SolrCoreAware or ResourceLoaderAware are informed about the
+  SolrCore/ResourceLoader.
+type: added
+authors:
+- name: Henri Biestro
+- name: ryan
+links:
+- name: SOLR-414
+  url: https://issues.apache.org/jira/browse/SOLR-414

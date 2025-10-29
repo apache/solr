@@ -1,0 +1,8 @@
+title: Admin UI - JVM memory bar - dark grey "used" width is too small
+type: fixed
+authors:
+- name: steffkes
+- name: elyograg
+links:
+- name: SOLR-4289
+  url: https://issues.apache.org/jira/browse/SOLR-4289

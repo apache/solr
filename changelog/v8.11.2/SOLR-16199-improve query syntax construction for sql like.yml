@@ -4,6 +4,7 @@ authors:
 - name: Kiran Chitturi
 - name: Aroop Ganguly
 - name: Amrit Sarkar
+- name: Timothy Potter
 links:
 - name: SOLR-16199
   url: https://issues.apache.org/jira/browse/SOLR-16199

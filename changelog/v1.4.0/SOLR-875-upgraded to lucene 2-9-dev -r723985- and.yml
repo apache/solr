@@ -1,0 +1,8 @@
+title: Upgraded to Lucene 2.9-dev (r723985) and consolidated the BitSet implementations
+type: other
+authors:
+- name: Michael Busch
+- name: gsingers
+links:
+- name: SOLR-875
+  url: https://issues.apache.org/jira/browse/SOLR-875

@@ -1,0 +1,8 @@
+title: bound and reduce memory usage by providing &lt;maxBufferedDeletes&gt; parameter,
+  which flushes deleted without forcing the user to use &lt;commit/&gt; for this purpose.
+type: changed
+authors:
+- name: klaas
+links:
+- name: SOLR-310
+  url: https://issues.apache.org/jira/browse/SOLR-310

@@ -2,6 +2,7 @@ title: Fix StatsComponent when using docValues="true" multiValued="true"
 type: fixed
 authors:
 - name: Vitaliy Zhovtyuk & Tomas Fernandez-Lobbe
+- name: hossman
 links:
 - name: SOLR-6024
   url: https://issues.apache.org/jira/browse/SOLR-6024

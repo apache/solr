@@ -1,0 +1,9 @@
+title: DIH Context.getDataSource(String) gives current entity's DataSource instance
+  regardless of argument.
+type: fixed
+authors:
+- name: Noble Paul
+- name: shalin
+links:
+- name: SOLR-729
+  url: https://issues.apache.org/jira/browse/SOLR-729

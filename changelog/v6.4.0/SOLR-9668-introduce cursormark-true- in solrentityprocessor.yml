@@ -3,6 +3,7 @@ type: added
 authors:
 - name: Yegor Kozlov
 - name: Raveendra Yerraguntl
+- name: Mikhail Khludnev
 links:
 - name: SOLR-9668
   url: https://issues.apache.org/jira/browse/SOLR-9668

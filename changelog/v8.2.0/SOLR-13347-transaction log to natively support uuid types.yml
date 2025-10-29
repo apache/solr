@@ -2,6 +2,7 @@ title: Transaction log to natively support UUID types
 type: changed
 authors:
 - name: Thomas Wöckinger
+- name: noble
 links:
 - name: SOLR-13347
   url: https://issues.apache.org/jira/browse/SOLR-13347

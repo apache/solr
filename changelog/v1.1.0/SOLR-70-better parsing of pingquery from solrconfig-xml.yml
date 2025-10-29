@@ -1,0 +1,7 @@
+title: Better parsing of pingQuery from solrconfig.xml SOLR-70
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-70
+  url: https://issues.apache.org/jira/browse/SOLR-70

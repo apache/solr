@@ -2,6 +2,7 @@ title: Improve logging in StreamingSolrClients
 type: other
 authors:
 - name: Peter Cseh
+- name: Kevin Risden
 links:
 - name: SOLR-13222
   url: https://issues.apache.org/jira/browse/SOLR-13222

@@ -2,6 +2,7 @@ title: Add boost support, and also exclude the queried document in MoreLikeThis 
 type: added
 authors:
 - name: Jens Wille
+- name: Anshum Gupta
 links:
 - name: SOLR-7912
   url: https://issues.apache.org/jira/browse/SOLR-7912

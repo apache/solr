@@ -4,6 +4,7 @@ type: changed
 authors:
 - name: Morten Bøgeskov
 - name: Munendra S N
+- name: Mikhail Khludnev
 links:
 - name: SOLR-13337
   url: https://issues.apache.org/jira/browse/SOLR-13337

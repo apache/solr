@@ -1,0 +1,9 @@
+title: Snapshooter does not work on Solaris and OS X since the cp command there does
+  not have the -l option. Also updated commit/optimize related scripts to handle both
+  old and new response format.
+type: fixed
+authors:
+- name: bill
+links:
+- name: SOLR-282
+  url: https://issues.apache.org/jira/browse/SOLR-282

@@ -1,0 +1,5 @@
+title: Escape '&gt;' in XML output
+type: fixed
+authors:
+- name: because ]]> is illegal in CharData
+links: []

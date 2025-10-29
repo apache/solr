@@ -1,0 +1,8 @@
+title: Ability to add openSearcher=false to not open a searcher when doing a hard
+  commit. commitWithin now only invokes a softCommit.
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-3069
+  url: https://issues.apache.org/jira/browse/SOLR-3069

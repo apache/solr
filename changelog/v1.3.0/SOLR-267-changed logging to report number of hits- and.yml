@@ -1,0 +1,10 @@
+title: 'Changed logging to report number of hits, and also provide a mechanism to
+  add log messages to be output by the SolrCore via a NamedList toLog member variable.
+  (Will Johnson, yseeley, gsingers) - SOLR-267: Removed adding values to the HTTP
+  headers in SolrDispatchFilter'
+type: fixed
+authors:
+- name: gsingers
+links:
+- name: SOLR-267
+  url: https://issues.apache.org/jira/browse/SOLR-267

@@ -1,0 +1,8 @@
+title: Changed Solrj default value for facet.sort to true
+type: other
+authors:
+- name: Lars Kotthoff
+- name: Shalin
+links:
+- name: SOLR-591
+  url: https://issues.apache.org/jira/browse/SOLR-591

@@ -1,0 +1,8 @@
+title: Added date faceting to the QueryResponse in SolrJ and QueryResponseTest
+type: added
+authors:
+- name: Shalin Shekhar Mangar
+- name: gsingers
+links:
+- name: SOLR-497
+  url: https://issues.apache.org/jira/browse/SOLR-497

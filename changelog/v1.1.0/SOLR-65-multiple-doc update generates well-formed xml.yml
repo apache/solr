@@ -1,0 +1,7 @@
+title: Multiple-doc update generates well-formed xml SOLR-65
+type: fixed
+authors:
+- name: klaas
+links:
+- name: SOLR-65
+  url: https://issues.apache.org/jira/browse/SOLR-65

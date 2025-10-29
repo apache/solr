@@ -1,0 +1,8 @@
+title: multi-valued fields always highlighted in disparate snippets
+type: fixed
+authors:
+- name: Lars Kotthoff
+- name: klaas
+links:
+- name: SOLR-556
+  url: https://issues.apache.org/jira/browse/SOLR-556

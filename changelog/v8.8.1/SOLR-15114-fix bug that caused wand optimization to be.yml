@@ -3,6 +3,7 @@ title: Fix bug that caused WAND optimization to be disabled in cases where the m
 type: fixed
 authors:
 - name: Naoto Minami
+- name: Tomás Fernández Löbbe
 links:
 - name: SOLR-15114
   url: https://issues.apache.org/jira/browse/SOLR-15114

@@ -2,6 +2,7 @@ title: closing JDBC Statement on failures in DataImportHandler (DIH)
 type: fixed
 authors:
 - name: Kristine Jetzke
+- name: Mikhail Khludnev
 links:
 - name: SOLR-8612
   url: https://issues.apache.org/jira/browse/SOLR-8612

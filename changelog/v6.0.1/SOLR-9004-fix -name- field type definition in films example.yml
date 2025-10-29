@@ -2,6 +2,7 @@ title: Fix "name" field type definition in films example.
 type: fixed
 authors:
 - name: Alexandre Rafalovitch
+- name: Varun Thacker
 links:
 - name: SOLR-9004
   url: https://issues.apache.org/jira/browse/SOLR-9004

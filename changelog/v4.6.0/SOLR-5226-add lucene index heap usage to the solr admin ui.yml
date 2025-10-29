@@ -2,6 +2,7 @@ title: Add Lucene index heap usage to the Solr admin UI.
 type: added
 authors:
 - name: Areek Zillur
+- name: Robert Muir
 links:
 - name: SOLR-5226
   url: https://issues.apache.org/jira/browse/SOLR-5226

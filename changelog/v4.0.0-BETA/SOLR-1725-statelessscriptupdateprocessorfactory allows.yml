@@ -1,0 +1,11 @@
+title: StatelessScriptUpdateProcessorFactory allows users to implement the full ScriptUpdateProcessor
+  API using any scripting language with a javax.script.ScriptEngineFactory
+type: added
+authors:
+- name: Uri Boness
+- name: ehatcher
+- name: Simon Rosenthal
+- name: hossman
+links:
+- name: SOLR-1725
+  url: https://issues.apache.org/jira/browse/SOLR-1725

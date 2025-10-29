@@ -1,0 +1,8 @@
+title: Logging of elapsed time broken on Solaris because the date command there does
+  not support the %s output format.
+type: fixed
+authors:
+- name: bill
+links:
+- name: SOLR-294
+  url: https://issues.apache.org/jira/browse/SOLR-294

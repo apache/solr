@@ -3,6 +3,7 @@ title: Fix InterruptedException being swallowed in ZkStateReader’s getLeaderRe
 type: fixed
 authors:
 - name: Andy Vuong
+- name: Tomás Fernández Löbbe
 links:
 - name: SOLR-13950
   url: https://issues.apache.org/jira/browse/SOLR-13950

@@ -1,0 +1,8 @@
+title: Fixed inconsistent treatment of third-party dependencies for solr contribs
+  analysis-extras & uima
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-3623
+  url: https://issues.apache.org/jira/browse/SOLR-3623

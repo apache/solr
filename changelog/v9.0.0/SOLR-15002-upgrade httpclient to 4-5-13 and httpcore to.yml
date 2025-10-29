@@ -2,6 +2,7 @@ title: Upgrade httpclient to 4.5.13 and httpcore to 4.4.13
 type: other
 authors:
 - name: Andras Salamon
+- name: janhoy
 links:
 - name: SOLR-15002
   url: https://issues.apache.org/jira/browse/SOLR-15002

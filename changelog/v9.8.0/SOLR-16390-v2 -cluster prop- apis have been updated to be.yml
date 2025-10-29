@@ -6,6 +6,7 @@ title: v2 "cluster prop" APIs have been updated to be more REST-ful. Cluster pro
 type: changed
 authors:
 - name: Carlos Ugarte
+- name: Jason Gerlowski
 links:
 - name: SOLR-16390
   url: https://issues.apache.org/jira/browse/SOLR-16390

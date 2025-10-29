@@ -2,6 +2,7 @@ title: Fix SynonymFilterFactory when an optional tokenizerFactory is supplied.
 type: fixed
 authors:
 - name: Chris Bleakley
+- name: rmuir
 links:
 - name: SOLR-4251
   url: https://issues.apache.org/jira/browse/SOLR-4251

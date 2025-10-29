@@ -3,6 +3,7 @@ title: The v2 endpoint to request the status of asynchronous CoreAdmin commands 
 type: changed
 authors:
 - name: Sanjay Dutt
+- name: Jason Gerlowski
 links:
 - name: SOLR-16397
   url: https://issues.apache.org/jira/browse/SOLR-16397

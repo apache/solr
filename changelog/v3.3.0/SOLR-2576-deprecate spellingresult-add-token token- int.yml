@@ -3,6 +3,7 @@ title: Deprecate SpellingResult.add(Token token, int docFreq), please use Spelli
 type: other
 authors:
 - name: James Dyer
+- name: rmuir
 links:
 - name: SOLR-2576
   url: https://issues.apache.org/jira/browse/SOLR-2576

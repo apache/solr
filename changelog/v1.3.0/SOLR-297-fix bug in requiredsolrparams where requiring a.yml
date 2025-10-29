@@ -1,0 +1,8 @@
+title: Fix bug in RequiredSolrParams where requiring a field specific param would
+  fail if a general default value had been supplied.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-297
+  url: https://issues.apache.org/jira/browse/SOLR-297

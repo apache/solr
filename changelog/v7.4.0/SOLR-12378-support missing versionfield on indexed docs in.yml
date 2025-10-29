@@ -3,6 +3,7 @@ type: added
 authors:
 - name: Oliver Bates
 - name: Michael Braun
+- name: Mark Miller
 links:
 - name: SOLR-12378
   url: https://issues.apache.org/jira/browse/SOLR-12378

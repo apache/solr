@@ -1,0 +1,8 @@
+title: Support binding dynamic fields to beans in SolrJ
+type: added
+authors:
+- name: Avlesh Singh
+- name: noble
+links:
+- name: SOLR-1129
+  url: https://issues.apache.org/jira/browse/SOLR-1129

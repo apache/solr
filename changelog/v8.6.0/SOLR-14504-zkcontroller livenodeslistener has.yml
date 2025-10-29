@@ -2,6 +2,7 @@ title: ZkController LiveNodesListener has NullPointerException in startup race.
 type: fixed
 authors:
 - name: Colvin Cowie
+- name: ab
 links:
 - name: SOLR-14504
   url: https://issues.apache.org/jira/browse/SOLR-14504

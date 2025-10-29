@@ -2,6 +2,7 @@ title: Add support for "preload" option in MMapDirectoryFactory.
 type: added
 authors:
 - name: Amrit Sarkar
+- name: Uwe Schindler
 links:
 - name: SOLR-10158
   url: https://issues.apache.org/jira/browse/SOLR-10158

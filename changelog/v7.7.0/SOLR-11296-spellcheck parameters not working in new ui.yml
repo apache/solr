@@ -2,6 +2,7 @@ title: Spellcheck parameters not working in new UI
 type: fixed
 authors:
 - name: Matt Pearce
+- name: janhoy
 links:
 - name: SOLR-11296
   url: https://issues.apache.org/jira/browse/SOLR-11296

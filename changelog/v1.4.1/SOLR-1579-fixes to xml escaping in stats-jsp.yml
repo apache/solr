@@ -1,0 +1,7 @@
+title: Fixes to XML escaping in stats.jsp
+type: fixed
+authors:
+- name: David Bowen and hossman
+links:
+- name: SOLR-1579
+  url: https://issues.apache.org/jira/browse/SOLR-1579

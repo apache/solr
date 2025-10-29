@@ -1,0 +1,10 @@
+title: Add preserveOriginal flag to WordDelimiterFilter
+type: added
+authors:
+- name: Geoffrey Young
+- name: Trey Hyde
+- name: Ankur Madnani
+- name: yonik
+links:
+- name: SOLR-14
+  url: https://issues.apache.org/jira/browse/SOLR-14

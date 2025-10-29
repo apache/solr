@@ -1,0 +1,7 @@
+title: The "threads" feature of DIH is removed (deprecated in Solr 3.6)
+type: other
+authors:
+- name: James Dyer
+links:
+- name: SOLR-3262
+  url: https://issues.apache.org/jira/browse/SOLR-3262

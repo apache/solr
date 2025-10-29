@@ -1,0 +1,10 @@
+title: Added ant target and POM files for building maven artifacts of the Solr core,
+  common, client and contrib. The target can publish artifacts with source and javadocs.
+type: other
+authors:
+- name: Spencer Crissman
+- name: Craig McClanahan
+- name: shalin
+links:
+- name: SOLR-586
+  url: https://issues.apache.org/jira/browse/SOLR-586

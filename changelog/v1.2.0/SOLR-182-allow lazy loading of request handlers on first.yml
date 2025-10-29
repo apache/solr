@@ -1,0 +1,8 @@
+title: allow lazy loading of request handlers on first request.
+type: added
+authors:
+- name: Ryan McKinley
+- name: yonik
+links:
+- name: SOLR-182
+  url: https://issues.apache.org/jira/browse/SOLR-182

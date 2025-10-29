@@ -5,6 +5,7 @@ authors:
 - name: Shawn Heisey
 - name: Aaron Greenspan
 - name: Thomas Champagne
+- name: shalin
 links:
 - name: SOLR-4464
   url: https://issues.apache.org/jira/browse/SOLR-4464

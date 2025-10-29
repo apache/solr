@@ -3,6 +3,7 @@ title: Support Solr being proxied with another endpoint than default /solr, by u
 type: changed
 authors:
 - name: Yun Jie Zhou
+- name: janhoy
 links:
 - name: SOLR-9584
   url: https://issues.apache.org/jira/browse/SOLR-9584

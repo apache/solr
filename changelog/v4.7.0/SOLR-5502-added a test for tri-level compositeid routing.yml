@@ -3,6 +3,7 @@ title: Added a test for tri-level compositeId routing with documents having a "/
 type: other
 authors:
 - name: Anshum Gupta
+- name: Mark Miller
 links:
 - name: SOLR-5502
   url: https://issues.apache.org/jira/browse/SOLR-5502

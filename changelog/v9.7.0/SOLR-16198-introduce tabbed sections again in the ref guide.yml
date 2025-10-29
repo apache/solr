@@ -2,6 +2,7 @@ title: Introduce tabbed sections again in the Ref Guide.
 type: changed
 authors:
 - name: Christos Malliaridis
+- name: Eric Pugh
 links:
 - name: SOLR-16198
   url: https://issues.apache.org/jira/browse/SOLR-16198

@@ -1,0 +1,11 @@
+title: 'Support grouped faceting. (Martijn van Groningen) Additional Work: - SOLR-3406:
+  Extended grouped faceting support to facet.query and facet.range parameters.'
+type: added
+authors:
+- name: David Boychuck
+- name: Martijn van Groningen
+links:
+- name: SOLR-2898
+  url: https://issues.apache.org/jira/browse/SOLR-2898
+- name: SOLR-3406
+  url: https://issues.apache.org/jira/browse/SOLR-3406
