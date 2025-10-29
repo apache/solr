@@ -4,3 +4,5 @@ type: added # added, changed, fixed, deprecated, removed, dependency_update, sec
 authors:
   - name: Eric Pugh
   - name: Andreas Rütten
+merge_requests:
+  - 3778
