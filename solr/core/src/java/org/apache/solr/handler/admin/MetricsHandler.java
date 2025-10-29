@@ -51,6 +51,16 @@ import org.apache.solr.security.PermissionNameProvider;
 public class MetricsHandler extends RequestHandlerBase implements PermissionNameProvider {
   final SolrMetricManager metricManager;
 
+  public static final String COMPACT_PARAM = "compact";
+  public static final String PREFIX_PARAM = "prefix";
+  public static final String REGEX_PARAM = "regex";
+  public static final String PROPERTY_PARAM = "property";
+  public static final String REGISTRY_PARAM = "registry";
+  public static final String GROUP_PARAM = "group";
+  public static final String KEY_PARAM = "key";
+  public static final String EXPR_PARAM = "expr";
+  public static final String TYPE_PARAM = "type";
+
   // Prometheus filtering parameters
   public static final String CATEGORY_PARAM = "category";
   public static final String CORE_PARAM = "core";

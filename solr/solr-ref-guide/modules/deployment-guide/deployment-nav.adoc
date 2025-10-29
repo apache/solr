@@ -61,6 +61,7 @@
 ** xref:metrics-reporting.adoc[]
 ** xref:performance-statistics-reference.adoc[]
 ** xref:plugins-stats-screen.adoc[]
+** xref:jmx-with-solr.adoc[]
 ** xref:thread-dump.adoc[]
 ** xref:distributed-tracing.adoc[]
 ** xref:circuit-breakers.adoc[]

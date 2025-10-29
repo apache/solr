@@ -178,6 +178,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 +
 +NOTE: The previous parse-context-based configuration (`parseContext.config`) is no longer supported. Tika parser-specific properties must now be configured directly on the Tika Server itself, rather than through Solr configuration. Please refer to the Tika Server documentation for details on how to set these properties.
 
+* The Prometheus exporter, JMX, SLF4J and Graphite metric reporters have been removed. Users should migrate to using OTLP or the `/admin/metrics` endpoint with external tools to get metrics to their preferred backend such as the link:https://opentelemetry.io/docs/collector/[OTEL Collector].
+
 * SolrInfoMBeanHandler and PluginInfoHandler have been removed
 
 === Security
@@ -190,17 +192,15 @@ Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-lif
 
 === OpenTelemetry
 
-Solr 10 introduces a major overhaul by migrating from Dropwizard metrics to OpenTelemetry (OTEL) for observability. This migration provides native Prometheus support, OTLP support, exemplar support for tracing correlation, and native attributes and labels on all metrics.
+Solr 10 has migrated from Dropwizard metrics to OpenTelemetry (OTEL) for observability. This migration provides native Prometheus support, OTLP support, exemplar support for tracing correlation, and native attributes and labels on all metrics.
 
-* All metrics have been migrated to metric names instead of dot-delimited format and now natively include attributes/labels.
+* All metrics have been migrated to snake-case metric names instead of dot-delimited format and now natively include attributes/labels.
 
-* The `/admin/metrics` API now defaults to Prometheus exposition format. You can specify `wt=prometheus` as a parameter for Prometheus format or `wt=openmetrics` for OpenMetrics exposition format with exemplars support (distributed tracing must be enabled to view exemplars).
+* The `/admin/metrics` API now defaults to Prometheus exposition format and no longer supports XML/JSON/javabin. You can specify `wt=prometheus` as a parameter for Prometheus format or `wt=openmetrics` for OpenMetrics exposition format with exemplars support (distributed tracing must be enabled to view exemplars).
 
-* The metrics API supports filtering by metric attributes with `name`, `category`, `core`, `collection`, `shard`, and `replica_type` parameters. Multiple values can be comma-separated.
+* The metrics API supports filtering by metric name and attributes. See xref:deployment-guide:metrics-reporting.adoc#api-filtering[Metrics API Filter] for more info.
 
 * OTLP metrics exporter via gRPC or HTTP is now supported with the OpenTelemetry module. Users can enable the module to push metrics to their preferred OTLP-supported backend.
-
-* The Prometheus exporter, JMX, SLF4J and Graphite metric reporters have been removed. Users should migrate to using OTLP or the `/admin/metrics` endpoint with external tools to get metrics to their preferred backend such as the link:https://opentelemetry.io/docs/collector/[OTEL Collector].
 
 * Core renaming and swapping will reset the state of all corresponding core metrics.
 

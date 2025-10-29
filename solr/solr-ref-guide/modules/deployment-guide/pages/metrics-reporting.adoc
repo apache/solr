@@ -18,17 +18,16 @@
 
 Solr supports both a pull-based Prometheus-formatted API and an OTLP push exporter for collecting detailed performance-oriented metrics throughout the lifecycle of Solr services and their various components.
 
-All metrics natively include attributes and labels, providing users with powerful ways to aggregate metrics in their preferred backend, as well as descriptions to help understand what each metric represents.
+All metrics natively include attributes/labels, providing users with powerful ways to aggregate metrics in their preferred backend, as well as descriptions to help understand what each metric represents.
 
-Internally this feature uses https://opentelemetry.io/[OpenTelemetry], which uses the following instruments to measure events:
+Internally this feature uses https://opentelemetry.io/[OpenTelemetry], which uses the following instruments to measure events. For more information on instruments see the OpenTelemetry documentation on https://opentelemetry.io/docs/concepts/signals/metrics/#metric-instruments[Metric Instruments].
 
-* *Counters* - Simply count events. They only increase and never decrease, providing a single long value (e.g., the number of requests).
-* *Gauges* - Provide instantaneous readings of current values (e.g., current queue depth, number of active connections, free heap size).
-* *Histograms* - Provide distribution of values divided into buckets with overall count and sum of events (e.g., duration of HTTP requests, count of requests recorded).
+Solr metrics provide raw data that must be aggregated and calculated by monitoring backends (Prometheus, Grafana, etc.). Counters can be use to calculate rates and averages over time windows. Histograms provide raw bucket data that backends use to calculate percentiles (p50, p75, p95, p99, p999), averages, and other statistical measures. Solr delegates these calculations to your monitoring system for better flexibility and reduced load on Solr. See xref:deployment-guide:metrics-reporting.adoc[Performance Statistics Reference] for examples with PromQL on how to calculate these rates and percentiles.
 
-For more information on instruments see the OpenTelemetry documentation on https://opentelemetry.io/docs/concepts/signals/metrics/#metric-instruments[Metric Instruments].
-
-*NOTE: Some metrics and/or events may be missing or empty if the metric was never recorded and therefore won't appear. Specifically, metrics will not appear if the triggering event never occurs.*
+[NOTE]
+====
+Some metrics and/or events may be missing or empty if the metric was never recorded and therefore won't appear. Specifically, metrics will not appear if the triggering event never occurs.
+====
 
 == Metric Registries
 
@@ -44,7 +43,7 @@ These are the major groups of metrics that are collected:
 The `Node Registry` records metrics at the process level that are not specific to any core. Metric names are prefixed with `solr_node_` and include the following information:
 
 * handler requests (count, timing): collections, info, admin, configsets, etc.
-* number of cores (loaded, lazy, unloaded)
+* number of cores (permanent, unloaded)
 
 === Core (SolrCore) Registry
 
@@ -75,7 +74,7 @@ Handlers that process distributed shard requests include a boolean `internal` at
 
 RequestHandlers can be configured to roll up core-level metrics to the node level in addition to reporting them per core. This is useful when you have a large number of cores per node and are interested in aggregate metrics per node.
 
-These metrics are prefixed with `solr_node`, include the `handler` attribute, and omit the standard core attributes. 
+These metrics are prefixed with `solr_node`, include the `handler` attribute, and omit the standard core attributes.
 
 This is configured by adding `<bool name="aggregateNodeLevelMetricsEnabled">true</bool>` to a xref:configuration-guide:requesthandlers-searchcomponents.adoc#configuring-request-handlers[RequestHandler configuration] in your solrconfig.xml, for example:
 
@@ -180,7 +179,7 @@ scrape_configs:
     params:
       wt: ['openmetrics']
     scrape_protocols:
-      - OpenMetricsText1.0.0 
+      - OpenMetricsText1.0.0
 ----
 
 The Prometheus server must also be started with the command-line parameter `--enable-feature=exemplar-storage` to collect exemplars from OpenMetrics.
@@ -273,7 +272,7 @@ http://localhost:8983/solr/admin/metrics?name=solr_core_index_size_bytes&collect
 
 == OTLP
 
-For users who do not use or support pulling metrics in Prometheus format with the `/admin/metrics` API, Solr also supports pushing metrics natively with https://opentelemetry.io/docs/specs/otlp/[OTLP], which is a vendor-agnostic protocol for pushing metrics via gRPC or HTTP. 
+For users who do not use or support pulling metrics in Prometheus format with the `/admin/metrics` API, Solr also supports pushing metrics natively with https://opentelemetry.io/docs/specs/otlp/[OTLP], which is a vendor-agnostic protocol for pushing metrics via gRPC or HTTP.
 
 OTLP is widely supported by many tools, vendors, and pipelines. See the OpenTelemetry https://opentelemetry.io/ecosystem/vendors/[vendors list] for more details on available and compatible options.
 
@@ -314,7 +313,7 @@ OTLP protocol to use for pushing metrics. Available options are `grpc`, `http`, 
 |Optional |Default: 60000
 |===
 +
-The interval in milliseconds for how frequently metrics are pushed via OTLP. 
+The interval in milliseconds for how frequently metrics are pushed via OTLP.
 
 `solr.metrics.otlpGrpcExporterEndpoint`::
 +
@@ -323,7 +322,7 @@ The interval in milliseconds for how frequently metrics are pushed via OTLP.
 |Optional |Default: http://localhost:4317
 |===
 +
-Endpoint to send OTLP metrics to using the gRPC protocol. 
+Endpoint to send OTLP metrics to using the gRPC protocol.
 
 `solr.metrics.otlpHttpExporterEndpoint`::
 +
@@ -350,7 +349,7 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-  
+
 exporters:
   prometheus:
     endpoint: 0.0.0.0:9464

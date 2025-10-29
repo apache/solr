@@ -24,7 +24,39 @@ The descriptions below focus on retrieving metrics using the Metrics API and Pro
 
 These statistics are per core. When you are running in SolrCloud mode these statistics would co-relate to the performance of an individual replica.
 
-*Note: Solr metrics provide raw data that must be aggregated and calculated by monitoring backends (Prometheus, Grafana, etc.). Counters can be use to calculate rates and averages over time windows. Histograms provide raw bucket data that backends use to calculate percentiles (p50, p75, p95, p99, p999), averages, and other statistical measures. Solr delegates these calculations to your monitoring system for better flexibility and reduced load on Solr.*
+[NOTE]
+====
+*What about rates and percentiles e.g. QPS, p95 latency?*
+
+Solr exposes raw counters and histograms. You need to use PromQL (or similar query language) to transform these raw metrics into useful statistics. Below are examples using PromQL. See https://prometheus.io/docs/prometheus/latest/querying/functions/[PromQL Query Functions documentation] for more information.
+
+[cols="1,1,2",options="header"]
+|===
+|What you want |Raw metric type |PromQL
+
+|Queries per second (QPS)
+|Counter: `solr_core_requests_total`
+|`rate(solr_core_requests_total[5m])`
+
+|Total number of errors over 5 minutes
+|Counter: `solr_core_requests_total`
+|`increase(solr_core_requests_errors_total[5m])`
+
+|95th percentile latency
+|Histogram: `_bucket` metrics
+|`histogram_quantile(0.95, rate(solr_core_requests_times_milliseconds_bucket[5m]))`
+
+|===
+
+*Filtering by handler and excluding internal requests:*
+You can apply the same functions to aggregate on specific handlers and exclude internal SolrCloud requests:
+
+[source,promql]
+----
+rate(solr_core_requests_total{handler="/select", internal="false"}[5m])
+----
+
+====
 
 == Request Handler Statistics
 
@@ -147,8 +179,6 @@ Since Lucene internal document IDs are transient, this cache cannot be auto-warm
 === Query Result Cache
 
 This cache holds the results of previous searches: ordered lists of document IDs based on a query, a sort, and the range of documents requested
-
-You can get the statistics shown in the table below with an API request such as `\http://localhost:8983/solr/admin/metrics?category=CACHE`
 
 === Filter Cache
 
