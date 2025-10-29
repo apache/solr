@@ -2,6 +2,7 @@ title: '[subquery] document transformer executes separate requests per result do
 type: added
 authors:
 - name: Cao Manh Dat
+- name: Mikhail Khludnev
 links:
 - name: SOLR-8208
   url: https://issues.apache.org/jira/browse/SOLR-8208

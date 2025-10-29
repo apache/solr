@@ -3,6 +3,7 @@ title: ConfigSet API also checks for solrconfig.xml when checking the existence 
 type: changed
 authors:
 - name: Andras Salamon
+- name: David Smiley
 links:
 - name: SOLR-15421
   url: https://issues.apache.org/jira/browse/SOLR-15421

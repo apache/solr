@@ -1,0 +1,10 @@
+title: Change the FULL_DUMP, DELTA_DUMP, FIND_DELTA constants in DIH Context to String.
+  Change Context.currentProcess() to return a string instead of an integer.
+type: other
+authors:
+- name: Kay Kay
+- name: Noble Paul
+- name: shalin
+links:
+- name: SOLR-969
+  url: https://issues.apache.org/jira/browse/SOLR-969

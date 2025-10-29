@@ -3,6 +3,7 @@ title: JSON Facet API - fix NPEs when short form "sort:index" or "sort:count" ar
 type: fixed
 authors:
 - name: Michael Sun
+- name: yonik
 links:
 - name: SOLR-8284
   url: https://issues.apache.org/jira/browse/SOLR-8284

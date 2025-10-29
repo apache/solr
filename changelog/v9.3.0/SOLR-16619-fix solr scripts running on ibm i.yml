@@ -2,6 +2,7 @@ title: Fix solr scripts running on IBM i
 type: fixed
 authors:
 - name: Jesse Gorzinski
+- name: Eric Pugh
 links:
 - name: SOLR-16619
   url: https://issues.apache.org/jira/browse/SOLR-16619

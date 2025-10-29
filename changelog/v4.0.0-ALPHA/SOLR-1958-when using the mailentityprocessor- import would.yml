@@ -1,0 +1,9 @@
+title: When using the MailEntityProcessor, import would fail if fetchMailsSince was
+  not specified.
+type: fixed
+authors:
+- name: Max Lynch
+- name: James Dyer
+links:
+- name: SOLR-1958
+  url: https://issues.apache.org/jira/browse/SOLR-1958

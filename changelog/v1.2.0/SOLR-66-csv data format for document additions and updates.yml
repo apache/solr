@@ -1,0 +1,7 @@
+title: CSV data format for document additions and updates.
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-66
+  url: https://issues.apache.org/jira/browse/SOLR-66

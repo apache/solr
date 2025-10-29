@@ -1,0 +1,5 @@
+title: Added escaping of attribute values in the XML response
+type: fixed
+authors:
+- name: Erik Hatcher
+links: []

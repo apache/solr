@@ -3,6 +3,7 @@ title: Fixed package-local-src-tgz target to not bring in unnecessary jars and b
 type: fixed
 authors:
 - name: Michael Dodsworth
+- name: rmuir
 links:
 - name: SOLR-3725
   url: https://issues.apache.org/jira/browse/SOLR-3725

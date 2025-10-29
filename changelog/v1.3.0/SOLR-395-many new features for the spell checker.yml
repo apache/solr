@@ -1,0 +1,11 @@
+title: Many new features for the spell checker implementation, including an extended
+  response mode with much richer output, multi-word spell checking, and a bevy of
+  new and renamed options (see the wiki).
+type: added
+authors:
+- name: Mike Krimerman
+- name: Scott Taber
+- name: klaas
+links:
+- name: SOLR-395
+  url: https://issues.apache.org/jira/browse/SOLR-395

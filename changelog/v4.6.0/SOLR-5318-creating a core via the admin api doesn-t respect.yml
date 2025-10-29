@@ -2,6 +2,7 @@ title: Creating a core via the admin API doesn't respect transient property
 type: fixed
 authors:
 - name: Olivier Soyez
+- name: Erick Erickson
 links:
 - name: SOLR-5318
   url: https://issues.apache.org/jira/browse/SOLR-5318

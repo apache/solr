@@ -1,0 +1,8 @@
+title: Fixed range faceting to error instead of looping infinitely when 'gap' is zero
+  -- or effectively zero due to floating point arithmetic underflow.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-3652
+  url: https://issues.apache.org/jira/browse/SOLR-3652

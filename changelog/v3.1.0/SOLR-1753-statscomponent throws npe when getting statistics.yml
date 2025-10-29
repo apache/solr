@@ -3,6 +3,7 @@ title: StatsComponent throws NPE when getting statistics for facets in distribut
 type: fixed
 authors:
 - name: Janne Majaranta
+- name: koji
 links:
 - name: SOLR-1753
   url: https://issues.apache.org/jira/browse/SOLR-1753

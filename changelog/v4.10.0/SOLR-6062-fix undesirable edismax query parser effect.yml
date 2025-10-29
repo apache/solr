@@ -3,6 +3,7 @@ title: Fix undesirable edismax query parser effect (introduced in SOLR-2058) in 
 type: fixed
 authors:
 - name: Michael Dodsworth
+- name: ehatcher
 links:
 - name: SOLR-6062
   url: https://issues.apache.org/jira/browse/SOLR-6062

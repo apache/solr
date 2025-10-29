@@ -4,6 +4,7 @@ title: ShingleFilterFactory supports the "outputUnigramsIfNoShingles" parameter,
 type: added
 authors:
 - name: Chris Harris
+- name: Steven Rowe
 links:
 - name: SOLR-744
   url: https://issues.apache.org/jira/browse/SOLR-744

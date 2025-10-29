@@ -1,0 +1,7 @@
+title: Fixed bug in NamedListCodec in regards to serializing Iterable objects.
+type: fixed
+authors:
+- name: gsingers
+links:
+- name: SOLR-696
+  url: https://issues.apache.org/jira/browse/SOLR-696

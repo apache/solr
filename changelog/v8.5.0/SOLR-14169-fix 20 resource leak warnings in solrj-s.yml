@@ -2,6 +2,7 @@ title: Fix 20 Resource Leak warnings in SolrJ's apache/solr/common
 type: other
 authors:
 - name: Andras Salamon
+- name: Tomás Fernández Löbbe
 links:
 - name: SOLR-14169
   url: https://issues.apache.org/jira/browse/SOLR-14169

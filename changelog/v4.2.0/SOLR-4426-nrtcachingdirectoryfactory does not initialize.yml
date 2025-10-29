@@ -3,6 +3,7 @@ title: NRTCachingDirectoryFactory does not initialize maxCachedMB and maxMergeSi
 type: fixed
 authors:
 - name: Jack Krupansky
+- name: shalin
 links:
 - name: SOLR-4426
   url: https://issues.apache.org/jira/browse/SOLR-4426

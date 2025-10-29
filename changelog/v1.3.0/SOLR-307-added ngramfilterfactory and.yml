@@ -1,0 +1,8 @@
+title: Added NGramFilterFactory and EdgeNGramFilterFactory.
+type: added
+authors:
+- name: Thomas Peuss
+- name: Otis Gospodnetic
+links:
+- name: SOLR-307
+  url: https://issues.apache.org/jira/browse/SOLR-307

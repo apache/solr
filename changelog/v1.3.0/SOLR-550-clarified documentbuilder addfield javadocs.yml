@@ -1,0 +1,7 @@
+title: Clarified DocumentBuilder addField javadocs
+type: other
+authors:
+- name: gsingers
+links:
+- name: SOLR-550
+  url: https://issues.apache.org/jira/browse/SOLR-550

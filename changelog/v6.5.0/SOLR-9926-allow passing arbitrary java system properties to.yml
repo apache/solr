@@ -2,6 +2,7 @@ title: Allow passing arbitrary java system properties to zkcli.
 type: added
 authors:
 - name: Hrishikesh Gadre
+- name: Mark Miller
 links:
 - name: SOLR-9926
   url: https://issues.apache.org/jira/browse/SOLR-9926

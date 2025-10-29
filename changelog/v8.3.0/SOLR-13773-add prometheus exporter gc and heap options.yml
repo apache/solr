@@ -2,6 +2,7 @@ title: Add Prometheus Exporter GC and Heap options.
 type: changed
 authors:
 - name: Houston Putman
+- name: Anshum Gupta
 - name: David Smiley
 links:
 - name: SOLR-13773

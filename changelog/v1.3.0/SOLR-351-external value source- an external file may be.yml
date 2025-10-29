@@ -1,0 +1,8 @@
+title: External Value Source. An external file may be used to specify the values of
+  a field, currently usable as a ValueSource in a FunctionQuery.
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-351
+  url: https://issues.apache.org/jira/browse/SOLR-351

@@ -2,6 +2,7 @@ title: Throw an error message if the feature store doesn't exist.
 type: changed
 authors:
 - name: Ilaria Petreti
+- name: Alessandro Benedetti
 links:
 - name: SOLR-15493
   url: https://issues.apache.org/jira/browse/SOLR-15493

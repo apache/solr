@@ -4,6 +4,7 @@ type: added
 authors:
 - name: Sunil Srinivasan
 - name: Jack Krupansky
+- name: Steve Rowe
 links:
 - name: SOLR-4864
   url: https://issues.apache.org/jira/browse/SOLR-4864

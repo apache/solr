@@ -2,6 +2,7 @@ title: Solr SQL query parsing fails on multiple LIKE clauses and multiple terms
 type: fixed
 authors:
 - name: Kiran Chitturi
+- name: David Smiley
 links:
 - name: SOLR-16227
   url: https://issues.apache.org/jira/browse/SOLR-16227

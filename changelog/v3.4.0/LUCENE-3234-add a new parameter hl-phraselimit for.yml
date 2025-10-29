@@ -2,6 +2,7 @@ title: add a new parameter hl.phraseLimit for FastVectorHighlighter speed up.
 type: added
 authors:
 - name: Mike Sokolov
+- name: koji
 links:
 - name: LUCENE-3234
   url: https://issues.apache.org/jira/browse/LUCENE-3234

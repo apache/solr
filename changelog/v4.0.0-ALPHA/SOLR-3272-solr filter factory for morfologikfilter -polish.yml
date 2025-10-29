@@ -1,0 +1,10 @@
+title: Solr filter factory for MorfologikFilter (Polish lemmatisation).
+type: added
+authors:
+- name: Rafał Kuć
+- name: Dawid Weiss
+- name: Steven Rowe
+- name: Uwe Schindler
+links:
+- name: SOLR-3272
+  url: https://issues.apache.org/jira/browse/SOLR-3272

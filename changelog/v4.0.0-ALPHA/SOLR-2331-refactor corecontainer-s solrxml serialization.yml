@@ -1,0 +1,11 @@
+title: Refactor CoreContainer's SolrXML serialization code and improve testing
+type: other
+authors:
+- name: Yury Kats
+- name: hossman
+- name: Mark Miller
+links:
+- name: SOLR-2331
+  url: https://issues.apache.org/jira/browse/SOLR-2331
+- name: SOLR-2691
+  url: https://issues.apache.org/jira/browse/SOLR-2691

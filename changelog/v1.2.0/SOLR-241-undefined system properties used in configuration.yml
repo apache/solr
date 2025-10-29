@@ -1,0 +1,9 @@
+title: Undefined system properties used in configuration files now cause a clear message
+  to be logged rather than an obscure exception thrown.
+type: fixed
+authors:
+- name: Koji Sekiguchi
+- name: ehatcher
+links:
+- name: SOLR-241
+  url: https://issues.apache.org/jira/browse/SOLR-241

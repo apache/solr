@@ -1,0 +1,7 @@
+title: Upgraded to Lucene 2.9-dev (r719351)
+type: other
+authors:
+- name: shalin
+links:
+- name: SOLR-465
+  url: https://issues.apache.org/jira/browse/SOLR-465

@@ -2,6 +2,7 @@ title: Add missing IntelliJ IDEA entries to the .gitignore file
 type: other
 authors:
 - name: Pushkar Raste
+- name: Anshum Gupta
 links:
 - name: SOLR-15309
   url: https://issues.apache.org/jira/browse/SOLR-15309

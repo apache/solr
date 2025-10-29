@@ -2,6 +2,7 @@ title: ConnectionManager can become stuck in likeExpired.
 type: fixed
 authors:
 - name: Gregory Chanan
+- name: Mark Miller
 links:
 - name: SOLR-5721
   url: https://issues.apache.org/jira/browse/SOLR-5721

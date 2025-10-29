@@ -2,6 +2,7 @@ title: Give security manager explicit read access to sharedLib
 type: changed
 authors:
 - name: Tomás Fernández Löbbe
+- name: Eric Pugh
 links:
 - name: SOLR-17109
   url: https://issues.apache.org/jira/browse/SOLR-17109

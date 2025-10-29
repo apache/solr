@@ -2,6 +2,7 @@ title: DistributedMap/Queue can create too many Watchers and some code simplific
 type: fixed
 authors:
 - name: Scott Blum
+- name: Mark Miller
 links:
 - name: SOLR-8694
   url: https://issues.apache.org/jira/browse/SOLR-8694

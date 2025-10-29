@@ -2,6 +2,7 @@ title: The "commitOnLeader" part of distributed recovery can use openSearcher=fa
 type: changed
 authors:
 - name: Tomás Fernández Löbbe
+- name: Mark Miller
 links:
 - name: SOLR-3941
   url: https://issues.apache.org/jira/browse/SOLR-3941

@@ -2,6 +2,7 @@ title: Prevent double submit of forms in admin interface.
 type: fixed
 authors:
 - name: Jeffrey Chang
+- name: uschindler
 links:
 - name: SOLR-2455
   url: https://issues.apache.org/jira/browse/SOLR-2455

@@ -1,0 +1,7 @@
+title: Upgrade to Tika 0.3. See http://www.apache.org/dist/lucene/tika/CHANGES-0.3.txt
+type: other
+authors:
+- name: gsingers
+links:
+- name: SOLR-1075
+  url: https://issues.apache.org/jira/browse/SOLR-1075

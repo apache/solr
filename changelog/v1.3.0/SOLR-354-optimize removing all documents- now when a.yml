@@ -1,0 +1,8 @@
+title: Optimize removing all documents. Now when a delete by query of *:* is issued,
+  the current index is removed.
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-354
+  url: https://issues.apache.org/jira/browse/SOLR-354

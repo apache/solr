@@ -4,6 +4,7 @@ title: Introducing json.queries in JSON Request API. Every property of this obje
 type: added
 authors:
 - name: Anatolii Siuniaev
+- name: Mikhail Khludnev
 links:
 - name: SOLR-12490
   url: https://issues.apache.org/jira/browse/SOLR-12490

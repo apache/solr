@@ -3,6 +3,7 @@ title: Fix debugQuery clicking on the Query UI does not show the debug.explain.s
 type: fixed
 authors:
 - name: Shiming Li
+- name: Eric Pugh
 links:
 - name: SOLR-16316
   url: https://issues.apache.org/jira/browse/SOLR-16316

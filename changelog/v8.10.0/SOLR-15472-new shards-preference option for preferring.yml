@@ -3,6 +3,7 @@ title: New shards.preference option for preferring replicas based on their leade
 type: added
 authors:
 - name: wei wang
+- name: Timothy Potter
 links:
 - name: SOLR-15472
   url: https://issues.apache.org/jira/browse/SOLR-15472

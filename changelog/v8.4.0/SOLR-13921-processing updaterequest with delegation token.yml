@@ -2,6 +2,7 @@ title: Processing UpdateRequest with delegation token throws NullPointerExceptio
 type: fixed
 authors:
 - name: Istvan Farkas
+- name: Kevin Risden
 links:
 - name: SOLR-13921
   url: https://issues.apache.org/jira/browse/SOLR-13921

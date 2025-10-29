@@ -1,0 +1,9 @@
+title: Deprecated SolrException( int, ... ) constructors in favor of constructors
+  that takes an ErrorCode enum. This will ensure that all SolrExceptions use a valid
+  HTTP status code.
+type: added
+authors:
+- name: ryan
+links:
+- name: SOLR-249
+  url: https://issues.apache.org/jira/browse/SOLR-249

@@ -1,0 +1,10 @@
+title: In addition to specifying default RequestHandler params in the solrconfig.xml,
+  support has been added for configuring values to be appended to the multi-val request
+  params, as well as for configuring invariant params that can not overridden in the
+  query. SOLR-46
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-46
+  url: https://issues.apache.org/jira/browse/SOLR-46

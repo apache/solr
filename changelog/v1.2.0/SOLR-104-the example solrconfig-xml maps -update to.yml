@@ -1,0 +1,11 @@
+title: 'The example solrconfig.xml maps /update to XmlUpdateRequestHandler using the
+  new request dispatcher (SOLR-104). This requires posted content to have a valid
+  contentType: curl -H ''Content-type:text/xml; charset=utf-8'' The response format
+  matches that of /select and returns standard error codes. To enable solr1.1 style
+  /update, do not map "/update" to any handler in solrconfig.xml'
+type: other
+authors:
+- name: ryan
+links:
+- name: SOLR-104
+  url: https://issues.apache.org/jira/browse/SOLR-104

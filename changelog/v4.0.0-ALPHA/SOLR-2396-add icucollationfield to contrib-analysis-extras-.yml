@@ -1,0 +1,9 @@
+title: Add ICUCollationField to contrib/analysis-extras, which is much more efficient
+  than the Solr 3.x ICUCollationKeyFilterFactory, and also supports Locale-sensitive
+  range queries.
+type: added
+authors:
+- name: rmuir
+links:
+- name: SOLR-2396
+  url: https://issues.apache.org/jira/browse/SOLR-2396

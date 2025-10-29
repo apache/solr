@@ -3,6 +3,7 @@ title: When there is an unexpected exception while trying to run the new leader 
 type: fixed
 authors:
 - name: Po Rui
+- name: Mark Miller
 links:
 - name: SOLR-4064
   url: https://issues.apache.org/jira/browse/SOLR-4064

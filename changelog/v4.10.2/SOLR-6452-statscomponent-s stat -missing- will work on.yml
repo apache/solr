@@ -3,6 +3,7 @@ title: StatsComponent's stat 'missing' will work on fields with docValues=true a
 type: fixed
 authors:
 - name: Xu Zhang
+- name: Tomás Fernández Löbbe
 links:
 - name: SOLR-6452
   url: https://issues.apache.org/jira/browse/SOLR-6452

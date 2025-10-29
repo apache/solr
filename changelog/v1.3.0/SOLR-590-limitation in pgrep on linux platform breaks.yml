@@ -1,0 +1,8 @@
+title: Limitation in pgrep on Linux platform breaks script-utils fixUser.
+type: fixed
+authors:
+- name: Hannes Schmidt
+- name: billa
+links:
+- name: SOLR-590
+  url: https://issues.apache.org/jira/browse/SOLR-590

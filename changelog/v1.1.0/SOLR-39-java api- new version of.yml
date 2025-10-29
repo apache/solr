@@ -1,0 +1,9 @@
+title: 'JAVA API: new version of SolrIndexSearcher.getDocListAndSet() which takes
+  flags SOLR-39'
+type: added
+authors:
+- name: Greg Ludington
+- name: yonik
+links:
+- name: SOLR-39
+  url: https://issues.apache.org/jira/browse/SOLR-39

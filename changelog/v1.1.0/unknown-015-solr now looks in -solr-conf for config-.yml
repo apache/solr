@@ -1,0 +1,5 @@
+title: Solr now looks in ./solr/conf for config, ./solr/data for data configurable
+  via solr.solr.home system property
+type: other
+authors: []
+links: []

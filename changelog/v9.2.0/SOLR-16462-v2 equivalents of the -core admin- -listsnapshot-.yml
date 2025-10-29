@@ -4,6 +4,7 @@ title: v2 equivalents of the "Core Admin" `LISTSNAPSHOT`, `CREATESNAPSHOT`, and 
 type: changed
 authors:
 - name: John Durham
+- name: Jason Gerlowski
 links:
 - name: SOLR-16462
   url: https://issues.apache.org/jira/browse/SOLR-16462

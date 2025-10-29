@@ -1,0 +1,10 @@
+title: bin scripts do not support non-default webapp names. Added "-U" option to specify
+  a full path to the update url, overriding the "-h" (hostname), "-p" (port) and "-w"
+  (webapp name) parameters.
+type: fixed
+authors:
+- name: Jeff Rodenburg
+- name: billa
+links:
+- name: SOLR-188
+  url: https://issues.apache.org/jira/browse/SOLR-188

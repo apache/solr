@@ -1,0 +1,8 @@
+title: The DisMaxRequestHandler now supports multiple occurances of the "fq" param.
+  SOLR-44
+type: other
+authors:
+- name: hossman
+links:
+- name: SOLR-44
+  url: https://issues.apache.org/jira/browse/SOLR-44

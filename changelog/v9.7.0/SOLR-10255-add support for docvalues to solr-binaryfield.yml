@@ -2,6 +2,7 @@ title: Add support for docValues to solr.BinaryField.
 type: added
 authors:
 - name: Alexey Serba
+- name: Mikhail Khludnev
 - name: David Smiley
 links:
 - name: SOLR-10255

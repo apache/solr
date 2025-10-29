@@ -3,6 +3,7 @@ title: Download speed was hard-coded in the "Replication" screen of the Solr Adm
 type: fixed
 authors:
 - name: Florin Babes
+- name: Christine Poerschke
 links:
 - name: SOLR-14571
   url: https://issues.apache.org/jira/browse/SOLR-14571

@@ -1,0 +1,6 @@
+title: Make TextField respect sortMissingFirst and sortMissingLast fields.
+type: fixed
+authors:
+- name: J.J. Larrea
+- name: yonik
+links: []

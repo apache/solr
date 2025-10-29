@@ -1,0 +1,8 @@
+title: Added standalone Java-based command-line updater.
+type: added
+authors:
+- name: Erik Hatcher
+- name: Bertrand Delecretaz
+links:
+- name: SOLR-86
+  url: https://issues.apache.org/jira/browse/SOLR-86

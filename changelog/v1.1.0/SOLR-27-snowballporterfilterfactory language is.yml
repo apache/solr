@@ -1,0 +1,9 @@
+title: SnowballPorterFilterFactory language is configurable via the "language" attribute,
+  with the default being "English". SOLR-27
+type: added
+authors:
+- name: Bertrand Delacretaz
+- name: yonik
+links:
+- name: SOLR-27
+  url: https://issues.apache.org/jira/browse/SOLR-27

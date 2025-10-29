@@ -1,0 +1,9 @@
+title: Improve/simplify example configs; and make index.jsp links more resilient to
+  configs loaded via an InputStream
+type: other
+authors:
+- name: Lars Kotthoff
+- name: hossman
+links:
+- name: SOLR-636
+  url: https://issues.apache.org/jira/browse/SOLR-636

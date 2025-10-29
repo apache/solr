@@ -2,6 +2,7 @@ title: Fix typos in the example configuration
 type: other
 authors:
 - name: Eric Pugh
+- name: rmuir
 links:
 - name: SOLR-2611
   url: https://issues.apache.org/jira/browse/SOLR-2611

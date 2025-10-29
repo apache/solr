@@ -2,6 +2,7 @@ title: Generify SolrCache
 type: other
 authors:
 - name: Jason Rutherglen
+- name: shalin
 links:
 - name: SOLR-1610
   url: https://issues.apache.org/jira/browse/SOLR-1610

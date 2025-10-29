@@ -3,6 +3,7 @@ title: Add FuzzyLookupFactory, which is like AnalyzingSuggester except that it c
 type: added
 authors:
 - name: Areek Zillur
+- name: Robert Muir
 links:
 - name: SOLR-4084
   url: https://issues.apache.org/jira/browse/SOLR-4084

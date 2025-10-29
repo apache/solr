@@ -2,6 +2,7 @@ title: Run SolrZkClient session watch asynchronously.
 type: other
 authors:
 - name: Ramkumar Aiyengar
+- name: Mark Miller
 links:
 - name: SOLR-6570
   url: https://issues.apache.org/jira/browse/SOLR-6570

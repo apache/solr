@@ -1,0 +1,9 @@
+title: Added ShardParams interface and changed several string literals to references
+  to constants in CommonParams.
+type: other
+authors:
+- name: Lars Kotthoff
+- name: Otis Gospodnetic
+links:
+- name: SOLR-592
+  url: https://issues.apache.org/jira/browse/SOLR-592

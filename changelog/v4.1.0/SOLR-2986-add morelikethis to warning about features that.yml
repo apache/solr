@@ -3,6 +3,7 @@ title: Add MoreLikeThis to warning about features that require uniqueKey. Also, 
 type: other
 authors:
 - name: Shawn Heisey
+- name: Mark Miller
 links:
 - name: SOLR-2986
   url: https://issues.apache.org/jira/browse/SOLR-2986

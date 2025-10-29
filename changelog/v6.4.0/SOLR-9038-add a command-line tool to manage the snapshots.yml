@@ -2,6 +2,7 @@ title: Add a command-line tool to manage the snapshots functionality
 type: added
 authors:
 - name: Hrishikesh Gadre
+- name: yonik
 links:
 - name: SOLR-9038
   url: https://issues.apache.org/jira/browse/SOLR-9038

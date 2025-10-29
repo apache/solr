@@ -2,6 +2,7 @@ title: Atomic Update 'remove' operations broken for certain field types in SolrJ
 type: fixed
 authors:
 - name: Thomas Wockinger
+- name: Jason Gerlowski
 links:
 - name: SOLR-13331
   url: https://issues.apache.org/jira/browse/SOLR-13331

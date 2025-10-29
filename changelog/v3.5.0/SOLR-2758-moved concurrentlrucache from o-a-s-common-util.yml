@@ -3,6 +3,7 @@ title: Moved ConcurrentLRUCache from o.a.s.common.util package in the solrj modu
 type: other
 authors:
 - name: David Smiley
+- name: Steve Rowe
 links:
 - name: SOLR-2758
   url: https://issues.apache.org/jira/browse/SOLR-2758

@@ -3,6 +3,7 @@ title: 'Replication: abortfetch command is broken if replication was started by 
 type: fixed
 authors:
 - name: Yury Kats
+- name: shalin
 links:
 - name: SOLR-2791
   url: https://issues.apache.org/jira/browse/SOLR-2791

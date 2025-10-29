@@ -1,0 +1,8 @@
+title: Add shard and collection to SolrCore statistics.
+type: other
+authors:
+- name: Michael Garski
+- name: Mark Miller
+links:
+- name: SOLR-3355
+  url: https://issues.apache.org/jira/browse/SOLR-3355

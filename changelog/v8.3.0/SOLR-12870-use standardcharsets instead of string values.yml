@@ -2,6 +2,7 @@ title: Use StandardCharsets instead of String values
 type: other
 authors:
 - name: Peter Somogyi
+- name: Munendra S N
 links:
 - name: SOLR-12870
   url: https://issues.apache.org/jira/browse/SOLR-12870

@@ -1,0 +1,6 @@
+title: Fixed delete-by-id for field types who's indexed form is different from the
+  printable form
+type: fixed
+authors:
+- name: mainly sortable numeric types
+links: []

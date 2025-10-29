@@ -2,6 +2,7 @@ title: Java 9+ GC Logging filesize parameter should use a unit.
 type: fixed
 authors:
 - name: Tim Underwood
+- name: Uwe Schindler
 links:
 - name: SOLR-12874
   url: https://issues.apache.org/jira/browse/SOLR-12874

@@ -3,6 +3,7 @@ title: Highlighter only highlights values from the first field value in a multiv
 type: fixed
 authors:
 - name: Chris Harris
+- name: yonik
 links:
 - name: SOLR-1624
   url: https://issues.apache.org/jira/browse/SOLR-1624

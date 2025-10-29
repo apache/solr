@@ -3,6 +3,7 @@ title: The rename-core v2 endpoint has been updated to be more REST-ful. RENAME 
 type: changed
 authors:
 - name: Sanjay Dutt
+- name: Jason Gerlowski
 links:
 - name: SOLR-16397
   url: https://issues.apache.org/jira/browse/SOLR-16397

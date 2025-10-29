@@ -1,0 +1,10 @@
+title: Converting to a standard PluginLoader framework. This reworks RequestHandlers,
+  FieldTypes, and QueryResponseWriters to share the same base code for loading and
+  initializing plugins. This adds a new configuration option to define the default
+  RequestHandler and QueryResponseWriter in XML using default="true".
+type: added
+authors:
+- name: ryan
+links:
+- name: SOLR-260
+  url: https://issues.apache.org/jira/browse/SOLR-260

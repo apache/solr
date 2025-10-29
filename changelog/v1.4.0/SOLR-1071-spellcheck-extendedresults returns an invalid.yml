@@ -1,0 +1,9 @@
+title: spellcheck.extendedResults returns an invalid JSON response when count &gt;
+  1. To fix, the extendedResults format was changed.
+type: fixed
+authors:
+- name: Uri Boness
+- name: yonik
+links:
+- name: SOLR-1071
+  url: https://issues.apache.org/jira/browse/SOLR-1071

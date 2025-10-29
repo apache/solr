@@ -2,6 +2,7 @@ title: Upgrade to Tika 1.19.1 when available
 type: other
 authors:
 - name: Tim Allison
+- name: Erick Erickson
 links:
 - name: SOLR-12423
   url: https://issues.apache.org/jira/browse/SOLR-12423

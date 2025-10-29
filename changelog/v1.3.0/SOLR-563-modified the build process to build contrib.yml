@@ -1,0 +1,8 @@
+title: Modified the build process to build contrib projects
+type: other
+authors:
+- name: Shalin Shekhar Mangar
+- name: Otis Gospodnetic
+links:
+- name: SOLR-563
+  url: https://issues.apache.org/jira/browse/SOLR-563

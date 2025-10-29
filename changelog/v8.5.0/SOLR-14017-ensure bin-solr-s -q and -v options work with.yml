@@ -2,6 +2,7 @@ title: Ensure bin/solr's -q and -v options work with examples
 type: fixed
 authors:
 - name: Andy Vuong
+- name: Jason Gerlowski
 links:
 - name: SOLR-14017
   url: https://issues.apache.org/jira/browse/SOLR-14017

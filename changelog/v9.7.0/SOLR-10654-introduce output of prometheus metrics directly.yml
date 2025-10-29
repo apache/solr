@@ -2,6 +2,7 @@ title: Introduce output of Prometheus metrics directly from Solr.
 type: added
 authors:
 - name: Matthew Biscocho
+- name: David Smiley
 links:
 - name: SOLR-10654
   url: https://issues.apache.org/jira/browse/SOLR-10654

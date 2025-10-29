@@ -2,6 +2,7 @@ title: Eliminate superfluous warning from LanguageIdentifierUpdateProcessor
 type: other
 authors:
 - name: Markus Jelsma
+- name: hossman
 links:
 - name: SOLR-3966
   url: https://issues.apache.org/jira/browse/SOLR-3966

@@ -1,0 +1,5 @@
+title: Explicitly set mime-type of .xsl files in web.xml to application/xslt+xml
+type: other
+authors:
+- name: hossman
+links: []
