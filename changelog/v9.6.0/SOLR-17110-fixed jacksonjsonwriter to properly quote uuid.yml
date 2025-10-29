@@ -2,6 +2,7 @@ title: Fixed JacksonJsonWriter to properly quote uuid values in json query respo
 type: fixed
 authors:
 - name: Andrey Bozhko
+- name: Eric Pugh
 links:
 - name: SOLR-17110
   url: https://issues.apache.org/jira/browse/SOLR-17110

@@ -3,6 +3,7 @@ type: other
 authors:
 - name: Jeff Field
 - name: Mike Drob
+- name: janhoy
 links:
 - name: SOLR-9053
   url: https://issues.apache.org/jira/browse/SOLR-9053

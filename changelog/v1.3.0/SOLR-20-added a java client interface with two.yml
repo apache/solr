@@ -1,0 +1,12 @@
+title: Added a java client interface with two implementations. One implementation
+  uses commons httpclient to connect to solr via HTTP. The other connects to solr
+  directly. Check client/java/solrj. This addition also includes tests that start
+  jetty and test a connection using the full HTTP request cycle.
+type: added
+authors:
+- name: Darren Erik Vengroff
+- name: Will Johnson
+- name: ryan
+links:
+- name: SOLR-20
+  url: https://issues.apache.org/jira/browse/SOLR-20

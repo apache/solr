@@ -1,0 +1,8 @@
+title: Date Faceting added to SimpleFacets. Facet counts computed for ranges of size
+  facet.date.gap (a DateMath expression) between facet.date.start and facet.date.end.
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-258
+  url: https://issues.apache.org/jira/browse/SOLR-258

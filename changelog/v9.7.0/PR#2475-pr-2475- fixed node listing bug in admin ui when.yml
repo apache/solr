@@ -3,6 +3,7 @@ title: 'PR-2475: Fixed node listing bug in Admin UI when different hostnames sta
 type: fixed
 authors:
 - name: '@hgdharold'
+- name: Eric Pugh
 links:
 - name: PR#2475
   url: https://github.com/apache/solr/pull/2475

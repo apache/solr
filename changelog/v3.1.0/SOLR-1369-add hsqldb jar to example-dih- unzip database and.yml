@@ -37,7 +37,9 @@ title: 'Add HSQLDB Jar to example-DIH, unzip database and update instructions. =
   The python client that used to ship with Solr is no longer included in the distribution'
 type: other
 authors:
-- name: see client/python/README.txt
+- name: see client
+- name: python
+- name: README.txt
 links:
 - name: SOLR-1369
   url: https://issues.apache.org/jira/browse/SOLR-1369

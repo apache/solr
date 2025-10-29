@@ -1,0 +1,9 @@
+title: Better error messages from SolrQueryParser when field isn't specified and there
+  is no defaultSearchField in schema.xml
+type: fixed
+authors:
+- name: Lars Kotthoff
+- name: hossman
+links:
+- name: SOLR-529
+  url: https://issues.apache.org/jira/browse/SOLR-529

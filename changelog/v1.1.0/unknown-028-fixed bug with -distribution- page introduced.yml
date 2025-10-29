@@ -1,0 +1,6 @@
+title: Fixed bug with "Distribution" page introduced when Versions were added to "Info"
+  page
+type: fixed
+authors:
+- name: hossman
+links: []

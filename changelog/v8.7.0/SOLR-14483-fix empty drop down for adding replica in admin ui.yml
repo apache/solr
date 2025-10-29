@@ -2,6 +2,7 @@ title: Fix empty drop down for adding replica in Admin UI
 type: fixed
 authors:
 - name: Sayan Das
+- name: Eric Pugh
 links:
 - name: SOLR-14483
   url: https://issues.apache.org/jira/browse/SOLR-14483

@@ -1,0 +1,8 @@
+title: A new method "getSolrQueryParser" has been added to the IndexSchema class for
+  retrieving a new SolrQueryParser instance with all options specified in the schema.xml's
+  &lt;solrQueryParser&gt; block set. The documentation for the SolrQueryParser constructor
+  and its use of IndexSchema have also been clarified.
+type: other
+authors:
+- name: Erik Hatcher and hossman
+links: []

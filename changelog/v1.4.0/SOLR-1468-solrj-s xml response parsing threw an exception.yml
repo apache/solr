@@ -1,0 +1,8 @@
+title: SolrJ's XML response parsing threw an exception for null names, such as those
+  produced when facet.missing=true
+type: fixed
+authors:
+- name: yonik
+links:
+- name: SOLR-1468
+  url: https://issues.apache.org/jira/browse/SOLR-1468

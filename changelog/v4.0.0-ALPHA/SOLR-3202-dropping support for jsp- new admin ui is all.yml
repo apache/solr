@@ -1,0 +1,11 @@
+title: Dropping Support for JSP. New Admin UI is all client side
+type: other
+authors:
+- name: ryan
+- name: Aliaksandr Zhuhrou
+- name: Uwe Schindler
+links:
+- name: SOLR-3202
+  url: https://issues.apache.org/jira/browse/SOLR-3202
+- name: SOLR-3244
+  url: https://issues.apache.org/jira/browse/SOLR-3244

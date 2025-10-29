@@ -1,0 +1,9 @@
+title: A HyphenatedWordsFilter, a text analysis filter used during indexing to rejoin
+  words that were hyphenated and split by a newline. SOLR-41
+type: added
+authors:
+- name: Boris Vitez
+- name: yonik
+links:
+- name: SOLR-41
+  url: https://issues.apache.org/jira/browse/SOLR-41

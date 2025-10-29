@@ -3,6 +3,7 @@ title: Throw a exception when issuing a streaming expression and all cores are d
 type: changed
 authors:
 - name: Antoine Bursaux
+- name: Eric Pugh
 links:
 - name: SOLR-16138
   url: https://issues.apache.org/jira/browse/SOLR-16138

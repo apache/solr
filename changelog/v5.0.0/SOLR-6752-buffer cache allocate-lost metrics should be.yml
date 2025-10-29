@@ -2,6 +2,7 @@ title: Buffer Cache allocate/lost metrics should be exposed.
 type: other
 authors:
 - name: Mike Drob
+- name: Mark Miller
 links:
 - name: SOLR-6752
   url: https://issues.apache.org/jira/browse/SOLR-6752

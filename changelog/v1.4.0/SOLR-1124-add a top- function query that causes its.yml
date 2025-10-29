@@ -1,0 +1,9 @@
+title: Add a top() function query that causes its argument to have its values derived
+  from the top level IndexReader, even when invoked from a sub-reader. top() is implicitly
+  used for the ord() and rord() functions.
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-1124
+  url: https://issues.apache.org/jira/browse/SOLR-1124

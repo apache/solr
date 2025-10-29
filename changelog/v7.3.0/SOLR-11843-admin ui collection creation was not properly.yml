@@ -4,6 +4,7 @@ title: Admin UI collection creation was not properly handling the router.field a
 type: fixed
 authors:
 - name: Shawn Heisey
+- name: Cassandra Targett
 links:
 - name: SOLR-11843
   url: https://issues.apache.org/jira/browse/SOLR-11843

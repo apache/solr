@@ -3,6 +3,7 @@ title: Correct SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE example comments in s
 type: fixed
 authors:
 - name: Aren Cambre
+- name: Christine Poerschke
 links:
 - name: SOLR-14584
   url: https://issues.apache.org/jira/browse/SOLR-14584

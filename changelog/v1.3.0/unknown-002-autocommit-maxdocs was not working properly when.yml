@@ -1,0 +1,6 @@
+title: autoCommit/maxDocs was not working properly when large autoCommit/maxTime was
+  specified
+type: fixed
+authors:
+- name: klaas
+links: []

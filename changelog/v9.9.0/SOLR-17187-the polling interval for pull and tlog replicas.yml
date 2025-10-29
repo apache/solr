@@ -3,6 +3,7 @@ title: The polling interval for PULL and TLOG replicas can now be overridden usi
 type: changed
 authors:
 - name: Torsten Koster
+- name: Christine Poerschke
 - name: Jason Gerlowski
 links:
 - name: SOLR-17187

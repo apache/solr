@@ -1,0 +1,8 @@
+title: 'New FunctionQuery functions: sum, product, div, pow, log, sqrt, abs, scale,
+  map. Constants may now be used as a value source.'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-349
+  url: https://issues.apache.org/jira/browse/SOLR-349

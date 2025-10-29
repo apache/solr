@@ -1,0 +1,8 @@
+title: Use Lucene Filters and pass them down to the Lucene search methods to filter
+  earlier and improve performance.
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-1165
+  url: https://issues.apache.org/jira/browse/SOLR-1165

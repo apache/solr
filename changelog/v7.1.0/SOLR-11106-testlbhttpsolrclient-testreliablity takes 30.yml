@@ -3,6 +3,7 @@ title: TestLBHttpSolrClient.testReliablity takes 30 seconds because of the wrong
 type: other
 authors:
 - name: Kensho Hirasawa
+- name: Erick Erickson
 links:
 - name: SOLR-11106
   url: https://issues.apache.org/jira/browse/SOLR-11106

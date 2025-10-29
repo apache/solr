@@ -1,0 +1,11 @@
+title: Add support for Lucene's Trie Range Queries by providing new FieldTypes in
+  schema for int, float, long, double and date. Single-valued Trie based fields with
+  a precisionStep will index multiple precisions and enable faster range queries.
+type: added
+authors:
+- name: Uwe Schindler
+- name: yonik
+- name: shalin
+links:
+- name: SOLR-940
+  url: https://issues.apache.org/jira/browse/SOLR-940

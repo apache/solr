@@ -3,6 +3,7 @@ title: 'Metrics: wt=prometheus fix for non-compliant exposition format containin
 type: fixed
 authors:
 - name: Matthew Biscocho
+- name: David Smiley
 links:
 - name: SOLR-17587
   url: https://issues.apache.org/jira/browse/SOLR-17587

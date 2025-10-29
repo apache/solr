@@ -2,6 +2,7 @@ title: '''WWW-Authenticate'' headers missing in MultiAuthPlugin'
 type: fixed
 authors:
 - name: Lamine Idjeraoui
+- name: Eric Pugh
 links:
 - name: SOLR-17247
   url: https://issues.apache.org/jira/browse/SOLR-17247

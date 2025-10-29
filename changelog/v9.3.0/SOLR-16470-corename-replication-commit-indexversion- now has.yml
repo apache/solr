@@ -3,6 +3,7 @@ title: '`/coreName/replication?commit=indexversion` now has a v2 equivalent, ava
 type: changed
 authors:
 - name: Matthew Biscocho
+- name: Jason Gerlowski
 links:
 - name: SOLR-16470
   url: https://issues.apache.org/jira/browse/SOLR-16470

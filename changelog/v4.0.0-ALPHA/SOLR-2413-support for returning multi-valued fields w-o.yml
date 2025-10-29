@@ -1,0 +1,8 @@
+title: Support for returning multi-valued fields w/o &lt;arr&gt; tag in the XMLResponseWriter
+  was removed. XMLResponseWriter only no longer work with values less then 2.2
+type: other
+authors:
+- name: ryan
+links:
+- name: SOLR-2413
+  url: https://issues.apache.org/jira/browse/SOLR-2413

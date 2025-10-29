@@ -4,6 +4,7 @@ type: added
 authors:
 - name: Christian Moen
 - name: Masaru Hasegawa
+- name: Robert Muir
 links:
 - name: LUCENE-3305
   url: https://issues.apache.org/jira/browse/LUCENE-3305

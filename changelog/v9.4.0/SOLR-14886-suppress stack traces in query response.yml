@@ -2,6 +2,7 @@ title: Suppress stack traces in query response
 type: changed
 authors:
 - name: Isabelle Giguere
+- name: Alex Deparvu
 links:
 - name: SOLR-14886
   url: https://issues.apache.org/jira/browse/SOLR-14886

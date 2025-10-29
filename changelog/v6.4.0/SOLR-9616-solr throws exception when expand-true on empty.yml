@@ -2,6 +2,7 @@ title: Solr throws exception when expand=true on empty index
 type: fixed
 authors:
 - name: Timo Hund
+- name: Ishan Chattopadhyaya
 links:
 - name: SOLR-9616
   url: https://issues.apache.org/jira/browse/SOLR-9616

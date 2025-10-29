@@ -1,0 +1,8 @@
+title: Add search timeout support.
+type: added
+authors:
+- name: Sean Timm
+- name: yonik
+links:
+- name: SOLR-502
+  url: https://issues.apache.org/jira/browse/SOLR-502

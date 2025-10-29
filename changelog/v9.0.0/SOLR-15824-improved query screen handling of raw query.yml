@@ -2,6 +2,7 @@ title: Improved Query Screen handling of raw query parameters.
 type: changed
 authors:
 - name: Betul Ince
+- name: Tim Potter
 - name: Eric Pugh
 links:
 - name: SOLR-15824

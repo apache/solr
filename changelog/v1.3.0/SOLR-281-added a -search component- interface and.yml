@@ -1,0 +1,11 @@
+title: Added a 'Search Component' interface and converted StandardRequestHandler and
+  DisMaxRequestHandler to use this framework.
+type: added
+authors:
+- name: Sharad Agarwal
+- name: Henri Biestro
+- name: yonik
+- name: ryan
+links:
+- name: SOLR-281
+  url: https://issues.apache.org/jira/browse/SOLR-281

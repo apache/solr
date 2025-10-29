@@ -2,6 +2,7 @@ title: Race condition causing occasional SolrIndexSearcher leak when SolrCore is
 type: fixed
 authors:
 - name: Jessica Cheng Mallet
+- name: shalin
 links:
 - name: SOLR-9116
   url: https://issues.apache.org/jira/browse/SOLR-9116

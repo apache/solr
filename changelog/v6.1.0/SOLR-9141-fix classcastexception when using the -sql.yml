@@ -3,6 +3,7 @@ title: Fix ClassCastException when using the /sql handler count() function with 
 type: fixed
 authors:
 - name: Minoru Osuka
+- name: James Dyer
 links:
 - name: SOLR-9141
   url: https://issues.apache.org/jira/browse/SOLR-9141

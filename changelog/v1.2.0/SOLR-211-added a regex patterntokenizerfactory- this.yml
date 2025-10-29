@@ -1,0 +1,8 @@
+title: Added a regex PatternTokenizerFactory. This extracts tokens from the input
+  string using a regex Pattern.
+type: added
+authors:
+- name: Ryan McKinley
+links:
+- name: SOLR-211
+  url: https://issues.apache.org/jira/browse/SOLR-211

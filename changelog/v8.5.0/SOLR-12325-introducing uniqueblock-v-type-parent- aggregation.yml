@@ -2,6 +2,7 @@ title: Introducing uniqueBlock({!v=type:parent}) aggregation
 type: added
 authors:
 - name: Anatolii Siuniaev
+- name: Mikhail Khludnev
 links:
 - name: SOLR-12325
   url: https://issues.apache.org/jira/browse/SOLR-12325

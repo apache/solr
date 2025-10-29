@@ -1,0 +1,9 @@
+title: 'By default, solr will abort after any severe initialization errors. This behavior
+  can be disabled by setting: &lt;abortOnConfigurationError&gt;false&lt;/abortOnConfigurationError&gt;
+  in solrconfig.xml'
+type: other
+authors:
+- name: ryan
+links:
+- name: SOLR-179
+  url: https://issues.apache.org/jira/browse/SOLR-179

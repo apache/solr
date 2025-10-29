@@ -2,6 +2,7 @@ title: Allow StreamingUpdateSolrServer to use a provided HttpClient
 type: added
 authors:
 - name: Gabriele Renzi
+- name: shalin
 links:
 - name: SOLR-1532
   url: https://issues.apache.org/jira/browse/SOLR-1532

@@ -1,0 +1,8 @@
+title: hl.maxAnalyzedChars can be -1 to highlight everything
+type: added
+authors:
+- name: Lars Kotthoff
+- name: klaas
+links:
+- name: SOLR-610
+  url: https://issues.apache.org/jira/browse/SOLR-610

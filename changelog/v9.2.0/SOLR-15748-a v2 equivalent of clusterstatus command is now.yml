@@ -3,6 +3,7 @@ title: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cl
 type: changed
 authors:
 - name: Joshua Ouma
+- name: Jason Gerlowski
 links:
 - name: SOLR-15748
   url: https://issues.apache.org/jira/browse/SOLR-15748

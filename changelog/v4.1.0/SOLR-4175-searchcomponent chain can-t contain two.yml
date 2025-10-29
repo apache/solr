@@ -3,6 +3,7 @@ title: SearchComponent chain can't contain two components of the same class and 
 type: fixed
 authors:
 - name: Tomás Fernández Löbbe
+- name: ehatcher
 links:
 - name: SOLR-4175
   url: https://issues.apache.org/jira/browse/SOLR-4175

@@ -2,6 +2,7 @@ title: Test asserts that block join facets work with parent level fq exclusions.
 type: other
 authors:
 - name: Dr. Oleg Savrasov
+- name: Mikhail Khludnev
 links:
 - name: SOLR-8644
   url: https://issues.apache.org/jira/browse/SOLR-8644

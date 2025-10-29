@@ -2,6 +2,7 @@ title: Have RulesTest consider disk space limitations of where the test is being
 type: other
 authors:
 - name: Christine Poerschke
+- name: Ramkumar Aiyengar
 links:
 - name: SOLR-7629
   url: https://issues.apache.org/jira/browse/SOLR-7629

@@ -3,6 +3,7 @@ title: Partial results from shard queries needlessly discarded for queries witho
 type: fixed
 authors:
 - name: Michael Kosten
+- name: Mike Drob
 - name: Eric Pugh
 links:
 - name: SOLR-15595

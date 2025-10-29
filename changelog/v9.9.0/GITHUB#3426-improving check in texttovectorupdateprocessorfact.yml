@@ -3,6 +3,7 @@ title: Improving check in TextToVectorUpdateProcessorFactory, which breaks updat
 type: fixed
 authors:
 - name: Renato Haeberli
+- name: Alessandro Benedetti
 links:
 - name: GITHUB#3426
   url: https://github.com/apache/solr/pull/3426

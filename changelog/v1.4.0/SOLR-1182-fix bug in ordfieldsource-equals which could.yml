@@ -1,0 +1,8 @@
+title: Fix bug in OrdFieldSource#equals which could cause a bug with OrdFieldSource
+  caching on OrdFieldSource#hashcode collisions.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-1182
+  url: https://issues.apache.org/jira/browse/SOLR-1182

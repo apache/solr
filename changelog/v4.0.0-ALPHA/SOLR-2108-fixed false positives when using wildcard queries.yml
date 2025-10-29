@@ -1,0 +1,9 @@
+title: Fixed false positives when using wildcard queries on fields with reversed wildcard
+  support. For example, a query of *zemog* would match documents that contain 'gomez'.
+type: fixed
+authors:
+- name: Landon Kuhn
+- name: Robert Muir
+links:
+- name: SOLR-2108
+  url: https://issues.apache.org/jira/browse/SOLR-2108

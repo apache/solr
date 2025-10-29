@@ -1,0 +1,8 @@
+title: the python and ruby response writers are now able to correctly output NaN and
+  Infinity in their respective languages.
+type: fixed
+authors:
+- name: klaas
+links:
+- name: SOLR-449
+  url: https://issues.apache.org/jira/browse/SOLR-449

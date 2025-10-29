@@ -1,0 +1,6 @@
+title: Changed distributiondump.jsp to use Solr HOME instead of CWD to set path.
+type: fixed
+authors: []
+links:
+- name: SOLR-333
+  url: https://issues.apache.org/jira/browse/SOLR-333

@@ -1,0 +1,8 @@
+title: 'JSON, Python, Ruby QueryResponseWriters: use wt="json", "python" or "ruby"
+  SOLR-31'
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-31
+  url: https://issues.apache.org/jira/browse/SOLR-31

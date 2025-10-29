@@ -2,6 +2,7 @@ title: The lib paths in example-schemaless will now load correctly.
 type: fixed
 authors:
 - name: Paul Westin
+- name: Shawn Heisey
 links:
 - name: SOLR-5647
   url: https://issues.apache.org/jira/browse/SOLR-5647

@@ -3,6 +3,7 @@ title: Check for Lucene directory locks at startup. In previous versions this ch
 type: other
 authors:
 - name: Luca Cavanna
+- name: Martijn van Groningen
 links:
 - name: SOLR-3156
   url: https://issues.apache.org/jira/browse/SOLR-3156

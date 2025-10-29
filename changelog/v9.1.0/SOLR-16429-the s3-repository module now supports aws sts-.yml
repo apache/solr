@@ -3,6 +3,7 @@ title: The s3-repository module now supports AWS STS, and therefore Web Identity
 type: changed
 authors:
 - name: Josh Souza
+- name: Houston Putman
 links:
 - name: SOLR-16429
   url: https://issues.apache.org/jira/browse/SOLR-16429

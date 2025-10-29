@@ -1,0 +1,9 @@
+title: Fixed spell check collation offset issue.
+type: fixed
+authors:
+- name: Stefan Oestreicher
+- name: Geoffrey Young
+- name: gsingers
+links:
+- name: SOLR-606
+  url: https://issues.apache.org/jira/browse/SOLR-606

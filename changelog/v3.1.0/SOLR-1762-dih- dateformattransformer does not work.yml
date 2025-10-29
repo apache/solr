@@ -3,6 +3,7 @@ title: 'DIH: DateFormatTransformer does not work correctly with non-default loca
 type: fixed
 authors:
 - name: tommy chheng
+- name: noble
 links:
 - name: SOLR-1762
   url: https://issues.apache.org/jira/browse/SOLR-1762

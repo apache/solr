@@ -2,6 +2,7 @@ title: Reduce memory usage for shard splitting by merging segments one at a time
 type: changed
 authors:
 - name: Christine Poerschke
+- name: shalin
 links:
 - name: SOLR-5214
   url: https://issues.apache.org/jira/browse/SOLR-5214

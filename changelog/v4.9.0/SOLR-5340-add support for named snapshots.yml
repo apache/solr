@@ -2,6 +2,7 @@ title: Add support for named snapshots
 type: other
 authors:
 - name: Varun Thacker
+- name: Noble Paul
 links:
 - name: SOLR-5340
   url: https://issues.apache.org/jira/browse/SOLR-5340

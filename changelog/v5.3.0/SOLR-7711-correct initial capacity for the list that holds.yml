@@ -3,6 +3,7 @@ title: Correct initial capacity for the list that holds the default components f
 type: other
 authors:
 - name: Christine Poerschke
+- name: Varun Thacker
 links:
 - name: SOLR-7711
   url: https://issues.apache.org/jira/browse/SOLR-7711

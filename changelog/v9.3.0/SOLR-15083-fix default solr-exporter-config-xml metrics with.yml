@@ -2,6 +2,7 @@ title: Fix default solr-exporter-config.xml metrics with incorrect time unit con
 type: fixed
 authors:
 - name: Matthew Biscocho
+- name: janhoy
 links:
 - name: SOLR-15083
   url: https://issues.apache.org/jira/browse/SOLR-15083

@@ -1,0 +1,8 @@
+title: Fix MoreLikeThis facet counting.
+type: fixed
+authors:
+- name: Pieter Berkel
+- name: ryan
+links:
+- name: SOLR-292
+  url: https://issues.apache.org/jira/browse/SOLR-292

@@ -1,0 +1,12 @@
+title: Support for "Update Plugins" -- RequestHandlers that want access to streams
+  of data for doing updates. ContentStreams can come from the raw POST body, multi-part
+  form data, or remote URLs. Included in this change is a new SolrDispatchFilter that
+  allows RequestHandlers registered with names that begin with a "/" to be accessed
+  using a URL structure based on that name.
+type: added
+authors:
+- name: Ryan McKinley
+- name: hossman
+links:
+- name: SOLR-104
+  url: https://issues.apache.org/jira/browse/SOLR-104

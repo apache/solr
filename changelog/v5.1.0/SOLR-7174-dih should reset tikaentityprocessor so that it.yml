@@ -3,6 +3,7 @@ type: other
 authors:
 - name: Alexandre Rafalovitch
 - name: Gary Taylor
+- name: Noble Paul
 links:
 - name: SOLR-7174
   url: https://issues.apache.org/jira/browse/SOLR-7174

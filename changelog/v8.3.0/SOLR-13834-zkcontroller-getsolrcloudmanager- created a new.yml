@@ -4,6 +4,7 @@ title: ZkController#getSolrCloudManager() created a new instance of ZkStateReade
 type: fixed
 authors:
 - name: Clay Goddard
+- name: Ishan Chattopadhyaya
 links:
 - name: SOLR-13834
   url: https://issues.apache.org/jira/browse/SOLR-13834

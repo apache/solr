@@ -3,6 +3,7 @@ title: When using ZK chroot, it would be nice if Solr would create the initial p
 type: added
 authors:
 - name: Tomás Fernández Löbbe
+- name: Mark Miller
 links:
 - name: SOLR-4028
   url: https://issues.apache.org/jira/browse/SOLR-4028

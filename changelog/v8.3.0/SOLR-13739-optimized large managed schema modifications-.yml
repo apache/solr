@@ -2,6 +2,7 @@ title: Optimized large managed schema modifications; Internal O(n^2) problem.
 type: changed
 authors:
 - name: Thomas Wöckinger
+- name: David Smiley
 links:
 - name: SOLR-13739
   url: https://issues.apache.org/jira/browse/SOLR-13739

@@ -3,6 +3,7 @@ title: Correct message that is logged in solrj's ConnectionManager when an excep
 type: fixed
 authors:
 - name: hu xiaodong
+- name: Christine Poerschke
 links:
 - name: SOLR-13254
   url: https://issues.apache.org/jira/browse/SOLR-13254

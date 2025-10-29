@@ -2,6 +2,7 @@ title: Make post.jar report timing information
 type: other
 authors:
 - name: Upayavira
+- name: janhoy
 links:
 - name: SOLR-4384
   url: https://issues.apache.org/jira/browse/SOLR-4384

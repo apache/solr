@@ -2,6 +2,7 @@ title: Fix TimeZone-dependent test failure in TestEvaluatorBag.
 type: other
 authors:
 - name: Chris Male
+- name: rmuir
 links:
 - name: SOLR-1821
   url: https://issues.apache.org/jira/browse/SOLR-1821

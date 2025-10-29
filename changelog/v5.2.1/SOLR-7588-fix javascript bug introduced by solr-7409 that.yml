@@ -3,6 +3,7 @@ title: Fix javascript bug introduced by SOLR-7409 that breaks the dataimport scr
 type: fixed
 authors:
 - name: Bill Bell
+- name: Shawn Heisey
 links:
 - name: SOLR-7588
   url: https://issues.apache.org/jira/browse/SOLR-7588

@@ -1,0 +1,8 @@
+title: Allow QParser and ValueSourceParsers to be extended with same name
+type: fixed
+authors:
+- name: hossman
+- name: gsingers
+links:
+- name: SOLR-749
+  url: https://issues.apache.org/jira/browse/SOLR-749

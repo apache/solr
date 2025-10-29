@@ -1,0 +1,7 @@
+title: SpellCheckerRequestHandler that uses the SpellChecker from the Lucene contrib.
+type: added
+authors:
+- name: Otis Gospodnetic and Adam Hiatt
+links:
+- name: SOLR-81
+  url: https://issues.apache.org/jira/browse/SOLR-81

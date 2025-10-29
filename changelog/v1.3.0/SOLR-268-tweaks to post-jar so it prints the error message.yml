@@ -1,0 +1,8 @@
+title: Tweaks to post.jar so it prints the error message from Solr.
+type: other
+authors:
+- name: Brian Whitman
+- name: hossman
+links:
+- name: SOLR-268
+  url: https://issues.apache.org/jira/browse/SOLR-268

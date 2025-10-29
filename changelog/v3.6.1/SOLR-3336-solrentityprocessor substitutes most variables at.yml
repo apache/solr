@@ -1,0 +1,9 @@
+title: SolrEntityProcessor substitutes most variables at query time.
+type: fixed
+authors:
+- name: Michael Kroh
+- name: Lance Norskog
+- name: Martijn van Groningen
+links:
+- name: SOLR-3336
+  url: https://issues.apache.org/jira/browse/SOLR-3336

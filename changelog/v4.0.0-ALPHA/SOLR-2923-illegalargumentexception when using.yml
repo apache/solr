@@ -1,0 +1,8 @@
+title: IllegalArgumentException when using useFilterForSortedQuery on an empty index.
+type: fixed
+authors:
+- name: Adrien Grand
+- name: Mark Miller
+links:
+- name: SOLR-2923
+  url: https://issues.apache.org/jira/browse/SOLR-2923

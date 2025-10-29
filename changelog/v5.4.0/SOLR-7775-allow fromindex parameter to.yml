@@ -4,6 +4,7 @@ title: Allow fromIndex parameter to ScoreJoinQParserPlugin {!join score=.. fromI
 type: added
 authors:
 - name: Andrei Beliakov
+- name: Mikhail Khludnev
 links:
 - name: SOLR-7775
   url: https://issues.apache.org/jira/browse/SOLR-7775

@@ -2,6 +2,7 @@ title: Fixed debug output on distributed requests when there are no results foun
 type: fixed
 authors:
 - name: David Bowen
+- name: hossman
 links:
 - name: SOLR-3569
   url: https://issues.apache.org/jira/browse/SOLR-3569

@@ -3,6 +3,7 @@ title: Align allowed collection names and the validation of them in the CreateCo
 type: changed
 authors:
 - name: Will White
+- name: Eric Pugh
 links:
 - name: SOLR-16820
   url: https://issues.apache.org/jira/browse/SOLR-16820

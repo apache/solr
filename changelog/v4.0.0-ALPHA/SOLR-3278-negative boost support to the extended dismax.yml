@@ -1,0 +1,7 @@
+title: Negative boost support to the Extended Dismax Query Parser Boost Query (bq).
+type: added
+authors:
+- name: James Dyer
+links:
+- name: SOLR-3278
+  url: https://issues.apache.org/jira/browse/SOLR-3278

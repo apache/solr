@@ -4,6 +4,7 @@ type: added
 authors:
 - name: Sven Windisch
 - name: Marius Grama
+- name: shalin
 links:
 - name: SOLR-7182
   url: https://issues.apache.org/jira/browse/SOLR-7182

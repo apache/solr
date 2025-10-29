@@ -2,6 +2,7 @@ title: Refactor XMLWriter startTag to allow arbitrary attributes to be written
 type: other
 authors:
 - name: Chris A. Mattmann
+- name: noble
 links:
 - name: SOLR-1592
   url: https://issues.apache.org/jira/browse/SOLR-1592

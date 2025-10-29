@@ -1,0 +1,4 @@
+title: 'much faster unionSize when one of the sets is a HashDocSet: O(smaller_set_size)'
+type: changed
+authors: []
+links: []

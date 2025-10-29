@@ -2,6 +2,7 @@ title: VectorValueSource.floatVal incorrectly used byteVal on sub-sources.
 type: fixed
 authors:
 - name: Tom Liu
+- name: yonik
 links:
 - name: SOLR-2539
   url: https://issues.apache.org/jira/browse/SOLR-2539

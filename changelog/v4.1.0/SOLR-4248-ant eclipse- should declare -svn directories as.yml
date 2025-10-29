@@ -2,6 +2,7 @@ title: '"ant eclipse" should declare .svn directories as derived.'
 type: other
 authors:
 - name: Shawn Heisey
+- name: Mark Miller
 links:
 - name: SOLR-4248
   url: https://issues.apache.org/jira/browse/SOLR-4248

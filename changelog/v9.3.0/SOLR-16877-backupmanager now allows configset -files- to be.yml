@@ -3,6 +3,7 @@ title: BackupManager now allows ConfigSet "files" to be empty, which previously 
 type: fixed
 authors:
 - name: Paul Blanchaert
+- name: Houston Putman
 links:
 - name: SOLR-16877
   url: https://issues.apache.org/jira/browse/SOLR-16877

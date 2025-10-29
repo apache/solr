@@ -1,0 +1,6 @@
+title: The default search field may now be overridden by requests to the standard
+  request handler using the df query parameter.
+type: added
+authors:
+- name: Erik Hatcher
+links: []

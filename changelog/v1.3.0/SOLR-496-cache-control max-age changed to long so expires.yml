@@ -1,0 +1,8 @@
+title: Cache-Control max-age changed to Long so Expires calculation won't cause overflow.
+type: fixed
+authors:
+- name: Thomas Peuss
+- name: hossman
+links:
+- name: SOLR-496
+  url: https://issues.apache.org/jira/browse/SOLR-496

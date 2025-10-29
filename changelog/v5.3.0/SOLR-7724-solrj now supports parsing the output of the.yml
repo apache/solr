@@ -2,6 +2,7 @@ title: SolrJ now supports parsing the output of the clustering component.
 type: added
 authors:
 - name: Alessandro Benedetti
+- name: Dawid Weiss
 links:
 - name: SOLR-7724
   url: https://issues.apache.org/jira/browse/SOLR-7724

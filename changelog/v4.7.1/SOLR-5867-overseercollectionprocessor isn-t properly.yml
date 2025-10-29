@@ -2,6 +2,7 @@ title: OverseerCollectionProcessor isn't properly generating https urls in some 
 type: fixed
 authors:
 - name: Steve Davids
+- name: shalin
 links:
 - name: SOLR-5867
   url: https://issues.apache.org/jira/browse/SOLR-5867

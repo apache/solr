@@ -1,0 +1,9 @@
+title: Give RequestHandlers the possiblity to suppress the generation of HTTP caching
+  headers.
+type: fixed
+authors:
+- name: Thomas Peuss
+- name: Otis Gospodnetic
+links:
+- name: SOLR-505
+  url: https://issues.apache.org/jira/browse/SOLR-505

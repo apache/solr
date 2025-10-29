@@ -3,6 +3,7 @@ title: Give DistributedSearchTestCase / JettySolrRunner the ability to specify e
 type: other
 authors:
 - name: Greg Chanan
+- name: Mark Miller
 links:
 - name: SOLR-5548
   url: https://issues.apache.org/jira/browse/SOLR-5548

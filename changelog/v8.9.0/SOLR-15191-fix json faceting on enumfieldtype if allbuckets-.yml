@@ -3,6 +3,7 @@ title: Fix JSON Faceting on EnumFieldType if allBuckets, numBuckets or missing i
 type: fixed
 authors:
 - name: Thomas Wöckinger
+- name: David Smiley
 links:
 - name: SOLR-15191
   url: https://issues.apache.org/jira/browse/SOLR-15191

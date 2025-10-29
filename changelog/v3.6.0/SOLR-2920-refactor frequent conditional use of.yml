@@ -3,6 +3,7 @@ title: Refactor frequent conditional use of DefaultSolrParams and AppendedSolrPa
 type: other
 authors:
 - name: David Smiley
+- name: hossman
 links:
 - name: SOLR-2920
   url: https://issues.apache.org/jira/browse/SOLR-2920

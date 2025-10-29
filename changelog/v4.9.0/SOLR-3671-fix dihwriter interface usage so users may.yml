@@ -3,6 +3,7 @@ title: Fix DIHWriter interface usage so users may implement writers that output 
 type: other
 authors:
 - name: Roman Chyla
+- name: James Dyer
 links:
 - name: SOLR-3671
   url: https://issues.apache.org/jira/browse/SOLR-3671

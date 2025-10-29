@@ -5,6 +5,7 @@ title: resolve DataImportHandler deltaQuery column against pk when pk has a pref
 type: fixed
 authors:
 - name: gthb
+- name: yonik
 links:
 - name: SOLR-1191
   url: https://issues.apache.org/jira/browse/SOLR-1191

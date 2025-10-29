@@ -3,6 +3,7 @@ title: Addition of an abstract BaseResponseWriter class to simplify the developm
 type: other
 authors:
 - name: Chris A. Mattmann
+- name: noble
 links:
 - name: SOLR-1516
   url: https://issues.apache.org/jira/browse/SOLR-1516

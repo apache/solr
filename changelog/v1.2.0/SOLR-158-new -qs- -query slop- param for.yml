@@ -1,0 +1,10 @@
+title: new "qs" (Query Slop) param for DisMaxRequestHandler allows for specifying
+  the amount of default slop to use when parsing explicit phrase queries from the
+  user.
+type: added
+authors:
+- name: Adam Hiatt
+- name: hossman
+links:
+- name: SOLR-158
+  url: https://issues.apache.org/jira/browse/SOLR-158

@@ -3,6 +3,7 @@ title: Unload core v2 endpoints have been updated to be more REST-ful. UNLOAD is
 type: changed
 authors:
 - name: Sanjay Dutt
+- name: Jason Gerlowski
 links:
 - name: SOLR-16397
   url: https://issues.apache.org/jira/browse/SOLR-16397

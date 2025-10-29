@@ -2,6 +2,7 @@ title: Fix Http2SolrClient's exception message when serverBaseUrl is null
 type: fixed
 authors:
 - name: Alex Deparvu
+- name: Kevin Risden
 links:
 - name: SOLR-16638
   url: https://issues.apache.org/jira/browse/SOLR-16638

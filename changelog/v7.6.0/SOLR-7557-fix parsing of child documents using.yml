@@ -1,7 +1,9 @@
 title: Fix parsing of child documents using queryAndStreamResponse
 type: fixed
 authors:
-- name: Marvin Bredal Lillehaug/Stian Østerhaug
+- name: Marvin Bredal Lillehaug
+- name: Stian Østerhaug
+- name: janhoy
 links:
 - name: SOLR-7557
   url: https://issues.apache.org/jira/browse/SOLR-7557

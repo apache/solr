@@ -3,6 +3,7 @@ type: added
 authors:
 - name: Anurag Sharma
 - name: Steve Davids
+- name: shalin
 links:
 - name: SOLR-6449
   url: https://issues.apache.org/jira/browse/SOLR-6449

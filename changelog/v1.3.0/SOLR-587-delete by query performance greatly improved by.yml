@@ -1,0 +1,8 @@
+title: Delete by Query performance greatly improved by using new underlying Lucene
+  IndexWriter implementation.
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-587
+  url: https://issues.apache.org/jira/browse/SOLR-587

@@ -2,6 +2,7 @@ title: Fixed local params to work correctly with multivalued params
 type: fixed
 authors:
 - name: Demian Katz
+- name: hossman
 links:
 - name: SOLR-2798
   url: https://issues.apache.org/jira/browse/SOLR-2798

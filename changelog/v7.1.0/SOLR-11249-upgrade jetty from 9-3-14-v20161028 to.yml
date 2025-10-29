@@ -2,6 +2,7 @@ title: Upgrade Jetty from 9.3.14.v20161028 to 9.3.20.v20170531
 type: other
 authors:
 - name: Michael Braun
+- name: David Smiley
 links:
 - name: SOLR-11249
   url: https://issues.apache.org/jira/browse/SOLR-11249

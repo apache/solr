@@ -2,6 +2,7 @@ title: Fix NPE in OCP when non-existent sliceId is used for a deleteShard reques
 type: fixed
 authors:
 - name: Ramkumar Aiyengar
+- name: Anshum Gupta
 links:
 - name: SOLR-6284
   url: https://issues.apache.org/jira/browse/SOLR-6284

@@ -3,6 +3,7 @@ title: Fixed StatsComponent to no longer return duplicated information when requ
 type: fixed
 authors:
 - name: Roman Kliewer
+- name: hossman
 links:
 - name: SOLR-2981
   url: https://issues.apache.org/jira/browse/SOLR-2981

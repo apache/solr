@@ -5,6 +5,7 @@ authors:
 - name: Alexey Kozhemiakin
 - name: Sebastian Koziel
 - name: Radoslaw Zielinski
+- name: Mikhail Khludnev
 links:
 - name: SOLR-5725
   url: https://issues.apache.org/jira/browse/SOLR-5725

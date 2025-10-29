@@ -3,6 +3,7 @@ title: Scope ZK election nodes by session to prevent elections from interfering 
 type: fixed
 authors:
 - name: Scott Blum
+- name: Mark Miller
 - name: "Alan\n  Woodward"
 links:
 - name: SOLR-8697

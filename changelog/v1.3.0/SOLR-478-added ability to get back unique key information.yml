@@ -1,0 +1,7 @@
+title: Added ability to get back unique key information from the LukeRequestHandler.
+type: added
+authors:
+- name: gsingers
+links:
+- name: SOLR-478
+  url: https://issues.apache.org/jira/browse/SOLR-478

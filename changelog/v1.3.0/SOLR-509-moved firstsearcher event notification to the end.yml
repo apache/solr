@@ -1,0 +1,8 @@
+title: Moved firstSearcher event notification to the end of the SolrCore constructor
+type: fixed
+authors:
+- name: Koji Sekiguchi
+- name: gsingers
+links:
+- name: SOLR-509
+  url: https://issues.apache.org/jira/browse/SOLR-509

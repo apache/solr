@@ -2,6 +2,7 @@ title: Add support for adding core properties to SolrJ Collection Admin Request 
 type: other
 authors:
 - name: Varun Thacker
+- name: Anshum Gupta
 links:
 - name: SOLR-5922
   url: https://issues.apache.org/jira/browse/SOLR-5922

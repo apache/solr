@@ -3,6 +3,7 @@ title: Fix for class-cast issues during atomic-update 'removeregex' operations. 
 type: fixed
 authors:
 - name: Tim Owen
+- name: Jason Gerlowski
 links:
 - name: SOLR-13539
   url: https://issues.apache.org/jira/browse/SOLR-13539

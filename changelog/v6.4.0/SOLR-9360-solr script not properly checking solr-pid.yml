@@ -2,6 +2,7 @@ title: Solr script not properly checking SOLR_PID
 type: fixed
 authors:
 - name: Alessandro Benedetti
+- name: Erick Erickson
 links:
 - name: SOLR-9360
   url: https://issues.apache.org/jira/browse/SOLR-9360

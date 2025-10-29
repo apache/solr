@@ -2,6 +2,7 @@ title: Expose the term count in /admin/segments handler if fieldInfo=true.
 type: changed
 authors:
 - name: Rahul Goswami
+- name: David Smiley and Christine Poerschke
 links:
 - name: SOLR-17038
   url: https://issues.apache.org/jira/browse/SOLR-17038
