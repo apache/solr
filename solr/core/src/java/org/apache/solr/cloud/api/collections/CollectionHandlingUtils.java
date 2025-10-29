@@ -666,6 +666,18 @@ public class CollectionHandlingUtils {
       shardHandler.submit(sreq, replica, sreq.params);
     }
 
+    /**
+     * Processes all responses (waiting, if necessary), populating "success" or "failure" keyed data
+     * into {@code results} per shard response in turn keyed by node. If {@code asyncId} mode, will
+     * wait for their completion.
+     *
+     * @param results will hold shard request results aggregated to "success" and "failure" keys.
+     * @param abortOnError if any shard request has an exception, throw it. This doesn't apply to
+     *     "STATUS=failed" responses.
+     * @param msgOnError the exception message for {@code abortOnError}
+     */
+    // TODO it's too confusing how we sometime abort on error yet if async or find STATUS=FAILED not
+    //  Recommend not doing any abort.  Have a separate utility method that looks for "failure".
     void processResponses(
         NamedList<Object> results,
         ShardHandler shardHandler,
@@ -698,8 +710,8 @@ public class CollectionHandlingUtils {
       } while (srsp != null);
 
       // If request is async wait for the core admin to complete before returning
+      // note: ignore abortOnError when async
       if (asyncId != null) {
-        // TODO: Shouldn't we abort with msgOnError exception when failure?
         waitForAsyncCallsToComplete(results);
         shardAsyncIdByNode.clear();
       }
