@@ -2,6 +2,7 @@ title: Fix lsof edge cases in the solr CLI script
 type: fixed
 authors:
 - name: Martijn Koster
+- name: janhoy
 links:
 - name: SOLR-13089
   url: https://issues.apache.org/jira/browse/SOLR-13089

@@ -4,6 +4,7 @@ type: fixed
 authors:
 - name: David Smiley
 - name: Peter Wolanin
+- name: Erick Erickson
 links:
 - name: SOLR-2535
   url: https://issues.apache.org/jira/browse/SOLR-2535

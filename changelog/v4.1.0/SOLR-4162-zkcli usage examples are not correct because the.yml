@@ -3,6 +3,7 @@ title: ZkCli usage examples are not correct because the zkhost parameter is not 
 type: fixed
 authors:
 - name: Tomás Fernández Löbbe
+- name: Mark Miller
 links:
 - name: SOLR-4162
   url: https://issues.apache.org/jira/browse/SOLR-4162

@@ -3,6 +3,7 @@ title: The commitWithin parameter is not passed on for deleteById in UpdateReque
 type: fixed
 authors:
 - name: Jessica Cheng Mallet
+- name: Erick Erickson
 links:
 - name: SOLR-8651
   url: https://issues.apache.org/jira/browse/SOLR-8651

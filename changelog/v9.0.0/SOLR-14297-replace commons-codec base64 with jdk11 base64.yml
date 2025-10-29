@@ -2,6 +2,7 @@ title: Replace commons-codec Base64 with JDK11 Base64
 type: other
 authors:
 - name: Andras Salamon
+- name: Houston Putman
 links:
 - name: SOLR-14297
   url: https://issues.apache.org/jira/browse/SOLR-14297

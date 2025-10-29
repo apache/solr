@@ -2,6 +2,7 @@ title: formatDate should use the current NOW value always
 type: fixed
 authors:
 - name: Sean Timm
+- name: noble
 links:
 - name: SOLR-1811
   url: https://issues.apache.org/jira/browse/SOLR-1811

@@ -2,6 +2,7 @@ title: Reuse comparator objects in contrib/ltr rescorer classes.
 type: changed
 authors:
 - name: marcosfpr
+- name: Christine Poerschke
 links:
 - name: SOLR-15496
   url: https://issues.apache.org/jira/browse/SOLR-15496

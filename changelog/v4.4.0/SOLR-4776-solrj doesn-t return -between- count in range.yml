@@ -2,6 +2,7 @@ title: Solrj doesn't return "between" count in range facets
 type: fixed
 authors:
 - name: Philip K. Warren
+- name: shalin
 links:
 - name: SOLR-4776
   url: https://issues.apache.org/jira/browse/SOLR-4776

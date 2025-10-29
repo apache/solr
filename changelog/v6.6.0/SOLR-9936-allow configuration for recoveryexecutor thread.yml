@@ -2,6 +2,7 @@ title: Allow configuration for recoveryExecutor thread pool size.
 type: added
 authors:
 - name: Tim Owen
+- name: Mark Miller
 links:
 - name: SOLR-9936
   url: https://issues.apache.org/jira/browse/SOLR-9936

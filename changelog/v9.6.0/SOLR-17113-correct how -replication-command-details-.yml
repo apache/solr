@@ -2,6 +2,7 @@ title: Correct how `/replication?command=details` describes errors in backup ope
 type: fixed
 authors:
 - name: Przemyslaw Ciezkowski
+- name: Christine Poerschke and Jason Gerlowski
 links:
 - name: SOLR-17113
   url: https://issues.apache.org/jira/browse/SOLR-17113

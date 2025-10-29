@@ -1,0 +1,9 @@
+title: 'The UpdateRequestHandler now accepts multiple delete options within a single
+  request. For example, sending: &lt;delete&gt;&lt;id&gt;1&lt;/id&gt;&lt;id&gt;2&lt;/id&gt;&lt;/delete&gt;
+  will delete both 1 and 2.'
+type: added
+authors:
+- name: ryan
+links:
+- name: SOLR-133
+  url: https://issues.apache.org/jira/browse/SOLR-133

@@ -3,6 +3,7 @@ title: UpdateShardHandler needs to use the system default scheme registry to pro
 type: fixed
 authors:
 - name: Steve Davids
+- name: shalin
 links:
 - name: SOLR-5866
   url: https://issues.apache.org/jira/browse/SOLR-5866

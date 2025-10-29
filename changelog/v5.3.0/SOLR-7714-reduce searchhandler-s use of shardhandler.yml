@@ -3,6 +3,7 @@ title: Reduce SearchHandler's use of ShardHandler objects across shards in a sea
 type: changed
 authors:
 - name: Christine Poerschke
+- name: Ramkumar Aiyengar
 links:
 - name: SOLR-7714
   url: https://issues.apache.org/jira/browse/SOLR-7714

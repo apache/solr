@@ -6,6 +6,7 @@ title: 'Schemaless concurrency improvements: - Fixed an NPE when reloading a man
 type: fixed
 authors:
 - name: Gregory Chanan
+- name: Steve Rowe
 links:
 - name: SOLR-6137
   url: https://issues.apache.org/jira/browse/SOLR-6137

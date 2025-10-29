@@ -4,6 +4,7 @@ title: Update FileBasedSpellChecker and IndexBasedSpellChecker to accept accurac
 type: other
 authors:
 - name: Andrey Bozhko
+- name: Eric Pugh
 links:
 - name: SOLR-12089
   url: https://issues.apache.org/jira/browse/SOLR-12089

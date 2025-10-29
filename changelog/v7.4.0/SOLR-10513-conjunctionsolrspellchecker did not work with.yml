@@ -2,6 +2,7 @@ title: ConjunctionSolrSpellChecker did not work with LuceneLevenshteinDistance
 type: fixed
 authors:
 - name: Amrit Sarkar
+- name: James Dyer
 links:
 - name: SOLR-10513
   url: https://issues.apache.org/jira/browse/SOLR-10513

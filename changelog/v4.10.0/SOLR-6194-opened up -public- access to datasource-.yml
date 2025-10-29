@@ -3,6 +3,7 @@ title: Opened up "public" access to DataSource, DocBuilder, and EntityProcessorW
 type: other
 authors:
 - name: Aaron LaBella
+- name: ehatcher
 links:
 - name: SOLR-6194
   url: https://issues.apache.org/jira/browse/SOLR-6194

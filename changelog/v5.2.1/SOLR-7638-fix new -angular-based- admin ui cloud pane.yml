@@ -2,6 +2,7 @@ title: Fix new (Angular-based) admin UI Cloud pane
 type: fixed
 authors:
 - name: Upayavira
+- name: ehatcher
 links:
 - name: SOLR-7638
   url: https://issues.apache.org/jira/browse/SOLR-7638

@@ -1,0 +1,15 @@
+title: '/ SOLR-695: If you have used "MultiCore" functionality in an unreleased version
+  of 1.3-dev, many classes and configs have been renamed for the official 1.3 release.
+  Speciffically, solr.xml has replaced multicore.xml, and uses a slightly different
+  syntax. The solrj classes: MultiCore{Request/Response/Params} have been renamed:
+  CoreAdmin{Request/Response/Params}'
+type: other
+authors:
+- name: hossman
+- name: ryan
+- name: Henri Biestro
+links:
+- name: SOLR-689
+  url: https://issues.apache.org/jira/browse/SOLR-689
+- name: SOLR-695
+  url: https://issues.apache.org/jira/browse/SOLR-695

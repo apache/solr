@@ -1,0 +1,8 @@
+title: Include shard info in distributed response when shards.info=true
+type: added
+authors:
+- name: Russell Black
+- name: ryan
+links:
+- name: SOLR-3134
+  url: https://issues.apache.org/jira/browse/SOLR-3134

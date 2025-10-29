@@ -3,6 +3,7 @@ title: Creating a new core via the HTTP API that results in a transient being un
 type: fixed
 authors:
 - name: Olivier Soyez
+- name: Erick Erickson
 links:
 - name: SOLR-5388
   url: https://issues.apache.org/jira/browse/SOLR-5388

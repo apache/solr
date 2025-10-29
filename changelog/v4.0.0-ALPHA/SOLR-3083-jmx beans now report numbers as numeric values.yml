@@ -1,0 +1,9 @@
+title: JMX beans now report Numbers as numeric values rather then String
+type: other
+authors:
+- name: Tagged Siteops
+- name: Greg Bowyer
+- name: ryan
+links:
+- name: SOLR-3083
+  url: https://issues.apache.org/jira/browse/SOLR-3083

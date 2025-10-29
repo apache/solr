@@ -2,6 +2,7 @@ title: Callers of ManagedIndexSchema mutators should hold the schemaUpdateLock.
 type: fixed
 authors:
 - name: Gregory Chanan
+- name: Steve Rowe
 links:
 - name: SOLR-6180
   url: https://issues.apache.org/jira/browse/SOLR-6180

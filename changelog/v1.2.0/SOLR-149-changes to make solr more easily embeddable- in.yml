@@ -1,0 +1,9 @@
+title: Changes to make Solr more easily embeddable, in addition to logging which request
+  handler handled each request.
+type: added
+authors:
+- name: Ryan McKinley
+- name: yonik
+links:
+- name: SOLR-149
+  url: https://issues.apache.org/jira/browse/SOLR-149

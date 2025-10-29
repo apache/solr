@@ -3,6 +3,7 @@ title: Allow specifying "spellcheck.maxResultsForSuggest" as a percentage of fil
 type: added
 authors:
 - name: Markus Jelsma
+- name: James Dyer
 links:
 - name: SOLR-4280
   url: https://issues.apache.org/jira/browse/SOLR-4280

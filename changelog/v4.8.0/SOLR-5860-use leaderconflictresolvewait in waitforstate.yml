@@ -3,6 +3,7 @@ title: Use leaderConflictResolveWait in WaitForState during recovery/startup, im
 type: added
 authors:
 - name: Timothy Potter
+- name: shalin
 links:
 - name: SOLR-5860
   url: https://issues.apache.org/jira/browse/SOLR-5860

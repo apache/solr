@@ -3,6 +3,7 @@ title: Learning To Rank - Added support for null feature values in multiple addi
 type: added
 authors:
 - name: Anna Ruggero
+- name: Alessandro Benedetti
 links:
 - name: SOLR-16596
   url: https://issues.apache.org/jira/browse/SOLR-16596

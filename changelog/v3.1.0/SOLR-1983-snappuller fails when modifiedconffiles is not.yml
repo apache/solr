@@ -3,6 +3,7 @@ title: snappuller fails when modifiedConfFiles is not empty and full copy of ind
 type: fixed
 authors:
 - name: Alexander Kanarsky
+- name: yonik
 links:
 - name: SOLR-1983
   url: https://issues.apache.org/jira/browse/SOLR-1983

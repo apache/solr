@@ -1,0 +1,8 @@
+title: DataImportHandler skips commit if no data has been updated.
+type: changed
+authors:
+- name: Wojtek Piaseczny
+- name: shalin
+links:
+- name: SOLR-974
+  url: https://issues.apache.org/jira/browse/SOLR-974

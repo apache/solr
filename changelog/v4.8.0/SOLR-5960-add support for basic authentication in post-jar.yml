@@ -3,6 +3,7 @@ title: 'Add support for basic authentication in post.jar tool, e.g.: java -Durl=
 type: added
 authors:
 - name: Sameer Maggon
+- name: Uwe Schindler
 links:
 - name: SOLR-5960
   url: https://issues.apache.org/jira/browse/SOLR-5960

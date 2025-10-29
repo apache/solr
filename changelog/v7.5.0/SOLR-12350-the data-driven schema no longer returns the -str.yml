@@ -1,0 +1,8 @@
+title: The data-driven schema no longer returns the *_str field-copy of text fields
+  by default. The *_str field is still created and can be used for e.g. sorting, but
+  to retrieve it you now need to explicitly list it in "fl" SOLR-12350
+type: upgrade_notes
+authors: []
+links:
+- name: SOLR-12350
+  url: https://issues.apache.org/jira/browse/SOLR-12350

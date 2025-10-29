@@ -2,6 +2,7 @@ title: Improve the performance of DataImportHandler for large delta-import updat
 type: changed
 authors:
 - name: Mark Waddle
+- name: rmuir
 links:
 - name: SOLR-2200
   url: https://issues.apache.org/jira/browse/SOLR-2200

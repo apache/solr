@@ -3,6 +3,7 @@ title: fix to SpellingQueryConverter to properly strip out colons in field-speci
 type: fixed
 authors:
 - name: Amrit Sarkar
+- name: James Dyer
 links:
 - name: SOLR-10323
   url: https://issues.apache.org/jira/browse/SOLR-10323

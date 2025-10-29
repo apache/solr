@@ -3,6 +3,7 @@ title: A v2 equivalent of the `/admin/collections?action=DELETENODE` command is 
 type: changed
 authors:
 - name: Bence Szabo
+- name: Jason Gerlowski
 links:
 - name: SOLR-11029
   url: https://issues.apache.org/jira/browse/SOLR-11029

@@ -2,6 +2,7 @@ title: Take SOLR_MODULES, configured by solr.in.sh, into account.
 type: fixed
 authors:
 - name: Thomas Wöckinger
+- name: janhoy
 links:
 - name: SOLR-16406
   url: https://issues.apache.org/jira/browse/SOLR-16406

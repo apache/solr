@@ -1,0 +1,12 @@
+title: 'Some servlet containers (including Tomcat and Resin) do not obey the specified
+  charset. Rather than letting the container handle it solr now uses the charset from
+  the header contentType to decode posted content. Using the contentType: "text/xml;
+  charset=utf-8" will force utf-8 encoding. If you do not specify a contentType, it
+  will use the platform default.'
+type: fixed
+authors:
+- name: Koji Sekiguchi
+- name: ryan
+links:
+- name: SOLR-214
+  url: https://issues.apache.org/jira/browse/SOLR-214

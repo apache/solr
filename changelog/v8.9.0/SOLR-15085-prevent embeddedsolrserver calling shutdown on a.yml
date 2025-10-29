@@ -3,6 +3,7 @@ title: Prevent EmbeddedSolrServer calling shutdown on a CoreContainer that was p
 type: changed
 authors:
 - name: Tim Owen
+- name: Mike Drob
 links:
 - name: SOLR-15085
   url: https://issues.apache.org/jira/browse/SOLR-15085

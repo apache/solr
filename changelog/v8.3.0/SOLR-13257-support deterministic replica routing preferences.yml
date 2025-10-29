@@ -2,6 +2,7 @@ title: Support deterministic replica routing preferences for better cache usage
 type: added
 authors:
 - name: Michael Gibney
+- name: Christine Poerschke
 - name: Tomás Fernández Löbbe
 links:
 - name: SOLR-13257

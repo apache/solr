@@ -2,6 +2,7 @@ title: DateFormatTransformer doesn't resolve dateTimeFormat.
 type: fixed
 authors:
 - name: Aaron LaBella
+- name: shalin
 links:
 - name: SOLR-6129
   url: https://issues.apache.org/jira/browse/SOLR-6129

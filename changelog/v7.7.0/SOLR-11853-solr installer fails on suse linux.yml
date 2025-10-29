@@ -2,6 +2,7 @@ title: Solr installer fails on SuSE linux
 type: fixed
 authors:
 - name: Markus Mandalka
+- name: janhoy
 links:
 - name: SOLR-11853
   url: https://issues.apache.org/jira/browse/SOLR-11853

@@ -3,6 +3,7 @@ title: Fixed example/example-DIH/ issues with "tika" and "solr" configurations, 
 type: fixed
 authors:
 - name: Daniel Shchyokin
+- name: ehatcher
 links:
 - name: SOLR-6378
   url: https://issues.apache.org/jira/browse/SOLR-6378

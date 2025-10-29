@@ -3,6 +3,7 @@ type: added
 authors:
 - name: Christine Poerschke
 - name: Ramkumar Aiyengar
+- name: Mark Miller
 links:
 - name: SOLR-6729
   url: https://issues.apache.org/jira/browse/SOLR-6729

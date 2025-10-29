@@ -1,0 +1,9 @@
+title: TextResponseWriter can write SolrDocuments and SolrDocumentLists the same way
+  it writes Document and DocList.
+type: added
+authors:
+- name: yonik
+- name: ryan
+links:
+- name: SOLR-446
+  url: https://issues.apache.org/jira/browse/SOLR-446

@@ -2,6 +2,7 @@ title: Adding getter method for defaultCollection on CloudSolrServer.
 type: added
 authors:
 - name: Furkan KAMACI
+- name: Mark Miller
 links:
 - name: SOLR-4973
   url: https://issues.apache.org/jira/browse/SOLR-4973

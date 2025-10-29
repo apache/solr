@@ -1,0 +1,12 @@
+title: use Lucene updateDocument, deleteDocuments methods. This removes the maxBufferedDeletes
+  parameter added by SOLR-310 as Lucene now manages the deletes. This provides slightly
+  better indexing performance and makes overwrites atomic, eliminating the possibility
+  of a crash causing duplicates.
+type: other
+authors:
+- name: yonik
+links:
+- name: SOLR-559
+  url: https://issues.apache.org/jira/browse/SOLR-559
+- name: SOLR-310
+  url: https://issues.apache.org/jira/browse/SOLR-310

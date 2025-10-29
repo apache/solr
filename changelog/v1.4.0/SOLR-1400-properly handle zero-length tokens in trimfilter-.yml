@@ -1,0 +1,9 @@
+title: Properly handle zero-length tokens in TrimFilter. This was not a bug in any
+  released version.
+type: fixed
+authors:
+- name: Peter Wolanin
+- name: gsingers
+links:
+- name: SOLR-1400
+  url: https://issues.apache.org/jira/browse/SOLR-1400

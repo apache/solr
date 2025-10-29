@@ -1,0 +1,8 @@
+title: Added support for Lucene's "surround" query parser.
+type: added
+authors:
+- name: Simon Rosenthal
+- name: ehatcher
+links:
+- name: SOLR-2703
+  url: https://issues.apache.org/jira/browse/SOLR-2703

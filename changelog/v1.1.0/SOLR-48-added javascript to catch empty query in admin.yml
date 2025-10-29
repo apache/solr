@@ -1,0 +1,7 @@
+title: Added javascript to catch empty query in admin query forms (Tomislav Nakic-Alfirevic
+  via billa, SOLR-48
+type: other
+authors: []
+links:
+- name: SOLR-48
+  url: https://issues.apache.org/jira/browse/SOLR-48

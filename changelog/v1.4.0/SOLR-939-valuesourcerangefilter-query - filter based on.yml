@@ -1,0 +1,8 @@
+title: ValueSourceRangeFilter/Query - filter based on values in a FieldCache entry
+  or on any arbitrary function of field values.
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-939
+  url: https://issues.apache.org/jira/browse/SOLR-939

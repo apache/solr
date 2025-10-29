@@ -3,6 +3,7 @@ title: The semi-internal `/admin/cores?action=restorecore` API now has a v2 equi
 type: changed
 authors:
 - name: Sayanti Dey
+- name: Jason Gerlowski
 links:
 - name: SOLR-16490
   url: https://issues.apache.org/jira/browse/SOLR-16490

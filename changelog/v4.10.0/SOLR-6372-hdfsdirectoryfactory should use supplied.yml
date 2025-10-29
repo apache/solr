@@ -3,6 +3,7 @@ title: HdfsDirectoryFactory should use supplied Configuration for communicating 
 type: fixed
 authors:
 - name: Gregory Chanan
+- name: Mark Miller
 links:
 - name: SOLR-6372
   url: https://issues.apache.org/jira/browse/SOLR-6372

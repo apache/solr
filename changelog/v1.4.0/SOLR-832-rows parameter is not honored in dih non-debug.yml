@@ -1,0 +1,9 @@
+title: Rows parameter is not honored in DIH non-debug mode and can abort a running
+  import in debug mode.
+type: fixed
+authors:
+- name: Akshay Ukey
+- name: shalin
+links:
+- name: SOLR-832
+  url: https://issues.apache.org/jira/browse/SOLR-832

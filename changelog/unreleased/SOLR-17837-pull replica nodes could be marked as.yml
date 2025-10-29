@@ -3,6 +3,7 @@ title: PULL replica nodes could be marked as "preferredLeader" by BALANCESHARDUN
 type: fixed
 authors:
 - name: Kevin Liang
+- name: Houston Putman
 links:
 - name: SOLR-17837
   url: https://issues.apache.org/jira/browse/SOLR-17837

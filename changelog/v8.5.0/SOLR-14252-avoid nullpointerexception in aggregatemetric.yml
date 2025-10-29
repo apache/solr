@@ -2,6 +2,7 @@ title: Avoid NullPointerException in AggregateMetric.
 type: fixed
 authors:
 - name: Andy Webb
+- name: ab
 links:
 - name: SOLR-14252
   url: https://issues.apache.org/jira/browse/SOLR-14252

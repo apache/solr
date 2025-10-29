@@ -1,0 +1,8 @@
+title: Fix rare concurrency issue when opening a new IndexWriter for replication or
+  rollback.
+type: fixed
+authors:
+- name: Mark Miller
+links:
+- name: SOLR-3621
+  url: https://issues.apache.org/jira/browse/SOLR-3621

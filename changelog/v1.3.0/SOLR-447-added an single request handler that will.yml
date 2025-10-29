@@ -1,0 +1,11 @@
+title: 'Added an single request handler that will automatically register all standard
+  admin request handlers. This replaces the need to register (and maintain) the set
+  of admin request handlers. Assuming solrconfig.xml includes: &lt;requestHandler
+  name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" /&gt; This will
+  register: Luke/SystemInfo/PluginInfo/ThreadDump/PropertiesRequestHandler.'
+type: added
+authors:
+- name: ryan
+links:
+- name: SOLR-447
+  url: https://issues.apache.org/jira/browse/SOLR-447

@@ -2,6 +2,7 @@ title: Improve and clean up TestReplicationHandler.
 type: other
 authors:
 - name: Amit Nithian
+- name: Mark Miller
 links:
 - name: SOLR-4471
   url: https://issues.apache.org/jira/browse/SOLR-4471

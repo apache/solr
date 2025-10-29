@@ -5,6 +5,7 @@ title: Added a new [child ...] DocTransformer for optionally including Block-Joi
 type: added
 authors:
 - name: Varun Thacker
+- name: hossman
 links:
 - name: SOLR-5285
   url: https://issues.apache.org/jira/browse/SOLR-5285

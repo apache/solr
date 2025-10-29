@@ -4,6 +4,7 @@ title: Minor improvements to SolrEntityProcessor. Add more consistency between s
 type: added
 authors:
 - name: Luca Cavanna
+- name: Martijn van Groningen
 links:
 - name: SOLR-3190
   url: https://issues.apache.org/jira/browse/SOLR-3190

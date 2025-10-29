@@ -4,6 +4,7 @@ type: changed
 authors:
 - name: James Ashbourne
 - name: Endika Posadas
+- name: David Smiley
 links:
 - name: SOLR-15213
   url: https://issues.apache.org/jira/browse/SOLR-15213

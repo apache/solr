@@ -3,6 +3,7 @@ title: Dynamic copy fields are considering all dynamic fields, causing a signifi
 type: changed
 authors:
 - name: Liram Vardi
+- name: "Erick\n  Erickson"
 - name: Steve Rowe
 links:
 - name: SOLR-6666

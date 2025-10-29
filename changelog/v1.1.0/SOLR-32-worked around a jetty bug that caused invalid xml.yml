@@ -1,0 +1,9 @@
+title: Worked around a Jetty bug that caused invalid XML responses for fields containing
+  non ASCII chars. SOLR-32
+type: fixed
+authors:
+- name: Bertrand Delacretaz
+- name: yonik
+links:
+- name: SOLR-32
+  url: https://issues.apache.org/jira/browse/SOLR-32

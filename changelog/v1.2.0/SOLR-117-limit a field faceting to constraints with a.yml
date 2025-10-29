@@ -1,0 +1,8 @@
+title: Limit a field faceting to constraints with a prefix specified by facet.prefix
+  or f.&lt;field&gt;.facet.prefix.
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-117
+  url: https://issues.apache.org/jira/browse/SOLR-117

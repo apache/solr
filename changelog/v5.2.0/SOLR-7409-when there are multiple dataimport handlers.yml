@@ -4,6 +4,7 @@ title: When there are multiple dataimport handlers defined, the admin UI was lis
 type: other
 authors:
 - name: Jellyfrog
+- name: Shawn Heisey
 links:
 - name: SOLR-7409
   url: https://issues.apache.org/jira/browse/SOLR-7409

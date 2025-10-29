@@ -3,6 +3,7 @@ title: Update the content security policy in Jetty to allow image requests from 
 type: changed
 authors:
 - name: MarcusSorealheis
+- name: Houston Putman
 links:
 - name: SOLR-15453
   url: https://issues.apache.org/jira/browse/SOLR-15453

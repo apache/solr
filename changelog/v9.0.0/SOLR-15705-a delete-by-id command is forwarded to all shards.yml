@@ -3,6 +3,7 @@ title: A delete-by-id command is forwarded to all shards when using the Composit
 type: changed
 authors:
 - name: Michael Kosten
+- name: Christine Poerschke
 - name: David Smiley
 - name: Eric Pugh
 links:

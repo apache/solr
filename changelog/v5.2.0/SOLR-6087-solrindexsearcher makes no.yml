@@ -3,6 +3,7 @@ title: SolrIndexSearcher makes no DelegatingCollector.finish() call when IndexSe
 type: fixed
 authors:
 - name: Christine Poerschke
+- name: shalin
 links:
 - name: SOLR-6087
   url: https://issues.apache.org/jira/browse/SOLR-6087

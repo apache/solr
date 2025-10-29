@@ -3,6 +3,7 @@ title: Fix NoSuchElementException in LFUCache resulting from heavy writes making
 type: fixed
 authors:
 - name: Maciej Zasada
+- name: Shawn Heisey
 links:
 - name: SOLR-7585
   url: https://issues.apache.org/jira/browse/SOLR-7585

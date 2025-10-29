@@ -3,6 +3,7 @@ title: Support for stream.url or stream.file pointing to gzipped data. It's dete
 type: changed
 authors:
 - name: Andrew Lundgren
+- name: David Smiley
 - name: Jan Høydahl
 links:
 - name: SOLR-10981

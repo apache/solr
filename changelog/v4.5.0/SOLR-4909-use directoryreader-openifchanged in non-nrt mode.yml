@@ -2,6 +2,7 @@ title: Use DirectoryReader.openIfChanged in non-NRT mode.
 type: fixed
 authors:
 - name: Michael Garski
+- name: Robert Muir
 links:
 - name: SOLR-4909
   url: https://issues.apache.org/jira/browse/SOLR-4909

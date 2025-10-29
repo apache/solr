@@ -1,0 +1,9 @@
+title: Static access to SolrCore.getSolrCore() and SolrConfig.config have been deprecated
+  in order to support multiple loaded cores.
+type: other
+authors:
+- name: Henri Biestro
+- name: ryan
+links:
+- name: SOLR-215
+  url: https://issues.apache.org/jira/browse/SOLR-215

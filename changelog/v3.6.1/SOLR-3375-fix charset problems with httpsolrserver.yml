@@ -1,0 +1,9 @@
+title: Fix charset problems with HttpSolrServer
+type: fixed
+authors:
+- name: Roger Håkansson
+- name: yonik
+- name: siren
+links:
+- name: SOLR-3375
+  url: https://issues.apache.org/jira/browse/SOLR-3375

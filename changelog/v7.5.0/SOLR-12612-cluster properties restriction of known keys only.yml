@@ -4,6 +4,7 @@ title: Cluster properties restriction of known keys only is relaxed, and now unk
 type: added
 authors:
 - name: Jeffery Yuan
+- name: Tomás Fernández Löbbe
 links:
 - name: SOLR-12612
   url: https://issues.apache.org/jira/browse/SOLR-12612

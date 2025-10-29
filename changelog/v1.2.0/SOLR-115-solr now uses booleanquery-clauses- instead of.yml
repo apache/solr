@@ -1,0 +1,8 @@
+title: Solr now uses BooleanQuery.clauses() instead of BooleanQuery.getClauses() in
+  any situation where there is no risk of modifying the original query.
+type: changed
+authors:
+- name: hossman
+links:
+- name: SOLR-115
+  url: https://issues.apache.org/jira/browse/SOLR-115

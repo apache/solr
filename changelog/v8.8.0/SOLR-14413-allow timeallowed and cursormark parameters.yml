@@ -2,6 +2,7 @@ title: Allow timeAllowed and cursorMark parameters together.
 type: changed
 authors:
 - name: John Gallagher
+- name: Mike Drob
 links:
 - name: SOLR-14413
   url: https://issues.apache.org/jira/browse/SOLR-14413

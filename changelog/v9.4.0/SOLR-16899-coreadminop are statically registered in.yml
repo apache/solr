@@ -3,6 +3,7 @@ title: CoreAdminOp are statically registered in CoreAdminHandler, preventing mor
 type: fixed
 authors:
 - name: Vincent Primault
+- name: Alex Deparvu
 links:
 - name: SOLR-16899
   url: https://issues.apache.org/jira/browse/SOLR-16899

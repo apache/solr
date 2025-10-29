@@ -2,6 +2,7 @@ title: v1 Restore API no longer conflates backup-name and collection-name during
 type: fixed
 authors:
 - name: Abhishek Umarjikar
+- name: Jason Gerlowski
 links:
 - name: SOLR-17830
   url: https://issues.apache.org/jira/browse/SOLR-17830

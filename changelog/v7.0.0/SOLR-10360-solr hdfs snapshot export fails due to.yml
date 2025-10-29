@@ -3,6 +3,7 @@ title: Solr HDFS snapshot export fails due to FileNotFoundException error when u
 type: fixed
 authors:
 - name: Hrishikesh
+- name: Mark Miller
 links:
 - name: SOLR-10360
   url: https://issues.apache.org/jira/browse/SOLR-10360

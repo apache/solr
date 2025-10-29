@@ -3,6 +3,7 @@ title: solr.hdfs.buffer.size can be configured for HdfsBackupRepository for bett
 type: changed
 authors:
 - name: Tim Owen
+- name: Mikhail Khludnev
 links:
 - name: SOLR-13029
   url: https://issues.apache.org/jira/browse/SOLR-13029

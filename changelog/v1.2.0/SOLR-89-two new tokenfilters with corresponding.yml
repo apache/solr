@@ -1,0 +1,9 @@
+title: Two new TokenFilters with corresponding Factories... * TrimFilter - Trims leading
+  and trailing whitespace from Tokens * PatternReplaceFilter - applies a Pattern to
+  each token in the stream, replacing match occurances with a specified replacement.
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-89
+  url: https://issues.apache.org/jira/browse/SOLR-89

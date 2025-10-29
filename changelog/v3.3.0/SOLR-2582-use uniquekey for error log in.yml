@@ -2,6 +2,7 @@ title: Use uniqueKey for error log in UIMAUpdateRequestProcessor.
 type: added
 authors:
 - name: Tommaso Teofili
+- name: koji
 links:
 - name: SOLR-2582
   url: https://issues.apache.org/jira/browse/SOLR-2582

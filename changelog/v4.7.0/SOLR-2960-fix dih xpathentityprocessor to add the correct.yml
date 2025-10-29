@@ -3,6 +3,7 @@ title: fix DIH XPathEntityProcessor to add the correct number of "null" placehol
 type: changed
 authors:
 - name: Michael Watts
+- name: James Dyer
 links:
 - name: SOLR-2960
   url: https://issues.apache.org/jira/browse/SOLR-2960

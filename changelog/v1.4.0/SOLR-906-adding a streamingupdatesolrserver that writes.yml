@@ -1,0 +1,10 @@
+title: Adding a StreamingUpdateSolrServer that writes update commands to an open HTTP
+  connection. If you are using solrj for bulk update requests you should consider
+  switching to this implementaion. However, note that the error handling is not immediate
+  as it is with the standard SolrServer.
+type: added
+authors:
+- name: ryan
+links:
+- name: SOLR-906
+  url: https://issues.apache.org/jira/browse/SOLR-906

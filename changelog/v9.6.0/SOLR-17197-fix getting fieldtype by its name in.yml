@@ -2,6 +2,7 @@ title: Fix getting fieldType by its name in FileBasedSpellChecker
 type: fixed
 authors:
 - name: Andrey Bozhko
+- name: Eric Pugh
 links:
 - name: SOLR-17197
   url: https://issues.apache.org/jira/browse/SOLR-17197

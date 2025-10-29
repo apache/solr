@@ -2,6 +2,7 @@ title: child.facet.field doubled counts at least when rows&gt;0.
 type: fixed
 authors:
 - name: Dr. Oleg Savrasov
+- name: Mikhail Khludnev
 links:
 - name: SOLR-10520
   url: https://issues.apache.org/jira/browse/SOLR-10520

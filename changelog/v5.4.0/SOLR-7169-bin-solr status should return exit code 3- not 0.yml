@@ -2,6 +2,7 @@ title: bin/solr status should return exit code 3, not 0 if Solr is not running
 type: fixed
 authors:
 - name: Dominik Siebel
+- name: Timothy Potter
 links:
 - name: SOLR-7169
   url: https://issues.apache.org/jira/browse/SOLR-7169

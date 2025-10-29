@@ -1,0 +1,7 @@
+title: DocSets can now be used as Lucene Filters via DocSet.getTopFilter()
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-1179
+  url: https://issues.apache.org/jira/browse/SOLR-1179

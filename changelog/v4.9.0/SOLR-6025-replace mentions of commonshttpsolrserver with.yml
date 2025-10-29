@@ -3,6 +3,7 @@ title: Replace mentions of CommonsHttpSolrServer with HttpSolrServer and Streami
 type: other
 authors:
 - name: Ahmet Arslan
+- name: shalin
 links:
 - name: SOLR-6025
   url: https://issues.apache.org/jira/browse/SOLR-6025

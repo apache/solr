@@ -1,0 +1,9 @@
+title: 'Fixed SignatureUpdateProcessor to fail to initialize on invalid config. Specifically:
+  a signatureField that does not exist, or overwriteDupes=true with a signatureField
+  that is not indexed.'
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-1908
+  url: https://issues.apache.org/jira/browse/SOLR-1908

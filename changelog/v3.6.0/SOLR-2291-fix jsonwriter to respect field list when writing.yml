@@ -2,6 +2,7 @@ title: fix JSONWriter to respect field list when writing SolrDocuments
 type: fixed
 authors:
 - name: Ahmet Arslan
+- name: hossman
 links:
 - name: SOLR-2291
   url: https://issues.apache.org/jira/browse/SOLR-2291

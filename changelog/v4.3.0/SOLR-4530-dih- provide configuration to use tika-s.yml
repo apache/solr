@@ -2,6 +2,7 @@ title: 'DIH: Provide configuration to use Tika''s IdentityHtmlMapper'
 type: added
 authors:
 - name: Alexandre Rafalovitch
+- name: shalin
 links:
 - name: SOLR-4530
   url: https://issues.apache.org/jira/browse/SOLR-4530

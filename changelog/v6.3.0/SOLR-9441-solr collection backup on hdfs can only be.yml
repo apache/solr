@@ -3,6 +3,7 @@ title: Solr collection backup on HDFS can only be manipulated by the Solr proces
 type: fixed
 authors:
 - name: Hrishikesh Gadre
+- name: Mark Miller
 links:
 - name: SOLR-9441
   url: https://issues.apache.org/jira/browse/SOLR-9441

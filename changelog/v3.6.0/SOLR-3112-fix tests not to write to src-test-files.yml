@@ -2,6 +2,7 @@ title: Fix tests not to write to src/test-files
 type: other
 authors:
 - name: Luca Cavanna
+- name: Robert Muir
 links:
 - name: SOLR-3112
   url: https://issues.apache.org/jira/browse/SOLR-3112

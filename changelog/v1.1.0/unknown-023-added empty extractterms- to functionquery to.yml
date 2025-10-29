@@ -1,0 +1,5 @@
+title: Added empty extractTerms() to FunctionQuery to enable use in a MultiSearcher
+type: fixed
+authors:
+- name: Yonik
+links: []

@@ -5,6 +5,7 @@ type: added
 authors:
 - name: Janne Majaranta
 - name: Gun Akkor
+- name: Erick Erickson
 - name: David Smiley
 links:
 - name: SOLR-2548

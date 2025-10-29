@@ -1,0 +1,5 @@
+title: field boosts weren't being applied and doc boosts were being applied to fields
+type: fixed
+authors:
+- name: klaas
+links: []

@@ -3,6 +3,7 @@ title: bin\solr.cmd delete and healthcheck now works again; fixed continuation c
 type: fixed
 authors:
 - name: Luis Goes
+- name: janhoy
 links:
 - name: SOLR-10369
   url: https://issues.apache.org/jira/browse/SOLR-10369

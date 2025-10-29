@@ -3,7 +3,6 @@ title: Cache the url list created from the ClusterState in CloudSolrServer on ea
 type: changed
 authors:
 - name: Mark Miller
-- name: yonik
 links:
 - name: SOLR-3709
   url: https://issues.apache.org/jira/browse/SOLR-3709

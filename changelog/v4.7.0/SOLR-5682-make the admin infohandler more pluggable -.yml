@@ -2,6 +2,7 @@ title: Make the admin InfoHandler more pluggable / derivable.
 type: added
 authors:
 - name: Greg Chanan
+- name: Mark Miller
 links:
 - name: SOLR-5682
   url: https://issues.apache.org/jira/browse/SOLR-5682

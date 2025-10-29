@@ -2,6 +2,7 @@ title: Upgrade Tika to 1.24
 type: other
 authors:
 - name: Mibo
+- name: Erick Erickson
 links:
 - name: SOLR-14367
   url: https://issues.apache.org/jira/browse/SOLR-14367

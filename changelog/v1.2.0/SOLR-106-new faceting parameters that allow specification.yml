@@ -1,0 +1,9 @@
+title: New faceting parameters that allow specification of a minimum count for returned
+  facets (facet.mincount), paging through facets (facet.offset, facet.limit), and
+  explicit sorting (facet.sort). facet.zeros is now deprecated.
+type: added
+authors:
+- name: yonik
+links:
+- name: SOLR-106
+  url: https://issues.apache.org/jira/browse/SOLR-106

@@ -2,6 +2,7 @@ title: SimpleQueryParser doesn't use MultiTermAnalysis for Fuzzy Queries
 type: other
 authors:
 - name: Tom Hill
+- name: Erick Erickson
 links:
 - name: SOLR-8313
   url: https://issues.apache.org/jira/browse/SOLR-8313

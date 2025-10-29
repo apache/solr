@@ -2,6 +2,7 @@ title: Allow DIH to extract content from embedded documents via Tika.
 type: added
 authors:
 - name: Tim Allison
+- name: shalin
 links:
 - name: SOLR-7189
   url: https://issues.apache.org/jira/browse/SOLR-7189

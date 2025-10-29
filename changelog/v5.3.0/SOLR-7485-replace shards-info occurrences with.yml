@@ -2,6 +2,7 @@ title: Replace shards.info occurrences with ShardParams.SHARDS_INFO
 type: other
 authors:
 - name: Christine Poerschke
+- name: Ramkumar Aiyengar
 links:
 - name: SOLR-7485
   url: https://issues.apache.org/jira/browse/SOLR-7485

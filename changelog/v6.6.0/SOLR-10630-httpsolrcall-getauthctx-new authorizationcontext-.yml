@@ -3,6 +3,7 @@ title: HttpSolrCall.getAuthCtx().new AuthorizationContext() {...}.getParams() so
 type: fixed
 authors:
 - name: hu xiaodong
+- name: shalin
 links:
 - name: SOLR-10630
   url: https://issues.apache.org/jira/browse/SOLR-10630

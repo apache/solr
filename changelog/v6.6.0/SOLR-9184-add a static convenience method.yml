@@ -4,6 +4,7 @@ title: Add a static convenience method ModifiableSolrParams#of(SolrParams) which
 type: changed
 authors:
 - name: Jörg Rathlev
+- name: Koji
 links:
 - name: SOLR-9184
   url: https://issues.apache.org/jira/browse/SOLR-9184

@@ -1,0 +1,9 @@
+title: SolrCmdDistributor flushAdds/flushDeletes can cause repeated adds/deletes to
+  be sent
+type: fixed
+authors:
+- name: Mark Miller
+- name: Per Steffensen
+links:
+- name: SOLR-3428
+  url: https://issues.apache.org/jira/browse/SOLR-3428

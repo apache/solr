@@ -3,6 +3,7 @@ title: 'JSON Facet API: fix bug where a limit of -1 in conjunction with multiple
 type: fixed
 authors:
 - name: Karthik Ramachandran
+- name: yonik
 links:
 - name: SOLR-12064
   url: https://issues.apache.org/jira/browse/SOLR-12064

@@ -3,6 +3,7 @@ title: 'Have HdfsIndexOutput extend BufferedIndexOutput. (Mark Miller, Uwe Schin
 type: changed
 authors:
 - name: Feihong Huang
+- name: Erick Erickson
 links:
 - name: SOLR-5134
   url: https://issues.apache.org/jira/browse/SOLR-5134

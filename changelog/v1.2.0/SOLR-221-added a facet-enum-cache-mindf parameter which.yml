@@ -1,0 +1,9 @@
+title: Added a facet.enum.cache.minDf parameter which avoids using the filterCache
+  for terms that match few documents, trading decreased memory usage for increased
+  query time.
+type: changed
+authors:
+- name: yonik
+links:
+- name: SOLR-221
+  url: https://issues.apache.org/jira/browse/SOLR-221

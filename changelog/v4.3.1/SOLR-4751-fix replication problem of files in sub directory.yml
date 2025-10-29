@@ -2,6 +2,7 @@ title: Fix replication problem of files in sub directory of conf directory.
 type: fixed
 authors:
 - name: Minoru Osuka
+- name: Koji
 links:
 - name: SOLR-4751
   url: https://issues.apache.org/jira/browse/SOLR-4751

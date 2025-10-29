@@ -3,6 +3,7 @@ title: Generated v2 'SolrRequest' implementations now all serialize to the corre
 type: fixed
 authors:
 - name: Christos Malliaridis
+- name: Jason Gerlowski
 links:
 - name: SOLR-17326
   url: https://issues.apache.org/jira/browse/SOLR-17326

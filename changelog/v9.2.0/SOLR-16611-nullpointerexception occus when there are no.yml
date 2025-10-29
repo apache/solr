@@ -2,6 +2,7 @@ title: NullPointerException occus when there are no segments in `{!collapse hint
 type: fixed
 authors:
 - name: Minami Takuya
+- name: Mikhail Khludnev
 links:
 - name: SOLR-16611
   url: https://issues.apache.org/jira/browse/SOLR-16611

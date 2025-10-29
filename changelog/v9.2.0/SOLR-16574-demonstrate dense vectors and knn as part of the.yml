@@ -2,6 +2,7 @@ title: Demonstrate Dense Vectors and KNN as part of the Films example
 type: other
 authors:
 - name: Gabriel Magno
+- name: Eric Pugh
 links:
 - name: SOLR-16574
   url: https://issues.apache.org/jira/browse/SOLR-16574
