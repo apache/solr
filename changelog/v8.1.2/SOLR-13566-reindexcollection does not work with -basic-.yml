@@ -1,8 +1,0 @@
-title: REINDEXCOLLECTION does not work with (basic) authentication.
-type: fixed
-authors:
-- name: Colvin Cowie
-- name: ab
-links:
-- name: SOLR-13566
-  url: https://issues.apache.org/jira/browse/SOLR-13566
