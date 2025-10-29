@@ -1,7 +1,0 @@
-title: Update org.mockito:mockito* from v5.5.0 to v5.8.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2055
-  url: https://github.com/apache/solr/pull/2055

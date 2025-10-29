@@ -1,7 +1,0 @@
-title: Update org.glassfish.jersey*:* to v3.1.9
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2396
-  url: https://github.com/apache/solr/pull/2396
