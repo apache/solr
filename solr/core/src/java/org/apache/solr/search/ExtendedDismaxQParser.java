@@ -97,6 +97,9 @@ public class ExtendedDismaxQParser extends QParser {
 
     /** If set to true, stopwords are removed from the query. */
     public static String STOPWORDS = "stopwords";
+
+    /** If set to true, the stopword filter applies even if all terms are stopwords */
+    public static String ALWAYS_STOPWORDS = "alwaysStopwords";
   }
 
   private ExtendedDismaxConfiguration config;
@@ -416,7 +419,7 @@ public class ExtendedDismaxQParser extends QParser {
       query = up.parse(mainUserQuery);
 
       if (shouldRemoveStopFilter(config, query)) {
-        // if the query was all stop words, remove none of them
+        // if the query was all stopwords, remove none of them (unless alwaysStopwords is set)
         up.setRemoveStopFilter(true);
         query = up.parse(mainUserQuery);
       }
@@ -425,6 +428,8 @@ public class ExtendedDismaxQParser extends QParser {
       up.exceptions = false;
     }
 
+    // query may have become empty if it only contained tokenising characters or due to
+    // stopword removal if alwaysStopwords is set
     if (query == null) {
       return null;
     }
@@ -447,11 +452,11 @@ public class ExtendedDismaxQParser extends QParser {
   /**
    * Determines if query should be re-parsed removing the stop filter.
    *
-   * @return true if there are stopwords configured and the parsed query was empty false in any
-   *     other case.
+   * @return true if there are stopwords configured, the alwaysStopwords option hasn't been set and
+   *     the parsed query was empty - return false in any other case.
    */
   protected boolean shouldRemoveStopFilter(ExtendedDismaxConfiguration config, Query query) {
-    return config.stopwords && isEmpty(query);
+    return config.stopwords && !config.alwaysStopwords && isEmpty(query);
   }
 
   private String escapeUserQuery(List<Clause> clauses) {
@@ -1699,6 +1704,8 @@ public class ExtendedDismaxQParser extends QParser {
 
     protected boolean stopwords;
 
+    protected boolean alwaysStopwords;
+
     protected boolean mmAutoRelax;
 
     protected String altQ;
@@ -1748,6 +1755,8 @@ public class ExtendedDismaxQParser extends QParser {
       qslop = solrParams.getInt(DisMaxParams.QS, 0);
 
       stopwords = solrParams.getBool(DMP.STOPWORDS, true);
+
+      alwaysStopwords = solrParams.getBool(DMP.ALWAYS_STOPWORDS, false);
 
       mmAutoRelax = solrParams.getBool(DMP.MM_AUTORELAX, false);
 

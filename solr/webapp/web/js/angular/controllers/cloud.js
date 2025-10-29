@@ -599,7 +599,7 @@ var treeSubController = function($scope, Zookeeper) {
  * Translates seconds into human readable format of seconds, minutes, hours, days, and years
  * 
  * @param  {number} seconds The number of seconds to be processed
- * @return {string}         The phrase describing the the amount of time
+ * @return {string}         The phrase describing the amount of time
  */
 function secondsForHumans ( seconds ) {
     var levels = [

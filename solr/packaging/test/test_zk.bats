@@ -68,7 +68,7 @@ teardown() {
   sleep 1
   run solr zk ls / --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "aliases.json"
- 
+
   run solr zk ls / -s http://localhost:${SOLR_PORT}
   assert_output --partial "aliases.json"
 
@@ -160,10 +160,32 @@ teardown() {
   run solr zk cp afile.txt zk:/afile.txt -z localhost:${ZK_PORT} --verbose --solr-home ${SOLR_TIP}/server/solr
   assert_output --partial "Using SolrHome: ${SOLR_TIP}/server/solr"
   refute_output --partial 'Failed to load solr.xml from ZK or SolrHome'
-  
+
   # The -DminStateByteLenForCompression variable substitution on solr start is not seen
   # by the ZkCpTool.java, so therefore we do not have compression unless solr.xml is directly edited.
   #assert_output --partial 'Compression of state.json has been enabled'
 
   rm afile.txt
+}
+
+@test "env var ZK_HOST is honored" {
+  sleep 1
+
+  # Need to unset SOLR_PORT to avoid the tool being smart and look at SOLR_PORT
+  export SOLR_PORT_KEEP=$SOLR_PORT
+  unset SOLR_PORT
+
+  # First test a command that will fail (no ZK_HOST set, no SOLR_PORT)
+  run solr zk ls / --recursive
+  assert_output --partial "assuming solr url is http://localhost:8983"
+  refute_output --partial "aliases.json"
+
+  # Then set the ZK_HOST variable and test again
+  export ZK_HOST=localhost:${ZK_PORT}
+  run solr zk ls / --recursive
+  assert_output --partial "aliases.json"
+
+  # Restore SOLR_PORT
+  export SOLR_PORT=$SOLR_PORT_KEEP
+  unset ZK_HOST
 }

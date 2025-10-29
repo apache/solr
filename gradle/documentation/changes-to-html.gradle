@@ -20,7 +20,7 @@ def resources = scriptResources(buildscript)
 configure(project(':solr:documentation')) {
   task changesToHtml(type: ChangesToHtmlTask) {
     siteDir = resources
-    script = file("${resources}/changes2html.pl")
+    script = file("${resources}/changes2html.py")
   }
 
   // Make the rendered HTML of changes available as a separate
@@ -36,7 +36,7 @@ configure(project(':solr:documentation')) {
   }
 }
 
-// compile changes.txt into an html file
+// compile CHANGELOG.md into an html file
 class ChangesToHtmlTask extends DefaultTask {
 
   @Internal
@@ -46,10 +46,7 @@ class ChangesToHtmlTask extends DefaultTask {
   String productName = productProject.name
 
   @InputFile
-  File changesFile = productProject.file('CHANGES.txt')
-
-  @InputFile
-  File changesDoapFile = project.rootProject.file("dev-tools/doap/${productName}.rdf")
+  File changesFile = project.rootProject.file('CHANGELOG.md')
 
   @InputDirectory
   File siteDir
@@ -58,44 +55,27 @@ class ChangesToHtmlTask extends DefaultTask {
   final DirectoryProperty targetDir = project.objects.directoryProperty()
       .fileProvider(project.providers.provider { project.file("${project.docroot}/changes") })
 
-  @Input
-  def luceneDocUrl = "${-> project.luceneDocUrl }"
-
   @InputFile
   def script
 
-  def loadVersions(File outfile) {
-    // load version properties from DOAP RDF
-    def prefix = "doap.${productName}".toString()
-    ant.xmlproperty(keeproot: false, file: changesDoapFile, collapseAttributes: false, prefix: "${prefix}")
-    outfile.withWriter("UTF-8") { writer ->
-      writer.println(ant.properties["${prefix}.Project.release.Version.revision"])
-      writer.println(ant.properties["${prefix}.Project.release.Version.created"])
-    }
-  }
-
-  def toHtml(File versionsFile) {
+  def toHtml() {
     def output = new ByteArrayOutputStream()
-    
-    // Check if the perl executable exists
-    if (!perlExists()) {
-        logger.warn("WARNING: Perl is not installed, skipping creating Changes.html")
+
+    // Check if Python is available
+    if (!pythonExists()) {
+        logger.warn("WARNING: Python is not installed, skipping creating Changes.html")
         return
     }
 
     def result = project.exec {
-      executable project.externalTool("perl")
-      standardInput changesFile.newInputStream()
+      executable "python3"
       standardOutput project.file("${targetDir.get().getAsFile()}/Changes.html").newOutputStream()
       errorOutput = output
       ignoreExitValue = true
 
       args += [
-          "-CSD",
-          script,
-          "${productName}",
-          versionsFile.toString(),
-          luceneDocUrl.concat('/')   // slash required at end by perl script
+          script.toString(),
+          changesFile.toString()
       ]
     }
 
@@ -107,24 +87,21 @@ class ChangesToHtmlTask extends DefaultTask {
   @TaskAction
   def convert() {
     project.mkdir targetDir
-    if (changesFile.exists() && changesDoapFile.exists()) {
-      File versionsFile = project.file("${project.buildDir}/doap.${project.name}.changes.version.dates.csv")
-      loadVersions(versionsFile)
-      toHtml(versionsFile)
+    if (changesFile.exists()) {
+      toHtml()
       project.copy {
         from siteDir
         into targetDir
         include "*.css"
       }
-      versionsFile.delete()
     } else {
-      throw new GradleException("Changes file ${changesFile} or Doap file ${changesDoapFile} not found.")
+      throw new GradleException("Changes file ${changesFile} not found.")
     }
   }
-  
-  def perlExists() {
+
+  def pythonExists() {
     try {
-        def process = "perl -v".execute()
+        def process = "python3 --version".execute()
         process.waitFor()
         return process.exitValue() == 0
     } catch (Exception e) {

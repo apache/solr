@@ -72,6 +72,14 @@ dependencies {
   implementation libs.apache.httpcomponents.httpclient
   implementation libs.apache.httpcomponents.httpcore
   implementation libs.opentelemetry.api
+  implementation(libs.opentelemetry.exporter.prometheus) {
+    transitive = false
+  }
+  implementation libs.prometheus.metrics.model
+  implementation(libs.opentelemetry.sdk) {
+    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
+  }
+  permitUnusedDeclared libs.opentelemetry.sdk
 
   implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server
@@ -89,4 +97,9 @@ dependencies {
   implementation libs.carrotsearch.randomizedtesting.runner
   implementation libs.junit.junit
   implementation libs.hamcrest.hamcrest
+
+  implementation(libs.prometheus.metrics.expositionformats, {
+    exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
+    exclude group: "io.prometheus", module: "prometheus-metrics-config"
+  })
 }

@@ -31,7 +31,7 @@ Antora is an open source project, online at https://antora.org/.
 The following sections describe the main features of Antora that you will encounter while working with the Solr Ref Guide.
 
 === Asciidoctor
-Antora uses Asciidoctor.js by default as it's content markup language.
+Antora uses Asciidoctor.js by default as its content markup language.
 
 Read more on the Solr xref:asciidoc-syntax.adoc[AsciiDoc Syntax] page, or on Antora's guide: https://docs.antora.org/antora/latest/asciidoc/asciidoc/
 

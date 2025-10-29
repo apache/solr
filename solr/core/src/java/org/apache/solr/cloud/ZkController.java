@@ -62,7 +62,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
@@ -250,10 +250,6 @@ public class ZkController implements Closeable {
 
   private final ConcurrentHashMap<String, Throwable> replicasMetTragicEvent =
       new ConcurrentHashMap<>();
-
-  @Deprecated
-  // keeps track of replicas that have been asked to recover by leaders running on this node
-  private final Map<String, String> replicasInLeaderInitiatedRecovery = new HashMap<>();
 
   // keeps track of a list of objects that need to know a new ZooKeeper session was created after
   // expiration occurred ref is held as a HashSet since we clone the set before notifying to avoid
@@ -2310,12 +2306,13 @@ public class ZkController implements Closeable {
         }
 
         // short timeouts, we may be in a storm and this is just best effort, and maybe we should be
-        // the
-        // leader now
+        // the leader now
+        // TODO ideally want 8sec connection timeout but can't easily also share the client
+        // listeners
         try (SolrClient client =
-            new Builder(leaderBaseUrl)
-                .withConnectionTimeout(8000, TimeUnit.MILLISECONDS)
-                .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            new Http2SolrClient.Builder(leaderBaseUrl)
+                .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
+                .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {
           WaitForState prepCmd = new WaitForState();
           prepCmd.setCoreName(leaderCoreName);
