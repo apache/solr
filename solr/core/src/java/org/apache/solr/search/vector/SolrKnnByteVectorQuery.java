@@ -24,6 +24,8 @@ public class SolrKnnByteVectorQuery extends KnnByteVectorQuery {
   private final int topK;
 
   public SolrKnnByteVectorQuery(String field, byte[] target, int topK, int efSearch, Query filter) {
+    // efSearch is used as 'k' to explore this many vectors in HNSW, then topK results are returned
+    // to the user
     super(field, target, efSearch, filter);
     this.topK = topK;
   }
@@ -31,5 +33,19 @@ public class SolrKnnByteVectorQuery extends KnnByteVectorQuery {
   @Override
   protected TopDocs mergeLeafResults(TopDocs[] perLeafResults) {
     return TopDocs.merge(topK, perLeafResults);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (!super.equals(obj)) return false;
+    if (getClass() != obj.getClass()) return false;
+    SolrKnnByteVectorQuery other = (SolrKnnByteVectorQuery) obj;
+    return this.topK == other.topK;
+  }
+
+  @Override
+  public int hashCode() {
+    return 31 * super.hashCode() + Integer.hashCode(topK);
   }
 }
