@@ -1,7 +1,0 @@
-title: Remove debug if branch in HdfsTransactionLog
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-8033
-  url: https://issues.apache.org/jira/browse/SOLR-8033

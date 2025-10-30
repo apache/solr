@@ -1,8 +1,0 @@
-title: CloudSolrClient should synchronize cache cluster state loading
-type: other
-authors:
-- name: Noble Paul
-- name: Jessica Cheng Mallet
-links:
-- name: SOLR-6521
-  url: https://issues.apache.org/jira/browse/SOLR-6521

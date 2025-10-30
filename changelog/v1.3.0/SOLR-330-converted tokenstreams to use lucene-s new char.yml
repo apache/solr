@@ -1,7 +1,0 @@
-title: Converted TokenStreams to use Lucene's new char array based capabilities.
-type: changed
-authors:
-- name: gsingers
-links:
-- name: SOLR-330
-  url: https://issues.apache.org/jira/browse/SOLR-330

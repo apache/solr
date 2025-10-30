@@ -1,7 +1,0 @@
-title: Add Delegation Token Support to Solr.
-type: added
-authors:
-- name: Gregory Chanan
-links:
-- name: SOLR-9200
-  url: https://issues.apache.org/jira/browse/SOLR-9200

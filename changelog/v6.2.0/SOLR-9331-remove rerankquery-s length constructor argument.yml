@@ -1,7 +1,0 @@
-title: Remove ReRankQuery's length constructor argument and member.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-9331
-  url: https://issues.apache.org/jira/browse/SOLR-9331

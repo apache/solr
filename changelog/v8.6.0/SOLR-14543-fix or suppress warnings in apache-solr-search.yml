@@ -1,7 +1,0 @@
-title: Fix or suppress warnings in apache/solr/search
-type: other
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-14543
-  url: https://issues.apache.org/jira/browse/SOLR-14543

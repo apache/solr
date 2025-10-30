@@ -1,7 +1,0 @@
-title: Security Manager prevents Solr SQL from working
-type: fixed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16433
-  url: https://issues.apache.org/jira/browse/SOLR-16433

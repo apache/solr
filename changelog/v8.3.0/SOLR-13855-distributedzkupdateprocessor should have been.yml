@@ -1,9 +1,0 @@
-title: DistributedZkUpdateProcessor should have been propagating URP.finish() lifecycle
-  like it used to before 8.1 (a regression). Impacts integrity since Run URP's finish()
-  propagates this to the updateLog to fsync.
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-13855
-  url: https://issues.apache.org/jira/browse/SOLR-13855

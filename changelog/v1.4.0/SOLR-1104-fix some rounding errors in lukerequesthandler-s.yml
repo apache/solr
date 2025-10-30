@@ -1,7 +1,0 @@
-title: Fix some rounding errors in LukeRequestHandler's histogram
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-1104
-  url: https://issues.apache.org/jira/browse/SOLR-1104

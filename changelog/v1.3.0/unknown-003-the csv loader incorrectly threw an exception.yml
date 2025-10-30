@@ -1,6 +1,0 @@
-title: The CSV loader incorrectly threw an exception when given header=true (the default).
-type: fixed
-authors:
-- name: ryan
-- name: yonik
-links: []

@@ -1,9 +1,0 @@
-title: SolrQueryParser now uses a ConstantScoreQuery for wildcard queries that prevent
-  an exception from being thrown when the number of matching terms exceeds the BooleanQuery
-  clause limit.
-type: other
-authors:
-- name: yonik
-links:
-- name: SOLR-737
-  url: https://issues.apache.org/jira/browse/SOLR-737

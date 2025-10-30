@@ -1,8 +1,0 @@
-title: StreamingUpdateSolrServer supports RequestWriter API and therefore, javabin
-  update format
-type: added
-authors:
-- name: shalin
-links:
-- name: SOLR-1565
-  url: https://issues.apache.org/jira/browse/SOLR-1565

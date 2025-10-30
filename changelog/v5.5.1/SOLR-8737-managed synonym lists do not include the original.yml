@@ -1,7 +1,0 @@
-title: Managed synonym lists do not include the original term in the expand
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-8737
-  url: https://issues.apache.org/jira/browse/SOLR-8737

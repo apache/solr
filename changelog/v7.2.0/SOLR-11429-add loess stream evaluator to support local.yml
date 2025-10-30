@@ -1,7 +1,0 @@
-title: Add loess Stream Evaluator to support local regression
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11429
-  url: https://issues.apache.org/jira/browse/SOLR-11429

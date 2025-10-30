@@ -1,8 +1,0 @@
-title: New parameter langid.lcmap to map detected language code to be placed in "language"
-  field
-type: changed
-authors:
-- name: janhoy
-links:
-- name: SOLR-4412
-  url: https://issues.apache.org/jira/browse/SOLR-4412

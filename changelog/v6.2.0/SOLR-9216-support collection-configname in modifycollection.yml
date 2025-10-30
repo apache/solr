@@ -1,8 +1,0 @@
-title: Support collection.configName in MODIFYCOLLECTION request
-type: added
-authors:
-- name: Keith Laban
-- name: noble
-links:
-- name: SOLR-9216
-  url: https://issues.apache.org/jira/browse/SOLR-9216

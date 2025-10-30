@@ -1,8 +1,0 @@
-title: When coming back from session expiration we should not wait for the leader
-  to see us in the down state if we are the node that must become the leader.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4244
-  url: https://issues.apache.org/jira/browse/SOLR-4244

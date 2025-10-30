@@ -1,8 +1,0 @@
-title: Switch /v2/collections APIs over to the now-preferred annotated-POJO implementation
-  approach
-type: other
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-15118
-  url: https://issues.apache.org/jira/browse/SOLR-15118

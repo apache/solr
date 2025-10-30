@@ -1,8 +1,0 @@
-title: Better error message for incorrect copyField destination
-type: fixed
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-872
-  url: https://issues.apache.org/jira/browse/SOLR-872

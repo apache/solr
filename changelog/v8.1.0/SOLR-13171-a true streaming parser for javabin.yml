@@ -1,7 +1,0 @@
-title: A true streaming parser for javabin payload/stream without creating any objects
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-13171
-  url: https://issues.apache.org/jira/browse/SOLR-13171

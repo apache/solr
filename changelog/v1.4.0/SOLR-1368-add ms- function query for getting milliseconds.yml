@@ -1,8 +1,0 @@
-title: Add ms() function query for getting milliseconds from dates and for high precision
-  date subtraction, add sub() for subtracting other arguments.
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-1368
-  url: https://issues.apache.org/jira/browse/SOLR-1368

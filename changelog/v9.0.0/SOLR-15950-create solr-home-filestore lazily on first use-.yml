@@ -1,8 +1,0 @@
-title: Create SOLR_HOME/filestore lazily on first use. Do not automatically create
-  SOLR_HOME/userfiles
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-15950
-  url: https://issues.apache.org/jira/browse/SOLR-15950

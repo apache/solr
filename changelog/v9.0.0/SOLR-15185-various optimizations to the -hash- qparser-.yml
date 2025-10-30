@@ -1,8 +1,0 @@
-title: Various optimizations to the {!hash} QParser, typically used by the parallel()
-  streaming expression. The hash algorithm changed.
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-15185
-  url: https://issues.apache.org/jira/browse/SOLR-15185

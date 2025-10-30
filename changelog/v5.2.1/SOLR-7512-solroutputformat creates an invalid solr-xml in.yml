@@ -1,8 +1,0 @@
-title: SolrOutputFormat creates an invalid solr.xml in the solr home zip for MapReduceIndexerTool.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Adam McElwee
-links:
-- name: SOLR-7512
-  url: https://issues.apache.org/jira/browse/SOLR-7512

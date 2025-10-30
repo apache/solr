@@ -1,9 +1,0 @@
-title: facet.method=fcs on single values fields could sometimes result in incorrect
-  facet labels.
-type: fixed
-authors:
-- name: Michael Froh
-- name: yonik
-links:
-- name: SOLR-5330
-  url: https://issues.apache.org/jira/browse/SOLR-5330

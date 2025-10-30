@@ -1,7 +1,0 @@
-title: JWT authentication plugin only requires "sub" claim when principalClaim=sub.
-type: changed
-authors:
-- name: Erik Hatcher
-links:
-- name: SOLR-14799
-  url: https://issues.apache.org/jira/browse/SOLR-14799

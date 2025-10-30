@@ -1,7 +1,0 @@
-title: Strengthen ScheduledTrigger's preferredOperation parameter validation.
-type: fixed
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-13280
-  url: https://issues.apache.org/jira/browse/SOLR-13280

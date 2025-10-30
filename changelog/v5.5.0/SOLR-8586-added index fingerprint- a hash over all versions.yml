@@ -1,8 +1,0 @@
-title: added index fingerprint, a hash over all versions currently in the index. PeerSync
-  now uses this to check if replicas are in sync.
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-8586
-  url: https://issues.apache.org/jira/browse/SOLR-8586

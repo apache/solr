@@ -1,7 +1,0 @@
-title: Add shuffle Streaming Expression
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-10426
-  url: https://issues.apache.org/jira/browse/SOLR-10426

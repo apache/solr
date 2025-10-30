@@ -1,8 +1,0 @@
-title: 'Schema API: Remove fields, dynamic fields, field types and copy fields; and
-  replace fields, dynamic fields and field types.'
-type: added
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-6141
-  url: https://issues.apache.org/jira/browse/SOLR-6141

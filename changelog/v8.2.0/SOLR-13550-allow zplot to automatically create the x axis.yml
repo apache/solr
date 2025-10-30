@@ -1,7 +1,0 @@
-title: Allow zplot to automatically create the x axis
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-13550
-  url: https://issues.apache.org/jira/browse/SOLR-13550

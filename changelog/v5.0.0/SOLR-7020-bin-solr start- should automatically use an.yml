@@ -1,8 +1,0 @@
-title: '''bin/solr start'' should automatically use an SSL-enabled alternate jetty
-  configuration file when in SSL mode, eliminating the need for manual jetty.xml edits.'
-type: other
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-7020
-  url: https://issues.apache.org/jira/browse/SOLR-7020

@@ -1,7 +1,0 @@
-title: Fixed Pivot Faceting to work with facet.missing=true
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-3783
-  url: https://issues.apache.org/jira/browse/SOLR-3783

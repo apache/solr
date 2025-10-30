@@ -1,8 +1,0 @@
-title: LoadAdminUIServlet directly references admin.html
-type: other
-authors:
-- name: Mark Miller
-- name: Upayavira
-links:
-- name: SOLR-8074
-  url: https://issues.apache.org/jira/browse/SOLR-8074

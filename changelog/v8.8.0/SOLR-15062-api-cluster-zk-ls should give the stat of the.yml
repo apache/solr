@@ -1,7 +1,0 @@
-title: /api/cluster/zk/ls should give the stat of the current node
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-15062
-  url: https://issues.apache.org/jira/browse/SOLR-15062

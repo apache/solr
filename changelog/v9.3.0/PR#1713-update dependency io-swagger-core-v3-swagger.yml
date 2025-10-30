@@ -1,7 +1,0 @@
-title: Update dependency io.swagger.core.v3:swagger-annotations to v2.2.12
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#1713
-  url: https://github.com/apache/solr/pull/1713

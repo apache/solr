@@ -1,7 +1,0 @@
-title: The 'clusterstatus' API should return 'roles' information.
-type: added
-authors:
-- name: shalin
-links:
-- name: SOLR-6069
-  url: https://issues.apache.org/jira/browse/SOLR-6069

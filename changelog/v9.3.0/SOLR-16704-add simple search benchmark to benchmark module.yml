@@ -1,7 +1,0 @@
-title: Add simple search benchmark to benchmark module
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-16704
-  url: https://issues.apache.org/jira/browse/SOLR-16704

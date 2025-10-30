@@ -1,9 +1,0 @@
-title: Cdcr bootstrapping should ensure that non-leader replicas should sync with
-  the leader
-type: fixed
-authors:
-- name: Amrit Sarkar
-- name: Varun Thacker
-links:
-- name: SOLR-11724
-  url: https://issues.apache.org/jira/browse/SOLR-11724

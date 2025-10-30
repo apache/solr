@@ -1,8 +1,0 @@
-title: allow _version_ to use DocValues.
-type: added
-authors:
-- name: Per Steffensen
-- name: yonik
-links:
-- name: SOLR-5670
-  url: https://issues.apache.org/jira/browse/SOLR-5670

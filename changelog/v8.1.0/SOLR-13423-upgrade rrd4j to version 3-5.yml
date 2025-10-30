@@ -1,7 +1,0 @@
-title: Upgrade RRD4j to version 3.5.
-type: other
-authors:
-- name: ab
-links:
-- name: SOLR-13423
-  url: https://issues.apache.org/jira/browse/SOLR-13423

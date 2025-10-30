@@ -1,7 +1,0 @@
-title: Update dependency biz.aQute.bnd:biz.aQute.bnd.annotation to v6.4.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#1397
-  url: https://github.com/apache/solr/pull/1397

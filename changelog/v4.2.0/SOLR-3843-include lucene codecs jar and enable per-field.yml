@@ -1,9 +1,0 @@
-title: Include lucene codecs jar and enable per-field postings and docvalues support
-  in the schema.xml
-type: other
-authors:
-- name: Robert Muir
-- name: Steve Rowe
-links:
-- name: SOLR-3843
-  url: https://issues.apache.org/jira/browse/SOLR-3843

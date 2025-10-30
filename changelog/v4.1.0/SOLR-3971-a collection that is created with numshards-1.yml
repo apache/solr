@@ -1,8 +1,0 @@
-title: A collection that is created with numShards=1 turns into a numShards=2 collection
-  after starting up a second core and not specifying numShards.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3971
-  url: https://issues.apache.org/jira/browse/SOLR-3971

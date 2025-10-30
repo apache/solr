@@ -1,9 +1,0 @@
-title: Avoid accidentally swallowing OutOfMemoryError (in LeaderInitiatedRecoveryThread.java
-  or CoreContainer.java)
-type: fixed
-authors:
-- name: Mike Drob
-- name: Christine Poerschke
-links:
-- name: SOLR-8223
-  url: https://issues.apache.org/jira/browse/SOLR-8223

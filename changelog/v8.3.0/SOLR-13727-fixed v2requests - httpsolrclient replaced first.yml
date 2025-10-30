@@ -1,9 +1,0 @@
-title: Fixed V2Requests - HttpSolrClient replaced first instance of "/solr" with "/api"
-  which caused a change in host names starting with "solr".
-type: fixed
-authors:
-- name: Megan Carey
-- name: yonik
-links:
-- name: SOLR-13727
-  url: https://issues.apache.org/jira/browse/SOLR-13727

@@ -1,8 +1,0 @@
-title: Add support for commitWithin in DataImportHandler
-type: added
-authors:
-- name: Sami Siren
-- name: yonik
-links:
-- name: SOLR-2481
-  url: https://issues.apache.org/jira/browse/SOLR-2481

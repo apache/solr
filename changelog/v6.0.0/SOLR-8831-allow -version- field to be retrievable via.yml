@@ -1,7 +1,0 @@
-title: allow _version_ field to be retrievable via docValues
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-8831
-  url: https://issues.apache.org/jira/browse/SOLR-8831

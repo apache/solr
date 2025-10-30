@@ -1,7 +1,0 @@
-title: Better error message when JWT auth SIGNATURE_INVALID during token parsing
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-16090
-  url: https://issues.apache.org/jira/browse/SOLR-16090

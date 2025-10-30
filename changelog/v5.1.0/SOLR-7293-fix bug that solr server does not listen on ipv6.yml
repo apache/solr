@@ -1,8 +1,0 @@
-title: Fix bug that Solr server does not listen on IPv6 interfaces by default.
-type: fixed
-authors:
-- name: Uwe Schindler
-- name: Sebastian Pesman
-links:
-- name: SOLR-7293
-  url: https://issues.apache.org/jira/browse/SOLR-7293

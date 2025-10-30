@@ -1,7 +1,0 @@
-title: Allow the diff Stream Evaluator to operate on the rows of a matrix
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-14478
-  url: https://issues.apache.org/jira/browse/SOLR-14478

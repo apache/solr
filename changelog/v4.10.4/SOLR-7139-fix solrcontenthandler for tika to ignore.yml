@@ -1,8 +1,0 @@
-title: Fix SolrContentHandler for TIKA to ignore multiple startDocument events.
-type: fixed
-authors:
-- name: Chris A. Mattmann
-- name: Uwe Schindler
-links:
-- name: SOLR-7139
-  url: https://issues.apache.org/jira/browse/SOLR-7139

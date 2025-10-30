@@ -1,8 +1,0 @@
-title: When registering or updating a ConfigurablePlugin through the `/cluster/plugin`
-  API, config validation exceptions are now propagated to the callers.
-type: changed
-authors:
-- name: Yohann Callea
-links:
-- name: SOLR-17119
-  url: https://issues.apache.org/jira/browse/SOLR-17119

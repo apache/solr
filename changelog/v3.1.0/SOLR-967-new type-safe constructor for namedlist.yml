@@ -1,8 +1,0 @@
-title: New type-safe constructor for NamedList
-type: other
-authors:
-- name: Kay Kay
-- name: hossman
-links:
-- name: SOLR-967
-  url: https://issues.apache.org/jira/browse/SOLR-967

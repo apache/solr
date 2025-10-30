@@ -1,8 +1,0 @@
-title: edismax with sow=false fails to create dismax-per-term queries when any field
-  is boosted.
-type: fixed
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-10527
-  url: https://issues.apache.org/jira/browse/SOLR-10527

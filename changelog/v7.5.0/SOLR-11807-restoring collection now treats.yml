@@ -1,7 +1,0 @@
-title: Restoring collection now treats maxShardsPerNode=-1 as unlimited
-type: fixed
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-11807
-  url: https://issues.apache.org/jira/browse/SOLR-11807

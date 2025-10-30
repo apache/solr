@@ -1,9 +1,0 @@
-title: All solr cores will now be loaded in parallel (as opposed to a fixed number)
-  in zookeeper mode to avoid deadlocks due to replicas waiting for other replicas
-  to come up.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-5240
-  url: https://issues.apache.org/jira/browse/SOLR-5240

@@ -1,6 +1,0 @@
-title: VelocityResponseWriter has been deprecated and may be removed in a future version.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-14065
-  url: https://issues.apache.org/jira/browse/SOLR-14065

@@ -1,8 +1,0 @@
-title: Circuit Breakers can now be configured globally
-type: added
-authors:
-- name: janhoy
-- name: Christine Poerschke
-links:
-- name: SOLR-16974
-  url: https://issues.apache.org/jira/browse/SOLR-16974

@@ -1,8 +1,0 @@
-title: The SynonymFilter sometimes generated incorrect offsets when multi token synonyms
-  were mached in the source text.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-167
-  url: https://issues.apache.org/jira/browse/SOLR-167

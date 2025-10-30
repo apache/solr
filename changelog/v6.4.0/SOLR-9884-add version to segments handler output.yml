@@ -1,8 +1,0 @@
-title: Add version to segments handler output
-type: added
-authors:
-- name: Steven Bower
-- name: Erick Erickson
-links:
-- name: SOLR-9884
-  url: https://issues.apache.org/jira/browse/SOLR-9884

@@ -1,7 +1,0 @@
-title: Field types need to be re-informed after reloading a managed schema from ZK
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-6764
-  url: https://issues.apache.org/jira/browse/SOLR-6764

@@ -1,7 +1,0 @@
-title: Added support for multiple spellcheck collations to /browse UI.
-type: other
-authors:
-- name: ehatcher
-links:
-- name: SOLR-4702
-  url: https://issues.apache.org/jira/browse/SOLR-4702

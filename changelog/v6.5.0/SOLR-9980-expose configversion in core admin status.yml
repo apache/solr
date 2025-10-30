@@ -1,8 +1,0 @@
-title: Expose configVersion in core admin status
-type: other
-authors:
-- name: Jessica Cheng Mallet
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-9980
-  url: https://issues.apache.org/jira/browse/SOLR-9980

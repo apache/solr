@@ -1,8 +1,0 @@
-title: 'Added clover code coverage targets for committers and the nightly build. Requires
-  the Clover library, as licensed to Apache and only available privately. To run:
-  ant -Drun.clover=true clean clover test generate-clover-reports'
-type: other
-authors: []
-links:
-- name: SOLR-479
-  url: https://issues.apache.org/jira/browse/SOLR-479

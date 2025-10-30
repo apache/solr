@@ -1,9 +1,0 @@
-title: The 'downnode' overseer command can trip asserts in ZkStateWriter.
-type: fixed
-authors:
-- name: Scott Blum
-- name: Mark Miller
-- name: shalin
-links:
-- name: SOLR-9030
-  url: https://issues.apache.org/jira/browse/SOLR-9030

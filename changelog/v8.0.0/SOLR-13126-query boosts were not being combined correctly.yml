@@ -1,9 +1,0 @@
-title: Query boosts were not being combined correctly for documents where not all
-  boost queries matched
-type: fixed
-authors:
-- name: Alan Woodward
-- name: Mikhail Khludnev
-links:
-- name: SOLR-13126
-  url: https://issues.apache.org/jira/browse/SOLR-13126

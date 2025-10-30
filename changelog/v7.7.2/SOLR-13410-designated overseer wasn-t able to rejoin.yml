@@ -1,8 +1,0 @@
-title: Designated overseer wasn't able to rejoin election queue at head upon restart
-type: fixed
-authors:
-- name: Ishan Chattopadhyaya
-- name: Kesharee Nandan Vishwakarma
-links:
-- name: SOLR-13410
-  url: https://issues.apache.org/jira/browse/SOLR-13410

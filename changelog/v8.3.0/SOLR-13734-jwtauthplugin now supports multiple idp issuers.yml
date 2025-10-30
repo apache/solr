@@ -1,9 +1,0 @@
-title: JWTAuthPlugin now supports multiple IdP issuers through configuring a new 'issuers'
-  configuration key. Access tokens issued and signed by any of the configured issuers
-  will be validated
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-13734
-  url: https://issues.apache.org/jira/browse/SOLR-13734

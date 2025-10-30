@@ -1,7 +1,0 @@
-title: Add env var options for the Prometheus Exporter bin scripts
-type: changed
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-14955
-  url: https://issues.apache.org/jira/browse/SOLR-14955

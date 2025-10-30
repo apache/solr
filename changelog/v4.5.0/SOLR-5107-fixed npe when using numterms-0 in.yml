@@ -1,8 +1,0 @@
-title: Fixed NPE when using numTerms=0 in LukeRequestHandler
-type: fixed
-authors:
-- name: Ahmet Arslan
-- name: hossman
-links:
-- name: SOLR-5107
-  url: https://issues.apache.org/jira/browse/SOLR-5107

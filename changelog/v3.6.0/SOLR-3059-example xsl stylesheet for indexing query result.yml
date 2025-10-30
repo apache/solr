@@ -1,7 +1,0 @@
-title: Example XSL stylesheet for indexing query result XML
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-3059
-  url: https://issues.apache.org/jira/browse/SOLR-3059

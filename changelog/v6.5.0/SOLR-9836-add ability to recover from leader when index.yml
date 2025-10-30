@@ -1,9 +1,0 @@
-title: Add ability to recover from leader when index corruption is detected on SolrCore
-  creation.
-type: added
-authors:
-- name: Mike Drob
-- name: Mark Miller
-links:
-- name: SOLR-9836
-  url: https://issues.apache.org/jira/browse/SOLR-9836

@@ -1,8 +1,0 @@
-title: A variety of spots in the code can create a collection zk node after the collection
-  has been removed.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-9834
-  url: https://issues.apache.org/jira/browse/SOLR-9834

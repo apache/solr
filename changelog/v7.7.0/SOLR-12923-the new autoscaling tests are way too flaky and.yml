@@ -1,7 +1,0 @@
-title: The new AutoScaling tests are way too flaky and need special attention.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-12923
-  url: https://issues.apache.org/jira/browse/SOLR-12923

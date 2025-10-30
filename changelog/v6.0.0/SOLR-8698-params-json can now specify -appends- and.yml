@@ -1,7 +1,0 @@
-title: params.json can now specify 'appends' and 'invariants'
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-8698
-  url: https://issues.apache.org/jira/browse/SOLR-8698

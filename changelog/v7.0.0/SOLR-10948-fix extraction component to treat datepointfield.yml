@@ -1,7 +1,0 @@
-title: Fix extraction component to treat DatePointField the same as TrieDateField
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-10948
-  url: https://issues.apache.org/jira/browse/SOLR-10948

@@ -1,8 +1,0 @@
-title: Remove restlet as dependency for the ManagedResource API
-type: other
-authors:
-- name: Timothy Potter
-- name: noble
-links:
-- name: SOLR-14659
-  url: https://issues.apache.org/jira/browse/SOLR-14659

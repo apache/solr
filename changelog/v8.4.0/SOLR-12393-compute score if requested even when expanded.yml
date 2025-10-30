@@ -1,8 +1,0 @@
-title: Compute score if requested even when expanded docs not sorted by score in ExpandComponent.
-type: fixed
-authors:
-- name: David Smiley
-- name: Munendra S N
-links:
-- name: SOLR-12393
-  url: https://issues.apache.org/jira/browse/SOLR-12393

@@ -1,7 +1,0 @@
-title: Directorys used by a SolrCore are now closed when they are no longer used.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-2654
-  url: https://issues.apache.org/jira/browse/SOLR-2654

@@ -1,8 +1,0 @@
-title: The full MapReduceIndexer help text does not display when using --help.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Wolfgang Hoschek
-links:
-- name: SOLR-5782
-  url: https://issues.apache.org/jira/browse/SOLR-5782

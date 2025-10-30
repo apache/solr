@@ -1,8 +1,0 @@
-title: ExternalFileField caches can be reloaded on firstSearcher/ newSearcher events
-  using the ExternalFileFieldReloader
-type: added
-authors:
-- name: Alan Woodward
-links:
-- name: SOLR-3985
-  url: https://issues.apache.org/jira/browse/SOLR-3985

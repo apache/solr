@@ -1,9 +1,0 @@
-title: ExternalFileField file parsing would fail if any key contained an "=" character.
-  It now only looks for the last "=" delimiter prior to the float value.
-type: fixed
-authors:
-- name: Markus Jelsma
-- name: hossman
-links:
-- name: SOLR-2545
-  url: https://issues.apache.org/jira/browse/SOLR-2545

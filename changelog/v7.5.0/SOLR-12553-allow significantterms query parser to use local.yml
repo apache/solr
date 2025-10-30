@@ -1,7 +1,0 @@
-title: Allow SignificantTerms Query Parser to use local parameters
-type: fixed
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-12553
-  url: https://issues.apache.org/jira/browse/SOLR-12553

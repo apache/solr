@@ -1,7 +1,0 @@
-title: New set-trigger and remove-trigger APIs for autoscaling.
-type: added
-authors:
-- name: shalin
-links:
-- name: SOLR-10339
-  url: https://issues.apache.org/jira/browse/SOLR-10339

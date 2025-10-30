@@ -1,8 +1,0 @@
-title: Fix inefficient iterator pattern in JsonSchemaValidator.
-type: changed
-authors:
-- name: Thomas DuBuisson
-- name: Bruno Roustant
-links:
-- name: SOLR-14819
-  url: https://issues.apache.org/jira/browse/SOLR-14819

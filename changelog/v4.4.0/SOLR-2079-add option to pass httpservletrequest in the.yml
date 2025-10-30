@@ -1,8 +1,0 @@
-title: Add option to pass HttpServletRequest in the SolrQueryRequest context map.
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-- name: Robert Muir
-links:
-- name: SOLR-2079
-  url: https://issues.apache.org/jira/browse/SOLR-2079

@@ -1,9 +1,0 @@
-title: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with
-  classic join closed fromCore if provided
-type: fixed
-authors:
-- name: Mikhail Khludnev
-- name: David Smiley
-links:
-- name: SOLR-15635
-  url: https://issues.apache.org/jira/browse/SOLR-15635

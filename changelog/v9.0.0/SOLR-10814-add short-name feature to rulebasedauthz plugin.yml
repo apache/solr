@@ -1,8 +1,0 @@
-title: Add short-name feature to RuleBasedAuthz plugin
-type: changed
-authors:
-- name: Mike Drob
-- name: Hrishikesh Gadre
-links:
-- name: SOLR-10814
-  url: https://issues.apache.org/jira/browse/SOLR-10814

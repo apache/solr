@@ -1,7 +1,0 @@
-title: Hunspell stemmer should not merge duplicate dictionary entries
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-4452
-  url: https://issues.apache.org/jira/browse/SOLR-4452

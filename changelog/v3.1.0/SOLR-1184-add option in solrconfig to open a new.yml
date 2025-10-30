@@ -1,8 +1,0 @@
-title: Add option in solrconfig to open a new IndexReader rather than using reopen.
-  Done mainly as a fail-safe in the case that a user runs into a reopen bug/issue.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-1184
-  url: https://issues.apache.org/jira/browse/SOLR-1184

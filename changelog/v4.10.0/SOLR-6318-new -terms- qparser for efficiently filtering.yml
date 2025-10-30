@@ -1,8 +1,0 @@
-title: New "terms" QParser for efficiently filtering documents by a list of values.
-  For many values, it's more appropriate than a boolean query.
-type: added
-authors:
-- name: David Smiley
-links:
-- name: SOLR-6318
-  url: https://issues.apache.org/jira/browse/SOLR-6318

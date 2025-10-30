@@ -1,8 +1,0 @@
-title: MoveReplicaCmd should skip deleting old replica in case of its node is not
-  live
-type: changed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-11124
-  url: https://issues.apache.org/jira/browse/SOLR-11124

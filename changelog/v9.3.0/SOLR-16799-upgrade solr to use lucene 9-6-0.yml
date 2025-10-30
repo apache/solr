@@ -1,8 +1,0 @@
-title: upgrade Solr to use Lucene 9.6.0
-type: dependency_update
-authors:
-- name: Alex Deparvu
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-16799
-  url: https://issues.apache.org/jira/browse/SOLR-16799

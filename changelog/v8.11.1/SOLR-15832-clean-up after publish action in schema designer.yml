@@ -1,8 +1,0 @@
-title: Clean-up after publish action in Schema Designer shouldn't fail if .system
-  collection doesn't exist
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-15832
-  url: https://issues.apache.org/jira/browse/SOLR-15832

@@ -1,9 +1,0 @@
-title: Harden ZkStateReader to expect that getCollectionLive may return null as it's
-  contract states.
-type: fixed
-authors:
-- name: Mark Miller
-- name: shalin
-links:
-- name: SOLR-6880
-  url: https://issues.apache.org/jira/browse/SOLR-6880

@@ -1,7 +1,0 @@
-title: Reduce code duplication w.r.t. RestTestHarness(es).
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-11793
-  url: https://issues.apache.org/jira/browse/SOLR-11793

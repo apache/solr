@@ -1,8 +1,0 @@
-title: Changing writeLockTimeout in solrconfig.xml did not change the effective timeout.
-type: fixed
-authors:
-- name: Koji Sekiguchi
-- name: yonik
-links:
-- name: SOLR-222
-  url: https://issues.apache.org/jira/browse/SOLR-222

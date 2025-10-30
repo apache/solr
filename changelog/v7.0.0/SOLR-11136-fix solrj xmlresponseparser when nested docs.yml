@@ -1,8 +1,0 @@
-title: Fix solrj XMLResponseParser when nested docs transformer is used with indented
-  XML
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-11136
-  url: https://issues.apache.org/jira/browse/SOLR-11136

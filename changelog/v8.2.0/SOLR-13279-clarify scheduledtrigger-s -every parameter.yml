@@ -1,7 +1,0 @@
-title: Clarify ScheduledTrigger's "every parameter missing" error response.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-13279
-  url: https://issues.apache.org/jira/browse/SOLR-13279

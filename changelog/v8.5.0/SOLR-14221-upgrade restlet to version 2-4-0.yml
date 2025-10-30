@@ -1,7 +1,0 @@
-title: Upgrade restlet to version 2.4.0
-type: changed
-authors:
-- name: janhoy
-links:
-- name: SOLR-14221
-  url: https://issues.apache.org/jira/browse/SOLR-14221

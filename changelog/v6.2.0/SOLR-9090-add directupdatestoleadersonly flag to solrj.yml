@@ -1,8 +1,0 @@
-title: Add directUpdatesToLeadersOnly flag to solrj CloudSolrClient.
-type: added
-authors:
-- name: Marvin Justice
-- name: Christine Poerschke
-links:
-- name: SOLR-9090
-  url: https://issues.apache.org/jira/browse/SOLR-9090

@@ -1,7 +1,0 @@
-title: Fix TestSolrCloudWithKerberosAlt.testBasics failure due to minikdc locale
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16042
-  url: https://issues.apache.org/jira/browse/SOLR-16042

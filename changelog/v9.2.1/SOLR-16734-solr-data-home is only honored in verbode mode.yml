@@ -1,7 +1,0 @@
-title: SOLR_DATA_HOME is only honored in verbode mode
-type: fixed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16734
-  url: https://issues.apache.org/jira/browse/SOLR-16734

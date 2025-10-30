@@ -1,9 +1,0 @@
-title: Fixed issue with calculating missing values for facets in single valued cases
-  in Stats Component. This is not correctly calculated for the multivalued case.
-type: fixed
-authors:
-- name: James Miller
-- name: gsingers
-links:
-- name: SOLR-1471
-  url: https://issues.apache.org/jira/browse/SOLR-1471

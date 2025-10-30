@@ -1,9 +1,0 @@
-title: Make it possible to invoke v2 api calls using SolrJ
-type: added
-authors:
-- name: Cao Manh Dat
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-10431
-  url: https://issues.apache.org/jira/browse/SOLR-10431

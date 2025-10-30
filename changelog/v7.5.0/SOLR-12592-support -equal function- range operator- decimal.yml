@@ -1,8 +1,0 @@
-title: 'support #EQUAL function, range operator, decimal and percentage in cores in
-  autoscaling policies'
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-12592
-  url: https://issues.apache.org/jira/browse/SOLR-12592

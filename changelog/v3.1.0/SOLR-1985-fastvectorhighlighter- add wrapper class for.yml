@@ -1,7 +1,0 @@
-title: 'FastVectorHighlighter: add wrapper class for Lucene''s SingleFragListBuilder'
-type: added
-authors:
-- name: koji
-links:
-- name: SOLR-1985
-  url: https://issues.apache.org/jira/browse/SOLR-1985

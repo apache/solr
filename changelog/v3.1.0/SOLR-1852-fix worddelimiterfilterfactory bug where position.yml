@@ -1,9 +1,0 @@
-title: Fix WordDelimiterFilterFactory bug where position increments were not being
-  applied properly to subwords.
-type: fixed
-authors:
-- name: Peter Wolanin
-- name: Robert Muir
-links:
-- name: SOLR-1852
-  url: https://issues.apache.org/jira/browse/SOLR-1852

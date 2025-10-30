@@ -1,8 +1,0 @@
-title: Clarify ref guide documentation about SQL queries with `SELECT *` requiring
-  a `LIMIT` clause
-type: other
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-15566
-  url: https://issues.apache.org/jira/browse/SOLR-15566

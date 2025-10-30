@@ -1,8 +1,0 @@
-title: Made it clearer when a core failed to load as well as better logging when the
-  QueryElevationComponent fails to properly initialize
-type: fixed
-authors:
-- name: gsingers
-links:
-- name: SOLR-1730
-  url: https://issues.apache.org/jira/browse/SOLR-1730

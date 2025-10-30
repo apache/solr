@@ -1,8 +1,0 @@
-title: The update log location in solrconfig.xml should default to ${solr.ulog.dir}
-  rather than ${solr.data.dir:}
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4062
-  url: https://issues.apache.org/jira/browse/SOLR-4062

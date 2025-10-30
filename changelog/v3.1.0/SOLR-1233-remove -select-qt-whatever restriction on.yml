@@ -1,7 +1,0 @@
-title: remove /select?qt=/whatever restriction on /-prefixed request handlers.
-type: other
-authors:
-- name: ehatcher
-links:
-- name: SOLR-1233
-  url: https://issues.apache.org/jira/browse/SOLR-1233

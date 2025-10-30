@@ -1,8 +1,0 @@
-title: Fix "false positive" suggestions from DirectSolrSpellChecker when using maxQueryFrequency
-  &gt; 1 in multi-shard collections
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-16436
-  url: https://issues.apache.org/jira/browse/SOLR-16436

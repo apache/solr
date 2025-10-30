@@ -1,8 +1,0 @@
-title: AbstractFullDistribZkTestBase#compareResults always returns false for shouldFail.
-type: other
-authors:
-- name: Mark Miller
-- name: Gregory Chanan
-links:
-- name: SOLR-5980
-  url: https://issues.apache.org/jira/browse/SOLR-5980

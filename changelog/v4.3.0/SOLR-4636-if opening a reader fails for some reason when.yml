@@ -1,8 +1,0 @@
-title: If opening a reader fails for some reason when opening a SolrIndexSearcher,
-  a Directory can be left unreleased.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4636
-  url: https://issues.apache.org/jira/browse/SOLR-4636

@@ -1,7 +1,0 @@
-title: Tweak Overseer leadership transition related logging for easier troubleshooting.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-12454
-  url: https://issues.apache.org/jira/browse/SOLR-12454

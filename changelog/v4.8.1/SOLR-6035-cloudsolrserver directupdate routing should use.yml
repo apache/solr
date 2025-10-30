@@ -1,8 +1,0 @@
-title: CloudSolrServer directUpdate routing should use getCoreUrl.
-type: fixed
-authors:
-- name: Marvin Justice
-- name: Joel Bernstein
-links:
-- name: SOLR-6035
-  url: https://issues.apache.org/jira/browse/SOLR-6035

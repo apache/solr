@@ -1,7 +1,0 @@
-title: Use google-cloud-bom for gcs-repository dependencies
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-15990
-  url: https://issues.apache.org/jira/browse/SOLR-15990

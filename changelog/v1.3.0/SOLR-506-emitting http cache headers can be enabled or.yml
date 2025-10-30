@@ -1,8 +1,0 @@
-title: Emitting HTTP Cache headers can be enabled or disabled through configuration
-  on a per-handler basis
-type: added
-authors:
-- name: shalin
-links:
-- name: SOLR-506
-  url: https://issues.apache.org/jira/browse/SOLR-506

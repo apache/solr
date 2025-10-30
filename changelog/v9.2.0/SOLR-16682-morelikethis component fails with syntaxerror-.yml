@@ -1,8 +1,0 @@
-title: 'MoreLikeThis Component fails with SyntaxError: Cannot parse if document terms
-  contains symbols from query parser syntax'
-type: fixed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-16682
-  url: https://issues.apache.org/jira/browse/SOLR-16682

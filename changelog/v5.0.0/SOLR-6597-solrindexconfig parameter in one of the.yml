@@ -1,8 +1,0 @@
-title: SolrIndexConfig parameter in one of the SolrIndexSearcher constructor has been
-  removed. It was just passed and never used via that constructor.
-type: other
-authors:
-- name: Anshum Gupta
-links:
-- name: SOLR-6597
-  url: https://issues.apache.org/jira/browse/SOLR-6597

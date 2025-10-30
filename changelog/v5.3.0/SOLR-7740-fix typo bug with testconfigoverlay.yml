@@ -1,8 +1,0 @@
-title: Fix typo bug with TestConfigOverlay
-type: other
-authors:
-- name: Christine Poerschke
-- name: Ramkumar Aiyengar
-links:
-- name: SOLR-7740
-  url: https://issues.apache.org/jira/browse/SOLR-7740

@@ -1,8 +1,0 @@
-title: The collections API should return responses (success or failure) for each node
-  it attempts to work with.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4577
-  url: https://issues.apache.org/jira/browse/SOLR-4577

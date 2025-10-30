@@ -1,8 +1,0 @@
-title: Separate out a solrj-streaming module
-type: other
-authors:
-- name: Joel Bernstein
-- name: Kevin Risden
-links:
-- name: SOLR-15733
-  url: https://issues.apache.org/jira/browse/SOLR-15733

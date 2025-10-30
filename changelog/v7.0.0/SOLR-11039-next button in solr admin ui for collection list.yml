@@ -1,7 +1,0 @@
-title: Next button in Solr admin UI for collection list pagination does not work.
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-11039
-  url: https://issues.apache.org/jira/browse/SOLR-11039

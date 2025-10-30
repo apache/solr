@@ -1,8 +1,0 @@
-title: Decide default when requested fields are both column and row stored.
-type: changed
-authors:
-- name: Cao Manh Dat
-- name: David Smiley
-links:
-- name: SOLR-8344
-  url: https://issues.apache.org/jira/browse/SOLR-8344

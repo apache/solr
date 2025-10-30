@@ -1,7 +1,0 @@
-title: toNativeType () TrieDate & EnumField do not handle CharSequence properly
-type: fixed
-authors:
-- name: Munendra S N
-links:
-- name: SOLR-13538
-  url: https://issues.apache.org/jira/browse/SOLR-13538

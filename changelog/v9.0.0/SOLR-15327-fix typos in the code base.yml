@@ -1,8 +1,0 @@
-title: Fix typos in the code base
-type: changed
-authors:
-- name: Edward Ribeiro
-- name: Eric Pugh
-links:
-- name: SOLR-15327
-  url: https://issues.apache.org/jira/browse/SOLR-15327

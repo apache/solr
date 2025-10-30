@@ -1,7 +1,0 @@
-title: After the core is reloaded, term of the core will not be watched
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-12129
-  url: https://issues.apache.org/jira/browse/SOLR-12129

@@ -1,8 +1,0 @@
-title: Replace new HashMap(int) and new HashSet(int) with CollectionUtil.newHashMap
-  / CollectionUtil.newHashSet
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16715
-  url: https://issues.apache.org/jira/browse/SOLR-16715

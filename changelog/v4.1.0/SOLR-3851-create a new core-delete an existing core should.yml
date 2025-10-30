@@ -1,8 +1,0 @@
-title: create a new core/delete an existing core should also update the main/left
-  list of cores on the admin UI
-type: changed
-authors:
-- name: steffkes
-links:
-- name: SOLR-3851
-  url: https://issues.apache.org/jira/browse/SOLR-3851

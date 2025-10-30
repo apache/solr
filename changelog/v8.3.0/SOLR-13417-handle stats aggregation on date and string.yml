@@ -1,9 +1,0 @@
-title: Handle stats aggregation on date and string fields in SolrJ's JSON facet response
-  processing
-type: fixed
-authors:
-- name: Jason Gerlowski
-- name: Munendra S N
-links:
-- name: SOLR-13417
-  url: https://issues.apache.org/jira/browse/SOLR-13417

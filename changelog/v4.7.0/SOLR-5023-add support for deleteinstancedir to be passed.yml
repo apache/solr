@@ -1,8 +1,0 @@
-title: Add support for deleteInstanceDir to be passed from SolrJ for Core Unload action.
-type: added
-authors:
-- name: Lyubov Romanchuk
-- name: shalin
-links:
-- name: SOLR-5023
-  url: https://issues.apache.org/jira/browse/SOLR-5023

@@ -1,7 +1,0 @@
-title: Support facet scoring with the scoreNodes expression
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-9537
-  url: https://issues.apache.org/jira/browse/SOLR-9537

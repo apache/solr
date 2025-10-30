@@ -1,9 +1,0 @@
-title: 'Better error messages/warnings when parsing schema.xml: field using bogus
-  fieldtype and multiple copyFields to a non-multiValue field.'
-type: fixed
-authors:
-- name: Shalin Shekhar Mangar
-- name: hossman
-links:
-- name: SOLR-530
-  url: https://issues.apache.org/jira/browse/SOLR-530

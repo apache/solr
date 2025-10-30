@@ -1,7 +1,0 @@
-title: 'Admin UI: Collection selector drop down does not sort collections'
-type: changed
-authors:
-- name: Edward Ribeiro
-links:
-- name: SOLR-15153
-  url: https://issues.apache.org/jira/browse/SOLR-15153

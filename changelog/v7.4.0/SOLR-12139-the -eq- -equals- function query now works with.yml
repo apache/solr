@@ -1,9 +1,0 @@
-title: The "eq" (equals) function query now works with string fields, string literals,
-  and perhaps anything.
-type: added
-authors:
-- name: Andrey Kudryavtsev
-- name: David Smiley
-links:
-- name: SOLR-12139
-  url: https://issues.apache.org/jira/browse/SOLR-12139

@@ -1,7 +1,0 @@
-title: Consistence problem when in-sync replicas are DOWN.
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-12011
-  url: https://issues.apache.org/jira/browse/SOLR-12011

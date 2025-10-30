@@ -1,8 +1,0 @@
-title: Upgrade Noggit to version 0.6 to support more flexible JSON input
-type: other
-authors:
-- name: Noble Paul
-- name: Yonik Seeley
-links:
-- name: SOLR-6445
-  url: https://issues.apache.org/jira/browse/SOLR-6445

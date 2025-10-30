@@ -1,9 +1,0 @@
-title: solr.cmd stop works only in english
-type: fixed
-authors:
-- name: john.work
-- name: Jan Høydahl
-- name: Timothy Potter
-links:
-- name: SOLR-6928
-  url: https://issues.apache.org/jira/browse/SOLR-6928

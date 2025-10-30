@@ -1,8 +1,0 @@
-title: Fix the connection reset problem caused by the incorrect use of 4LW with \n
-  when monitoring zooKeeper status
-type: fixed
-authors:
-- name: Fa Ming
-links:
-- name: SOLR-15849
-  url: https://issues.apache.org/jira/browse/SOLR-15849

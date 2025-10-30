@@ -1,7 +1,0 @@
-title: Make it possible to run all tests in a package
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-1441
-  url: https://issues.apache.org/jira/browse/SOLR-1441

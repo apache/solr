@@ -1,8 +1,0 @@
-title: Solr's hdfs safe mode detection does not catch all cases of being in safe mode.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Mike Drob
-links:
-- name: SOLR-8130
-  url: https://issues.apache.org/jira/browse/SOLR-8130

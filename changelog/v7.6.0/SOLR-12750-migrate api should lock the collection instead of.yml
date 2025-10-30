@@ -1,7 +1,0 @@
-title: Migrate API should lock the collection instead of shard.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-12750
-  url: https://issues.apache.org/jira/browse/SOLR-12750

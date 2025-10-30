@@ -1,9 +1,0 @@
-title: Async response for backups now correctly aggregates and returns information
-type: fixed
-authors:
-- name: Houston Putman
-- name: Artem Abeleshev
-- name: Christine Poerschke
-links:
-- name: SOLR-15842
-  url: https://issues.apache.org/jira/browse/SOLR-15842

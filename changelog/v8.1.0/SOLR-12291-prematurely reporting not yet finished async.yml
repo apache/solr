@@ -1,9 +1,0 @@
-title: prematurely reporting not yet finished async Collections API call as completed
-  when collection's replicas are colocated at least at one node
-type: fixed
-authors:
-- name: Varun Thacker
-- name: Mikhail Khludnev
-links:
-- name: SOLR-12291
-  url: https://issues.apache.org/jira/browse/SOLR-12291

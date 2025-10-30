@@ -1,8 +1,0 @@
-title: We'll now always throw an exception if defaultOperator is found in schema.
-  This config has been deprecated since 3.6, and enforced for new configs since 6.6
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-10584
-  url: https://issues.apache.org/jira/browse/SOLR-10584

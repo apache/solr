@@ -1,8 +1,0 @@
-title: The heatmap facet response structure, when returned in JSON, changed from an
-  even/odd name/value array to an object style. Although the object style makes more
-  sense, this was an overlooked back-compat break; sorry.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-12398
-  url: https://issues.apache.org/jira/browse/SOLR-12398

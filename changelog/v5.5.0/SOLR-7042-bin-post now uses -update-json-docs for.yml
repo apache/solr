@@ -1,8 +1,0 @@
-title: bin/post now uses /update/json/docs for application/json content types, including
-  support for .jsonl (JSON Lines) files.
-type: other
-authors:
-- name: Erik Hatcher and shalin
-links:
-- name: SOLR-7042
-  url: https://issues.apache.org/jira/browse/SOLR-7042

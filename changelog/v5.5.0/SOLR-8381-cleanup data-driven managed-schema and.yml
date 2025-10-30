@@ -1,8 +1,0 @@
-title: Cleanup data_driven managed-schema and solrconfig.xml files. Commented out
-  copyFields are removed and solrconfig.xml doesn't refer to field which are not defined.
-type: other
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-8381
-  url: https://issues.apache.org/jira/browse/SOLR-8381

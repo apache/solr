@@ -1,8 +1,0 @@
-title: Refactor SolrCoreState so that it's managed by SolrCore.
-type: other
-authors:
-- name: Mark Miller
-- name: hossman
-links:
-- name: SOLR-3861
-  url: https://issues.apache.org/jira/browse/SOLR-3861

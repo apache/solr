@@ -1,7 +1,0 @@
-title: Deprecate CollectionAdminRequest.getV2Request().
-type: other
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-15118
-  url: https://issues.apache.org/jira/browse/SOLR-15118

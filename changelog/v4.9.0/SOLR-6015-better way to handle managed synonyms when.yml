@@ -1,7 +1,0 @@
-title: Better way to handle managed synonyms when ignoreCase=true
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-6015
-  url: https://issues.apache.org/jira/browse/SOLR-6015

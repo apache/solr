@@ -1,7 +1,0 @@
-title: Remove deprecated constructor in MetricsMap
-type: other
-authors:
-- name: janhoy
-links:
-- name: PR#1567
-  url: https://github.com/apache/solr/pull/1567

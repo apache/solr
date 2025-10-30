@@ -1,7 +1,0 @@
-title: Support a runtime function `#ALL` for 'replica' in autoscaling policies
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-12522
-  url: https://issues.apache.org/jira/browse/SOLR-12522

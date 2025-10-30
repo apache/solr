@@ -1,8 +1,0 @@
-title: NPE in Replica Placement Rules when using Overseer Role with other rules
-type: fixed
-authors:
-- name: Tim Owen
-- name: noble
-links:
-- name: SOLR-9503
-  url: https://issues.apache.org/jira/browse/SOLR-9503

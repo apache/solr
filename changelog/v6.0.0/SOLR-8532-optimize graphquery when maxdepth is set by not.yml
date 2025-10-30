@@ -1,9 +1,0 @@
-title: Optimize GraphQuery when maxDepth is set by not collecting edges at the maxDepth
-  level.
-type: changed
-authors:
-- name: Kevin Watters
-- name: yonik
-links:
-- name: SOLR-8532
-  url: https://issues.apache.org/jira/browse/SOLR-8532

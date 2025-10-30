@@ -1,7 +1,0 @@
-title: Remove the problematic and now unnecessary log4j-over-slf4j.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4308
-  url: https://issues.apache.org/jira/browse/SOLR-4308

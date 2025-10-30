@@ -1,8 +1,0 @@
-title: ReplicationHandler can try and do a snappull and open a new IndexWriter after
-  shutdown has already occurred, leaving an IndexWriter that is not closed.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4060
-  url: https://issues.apache.org/jira/browse/SOLR-4060

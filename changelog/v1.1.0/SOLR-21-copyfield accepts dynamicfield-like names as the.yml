@@ -1,8 +1,0 @@
-title: copyField accepts dynamicfield-like names as the source. SOLR-21
-type: added
-authors:
-- name: Darren Erik Vengroff
-- name: yonik
-links:
-- name: SOLR-21
-  url: https://issues.apache.org/jira/browse/SOLR-21

@@ -1,9 +1,0 @@
-title: Reduced logging during startup and shutdown, moved more logs to DEBUG level
-type: other
-authors:
-- name: janhoy
-- name: Shawn Heisey
-- name: Alan Woodward
-links:
-- name: SOLR-6677
-  url: https://issues.apache.org/jira/browse/SOLR-6677

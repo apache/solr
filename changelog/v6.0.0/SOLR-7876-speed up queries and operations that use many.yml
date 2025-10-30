@@ -1,8 +1,0 @@
-title: Speed up queries and operations that use many terms when timeAllowed has not
-  been specified. Speedups of up to 8% were observed.
-type: changed
-authors:
-- name: yonik
-links:
-- name: SOLR-7876
-  url: https://issues.apache.org/jira/browse/SOLR-7876

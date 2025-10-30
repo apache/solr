@@ -1,8 +1,0 @@
-title: LBHttpSolrServer should only retry on Connection exceptions when sending updates.
-  Affects CloudSolrServer.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5727
-  url: https://issues.apache.org/jira/browse/SOLR-5727

@@ -1,5 +1,0 @@
-title: postOptimize hook, mirroring the functionallity of the postCommit hook, but
-  only called on an index optimize.
-type: added
-authors: []
-links: []

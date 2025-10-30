@@ -1,7 +1,0 @@
-title: In DIH, TikaEntityProcessor should have support for onError=skip
-type: other
-authors:
-- name: Noble Paul
-links:
-- name: SOLR-7076
-  url: https://issues.apache.org/jira/browse/SOLR-7076

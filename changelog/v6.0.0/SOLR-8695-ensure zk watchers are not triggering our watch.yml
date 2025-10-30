@@ -1,9 +1,0 @@
-title: Ensure ZK watchers are not triggering our watch logic on connection events
-  and make this handling more consistent.
-type: fixed
-authors:
-- name: Scott Blum
-- name: Mark Miller
-links:
-- name: SOLR-8695
-  url: https://issues.apache.org/jira/browse/SOLR-8695

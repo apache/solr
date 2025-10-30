@@ -1,8 +1,0 @@
-title: BinaryResponseWriter does not handle incompatible data in fields
-type: fixed
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-840
-  url: https://issues.apache.org/jira/browse/SOLR-840

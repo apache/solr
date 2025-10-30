@@ -1,8 +1,0 @@
-title: the JSON Facet 'relatedness()' aggregate function now supports a 'min_popularity'
-  option using the extended type:func syntax
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-12581
-  url: https://issues.apache.org/jira/browse/SOLR-12581

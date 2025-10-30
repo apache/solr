@@ -1,8 +1,0 @@
-title: Relocate the example mime-to-extension mapping, and upgrade Velocity Engine
-  to 1.7
-type: other
-authors:
-- name: ehatcher
-links:
-- name: SOLR-3735
-  url: https://issues.apache.org/jira/browse/SOLR-3735

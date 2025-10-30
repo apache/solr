@@ -1,7 +1,0 @@
-title: Refactor JSON serialization code into SolrJ package
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-12455
-  url: https://issues.apache.org/jira/browse/SOLR-12455

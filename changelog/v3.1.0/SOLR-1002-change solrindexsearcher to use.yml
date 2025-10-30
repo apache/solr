@@ -1,9 +1,0 @@
-title: Change SolrIndexSearcher to use insertWithOverflow with reusable priority queue
-  entries to reduce the amount of generated garbage during searching.
-type: changed
-authors:
-- name: Mark Miller
-- name: yonik
-links:
-- name: SOLR-1002
-  url: https://issues.apache.org/jira/browse/SOLR-1002

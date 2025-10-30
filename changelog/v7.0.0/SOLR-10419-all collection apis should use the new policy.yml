@@ -1,8 +1,0 @@
-title: All collection APIs should use the new Policy framework for replica placement.
-type: other
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-10419
-  url: https://issues.apache.org/jira/browse/SOLR-10419

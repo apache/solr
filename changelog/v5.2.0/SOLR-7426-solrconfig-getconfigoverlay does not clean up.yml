@@ -1,7 +1,0 @@
-title: SolrConfig#getConfigOverlay does not clean up it's resources.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-7426
-  url: https://issues.apache.org/jira/browse/SOLR-7426

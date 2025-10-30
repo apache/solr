@@ -1,7 +1,0 @@
-title: StreamExpressionParser should handle white space around = in named parameters
-type: other
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-10601
-  url: https://issues.apache.org/jira/browse/SOLR-10601

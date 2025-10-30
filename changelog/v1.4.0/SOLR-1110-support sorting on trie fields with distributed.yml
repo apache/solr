@@ -1,9 +1,0 @@
-title: Support sorting on trie fields with Distributed Search.
-type: added
-authors:
-- name: Mark Miller
-- name: Uwe Schindler
-- name: shalin
-links:
-- name: SOLR-1110
-  url: https://issues.apache.org/jira/browse/SOLR-1110

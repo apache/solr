@@ -1,7 +1,0 @@
-title: Fix spurious failures of TriggerIntegrationTest due to timing issues.
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-11621
-  url: https://issues.apache.org/jira/browse/SOLR-11621

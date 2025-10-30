@@ -1,7 +1,0 @@
-title: Refactor DocRouter.getDocRouter to accept routerName as a String.
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-6116
-  url: https://issues.apache.org/jira/browse/SOLR-6116

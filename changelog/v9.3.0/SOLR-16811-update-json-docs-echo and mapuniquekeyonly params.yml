@@ -1,7 +1,0 @@
-title: /update/json/docs?echo and mapUniqueKeyOnly params doesn't work
-type: fixed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-16811
-  url: https://issues.apache.org/jira/browse/SOLR-16811

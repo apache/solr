@@ -1,7 +1,0 @@
-title: REPLACENODE should identify appropriate nodes if targetNode is not provided
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-11067
-  url: https://issues.apache.org/jira/browse/SOLR-11067

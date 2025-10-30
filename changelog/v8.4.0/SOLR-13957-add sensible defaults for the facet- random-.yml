@@ -1,8 +1,0 @@
-title: Add sensible defaults for the facet, random, facet2D, timeseries, stats and
-  update Streaming Expressions
-type: changed
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-13957
-  url: https://issues.apache.org/jira/browse/SOLR-13957

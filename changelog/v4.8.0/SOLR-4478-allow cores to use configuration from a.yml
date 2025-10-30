@@ -1,9 +1,0 @@
-title: Allow cores to use configuration from a configsets directory outside their
-  instance directory.
-type: added
-authors:
-- name: Alan Woodward
-- name: Erick Erickson
-links:
-- name: SOLR-4478
-  url: https://issues.apache.org/jira/browse/SOLR-4478

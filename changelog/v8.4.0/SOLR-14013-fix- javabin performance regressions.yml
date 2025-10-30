@@ -1,9 +1,0 @@
-title: 'FIX: javabin performance regressions'
-type: fixed
-authors:
-- name: noble
-- name: yonik
-- name: Houston Putman
-links:
-- name: SOLR-14013
-  url: https://issues.apache.org/jira/browse/SOLR-14013

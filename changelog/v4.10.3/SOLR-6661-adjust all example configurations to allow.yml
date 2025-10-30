@@ -1,9 +1,0 @@
-title: Adjust all example configurations to allow overriding error-prone relative
-  paths for solrconfig.xml &lt;lib&gt; references with solr.install.dir system property;
-  bin/solr scripts will set it appropriately.
-type: other
-authors:
-- name: ehatcher
-links:
-- name: SOLR-6661
-  url: https://issues.apache.org/jira/browse/SOLR-6661

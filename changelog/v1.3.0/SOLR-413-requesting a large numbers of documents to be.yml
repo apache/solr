@@ -1,8 +1,0 @@
-title: Requesting a large numbers of documents to be returned (limit) can result in
-  an out-of-memory exception, even for a small index.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-413
-  url: https://issues.apache.org/jira/browse/SOLR-413

@@ -1,9 +1,0 @@
-title: Relative configSetBase directories were resolved relative to the container
-  CWD, rather than solr.home.
-type: fixed
-authors:
-- name: Simon Endele
-- name: Alan Woodward
-links:
-- name: SOLR-6158
-  url: https://issues.apache.org/jira/browse/SOLR-6158

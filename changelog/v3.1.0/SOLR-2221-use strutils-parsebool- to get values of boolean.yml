@@ -1,9 +1,0 @@
-title: Use StrUtils.parseBool() to get values of boolean options in DIH. true/on/yes
-  (for TRUE) and false/off/no (for FALSE) can be used for sub-options (debug, verbose,
-  synchronous, commit, clean, optimize) for full/delta-import commands.
-type: fixed
-authors:
-- name: koji
-links:
-- name: SOLR-2221
-  url: https://issues.apache.org/jira/browse/SOLR-2221

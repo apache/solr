@@ -1,6 +1,0 @@
-title: 'SOLR:10822: Share a Policy.session object between multiple collection admin
-  calls to get the correct computations'
-type: other
-authors:
-- name: noble
-links: []

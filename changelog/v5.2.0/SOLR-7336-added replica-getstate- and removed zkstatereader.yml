@@ -1,8 +1,0 @@
-title: Added Replica.getState() and removed ZkStateReader state-related constants.
-  You should use Replica.State to compare a replica's state.
-type: other
-authors:
-- name: Shai Erera
-links:
-- name: SOLR-7336
-  url: https://issues.apache.org/jira/browse/SOLR-7336

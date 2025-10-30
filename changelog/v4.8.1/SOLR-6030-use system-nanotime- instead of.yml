@@ -1,8 +1,0 @@
-title: Use System.nanoTime() instead of currentTimeInMills() in LRUCache.warm.
-type: fixed
-authors:
-- name: Tomás Fernández Löbbe
-- name: shalin
-links:
-- name: SOLR-6030
-  url: https://issues.apache.org/jira/browse/SOLR-6030

@@ -1,9 +1,0 @@
-title: specify appends, defaults, invariants outside of the request handler.
-type: added
-authors:
-- name: Noble Paul
-- name: Erik Hatcher
-- name: shalin
-links:
-- name: SOLR-6365
-  url: https://issues.apache.org/jira/browse/SOLR-6365

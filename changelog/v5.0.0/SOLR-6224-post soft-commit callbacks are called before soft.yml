@@ -1,7 +1,0 @@
-title: Post soft-commit callbacks are called before soft commit actually happens.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-6224
-  url: https://issues.apache.org/jira/browse/SOLR-6224

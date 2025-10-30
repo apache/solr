@@ -1,7 +1,0 @@
-title: Upgrade Carrot2 to 3.6.2
-type: other
-authors:
-- name: Stanisław Osiński
-links:
-- name: SOLR-3279
-  url: https://issues.apache.org/jira/browse/SOLR-3279

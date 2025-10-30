@@ -1,9 +1,0 @@
-title: In-place update of nonexistent doc following existing doc update fails to create
-  the doc.
-type: fixed
-authors:
-- name: Andrey Kudryavtsev
-- name: Mikhail Khludnev
-links:
-- name: SOLR-11459
-  url: https://issues.apache.org/jira/browse/SOLR-11459

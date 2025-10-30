@@ -1,9 +1,0 @@
-title: Warn if checkIntegrityAtMerge is configured. This option is no longer meaningful
-  since the checks are done automatically at a very low level in the segment merging.
-  This warning will become an error in Solr 6.0.
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-6834
-  url: https://issues.apache.org/jira/browse/SOLR-6834

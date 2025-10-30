@@ -1,8 +1,0 @@
-title: Introduced support for byte vector encoding in DenseVectorField and KnnQParser
-type: added
-authors:
-- name: Elia Porciani
-- name: Alessandro Benedetti
-links:
-- name: SOLR-16674
-  url: https://issues.apache.org/jira/browse/SOLR-16674

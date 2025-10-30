@@ -1,7 +1,0 @@
-title: Add netty-transport-classes-epoll dependency
-type: fixed
-authors:
-- name: Colvin Cowie
-links:
-- name: SOLR-17168
-  url: https://issues.apache.org/jira/browse/SOLR-17168

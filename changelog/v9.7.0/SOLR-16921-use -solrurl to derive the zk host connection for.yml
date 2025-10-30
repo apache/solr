@@ -1,7 +1,0 @@
-title: use -solrUrl to derive the zk host connection for bin/solr zk subcommands
-type: changed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-16921
-  url: https://issues.apache.org/jira/browse/SOLR-16921

@@ -1,7 +1,0 @@
-title: introducing sort=childfield(field) asc for searching by {!parent}
-type: added
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-10521
-  url: https://issues.apache.org/jira/browse/SOLR-10521

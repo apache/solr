@@ -1,8 +1,0 @@
-title: Document -p port option for the create_core and create_collection actions in
-  bin/solr
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-6946
-  url: https://issues.apache.org/jira/browse/SOLR-6946

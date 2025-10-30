@@ -1,9 +1,0 @@
-title: Analysis Factories are now configured with their Lucene Version throw setLuceneMatchVersion,
-  rather than through the Map passed to init. Parsing and simple error checking for
-  the Version is now done inside the code that creates the Analysis Factories.
-type: added
-authors:
-- name: Chris Male
-links:
-- name: SOLR-3402
-  url: https://issues.apache.org/jira/browse/SOLR-3402

@@ -1,7 +1,0 @@
-title: Check if SOLR_SSL_ENABLED strictly equal to true for setting solr.jetty.https.port
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-15046
-  url: https://issues.apache.org/jira/browse/SOLR-15046

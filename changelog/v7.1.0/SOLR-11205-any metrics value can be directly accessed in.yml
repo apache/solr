@@ -1,7 +1,0 @@
-title: Any metrics value can be directly accessed in autoscaling policies
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-11205
-  url: https://issues.apache.org/jira/browse/SOLR-11205

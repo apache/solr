@@ -1,8 +1,0 @@
-title: JSON Facet API percentile function caused a NullPointerException in distributed
-  mode when there were no values in a bucket from a shard.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-9917
-  url: https://issues.apache.org/jira/browse/SOLR-9917

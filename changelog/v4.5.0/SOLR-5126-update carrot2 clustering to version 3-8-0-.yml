@@ -1,7 +1,0 @@
-title: Update Carrot2 clustering to version 3.8.0, update Morfologik to version 1.7.1
-type: added
-authors:
-- name: Dawid Weiss
-links:
-- name: SOLR-5126
-  url: https://issues.apache.org/jira/browse/SOLR-5126

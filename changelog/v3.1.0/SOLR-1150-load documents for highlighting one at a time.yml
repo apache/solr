@@ -1,9 +1,0 @@
-title: Load Documents for Highlighting one at a time rather than all at once to avoid
-  OOM with many large Documents.
-type: changed
-authors:
-- name: Siddharth Gargate
-- name: Mark Miller
-links:
-- name: SOLR-1150
-  url: https://issues.apache.org/jira/browse/SOLR-1150

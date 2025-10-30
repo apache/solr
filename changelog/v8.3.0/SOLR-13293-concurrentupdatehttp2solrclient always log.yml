@@ -1,8 +1,0 @@
-title: ConcurrentUpdateHttp2SolrClient always log AsynchronousCloseException exception
-  error on indexing.
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-13293
-  url: https://issues.apache.org/jira/browse/SOLR-13293

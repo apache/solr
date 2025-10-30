@@ -1,8 +1,0 @@
-title: A new cluster singleton plugin to automatically remove inactive shards.
-type: added
-authors:
-- name: Paul McArthur
-- name: David Smiley
-links:
-- name: SOLR-16403
-  url: https://issues.apache.org/jira/browse/SOLR-16403

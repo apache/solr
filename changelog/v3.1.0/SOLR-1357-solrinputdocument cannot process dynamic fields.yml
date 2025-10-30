@@ -1,8 +1,0 @@
-title: SolrInputDocument cannot process dynamic fields
-type: other
-authors:
-- name: Lars Grote
-- name: noble
-links:
-- name: SOLR-1357
-  url: https://issues.apache.org/jira/browse/SOLR-1357

@@ -1,8 +1,0 @@
-title: LowerCaseTokenizer is deprecated, and should be replaced by LetterTokenizer
-  and LowerCaseFilter
-type: other
-authors:
-- name: Alan Woodward
-links:
-- name: SOLR-12775
-  url: https://issues.apache.org/jira/browse/SOLR-12775

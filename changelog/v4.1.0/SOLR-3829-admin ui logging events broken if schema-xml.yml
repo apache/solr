@@ -1,8 +1,0 @@
-title: Admin UI Logging events broken if schema.xml defines a catch-all dynamicField
-  with type ignored
-type: fixed
-authors:
-- name: steffkes
-links:
-- name: SOLR-3829
-  url: https://issues.apache.org/jira/browse/SOLR-3829

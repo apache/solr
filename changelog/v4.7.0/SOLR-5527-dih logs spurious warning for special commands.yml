@@ -1,7 +1,0 @@
-title: DIH logs spurious warning for special commands.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-5527
-  url: https://issues.apache.org/jira/browse/SOLR-5527

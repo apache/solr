@@ -1,7 +1,0 @@
-title: Enforce special character requirements on passwords with length less than 15
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-16022
-  url: https://issues.apache.org/jira/browse/SOLR-16022

@@ -1,8 +1,0 @@
-title: change morphline test config files to work around 'importCommands' bug when
-  using java9
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-8876
-  url: https://issues.apache.org/jira/browse/SOLR-8876

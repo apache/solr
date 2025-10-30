@@ -1,8 +1,0 @@
-title: The default spellcheck query converter was ignoring terms consisting entirely
-  of digits.
-type: fixed
-authors:
-- name: James Dyer
-links:
-- name: SOLR-2556
-  url: https://issues.apache.org/jira/browse/SOLR-2556

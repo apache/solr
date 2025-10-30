@@ -1,7 +1,0 @@
-title: Add cat() stream source to create tuples from lines in local files
-type: added
-authors:
-- name: Jason Gerlowski and Joel Bernstein
-links:
-- name: SOLR-13622
-  url: https://issues.apache.org/jira/browse/SOLR-13622

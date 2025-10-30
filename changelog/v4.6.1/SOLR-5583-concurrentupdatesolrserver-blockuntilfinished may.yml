@@ -1,8 +1,0 @@
-title: ConcurrentUpdateSolrServer#blockUntilFinished may wait forever if the executor
-  service is shutdown.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5583
-  url: https://issues.apache.org/jira/browse/SOLR-5583

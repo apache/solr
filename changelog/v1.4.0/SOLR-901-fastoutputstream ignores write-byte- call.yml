@@ -1,8 +1,0 @@
-title: FastOutputStream ignores write(byte[]) call.
-type: fixed
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-901
-  url: https://issues.apache.org/jira/browse/SOLR-901

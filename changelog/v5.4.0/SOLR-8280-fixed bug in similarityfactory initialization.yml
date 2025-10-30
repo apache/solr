@@ -1,9 +1,0 @@
-title: Fixed bug in SimilarityFactory initialization that prevented SolrCoreAware
-  factories -- such as SchemaSimilarityFactory -- from functioning properly with managed
-  schema features.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-8280
-  url: https://issues.apache.org/jira/browse/SOLR-8280

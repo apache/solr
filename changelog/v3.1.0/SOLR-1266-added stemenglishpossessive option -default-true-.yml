@@ -1,9 +1,0 @@
-title: Added stemEnglishPossessive option (default=true) to WordDelimiterFilter that
-  allows disabling of english possessive stemming (removal of trailing 's from tokens)
-type: added
-authors:
-- name: Robert Muir
-- name: yonik
-links:
-- name: SOLR-1266
-  url: https://issues.apache.org/jira/browse/SOLR-1266

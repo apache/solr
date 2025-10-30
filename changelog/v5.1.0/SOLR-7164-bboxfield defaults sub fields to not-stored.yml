@@ -1,7 +1,0 @@
-title: BBoxField defaults sub fields to not-stored
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-7164
-  url: https://issues.apache.org/jira/browse/SOLR-7164

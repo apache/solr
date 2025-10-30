@@ -1,8 +1,0 @@
-title: AbstractFullDistribZkTestBase.waitForRecoveriesToFinish now takes a timeout
-  and time unit instead of assuming that we are passed value in seconds.
-type: other
-authors:
-- name: Mike Drob
-links:
-- name: SOLR-14322
-  url: https://issues.apache.org/jira/browse/SOLR-14322

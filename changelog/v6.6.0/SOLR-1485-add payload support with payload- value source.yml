@@ -1,8 +1,0 @@
-title: Add payload support with payload() value source and {!payload_score} and {!payload_check}
-  query parsers.
-type: added
-authors:
-- name: Erik Hatcher
-links:
-- name: SOLR-1485
-  url: https://issues.apache.org/jira/browse/SOLR-1485

@@ -1,9 +1,0 @@
-title: JSON updates now support nested child documents using a "_childDocument_" object
-  key.
-type: added
-authors:
-- name: Varun Thacker
-- name: hossman
-links:
-- name: SOLR-5183
-  url: https://issues.apache.org/jira/browse/SOLR-5183

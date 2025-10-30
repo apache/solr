@@ -1,7 +1,0 @@
-title: bin/solr and SolrCLI should support SSL-related Java System Properties
-type: other
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-6982
-  url: https://issues.apache.org/jira/browse/SOLR-6982

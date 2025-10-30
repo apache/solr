@@ -1,8 +1,0 @@
-title: Guard against CloudSolrStream close method NullPointerException
-type: fixed
-authors:
-- name: Kevin Risden
-- name: Joel Bernstein
-links:
-- name: SOLR-8191
-  url: https://issues.apache.org/jira/browse/SOLR-8191

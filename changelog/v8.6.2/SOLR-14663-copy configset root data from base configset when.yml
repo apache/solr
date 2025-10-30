@@ -1,8 +1,0 @@
-title: Copy ConfigSet root data from base ConfigSet when using CREATE command
-type: fixed
-authors:
-- name: Andras Salamon
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-14663
-  url: https://issues.apache.org/jira/browse/SOLR-14663

@@ -1,9 +1,0 @@
-title: ReRankingQParserPlugin cleaner paging and fix bug with fuzzy, range and other
-  queries that need to be re-written.
-type: fixed
-authors:
-- name: Adair Kovac
-- name: Joel Bernstein
-links:
-- name: SOLR-6323
-  url: https://issues.apache.org/jira/browse/SOLR-6323

@@ -1,7 +1,0 @@
-title: Upgrade guava to version 31.0.1-jre
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-15912
-  url: https://issues.apache.org/jira/browse/SOLR-15912

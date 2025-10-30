@@ -1,7 +1,0 @@
-title: Added support for "host" variable in autoscaling policy rules
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-12846
-  url: https://issues.apache.org/jira/browse/SOLR-12846

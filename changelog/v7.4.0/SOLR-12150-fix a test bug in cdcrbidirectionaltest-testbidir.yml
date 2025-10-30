@@ -1,9 +1,0 @@
-title: Fix a test bug in CdcrBidirectionalTest.testBiDir
-type: fixed
-authors:
-- name: Steve Rowe
-- name: Amrit Sarkar
-- name: Varun Thacker
-links:
-- name: SOLR-12150
-  url: https://issues.apache.org/jira/browse/SOLR-12150

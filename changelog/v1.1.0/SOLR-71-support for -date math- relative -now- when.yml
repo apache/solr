@@ -1,8 +1,0 @@
-title: Support for "Date Math" relative "NOW" when specifying values of a DateField
-  in a query -- or when adding a document. SOLR-71
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-71
-  url: https://issues.apache.org/jira/browse/SOLR-71

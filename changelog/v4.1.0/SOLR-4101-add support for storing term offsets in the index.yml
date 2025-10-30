@@ -1,9 +1,0 @@
-title: Add support for storing term offsets in the index via a 'storeOffsetsWithPositions'
-  flag on field definitions in the schema.
-type: added
-authors:
-- name: Tom Winch
-- name: Alan Woodward
-links:
-- name: SOLR-4101
-  url: https://issues.apache.org/jira/browse/SOLR-4101

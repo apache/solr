@@ -1,7 +1,0 @@
-title: Reduce object creation in HashBasedRouter.
-type: changed
-authors:
-- name: ab
-links:
-- name: SOLR-12723
-  url: https://issues.apache.org/jira/browse/SOLR-12723

@@ -1,8 +1,0 @@
-title: Fix bin\solr.cmd to work in a directory with spaces in the name.
-type: fixed
-authors:
-- name: Timothy Potter
-- name: Uwe Schindler
-links:
-- name: SOLR-7016
-  url: https://issues.apache.org/jira/browse/SOLR-7016

@@ -1,7 +1,0 @@
-title: Add l1norm, l2norm and linfnorm Stream Evaluators
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11689
-  url: https://issues.apache.org/jira/browse/SOLR-11689

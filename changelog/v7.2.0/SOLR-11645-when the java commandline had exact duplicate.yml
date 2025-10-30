@@ -1,9 +1,0 @@
-title: When the java commandline had exact duplicate arguments, the admin UI dashboard
-  would not display any commandline arguments.
-type: fixed
-authors:
-- name: Webster Homer
-- name: Shawn Heisey
-links:
-- name: SOLR-11645
-  url: https://issues.apache.org/jira/browse/SOLR-11645

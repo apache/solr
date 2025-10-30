@@ -1,7 +1,0 @@
-title: Add 'autoscaling' tool support to solr.cmd
-type: added
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-13241
-  url: https://issues.apache.org/jira/browse/SOLR-13241

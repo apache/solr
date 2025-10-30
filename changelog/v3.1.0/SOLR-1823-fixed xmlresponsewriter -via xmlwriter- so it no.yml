@@ -1,9 +1,0 @@
-title: Fixed XMLResponseWriter (via XMLWriter) so it no longer throws a ClassCastException
-  when a Map containing a non-String key is used.
-type: fixed
-authors:
-- name: Frank Wesemann
-- name: hossman
-links:
-- name: SOLR-1823
-  url: https://issues.apache.org/jira/browse/SOLR-1823

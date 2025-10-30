@@ -1,8 +1,0 @@
-title: Refactor common getSortField logic in various FieldTypes
-type: other
-authors:
-- name: Jason Gerlowski
-- name: hossman
-links:
-- name: SOLR-11132
-  url: https://issues.apache.org/jira/browse/SOLR-11132

@@ -1,8 +1,0 @@
-title: Remove mention of the managed_schema_configs as valid config directory when
-  creating the collection for the SolrCloud example.
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-9007
-  url: https://issues.apache.org/jira/browse/SOLR-9007

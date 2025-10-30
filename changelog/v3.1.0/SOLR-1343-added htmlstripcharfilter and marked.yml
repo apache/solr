@@ -1,9 +1,0 @@
-title: Added HTMLStripCharFilter and marked HTMLStripReader, HTMLStripWhitespaceTokenizerFactory
-  and HTMLStripStandardTokenizerFactory deprecated. To strip HTML tags, HTMLStripCharFilter
-  can be used with an arbitrary Tokenizer.
-type: added
-authors:
-- name: koji
-links:
-- name: SOLR-1343
-  url: https://issues.apache.org/jira/browse/SOLR-1343

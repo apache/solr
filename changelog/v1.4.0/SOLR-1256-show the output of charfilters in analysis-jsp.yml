@@ -1,7 +1,0 @@
-title: Show the output of CharFilters in analysis.jsp.
-type: added
-authors:
-- name: koji
-links:
-- name: SOLR-1256
-  url: https://issues.apache.org/jira/browse/SOLR-1256

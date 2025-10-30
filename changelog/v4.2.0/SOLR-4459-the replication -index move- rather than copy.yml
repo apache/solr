@@ -1,8 +1,0 @@
-title: The Replication 'index move' rather than copy optimization doesn't kick in
-  when using NRTCachingDirectory or the rate limiting feature.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4459
-  url: https://issues.apache.org/jira/browse/SOLR-4459

@@ -1,8 +1,0 @@
-title: docValues are now enabled by default for most non-text (string, date, and numeric)
-  fields in the schema templates.
-type: other
-authors:
-- name: yonik
-links:
-- name: SOLR-8740
-  url: https://issues.apache.org/jira/browse/SOLR-8740

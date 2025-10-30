@@ -1,9 +1,0 @@
-title: 'CloudSolrClient refactoring: Removed ZK specific methods'
-type: other
-authors:
-- name: Haythem Khiri
-- name: David Smiley
-- name: janhoy
-links:
-- name: SOLR-16061
-  url: https://issues.apache.org/jira/browse/SOLR-16061

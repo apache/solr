@@ -1,7 +1,0 @@
-title: Fix core admin SPLIT action to be useful with non-cloud setups
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-4695
-  url: https://issues.apache.org/jira/browse/SOLR-4695

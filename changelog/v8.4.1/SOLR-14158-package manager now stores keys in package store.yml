@@ -1,9 +1,0 @@
-title: 'Package manager now stores keys in package store instead of ZK. If you''re
-  using package manager and have already added any repositories, then you would need
-  to re-add all the keys from /keys/exe location, one-by-one, using: "bin/solr add-key
-  &lt;keyfile.der&gt;"'
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-14158
-  url: https://issues.apache.org/jira/browse/SOLR-14158

@@ -1,7 +1,0 @@
-title: Add gammaDistribution Stream Evaluator
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11414
-  url: https://issues.apache.org/jira/browse/SOLR-11414

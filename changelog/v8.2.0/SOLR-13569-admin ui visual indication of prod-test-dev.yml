@@ -1,7 +1,0 @@
-title: Admin UI visual indication of prod/test/dev environment
-type: changed
-authors:
-- name: janhoy
-links:
-- name: SOLR-13569
-  url: https://issues.apache.org/jira/browse/SOLR-13569

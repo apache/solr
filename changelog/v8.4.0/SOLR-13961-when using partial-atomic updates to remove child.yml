@@ -1,8 +1,0 @@
-title: When using partial/atomic updates to remove child documents, we now support
-  setting to null or an empty list as equivalent to the "remove" command.
-type: changed
-authors:
-- name: Thomas Wöckinger
-links:
-- name: SOLR-13961
-  url: https://issues.apache.org/jira/browse/SOLR-13961

@@ -1,9 +1,0 @@
-title: Fix ReplicationFactorTest on Windows by adding better retry support after seeing
-  no response exceptions.
-type: other
-authors:
-- name: Ishan Chattopadhyaya
-- name: Timothy Potter
-links:
-- name: SOLR-7173
-  url: https://issues.apache.org/jira/browse/SOLR-7173

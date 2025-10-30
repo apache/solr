@@ -1,9 +1,0 @@
-title: Added the TaggerRequestHandler (AKA SolrTextTagger) for tagging text. It's
-  used as a component of NER/ERD systems including query-understanding. See the ref
-  guide for more info.
-type: added
-authors:
-- name: David Smiley
-links:
-- name: SOLR-12376
-  url: https://issues.apache.org/jira/browse/SOLR-12376

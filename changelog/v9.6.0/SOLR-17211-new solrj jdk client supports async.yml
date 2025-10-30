@@ -1,7 +1,0 @@
-title: New SolrJ JDK client supports Async
-type: changed
-authors:
-- name: James Dyer
-links:
-- name: SOLR-17211
-  url: https://issues.apache.org/jira/browse/SOLR-17211

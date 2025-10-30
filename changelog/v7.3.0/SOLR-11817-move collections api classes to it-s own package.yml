@@ -1,7 +1,0 @@
-title: Move Collections API classes to it's own package
-type: other
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-11817
-  url: https://issues.apache.org/jira/browse/SOLR-11817

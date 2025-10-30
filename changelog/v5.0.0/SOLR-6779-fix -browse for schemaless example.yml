@@ -1,7 +1,0 @@
-title: fix /browse for schemaless example
-type: fixed
-authors:
-- name: ehatcher
-links:
-- name: SOLR-6779
-  url: https://issues.apache.org/jira/browse/SOLR-6779

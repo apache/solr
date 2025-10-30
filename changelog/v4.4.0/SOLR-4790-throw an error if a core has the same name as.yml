@@ -1,7 +1,0 @@
-title: Throw an error if a core has the same name as another core, both old and new
-  style solr.xml
-type: fixed
-authors: []
-links:
-- name: SOLR-4790
-  url: https://issues.apache.org/jira/browse/SOLR-4790

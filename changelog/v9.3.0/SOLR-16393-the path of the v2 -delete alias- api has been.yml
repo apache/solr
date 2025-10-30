@@ -1,8 +1,0 @@
-title: The path of the v2 "delete alias" API has been tweaked slightly to be more
-  intuitive, and is now available at `DELETE /api/aliases/aliasName`.
-type: changed
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-16393
-  url: https://issues.apache.org/jira/browse/SOLR-16393

@@ -1,7 +1,0 @@
-title: PluginInfo should load plugins w/o class attribute also
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-1697
-  url: https://issues.apache.org/jira/browse/SOLR-1697

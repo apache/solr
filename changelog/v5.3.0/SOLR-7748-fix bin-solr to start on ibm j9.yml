@@ -1,7 +1,0 @@
-title: Fix bin/solr to start on IBM J9.
-type: fixed
-authors:
-- name: Shai Erera
-links:
-- name: SOLR-7748
-  url: https://issues.apache.org/jira/browse/SOLR-7748

@@ -1,7 +1,0 @@
-title: Add integrate Stream Evaluator to support integral calculations
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11789
-  url: https://issues.apache.org/jira/browse/SOLR-11789

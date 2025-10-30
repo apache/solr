@@ -1,8 +1,0 @@
-title: Remove bogus "Content-Charset" header in HttpSolrServer.
-type: other
-authors:
-- name: Michael Ryan
-- name: Uwe Schindler
-links:
-- name: SOLR-6360
-  url: https://issues.apache.org/jira/browse/SOLR-6360

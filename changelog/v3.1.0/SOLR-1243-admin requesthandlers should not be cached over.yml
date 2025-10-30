@@ -1,7 +1,0 @@
-title: Admin RequestHandlers should not be cached over HTTP.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-1243
-  url: https://issues.apache.org/jira/browse/SOLR-1243

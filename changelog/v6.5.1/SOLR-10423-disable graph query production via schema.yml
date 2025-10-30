@@ -1,9 +1,0 @@
-title: Disable graph query production via schema configuration &lt;fieldtype ... enableGraphQueries="false"&gt;.
-  This fixes broken queries for ShingleFilter-containing query-time analyzers when
-  request param sow=false.
-type: fixed
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-10423
-  url: https://issues.apache.org/jira/browse/SOLR-10423

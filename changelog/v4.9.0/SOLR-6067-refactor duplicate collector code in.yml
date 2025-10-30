@@ -1,8 +1,0 @@
-title: Refactor duplicate Collector code in SolrIndexSearcher
-type: other
-authors:
-- name: Christine Poerschke
-- name: hossman
-links:
-- name: SOLR-6067
-  url: https://issues.apache.org/jira/browse/SOLR-6067

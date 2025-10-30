@@ -1,8 +1,0 @@
-title: ConfigSet DELETE operation no longer allows deletion of config sets that are
-  currently in use by other collections
-type: other
-authors:
-- name: Anshum Gupta
-links:
-- name: SOLR-8299
-  url: https://issues.apache.org/jira/browse/SOLR-8299

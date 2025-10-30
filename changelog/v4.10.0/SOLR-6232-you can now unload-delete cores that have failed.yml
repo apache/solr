@@ -1,7 +1,0 @@
-title: You can now unload/delete cores that have failed to initialize
-type: added
-authors:
-- name: Alan Woodward
-links:
-- name: SOLR-6232
-  url: https://issues.apache.org/jira/browse/SOLR-6232

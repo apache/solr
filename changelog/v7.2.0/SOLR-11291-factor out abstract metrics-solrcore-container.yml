@@ -1,8 +1,0 @@
-title: Factor out abstract metrics/SolrCore[Container]Reporter classes.
-type: other
-authors:
-- name: Omar Abdelnabi
-- name: Christine Poerschke
-links:
-- name: SOLR-11291
-  url: https://issues.apache.org/jira/browse/SOLR-11291

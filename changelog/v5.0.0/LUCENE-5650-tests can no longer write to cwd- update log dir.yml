@@ -1,9 +1,0 @@
-title: Tests can no longer write to CWD. Update log dir is now made relative to the
-  instance dir if it is not an absolute path.
-type: other
-authors:
-- name: Ryan Ernst
-- name: Dawid Weiss
-links:
-- name: LUCENE-5650
-  url: https://issues.apache.org/jira/browse/LUCENE-5650

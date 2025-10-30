@@ -1,9 +1,0 @@
-title: Make docValues range queries behave the same as Trie/Point fields for Double/Float
-  Infinity cases
-type: changed
-authors:
-- name: Tomás Fernández Löbbe
-- name: Andrey Kudryavtsev
-links:
-- name: SOLR-11070
-  url: https://issues.apache.org/jira/browse/SOLR-11070

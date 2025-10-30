@@ -1,9 +1,0 @@
-title: Collections created without specifying a configset name use a copy of the _default
-  configset since 7.0. Before 7.3, the copied over configset was named the same as
-  the collection name, but 7.3 onwards it will be named with an additional ".AUTOCREATED"
-  suffix.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-11624
-  url: https://issues.apache.org/jira/browse/SOLR-11624

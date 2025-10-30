@@ -1,7 +1,0 @@
-title: CPU Utilization Based Circuit Breaker
-type: added
-authors:
-- name: Atri Sharma
-links:
-- name: SOLR-14615
-  url: https://issues.apache.org/jira/browse/SOLR-14615

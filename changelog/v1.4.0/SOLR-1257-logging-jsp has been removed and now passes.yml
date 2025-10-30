@@ -1,9 +1,0 @@
-title: logging.jsp has been removed and now passes through to the hierarchical log
-  level tool added in Solr 1.3. Users still hitting "/admin/logging.jsp" should switch
-  to "/admin/logging".
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-1257
-  url: https://issues.apache.org/jira/browse/SOLR-1257

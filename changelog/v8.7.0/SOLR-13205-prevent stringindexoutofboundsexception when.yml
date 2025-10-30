@@ -1,8 +1,0 @@
-title: Prevent StringIndexOutOfBoundsException when parsing field names in SolrQueryParserBase
-type: changed
-authors:
-- name: pramodkumar9
-- name: Jason Gerlowski
-links:
-- name: SOLR-13205
-  url: https://issues.apache.org/jira/browse/SOLR-13205

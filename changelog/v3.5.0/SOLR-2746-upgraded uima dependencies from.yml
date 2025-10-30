@@ -1,6 +1,0 @@
-title: Upgraded UIMA dependencies from *-2.3.1-SNAPSHOT.jar to *-2.3.1.jar.
-type: other
-authors: []
-links:
-- name: SOLR-2746
-  url: https://issues.apache.org/jira/browse/SOLR-2746

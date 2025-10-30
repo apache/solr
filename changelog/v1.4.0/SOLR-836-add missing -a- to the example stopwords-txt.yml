@@ -1,7 +1,0 @@
-title: Add missing "a" to the example stopwords.txt
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-836
-  url: https://issues.apache.org/jira/browse/SOLR-836

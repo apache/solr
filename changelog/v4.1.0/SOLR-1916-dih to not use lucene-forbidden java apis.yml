@@ -1,8 +1,0 @@
-title: DIH to not use Lucene-forbidden Java APIs (default encoding, locale, etc.)
-type: other
-authors:
-- name: James Dyer
-- name: Robert Muir
-links:
-- name: SOLR-1916
-  url: https://issues.apache.org/jira/browse/SOLR-1916

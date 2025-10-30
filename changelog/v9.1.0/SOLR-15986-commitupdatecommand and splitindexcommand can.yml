@@ -1,7 +1,0 @@
-title: CommitUpdateCommand and SplitIndexCommand can write user commit metadata.
-type: changed
-authors:
-- name: Bruno Roustant
-links:
-- name: SOLR-15986
-  url: https://issues.apache.org/jira/browse/SOLR-15986

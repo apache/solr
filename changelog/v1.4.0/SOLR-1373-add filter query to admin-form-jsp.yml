@@ -1,8 +1,0 @@
-title: Add Filter query to admin/form.jsp
-type: added
-authors:
-- name: Jason Rutherglen
-- name: hossman
-links:
-- name: SOLR-1373
-  url: https://issues.apache.org/jira/browse/SOLR-1373

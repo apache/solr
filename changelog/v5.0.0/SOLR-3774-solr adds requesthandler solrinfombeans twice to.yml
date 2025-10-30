@@ -1,9 +1,0 @@
-title: Solr adds RequestHandler SolrInfoMBeans twice to the JMX server.
-type: fixed
-authors:
-- name: Tomás Fernández Löbbe
-- name: hossman
-- name: Mark Miller
-links:
-- name: SOLR-3774
-  url: https://issues.apache.org/jira/browse/SOLR-3774

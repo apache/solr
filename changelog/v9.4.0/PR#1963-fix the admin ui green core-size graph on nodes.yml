@@ -1,7 +1,0 @@
-title: Fix the admin UI green core-size graph on nodes screen
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: PR#1963
-  url: https://github.com/apache/solr/pull/1963

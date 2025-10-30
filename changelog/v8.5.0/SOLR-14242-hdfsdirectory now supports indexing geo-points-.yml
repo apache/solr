@@ -1,7 +1,0 @@
-title: HdfsDirectory now supports indexing geo-points, ranges or shapes.
-type: changed
-authors:
-- name: Adrien Grand
-links:
-- name: SOLR-14242
-  url: https://issues.apache.org/jira/browse/SOLR-14242

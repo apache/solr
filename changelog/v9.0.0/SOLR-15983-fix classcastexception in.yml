@@ -1,8 +1,0 @@
-title: Fix ClassCastException in UpdateLog$LogReplayer.doReplay.
-type: fixed
-authors:
-- name: Christine Poerschke
-- name: David Smiley
-links:
-- name: SOLR-15983
-  url: https://issues.apache.org/jira/browse/SOLR-15983

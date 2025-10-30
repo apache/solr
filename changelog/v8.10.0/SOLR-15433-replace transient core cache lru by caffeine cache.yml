@@ -1,7 +1,0 @@
-title: Replace transient core cache LRU by Caffeine cache.
-type: changed
-authors:
-- name: Bruno Roustant
-links:
-- name: SOLR-15433
-  url: https://issues.apache.org/jira/browse/SOLR-15433

@@ -1,8 +1,0 @@
-title: Upgrade Lucene to 9.8.0
-type: dependency_update
-authors:
-- name: Alex Deparvu
-- name: Christine Poerschke
-links:
-- name: SOLR-16985
-  url: https://issues.apache.org/jira/browse/SOLR-16985

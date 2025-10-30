@@ -1,7 +1,0 @@
-title: Fix followRedirect property on HttpSolrClient not set when using Builder pattern.
-type: fixed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-10458
-  url: https://issues.apache.org/jira/browse/SOLR-10458

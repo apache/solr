@@ -1,7 +1,0 @@
-title: New delete() Stream Decorator
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-14241
-  url: https://issues.apache.org/jira/browse/SOLR-14241

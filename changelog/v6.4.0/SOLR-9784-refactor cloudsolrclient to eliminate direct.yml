@@ -1,7 +1,0 @@
-title: Refactor CloudSolrClient to eliminate direct dependency on ZK
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-9784
-  url: https://issues.apache.org/jira/browse/SOLR-9784

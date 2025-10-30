@@ -1,7 +1,0 @@
-title: Initialize the LogWatcher earlier in CoreContainer#load()
-type: changed
-authors:
-- name: janhoy
-links:
-- name: SOLR-16181
-  url: https://issues.apache.org/jira/browse/SOLR-16181

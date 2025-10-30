@@ -1,9 +1,0 @@
-title: Return 400 status code on invalid dynamic field for Edismax's user Fields
-type: fixed
-authors:
-- name: Johannes Kloos
-- name: mrsoong
-- name: Munendra S N
-links:
-- name: SOLR-13203
-  url: https://issues.apache.org/jira/browse/SOLR-13203

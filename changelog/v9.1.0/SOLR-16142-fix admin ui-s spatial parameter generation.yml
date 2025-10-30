@@ -1,8 +1,0 @@
-title: Fix Admin UI's spatial parameter generation.
-type: fixed
-authors:
-- name: Arsal Jalib
-- name: Christine Poerschke
-links:
-- name: SOLR-16142
-  url: https://issues.apache.org/jira/browse/SOLR-16142

@@ -1,7 +1,0 @@
-title: Add support for PostingsHighlighter.
-type: added
-authors:
-- name: Robert Muir
-links:
-- name: SOLR-4271
-  url: https://issues.apache.org/jira/browse/SOLR-4271

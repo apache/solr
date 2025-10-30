@@ -1,7 +1,0 @@
-title: DIH multithreading sometimes throws NPE
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-1757
-  url: https://issues.apache.org/jira/browse/SOLR-1757

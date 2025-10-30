@@ -1,7 +1,0 @@
-title: NullPointerException when excluding facets in More Like This Handler
-type: fixed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-16648
-  url: https://issues.apache.org/jira/browse/SOLR-16648

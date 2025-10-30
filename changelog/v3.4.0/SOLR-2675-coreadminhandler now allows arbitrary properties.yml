@@ -1,9 +1,0 @@
-title: CoreAdminHandler now allows arbitrary properties to be specified when CREATEing
-  a new SolrCore using property.* request params.
-type: added
-authors:
-- name: Yury Kats
-- name: hossman
-links:
-- name: SOLR-2675
-  url: https://issues.apache.org/jira/browse/SOLR-2675

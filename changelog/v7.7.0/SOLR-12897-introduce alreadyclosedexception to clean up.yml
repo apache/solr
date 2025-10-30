@@ -1,7 +1,0 @@
-title: Introduce AlreadyClosedException to clean up silly close / shutdown logging.
-type: changed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-12897
-  url: https://issues.apache.org/jira/browse/SOLR-12897

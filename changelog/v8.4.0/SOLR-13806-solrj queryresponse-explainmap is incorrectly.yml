@@ -1,8 +1,0 @@
-title: SolrJ QueryResponse._explainMap is incorrectly typed.
-type: fixed
-authors:
-- name: Guna Sekhar Dorai
-- name: ab
-links:
-- name: SOLR-13806
-  url: https://issues.apache.org/jira/browse/SOLR-13806

@@ -1,8 +1,0 @@
-title: Added hl.maxAlternateFieldLength parameter, to set max length for hl.alternateField
-type: added
-authors:
-- name: Koji Sekiguchi
-- name: klaas
-links:
-- name: SOLR-516
-  url: https://issues.apache.org/jira/browse/SOLR-516

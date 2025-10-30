@@ -1,7 +1,0 @@
-title: High CPU usage in Solr due to Java 8 bug
-type: fixed
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-13349
-  url: https://issues.apache.org/jira/browse/SOLR-13349

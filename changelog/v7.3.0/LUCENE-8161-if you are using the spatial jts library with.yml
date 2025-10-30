@@ -1,7 +1,0 @@
-title: If you are using the spatial JTS library with Solr, you must upgrade to 1.15.0.
-  This new version of JTS is now dual-licensed to include a BSD style license.
-type: upgrade_notes
-authors: []
-links:
-- name: LUCENE-8161
-  url: https://issues.apache.org/jira/browse/LUCENE-8161

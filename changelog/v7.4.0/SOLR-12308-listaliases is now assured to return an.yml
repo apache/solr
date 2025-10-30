@@ -1,9 +1,0 @@
-title: LISTALIASES is now assured to return an up-to-date response. Also, the test
-  utility MiniSolrCloudCluster.deleteAllCollections will now first delete aliases
-  since a collection cannot be deleted if an alias refers to it.
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-12308
-  url: https://issues.apache.org/jira/browse/SOLR-12308

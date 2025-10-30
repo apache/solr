@@ -1,7 +1,0 @@
-title: OverseerAutoReplicaFailoverThread compares Integer objects using ==
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-7178
-  url: https://issues.apache.org/jira/browse/SOLR-7178

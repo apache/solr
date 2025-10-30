@@ -1,7 +1,0 @@
-title: Empty fields in XML update messages confuse DataImportHandler.
-type: fixed
-authors:
-- name: koji
-links:
-- name: SOLR-1973
-  url: https://issues.apache.org/jira/browse/SOLR-1973

@@ -1,7 +1,0 @@
-title: TestMiniSolrCloudCluster.createCollection to support extra & alternative collectionProperties
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8489
-  url: https://issues.apache.org/jira/browse/SOLR-8489

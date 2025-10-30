@@ -1,7 +1,0 @@
-title: test improvements to randomize use of compound files
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-4942
-  url: https://issues.apache.org/jira/browse/SOLR-4942

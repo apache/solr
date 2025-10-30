@@ -1,8 +1,0 @@
-title: The Solr source release can now be built/checked using gradle. The solr-ref-guide
-  tasks will not be included by default if the root directory is not a github repository.
-type: other
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-16747
-  url: https://issues.apache.org/jira/browse/SOLR-16747

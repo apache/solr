@@ -1,8 +1,0 @@
-title: Use noggit 0.5 release jar rather than a forked copy.
-type: other
-authors:
-- name: Yonik Seeley
-- name: Robert Muir
-links:
-- name: SOLR-4607
-  url: https://issues.apache.org/jira/browse/SOLR-4607

@@ -1,7 +1,0 @@
-title: Fix solr.jetty.ssl.verifyClientHostName logging
-type: fixed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16679
-  url: https://issues.apache.org/jira/browse/SOLR-16679

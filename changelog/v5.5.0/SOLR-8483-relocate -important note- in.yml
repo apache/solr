@@ -1,8 +1,0 @@
-title: relocate 'IMPORTANT NOTE' in open-exchange-rates.json test-file to avoid OpenExchangeRatesOrgProvider.java
-  warnings
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8483
-  url: https://issues.apache.org/jira/browse/SOLR-8483

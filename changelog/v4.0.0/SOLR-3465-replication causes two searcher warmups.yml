@@ -1,8 +1,0 @@
-title: Replication causes two searcher warmups.
-type: fixed
-authors:
-- name: Michael Garski
-- name: Mark Miller
-links:
-- name: SOLR-3465
-  url: https://issues.apache.org/jira/browse/SOLR-3465

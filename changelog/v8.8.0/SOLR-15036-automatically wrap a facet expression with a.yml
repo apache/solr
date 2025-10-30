@@ -1,9 +1,0 @@
-title: Automatically wrap a facet expression with a select / rollup / sort / plist
-  when using a collection alias with multiple collections and count|sum|min|max|avg
-  metrics.
-type: changed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-15036
-  url: https://issues.apache.org/jira/browse/SOLR-15036

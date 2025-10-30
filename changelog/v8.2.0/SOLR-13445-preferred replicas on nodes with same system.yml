@@ -1,7 +1,0 @@
-title: Preferred replicas on nodes with same system properties as the query master
-type: added
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-13445
-  url: https://issues.apache.org/jira/browse/SOLR-13445

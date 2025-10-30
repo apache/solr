@@ -1,8 +1,0 @@
-title: Stored XSS in Admin UI Schema-Browser page and Analysis page
-type: other
-authors:
-- name: Mei Wang
-- name: Timothy Potter
-links:
-- name: SOLR-7346
-  url: https://issues.apache.org/jira/browse/SOLR-7346

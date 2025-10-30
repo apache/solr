@@ -1,7 +1,0 @@
-title: Upgrade to Gradle 8.4
-type: dependency_update
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-17026
-  url: https://issues.apache.org/jira/browse/SOLR-17026

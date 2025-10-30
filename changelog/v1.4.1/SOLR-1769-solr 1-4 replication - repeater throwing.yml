@@ -1,7 +1,0 @@
-title: Solr 1.4 Replication - Repeater throwing NullPointerException
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-1769
-  url: https://issues.apache.org/jira/browse/SOLR-1769

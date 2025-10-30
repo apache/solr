@@ -1,8 +1,0 @@
-title: SPLITSHARD (async) with failures in underlying sub-operations can result in
-  data loss
-type: fixed
-authors:
-- name: Ishan Chattopadhyaya
-links:
-- name: SOLR-13718
-  url: https://issues.apache.org/jira/browse/SOLR-13718

@@ -1,8 +1,0 @@
-title: DocCollection, Slice and Replica now write to Json and write to Maps identically.
-type: fixed
-authors:
-- name: Houston Putman
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-16891
-  url: https://issues.apache.org/jira/browse/SOLR-16891

@@ -1,8 +1,0 @@
-title: SolrJ Cloud clients now correctly support isUpdatesToLeaders() being false.
-  This behavior can also be configured per AbstractUpdateRequest instance.
-type: changed
-authors:
-- name: hossman
-links:
-- name: SOLR-6312
-  url: https://issues.apache.org/jira/browse/SOLR-6312

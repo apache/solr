@@ -1,8 +1,0 @@
-title: spurious ConcurrentModificationException when spell check component was in
-  use with filters.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-5019
-  url: https://issues.apache.org/jira/browse/SOLR-5019

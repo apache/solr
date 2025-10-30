@@ -1,8 +1,0 @@
-title: LBHttpSolrServer exception handling improvement and small test improvements.
-type: other
-authors:
-- name: Gregory Chanan
-- name: Mark Miller
-links:
-- name: SOLR-5934
-  url: https://issues.apache.org/jira/browse/SOLR-5934

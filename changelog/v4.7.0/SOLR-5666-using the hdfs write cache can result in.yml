@@ -1,7 +1,0 @@
-title: Using the hdfs write cache can result in appearance of corrupted index.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5666
-  url: https://issues.apache.org/jira/browse/SOLR-5666

@@ -1,8 +1,0 @@
-title: DocSet decoupled from OpenBitSet. DocSetBase moved to use FixedBitSet instead
-  of OpenBitSet. As a result BitDocSet now only works with FixedBitSet.
-type: changed
-authors:
-- name: Shai Erera
-links:
-- name: LUCENE-5440
-  url: https://issues.apache.org/jira/browse/LUCENE-5440

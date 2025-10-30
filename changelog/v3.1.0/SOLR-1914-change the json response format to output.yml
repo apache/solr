@@ -1,8 +1,0 @@
-title: Change the JSON response format to output float/double values of NaN,Infinity,-Infinity
-  as strings.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-1914
-  url: https://issues.apache.org/jira/browse/SOLR-1914

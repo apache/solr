@@ -1,8 +1,0 @@
-title: BadApple and AwaitsFix annotations usage
-type: other
-authors:
-- name: Erick Erickson
-- name: Uwe Schindler
-links:
-- name: SOLR-12028
-  url: https://issues.apache.org/jira/browse/SOLR-12028

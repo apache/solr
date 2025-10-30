@@ -1,8 +1,0 @@
-title: GraphTermsQueryQParserPlugin throws NPE when field being searched is not present
-  in segment
-type: fixed
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-9254
-  url: https://issues.apache.org/jira/browse/SOLR-9254

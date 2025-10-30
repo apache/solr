@@ -1,7 +1,0 @@
-title: Added ability to partially optimize.
-type: added
-authors:
-- name: gsingers
-links:
-- name: SOLR-603
-  url: https://issues.apache.org/jira/browse/SOLR-603

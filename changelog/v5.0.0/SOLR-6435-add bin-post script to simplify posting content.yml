@@ -1,7 +1,0 @@
-title: Add bin/post script to simplify posting content to Solr
-type: added
-authors:
-- name: Erik Hatcher
-links:
-- name: SOLR-6435
-  url: https://issues.apache.org/jira/browse/SOLR-6435

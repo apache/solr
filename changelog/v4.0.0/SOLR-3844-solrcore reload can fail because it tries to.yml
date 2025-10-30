@@ -1,8 +1,0 @@
-title: SolrCore reload can fail because it tries to remove the index write lock while
-  already holding it.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3844
-  url: https://issues.apache.org/jira/browse/SOLR-3844

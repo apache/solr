@@ -1,7 +1,0 @@
-title: downconfig downloads empty file as folder
-type: fixed
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-11198
-  url: https://issues.apache.org/jira/browse/SOLR-11198

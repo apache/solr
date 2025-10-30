@@ -1,8 +1,0 @@
-title: Setting the log level for the log4j root category results in adding a new category,
-  the empty string.
-type: fixed
-authors:
-- name: Shawn Heisey
-links:
-- name: SOLR-4868
-  url: https://issues.apache.org/jira/browse/SOLR-4868

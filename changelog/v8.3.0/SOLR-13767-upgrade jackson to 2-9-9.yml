@@ -1,7 +1,0 @@
-title: Upgrade jackson to 2.9.9
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-13767
-  url: https://issues.apache.org/jira/browse/SOLR-13767

@@ -1,8 +1,0 @@
-title: Fixed DocExpirationUpdateProcessorFactory to work with BasicAuth and other
-  auth plugins that delegate to PKI for server initiated node-to-node communication.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-12859
-  url: https://issues.apache.org/jira/browse/SOLR-12859

@@ -1,8 +1,0 @@
-title: Managed schema manipulations were not persisting the optional luceneMatchVersion
-  that can be set on an Analyzer.
-type: fixed
-authors:
-- name: Thomas Wöckinger
-links:
-- name: SOLR-13802
-  url: https://issues.apache.org/jira/browse/SOLR-13802

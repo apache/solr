@@ -1,7 +1,0 @@
-title: ZkController.publish doesn't use the updateLastState parameter.
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-6754
-  url: https://issues.apache.org/jira/browse/SOLR-6754

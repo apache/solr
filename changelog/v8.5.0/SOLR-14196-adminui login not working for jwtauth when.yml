@@ -1,7 +1,0 @@
-title: AdminUI login not working for JWTAuth when blockUnknown=false
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-14196
-  url: https://issues.apache.org/jira/browse/SOLR-14196

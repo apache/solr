@@ -1,9 +1,0 @@
-title: MiniSolrCloudCluster based tests can fail with ZooKeeperException NoNode for
-  /live_nodes.
-type: other
-authors:
-- name: Vamsee Yarlagadda
-- name: shalin
-links:
-- name: SOLR-7146
-  url: https://issues.apache.org/jira/browse/SOLR-7146

@@ -1,8 +1,0 @@
-title: Fix dependencies in Maven POMs.
-type: other
-authors:
-- name: David Smiley
-- name: Steve Rowe
-links:
-- name: SOLR-2849
-  url: https://issues.apache.org/jira/browse/SOLR-2849

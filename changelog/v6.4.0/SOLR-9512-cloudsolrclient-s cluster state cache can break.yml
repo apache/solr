@@ -1,7 +1,0 @@
-title: CloudSolrClient's cluster state cache can break direct updates to leaders
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-9512
-  url: https://issues.apache.org/jira/browse/SOLR-9512

@@ -1,9 +1,0 @@
-title: Rollback is not implemented quite right and can cause corner case fails in
-  SolrCloud tests.
-type: fixed
-authors:
-- name: rmuir
-- name: Mark Miller
-links:
-- name: SOLR-3730
-  url: https://issues.apache.org/jira/browse/SOLR-3730

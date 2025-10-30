@@ -1,8 +1,0 @@
-title: Added before/after count response parsing support for range facets in SolrJ.
-type: added
-authors:
-- name: Bernhard Frauendienst
-- name: Martijn van Groningen
-links:
-- name: SOLR-2818
-  url: https://issues.apache.org/jira/browse/SOLR-2818

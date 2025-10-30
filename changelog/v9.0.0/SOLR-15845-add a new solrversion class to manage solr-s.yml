@@ -1,8 +1,0 @@
-title: Add a new SolrVersion class to manage Solr's version independently from the
-  Lucene version we consume
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-15845
-  url: https://issues.apache.org/jira/browse/SOLR-15845

@@ -1,8 +1,0 @@
-title: StreamingUpdateSolrServer.blockUntilFinished was not thread safe and could
-  throw an exception.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-2192
-  url: https://issues.apache.org/jira/browse/SOLR-2192

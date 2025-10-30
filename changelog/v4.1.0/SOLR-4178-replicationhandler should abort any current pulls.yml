@@ -1,8 +1,0 @@
-title: ReplicationHandler should abort any current pulls and wait for its executor
-  to stop during core close.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4178
-  url: https://issues.apache.org/jira/browse/SOLR-4178

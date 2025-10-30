@@ -1,8 +1,0 @@
-title: Fix "Files" UI to show the managed-schema file as well.
-type: fixed
-authors:
-- name: Shawn Heisey
-- name: Varun Thacker
-links:
-- name: SOLR-6992
-  url: https://issues.apache.org/jira/browse/SOLR-6992

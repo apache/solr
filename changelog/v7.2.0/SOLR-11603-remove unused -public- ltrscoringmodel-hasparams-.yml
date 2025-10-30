@@ -1,7 +1,0 @@
-title: Remove unused (public) LTRScoringModel.hasParams() method.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-11603
-  url: https://issues.apache.org/jira/browse/SOLR-11603

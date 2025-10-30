@@ -1,8 +1,0 @@
-title: Ability to compress state.json in Zookeeper
-type: added
-authors:
-- name: Justin Sweeney
-- name: noble
-links:
-- name: SOLR-16608
-  url: https://issues.apache.org/jira/browse/SOLR-16608

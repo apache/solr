@@ -1,9 +1,0 @@
-title: requests are suspended until SolrDispatchFilter initialization is completed.
-  After core container shutdown or severe initialization problem Solr responds with
-  http stauts 404 Not Found instead of 500 as it was before
-type: fixed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-10615
-  url: https://issues.apache.org/jira/browse/SOLR-10615

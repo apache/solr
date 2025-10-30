@@ -1,8 +1,0 @@
-title: Fix CloudSolrClient to expand the collection parameter correctly
-type: fixed
-authors:
-- name: Tim Owen
-- name: Varun Thacker
-links:
-- name: SOLR-10826
-  url: https://issues.apache.org/jira/browse/SOLR-10826

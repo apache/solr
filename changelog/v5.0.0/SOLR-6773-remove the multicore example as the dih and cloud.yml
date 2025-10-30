@@ -1,9 +1,0 @@
-title: Remove the multicore example as the DIH and cloud examples illustrate multicore
-  behavior
-type: other
-authors:
-- name: hossman
-- name: Timothy Potter
-links:
-- name: SOLR-6773
-  url: https://issues.apache.org/jira/browse/SOLR-6773

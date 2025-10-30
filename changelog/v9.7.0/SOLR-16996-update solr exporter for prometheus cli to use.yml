@@ -1,8 +1,0 @@
-title: Update Solr Exporter for Prometheus cli to use commons-cli instead of argparse4j.
-type: other
-authors:
-- name: Christos Malliaridis
-- name: Eric Pugh
-links:
-- name: SOLR-16996
-  url: https://issues.apache.org/jira/browse/SOLR-16996

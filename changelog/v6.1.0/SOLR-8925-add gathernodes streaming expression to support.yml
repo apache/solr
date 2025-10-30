@@ -1,7 +1,0 @@
-title: Add gatherNodes Streaming Expression to support breadth first traversals
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-8925
-  url: https://issues.apache.org/jira/browse/SOLR-8925

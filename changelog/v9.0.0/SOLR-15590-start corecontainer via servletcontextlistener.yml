@@ -1,7 +1,0 @@
-title: Start CoreContainer via ServletContextListener
-type: changed
-authors:
-- name: Gus Heck
-links:
-- name: SOLR-15590
-  url: https://issues.apache.org/jira/browse/SOLR-15590

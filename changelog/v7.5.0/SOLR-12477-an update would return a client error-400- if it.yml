@@ -1,9 +1,0 @@
-title: An update would return a client error(400) if it hit a AlreadyClosedException.
-  We now return the error as a server error(500) instead
-type: fixed
-authors:
-- name: Jeffery
-- name: Varun Thacker
-links:
-- name: SOLR-12477
-  url: https://issues.apache.org/jira/browse/SOLR-12477

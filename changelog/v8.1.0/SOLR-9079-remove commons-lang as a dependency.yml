@@ -1,7 +1,0 @@
-title: Remove commons-lang as a dependency
-type: changed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-9079
-  url: https://issues.apache.org/jira/browse/SOLR-9079

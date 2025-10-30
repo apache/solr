@@ -1,9 +1,0 @@
-title: Query field list with wild card on dynamic field fails.
-type: fixed
-authors:
-- name: Burke Webster
-- name: Xu Zhang
-- name: shalin
-links:
-- name: SOLR-6545
-  url: https://issues.apache.org/jira/browse/SOLR-6545

@@ -1,8 +1,0 @@
-title: The UnifiedHighlighter was ignoring the hl.fragsize parameter when hl.bs.type=SEPARATOR
-type: fixed
-authors:
-- name: Marc Morissette
-- name: David Smiley
-links:
-- name: SOLR-11399
-  url: https://issues.apache.org/jira/browse/SOLR-11399

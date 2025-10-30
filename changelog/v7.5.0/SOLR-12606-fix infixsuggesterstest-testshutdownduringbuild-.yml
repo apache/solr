@@ -1,7 +1,0 @@
-title: Fix InfixSuggestersTest.testShutdownDuringBuild() failures.
-type: fixed
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-12606
-  url: https://issues.apache.org/jira/browse/SOLR-12606

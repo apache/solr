@@ -1,7 +1,0 @@
-title: Make SolrEventListeners load from packages
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-14875
-  url: https://issues.apache.org/jira/browse/SOLR-14875

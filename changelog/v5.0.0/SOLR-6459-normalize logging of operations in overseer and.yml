@@ -1,9 +1,0 @@
-title: Normalize logging of operations in Overseer and log current queue size.
-type: other
-authors:
-- name: Ramkumar Aiyengar
-- name: shalin
-- name: Mark Miller
-links:
-- name: SOLR-6459
-  url: https://issues.apache.org/jira/browse/SOLR-6459

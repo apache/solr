@@ -1,9 +1,0 @@
-title: Properties files by Solr are now written in UTF-8 encoding, Unicode is no longer
-  escaped. Reading of legacy properties files with \u escapes is still possible.
-type: other
-authors:
-- name: Uwe Schindler
-- name: Robert Muir
-links:
-- name: LUCENE-5107
-  url: https://issues.apache.org/jira/browse/LUCENE-5107

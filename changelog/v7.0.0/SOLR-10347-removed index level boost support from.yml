@@ -1,7 +1,0 @@
-title: Removed index level boost support from "documents" section of the admin UI
-type: other
-authors:
-- name: "Amrit Sarkar via\n  Tomás Fernández Löbbe"
-links:
-- name: SOLR-10347
-  url: https://issues.apache.org/jira/browse/SOLR-10347

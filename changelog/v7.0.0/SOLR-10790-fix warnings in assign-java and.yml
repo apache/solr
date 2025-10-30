@@ -1,7 +1,0 @@
-title: Fix warnings in Assign.java and ReplicaAssigner.java classes.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-10790
-  url: https://issues.apache.org/jira/browse/SOLR-10790

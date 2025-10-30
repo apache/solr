@@ -1,8 +1,0 @@
-title: Admin UI Replication details now correctly displays the current replicable
-  generation/version of the master.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-4661
-  url: https://issues.apache.org/jira/browse/SOLR-4661

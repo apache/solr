@@ -1,8 +1,0 @@
-title: Fixed performance problem in the StopFilterFactory and simplified code. Added
-  tests as well.
-type: added
-authors:
-- name: gsingers
-links:
-- name: SOLR-1095
-  url: https://issues.apache.org/jira/browse/SOLR-1095

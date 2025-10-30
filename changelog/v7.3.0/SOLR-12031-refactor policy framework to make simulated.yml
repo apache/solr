@@ -1,8 +1,0 @@
-title: Refactor Policy framework to make simulated changes affect more than a single
-  node
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-12031
-  url: https://issues.apache.org/jira/browse/SOLR-12031

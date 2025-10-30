@@ -1,8 +1,0 @@
-title: Only take snapshots if there are differences to the index
-type: changed
-authors:
-- name: Richard Trey Hyde
-- name: gsingers
-links:
-- name: SOLR-624
-  url: https://issues.apache.org/jira/browse/SOLR-624

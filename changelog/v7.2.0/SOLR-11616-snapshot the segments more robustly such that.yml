@@ -1,8 +1,0 @@
-title: Snapshot the segments more robustly such that segments created during a backup
-  does does not fail the operation
-type: fixed
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-11616
-  url: https://issues.apache.org/jira/browse/SOLR-11616

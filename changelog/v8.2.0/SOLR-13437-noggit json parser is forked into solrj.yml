@@ -1,7 +1,0 @@
-title: noggit json parser is forked into solrj
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-13437
-  url: https://issues.apache.org/jira/browse/SOLR-13437

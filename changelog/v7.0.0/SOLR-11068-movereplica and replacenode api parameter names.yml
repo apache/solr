@@ -1,9 +1,0 @@
-title: MOVEREPLICA and REPLACENODE API parameter names are now 'sourceNode' and 'targetNode'.
-  The old names viz. 'fromNode' for MOVEREPLICA and 'source', 'target' for REPLACENODE
-  have been deprecated.
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-11068
-  url: https://issues.apache.org/jira/browse/SOLR-11068

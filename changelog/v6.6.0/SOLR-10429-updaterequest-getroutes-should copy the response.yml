@@ -1,7 +1,0 @@
-title: UpdateRequest#getRoutes()should copy the response parser
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-10429
-  url: https://issues.apache.org/jira/browse/SOLR-10429

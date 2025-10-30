@@ -1,8 +1,0 @@
-title: When reconnecting after ZooKeeper expiration, we need to be willing to wait
-  forever, not just for 30 seconds.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4899
-  url: https://issues.apache.org/jira/browse/SOLR-4899

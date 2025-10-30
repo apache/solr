@@ -1,8 +1,0 @@
-title: Add JDBCStream to Streaming API and Streaming Expressions for integration with
-  external data sources
-type: added
-authors:
-- name: Dennis Gove
-links:
-- name: SOLR-8479
-  url: https://issues.apache.org/jira/browse/SOLR-8479

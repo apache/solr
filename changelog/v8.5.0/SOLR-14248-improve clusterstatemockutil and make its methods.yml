@@ -1,7 +1,0 @@
-title: Improve ClusterStateMockUtil and make its methods public.
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-14248
-  url: https://issues.apache.org/jira/browse/SOLR-14248

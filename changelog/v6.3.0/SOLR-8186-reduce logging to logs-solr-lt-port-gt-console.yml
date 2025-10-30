@@ -1,8 +1,0 @@
-title: Reduce logging to logs/solr-&lt;port&gt;-console.log when not running in foreground
-  mode Show timestamp also in foreground log. Also removes some logging noise.
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-8186
-  url: https://issues.apache.org/jira/browse/SOLR-8186

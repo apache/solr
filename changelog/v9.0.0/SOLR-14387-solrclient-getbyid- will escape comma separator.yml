@@ -1,8 +1,0 @@
-title: SolrClient.getById() will escape comma separator within ids
-type: changed
-authors:
-- name: Markus Schuch
-- name: Mike Drob
-links:
-- name: SOLR-14387
-  url: https://issues.apache.org/jira/browse/SOLR-14387

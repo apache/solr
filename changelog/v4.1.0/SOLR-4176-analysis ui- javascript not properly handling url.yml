@@ -1,7 +1,0 @@
-title: 'analysis ui: javascript not properly handling URL decoding of input'
-type: fixed
-authors:
-- name: steffkes
-links:
-- name: SOLR-4176
-  url: https://issues.apache.org/jira/browse/SOLR-4176

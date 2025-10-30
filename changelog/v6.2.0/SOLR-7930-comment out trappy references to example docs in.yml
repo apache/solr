@@ -1,7 +1,0 @@
-title: Comment out trappy references to example docs in elevate.xml files
-type: other
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-7930
-  url: https://issues.apache.org/jira/browse/SOLR-7930

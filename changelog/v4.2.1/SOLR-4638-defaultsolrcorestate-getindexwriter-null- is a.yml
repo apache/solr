@@ -1,8 +1,0 @@
-title: DefaultSolrCoreState#getIndexWriter(null) is a way to avoid creating the IndexWriter
-  earlier than necessary, but it's not implemented quite right.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4638
-  url: https://issues.apache.org/jira/browse/SOLR-4638

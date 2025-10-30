@@ -1,9 +1,0 @@
-title: The top-level &lt;highlighting&gt; syntax in solrconfig.xml is now formally
-  deprecated in favour of &lt;searchComponent&gt; equivalent syntax. See also SOLR-1696.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-11798
-  url: https://issues.apache.org/jira/browse/SOLR-11798
-- name: SOLR-1696
-  url: https://issues.apache.org/jira/browse/SOLR-1696

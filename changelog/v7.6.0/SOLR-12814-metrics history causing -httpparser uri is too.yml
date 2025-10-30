@@ -1,7 +1,0 @@
-title: Metrics history causing "HttpParser URI is too large &gt;8192" when many collections
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-12814
-  url: https://issues.apache.org/jira/browse/SOLR-12814

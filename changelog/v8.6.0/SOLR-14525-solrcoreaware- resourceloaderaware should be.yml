@@ -1,8 +1,0 @@
-title: SolrCoreAware, ResourceLoaderAware should be honored for plugin loaded from
-  packages
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-14525
-  url: https://issues.apache.org/jira/browse/SOLR-14525

@@ -1,8 +1,0 @@
-title: Fix incorrect documentation for 'delete' op in Request parameters API
-type: other
-authors:
-- name: Alexandre Rafalovitch
-- name: Munendra S N
-links:
-- name: SOLR-12769
-  url: https://issues.apache.org/jira/browse/SOLR-12769

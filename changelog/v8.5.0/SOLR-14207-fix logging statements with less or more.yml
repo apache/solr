@@ -1,7 +1,0 @@
-title: Fix logging statements with less or more arguments than placeholders.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-14207
-  url: https://issues.apache.org/jira/browse/SOLR-14207

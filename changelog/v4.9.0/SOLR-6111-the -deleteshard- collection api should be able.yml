@@ -1,8 +1,0 @@
-title: The 'deleteshard' collection API should be able to delete a shard in 'construction'
-  state.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-6111
-  url: https://issues.apache.org/jira/browse/SOLR-6111

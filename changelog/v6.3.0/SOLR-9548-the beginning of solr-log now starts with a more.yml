@@ -1,7 +1,0 @@
-title: The beginning of solr.log now starts with a more informative welcome message
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-9548
-  url: https://issues.apache.org/jira/browse/SOLR-9548

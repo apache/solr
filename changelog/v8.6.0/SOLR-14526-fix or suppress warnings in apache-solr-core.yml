@@ -1,7 +1,0 @@
-title: fix or suppress warnings in apache/solr/core
-type: other
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-14526
-  url: https://issues.apache.org/jira/browse/SOLR-14526

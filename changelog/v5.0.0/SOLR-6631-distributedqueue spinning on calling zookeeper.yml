@@ -1,9 +1,0 @@
-title: DistributedQueue spinning on calling zookeeper getChildren()
-type: fixed
-authors:
-- name: Jessica Cheng Mallet
-- name: Mark Miller
-- name: Timothy Potter
-links:
-- name: SOLR-6631
-  url: https://issues.apache.org/jira/browse/SOLR-6631

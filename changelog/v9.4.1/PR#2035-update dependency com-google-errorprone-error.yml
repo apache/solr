@@ -1,7 +1,0 @@
-title: Update dependency com.google.errorprone:error_prone_annotations to v2.23.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2035
-  url: https://github.com/apache/solr/pull/2035

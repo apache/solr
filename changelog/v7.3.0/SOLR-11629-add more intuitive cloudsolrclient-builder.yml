@@ -1,8 +1,0 @@
-title: Add more intuitive CloudSolrClient.Builder constructors
-type: other
-authors:
-- name: Varun Thacker
-- name: Jason Gerlowski
-links:
-- name: SOLR-11629
-  url: https://issues.apache.org/jira/browse/SOLR-11629

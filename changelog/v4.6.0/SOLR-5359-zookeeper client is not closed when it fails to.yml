@@ -1,8 +1,0 @@
-title: ZooKeeper client is not closed when it fails to connect to an ensemble.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Klaus Herrmann
-links:
-- name: SOLR-5359
-  url: https://issues.apache.org/jira/browse/SOLR-5359

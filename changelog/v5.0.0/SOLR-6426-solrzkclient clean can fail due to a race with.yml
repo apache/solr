@@ -1,7 +1,0 @@
-title: SolrZkClient clean can fail due to a race with children nodes.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-6426
-  url: https://issues.apache.org/jira/browse/SOLR-6426

@@ -1,7 +1,0 @@
-title: Collect metrics for shard replication and tlog replay on replicas
-type: added
-authors:
-- name: ab
-links:
-- name: SOLR-9856
-  url: https://issues.apache.org/jira/browse/SOLR-9856

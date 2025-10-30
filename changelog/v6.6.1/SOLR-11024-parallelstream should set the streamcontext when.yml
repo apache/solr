@@ -1,7 +1,0 @@
-title: ParallelStream should set the StreamContext when constructing SolrStreams
-type: fixed
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11024
-  url: https://issues.apache.org/jira/browse/SOLR-11024

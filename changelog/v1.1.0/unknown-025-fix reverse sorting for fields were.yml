@@ -1,6 +1,0 @@
-title: Fix reverse sorting for fields were sortMissingFirst=true
-type: fixed
-authors:
-- name: Rob Staveley
-- name: yonik
-links: []

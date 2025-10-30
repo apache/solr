@@ -1,8 +1,0 @@
-title: NPE in SolrClientCache following collection reload
-type: fixed
-authors:
-- name: Joel Bernstein
-- name: Ryan Yacyshyn
-links:
-- name: SOLR-9059
-  url: https://issues.apache.org/jira/browse/SOLR-9059

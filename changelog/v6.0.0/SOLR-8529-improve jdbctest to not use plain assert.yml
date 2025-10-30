@@ -1,8 +1,0 @@
-title: Improve JdbcTest to not use plain assert statements
-type: other
-authors:
-- name: Kevin Risden
-- name: Joel Bernstein
-links:
-- name: SOLR-8529
-  url: https://issues.apache.org/jira/browse/SOLR-8529

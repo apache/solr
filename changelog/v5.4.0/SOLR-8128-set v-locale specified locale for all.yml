@@ -1,8 +1,0 @@
-title: Set v.locale specified locale for all LocaleConfig extending VelocityResponseWriter
-  tools.
-type: fixed
-authors:
-- name: Erik Hatcher
-links:
-- name: SOLR-8128
-  url: https://issues.apache.org/jira/browse/SOLR-8128

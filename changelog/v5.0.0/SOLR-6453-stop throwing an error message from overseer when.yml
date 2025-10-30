@@ -1,8 +1,0 @@
-title: Stop throwing an error message from Overseer when node exits
-type: other
-authors:
-- name: Ramkumar Aiyengar
-- name: Noble Paul
-links:
-- name: SOLR-6453
-  url: https://issues.apache.org/jira/browse/SOLR-6453

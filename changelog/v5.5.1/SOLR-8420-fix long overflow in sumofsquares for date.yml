@@ -1,9 +1,0 @@
-title: Fix long overflow in sumOfSquares for Date statistics.
-type: fixed
-authors:
-- name: Tom Hill
-- name: Christine Poerschke
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-8420
-  url: https://issues.apache.org/jira/browse/SOLR-8420

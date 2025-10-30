@@ -1,9 +1,0 @@
-title: '{!terms} docValuesTermsFilterTopLevel method now works with single-valued
-  strings'
-type: fixed
-authors:
-- name: Anatolii Siuniaev
-- name: Jason Gerlowski
-links:
-- name: SOLR-14821
-  url: https://issues.apache.org/jira/browse/SOLR-14821

@@ -1,8 +1,0 @@
-title: Add unit tests for highlighting with termOffsets=true and overlapping tokens.
-type: other
-authors:
-- name: Stefan Oestreicher
-- name: rmuir
-links:
-- name: SOLR-1826
-  url: https://issues.apache.org/jira/browse/SOLR-1826

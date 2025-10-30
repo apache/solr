@@ -1,9 +1,0 @@
-title: wrong caching for {!filters} as well as for `filters` local param in {!parent}
-  and {!child}
-type: fixed
-authors:
-- name: David Smiley
-- name: Mikhail Khluldnev
-links:
-- name: SOLR-12275
-  url: https://issues.apache.org/jira/browse/SOLR-12275

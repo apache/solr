@@ -1,8 +1,0 @@
-title: Fixed LukeRequestHandler response to correctly return field name strings in
-  copyDests and copySources arrays
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-3795
-  url: https://issues.apache.org/jira/browse/SOLR-3795

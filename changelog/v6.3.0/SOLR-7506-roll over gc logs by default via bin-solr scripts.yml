@@ -1,8 +1,0 @@
-title: Roll over GC logs by default via bin/solr scripts
-type: changed
-authors:
-- name: shalin
-- name: janhoy
-links:
-- name: SOLR-7506
-  url: https://issues.apache.org/jira/browse/SOLR-7506

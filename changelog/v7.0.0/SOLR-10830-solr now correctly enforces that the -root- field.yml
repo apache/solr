@@ -1,8 +1,0 @@
-title: Solr now correctly enforces that the '_root_' field has the same fieldType
-  as the uniqueKey field. With out this enforcement, child document updating was unreliable.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-10830
-  url: https://issues.apache.org/jira/browse/SOLR-10830

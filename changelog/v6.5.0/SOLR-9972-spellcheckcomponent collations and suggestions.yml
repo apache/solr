@@ -1,8 +1,0 @@
-title: SpellCheckComponent collations and suggestions returned as a JSON object rather
-  than a list
-type: other
-authors:
-- name: Christine Poerschke in response to bug report from Ricky Oktavianus Lazuardy
-links:
-- name: SOLR-9972
-  url: https://issues.apache.org/jira/browse/SOLR-9972

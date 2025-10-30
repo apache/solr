@@ -1,8 +1,0 @@
-title: Make DenseVectorField codec agnostic
-type: other
-authors:
-- name: Elia Porciani
-- name: Alessandro Benedetti
-links:
-- name: SOLR-16245
-  url: https://issues.apache.org/jira/browse/SOLR-16245

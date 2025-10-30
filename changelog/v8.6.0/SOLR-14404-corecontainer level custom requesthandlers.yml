@@ -1,7 +1,0 @@
-title: CoreContainer level custom requesthandlers
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-14404
-  url: https://issues.apache.org/jira/browse/SOLR-14404

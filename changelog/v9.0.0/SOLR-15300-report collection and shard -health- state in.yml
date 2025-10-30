@@ -1,8 +1,0 @@
-title: Report collection and shard "health" state in CLUSTERSTATUS response.
-type: added
-authors:
-- name: ab
-- name: janhoy
-links:
-- name: SOLR-15300
-  url: https://issues.apache.org/jira/browse/SOLR-15300

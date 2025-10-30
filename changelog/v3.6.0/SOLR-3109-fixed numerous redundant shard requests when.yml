@@ -1,8 +1,0 @@
-title: Fixed numerous redundant shard requests when using distributed grouping.
-type: fixed
-authors:
-- name: rblack
-- name: Martijn van Groningen
-links:
-- name: SOLR-3109
-  url: https://issues.apache.org/jira/browse/SOLR-3109

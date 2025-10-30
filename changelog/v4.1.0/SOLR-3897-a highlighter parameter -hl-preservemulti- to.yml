@@ -1,9 +1,0 @@
-title: A highlighter parameter "hl.preserveMulti" to return all of the values of a
-  multiValued field in their original order when highlighting.
-type: added
-authors:
-- name: Joel Bernstein
-- name: yonik
-links:
-- name: SOLR-3897
-  url: https://issues.apache.org/jira/browse/SOLR-3897

@@ -1,8 +1,0 @@
-title: Avoid publishing the state as down if the node is not live when determining
-  if a replica should be in leader-initiated recovery.
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-6189
-  url: https://issues.apache.org/jira/browse/SOLR-6189

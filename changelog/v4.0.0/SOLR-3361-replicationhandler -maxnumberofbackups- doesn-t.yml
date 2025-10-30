@@ -1,9 +1,0 @@
-title: ReplicationHandler "maxNumberOfBackups" doesn't work if backups are triggered
-  on commit
-type: fixed
-authors:
-- name: James Dyer
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-3361
-  url: https://issues.apache.org/jira/browse/SOLR-3361

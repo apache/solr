@@ -1,8 +1,0 @@
-title: Overseer stats are not reset on loss of ZK connection.
-type: fixed
-authors:
-- name: Jessica Cheng
-- name: shalin
-links:
-- name: SOLR-7420
-  url: https://issues.apache.org/jira/browse/SOLR-7420

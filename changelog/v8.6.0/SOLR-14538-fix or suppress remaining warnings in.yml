@@ -1,7 +1,0 @@
-title: Fix or suppress remaining warnings in apache/solr/handler
-type: other
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-14538
-  url: https://issues.apache.org/jira/browse/SOLR-14538

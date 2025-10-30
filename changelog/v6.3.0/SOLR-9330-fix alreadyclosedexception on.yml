@@ -1,7 +1,0 @@
-title: Fix AlreadyClosedException on admin/mbeans?stats=true
-type: fixed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-9330
-  url: https://issues.apache.org/jira/browse/SOLR-9330

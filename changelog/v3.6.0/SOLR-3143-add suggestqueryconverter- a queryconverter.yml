@@ -1,7 +1,0 @@
-title: Add SuggestQueryConverter, a QueryConverter intended for auto-suggesters.
-type: added
-authors:
-- name: Robert Muir
-links:
-- name: SOLR-3143
-  url: https://issues.apache.org/jira/browse/SOLR-3143

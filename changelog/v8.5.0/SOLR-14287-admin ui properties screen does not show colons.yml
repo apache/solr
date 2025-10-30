@@ -1,7 +1,0 @@
-title: Admin UI Properties screen does not show colons
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-14287
-  url: https://issues.apache.org/jira/browse/SOLR-14287

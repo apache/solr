@@ -1,7 +1,0 @@
-title: Add optional --excluderegex argument to ZkCLI.
-type: added
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8938
-  url: https://issues.apache.org/jira/browse/SOLR-8938

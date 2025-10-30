@@ -1,7 +1,0 @@
-title: Fix edge case which could cause `bin/solr stop` to hang forever
-type: fixed
-authors:
-- name: Ramkumar Aiyengar
-links:
-- name: SOLR-7450
-  url: https://issues.apache.org/jira/browse/SOLR-7450

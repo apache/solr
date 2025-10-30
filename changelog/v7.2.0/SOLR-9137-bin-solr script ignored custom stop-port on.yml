@@ -1,9 +1,0 @@
-title: bin/solr script ignored custom STOP_PORT on shutdown.
-type: fixed
-authors:
-- name: Joachim Kohlhammer
-- name: Steve Rowe
-- name: Christine Poerschke
-links:
-- name: SOLR-9137
-  url: https://issues.apache.org/jira/browse/SOLR-9137

@@ -1,7 +1,0 @@
-title: Occasional NPE in ThreadDumpHandler
-type: fixed
-authors:
-- name: siren
-links:
-- name: SOLR-3068
-  url: https://issues.apache.org/jira/browse/SOLR-3068

@@ -1,7 +1,0 @@
-title: ExtendedDismaxQParser fails to include charfilters in nostopanalyzer
-type: fixed
-authors:
-- name: "Tim Allison via\n  Tomás Fernández Löbbe"
-links:
-- name: SOLR-12035
-  url: https://issues.apache.org/jira/browse/SOLR-12035

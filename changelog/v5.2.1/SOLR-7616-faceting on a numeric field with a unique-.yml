@@ -1,8 +1,0 @@
-title: Faceting on a numeric field with a unique() subfacet function on another numeric
-  field can result in incorrect results or an exception.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-7616
-  url: https://issues.apache.org/jira/browse/SOLR-7616

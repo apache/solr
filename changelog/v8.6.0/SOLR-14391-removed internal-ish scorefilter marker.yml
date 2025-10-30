@@ -1,9 +1,0 @@
-title: Removed internal-ish ScoreFilter marker interface; only used by {!collapse}.
-  Removed needless code in SolrIndexSearcher.getDocSet(List&lt;Query&gt;) (processes
-  some filter queries).
-type: other
-authors:
-- name: David Smiley
-links:
-- name: SOLR-14391
-  url: https://issues.apache.org/jira/browse/SOLR-14391

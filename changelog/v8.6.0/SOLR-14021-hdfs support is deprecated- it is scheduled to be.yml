@@ -1,9 +1,0 @@
-title: HDFS support is deprecated. It is scheduled to be removed as of 9.0. Please
-  see JIRA for more details.
-type: other
-authors:
-- name: Joel Bernstein
-- name: Ishan Chattopadhyaya
-links:
-- name: SOLR-14021
-  url: https://issues.apache.org/jira/browse/SOLR-14021

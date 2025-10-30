@@ -1,7 +1,0 @@
-title: Solr should support better way of finding active sorts
-type: fixed
-authors:
-- name: "Eirik Lygre via\n  Erick Erickson"
-links:
-- name: SOLR-3926
-  url: https://issues.apache.org/jira/browse/SOLR-3926

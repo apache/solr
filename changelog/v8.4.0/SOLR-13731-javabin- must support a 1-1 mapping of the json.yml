@@ -1,7 +1,0 @@
-title: '''javabin'' must support a 1:1 mapping of the JSON update format'
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-13731
-  url: https://issues.apache.org/jira/browse/SOLR-13731

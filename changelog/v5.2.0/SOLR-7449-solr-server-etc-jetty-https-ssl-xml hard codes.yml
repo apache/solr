@@ -1,7 +1,0 @@
-title: solr/server/etc/jetty-https-ssl.xml hard codes the key store file and password
-  rather than pulling them from the sysprops defined in solr/bin/solr.in.{sh,cmd}
-type: fixed
-authors: []
-links:
-- name: SOLR-7449
-  url: https://issues.apache.org/jira/browse/SOLR-7449

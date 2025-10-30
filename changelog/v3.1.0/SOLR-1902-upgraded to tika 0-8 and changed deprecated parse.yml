@@ -1,6 +1,0 @@
-title: Upgraded to Tika 0.8 and changed deprecated parse call
-type: other
-authors: []
-links:
-- name: SOLR-1902
-  url: https://issues.apache.org/jira/browse/SOLR-1902

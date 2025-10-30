@@ -1,9 +1,0 @@
-title: An ERROR is logged if SignatureUpdateProcessorFactory is used in SolrCloud
-  cluster in a way that is known to be problematic with multiple replicas. In 9.0
-  this situation will prevent collection initialization.
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-15292
-  url: https://issues.apache.org/jira/browse/SOLR-15292

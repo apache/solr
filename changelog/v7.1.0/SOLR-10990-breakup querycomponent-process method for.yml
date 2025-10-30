@@ -1,7 +1,0 @@
-title: Breakup QueryComponent.process method for readability.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-10990
-  url: https://issues.apache.org/jira/browse/SOLR-10990

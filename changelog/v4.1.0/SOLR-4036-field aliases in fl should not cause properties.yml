@@ -1,8 +1,0 @@
-title: field aliases in fl should not cause properties of target field to be used.
-type: fixed
-authors:
-- name: Martin Koch
-- name: yonik
-links:
-- name: SOLR-4036
-  url: https://issues.apache.org/jira/browse/SOLR-4036

@@ -1,7 +1,0 @@
-title: Deprecate and remove implicit registration of "lucenePlusSort" aka OldLuceneQParser
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-10792
-  url: https://issues.apache.org/jira/browse/SOLR-10792

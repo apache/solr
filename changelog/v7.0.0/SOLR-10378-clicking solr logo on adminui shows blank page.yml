@@ -1,8 +1,0 @@
-title: Clicking Solr logo on AdminUI shows blank page
-type: other
-authors:
-- name: Takumi Yoshida
-- name: janhoy
-links:
-- name: SOLR-10378
-  url: https://issues.apache.org/jira/browse/SOLR-10378

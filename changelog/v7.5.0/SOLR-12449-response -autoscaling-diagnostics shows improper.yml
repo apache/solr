@@ -1,7 +1,0 @@
-title: Response /autoscaling/diagnostics shows improper json
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-12449
-  url: https://issues.apache.org/jira/browse/SOLR-12449

@@ -1,8 +1,0 @@
-title: CacheValue in CachingDirectoryFactory cannot be used outside of solr.core package.
-type: fixed
-authors:
-- name: phunt
-- name: Mark Miller
-links:
-- name: SOLR-3891
-  url: https://issues.apache.org/jira/browse/SOLR-3891

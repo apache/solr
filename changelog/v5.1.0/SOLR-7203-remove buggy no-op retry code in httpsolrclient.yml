@@ -1,9 +1,0 @@
-title: Remove buggy no-op retry code in HttpSolrClient
-type: other
-authors:
-- name: Alan Woodward
-- name: Mark Miller
-- name: Greg Solovyev
-links:
-- name: SOLR-7203
-  url: https://issues.apache.org/jira/browse/SOLR-7203

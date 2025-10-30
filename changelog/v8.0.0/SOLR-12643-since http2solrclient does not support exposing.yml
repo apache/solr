@@ -1,9 +1,0 @@
-title: Since Http2SolrClient does not support exposing connections related metrics.
-  These metrics are no longer available 'QUERY.httpShardHandler.{availableConnections,
-  leasedConnections, maxConnections, pendingConnections}', 'UPDATE.updateShardHandler.{availableConnections,
-  leasedConnections, maxConnections, pendingConnections}'
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-12643
-  url: https://issues.apache.org/jira/browse/SOLR-12643

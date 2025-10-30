@@ -1,8 +1,0 @@
-title: Ability to specify Key Store type in solr.in.sh file for SSL
-type: added
-authors:
-- name: Michael Suzuki
-- name: Kevin Risden
-links:
-- name: SOLR-9728
-  url: https://issues.apache.org/jira/browse/SOLR-9728

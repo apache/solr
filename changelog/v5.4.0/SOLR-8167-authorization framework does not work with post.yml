@@ -1,7 +1,0 @@
-title: Authorization framework does not work with POST params
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-8167
-  url: https://issues.apache.org/jira/browse/SOLR-8167

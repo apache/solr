@@ -1,8 +1,0 @@
-title: Default field values can be specified in the schema.xml.
-type: added
-authors:
-- name: Ryan McKinley
-- name: hossman
-links:
-- name: SOLR-82
-  url: https://issues.apache.org/jira/browse/SOLR-82

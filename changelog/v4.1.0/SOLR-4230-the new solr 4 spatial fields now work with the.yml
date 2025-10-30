@@ -1,8 +1,0 @@
-title: The new Solr 4 spatial fields now work with the {!geofilt} and {!bbox} query
-  parsers. The score local-param works too.
-type: added
-authors:
-- name: David Smiley
-links:
-- name: SOLR-4230
-  url: https://issues.apache.org/jira/browse/SOLR-4230

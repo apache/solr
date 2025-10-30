@@ -1,9 +1,0 @@
-title: A new optional facet.matches parameter to return facet buckets only for terms
-  that match a regular expression.
-type: added
-authors:
-- name: Gus Heck
-- name: Christine Poerschke
-links:
-- name: SOLR-10132
-  url: https://issues.apache.org/jira/browse/SOLR-10132

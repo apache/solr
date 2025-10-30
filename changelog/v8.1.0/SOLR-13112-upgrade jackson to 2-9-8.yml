@@ -1,7 +1,0 @@
-title: Upgrade jackson to 2.9.8
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-13112
-  url: https://issues.apache.org/jira/browse/SOLR-13112

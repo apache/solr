@@ -1,8 +1,0 @@
-title: /terms should default to distrib=false.
-type: fixed
-authors:
-- name: Nick Cotton
-- name: Mark Miller
-links:
-- name: SOLR-3645
-  url: https://issues.apache.org/jira/browse/SOLR-3645

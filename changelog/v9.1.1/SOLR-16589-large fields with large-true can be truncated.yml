@@ -1,7 +1,0 @@
-title: Large fields with large=true can be truncated when using unicode values
-type: fixed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16589
-  url: https://issues.apache.org/jira/browse/SOLR-16589

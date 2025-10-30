@@ -1,7 +1,0 @@
-title: default TTL of PKIAuthenticationPlugin increased to 10secs
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-10230
-  url: https://issues.apache.org/jira/browse/SOLR-10230

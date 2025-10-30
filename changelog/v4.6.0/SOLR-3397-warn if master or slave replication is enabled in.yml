@@ -1,7 +1,0 @@
-title: Warn if master or slave replication is enabled in SolrCloud mode.
-type: other
-authors:
-- name: "Erick\n  Erickson"
-links:
-- name: SOLR-3397
-  url: https://issues.apache.org/jira/browse/SOLR-3397

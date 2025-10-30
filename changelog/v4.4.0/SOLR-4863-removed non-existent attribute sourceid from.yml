@@ -1,9 +1,0 @@
-title: Removed non-existent attribute sourceId from dynamic JMX stats to fix AttributeNotFoundException
-type: fixed
-authors:
-- name: suganuma
-- name: hossman
-- name: shalin
-links:
-- name: SOLR-4863
-  url: https://issues.apache.org/jira/browse/SOLR-4863

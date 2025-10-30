@@ -1,8 +1,0 @@
-title: SolrIndexSearcher.localCollectionStatistics is now faster by leveraging an
-  existing cached MultiFields. Noticeable when many fields are searched.
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-11595
-  url: https://issues.apache.org/jira/browse/SOLR-11595

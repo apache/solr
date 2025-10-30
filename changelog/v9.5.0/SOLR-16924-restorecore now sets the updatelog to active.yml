@@ -1,9 +1,0 @@
-title: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
-  REQUESTAPPLYUPDATES call in Collection restore.
-type: changed
-authors:
-- name: Julia Maimone
-- name: David Smiley
-links:
-- name: SOLR-16924
-  url: https://issues.apache.org/jira/browse/SOLR-16924

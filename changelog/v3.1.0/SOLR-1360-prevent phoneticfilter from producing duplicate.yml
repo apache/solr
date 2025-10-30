@@ -1,7 +1,0 @@
-title: Prevent PhoneticFilter from producing duplicate tokens.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-1360
-  url: https://issues.apache.org/jira/browse/SOLR-1360

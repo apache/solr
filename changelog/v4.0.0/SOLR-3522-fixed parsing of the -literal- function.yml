@@ -1,7 +1,0 @@
-title: fixed parsing of the 'literal()' function
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-3522
-  url: https://issues.apache.org/jira/browse/SOLR-3522

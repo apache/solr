@@ -1,8 +1,0 @@
-title: Improved error messages when java is not found by the bin/solr shell script,
-  particularly when JAVA_HOME has an invalid location.
-type: fixed
-authors:
-- name: Shawn Heisey
-links:
-- name: SOLR-7024
-  url: https://issues.apache.org/jira/browse/SOLR-7024

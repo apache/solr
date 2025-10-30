@@ -1,8 +1,0 @@
-title: Support for per-collection replica placement node sets, a.k.a "node type" placements.
-type: added
-authors:
-- name: ab
-- name: ilan
-links:
-- name: SOLR-15130
-  url: https://issues.apache.org/jira/browse/SOLR-15130

@@ -1,8 +1,0 @@
-title: 'DIH: $skipDoc was not working correctly'
-type: fixed
-authors:
-- name: Gian Marco Tagliani
-- name: noble
-links:
-- name: SOLR-1759
-  url: https://issues.apache.org/jira/browse/SOLR-1759

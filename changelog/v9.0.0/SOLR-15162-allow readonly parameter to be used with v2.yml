@@ -1,7 +1,0 @@
-title: Allow readOnly parameter to be used with v2 modify collection command
-type: fixed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-15162
-  url: https://issues.apache.org/jira/browse/SOLR-15162

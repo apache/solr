@@ -1,7 +1,0 @@
-title: Deprecate non-Trie-based numeric & date field types.
-type: other
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-5936
-  url: https://issues.apache.org/jira/browse/SOLR-5936

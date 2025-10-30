@@ -1,8 +1,0 @@
-title: Purge termIndexInterval from example/test configs
-type: other
-authors:
-- name: Tom Burton-West
-- name: hossman
-links:
-- name: SOLR-6560
-  url: https://issues.apache.org/jira/browse/SOLR-6560

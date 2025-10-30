@@ -1,8 +1,0 @@
-title: Add mapping-FoldToASCII.txt to example conf directory.
-type: other
-authors:
-- name: Steven Rowe
-- name: koji
-links:
-- name: SOLR-2013
-  url: https://issues.apache.org/jira/browse/SOLR-2013

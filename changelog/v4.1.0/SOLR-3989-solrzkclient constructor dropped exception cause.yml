@@ -1,8 +1,0 @@
-title: SolrZkClient constructor dropped exception cause when throwing a new RuntimeException.
-type: fixed
-authors:
-- name: Colin Bartolome
-- name: yonik
-links:
-- name: SOLR-3989
-  url: https://issues.apache.org/jira/browse/SOLR-3989

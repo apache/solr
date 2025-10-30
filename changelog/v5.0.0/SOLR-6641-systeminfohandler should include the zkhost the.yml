@@ -1,8 +1,0 @@
-title: SystemInfoHandler should include the zkHost the node is using (when running
-  in solrcloud mode)
-type: other
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-6641
-  url: https://issues.apache.org/jira/browse/SOLR-6641

@@ -1,8 +1,0 @@
-title: Pluggable query parsers. Allows specification of query type and arguments as
-  a prefix on a query string.
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-334
-  url: https://issues.apache.org/jira/browse/SOLR-334

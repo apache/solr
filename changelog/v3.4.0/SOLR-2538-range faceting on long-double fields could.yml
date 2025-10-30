@@ -1,9 +1,0 @@
-title: Range Faceting on long/double fields could overflow if values bigger then the
-  max int/float were used.
-type: fixed
-authors:
-- name: Erbi Hanka
-- name: hossman
-links:
-- name: SOLR-2538
-  url: https://issues.apache.org/jira/browse/SOLR-2538

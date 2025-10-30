@@ -1,7 +1,0 @@
-title: Add geometricDistribution Stream Evaluator
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11697
-  url: https://issues.apache.org/jira/browse/SOLR-11697

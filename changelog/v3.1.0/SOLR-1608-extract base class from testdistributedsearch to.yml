@@ -1,8 +1,0 @@
-title: Extract base class from TestDistributedSearch to make it easy to write test
-  cases for other distributed components.
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-1608
-  url: https://issues.apache.org/jira/browse/SOLR-1608

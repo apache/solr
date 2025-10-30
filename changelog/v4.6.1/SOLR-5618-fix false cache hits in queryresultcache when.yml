@@ -1,8 +1,0 @@
-title: Fix false cache hits in queryResultCache when hashCodes are equal and duplicate
-  filter queries exist in one of the requests
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-5618
-  url: https://issues.apache.org/jira/browse/SOLR-5618

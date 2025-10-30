@@ -1,7 +1,0 @@
-title: Always log to stdout from server/scripts/cloud-scripts/zkcli.{bat|sh}
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-14109
-  url: https://issues.apache.org/jira/browse/SOLR-14109

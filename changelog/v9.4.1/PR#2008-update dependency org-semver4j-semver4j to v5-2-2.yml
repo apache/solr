@@ -1,7 +1,0 @@
-title: Update dependency org.semver4j:semver4j to v5.2.2
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2008
-  url: https://github.com/apache/solr/pull/2008

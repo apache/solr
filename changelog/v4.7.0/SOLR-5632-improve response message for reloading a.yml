@@ -1,8 +1,0 @@
-title: Improve response message for reloading a non-existent core.
-type: other
-authors:
-- name: Anshum Gupta
-- name: Mark Miller
-links:
-- name: SOLR-5632
-  url: https://issues.apache.org/jira/browse/SOLR-5632

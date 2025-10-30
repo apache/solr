@@ -1,7 +1,0 @@
-title: Upgrade Dropwizard Metrics to 4.0.5 release.
-type: other
-authors:
-- name: ab
-links:
-- name: SOLR-12461
-  url: https://issues.apache.org/jira/browse/SOLR-12461

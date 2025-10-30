@@ -1,8 +1,0 @@
-title: HttpSolrCore.getCoreByCollection() can throw NPE
-type: fixed
-authors:
-- name: Alan Woodward
-- name: Mark Miller
-links:
-- name: SOLR-8254
-  url: https://issues.apache.org/jira/browse/SOLR-8254

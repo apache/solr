@@ -1,8 +1,0 @@
-title: SolrSuggester should selectively register close hook
-type: other
-authors:
-- name: Gethin James
-- name: Joel Bernstein
-links:
-- name: SOLR-9406
-  url: https://issues.apache.org/jira/browse/SOLR-9406

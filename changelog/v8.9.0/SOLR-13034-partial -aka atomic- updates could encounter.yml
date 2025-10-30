@@ -1,9 +1,0 @@
-title: Partial (AKA Atomic) updates could encounter "LazyField" instances in the document
-  cache and not know hot to deal with them when writing the updated doc to the update
-  log.
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-13034
-  url: https://issues.apache.org/jira/browse/SOLR-13034

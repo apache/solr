@@ -1,7 +1,0 @@
-title: Update Woodstox to 4.4.1 and StAX to 3.1.4.
-type: other
-authors:
-- name: ab
-links:
-- name: SOLR-6830
-  url: https://issues.apache.org/jira/browse/SOLR-6830

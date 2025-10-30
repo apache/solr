@@ -1,8 +1,0 @@
-title: Added text serialization output for extractOnly
-type: added
-authors:
-- name: Peter Wolanin
-- name: gsingers
-links:
-- name: SOLR-1274
-  url: https://issues.apache.org/jira/browse/SOLR-1274

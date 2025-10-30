@@ -1,8 +1,0 @@
-title: Document the SystemInfoHandler in the Ref Guide.
-type: changed
-authors:
-- name: Tony Cook
-- name: Eric Pugh
-links:
-- name: SOLR-13626
-  url: https://issues.apache.org/jira/browse/SOLR-13626

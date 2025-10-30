@@ -1,9 +1,0 @@
-title: Slower DataImportHandler process caused by not reusing jdbc connections.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Paco Garcia
-- name: Raja Nagendra Kumar
-links:
-- name: SOLR-5954
-  url: https://issues.apache.org/jira/browse/SOLR-5954

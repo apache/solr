@@ -1,8 +1,0 @@
-title: Improve example docs, using films data
-type: other
-authors:
-- name: Varun Thacker
-- name: ehatcher
-links:
-- name: SOLR-6127
-  url: https://issues.apache.org/jira/browse/SOLR-6127

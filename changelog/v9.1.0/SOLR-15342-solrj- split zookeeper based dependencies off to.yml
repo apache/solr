@@ -1,9 +1,0 @@
-title: 'SolrJ: Split ZooKeeper based dependencies off to a solr-solrj-zookeeper module
-  / dependency.'
-type: other
-authors:
-- name: David Smiley
-- name: Haythem Khiri
-links:
-- name: SOLR-15342
-  url: https://issues.apache.org/jira/browse/SOLR-15342

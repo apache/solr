@@ -1,9 +1,0 @@
-title: Added Request Handler close hook notification so that RequestHandlers can be
-  notified when a core is closing.
-type: added
-authors:
-- name: gsingers
-- name: ryan
-links:
-- name: SOLR-423
-  url: https://issues.apache.org/jira/browse/SOLR-423

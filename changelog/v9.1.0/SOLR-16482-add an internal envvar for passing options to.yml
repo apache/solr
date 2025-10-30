@@ -1,8 +1,0 @@
-title: Add an internal envVar for passing options to bin/solr that will not be overriden
-  by the user.
-type: other
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-16482
-  url: https://issues.apache.org/jira/browse/SOLR-16482

@@ -1,9 +1,0 @@
-title: ZooKeeper connection loss can cause the Overseer to stop processing commands.
-type: fixed
-authors:
-- name: Christine Poerschke
-- name: Mark Miller
-- name: Jessica Cheng
-links:
-- name: SOLR-5325
-  url: https://issues.apache.org/jira/browse/SOLR-5325

@@ -1,9 +1,0 @@
-title: QueryElevationComponent can have query rules configured with match="subset"
-  wherein the words need only match a subset of the query's words and in any order.
-type: added
-authors:
-- name: Bruno Roustant
-- name: David Smiley
-links:
-- name: SOLR-11866
-  url: https://issues.apache.org/jira/browse/SOLR-11866

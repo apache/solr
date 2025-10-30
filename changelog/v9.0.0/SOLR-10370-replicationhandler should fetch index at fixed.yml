@@ -1,7 +1,0 @@
-title: ReplicationHandler should fetch index at fixed delay instead of fixed rate
-type: other
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-10370
-  url: https://issues.apache.org/jira/browse/SOLR-10370

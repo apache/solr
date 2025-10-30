@@ -1,8 +1,0 @@
-title: new n-gram tokenizers available via NGramTokenizerFactory and EdgeNGramTokenizerFactory.
-type: added
-authors:
-- name: Adam Hiatt
-- name: yonik
-links:
-- name: SOLR-199
-  url: https://issues.apache.org/jira/browse/SOLR-199

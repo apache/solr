@@ -1,9 +1,0 @@
-title: Added "time routed alias" creation support to the CREATEALIAS command. It's
-  for managing multiple collections partitioned by time.
-type: added
-authors:
-- name: Gus Heck
-- name: David Smiley
-links:
-- name: SOLR-11722
-  url: https://issues.apache.org/jira/browse/SOLR-11722

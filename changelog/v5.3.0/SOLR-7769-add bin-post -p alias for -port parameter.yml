@@ -1,7 +1,0 @@
-title: Add bin/post -p alias for -port parameter.
-type: added
-authors:
-- name: ehatcher
-links:
-- name: SOLR-7769
-  url: https://issues.apache.org/jira/browse/SOLR-7769

@@ -1,8 +1,0 @@
-title: Disable HTML directory listings in admin interface to prevent possible security
-  issues
-type: other
-authors:
-- name: Uwe Schindler
-links:
-- name: SOLR-13409
-  url: https://issues.apache.org/jira/browse/SOLR-13409

@@ -1,8 +1,0 @@
-title: Recovery may never finish on SolrCore shutdown if the last reference to a SolrCore
-  is closed by the recovery process.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3995
-  url: https://issues.apache.org/jira/browse/SOLR-3995

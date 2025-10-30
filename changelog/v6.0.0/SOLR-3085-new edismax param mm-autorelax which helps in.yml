@@ -1,8 +1,0 @@
-title: New edismax param mm.autoRelax which helps in certain cases of the stopwords/zero-hits
-  issue
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-3085
-  url: https://issues.apache.org/jira/browse/SOLR-3085

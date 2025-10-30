@@ -1,7 +1,0 @@
-title: Deprecate analytics component
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-16660
-  url: https://issues.apache.org/jira/browse/SOLR-16660

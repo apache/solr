@@ -1,8 +1,0 @@
-title: FacetComponent helper classes are made public as an experimental API.
-type: other
-authors:
-- name: Wojtek Piaseczny
-- name: shalin
-links:
-- name: SOLR-748
-  url: https://issues.apache.org/jira/browse/SOLR-748

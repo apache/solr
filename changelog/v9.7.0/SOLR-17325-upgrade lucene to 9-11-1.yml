@@ -1,7 +1,0 @@
-title: Upgrade Lucene to 9.11.1
-type: dependency_update
-authors:
-- name: hossman
-links:
-- name: SOLR-17325
-  url: https://issues.apache.org/jira/browse/SOLR-17325

@@ -1,7 +1,0 @@
-title: Rename shardsWhitelist and extract AllowListUrlChecker to use it more broadly.
-type: changed
-authors:
-- name: Bruno Roustant
-links:
-- name: SOLR-15340
-  url: https://issues.apache.org/jira/browse/SOLR-15340

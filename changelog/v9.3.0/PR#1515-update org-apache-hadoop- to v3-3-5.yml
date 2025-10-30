@@ -1,7 +1,0 @@
-title: Update org.apache.hadoop:* to v3.3.5
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#1515
-  url: https://github.com/apache/solr/pull/1515

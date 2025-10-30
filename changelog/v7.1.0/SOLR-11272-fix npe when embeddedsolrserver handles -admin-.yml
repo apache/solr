@@ -1,8 +1,0 @@
-title: fix NPE when EmbeddedSolrServer handles /admin/* request and so one
-type: fixed
-authors:
-- name: Stephen Allen
-- name: Mikhail Khludnev
-links:
-- name: SOLR-11272
-  url: https://issues.apache.org/jira/browse/SOLR-11272

@@ -1,7 +1,0 @@
-title: Allow filtering on ISO-8601 formatted timestamp literals in SQL WHERE clause
-type: changed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-15576
-  url: https://issues.apache.org/jira/browse/SOLR-15576

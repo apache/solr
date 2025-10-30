@@ -1,7 +1,0 @@
-title: Fixed some test related bugs preventing SSL + ClientAuth from ever being tested
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-9028
-  url: https://issues.apache.org/jira/browse/SOLR-9028

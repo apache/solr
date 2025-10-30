@@ -1,8 +1,0 @@
-title: Add sort by Function capability
-type: added
-authors:
-- name: gsingers
-- name: yonik
-links:
-- name: SOLR-1297
-  url: https://issues.apache.org/jira/browse/SOLR-1297

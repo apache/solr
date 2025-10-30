@@ -1,7 +1,0 @@
-title: Deprecate old &lt;highlighting&gt; syntax and move configuration to HighlightComponent
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-1696
-  url: https://issues.apache.org/jira/browse/SOLR-1696

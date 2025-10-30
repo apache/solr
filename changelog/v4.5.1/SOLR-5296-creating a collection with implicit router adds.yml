@@ -1,7 +1,0 @@
-title: Creating a collection with implicit router adds shard ranges to each shard.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-5296
-  url: https://issues.apache.org/jira/browse/SOLR-5296

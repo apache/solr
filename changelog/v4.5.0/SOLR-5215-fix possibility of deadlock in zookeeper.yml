@@ -1,8 +1,0 @@
-title: Fix possibility of deadlock in ZooKeeper ConnectionManager.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Ricardo Merizalde
-links:
-- name: SOLR-5215
-  url: https://issues.apache.org/jira/browse/SOLR-5215

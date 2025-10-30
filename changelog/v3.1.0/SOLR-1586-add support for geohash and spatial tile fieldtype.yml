@@ -1,8 +1,0 @@
-title: Add support for Geohash and Spatial Tile FieldType
-type: added
-authors:
-- name: Chris Mattmann
-- name: gsingers
-links:
-- name: SOLR-1586
-  url: https://issues.apache.org/jira/browse/SOLR-1586

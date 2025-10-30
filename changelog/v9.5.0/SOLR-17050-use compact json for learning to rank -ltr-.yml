@@ -1,9 +1,0 @@
-title: Use compact JSON for Learning to Rank (LTR) feature and model storage.
-type: changed
-authors:
-- name: Florin Babes
-- name: Christine Poerschke
-- name: Alessandro Benedetti
-links:
-- name: SOLR-17050
-  url: https://issues.apache.org/jira/browse/SOLR-17050

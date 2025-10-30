@@ -1,9 +1,0 @@
-title: Date Math expressions were being truncated to 32 characters when used in field:value
-  queries in the lucene QParser.
-type: fixed
-authors:
-- name: hossman
-- name: yonik
-links:
-- name: SOLR-4538
-  url: https://issues.apache.org/jira/browse/SOLR-4538

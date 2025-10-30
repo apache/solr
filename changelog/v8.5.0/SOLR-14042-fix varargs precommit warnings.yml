@@ -1,8 +1,0 @@
-title: Fix varargs precommit warnings
-type: changed
-authors:
-- name: Andraas Salamon
-- name: Jason Gerlowski
-links:
-- name: SOLR-14042
-  url: https://issues.apache.org/jira/browse/SOLR-14042

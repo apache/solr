@@ -1,9 +1,0 @@
-title: The example config references deprecated classes.
-type: other
-authors:
-- name: Uwe Schindler
-- name: Rafał Kuć
-- name: Mark Miller
-links:
-- name: SOLR-5404
-  url: https://issues.apache.org/jira/browse/SOLR-5404

@@ -1,9 +1,0 @@
-title: Add a default autoscaling cluster policy.
-type: changed
-authors:
-- name: shalin
-- name: varunthacker
-- name: ab
-links:
-- name: SOLR-12845
-  url: https://issues.apache.org/jira/browse/SOLR-12845

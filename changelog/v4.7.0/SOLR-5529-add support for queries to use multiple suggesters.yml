@@ -1,9 +1,0 @@
-title: Add support for queries to use multiple suggesters.
-type: added
-authors:
-- name: Areek Zillur
-- name: Erick Erickson
-- name: Robert Muir
-links:
-- name: SOLR-5529
-  url: https://issues.apache.org/jira/browse/SOLR-5529

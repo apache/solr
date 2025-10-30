@@ -1,8 +1,0 @@
-title: Allow CoreContainer to load multiple SolrCores in parallel rather than just
-  serially.
-type: changed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4063
-  url: https://issues.apache.org/jira/browse/SOLR-4063

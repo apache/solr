@@ -1,8 +1,0 @@
-title: Pass thru all command actions not explicitly handled by the bin/solr script,
-  such as 'api', to the SolrCLI Java app
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-15199
-  url: https://issues.apache.org/jira/browse/SOLR-15199

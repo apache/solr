@@ -1,9 +1,0 @@
-title: Remove deprecated &lt;admin&gt; tag in solrconfig.xml and support for admin/gettableFiles
-type: other
-authors:
-- name: noble
-- name: Jason Gerlowski
-- name: Varun Thacker
-links:
-- name: SOLR-8766
-  url: https://issues.apache.org/jira/browse/SOLR-8766

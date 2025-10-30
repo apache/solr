@@ -1,9 +1,0 @@
-title: The DefaultSolrHighlighter since 5.0 was determining if payloads were present
-  in a way that was slow, especially when lots of fields were highlighted. It's now
-  fast.
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-7655
-  url: https://issues.apache.org/jira/browse/SOLR-7655

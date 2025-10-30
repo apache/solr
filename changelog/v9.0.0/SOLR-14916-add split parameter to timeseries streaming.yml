@@ -1,7 +1,0 @@
-title: Add split parameter to timeseries Streaming Expression
-type: changed
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-14916
-  url: https://issues.apache.org/jira/browse/SOLR-14916

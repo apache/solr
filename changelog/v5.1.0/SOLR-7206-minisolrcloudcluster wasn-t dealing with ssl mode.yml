@@ -1,7 +1,0 @@
-title: MiniSolrCloudCluster wasn't dealing with SSL mode correctly
-type: fixed
-authors:
-- name: "Alan\n  Woodward"
-links:
-- name: SOLR-7206
-  url: https://issues.apache.org/jira/browse/SOLR-7206

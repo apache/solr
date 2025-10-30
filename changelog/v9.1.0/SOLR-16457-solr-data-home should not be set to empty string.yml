@@ -1,7 +1,0 @@
-title: solr.data.home should not be set to empty string in bin/solr
-type: fixed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16457
-  url: https://issues.apache.org/jira/browse/SOLR-16457

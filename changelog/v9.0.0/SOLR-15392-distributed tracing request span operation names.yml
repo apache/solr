@@ -1,8 +1,0 @@
-title: Distributed Tracing request span operation names are now composed of a command/verb
-  and a templated path. The collection or core name is now in the db.instance tag.
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-15392
-  url: https://issues.apache.org/jira/browse/SOLR-15392

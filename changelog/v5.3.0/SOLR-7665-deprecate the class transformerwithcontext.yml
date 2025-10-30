@@ -1,7 +1,0 @@
-title: deprecate the class TransformerWithContext
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-7665
-  url: https://issues.apache.org/jira/browse/SOLR-7665

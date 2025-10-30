@@ -1,7 +1,0 @@
-title: Regression in loading runtime UpdateRequestProcessors like TemplateUpdateProcessorFactory
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-10876
-  url: https://issues.apache.org/jira/browse/SOLR-10876

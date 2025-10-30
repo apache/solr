@@ -1,9 +1,0 @@
-title: Add "types" attribute to WordDelimiterFilterFactory, which allows you to customize
-  how WordDelimiterFilter tokenizes text with a configuration file.
-type: added
-authors:
-- name: Peter Karich
-- name: rmuir
-links:
-- name: SOLR-2059
-  url: https://issues.apache.org/jira/browse/SOLR-2059

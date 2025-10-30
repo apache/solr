@@ -1,7 +1,0 @@
-title: Async execution of OverseerCollectionProcessor(CollectionsAPI) tasks.
-type: added
-authors:
-- name: Anshum Gupta
-links:
-- name: SOLR-5477
-  url: https://issues.apache.org/jira/browse/SOLR-5477

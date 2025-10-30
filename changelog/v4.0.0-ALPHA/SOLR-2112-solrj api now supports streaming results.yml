@@ -1,7 +1,0 @@
-title: Solrj API now supports streaming results.
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-2112
-  url: https://issues.apache.org/jira/browse/SOLR-2112

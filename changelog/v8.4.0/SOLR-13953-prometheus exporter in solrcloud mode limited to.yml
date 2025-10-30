@@ -1,8 +1,0 @@
-title: Prometheus exporter in SolrCloud mode limited to 100 nodes
-type: fixed
-authors:
-- name: Alex Jablonski
-- name: Erick Erickson
-links:
-- name: SOLR-13953
-  url: https://issues.apache.org/jira/browse/SOLR-13953

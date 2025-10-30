@@ -1,9 +1,0 @@
-title: QueryResponse.getExplainMap() type has changed from Map&lt;String, String&gt;
-  to Map&lt;String, Object&gt; in order to accommodate structured explanations. This
-  is a partially back-compatible change - compiled third-party components will work
-  the same as before due to type erasure but source code changes may be required.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-13806
-  url: https://issues.apache.org/jira/browse/SOLR-13806

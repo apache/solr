@@ -1,9 +1,0 @@
-title: Fix CoreContainer and SolrResourceLoader logging to be more clear about when
-  SolrCores are being created, and stop misleading people about SolrCore instanceDir's
-  being the "Solr Home Dir"
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-3264
-  url: https://issues.apache.org/jira/browse/SOLR-3264

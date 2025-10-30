@@ -1,8 +1,0 @@
-title: DefaultSolrCoreState#doRecovery needs to check the CoreContainer shutdown flag
-  inside the recoveryLock sync block.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4592
-  url: https://issues.apache.org/jira/browse/SOLR-4592

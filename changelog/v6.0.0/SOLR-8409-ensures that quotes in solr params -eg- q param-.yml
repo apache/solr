@@ -1,7 +1,0 @@
-title: Ensures that quotes in solr params (eg. q param) are properly handled
-type: fixed
-authors:
-- name: Dennis Gove
-links:
-- name: SOLR-8409
-  url: https://issues.apache.org/jira/browse/SOLR-8409

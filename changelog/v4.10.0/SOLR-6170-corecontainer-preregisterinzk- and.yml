@@ -1,8 +1,0 @@
-title: CoreContainer.preRegisterInZk() and CoreContainer.register() commands are merged
-  into CoreContainer.create().
-type: other
-authors:
-- name: Alan Woodward
-links:
-- name: SOLR-6170
-  url: https://issues.apache.org/jira/browse/SOLR-6170

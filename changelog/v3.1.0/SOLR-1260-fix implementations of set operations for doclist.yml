@@ -1,9 +1,0 @@
-title: Fix implementations of set operations for DocList subclasses and fix a bug
-  in HashDocSet construction when offset != 0. These bugs never manifested in normal
-  Solr use and only potentially affect custom code.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-1260
-  url: https://issues.apache.org/jira/browse/SOLR-1260

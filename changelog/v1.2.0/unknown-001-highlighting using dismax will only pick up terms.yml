@@ -1,6 +1,0 @@
-title: Highlighting using DisMax will only pick up terms from the main user query,
-  not boost or filter queries
-type: other
-authors:
-- name: klaas
-links: []

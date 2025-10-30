@@ -1,7 +1,0 @@
-title: Collection APIs should use the disk space hint when using policy framework
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-11064
-  url: https://issues.apache.org/jira/browse/SOLR-11064

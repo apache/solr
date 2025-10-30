@@ -1,7 +1,0 @@
-title: 'Transient cores: don''t evict a core when it''s still being used.'
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-15964
-  url: https://issues.apache.org/jira/browse/SOLR-15964

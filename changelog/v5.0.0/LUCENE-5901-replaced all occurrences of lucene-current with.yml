@@ -1,7 +1,0 @@
-title: Replaced all occurrences of LUCENE_CURRENT with LATEST for luceneMatchVersion.
-type: other
-authors:
-- name: Ryan Ernst
-links:
-- name: LUCENE-5901
-  url: https://issues.apache.org/jira/browse/LUCENE-5901

@@ -1,7 +1,0 @@
-title: Add movingMAD Stream Evaluator
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-13147
-  url: https://issues.apache.org/jira/browse/SOLR-13147

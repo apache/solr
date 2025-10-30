@@ -1,7 +1,0 @@
-title: LIR should skip deleted replicas
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-12146
-  url: https://issues.apache.org/jira/browse/SOLR-12146

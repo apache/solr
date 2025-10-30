@@ -1,8 +1,0 @@
-title: Reduce log level for inconsequential NoSuchFileException that LukeRequestHandler
-  may encounter
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-9120
-  url: https://issues.apache.org/jira/browse/SOLR-9120

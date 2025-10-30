@@ -1,8 +1,0 @@
-title: fix velocity template layout.vm that referred to an older version of jquery.
-type: fixed
-authors:
-- name: Eric Pugh
-- name: rmuir
-links:
-- name: SOLR-2261
-  url: https://issues.apache.org/jira/browse/SOLR-2261

@@ -1,8 +1,0 @@
-title: DefaultSolrHighlighter can sometimes avoid CachingTokenFilter with hl.usePhraseHighlighter,
-  and can be more efficient handling data from term vectors.
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-6680
-  url: https://issues.apache.org/jira/browse/SOLR-6680

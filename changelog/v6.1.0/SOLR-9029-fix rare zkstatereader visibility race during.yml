@@ -1,8 +1,0 @@
-title: fix rare ZkStateReader visibility race during collection state format update
-type: fixed
-authors:
-- name: Scott Blum
-- name: hossman
-links:
-- name: SOLR-9029
-  url: https://issues.apache.org/jira/browse/SOLR-9029

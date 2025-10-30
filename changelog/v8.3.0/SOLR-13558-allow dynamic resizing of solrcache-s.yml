@@ -1,9 +1,0 @@
-title: Allow dynamic resizing of SolrCache-s.
-type: changed
-authors:
-- name: ab
-links:
-- name: SOLR-13558
-  url: https://issues.apache.org/jira/browse/SOLR-13558
-- name: SOLR-13693
-  url: https://issues.apache.org/jira/browse/SOLR-13693

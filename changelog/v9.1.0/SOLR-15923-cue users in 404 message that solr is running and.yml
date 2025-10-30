@@ -1,9 +1,0 @@
-title: Cue users in 404 message that Solr is running and the url is incorrect.
-type: other
-authors:
-- name: Eric Pugh
-- name: Mike Drob
-- name: Shawn Heisey
-links:
-- name: SOLR-15923
-  url: https://issues.apache.org/jira/browse/SOLR-15923

@@ -1,9 +1,0 @@
-title: The HDFS BlockDirectoryCache should not let it's keysToRelease or names maps
-  grow indefinitely.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Michael Sun
-links:
-- name: SOLR-9284
-  url: https://issues.apache.org/jira/browse/SOLR-9284

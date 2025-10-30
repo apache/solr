@@ -1,9 +1,0 @@
-title: 'Facet Analytics Module: new "hll" function that uses HyperLogLog to calculate
-  distributed cardinality. The original "unique" function is still available. Example:
-  json.facet={ numProducts : "hll(product_id)" }'
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-7553
-  url: https://issues.apache.org/jira/browse/SOLR-7553

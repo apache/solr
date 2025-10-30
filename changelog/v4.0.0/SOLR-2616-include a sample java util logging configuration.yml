@@ -1,8 +1,0 @@
-title: Include a sample java util logging configuration file.
-type: added
-authors:
-- name: David Smiley
-- name: Mark Miller
-links:
-- name: SOLR-2616
-  url: https://issues.apache.org/jira/browse/SOLR-2616

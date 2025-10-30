@@ -1,8 +1,0 @@
-title: /analysis/field and /analysis/document requests should support points fields.
-type: other
-authors:
-- name: Jason Gerlowski
-- name: Steve Rowe
-links:
-- name: SOLR-11155
-  url: https://issues.apache.org/jira/browse/SOLR-11155

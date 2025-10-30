@@ -1,8 +1,0 @@
-title: Reduce duplicated core creation work
-type: changed
-authors:
-- name: Mike Drob
-- name: Mark Miller
-links:
-- name: SOLR-15120
-  url: https://issues.apache.org/jira/browse/SOLR-15120

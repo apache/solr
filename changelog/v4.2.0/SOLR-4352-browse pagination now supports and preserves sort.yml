@@ -1,8 +1,0 @@
-title: /browse pagination now supports and preserves sort context
-type: fixed
-authors:
-- name: Eric Spiegelberg
-- name: Erik Hatcher
-links:
-- name: SOLR-4352
-  url: https://issues.apache.org/jira/browse/SOLR-4352

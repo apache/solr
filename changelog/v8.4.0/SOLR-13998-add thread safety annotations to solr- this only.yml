@@ -1,9 +1,0 @@
-title: Add thread safety annotations to Solr. This only introduces the annotations
-  and doesn't add these to existing classes.
-type: other
-authors:
-- name: Anshum Gupta
-- name: Mark Miller
-links:
-- name: SOLR-13998
-  url: https://issues.apache.org/jira/browse/SOLR-13998

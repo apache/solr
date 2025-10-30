@@ -1,8 +1,0 @@
-title: Add ls command to ZkCLI for listing only sub-directories.
-type: added
-authors:
-- name: Peter Szantai-Kis
-- name: Mark Miller
-links:
-- name: SOLR-10430
-  url: https://issues.apache.org/jira/browse/SOLR-10430

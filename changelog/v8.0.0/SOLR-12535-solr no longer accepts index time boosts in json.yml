@@ -1,7 +1,0 @@
-title: Solr no longer accepts index time boosts in JSON provided to Solr.
-type: other
-authors:
-- name: David Smiley
-links:
-- name: SOLR-12535
-  url: https://issues.apache.org/jira/browse/SOLR-12535

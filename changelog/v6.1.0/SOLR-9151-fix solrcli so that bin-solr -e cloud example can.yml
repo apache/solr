@@ -1,7 +1,0 @@
-title: Fix SolrCLI so that bin/solr -e cloud example can be run from any CWD
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-9151
-  url: https://issues.apache.org/jira/browse/SOLR-9151

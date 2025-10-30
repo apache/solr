@@ -1,8 +1,0 @@
-title: Solr Javadocs now have searching enabled.
-type: added
-authors:
-- name: Mike Drob
-- name: Houston Putman
-links:
-- name: SOLR-16884
-  url: https://issues.apache.org/jira/browse/SOLR-16884

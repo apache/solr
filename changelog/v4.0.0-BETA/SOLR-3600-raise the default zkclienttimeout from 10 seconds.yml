@@ -1,7 +1,0 @@
-title: Raise the default zkClientTimeout from 10 seconds to 15 seconds.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3600
-  url: https://issues.apache.org/jira/browse/SOLR-3600

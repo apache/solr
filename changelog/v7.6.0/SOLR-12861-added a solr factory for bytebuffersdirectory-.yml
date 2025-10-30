@@ -1,7 +1,0 @@
-title: Added a Solr factory for ByteBuffersDirectory, which will replace deprecated
-  RAMDirectory in Solr 9.0.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-12861
-  url: https://issues.apache.org/jira/browse/SOLR-12861

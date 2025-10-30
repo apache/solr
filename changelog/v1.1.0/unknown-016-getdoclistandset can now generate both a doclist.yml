@@ -1,5 +1,0 @@
-title: getDocListAndSet can now generate both a DocList and a DocSet from a single
-  lucene query.
-type: changed
-authors: []
-links: []

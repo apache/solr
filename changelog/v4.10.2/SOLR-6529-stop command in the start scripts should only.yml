@@ -1,9 +1,0 @@
-title: Stop command in the start scripts should only stop the instance that it had
-  started.
-type: other
-authors:
-- name: Varun Thacker
-- name: Timothy Potter
-links:
-- name: SOLR-6529
-  url: https://issues.apache.org/jira/browse/SOLR-6529

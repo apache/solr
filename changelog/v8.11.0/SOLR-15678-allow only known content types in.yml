@@ -1,9 +1,0 @@
-title: Allow only known content types in ShowFileRequestHandler
-type: other
-authors:
-- name: janhoy
-- name: Gus Heck
-- name: Mal Aware
-links:
-- name: SOLR-15678
-  url: https://issues.apache.org/jira/browse/SOLR-15678

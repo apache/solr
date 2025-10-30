@@ -1,9 +1,0 @@
-title: Added in deprecation comments.
-type: other
-authors:
-- name: Sean Timm
-- name: Lars Kothoff
-- name: gsingers
-links:
-- name: SOLR-489
-  url: https://issues.apache.org/jira/browse/SOLR-489

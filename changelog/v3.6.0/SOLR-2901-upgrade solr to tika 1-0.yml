@@ -1,7 +1,0 @@
-title: Upgrade Solr to Tika 1.0
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-2901
-  url: https://issues.apache.org/jira/browse/SOLR-2901

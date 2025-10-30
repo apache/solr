@@ -1,9 +1,0 @@
-title: In build.xml, use longfile="gnu" in tar task to avoid warnings about long file
-  names
-type: other
-authors:
-- name: Mark Miller
-- name: shalin
-links:
-- name: SOLR-1386
-  url: https://issues.apache.org/jira/browse/SOLR-1386

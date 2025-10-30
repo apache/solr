@@ -1,8 +1,0 @@
-title: StandardRequestHandler now supports a "sort" parameter. Using the ';' syntax
-  is still supported, but it is recommended to transition to the new syntax.
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-170
-  url: https://issues.apache.org/jira/browse/SOLR-170

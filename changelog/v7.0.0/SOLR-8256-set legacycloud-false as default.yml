@@ -1,7 +1,0 @@
-title: Set legacyCloud=false as default
-type: other
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-8256
-  url: https://issues.apache.org/jira/browse/SOLR-8256

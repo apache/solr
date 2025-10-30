@@ -1,9 +1,0 @@
-title: Merge index does not mark the Directory objects it creates as 'done' and they
-  are retained in the Directory cache.
-type: fixed
-authors:
-- name: Sivlio Sanchez
-- name: Mark Miller
-links:
-- name: SOLR-8497
-  url: https://issues.apache.org/jira/browse/SOLR-8497

@@ -1,7 +1,0 @@
-title: Update Jetty to 10.0.14, slf4j to 2.0.7, io.dropwizard.metrics to v4.2.18
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#1472
-  url: https://github.com/apache/solr/pull/1472

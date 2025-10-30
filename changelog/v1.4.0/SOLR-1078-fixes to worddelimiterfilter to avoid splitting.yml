@@ -1,8 +1,0 @@
-title: Fixes to WordDelimiterFilter to avoid splitting or dropping international non-letter
-  characters such as non spacing marks.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-1078
-  url: https://issues.apache.org/jira/browse/SOLR-1078

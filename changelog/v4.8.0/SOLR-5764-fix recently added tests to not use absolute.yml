@@ -1,9 +1,0 @@
-title: Fix recently added tests to not use absolute paths to load test-files, use
-  SolrTestCaseJ4.getFile() and getResource() instead; fix morphlines/map-reduce to
-  not duplicate test resources and fix dependencies among them.
-type: other
-authors:
-- name: Uwe Schindler
-links:
-- name: SOLR-5764
-  url: https://issues.apache.org/jira/browse/SOLR-5764

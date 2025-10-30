@@ -1,7 +1,0 @@
-title: SearchGroupsResultTransformer tweaks (String literals, list/map initialCapacity)
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8116
-  url: https://issues.apache.org/jira/browse/SOLR-8116

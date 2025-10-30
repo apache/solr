@@ -1,7 +1,0 @@
-title: Allow CloudSolrServer and SolrCmdDistributor to use JavaBin.
-type: added
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3249
-  url: https://issues.apache.org/jira/browse/SOLR-3249
