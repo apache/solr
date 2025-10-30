@@ -1,7 +1,0 @@
-title: Add indexOf, rowCount and columnCount StreamEvaluators
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11867
-  url: https://issues.apache.org/jira/browse/SOLR-11867

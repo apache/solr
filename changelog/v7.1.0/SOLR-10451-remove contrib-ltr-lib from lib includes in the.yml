@@ -1,8 +1,0 @@
-title: Remove contrib/ltr/lib from lib includes in the techproducts example config
-type: other
-authors:
-- name: sungjunyoung
-- name: janhoy
-links:
-- name: SOLR-10451
-  url: https://issues.apache.org/jira/browse/SOLR-10451

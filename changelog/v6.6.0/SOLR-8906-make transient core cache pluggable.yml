@@ -1,7 +1,0 @@
-title: Make transient core cache pluggable
-type: other
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-8906
-  url: https://issues.apache.org/jira/browse/SOLR-8906

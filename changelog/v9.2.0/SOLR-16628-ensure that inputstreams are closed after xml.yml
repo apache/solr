@@ -1,9 +1,0 @@
-title: Ensure that InputStreams are closed after Xml parsing
-type: fixed
-authors:
-- name: Michael Gibney
-- name: David Smiley
-- name: Kevin Risden
-links:
-- name: SOLR-16628
-  url: https://issues.apache.org/jira/browse/SOLR-16628

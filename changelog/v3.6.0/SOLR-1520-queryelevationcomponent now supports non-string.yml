@@ -1,7 +1,0 @@
-title: QueryElevationComponent now supports non-string ids
-type: fixed
-authors:
-- name: gsingers
-links:
-- name: SOLR-1520
-  url: https://issues.apache.org/jira/browse/SOLR-1520

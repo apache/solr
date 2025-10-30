@@ -1,8 +1,0 @@
-title: disable/enable replication on master side. added two commands 'enableReplication'
-  and 'disableReplication'
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-1175
-  url: https://issues.apache.org/jira/browse/SOLR-1175

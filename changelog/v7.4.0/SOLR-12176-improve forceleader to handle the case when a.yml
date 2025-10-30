@@ -1,8 +1,0 @@
-title: Improve FORCELEADER to handle the case when a replica win the election but
-  does not present in clusterstate
-type: other
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-12176
-  url: https://issues.apache.org/jira/browse/SOLR-12176

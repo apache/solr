@@ -1,7 +1,0 @@
-title: CLUSTERSTATUS API is executed at CollectionsHandler
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-7636
-  url: https://issues.apache.org/jira/browse/SOLR-7636

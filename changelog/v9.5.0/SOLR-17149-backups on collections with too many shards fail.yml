@@ -1,9 +1,0 @@
-title: Backups on collections with too many shards fail due to restrictive Executor
-  queue size
-type: fixed
-authors:
-- name: Pierre Salagnac
-- name: Jason Gerlowski
-links:
-- name: SOLR-17149
-  url: https://issues.apache.org/jira/browse/SOLR-17149

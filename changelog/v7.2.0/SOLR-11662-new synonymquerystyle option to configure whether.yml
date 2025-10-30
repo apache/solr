@@ -1,9 +1,0 @@
-title: New synonymQueryStyle option to configure whether SynonymQuery, a DisjunctionMaxQuery,
-  or BooleanQuery occurs over query terms that overlap their position.
-type: added
-authors:
-- name: Doug Turnbull
-- name: David Smiley
-links:
-- name: SOLR-11662
-  url: https://issues.apache.org/jira/browse/SOLR-11662

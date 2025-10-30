@@ -1,8 +1,0 @@
-title: Make FieldAnalysisRequestHandler, DocumentAnalysisRequestHandler & DumpRequestHandler
-  implicit
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-9576
-  url: https://issues.apache.org/jira/browse/SOLR-9576

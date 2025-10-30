@@ -1,9 +1,0 @@
-title: 'fix bug in PHPSerializedResponseWriter (wt=phps) when dealing with SolrDocumentList
-  objects -- ie: sharded queries.'
-type: fixed
-authors:
-- name: Antonio Verni
-- name: hossman
-links:
-- name: SOLR-2307
-  url: https://issues.apache.org/jira/browse/SOLR-2307

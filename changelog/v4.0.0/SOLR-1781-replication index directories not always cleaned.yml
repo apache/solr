@@ -1,9 +1,0 @@
-title: Replication index directories not always cleaned up.
-type: fixed
-authors:
-- name: Markus Jelsma
-- name: Terje Sten Bjerkseth
-- name: Mark Miller
-links:
-- name: SOLR-1781
-  url: https://issues.apache.org/jira/browse/SOLR-1781

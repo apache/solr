@@ -1,8 +1,0 @@
-title: Fix TrieTokenizer to no longer throw StringIndexOutOfBoundsException in admin
-  UI / AnalysisRequestHandler when you enter no number to tokenize.
-type: fixed
-authors:
-- name: Uwe Schindler
-links:
-- name: SOLR-4275
-  url: https://issues.apache.org/jira/browse/SOLR-4275

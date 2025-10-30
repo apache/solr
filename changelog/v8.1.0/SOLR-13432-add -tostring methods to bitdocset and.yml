@@ -1,8 +1,0 @@
-title: Add .toString methods to BitDocSet and SortedIntDocSet so that enabling "showItems"
-  on the filter caches shows some useful information about the values in the cache.
-type: changed
-authors:
-- name: shalin
-links:
-- name: SOLR-13432
-  url: https://issues.apache.org/jira/browse/SOLR-13432

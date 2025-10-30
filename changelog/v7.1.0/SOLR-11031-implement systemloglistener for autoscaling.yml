@@ -1,7 +1,0 @@
-title: Implement SystemLogListener for autoscaling
-type: added
-authors:
-- name: ab
-links:
-- name: SOLR-11031
-  url: https://issues.apache.org/jira/browse/SOLR-11031

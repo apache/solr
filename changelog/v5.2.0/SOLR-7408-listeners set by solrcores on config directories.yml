@@ -1,9 +1,0 @@
-title: Listeners set by SolrCores on config directories in ZK could be removed if
-  collections are created/deleted in paralle against the same config set.
-type: fixed
-authors:
-- name: Shai Erera
-- name: Anshum Gupta
-links:
-- name: SOLR-7408
-  url: https://issues.apache.org/jira/browse/SOLR-7408

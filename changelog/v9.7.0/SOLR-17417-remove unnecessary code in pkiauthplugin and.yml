@@ -1,9 +1,0 @@
-title: Remove unnecessary code in PKIAuthPlugin and HttpSolrCall
-type: fixed
-authors:
-- name: Houston Putman
-- name: janhoy
-- name: Liu Huajin
-links:
-- name: SOLR-17417
-  url: https://issues.apache.org/jira/browse/SOLR-17417

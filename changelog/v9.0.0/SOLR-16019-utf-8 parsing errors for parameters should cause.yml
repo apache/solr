@@ -1,9 +1,0 @@
-title: UTF-8 parsing errors for parameters should cause a HTTP 400 status code, not
-  500
-type: fixed
-authors:
-- name: janhoy
-- name: Matthias Pigulla
-links:
-- name: SOLR-16019
-  url: https://issues.apache.org/jira/browse/SOLR-16019

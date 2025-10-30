@@ -1,8 +1,0 @@
-title: Exception when using result grouping with main=true and using wt=javabin.
-type: fixed
-authors:
-- name: Ludovic Boutros
-- name: Martijn van Groningen
-links:
-- name: SOLR-3454
-  url: https://issues.apache.org/jira/browse/SOLR-3454

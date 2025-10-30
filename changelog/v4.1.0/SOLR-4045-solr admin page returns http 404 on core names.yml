@@ -1,7 +1,0 @@
-title: SOLR admin page returns HTTP 404 on core names containing a '.' (dot)
-type: fixed
-authors:
-- name: steffkes
-links:
-- name: SOLR-4045
-  url: https://issues.apache.org/jira/browse/SOLR-4045

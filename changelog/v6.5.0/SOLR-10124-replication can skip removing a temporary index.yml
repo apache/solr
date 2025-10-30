@@ -1,8 +1,0 @@
-title: Replication can skip removing a temporary index directory in some cases when
-  it should not.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-10124
-  url: https://issues.apache.org/jira/browse/SOLR-10124

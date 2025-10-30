@@ -1,8 +1,0 @@
-title: bin/solr post now has proper unit testing. Users can specify a --dry-run option
-  to simulate posting documents without sending them to Solr.
-type: changed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-17159
-  url: https://issues.apache.org/jira/browse/SOLR-17159

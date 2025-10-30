@@ -1,8 +1,0 @@
-title: Reduce number of lookupOrd calls made by the DocValuesFacets.getCounts method.
-type: changed
-authors:
-- name: Jonny Marks
-- name: Christine Poerschke
-links:
-- name: SOLR-9726
-  url: https://issues.apache.org/jira/browse/SOLR-9726

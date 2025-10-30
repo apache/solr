@@ -1,9 +1,0 @@
-title: Support Solr being proxied with another endpoint than default /solr, by using
-  relative links in AdminUI javascripts
-type: changed
-authors:
-- name: Yun Jie Zhou
-- name: janhoy
-links:
-- name: SOLR-9584
-  url: https://issues.apache.org/jira/browse/SOLR-9584

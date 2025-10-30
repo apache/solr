@@ -1,8 +1,0 @@
-title: Missing newline at the end of solr.in.sh breaks the installer.
-type: fixed
-authors:
-- name: John Gately
-- name: Shawn Heisey
-links:
-- name: SOLR-16259
-  url: https://issues.apache.org/jira/browse/SOLR-16259

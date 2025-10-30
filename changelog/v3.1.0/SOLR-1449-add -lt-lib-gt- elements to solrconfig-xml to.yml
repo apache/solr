@@ -1,9 +1,0 @@
-title: Add &lt;lib&gt; elements to solrconfig.xml to specifying additional classpath
-  directories and regular expressions.
-type: added
-authors:
-- name: hossman
-- name: yonik
-links:
-- name: SOLR-1449
-  url: https://issues.apache.org/jira/browse/SOLR-1449

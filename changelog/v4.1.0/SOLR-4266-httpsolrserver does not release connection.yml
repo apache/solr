@@ -1,9 +1,0 @@
-title: HttpSolrServer does not release connection properly on exception when no response
-  parser is used.
-type: fixed
-authors:
-- name: Steve Molloy
-- name: Mark Miller
-links:
-- name: SOLR-4266
-  url: https://issues.apache.org/jira/browse/SOLR-4266

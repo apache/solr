@@ -1,8 +1,0 @@
-title: Make QueryComponent more extensible.
-type: other
-authors:
-- name: Markus Jelsma
-- name: David Smiley
-links:
-- name: SOLR-7968
-  url: https://issues.apache.org/jira/browse/SOLR-7968

@@ -1,7 +1,0 @@
-title: 'Highlighting: hl.method=unified is the new default.'
-type: other
-authors:
-- name: David Smiley
-links:
-- name: SOLR-12901
-  url: https://issues.apache.org/jira/browse/SOLR-12901

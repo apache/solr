@@ -1,8 +1,0 @@
-title: Rate Limiting in Solr
-type: added
-authors:
-- name: Atri Sharma
-- name: Mike Drob
-links:
-- name: SOLR-13528
-  url: https://issues.apache.org/jira/browse/SOLR-13528

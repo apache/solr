@@ -1,9 +1,0 @@
-title: Can't index example XML docs into the cloud example using bin/post due to regression
-  in ManagedIndexSchema's handling of ResourceLoaderAware objects used by field types
-type: fixed
-authors:
-- name: Steve Rowe
-- name: Timothy Potter
-links:
-- name: SOLR-7366
-  url: https://issues.apache.org/jira/browse/SOLR-7366

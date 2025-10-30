@@ -1,8 +1,0 @@
-title: Fixed a bug that prevented omitNorms and omitTermFreqAndPositions options from
-  being respected in some &lt;fieldType/&gt; declarations
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-2890
-  url: https://issues.apache.org/jira/browse/SOLR-2890

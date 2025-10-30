@@ -1,7 +1,0 @@
-title: Move Streaming Expressions section in Ref Guide to be a top-level section.
-type: other
-authors:
-- name: Cassandra Targett
-links:
-- name: SOLR-11766
-  url: https://issues.apache.org/jira/browse/SOLR-11766

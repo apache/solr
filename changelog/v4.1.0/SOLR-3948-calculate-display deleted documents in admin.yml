@@ -1,8 +1,0 @@
-title: Calculate/display deleted documents in admin interface.
-type: added
-authors:
-- name: Shawn Heisey
-- name: Mark Miller
-links:
-- name: SOLR-3948
-  url: https://issues.apache.org/jira/browse/SOLR-3948

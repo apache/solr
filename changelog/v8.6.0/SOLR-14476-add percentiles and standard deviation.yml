@@ -1,8 +1,0 @@
-title: Add percentiles and standard deviation aggregations to stats, facet and timeseries
-  Streaming Expressions
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-14476
-  url: https://issues.apache.org/jira/browse/SOLR-14476

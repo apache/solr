@@ -1,7 +1,0 @@
-title: Autoscaling policy not being refreshed due to caching
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-12665
-  url: https://issues.apache.org/jira/browse/SOLR-12665

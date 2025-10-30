@@ -1,7 +1,0 @@
-title: Add sql Streaming Expression
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-10623
-  url: https://issues.apache.org/jira/browse/SOLR-10623

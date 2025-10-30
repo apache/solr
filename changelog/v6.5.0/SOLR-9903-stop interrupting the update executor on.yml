@@ -1,8 +1,0 @@
-title: Stop interrupting the update executor on shutdown, it can cause graceful shutdowns
-  to put replicas into Leader Initiated Recovery among other undesirable things.
-type: added
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-9903
-  url: https://issues.apache.org/jira/browse/SOLR-9903

@@ -1,7 +1,0 @@
-title: short-circuit faceting if less than mincount docs match.
-type: changed
-authors:
-- name: yonik
-links:
-- name: SOLR-348
-  url: https://issues.apache.org/jira/browse/SOLR-348

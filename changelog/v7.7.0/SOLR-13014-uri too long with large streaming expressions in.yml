@@ -1,7 +1,0 @@
-title: URI Too Long with large streaming expressions in SolrJ
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-13014
-  url: https://issues.apache.org/jira/browse/SOLR-13014

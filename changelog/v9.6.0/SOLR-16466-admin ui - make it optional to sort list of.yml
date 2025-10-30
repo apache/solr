@@ -1,9 +1,0 @@
-title: Admin UI - Make it optional to sort list of commandline args
-type: added
-authors:
-- name: Shawn Heisey
-- name: Vincenzo D'Amore
-- name: Christine Poerschke
-links:
-- name: SOLR-16466
-  url: https://issues.apache.org/jira/browse/SOLR-16466

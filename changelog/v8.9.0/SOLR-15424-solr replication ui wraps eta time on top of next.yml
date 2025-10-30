@@ -1,7 +1,0 @@
-title: Solr replication UI wraps ETA time on top of next line
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-15424
-  url: https://issues.apache.org/jira/browse/SOLR-15424

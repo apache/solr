@@ -1,8 +1,0 @@
-title: Change the example to use the new solr.xml format and core discovery by directory
-  structure.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4757
-  url: https://issues.apache.org/jira/browse/SOLR-4757

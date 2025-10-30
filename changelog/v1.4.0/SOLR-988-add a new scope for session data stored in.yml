@@ -1,9 +1,0 @@
-title: Add a new scope for session data stored in Context to store objects across
-  imports.
-type: added
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-988
-  url: https://issues.apache.org/jira/browse/SOLR-988

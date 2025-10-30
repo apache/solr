@@ -1,7 +1,0 @@
-title: fix facet.pivot refinement bugs when using facet.sort=index and facet.mincount&gt;1
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-12954
-  url: https://issues.apache.org/jira/browse/SOLR-12954

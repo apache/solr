@@ -1,7 +1,0 @@
-title: Fixes hash conflict in HashJoinStream and OuterHashJoinStream
-type: fixed
-authors:
-- name: Dennis Gove
-links:
-- name: SOLR-12355
-  url: https://issues.apache.org/jira/browse/SOLR-12355

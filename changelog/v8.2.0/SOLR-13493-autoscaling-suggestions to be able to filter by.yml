@@ -1,7 +1,0 @@
-title: /autoscaling/suggestions to be able to filter by type
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-13493
-  url: https://issues.apache.org/jira/browse/SOLR-13493

@@ -1,8 +1,0 @@
-title: fieldTypes with sortMissingLast=true or sortMissingFirst=true can result in
-  incorrectly sorted results.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-1777
-  url: https://issues.apache.org/jira/browse/SOLR-1777

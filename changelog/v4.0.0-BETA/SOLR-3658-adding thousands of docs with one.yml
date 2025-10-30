@@ -1,9 +1,0 @@
-title: Adding thousands of docs with one UpdateProcessorChain instance can briefly
-  create spikes of threads in the thousands.
-type: fixed
-authors:
-- name: yonik
-- name: Mark Miller
-links:
-- name: SOLR-3658
-  url: https://issues.apache.org/jira/browse/SOLR-3658

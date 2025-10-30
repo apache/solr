@@ -1,7 +1,0 @@
-title: Add expungeDeletes to DirectUpdateHandler2
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-1275
-  url: https://issues.apache.org/jira/browse/SOLR-1275

@@ -1,8 +1,0 @@
-title: Moved solrj into /src/solrj. The contents of solr-common.jar is now included
-  in the solr-solrj.jar.
-type: other
-authors:
-- name: ryan
-links:
-- name: SOLR-900
-  url: https://issues.apache.org/jira/browse/SOLR-900

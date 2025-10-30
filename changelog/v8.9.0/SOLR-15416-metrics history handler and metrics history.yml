@@ -1,8 +1,0 @@
-title: Metrics history handler and metrics history collection (together with its specialized
-  reporters) have been deprecated and will be removed in 9.0.
-type: other
-authors:
-- name: ab
-links:
-- name: SOLR-15416
-  url: https://issues.apache.org/jira/browse/SOLR-15416

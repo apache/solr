@@ -1,8 +1,0 @@
-title: More than two "!"-s in a doc ID throws an ArrayIndexOutOfBoundsException when
-  using the composite id router.
-type: fixed
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-6257
-  url: https://issues.apache.org/jira/browse/SOLR-6257

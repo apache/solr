@@ -1,8 +1,0 @@
-title: Search requests should return the shard name that is down.
-type: fixed
-authors:
-- name: Marius Grama
-- name: shalin
-links:
-- name: SOLR-7566
-  url: https://issues.apache.org/jira/browse/SOLR-7566

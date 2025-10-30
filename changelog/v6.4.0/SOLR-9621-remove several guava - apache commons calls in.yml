@@ -1,8 +1,0 @@
-title: Remove several Guava & Apache Commons calls in favor of java 8 alternatives.
-type: other
-authors:
-- name: Michael Braun
-- name: David Smiley
-links:
-- name: SOLR-9621
-  url: https://issues.apache.org/jira/browse/SOLR-9621

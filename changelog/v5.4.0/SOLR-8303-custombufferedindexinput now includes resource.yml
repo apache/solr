@@ -1,8 +1,0 @@
-title: CustomBufferedIndexInput now includes resource description when throwing EOFException.
-type: other
-authors:
-- name: Mike Drob
-- name: Uwe Schindler
-links:
-- name: SOLR-8303
-  url: https://issues.apache.org/jira/browse/SOLR-8303

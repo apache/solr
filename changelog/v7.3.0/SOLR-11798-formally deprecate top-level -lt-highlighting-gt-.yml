@@ -1,8 +1,0 @@
-title: Formally deprecate top-level &lt;highlighting&gt; syntax in solrconfig.xml
-  in favour of &lt;searchComponent&gt; equivalent syntax.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-11798
-  url: https://issues.apache.org/jira/browse/SOLR-11798

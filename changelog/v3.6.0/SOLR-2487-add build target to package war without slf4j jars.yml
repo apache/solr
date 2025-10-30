@@ -1,7 +1,0 @@
-title: Add build target to package war without slf4j jars
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-2487
-  url: https://issues.apache.org/jira/browse/SOLR-2487

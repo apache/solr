@@ -1,8 +1,0 @@
-title: Add PathHierarchyTokenizerFactory.
-type: added
-authors:
-- name: ryan
-- name: koji
-links:
-- name: SOLR-1057
-  url: https://issues.apache.org/jira/browse/SOLR-1057

@@ -1,7 +1,0 @@
-title: Corecontainer level mbeans are not exposed
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-5902
-  url: https://issues.apache.org/jira/browse/SOLR-5902

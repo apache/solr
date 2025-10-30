@@ -1,7 +1,0 @@
-title: posting the same file to the package store should not throw an error
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-16565
-  url: https://issues.apache.org/jira/browse/SOLR-16565

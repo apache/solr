@@ -1,8 +1,0 @@
-title: Remove unreachable printLayout usage in cloud tests.
-type: other
-authors:
-- name: Cao Manh Dat
-- name: shalin
-links:
-- name: SOLR-6090
-  url: https://issues.apache.org/jira/browse/SOLR-6090

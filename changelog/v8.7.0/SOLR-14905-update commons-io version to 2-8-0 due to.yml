@@ -1,8 +1,0 @@
-title: Update commons-io version to 2.8.0 due to security vulnerability.
-type: changed
-authors:
-- name: Nazerke Seidan
-- name: Bruno Roustant
-links:
-- name: SOLR-14905
-  url: https://issues.apache.org/jira/browse/SOLR-14905

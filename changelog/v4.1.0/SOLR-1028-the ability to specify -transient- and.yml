@@ -1,9 +1,0 @@
-title: The ability to specify "transient" and "loadOnStartup" as a new properties
-  of &lt;core&gt; tags in solr.xml. Can specify "transientCacheSize" in the &lt;cores&gt;
-  tag. Together these allow cores to be loaded only when needed and only transientCacheSize
-  transient cores will be loaded at a time, the rest aged out on an LRU basis.
-type: added
-authors: []
-links:
-- name: SOLR-1028
-  url: https://issues.apache.org/jira/browse/SOLR-1028

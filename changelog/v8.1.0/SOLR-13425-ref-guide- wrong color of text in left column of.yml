@@ -1,7 +1,0 @@
-title: 'Ref-Guide: Wrong color of text in left column of horizontal definition list'
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-13425
-  url: https://issues.apache.org/jira/browse/SOLR-13425

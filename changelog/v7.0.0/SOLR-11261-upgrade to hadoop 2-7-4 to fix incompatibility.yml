@@ -1,9 +1,0 @@
-title: Upgrade to Hadoop 2.7.4 to fix incompatibility with Java 9.
-type: other
-authors:
-- name: Uwe Schindler
-links:
-- name: SOLR-11261
-  url: https://issues.apache.org/jira/browse/SOLR-11261
-- name: SOLR-10966
-  url: https://issues.apache.org/jira/browse/SOLR-10966

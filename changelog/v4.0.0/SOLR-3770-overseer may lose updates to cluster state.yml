@@ -1,7 +1,0 @@
-title: Overseer may lose updates to cluster state
-type: fixed
-authors:
-- name: siren
-links:
-- name: SOLR-3770
-  url: https://issues.apache.org/jira/browse/SOLR-3770

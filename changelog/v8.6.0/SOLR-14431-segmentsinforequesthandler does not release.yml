@@ -1,8 +1,0 @@
-title: SegmentsInfoRequestHandler does not release IndexWriter
-type: fixed
-authors:
-- name: Tiziano Degaetano
-- name: ab
-links:
-- name: SOLR-14431
-  url: https://issues.apache.org/jira/browse/SOLR-14431

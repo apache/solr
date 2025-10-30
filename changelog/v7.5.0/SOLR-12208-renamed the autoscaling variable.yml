@@ -1,7 +1,0 @@
-title: Renamed the autoscaling variable 'INDEX.sizeInBytes' to 'INDEX.sizeInGB'
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-12208
-  url: https://issues.apache.org/jira/browse/SOLR-12208

@@ -1,8 +1,0 @@
-title: More SpellCheckerRequestHandler enhancements, inlcluding support for relative
-  or absolute directory path configurations, as well as RAM based directory.
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-81
-  url: https://issues.apache.org/jira/browse/SOLR-81

@@ -1,8 +1,0 @@
-title: Throw exception when attempting to replace uniqueKey via fl in distributed
-  request, e.g. fl=old_id:id,id:new_id
-type: other
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-16681
-  url: https://issues.apache.org/jira/browse/SOLR-16681

@@ -1,7 +1,0 @@
-title: '{!join} can join collections with multiple shards on both sides.'
-type: added
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-16717
-  url: https://issues.apache.org/jira/browse/SOLR-16717

@@ -1,8 +1,0 @@
-title: Fix stats.jsp XML encoding for &lt;stat&gt; item entries with ampersands in
-  their names.
-type: fixed
-authors:
-- name: ehatcher
-links:
-- name: SOLR-1008
-  url: https://issues.apache.org/jira/browse/SOLR-1008

@@ -1,9 +1,0 @@
-title: Fail the request when collapsing or expand is used with Grouping.
-type: changed
-authors:
-- name: Erick Erickson
-- name: Joel Bernstein
-- name: Munendra S N
-links:
-- name: SOLR-13970
-  url: https://issues.apache.org/jira/browse/SOLR-13970

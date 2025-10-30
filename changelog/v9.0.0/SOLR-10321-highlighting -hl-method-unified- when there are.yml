@@ -1,8 +1,0 @@
-title: 'Highlighting (hl.method=unified): When there are no highlights for a field,
-  don''t return the field in the response at all.'
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-10321
-  url: https://issues.apache.org/jira/browse/SOLR-10321

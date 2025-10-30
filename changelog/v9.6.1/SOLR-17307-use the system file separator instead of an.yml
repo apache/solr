@@ -1,8 +1,0 @@
-title: Use the system file separator instead of an explicit '/' in CachingDirectoryFactory
-type: fixed
-authors:
-- name: Houston Putman
-- name: hossman
-links:
-- name: SOLR-17307
-  url: https://issues.apache.org/jira/browse/SOLR-17307

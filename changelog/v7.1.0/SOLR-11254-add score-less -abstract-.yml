@@ -1,7 +1,0 @@
-title: Add score-less (abstract) DocTransformer.transform method.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-11254
-  url: https://issues.apache.org/jira/browse/SOLR-11254

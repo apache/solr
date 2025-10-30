@@ -1,7 +1,0 @@
-title: Added metadata output to extraction request handler "extract only" option.
-type: added
-authors:
-- name: gsingers
-links:
-- name: SOLR-1128
-  url: https://issues.apache.org/jira/browse/SOLR-1128

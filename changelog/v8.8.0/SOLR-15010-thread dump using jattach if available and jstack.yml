@@ -1,7 +1,0 @@
-title: Thread dump using jattach if available and jstack is missing.
-type: other
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-15010
-  url: https://issues.apache.org/jira/browse/SOLR-15010

@@ -1,9 +1,0 @@
-title: 'SolrExceptions thrown by HttpSolrServer will now contain the proper HTTP status
-  code returned by the remote server, even if that status code is not something Solr
-  itself returned -- eg: from the Servlet Container, or an intermediate HTTP Proxy'
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-4487
-  url: https://issues.apache.org/jira/browse/SOLR-4487

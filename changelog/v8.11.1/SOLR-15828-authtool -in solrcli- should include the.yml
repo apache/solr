@@ -1,9 +1,0 @@
-title: AuthTool (in SolrCLI) should include the config-read, collection-admin-read,
-  core-admin-read, and all permissions in the initial security.json to avoid warnings
-  in the security UI
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-15828
-  url: https://issues.apache.org/jira/browse/SOLR-15828

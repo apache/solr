@@ -1,8 +1,0 @@
-title: CurrencyField's OpenExchangeRatesOrgProvider now requires a ratesFileLocation
-  init param, since the previous global default no longer works
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-4515
-  url: https://issues.apache.org/jira/browse/SOLR-4515

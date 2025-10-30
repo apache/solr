@@ -1,9 +1,0 @@
-title: ElectionContext can cancel an election when it should not if there was an exception
-  while trying to register as the leader.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Alan Woodward
-links:
-- name: SOLR-5904
-  url: https://issues.apache.org/jira/browse/SOLR-5904

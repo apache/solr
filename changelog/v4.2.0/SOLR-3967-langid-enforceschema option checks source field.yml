@@ -1,7 +1,0 @@
-title: langid.enforceSchema option checks source field instead of target field
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-3967
-  url: https://issues.apache.org/jira/browse/SOLR-3967

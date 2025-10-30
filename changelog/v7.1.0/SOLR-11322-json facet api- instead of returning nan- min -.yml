@@ -1,8 +1,0 @@
-title: 'JSON Facet API: instead of returning NaN, min & max aggregations omit the
-  value for any bucket with no values in the numeric field.'
-type: other
-authors:
-- name: yonik
-links:
-- name: SOLR-11322
-  url: https://issues.apache.org/jira/browse/SOLR-11322

@@ -1,8 +1,0 @@
-title: Allow looking up Solr Package repo when that URL references a raw repository.json
-  hosted on Github when the file is JSON but the mimetype used is text/plain.
-type: fixed
-authors:
-- name: Eric Pugh
-links:
-- name: PR#1826
-  url: https://github.com/apache/solr/pull/1826

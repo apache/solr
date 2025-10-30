@@ -1,9 +1,0 @@
-title: Upgrade Lucene to 9.9.2
-type: dependency_update
-authors:
-- name: Nazerke Seidan
-- name: Christine Poerschke
-- name: Pierre Salagnac
-links:
-- name: SOLR-17097
-  url: https://issues.apache.org/jira/browse/SOLR-17097

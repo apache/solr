@@ -1,9 +1,0 @@
-title: Validate that installed ps utility supports -p flag, so that we do not inadvertantly
-  stop the wrong process.
-type: fixed
-authors:
-- name: Mike Drob
-- name: Michael Gibney
-links:
-- name: SOLR-16191
-  url: https://issues.apache.org/jira/browse/SOLR-16191

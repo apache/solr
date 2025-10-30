@@ -1,7 +1,0 @@
-title: Upgrade example and tests to run with Jetty 8
-type: other
-authors:
-- name: ryan
-links:
-- name: SOLR-3159
-  url: https://issues.apache.org/jira/browse/SOLR-3159

@@ -1,8 +1,0 @@
-title: Some bulk update paths could be very slow due to CUSC polling.
-type: fixed
-authors:
-- name: David Smiley
-- name: Mark Miller
-links:
-- name: SOLR-9824
-  url: https://issues.apache.org/jira/browse/SOLR-9824

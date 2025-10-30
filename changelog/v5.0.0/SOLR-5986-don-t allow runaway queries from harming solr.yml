@@ -1,9 +1,0 @@
-title: Don't allow runaway queries from harming Solr cluster health or search performance
-type: added
-authors:
-- name: Anshum Gupta
-- name: Steve Rowe
-- name: Robert Muir
-links:
-- name: SOLR-5986
-  url: https://issues.apache.org/jira/browse/SOLR-5986

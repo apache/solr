@@ -1,9 +1,0 @@
-title: Remove CLUSTERSTATUS related exclusivity checks while running commands in the
-  Overseer because the CLUSTERSTATUS request is served by the individual nodes itself
-  and not via the Overseer node
-type: other
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-7907
-  url: https://issues.apache.org/jira/browse/SOLR-7907

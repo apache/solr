@@ -1,7 +1,0 @@
-title: Eliminate unneccessary byte[] copy in Http2SolrClient
-type: changed
-authors:
-- name: hossman
-links:
-- name: SOLR-16266
-  url: https://issues.apache.org/jira/browse/SOLR-16266

@@ -1,8 +1,0 @@
-title: Add optional slow request logging at WARN level
-type: added
-authors:
-- name: Jessica Cheng Mallet
-- name: Timothy Potter
-links:
-- name: SOLR-6650
-  url: https://issues.apache.org/jira/browse/SOLR-6650

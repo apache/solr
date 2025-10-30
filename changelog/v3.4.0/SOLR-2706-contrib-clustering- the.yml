@@ -1,8 +1,0 @@
-title: 'contrib/clustering: The carrot.lexicalResourcesDir parameter now works with
-  absolute directories'
-type: fixed
-authors:
-- name: Stanislaw Osinski
-links:
-- name: SOLR-2706
-  url: https://issues.apache.org/jira/browse/SOLR-2706

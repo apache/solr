@@ -1,7 +1,0 @@
-title: Overseer Task Processor/Queue can miss responses, leading to timeouts.
-type: fixed
-authors:
-- name: Gregory Chanan
-links:
-- name: SOLR-8152
-  url: https://issues.apache.org/jira/browse/SOLR-8152

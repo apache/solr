@@ -1,8 +1,0 @@
-title: Add support for hash based exact/near duplicate document handling.
-type: added
-authors:
-- name: Mark Miller
-- name: yonik
-links:
-- name: SOLR-799
-  url: https://issues.apache.org/jira/browse/SOLR-799

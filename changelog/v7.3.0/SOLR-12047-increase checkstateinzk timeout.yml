@@ -1,8 +1,0 @@
-title: Increase checkStateInZk timeout
-type: other
-authors:
-- name: Cao Manh Dat
-- name: Varun Thacker
-links:
-- name: SOLR-12047
-  url: https://issues.apache.org/jira/browse/SOLR-12047

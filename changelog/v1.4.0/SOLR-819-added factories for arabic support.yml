@@ -1,7 +1,0 @@
-title: Added factories for Arabic support
-type: added
-authors:
-- name: gsingers
-links:
-- name: SOLR-819
-  url: https://issues.apache.org/jira/browse/SOLR-819

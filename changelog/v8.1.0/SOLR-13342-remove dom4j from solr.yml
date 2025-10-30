@@ -1,7 +1,0 @@
-title: Remove dom4j from Solr
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-13342
-  url: https://issues.apache.org/jira/browse/SOLR-13342

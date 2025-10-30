@@ -1,7 +1,0 @@
-title: Jaegertracer module must include okhttp3 dependency
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-16528
-  url: https://issues.apache.org/jira/browse/SOLR-16528

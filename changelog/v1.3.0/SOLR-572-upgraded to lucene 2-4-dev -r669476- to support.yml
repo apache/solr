@@ -1,7 +1,0 @@
-title: Upgraded to Lucene 2.4-dev (r669476) to support SOLR-572
-type: other
-authors:
-- name: gsingers
-links:
-- name: SOLR-572
-  url: https://issues.apache.org/jira/browse/SOLR-572

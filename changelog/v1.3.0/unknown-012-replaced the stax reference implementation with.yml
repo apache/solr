@@ -1,6 +1,0 @@
-title: Replaced the StAX reference implementation with the geronimo StAX API jar,
-  and the Woodstox StAX implementation.
-type: other
-authors:
-- name: yonik
-links: []

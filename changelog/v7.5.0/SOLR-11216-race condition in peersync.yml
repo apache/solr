@@ -1,7 +1,0 @@
-title: Race condition in PeerSync
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-11216
-  url: https://issues.apache.org/jira/browse/SOLR-11216

@@ -1,8 +1,0 @@
-title: -- Added a srcCore parameter to CoreAdminHandler's mergeindexes action to merge
-  one or more cores' indexes to a target core
-type: added
-authors:
-- name: shalin
-links:
-- name: SOLR-1331
-  url: https://issues.apache.org/jira/browse/SOLR-1331

@@ -1,8 +1,0 @@
-title: RefreshCollectionMessage in PRS should update Overseer's ZkStateWriter
-type: fixed
-authors:
-- name: noble
-- name: Ishan Chattopadhyaya
-links:
-- name: SOLR-16440
-  url: https://issues.apache.org/jira/browse/SOLR-16440

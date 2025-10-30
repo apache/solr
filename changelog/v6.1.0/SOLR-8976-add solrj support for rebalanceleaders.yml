@@ -1,7 +1,0 @@
-title: Add SolrJ support for REBALANCELEADERS Collections API
-type: added
-authors:
-- name: Anshum Gupta
-links:
-- name: SOLR-8976
-  url: https://issues.apache.org/jira/browse/SOLR-8976

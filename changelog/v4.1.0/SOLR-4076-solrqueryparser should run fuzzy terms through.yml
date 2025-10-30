@@ -1,9 +1,0 @@
-title: SolrQueryParser should run fuzzy terms through MultiTermAwareComponents to
-  ensure that (for example) a fuzzy query of foobar~2 is equivalent to FooBar~2 on
-  a field that includes lowercasing.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-4076
-  url: https://issues.apache.org/jira/browse/SOLR-4076

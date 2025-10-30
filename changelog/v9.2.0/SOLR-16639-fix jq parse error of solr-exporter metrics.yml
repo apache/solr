@@ -1,7 +1,0 @@
-title: Fix jq parse error of solr-exporter metrics node_thread_pool_completed_total
-type: fixed
-authors:
-- name: Naoto Minami
-links:
-- name: SOLR-16639
-  url: https://issues.apache.org/jira/browse/SOLR-16639

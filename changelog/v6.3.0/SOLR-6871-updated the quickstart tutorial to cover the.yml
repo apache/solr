@@ -1,8 +1,0 @@
-title: Updated the quickstart tutorial to cover the 6.2.0 release, and added ant target
-  "generate-website-quickstart" to convert the bundled version of the tutorial into
-  one suitable for the website.
-type: other
-authors: []
-links:
-- name: SOLR-6871
-  url: https://issues.apache.org/jira/browse/SOLR-6871

@@ -1,9 +1,0 @@
-title: Stop using the 'force' option for recovery replication. This will keep some
-  less common unnecessary replications from happening.
-type: changed
-authors:
-- name: Mark Miller
-- name: Simon Scofield
-links:
-- name: SOLR-4521
-  url: https://issues.apache.org/jira/browse/SOLR-4521

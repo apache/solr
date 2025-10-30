@@ -1,8 +1,0 @@
-title: ExtendedDismaxQParserPlugin has been refactored to make subclassing easier.
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-- name: hossman
-links:
-- name: SOLR-4208
-  url: https://issues.apache.org/jira/browse/SOLR-4208

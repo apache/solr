@@ -1,7 +1,0 @@
-title: ExternalRoleRuleBasedAuthorizationPlugin which gets user's roles from request
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-12131
-  url: https://issues.apache.org/jira/browse/SOLR-12131

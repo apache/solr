@@ -1,8 +1,0 @@
-title: HDFS Transaction logs stay open for writes which leaks Xceivers.
-type: fixed
-authors:
-- name: Tim Owen
-- name: Mark Miller
-links:
-- name: SOLR-9389
-  url: https://issues.apache.org/jira/browse/SOLR-9389

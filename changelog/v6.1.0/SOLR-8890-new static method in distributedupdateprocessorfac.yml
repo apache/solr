@@ -1,8 +1,0 @@
-title: New static method in DistributedUpdateProcessorFactory to allow UpdateProcessorFactories
-  to indicate request params that should be forwarded when DUP distributes updates.
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-8890
-  url: https://issues.apache.org/jira/browse/SOLR-8890

@@ -1,9 +1,0 @@
-title: Fix doc boosts to no longer be multiplied in each field value in multivalued
-  fields that are not used in copyFields
-type: fixed
-authors:
-- name: Shingo Sasaki
-- name: hossman
-links:
-- name: SOLR-7335
-  url: https://issues.apache.org/jira/browse/SOLR-7335

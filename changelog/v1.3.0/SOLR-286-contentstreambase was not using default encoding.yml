@@ -1,8 +1,0 @@
-title: ContentStreamBase was not using default encoding for getBytes()
-type: fixed
-authors:
-- name: Toru Matsuzawa
-- name: ryan
-links:
-- name: SOLR-286
-  url: https://issues.apache.org/jira/browse/SOLR-286

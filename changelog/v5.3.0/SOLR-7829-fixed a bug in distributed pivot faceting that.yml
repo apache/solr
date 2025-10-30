@@ -1,9 +1,0 @@
-title: Fixed a bug in distributed pivot faceting that could result in a facet.missing=true
-  count which was lower then the correct count if facet.sort=index and facet.pivot.mincount
-  &gt; 1
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-7829
-  url: https://issues.apache.org/jira/browse/SOLR-7829

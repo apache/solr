@@ -1,8 +1,0 @@
-title: DateUtil in SolrJ moved to the extraction contrib as ExtractionDateUtil. Obsolete
-  methods were removed.
-type: other
-authors:
-- name: David Smiley
-links:
-- name: SOLR-8904
-  url: https://issues.apache.org/jira/browse/SOLR-8904

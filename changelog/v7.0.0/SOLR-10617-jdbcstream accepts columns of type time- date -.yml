@@ -1,8 +1,0 @@
-title: JDBCStream accepts columns of type TIME, DATE & TIMESTAMP as well as CLOBs
-  and decimal numeric types
-type: other
-authors:
-- name: James Dyer
-links:
-- name: SOLR-10617
-  url: https://issues.apache.org/jira/browse/SOLR-10617

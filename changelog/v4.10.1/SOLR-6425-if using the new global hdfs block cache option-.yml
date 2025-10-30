@@ -1,9 +1,0 @@
-title: If using the new global hdfs block cache option, you can end up reading corrupt
-  files on file name reuse.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Gregory Chanan
-links:
-- name: SOLR-6425
-  url: https://issues.apache.org/jira/browse/SOLR-6425

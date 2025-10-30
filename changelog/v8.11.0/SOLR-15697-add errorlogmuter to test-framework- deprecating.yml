@@ -1,7 +1,0 @@
-title: Add ErrorLogMuter to test-framework, deprecating SolrException.ignorePatterns
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-15697
-  url: https://issues.apache.org/jira/browse/SOLR-15697

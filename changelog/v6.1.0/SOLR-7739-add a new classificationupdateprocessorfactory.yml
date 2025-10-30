@@ -1,8 +1,0 @@
-title: Add a new ClassificationUpdateProcessorFactory.
-type: added
-authors:
-- name: Alessandro Benedetti
-- name: Tommaso Teofili
-links:
-- name: SOLR-7739
-  url: https://issues.apache.org/jira/browse/SOLR-7739

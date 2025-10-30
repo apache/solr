@@ -1,7 +1,0 @@
-title: tweak SolrQueryResponse.getToLogAsString, add TestSolrQueryResponse.testToLog
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8404
-  url: https://issues.apache.org/jira/browse/SOLR-8404

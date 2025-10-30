@@ -1,7 +1,0 @@
-title: Allow percentiles Stream Evaluator to accept an array of percentiles to calculate
-type: added
-authors:
-- name: Joel bernstein
-links:
-- name: SOLR-12936
-  url: https://issues.apache.org/jira/browse/SOLR-12936

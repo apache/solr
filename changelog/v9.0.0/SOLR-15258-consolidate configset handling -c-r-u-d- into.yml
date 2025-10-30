@@ -1,9 +1,0 @@
-title: Consolidate ConfigSet handling (C.R.U.D.) into ConfigSetService to allow for
-  viable alternative implementations of where ConfigSets come from.
-type: other
-authors:
-- name: Nazerke Seidan
-- name: David Smiley
-links:
-- name: SOLR-15258
-  url: https://issues.apache.org/jira/browse/SOLR-15258

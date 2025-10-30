@@ -1,8 +1,0 @@
-title: Rename (deprecated) Insanity.java to NumericHidingLeafReader.java adjusting
-  callers to match.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-15606
-  url: https://issues.apache.org/jira/browse/SOLR-15606

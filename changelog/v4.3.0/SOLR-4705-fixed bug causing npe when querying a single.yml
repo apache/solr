@@ -1,9 +1,0 @@
-title: Fixed bug causing NPE when querying a single replica in SolrCloud using the
-  shards param
-type: fixed
-authors:
-- name: Raintung Li
-- name: hossman
-links:
-- name: SOLR-4705
-  url: https://issues.apache.org/jira/browse/SOLR-4705

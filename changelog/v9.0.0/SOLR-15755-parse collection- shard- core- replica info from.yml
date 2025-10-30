@@ -1,8 +1,0 @@
-title: Parse collection, shard, core, replica info from newSearcher events in postlogs
-  tool
-type: changed
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-15755
-  url: https://issues.apache.org/jira/browse/SOLR-15755

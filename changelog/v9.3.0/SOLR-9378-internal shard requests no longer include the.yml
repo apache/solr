@@ -1,9 +1,0 @@
-title: Internal shard requests no longer include the wasteful shard.url param. [shard]
-  transformer now defaults to returning only the shard id (based on luceneMatchVersion),
-  but can be configured to return the legacy list of replicas.
-type: changed
-authors:
-- name: hossman
-links:
-- name: SOLR-9378
-  url: https://issues.apache.org/jira/browse/SOLR-9378

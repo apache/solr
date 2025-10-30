@@ -1,9 +1,0 @@
-title: Add 'distrib.statsCache' parameter to disable distributed stats requests at
-  query time.
-type: changed
-authors:
-- name: Wei Wang
-- name: Mikhail Khludnev
-links:
-- name: SOLR-17058
-  url: https://issues.apache.org/jira/browse/SOLR-17058

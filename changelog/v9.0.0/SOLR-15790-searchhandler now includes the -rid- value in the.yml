@@ -1,8 +1,0 @@
-title: SearchHandler now includes the `rid` value in the Logging MDC for the duration
-  of the request, allowing custom logging configurations to include it.
-type: changed
-authors:
-- name: hossman
-links:
-- name: SOLR-15790
-  url: https://issues.apache.org/jira/browse/SOLR-15790

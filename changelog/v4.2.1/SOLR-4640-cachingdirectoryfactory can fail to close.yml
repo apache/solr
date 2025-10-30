@@ -1,7 +1,0 @@
-title: CachingDirectoryFactory can fail to close directories in some race conditions.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4640
-  url: https://issues.apache.org/jira/browse/SOLR-4640

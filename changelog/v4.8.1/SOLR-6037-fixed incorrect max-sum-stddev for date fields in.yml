@@ -1,8 +1,0 @@
-title: Fixed incorrect max/sum/stddev for Date fields in StatsComponent
-type: fixed
-authors:
-- name: Brett Lucey
-- name: hossman
-links:
-- name: SOLR-6037
-  url: https://issues.apache.org/jira/browse/SOLR-6037

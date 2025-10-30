@@ -1,7 +1,0 @@
-title: If CoreContainer fails to register a created core, it should close it.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4005
-  url: https://issues.apache.org/jira/browse/SOLR-4005

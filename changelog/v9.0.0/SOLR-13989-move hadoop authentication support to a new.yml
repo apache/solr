@@ -1,7 +1,0 @@
-title: Move Hadoop Authentication support to a new hadoop-auth module
-type: added
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-13989
-  url: https://issues.apache.org/jira/browse/SOLR-13989

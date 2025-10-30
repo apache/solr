@@ -1,9 +1,0 @@
-title: NullPointerException with 500 http status on omitted or wrong wt param. It's
-  fixed by fallback to json
-type: fixed
-authors:
-- name: Munendra S N
-- name: Mikhail Khludnev
-links:
-- name: SOLR-13284
-  url: https://issues.apache.org/jira/browse/SOLR-13284

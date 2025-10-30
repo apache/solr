@@ -1,8 +1,0 @@
-title: Remove ShardDoc.score and use parent's ScoreDoc.score.
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-- name: Ryan Ernst
-links:
-- name: SOLR-5974
-  url: https://issues.apache.org/jira/browse/SOLR-5974

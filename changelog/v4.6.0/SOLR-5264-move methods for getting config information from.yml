@@ -1,8 +1,0 @@
-title: Move methods for getting config information from FieldMutatingUpdateProcessorFactory
-  to NamedList.
-type: other
-authors:
-- name: Shawn Heisey
-links:
-- name: SOLR-5264
-  url: https://issues.apache.org/jira/browse/SOLR-5264

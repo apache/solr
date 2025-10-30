@@ -1,8 +1,0 @@
-title: SchemaSimilarityFactory now supports a 'defaultSimFromFieldType' init option
-  for using a fieldType name to identify which Similarity to use as a default.
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-8329
-  url: https://issues.apache.org/jira/browse/SOLR-8329

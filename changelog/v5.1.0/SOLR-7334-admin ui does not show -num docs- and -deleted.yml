@@ -1,8 +1,0 @@
-title: Admin UI does not show "Num Docs" and "Deleted Docs".
-type: fixed
-authors:
-- name: Erick Erickson
-- name: Timothy Potter
-links:
-- name: SOLR-7334
-  url: https://issues.apache.org/jira/browse/SOLR-7334

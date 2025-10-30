@@ -1,8 +1,0 @@
-title: Extracting update request handler throws exception and returns 400 when zero-length
-  file posted using multipart form post
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-2763
-  url: https://issues.apache.org/jira/browse/SOLR-2763

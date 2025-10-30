@@ -1,8 +1,0 @@
-title: Get expression fails to return EOF tuple
-type: fixed
-authors:
-- name: Susheel Kumar
-- name: Joel Bernstein
-links:
-- name: SOLR-10944
-  url: https://issues.apache.org/jira/browse/SOLR-10944

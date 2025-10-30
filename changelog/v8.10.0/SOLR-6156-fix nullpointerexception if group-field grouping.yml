@@ -1,8 +1,0 @@
-title: Fix NullPointerException if group.field grouping is used with rows=0 and timeAllowed.
-type: fixed
-authors:
-- name: Modassar Ather
-- name: Christine Poerschke
-links:
-- name: SOLR-6156
-  url: https://issues.apache.org/jira/browse/SOLR-6156

@@ -1,7 +1,0 @@
-title: 'Logs: Http2SolrClient.async() lacked MDC'
-type: fixed
-authors:
-- name: Alex Deparvu
-links:
-- name: SOLR-16676
-  url: https://issues.apache.org/jira/browse/SOLR-16676

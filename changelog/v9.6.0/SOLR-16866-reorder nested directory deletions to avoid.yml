@@ -1,7 +1,0 @@
-title: Reorder nested directory deletions to avoid logging spurious NoSuchFileException
-type: fixed
-authors:
-- name: Michael Gibney
-links:
-- name: SOLR-16866
-  url: https://issues.apache.org/jira/browse/SOLR-16866

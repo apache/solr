@@ -1,8 +1,0 @@
-title: Fix for non-atomic long counters and a cast fix to avoid divide by zero.
-type: fixed
-authors:
-- name: Sean Timm
-- name: Otis Gospodnetic
-links:
-- name: SOLR-539
-  url: https://issues.apache.org/jira/browse/SOLR-539

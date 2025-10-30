@@ -1,9 +1,0 @@
-title: SolrResourceLoader.getLines ignores Byte Order Markers (BOMs) at the beginning
-  of input files, these are often created by editors such as Windows Notepad.
-type: other
-authors:
-- name: rmuir
-- name: hossman
-links:
-- name: SOLR-1865
-  url: https://issues.apache.org/jira/browse/SOLR-1865

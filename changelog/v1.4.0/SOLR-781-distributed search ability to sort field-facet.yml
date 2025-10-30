@@ -1,9 +1,0 @@
-title: Distributed search ability to sort field.facet values lexicographically. facet.sort
-  values "true" and "false" are also deprecated and replaced with "count" and "lex".
-type: added
-authors:
-- name: Lars Kotthoff
-- name: yonik
-links:
-- name: SOLR-781
-  url: https://issues.apache.org/jira/browse/SOLR-781

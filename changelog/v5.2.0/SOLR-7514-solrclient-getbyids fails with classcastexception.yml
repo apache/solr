@@ -1,8 +1,0 @@
-title: SolrClient.getByIds fails with ClassCastException
-type: fixed
-authors:
-- name: Tom Farnworth
-- name: Ramkumar Aiyengar
-links:
-- name: SOLR-7514
-  url: https://issues.apache.org/jira/browse/SOLR-7514

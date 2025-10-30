@@ -1,8 +1,0 @@
-title: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns
-  no terms.
-type: fixed
-authors:
-- name: Bruno Roustant
-links:
-- name: SOLR-6613
-  url: https://issues.apache.org/jira/browse/SOLR-6613

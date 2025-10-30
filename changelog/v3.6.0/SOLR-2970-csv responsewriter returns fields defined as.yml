@@ -1,7 +1,0 @@
-title: CSV ResponseWriter returns fields defined as stored=false in schema
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-2970
-  url: https://issues.apache.org/jira/browse/SOLR-2970

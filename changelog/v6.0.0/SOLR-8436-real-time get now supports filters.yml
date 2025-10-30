@@ -1,7 +1,0 @@
-title: Real-time get now supports filters.
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-8436
-  url: https://issues.apache.org/jira/browse/SOLR-8436

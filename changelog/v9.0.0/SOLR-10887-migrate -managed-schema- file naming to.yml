@@ -1,9 +1,0 @@
-title: Migrate "managed-schema" file naming to "managed-schema.xml" file name, with
-  a fallback to the legacy "managed-schema".
-type: changed
-authors:
-- name: Eric Pugh
-- name: David Smiley
-links:
-- name: SOLR-10887
-  url: https://issues.apache.org/jira/browse/SOLR-10887

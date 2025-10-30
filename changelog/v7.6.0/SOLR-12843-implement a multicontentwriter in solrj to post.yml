@@ -1,7 +1,0 @@
-title: Implement a MultiContentWriter in SolrJ to post multiple files/payload at once
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-12843
-  url: https://issues.apache.org/jira/browse/SOLR-12843

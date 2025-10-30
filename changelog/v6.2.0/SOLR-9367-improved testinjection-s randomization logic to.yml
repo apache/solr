@@ -1,7 +1,0 @@
-title: Improved TestInjection's randomization logic to use LuceneTestCase.random()
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-9367
-  url: https://issues.apache.org/jira/browse/SOLR-9367

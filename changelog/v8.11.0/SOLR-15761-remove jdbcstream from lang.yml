@@ -1,7 +1,0 @@
-title: Remove JdbcStream from Lang
-type: other
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-15761
-  url: https://issues.apache.org/jira/browse/SOLR-15761

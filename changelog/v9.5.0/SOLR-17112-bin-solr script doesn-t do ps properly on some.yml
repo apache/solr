@@ -1,8 +1,0 @@
-title: bin/solr script doesn't do ps properly on some systems.
-type: fixed
-authors:
-- name: Vincenzo D'Amore
-- name: Eric Pugh
-links:
-- name: SOLR-17112
-  url: https://issues.apache.org/jira/browse/SOLR-17112

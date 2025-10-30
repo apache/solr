@@ -1,8 +1,0 @@
-title: Move replica routing code to SolrJ.
-type: changed
-authors:
-- name: Houston Putman
-- name: Tomas Fernandez-Lobbe
-links:
-- name: SOLR-13865
-  url: https://issues.apache.org/jira/browse/SOLR-13865

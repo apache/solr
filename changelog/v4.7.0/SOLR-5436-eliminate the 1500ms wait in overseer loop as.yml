@@ -1,9 +1,0 @@
-title: Eliminate the 1500ms wait in overseer loop as well as polling the ZK distributed
-  queue.
-type: changed
-authors:
-- name: Noble Paul
-- name: Mark Miller
-links:
-- name: SOLR-5436
-  url: https://issues.apache.org/jira/browse/SOLR-5436

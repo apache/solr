@@ -1,8 +1,0 @@
-title: Stop returning duplicate HTTP response headers when requests are forward to
-  another node.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-14898
-  url: https://issues.apache.org/jira/browse/SOLR-14898

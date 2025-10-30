@@ -1,8 +1,0 @@
-title: Change /stream handler http param from "stream" to "expr"
-type: other
-authors:
-- name: Joel Bernstein
-- name: Dennis Gove
-links:
-- name: SOLR-8443
-  url: https://issues.apache.org/jira/browse/SOLR-8443

@@ -1,8 +1,0 @@
-title: Optimize PatternReplaceFilter for better performance.
-type: changed
-authors:
-- name: rmuir
-- name: uschindler
-links:
-- name: SOLR-1874
-  url: https://issues.apache.org/jira/browse/SOLR-1874

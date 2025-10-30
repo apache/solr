@@ -1,7 +1,0 @@
-title: Don't wait for zombie processes to exit when stopping.
-type: fixed
-authors:
-- name: Colvin Cowie
-links:
-- name: SOLR-15558
-  url: https://issues.apache.org/jira/browse/SOLR-15558

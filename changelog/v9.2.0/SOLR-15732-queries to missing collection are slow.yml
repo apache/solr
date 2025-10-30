@@ -1,7 +1,0 @@
-title: queries to missing collection are slow
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-15732
-  url: https://issues.apache.org/jira/browse/SOLR-15732

@@ -1,7 +1,0 @@
-title: Query Elevation Component now gracefully handles missing queries.
-type: fixed
-authors:
-- name: gsingers
-links:
-- name: SOLR-1138
-  url: https://issues.apache.org/jira/browse/SOLR-1138

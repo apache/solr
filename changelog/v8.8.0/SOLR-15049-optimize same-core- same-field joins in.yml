@@ -1,7 +1,0 @@
-title: Optimize same-core, same-field joins in TopLevelJoinQuery
-type: changed
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-15049
-  url: https://issues.apache.org/jira/browse/SOLR-15049

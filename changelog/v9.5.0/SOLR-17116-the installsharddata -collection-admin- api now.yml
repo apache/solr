@@ -1,8 +1,0 @@
-title: The INSTALLSHARDDATA "collection-admin" API now reports errors correctly when
-  run asynchronously.
-type: fixed
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-17116
-  url: https://issues.apache.org/jira/browse/SOLR-17116

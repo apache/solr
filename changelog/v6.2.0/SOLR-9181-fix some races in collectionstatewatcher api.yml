@@ -1,8 +1,0 @@
-title: Fix some races in CollectionStateWatcher API
-type: fixed
-authors:
-- name: Alan Woodward
-- name: "Scott\n  Blum"
-links:
-- name: SOLR-9181
-  url: https://issues.apache.org/jira/browse/SOLR-9181

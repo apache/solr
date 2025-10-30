@@ -1,9 +1,0 @@
-title: OpenBitSet completed, replaces BitSet as the implementation for BitDocSet.
-  Iteration is faster, and BitDocSet.intersectionSize(BitDocSet) and unionSize is
-  between 3 and 4 times faster. SOLR-15
-type: changed
-authors:
-- name: yonik
-links:
-- name: SOLR-15
-  url: https://issues.apache.org/jira/browse/SOLR-15

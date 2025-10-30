@@ -1,9 +1,0 @@
-title: Add shortestPath Streaming Expression. This expression performs a breadth first
-  graph traversal to find the shortest path(s) in an unweighted, directed graph stored
-  in a SolrCloud collection.
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-8888
-  url: https://issues.apache.org/jira/browse/SOLR-8888

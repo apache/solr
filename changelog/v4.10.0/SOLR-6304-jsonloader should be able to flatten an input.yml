@@ -1,7 +1,0 @@
-title: JsonLoader should be able to flatten an input JSON to multiple docs
-type: added
-authors:
-- name: Noble Paul
-links:
-- name: SOLR-6304
-  url: https://issues.apache.org/jira/browse/SOLR-6304

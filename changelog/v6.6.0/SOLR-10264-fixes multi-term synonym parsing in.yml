@@ -1,9 +1,0 @@
-title: Fixes multi-term synonym parsing in ManagedSynonymFilterFactory.
-type: fixed
-authors:
-- name: Jörg Rathlev
-- name: Steve Rowe
-- name: Christine Poerschke
-links:
-- name: SOLR-10264
-  url: https://issues.apache.org/jira/browse/SOLR-10264

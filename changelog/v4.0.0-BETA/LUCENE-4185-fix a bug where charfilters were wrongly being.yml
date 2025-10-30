@@ -1,8 +1,0 @@
-title: Fix a bug where CharFilters were wrongly being applied twice.
-type: fixed
-authors:
-- name: Michael Froh
-- name: rmuir
-links:
-- name: LUCENE-4185
-  url: https://issues.apache.org/jira/browse/LUCENE-4185

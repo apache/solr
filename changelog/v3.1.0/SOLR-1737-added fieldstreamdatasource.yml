@@ -1,7 +1,0 @@
-title: Added FieldStreamDataSource
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-1737
-  url: https://issues.apache.org/jira/browse/SOLR-1737

@@ -1,9 +1,0 @@
-title: On replication, if the generation of the master is lower than the slave we
-  need to force a full copy of the index.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Gregg Donovan
-links:
-- name: SOLR-4303
-  url: https://issues.apache.org/jira/browse/SOLR-4303

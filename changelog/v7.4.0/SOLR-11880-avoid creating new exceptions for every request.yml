@@ -1,9 +1,0 @@
-title: Avoid creating new exceptions for every request made to MDCAwareThreadPoolExecutor
-  by distributed search and update operations.
-type: changed
-authors:
-- name: Varun Thacker
-- name: shalin
-links:
-- name: SOLR-11880
-  url: https://issues.apache.org/jira/browse/SOLR-11880

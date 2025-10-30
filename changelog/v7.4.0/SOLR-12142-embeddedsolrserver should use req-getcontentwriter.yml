@@ -1,7 +1,0 @@
-title: EmbeddedSolrServer should use req.getContentWriter
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-12142
-  url: https://issues.apache.org/jira/browse/SOLR-12142

@@ -1,9 +1,0 @@
-title: Fixed improper handling of fields that have only term positions and not term
-  offsets during Highlighting
-type: fixed
-authors:
-- name: Thorsten Fischer
-- name: gsingers
-links:
-- name: SOLR-1381
-  url: https://issues.apache.org/jira/browse/SOLR-1381

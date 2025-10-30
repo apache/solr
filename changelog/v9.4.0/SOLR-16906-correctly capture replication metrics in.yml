@@ -1,8 +1,0 @@
-title: Correctly capture REPLICATION metrics in Prometheus config
-type: fixed
-authors:
-- name: Daisuke Aritomo
-- name: Houston Putman
-links:
-- name: SOLR-16906
-  url: https://issues.apache.org/jira/browse/SOLR-16906

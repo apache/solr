@@ -1,8 +1,0 @@
-title: v2 Collection API "modify" command specification's replicationFactor property
-  is incorrectly typed as string, should be integer
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-10411
-  url: https://issues.apache.org/jira/browse/SOLR-10411

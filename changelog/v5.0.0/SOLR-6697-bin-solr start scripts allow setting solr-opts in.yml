@@ -1,7 +1,0 @@
-title: bin/solr start scripts allow setting SOLR_OPTS in solr.in.*
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-6697
-  url: https://issues.apache.org/jira/browse/SOLR-6697

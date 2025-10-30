@@ -1,8 +1,0 @@
-title: Fixed Incorrect dataimport handler package name in SolrResourceLoader
-type: fixed
-authors:
-- name: Akshay Ukey
-- name: shalin
-links:
-- name: SOLR-1651
-  url: https://issues.apache.org/jira/browse/SOLR-1651

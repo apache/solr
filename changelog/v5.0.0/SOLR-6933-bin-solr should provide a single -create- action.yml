@@ -1,8 +1,0 @@
-title: bin/solr should provide a single "create" action that creates a core or collection
-  depending on whether Solr is running in standalone or cloud mode
-type: other
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-6933
-  url: https://issues.apache.org/jira/browse/SOLR-6933

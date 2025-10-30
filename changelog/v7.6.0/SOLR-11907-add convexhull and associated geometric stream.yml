@@ -1,7 +1,0 @@
-title: Add convexHull and associated geometric Stream Evaluators.
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11907
-  url: https://issues.apache.org/jira/browse/SOLR-11907

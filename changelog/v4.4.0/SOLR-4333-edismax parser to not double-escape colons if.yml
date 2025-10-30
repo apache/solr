@@ -1,9 +1,0 @@
-title: edismax parser to not double-escape colons if already escaped by the client
-  application
-type: fixed
-authors:
-- name: James Dyer
-- name: Robert J. van der Boon
-links:
-- name: SOLR-4333
-  url: https://issues.apache.org/jira/browse/SOLR-4333

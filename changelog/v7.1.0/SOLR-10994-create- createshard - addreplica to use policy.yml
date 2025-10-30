@@ -1,8 +1,0 @@
-title: CREATE, CREATESHARD & ADDREPLICA to use policy framework & support replica
-  types
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-10994
-  url: https://issues.apache.org/jira/browse/SOLR-10994

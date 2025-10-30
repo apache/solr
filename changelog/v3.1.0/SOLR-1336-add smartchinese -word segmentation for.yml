@@ -1,8 +1,0 @@
-title: Add SmartChinese (word segmentation for Simplified Chinese) tokenizer and filters
-  to contrib/analysis-extras
-type: added
-authors:
-- name: rmuir
-links:
-- name: SOLR-1336
-  url: https://issues.apache.org/jira/browse/SOLR-1336

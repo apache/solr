@@ -1,6 +1,0 @@
-title: JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation
-  and calculates cardinality before filtering buckets by any mincount greater than
-  1.
-type: upgrade_notes
-authors: []
-links: []

@@ -1,7 +1,0 @@
-title: Add kmeans Stream Evaluator to support kmeans clustering
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11737
-  url: https://issues.apache.org/jira/browse/SOLR-11737

@@ -1,8 +1,0 @@
-title: Remove unneeded import statements
-type: changed
-authors:
-- name: Peter Somogyi
-- name: Erick Erickson
-links:
-- name: SOLR-12881
-  url: https://issues.apache.org/jira/browse/SOLR-12881

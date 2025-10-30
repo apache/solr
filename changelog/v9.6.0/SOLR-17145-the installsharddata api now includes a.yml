@@ -1,7 +1,0 @@
-title: The INSTALLSHARDDATA API now includes a 'requestid' field when run asynchronously
-type: changed
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-17145
-  url: https://issues.apache.org/jira/browse/SOLR-17145

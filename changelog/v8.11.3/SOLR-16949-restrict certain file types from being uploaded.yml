@@ -1,9 +1,0 @@
-title: Restrict certain file types from being uploaded to or downloaded from Config
-  Sets
-type: other
-authors:
-- name: janhoy
-- name: Houston Putman
-links:
-- name: SOLR-16949
-  url: https://issues.apache.org/jira/browse/SOLR-16949

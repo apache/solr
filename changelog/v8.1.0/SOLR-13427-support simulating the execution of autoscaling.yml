@@ -1,7 +1,0 @@
-title: Support simulating the execution of autoscaling suggestions.
-type: added
-authors:
-- name: ab
-links:
-- name: SOLR-13427
-  url: https://issues.apache.org/jira/browse/SOLR-13427

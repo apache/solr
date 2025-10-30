@@ -1,9 +1,0 @@
-title: HTMLStripCharFilter split tokens that contained entities and often calculated
-  offsets incorrectly for entities.
-type: fixed
-authors:
-- name: Anders Melchiorsen
-- name: yonik
-links:
-- name: SOLR-1394
-  url: https://issues.apache.org/jira/browse/SOLR-1394

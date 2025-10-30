@@ -1,8 +1,0 @@
-title: Fix SegmentsInfoRequestHandlerTest when more than one segment is created.
-type: other
-authors:
-- name: Ramkumar Aiyengar
-- name: Steve Rowe
-links:
-- name: SOLR-7619
-  url: https://issues.apache.org/jira/browse/SOLR-7619

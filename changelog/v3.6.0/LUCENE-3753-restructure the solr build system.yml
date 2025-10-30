@@ -1,7 +1,0 @@
-title: Restructure the Solr build system.
-type: other
-authors:
-- name: Steve Rowe
-links:
-- name: LUCENE-3753
-  url: https://issues.apache.org/jira/browse/LUCENE-3753

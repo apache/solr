@@ -1,9 +1,0 @@
-title: Fix bug in shards.preference behavior, base replica selection strategy not
-  applied to the last group of equivalent replicas.
-type: fixed
-authors:
-- name: Michael Gibney
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-14471
-  url: https://issues.apache.org/jira/browse/SOLR-14471

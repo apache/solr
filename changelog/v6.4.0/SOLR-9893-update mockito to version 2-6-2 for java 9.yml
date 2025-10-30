@@ -1,8 +1,0 @@
-title: Update Mockito to version 2.6.2 for Java 9 support. Disable all legacy EasyMock
-  tests when running on Java 9 until they were migrated to Mockito.
-type: other
-authors:
-- name: Uwe Schindler
-links:
-- name: SOLR-9893
-  url: https://issues.apache.org/jira/browse/SOLR-9893

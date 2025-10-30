@@ -1,8 +1,0 @@
-title: bin/solr create action should copy configset directory instead of reusing an
-  existing configset in ZooKeeper by default
-type: other
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-6952
-  url: https://issues.apache.org/jira/browse/SOLR-6952

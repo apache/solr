@@ -1,8 +1,0 @@
-title: Retry 'forward to leader' requests less aggressively - rather than on IOException
-  and status 500, ConnectException.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5503
-  url: https://issues.apache.org/jira/browse/SOLR-5503

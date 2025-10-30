@@ -1,7 +1,0 @@
-title: Add Javadoc @since tag to URP classes
-type: other
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-12966
-  url: https://issues.apache.org/jira/browse/SOLR-12966

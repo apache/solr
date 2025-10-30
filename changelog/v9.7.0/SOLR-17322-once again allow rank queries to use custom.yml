@@ -1,9 +1,0 @@
-title: Once again allow rank queries to use custom TopDocsCollectors that operate
-  on types that extend ScoreDocs (covariant generic types) broken in Solr 9.0.
-type: other
-authors:
-- name: Stephen Woods
-- name: Christine Poerschke
-links:
-- name: SOLR-17322
-  url: https://issues.apache.org/jira/browse/SOLR-17322

@@ -1,8 +1,0 @@
-title: Entropy calculation in bin/solr script fails in Docker due to missing 'bc'
-  cmd
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-17039
-  url: https://issues.apache.org/jira/browse/SOLR-17039

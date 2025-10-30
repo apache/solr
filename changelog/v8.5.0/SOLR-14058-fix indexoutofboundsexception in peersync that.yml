@@ -1,8 +1,0 @@
-title: Fix IndexOutOfBoundsException in PeerSync that can prevent nodes from recovering
-  under certain circumstances.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-14058
-  url: https://issues.apache.org/jira/browse/SOLR-14058

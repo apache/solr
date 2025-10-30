@@ -1,9 +1,0 @@
-title: Add panels to the default Grafana dashboard for query performance monitoring,
-  includes updates to the Prometheus exporter to export query performance metrics,
-  such as QPS and p95.
-type: changed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-15059
-  url: https://issues.apache.org/jira/browse/SOLR-15059

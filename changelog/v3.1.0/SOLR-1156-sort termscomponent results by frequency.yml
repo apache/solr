@@ -1,8 +1,0 @@
-title: Sort TermsComponent results by frequency
-type: added
-authors:
-- name: Matt Weber
-- name: yonik
-links:
-- name: SOLR-1156
-  url: https://issues.apache.org/jira/browse/SOLR-1156

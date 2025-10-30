@@ -1,9 +1,0 @@
-title: fix ArrayIndexOutOfBoundsException when unique(field) or uniqueBlock(_root_)
-  is used with DVHASH method in json.facet.
-type: fixed
-authors:
-- name: Tim Underwood
-- name: Mikhail Khludnev
-links:
-- name: SOLR-12875
-  url: https://issues.apache.org/jira/browse/SOLR-12875

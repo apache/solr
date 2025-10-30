@@ -1,8 +1,0 @@
-title: Fix NPE in QueryComponent.mergeIds when using timeAllowed and sorting
-type: fixed
-authors:
-- name: Bram Van Dam
-- name: Uwe Schindler
-links:
-- name: SOLR-14758
-  url: https://issues.apache.org/jira/browse/SOLR-14758

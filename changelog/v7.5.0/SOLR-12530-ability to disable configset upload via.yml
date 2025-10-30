@@ -1,8 +1,0 @@
-title: Ability to disable configset upload via -Dconfigset.upload.enabled=false startup
-  parameter
-type: added
-authors:
-- name: Ishan Chattopadhyaya
-links:
-- name: SOLR-12530
-  url: https://issues.apache.org/jira/browse/SOLR-12530

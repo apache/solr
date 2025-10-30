@@ -1,8 +1,0 @@
-title: Some ConfigSet operations formerly required that solrconfig.xml exist but should
-  not have because the name of the file is configurable when creating cores / collections.
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-16967
-  url: https://issues.apache.org/jira/browse/SOLR-16967

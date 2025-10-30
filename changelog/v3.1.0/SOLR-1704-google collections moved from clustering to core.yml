@@ -1,7 +1,0 @@
-title: Google collections moved from clustering to core
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-1704
-  url: https://issues.apache.org/jira/browse/SOLR-1704

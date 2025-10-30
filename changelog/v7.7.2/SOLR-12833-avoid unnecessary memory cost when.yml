@@ -1,8 +1,0 @@
-title: Avoid unnecessary memory cost when DistributedUpdateProcessor timed-out lock
-  is not used.
-type: fixed
-authors:
-- name: ab
-links:
-- name: SOLR-12833
-  url: https://issues.apache.org/jira/browse/SOLR-12833

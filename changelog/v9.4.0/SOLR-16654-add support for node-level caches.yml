@@ -1,7 +1,0 @@
-title: Add support for node-level caches
-type: added
-authors:
-- name: Michael Gibney
-links:
-- name: SOLR-16654
-  url: https://issues.apache.org/jira/browse/SOLR-16654

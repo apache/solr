@@ -1,8 +1,0 @@
-title: Improve PreAnalyzedField query analysis.
-type: added
-authors:
-- name: Andrzej Bialecki
-- name: Steve Rowe
-links:
-- name: SOLR-4619
-  url: https://issues.apache.org/jira/browse/SOLR-4619

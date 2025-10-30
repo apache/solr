@@ -1,8 +1,0 @@
-title: Raise default maxUpdateConnections and maxUpdateConnectionsPerHost to 100k
-  each.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-8533
-  url: https://issues.apache.org/jira/browse/SOLR-8533

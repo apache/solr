@@ -1,9 +1,0 @@
-title: Added a CompressableField base class which allows fields of derived types to
-  be compressed using the compress=true setting. The field type also gains the ability
-  to specify a size threshold at which field data is compressed. SOLR-45
-type: added
-authors:
-- name: klaas
-links:
-- name: SOLR-45
-  url: https://issues.apache.org/jira/browse/SOLR-45

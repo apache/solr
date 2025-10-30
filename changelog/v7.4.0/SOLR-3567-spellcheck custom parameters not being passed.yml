@@ -1,8 +1,0 @@
-title: Spellcheck custom parameters not being passed through due to wrong prefix creation.
-type: fixed
-authors:
-- name: Josh Lucas
-- name: shalin
-links:
-- name: SOLR-3567
-  url: https://issues.apache.org/jira/browse/SOLR-3567

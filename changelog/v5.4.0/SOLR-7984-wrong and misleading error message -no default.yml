@@ -1,8 +1,0 @@
-title: wrong and misleading error message 'no default request handler is registered'
-type: fixed
-authors:
-- name: noble
-- name: hossman
-links:
-- name: SOLR-7984
-  url: https://issues.apache.org/jira/browse/SOLR-7984

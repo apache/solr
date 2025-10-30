@@ -1,8 +1,0 @@
-title: UTILIZENODE does not enforce policy rules
-type: fixed
-authors:
-- name: hossman
-- name: noble
-links:
-- name: SOLR-12050
-  url: https://issues.apache.org/jira/browse/SOLR-12050

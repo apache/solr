@@ -1,8 +1,0 @@
-title: solrconfig.xml files in example-DIH are broken.
-type: fixed
-authors:
-- name: Matt Parker
-- name: koji
-links:
-- name: SOLR-2330
-  url: https://issues.apache.org/jira/browse/SOLR-2330

@@ -1,9 +1,0 @@
-title: Gradle no longer uses "errorprone" by default
-type: other
-authors:
-- name: Dawid Weiss
-- name: Uwe Schindler
-- name: hossman
-links:
-- name: SOLR-16258
-  url: https://issues.apache.org/jira/browse/SOLR-16258

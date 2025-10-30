@@ -1,8 +1,0 @@
-title: Expose number of transaction log files and their size via JMX.
-type: added
-authors:
-- name: Rafał Kuć
-- name: shalin
-links:
-- name: SOLR-5441
-  url: https://issues.apache.org/jira/browse/SOLR-5441

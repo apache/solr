@@ -1,8 +1,0 @@
-title: UI Cloud-&gt;Tree view now shows .txt files correctly
-type: fixed
-authors:
-- name: Alexandre Rafalovitch
-- name: janhoy
-links:
-- name: SOLR-8379
-  url: https://issues.apache.org/jira/browse/SOLR-8379

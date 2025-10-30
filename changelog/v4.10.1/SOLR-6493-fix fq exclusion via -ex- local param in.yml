@@ -1,7 +1,0 @@
-title: Fix fq exclusion via "ex" local param in multivalued stats.field
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-6493
-  url: https://issues.apache.org/jira/browse/SOLR-6493

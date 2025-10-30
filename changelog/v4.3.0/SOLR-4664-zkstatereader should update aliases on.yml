@@ -1,8 +1,0 @@
-title: ZkStateReader should update aliases on construction.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Elodie Sannier
-links:
-- name: SOLR-4664
-  url: https://issues.apache.org/jira/browse/SOLR-4664

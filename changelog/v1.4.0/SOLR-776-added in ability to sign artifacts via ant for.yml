@@ -1,7 +1,0 @@
-title: Added in ability to sign artifacts via Ant for releases
-type: other
-authors:
-- name: gsingers
-links:
-- name: SOLR-776
-  url: https://issues.apache.org/jira/browse/SOLR-776

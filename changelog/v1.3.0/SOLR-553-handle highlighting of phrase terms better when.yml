@@ -1,9 +1,0 @@
-title: Handle highlighting of phrase terms better when hl.usePhraseHighligher=true
-  URL param is used.
-type: fixed
-authors:
-- name: Bojan Smid
-- name: Otis Gospodnetic
-links:
-- name: SOLR-553
-  url: https://issues.apache.org/jira/browse/SOLR-553

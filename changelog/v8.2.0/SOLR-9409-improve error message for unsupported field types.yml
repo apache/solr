@@ -1,9 +1,0 @@
-title: Improve error message for unsupported field types and return 400 error code
-  on unsupported values in collapsing
-type: fixed
-authors:
-- name: hossman
-- name: Munendra S N
-links:
-- name: SOLR-9409
-  url: https://issues.apache.org/jira/browse/SOLR-9409

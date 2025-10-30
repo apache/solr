@@ -1,9 +1,0 @@
-title: memory leak in JsonRecordReader affecting /update/json/docs. Large payloads
-  cause OOM
-type: fixed
-authors:
-- name: noble
-- name: shalin
-links:
-- name: SOLR-8582
-  url: https://issues.apache.org/jira/browse/SOLR-8582

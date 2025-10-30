@@ -1,8 +1,0 @@
-title: When creating a time routed alias, the router.autoDeleteAge option wasn't considered.
-type: fixed
-authors:
-- name: Joachim Sauer
-- name: David Smiley
-links:
-- name: SOLR-12416
-  url: https://issues.apache.org/jira/browse/SOLR-12416

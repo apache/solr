@@ -1,9 +1,0 @@
-title: All references to "master" and "slave" replaced with "leader" and "follower"
-type: other
-authors:
-- name: MarcusSorealheis
-- name: Erick Erickson
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-14702
-  url: https://issues.apache.org/jira/browse/SOLR-14702

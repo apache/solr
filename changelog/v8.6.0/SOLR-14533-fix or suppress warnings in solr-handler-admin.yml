@@ -1,8 +1,0 @@
-title: Fix or suppress warnings in solr/handler/admin
-type: other
-authors:
-- name: Andras Salamon
-- name: Erick Erickson
-links:
-- name: SOLR-14533
-  url: https://issues.apache.org/jira/browse/SOLR-14533

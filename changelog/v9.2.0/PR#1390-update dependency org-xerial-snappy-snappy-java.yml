@@ -1,7 +1,0 @@
-title: Update dependency org.xerial.snappy:snappy-java to v1.1.9.1
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#1390
-  url: https://github.com/apache/solr/pull/1390

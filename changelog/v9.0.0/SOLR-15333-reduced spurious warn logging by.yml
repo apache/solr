@@ -1,9 +1,0 @@
-title: Reduced spurious warn logging by AbstractSpatialPrefixTreeFieldType field properties
-type: fixed
-authors:
-- name: Steffen Moldenhauer
-- name: David Smiley
-- name: Mike Drob
-links:
-- name: SOLR-15333
-  url: https://issues.apache.org/jira/browse/SOLR-15333

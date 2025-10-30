@@ -1,7 +1,0 @@
-title: '''core-admin-read'' and ''core-admin-edit'' are well known permissions'
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-9041
-  url: https://issues.apache.org/jira/browse/SOLR-9041

@@ -1,8 +1,0 @@
-title: Enable Prometheus exporter to communicate with SSL protected Solr.
-type: changed
-authors:
-- name: Eivind Bergstøl
-- name: Eric Pugh
-links:
-- name: SOLR-17137
-  url: https://issues.apache.org/jira/browse/SOLR-17137

@@ -1,8 +1,0 @@
-title: Fix &lt;analyzer class="..." /&gt; initialization so any errors are logged
-  properly.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-2467
-  url: https://issues.apache.org/jira/browse/SOLR-2467

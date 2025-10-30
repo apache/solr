@@ -1,7 +1,0 @@
-title: Embedded ZooKeeper in Solr now does not try to load JettyAdminServer
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-13954
-  url: https://issues.apache.org/jira/browse/SOLR-13954

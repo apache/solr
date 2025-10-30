@@ -1,7 +1,0 @@
-title: Make stats.jsp and stats.xsl more robust.
-type: fixed
-authors:
-- name: Yousef Ourabi and hossman
-links:
-- name: SOLR-584
-  url: https://issues.apache.org/jira/browse/SOLR-584

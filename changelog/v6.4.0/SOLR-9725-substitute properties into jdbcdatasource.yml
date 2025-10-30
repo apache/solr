@@ -1,9 +1,0 @@
-title: Substitute properties into JdbcDataSource configuration
-type: added
-authors:
-- name: Jamie Jackson
-- name: Yuri Sashevsky
-- name: Mikhail Khludnev
-links:
-- name: SOLR-9725
-  url: https://issues.apache.org/jira/browse/SOLR-9725

@@ -1,7 +1,0 @@
-title: SolrCLI masks underlying cause of create collection failure.
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-7934
-  url: https://issues.apache.org/jira/browse/SOLR-7934

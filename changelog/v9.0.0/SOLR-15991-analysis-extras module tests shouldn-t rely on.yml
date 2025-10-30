@@ -1,7 +1,0 @@
-title: analysis-extras module tests shouldn't rely on log4j dependency
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-15991
-  url: https://issues.apache.org/jira/browse/SOLR-15991

@@ -1,8 +1,0 @@
-title: Adding KeepWordFilter and KeepWordFilterFactory. A TokenFilter that keeps tokens
-  with text in the registered keeplist. This behaves like the inverse of StopFilter.
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-253
-  url: https://issues.apache.org/jira/browse/SOLR-253

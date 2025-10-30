@@ -1,7 +1,0 @@
-title: RuleBasedAuthorization plugin does not work for the collection-admin-edit permission
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-8004
-  url: https://issues.apache.org/jira/browse/SOLR-8004

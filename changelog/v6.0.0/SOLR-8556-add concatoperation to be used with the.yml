@@ -1,8 +1,0 @@
-title: Add ConcatOperation to be used with the SelectStream
-type: added
-authors:
-- name: Joel Bernstein
-- name: Dennis Gove
-links:
-- name: SOLR-8556
-  url: https://issues.apache.org/jira/browse/SOLR-8556

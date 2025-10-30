@@ -1,9 +1,0 @@
-title: Upgrade forbiddenapis to version 3.2.
-type: other
-authors:
-- name: Uwe Schindler
-links:
-- name: LUCENE-10104
-  url: https://issues.apache.org/jira/browse/LUCENE-10104
-- name: SOLR-15631
-  url: https://issues.apache.org/jira/browse/SOLR-15631

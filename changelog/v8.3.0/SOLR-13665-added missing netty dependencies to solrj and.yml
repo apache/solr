@@ -1,8 +1,0 @@
-title: Added missing netty dependencies to solrJ and upgraded netty to v 4.1.29.Final
-type: fixed
-authors:
-- name: Jörn Franke
-- name: janhoy
-links:
-- name: SOLR-13665
-  url: https://issues.apache.org/jira/browse/SOLR-13665

@@ -1,8 +1,0 @@
-title: A restarted node can briefly appear live and active before it really is in
-  some cases.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3655
-  url: https://issues.apache.org/jira/browse/SOLR-3655

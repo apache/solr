@@ -1,9 +1,0 @@
-title: Expose remote IP and Host via the AuthorizationContext to be used by the authorization
-  plugin.
-type: other
-authors:
-- name: Ishan Chattopadhyaya
-- name: Anshum Gupta
-links:
-- name: SOLR-7648
-  url: https://issues.apache.org/jira/browse/SOLR-7648

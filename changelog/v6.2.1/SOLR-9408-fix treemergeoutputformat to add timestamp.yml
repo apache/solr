@@ -1,9 +1,0 @@
-title: Fix TreeMergeOutputFormat to add timestamp metadata to a commit. SolrCloud
-  replication relies on this.
-type: fixed
-authors:
-- name: Jessica Cheng Mallet
-- name: Varun Thacker
-links:
-- name: SOLR-9408
-  url: https://issues.apache.org/jira/browse/SOLR-9408

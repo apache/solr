@@ -1,8 +1,0 @@
-title: Display configured Similarity in Schema-Browser, both global/default and per-field/field-type
-type: added
-authors:
-- name: janhoy
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-8370
-  url: https://issues.apache.org/jira/browse/SOLR-8370

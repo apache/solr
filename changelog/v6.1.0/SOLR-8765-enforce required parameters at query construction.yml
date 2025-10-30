@@ -1,9 +1,0 @@
-title: Enforce required parameters at query construction time in the SolrJ Collections
-  API, add static factory methods, and deprecate old setter methods.
-type: added
-authors:
-- name: Alan Woodward
-- name: Jason Gerlowski
-links:
-- name: SOLR-8765
-  url: https://issues.apache.org/jira/browse/SOLR-8765

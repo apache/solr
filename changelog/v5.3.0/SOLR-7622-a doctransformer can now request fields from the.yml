@@ -1,9 +1,0 @@
-title: A DocTransformer can now request fields from the SolrIndexSearcher that are
-  not necessarily returned in the file SolrDocument by returning a list of fields
-  from DocTransformer#getExtraRequestFields
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-7622
-  url: https://issues.apache.org/jira/browse/SOLR-7622

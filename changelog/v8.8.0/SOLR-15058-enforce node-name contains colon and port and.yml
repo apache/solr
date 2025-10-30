@@ -1,9 +1,0 @@
-title: Enforce node_name contains colon and port and find first underscore after colon
-  to parse context when converting a node_name to a base URL.
-type: fixed
-authors:
-- name: Timothy Potter
-- name: Su Sasa
-links:
-- name: SOLR-15058
-  url: https://issues.apache.org/jira/browse/SOLR-15058

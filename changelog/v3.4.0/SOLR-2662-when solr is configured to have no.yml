@@ -1,9 +1,0 @@
-title: When Solr is configured to have no queryResultCache, the "start" parameter
-  was not honored and the documents returned were 0 through start+offset.
-type: fixed
-authors:
-- name: Markus Jelsma
-- name: yonik
-links:
-- name: SOLR-2662
-  url: https://issues.apache.org/jira/browse/SOLR-2662

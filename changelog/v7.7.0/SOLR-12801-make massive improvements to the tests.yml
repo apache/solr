@@ -1,7 +1,0 @@
-title: Make massive improvements to the tests.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-12801
-  url: https://issues.apache.org/jira/browse/SOLR-12801

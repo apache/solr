@@ -1,8 +1,0 @@
-title: Make TTL of PKIAuthenticationPlugin's tokens configurable through a system
-  property (pkiauth.ttl)
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-8470
-  url: https://issues.apache.org/jira/browse/SOLR-8470

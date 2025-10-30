@@ -1,7 +1,0 @@
-title: NPE in export handler when "fl" parameter is omitted.
-type: fixed
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-9701
-  url: https://issues.apache.org/jira/browse/SOLR-9701

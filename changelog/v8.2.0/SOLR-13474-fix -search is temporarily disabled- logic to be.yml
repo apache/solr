@@ -1,7 +1,0 @@
-title: Fix "Search is temporarily disabled" logic to be consistent for entire request
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-13474
-  url: https://issues.apache.org/jira/browse/SOLR-13474

@@ -1,8 +1,0 @@
-title: OverseerCollectionProcessor should not exit for ZooKeeper ConnectionLoss.
-type: fixed
-authors:
-- name: Jessica Cheng
-- name: Mark Miller
-links:
-- name: SOLR-6402
-  url: https://issues.apache.org/jira/browse/SOLR-6402

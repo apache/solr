@@ -1,8 +1,0 @@
-title: Improve PostingsSolrHighlighter to support per-field/query-time overrides and
-  add additional configuration parameters. See the javadocs for more details and examples.
-type: added
-authors:
-- name: Robert Muir
-links:
-- name: SOLR-4675
-  url: https://issues.apache.org/jira/browse/SOLR-4675

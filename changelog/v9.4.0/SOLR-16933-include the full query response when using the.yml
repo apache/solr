@@ -1,8 +1,0 @@
-title: Include the full query response when using the API tool, and fix serialization
-  issues for SolrDocumentList.
-type: fixed
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-16933
-  url: https://issues.apache.org/jira/browse/SOLR-16933

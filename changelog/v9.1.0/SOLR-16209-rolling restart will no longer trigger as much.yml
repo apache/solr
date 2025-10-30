@@ -1,8 +1,0 @@
-title: Rolling restart will no longer trigger as much PKI Plugin error logging.
-type: other
-authors:
-- name: Mike Drob
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-16209
-  url: https://issues.apache.org/jira/browse/SOLR-16209

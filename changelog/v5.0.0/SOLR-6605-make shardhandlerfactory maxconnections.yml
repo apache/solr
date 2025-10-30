@@ -1,8 +1,0 @@
-title: Make ShardHandlerFactory maxConnections configurable.
-type: added
-authors:
-- name: Christine Poerschke
-- name: shalin
-links:
-- name: SOLR-6605
-  url: https://issues.apache.org/jira/browse/SOLR-6605

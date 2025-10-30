@@ -1,7 +1,0 @@
-title: Add trace id to jetty thread names to improve debuggability via stack traces
-type: changed
-authors:
-- name: Alex Deparvu
-links:
-- name: SOLR-17035
-  url: https://issues.apache.org/jira/browse/SOLR-17035

@@ -1,8 +1,0 @@
-title: Films example readme needs updating, including useParams support for multiple
-  algorithms.
-type: changed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-15834
-  url: https://issues.apache.org/jira/browse/SOLR-15834

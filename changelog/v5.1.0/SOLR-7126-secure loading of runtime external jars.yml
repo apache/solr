@@ -1,7 +1,0 @@
-title: Secure loading of runtime external jars
-type: added
-authors:
-- name: Noble Paul
-links:
-- name: SOLR-7126
-  url: https://issues.apache.org/jira/browse/SOLR-7126

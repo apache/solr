@@ -1,8 +1,0 @@
-title: Solr now defaults to TieredMergePolicy. See http://s.apache.org/merging for
-  more information.
-type: changed
-authors:
-- name: rmuir
-links:
-- name: SOLR-2567
-  url: https://issues.apache.org/jira/browse/SOLR-2567

@@ -1,7 +1,0 @@
-title: We do not show ZooKeeper data in the UI for a node that has children.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3611
-  url: https://issues.apache.org/jira/browse/SOLR-3611

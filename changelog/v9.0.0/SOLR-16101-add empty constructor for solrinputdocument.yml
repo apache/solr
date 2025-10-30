@@ -1,7 +1,0 @@
-title: Add empty constructor for SolrInputDocument
-type: other
-authors:
-- name: Anshum Gupta
-links:
-- name: SOLR-16101
-  url: https://issues.apache.org/jira/browse/SOLR-16101

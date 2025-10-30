@@ -1,9 +1,0 @@
-title: Improve Solr resource loader coverage in the ref guide.
-type: other
-authors:
-- name: Steve Rowe
-- name: Cassandra Targett
-- name: Christine Poerschke
-links:
-- name: SOLR-12590
-  url: https://issues.apache.org/jira/browse/SOLR-12590

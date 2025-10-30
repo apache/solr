@@ -1,8 +1,0 @@
-title: Delete silently fails if not sent to shard where document was added
-type: fixed
-authors:
-- name: Ishan Chattopadhyaya
-- name: Noble Paul
-links:
-- name: SOLR-5890
-  url: https://issues.apache.org/jira/browse/SOLR-5890

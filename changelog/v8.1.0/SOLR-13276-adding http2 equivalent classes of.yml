@@ -1,7 +1,0 @@
-title: Adding Http2 equivalent classes of CloudSolrClient and HttpClusterStateProvider
-type: added
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-13276
-  url: https://issues.apache.org/jira/browse/SOLR-13276

@@ -1,9 +1,0 @@
-title: 'contrib/clustering: custom Carrot2 tokenizer and stemmer factories are respected
-  now'
-type: fixed
-authors:
-- name: Stanislaw Osinski
-- name: Dawid Weiss
-links:
-- name: SOLR-3470
-  url: https://issues.apache.org/jira/browse/SOLR-3470

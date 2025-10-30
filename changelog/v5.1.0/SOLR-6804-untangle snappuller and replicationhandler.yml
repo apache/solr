@@ -1,7 +1,0 @@
-title: Untangle SnapPuller and ReplicationHandler
-type: other
-authors:
-- name: Ramkumar Aiyengar
-links:
-- name: SOLR-6804
-  url: https://issues.apache.org/jira/browse/SOLR-6804

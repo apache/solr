@@ -1,8 +1,0 @@
-title: ConfigSet API returns error if untrusted user creates from _default configset
-type: fixed
-authors:
-- name: Eric Pugh
-- name: Kevin Risden
-links:
-- name: SOLR-16164
-  url: https://issues.apache.org/jira/browse/SOLR-16164

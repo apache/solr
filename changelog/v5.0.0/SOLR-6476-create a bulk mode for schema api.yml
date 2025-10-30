@@ -1,8 +1,0 @@
-title: Create a bulk mode for schema API
-type: added
-authors:
-- name: Noble Paul
-- name: Steve Rowe
-links:
-- name: SOLR-6476
-  url: https://issues.apache.org/jira/browse/SOLR-6476

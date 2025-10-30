@@ -1,7 +1,0 @@
-title: Fix check-licenses to correctly detect if start.jar.sha1 is incorrect
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-7469
-  url: https://issues.apache.org/jira/browse/SOLR-7469

@@ -1,7 +1,0 @@
-title: RollupStream should not use the HashQueryParser for 1 worker.
-type: fixed
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-12674
-  url: https://issues.apache.org/jira/browse/SOLR-12674

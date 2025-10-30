@@ -1,7 +1,0 @@
-title: Core Admin status command to emit collection details of each core
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-10507
-  url: https://issues.apache.org/jira/browse/SOLR-10507

@@ -1,8 +1,0 @@
-title: JsonRecordReader should not deep copy document before handler.handle().
-type: changed
-authors:
-- name: noble
-- name: shalin
-links:
-- name: SOLR-9452
-  url: https://issues.apache.org/jira/browse/SOLR-9452

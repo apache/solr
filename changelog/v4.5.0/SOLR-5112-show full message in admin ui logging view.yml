@@ -1,7 +1,0 @@
-title: Show full message in Admin UI Logging View
-type: fixed
-authors:
-- name: "Matthew Keeney via\n  steffkes"
-links:
-- name: SOLR-5112
-  url: https://issues.apache.org/jira/browse/SOLR-5112

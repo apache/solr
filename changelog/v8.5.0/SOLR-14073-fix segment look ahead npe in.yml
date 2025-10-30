@@ -1,7 +1,0 @@
-title: Fix segment look ahead NPE in CollapsingQParserPlugin
-type: fixed
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-14073
-  url: https://issues.apache.org/jira/browse/SOLR-14073

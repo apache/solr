@@ -1,8 +1,0 @@
-title: It was possible for EmbeddedSolrServer to leave searchers open if a request
-  threw an exception.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-2180
-  url: https://issues.apache.org/jira/browse/SOLR-2180

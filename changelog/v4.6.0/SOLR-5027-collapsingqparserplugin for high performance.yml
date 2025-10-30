@@ -1,8 +1,0 @@
-title: CollapsingQParserPlugin for high performance field collapsing on high cardinality
-  fields.
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-5027
-  url: https://issues.apache.org/jira/browse/SOLR-5027

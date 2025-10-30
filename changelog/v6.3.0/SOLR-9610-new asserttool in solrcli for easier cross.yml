@@ -1,8 +1,0 @@
-title: New AssertTool in SolrCLI for easier cross platform assertions from command
-  line
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-9610
-  url: https://issues.apache.org/jira/browse/SOLR-9610

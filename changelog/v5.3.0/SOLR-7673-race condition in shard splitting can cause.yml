@@ -1,8 +1,0 @@
-title: Race condition in shard splitting can cause operation to hang indefinitely
-  or sub-shards to never become active.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-7673
-  url: https://issues.apache.org/jira/browse/SOLR-7673

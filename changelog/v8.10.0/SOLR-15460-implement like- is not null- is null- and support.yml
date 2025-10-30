@@ -1,9 +1,0 @@
-title: Implement LIKE, IS NOT NULL, IS NULL, and support wildcard * in equals string
-  literal for Parallel SQL
-type: changed
-authors:
-- name: Timothy Potter
-- name: Houston Putman
-links:
-- name: SOLR-15460
-  url: https://issues.apache.org/jira/browse/SOLR-15460

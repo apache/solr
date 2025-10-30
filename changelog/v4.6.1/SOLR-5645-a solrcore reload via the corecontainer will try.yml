@@ -1,8 +1,0 @@
-title: A SolrCore reload via the CoreContainer will try and register in zk again with
-  the new SolrCore.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5645
-  url: https://issues.apache.org/jira/browse/SOLR-5645

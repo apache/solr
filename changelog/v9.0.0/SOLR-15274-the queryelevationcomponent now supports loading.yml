@@ -1,9 +1,0 @@
-title: The QueryElevationComponent now supports loading elevation file changes on
-  commits. This doesn't work in SolrCloud (but may someday). QEC no longer supports
-  a config file in the data dir.
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-15274
-  url: https://issues.apache.org/jira/browse/SOLR-15274

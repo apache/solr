@@ -1,8 +1,0 @@
-title: CVSResponseWriter omits useDocValuesAsStored=true field when fl=*
-type: fixed
-authors:
-- name: Munendra S N
-- name: Mikhail Khludnev
-links:
-- name: SOLR-12546
-  url: https://issues.apache.org/jira/browse/SOLR-12546

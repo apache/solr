@@ -1,9 +1,0 @@
-title: Document the diskType policy attribute and usage of disk space in Collection
-  APIs.
-type: other
-authors:
-- name: Cassandra Targett
-- name: shalin
-links:
-- name: SOLR-12097
-  url: https://issues.apache.org/jira/browse/SOLR-12097

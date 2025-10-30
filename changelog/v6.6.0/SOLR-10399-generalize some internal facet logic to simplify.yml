@@ -1,8 +1,0 @@
-title: Generalize some internal facet logic to simplify points/non-points field handling
-type: other
-authors:
-- name: Adrien Grand
-- name: hossman
-links:
-- name: SOLR-10399
-  url: https://issues.apache.org/jira/browse/SOLR-10399

@@ -1,9 +1,0 @@
-title: Use corrected sample formula for computing stdDev and variance in JSON aggregations
-type: changed
-authors:
-- name: hossman
-- name: Munendra S N
-- name: yonik
-links:
-- name: SOLR-11725
-  url: https://issues.apache.org/jira/browse/SOLR-11725

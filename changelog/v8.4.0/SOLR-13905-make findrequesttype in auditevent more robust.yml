@@ -1,7 +1,0 @@
-title: Make findRequestType in AuditEvent more robust
-type: changed
-authors:
-- name: janhoy
-links:
-- name: SOLR-13905
-  url: https://issues.apache.org/jira/browse/SOLR-13905

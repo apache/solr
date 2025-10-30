@@ -1,8 +1,0 @@
-title: StopFilterFactory support for "enablePositionIncrements"
-type: added
-authors:
-- name: Walter Ferrara
-- name: hossman
-links:
-- name: SOLR-521
-  url: https://issues.apache.org/jira/browse/SOLR-521

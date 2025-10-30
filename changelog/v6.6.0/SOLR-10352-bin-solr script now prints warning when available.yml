@@ -1,8 +1,0 @@
-title: bin/solr script now prints warning when available system entropy is lower than
-  300
-type: other
-authors:
-- name: "Esther Quansah via\n  Ishan Chattopadhyaya"
-links:
-- name: SOLR-10352
-  url: https://issues.apache.org/jira/browse/SOLR-10352

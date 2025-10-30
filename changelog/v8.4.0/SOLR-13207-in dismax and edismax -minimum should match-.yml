@@ -1,9 +1,0 @@
-title: In dismax and edismax "minimum should match" queries, the &lt; operator not
-  followed by a number will now return an HTTP 400 error rather than 500, and the
-  error message will explain that &lt; must be followed by a number.
-type: fixed
-authors:
-- name: Chris Hennick
-links:
-- name: SOLR-13207
-  url: https://issues.apache.org/jira/browse/SOLR-13207

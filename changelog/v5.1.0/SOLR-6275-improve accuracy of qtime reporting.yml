@@ -1,7 +1,0 @@
-title: Improve accuracy of QTime reporting
-type: other
-authors:
-- name: Ramkumar Aiyengar
-links:
-- name: SOLR-6275
-  url: https://issues.apache.org/jira/browse/SOLR-6275

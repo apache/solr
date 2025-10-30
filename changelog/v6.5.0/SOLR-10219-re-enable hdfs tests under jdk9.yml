@@ -1,8 +1,0 @@
-title: re-enable HDFS tests under JDK9
-type: other
-authors:
-- name: hossman
-- name: Uwe Schindler
-links:
-- name: SOLR-10219
-  url: https://issues.apache.org/jira/browse/SOLR-10219

@@ -1,8 +1,0 @@
-title: MoveReplicaHDFSTest leaks threads, falls into an endless loop, logging like
-  crazy
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-13074
-  url: https://issues.apache.org/jira/browse/SOLR-13074

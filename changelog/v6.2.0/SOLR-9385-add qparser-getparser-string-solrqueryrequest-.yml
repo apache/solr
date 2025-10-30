@@ -1,7 +1,0 @@
-title: Add QParser.getParser(String,SolrQueryRequest) variant.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-9385
-  url: https://issues.apache.org/jira/browse/SOLR-9385

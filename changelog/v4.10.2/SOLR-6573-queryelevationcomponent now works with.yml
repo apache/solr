@@ -1,7 +1,0 @@
-title: QueryElevationComponent now works with localParams in the query
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-6573
-  url: https://issues.apache.org/jira/browse/SOLR-6573

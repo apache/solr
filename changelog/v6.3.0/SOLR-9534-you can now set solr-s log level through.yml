@@ -1,8 +1,0 @@
-title: 'You can now set Solr''s log level through environment variable SOLR_LOG_LEVEL
-  Also adds conveience arguments -q (quiet: WARN) and -v (verbose: DEBUG) to bin/solr'
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-9534
-  url: https://issues.apache.org/jira/browse/SOLR-9534

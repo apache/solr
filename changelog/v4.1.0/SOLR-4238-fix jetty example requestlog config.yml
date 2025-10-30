@@ -1,8 +1,0 @@
-title: Fix jetty example requestLog config
-type: fixed
-authors:
-- name: jm
-- name: hossman
-links:
-- name: SOLR-4238
-  url: https://issues.apache.org/jira/browse/SOLR-4238

@@ -1,8 +1,0 @@
-title: DistributedUpdateProcessor now logs replay flag as boolean instead of int
-type: other
-authors:
-- name: Mike Drob
-- name: Christine Poerschke
-links:
-- name: SOLR-7007
-  url: https://issues.apache.org/jira/browse/SOLR-7007

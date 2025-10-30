@@ -1,7 +1,0 @@
-title: Refactor handling of params in CloudSolrStream and FacetStream
-type: other
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-11075
-  url: https://issues.apache.org/jira/browse/SOLR-11075

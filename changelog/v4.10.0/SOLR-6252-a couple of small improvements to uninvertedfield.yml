@@ -1,9 +1,0 @@
-title: A couple of small improvements to UnInvertedField class.
-type: other
-authors:
-- name: Vamsee Yarlagadda
-- name: Gregory Chanan
-- name: Mark Miller
-links:
-- name: SOLR-6252
-  url: https://issues.apache.org/jira/browse/SOLR-6252

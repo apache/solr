@@ -1,8 +1,0 @@
-title: log4j-layout-template-json is now included in solr server, allowing JSON formatted
-  logs to be configurable.
-type: changed
-authors:
-- name: hossman
-links:
-- name: SOLR-15610
-  url: https://issues.apache.org/jira/browse/SOLR-15610

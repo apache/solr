@@ -1,8 +1,0 @@
-title: DistributedQueue should use our Solr zk client rather than the std zk client.
-  ZooKeeper expiration can be permanent otherwise.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3647
-  url: https://issues.apache.org/jira/browse/SOLR-3647

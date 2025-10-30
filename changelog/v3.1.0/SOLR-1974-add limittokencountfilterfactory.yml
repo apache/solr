@@ -1,7 +1,0 @@
-title: Add LimitTokenCountFilterFactory.
-type: added
-authors:
-- name: koji
-links:
-- name: SOLR-1974
-  url: https://issues.apache.org/jira/browse/SOLR-1974

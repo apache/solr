@@ -1,9 +1,0 @@
-title: Update Ref Guide to include info on grouping operations and using curl for
-  large files.
-type: other
-authors:
-- name: Dariusz Wojtas
-- name: Cassandra Targett
-links:
-- name: SOLR-11848
-  url: https://issues.apache.org/jira/browse/SOLR-11848

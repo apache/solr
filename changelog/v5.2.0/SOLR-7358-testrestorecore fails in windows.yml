@@ -1,8 +1,0 @@
-title: TestRestoreCore fails in Windows
-type: other
-authors:
-- name: Ishan Chattopadhyaya
-- name: Varun Thacker
-links:
-- name: SOLR-7358
-  url: https://issues.apache.org/jira/browse/SOLR-7358

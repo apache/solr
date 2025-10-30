@@ -1,7 +1,0 @@
-title: Prevent redundant core reload on config update
-type: fixed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-10588
-  url: https://issues.apache.org/jira/browse/SOLR-10588

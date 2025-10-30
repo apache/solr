@@ -1,8 +1,0 @@
-title: Fix NPE in TermsComponent for DatePointField
-type: fixed
-authors:
-- name: yonik
-- name: Munendra S N
-links:
-- name: SOLR-13403
-  url: https://issues.apache.org/jira/browse/SOLR-13403

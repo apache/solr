@@ -1,8 +1,0 @@
-title: Updates need to use their own connection pool to maintain connection reuse
-  and prevent spurious recoveries.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-12293
-  url: https://issues.apache.org/jira/browse/SOLR-12293

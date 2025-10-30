@@ -1,9 +1,0 @@
-title: HdfsDirectoryFactory should fall back to system props for most of it's config
-  if it is not found in solrconfig.xml.
-type: other
-authors:
-- name: Mark Miller
-- name: Mike Drob
-links:
-- name: SOLR-6943
-  url: https://issues.apache.org/jira/browse/SOLR-6943

@@ -1,8 +1,0 @@
-title: registry.jsp incorrectly displaying info for last core initialized regardless
-  of what the current core is.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-1064
-  url: https://issues.apache.org/jira/browse/SOLR-1064

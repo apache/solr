@@ -1,8 +1,0 @@
-title: DataImportHandler should use UpdateRequestProcessor API instead of directly
-  using UpdateHandler.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-676
-  url: https://issues.apache.org/jira/browse/SOLR-676

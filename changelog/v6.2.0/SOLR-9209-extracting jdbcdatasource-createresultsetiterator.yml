@@ -1,8 +1,0 @@
-title: extracting JdbcDataSource.createResultSetIterator() for extension
-type: other
-authors:
-- name: Kristine Jetzke
-- name: Mikhai Khludnev
-links:
-- name: SOLR-9209
-  url: https://issues.apache.org/jira/browse/SOLR-9209

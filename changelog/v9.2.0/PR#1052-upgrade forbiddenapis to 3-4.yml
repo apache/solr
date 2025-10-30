@@ -1,7 +1,0 @@
-title: Upgrade forbiddenapis to 3.4
-type: dependency_update
-authors:
-- name: Uwe Schindler
-links:
-- name: PR#1052
-  url: https://github.com/apache/solr/pull/1052

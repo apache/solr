@@ -1,8 +1,0 @@
-title: Remove deprecated soLingerTime when configuring Jetty connector
-type: other
-authors:
-- name: Matthias Krueger
-- name: Kevin Risden
-links:
-- name: SOLR-14091
-  url: https://issues.apache.org/jira/browse/SOLR-14091

@@ -1,7 +1,0 @@
-title: Make clusterstatus command logging less verbose.
-type: other
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-9451
-  url: https://issues.apache.org/jira/browse/SOLR-9451

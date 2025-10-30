@@ -1,7 +1,0 @@
-title: Cache index fingerprints per searcher.
-type: other
-authors:
-- name: yonik
-links:
-- name: SOLR-8691
-  url: https://issues.apache.org/jira/browse/SOLR-8691

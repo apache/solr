@@ -1,8 +1,0 @@
-title: XML update allows &lt;doc&gt; &lt;doc name="child"&gt; ... &lt;/doc&gt; &lt;/doc&gt;.
-type: changed
-authors:
-- name: Vinayak Hegde
-- name: Mikhail Khludnev
-links:
-- name: SOLR-16183
-  url: https://issues.apache.org/jira/browse/SOLR-16183

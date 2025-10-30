@@ -1,8 +1,0 @@
-title: CloudSolrClient does not invalidate cache or retry for RouteException
-type: fixed
-authors:
-- name: noble
-- name: hossman
-links:
-- name: SOLR-11484
-  url: https://issues.apache.org/jira/browse/SOLR-11484

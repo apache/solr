@@ -1,7 +1,0 @@
-title: Reduce SolrIndexSearcher casting in LTRRescorer.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-10964
-  url: https://issues.apache.org/jira/browse/SOLR-10964

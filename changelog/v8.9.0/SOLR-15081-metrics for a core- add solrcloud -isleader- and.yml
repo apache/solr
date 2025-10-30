@@ -1,7 +1,0 @@
-title: 'Metrics for a core: add SolrCloud "isLeader" and "replicaState".'
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-15081
-  url: https://issues.apache.org/jira/browse/SOLR-15081

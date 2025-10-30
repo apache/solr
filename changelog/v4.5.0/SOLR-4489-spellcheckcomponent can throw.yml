@@ -1,8 +1,0 @@
-title: SpellCheckComponent can throw StringIndexOutOfBoundsException when generating
-  collations involving multiple word-break corrections.
-type: fixed
-authors:
-- name: James Dyer
-links:
-- name: SOLR-4489
-  url: https://issues.apache.org/jira/browse/SOLR-4489

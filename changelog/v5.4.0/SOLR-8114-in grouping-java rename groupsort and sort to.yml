@@ -1,7 +1,0 @@
-title: in Grouping.java rename groupSort and sort to withinGroupSort and groupSort
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8114
-  url: https://issues.apache.org/jira/browse/SOLR-8114

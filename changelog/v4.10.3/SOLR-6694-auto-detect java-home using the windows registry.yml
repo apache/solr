@@ -1,8 +1,0 @@
-title: Auto-detect JAVA_HOME using the Windows registry if it is not set
-type: other
-authors:
-- name: janhoy
-- name: Timothy Potter
-links:
-- name: SOLR-6694
-  url: https://issues.apache.org/jira/browse/SOLR-6694

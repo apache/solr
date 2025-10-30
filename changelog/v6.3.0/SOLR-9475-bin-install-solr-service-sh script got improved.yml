@@ -1,9 +1,0 @@
-title: bin/install_solr_service.sh script got improved detection of Linux distro,
-  especially within virtualized/Docker environment through parsing of /etc/*-release
-  files. Now also supports CentOS.
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-9475
-  url: https://issues.apache.org/jira/browse/SOLR-9475

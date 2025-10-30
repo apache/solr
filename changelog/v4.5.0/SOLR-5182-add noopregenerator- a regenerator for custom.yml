@@ -1,8 +1,0 @@
-title: Add NoOpRegenerator, a regenerator for custom per-segment caches where items
-  are preserved across commits.
-type: added
-authors:
-- name: Robert Muir
-links:
-- name: SOLR-5182
-  url: https://issues.apache.org/jira/browse/SOLR-5182

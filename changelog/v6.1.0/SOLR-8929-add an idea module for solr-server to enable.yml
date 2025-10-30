@@ -1,8 +1,0 @@
-title: Add an idea module for solr/server to enable launching start.jar
-type: other
-authors:
-- name: Scott Blum
-- name: Steve Rowe
-links:
-- name: SOLR-8929
-  url: https://issues.apache.org/jira/browse/SOLR-8929

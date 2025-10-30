@@ -1,8 +1,0 @@
-title: Removed fastutil and java-hll dependency, integrated HyperLogLog from java-hll
-  into Solr core.
-type: other
-authors:
-- name: Dawid Weiss
-links:
-- name: SOLR-7787
-  url: https://issues.apache.org/jira/browse/SOLR-7787

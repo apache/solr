@@ -1,8 +1,0 @@
-title: JmxMonitoredMap can throw an exception in clear when queryNames fails.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Wolfgang Hoschek
-links:
-- name: SOLR-7101
-  url: https://issues.apache.org/jira/browse/SOLR-7101

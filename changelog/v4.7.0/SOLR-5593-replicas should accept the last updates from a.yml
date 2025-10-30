@@ -1,9 +1,0 @@
-title: Replicas should accept the last updates from a leader that has just lost its
-  connection to ZooKeeper.
-type: fixed
-authors:
-- name: Christine Poerschke
-- name: Mark Miller
-links:
-- name: SOLR-5593
-  url: https://issues.apache.org/jira/browse/SOLR-5593

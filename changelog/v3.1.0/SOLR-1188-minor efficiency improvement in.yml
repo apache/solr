@@ -1,8 +1,0 @@
-title: Minor efficiency improvement in TermVectorComponent related to ignoring positions
-  or offsets
-type: changed
-authors:
-- name: gsingers
-links:
-- name: SOLR-1188
-  url: https://issues.apache.org/jira/browse/SOLR-1188

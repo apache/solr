@@ -1,8 +1,0 @@
-title: If a charset is not specified in the contentType, ContentStream.getReader()
-  will use UTF-8 encoding.
-type: other
-authors:
-- name: ryan
-links:
-- name: SOLR-231
-  url: https://issues.apache.org/jira/browse/SOLR-231

@@ -1,7 +1,0 @@
-title: AngularJS UI insufficient URLDecoding in cloud/tree view
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-7369
-  url: https://issues.apache.org/jira/browse/SOLR-7369

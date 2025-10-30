@@ -1,7 +1,0 @@
-title: Remove broken handleAlias action in CoreAdminHandler
-type: other
-authors:
-- name: "Alan\n  Woodward"
-links:
-- name: SOLR-6169
-  url: https://issues.apache.org/jira/browse/SOLR-6169

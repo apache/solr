@@ -1,8 +1,0 @@
-title: Remove support for `autoReplicaFailoverWaitAfterExpiration`.
-type: removed
-authors:
-- name: marcussorealheis
-- name: shalin
-links:
-- name: SOLR-12720
-  url: https://issues.apache.org/jira/browse/SOLR-12720

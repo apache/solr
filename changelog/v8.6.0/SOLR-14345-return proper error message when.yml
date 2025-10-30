@@ -1,7 +1,0 @@
-title: Return proper error message when non-BinaryResponseParser is used in solrJ
-type: fixed
-authors:
-- name: Munendra S N
-links:
-- name: SOLR-14345
-  url: https://issues.apache.org/jira/browse/SOLR-14345

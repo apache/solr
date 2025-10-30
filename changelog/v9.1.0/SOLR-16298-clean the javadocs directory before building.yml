@@ -1,9 +1,0 @@
-title: Clean the javadocs directory before building
-type: other
-authors:
-- name: Houston Putman
-- name: Mike Drob
-- name: Uwe Schindler
-links:
-- name: SOLR-16298
-  url: https://issues.apache.org/jira/browse/SOLR-16298

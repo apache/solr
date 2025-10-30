@@ -1,8 +1,0 @@
-title: The CommitTracker used for commitWith or autoCommit by maxTime could commit
-  too frequently and could block adds until a new searcher was registered.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-2748
-  url: https://issues.apache.org/jira/browse/SOLR-2748

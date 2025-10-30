@@ -1,8 +1,0 @@
-title: Default QueryResponseWriters are now initialized via init() with an empty NamedList.
-type: other
-authors:
-- name: Gasol Wu
-- name: Chris Male
-links:
-- name: SOLR-3005
-  url: https://issues.apache.org/jira/browse/SOLR-3005

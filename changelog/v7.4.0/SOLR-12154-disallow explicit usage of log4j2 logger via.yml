@@ -1,8 +1,0 @@
-title: Disallow explicit usage of Log4j2 logger via forbidden APIs.
-type: other
-authors:
-- name: Varun Thacker
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-12154
-  url: https://issues.apache.org/jira/browse/SOLR-12154

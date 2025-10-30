@@ -1,9 +1,0 @@
-title: SolrCore.getNewIndexDir falsely returns {dataDir}/index on any IOException
-  reading index.properties
-type: fixed
-authors:
-- name: Nikolay Martynov
-- name: Erick Erickson
-links:
-- name: SOLR-11687
-  url: https://issues.apache.org/jira/browse/SOLR-11687

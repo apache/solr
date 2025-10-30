@@ -1,8 +1,0 @@
-title: Solr now always includes in the response of update requests the achieved replication
-  factor
-type: changed
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-12767
-  url: https://issues.apache.org/jira/browse/SOLR-12767

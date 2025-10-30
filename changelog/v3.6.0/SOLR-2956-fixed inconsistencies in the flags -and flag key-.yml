@@ -1,7 +1,0 @@
-title: Fixed inconsistencies in the flags (and flag key) reported by the LukeRequestHandler
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-2956
-  url: https://issues.apache.org/jira/browse/SOLR-2956

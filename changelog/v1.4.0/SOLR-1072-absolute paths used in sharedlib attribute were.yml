@@ -1,8 +1,0 @@
-title: absolute paths used in sharedLib attribute were incorrectly treated as relative
-  paths.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-1072
-  url: https://issues.apache.org/jira/browse/SOLR-1072

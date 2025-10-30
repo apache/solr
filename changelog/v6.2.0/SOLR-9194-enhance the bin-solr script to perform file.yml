@@ -1,8 +1,0 @@
-title: Enhance the bin/solr script to perform file operations to/from Zookeeper
-type: added
-authors:
-- name: Erick Erickson
-- name: janhoy
-links:
-- name: SOLR-9194
-  url: https://issues.apache.org/jira/browse/SOLR-9194

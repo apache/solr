@@ -1,8 +1,0 @@
-title: Fix example /browse "Did you mean?" suggestion feature.
-type: fixed
-authors:
-- name: ehatcher
-- name: Mark Bennett
-links:
-- name: SOLR-4702
-  url: https://issues.apache.org/jira/browse/SOLR-4702

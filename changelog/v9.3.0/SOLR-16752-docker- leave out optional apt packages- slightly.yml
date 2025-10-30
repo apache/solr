@@ -1,8 +1,0 @@
-title: 'Docker: Leave out optional apt packages, slightly reducing image size and
-  lowering attack surface'
-type: changed
-authors:
-- name: Quang-Cuong Bui
-links:
-- name: SOLR-16752
-  url: https://issues.apache.org/jira/browse/SOLR-16752

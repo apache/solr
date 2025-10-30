@@ -1,7 +1,0 @@
-title: FieldTypePluginLoader has been refactored out of IndexSchema and made public.
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-2663
-  url: https://issues.apache.org/jira/browse/SOLR-2663

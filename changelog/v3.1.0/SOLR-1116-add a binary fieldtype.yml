@@ -1,7 +1,0 @@
-title: Add a Binary FieldType
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-1116
-  url: https://issues.apache.org/jira/browse/SOLR-1116

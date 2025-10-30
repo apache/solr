@@ -1,8 +1,0 @@
-title: ZkController#unregister should cancel its election participation before asking
-  the Overseer to delete the SolrCore information.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4602
-  url: https://issues.apache.org/jira/browse/SOLR-4602

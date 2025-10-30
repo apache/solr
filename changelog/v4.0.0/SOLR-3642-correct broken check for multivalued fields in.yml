@@ -1,8 +1,0 @@
-title: Correct broken check for multivalued fields in stats.facet
-type: fixed
-authors:
-- name: Yandong Yao
-- name: hossman
-links:
-- name: SOLR-3642
-  url: https://issues.apache.org/jira/browse/SOLR-3642

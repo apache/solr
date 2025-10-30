@@ -1,9 +1,0 @@
-title: The path of the v2 "collprop" API has been tweaked slightly to be more intuitive.
-  Endpoints are now available under the `PUT` and `DELETE` verbs at `/api/collections/collName/properties/propName`
-  depending on whether the property is being upserted or deleted.
-type: changed
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-16391
-  url: https://issues.apache.org/jira/browse/SOLR-16391

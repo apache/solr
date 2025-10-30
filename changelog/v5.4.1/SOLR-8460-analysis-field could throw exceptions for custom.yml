@@ -1,8 +1,0 @@
-title: /analysis/field could throw exceptions for custom attributes.
-type: fixed
-authors:
-- name: David Smiley
-- name: Uwe Schindler
-links:
-- name: SOLR-8460
-  url: https://issues.apache.org/jira/browse/SOLR-8460

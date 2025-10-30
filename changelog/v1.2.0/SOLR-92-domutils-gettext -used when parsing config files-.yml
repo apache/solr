@@ -1,9 +1,0 @@
-title: DOMUtils.getText (used when parsing config files) did not work properly with
-  many DOM implementations when dealing with "Attributes".
-type: fixed
-authors:
-- name: Ryan McKinley
-- name: hossman
-links:
-- name: SOLR-92
-  url: https://issues.apache.org/jira/browse/SOLR-92

@@ -1,7 +1,0 @@
-title: Unified use of system properties and environment variables
-type: changed
-authors:
-- name: janhoy
-links:
-- name: SOLR-15960
-  url: https://issues.apache.org/jira/browse/SOLR-15960

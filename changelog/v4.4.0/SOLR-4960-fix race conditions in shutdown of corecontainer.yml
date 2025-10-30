@@ -1,8 +1,0 @@
-title: Fix race conditions in shutdown of CoreContainer and getCore that could cause
-  a request to attempt to use a core that has shut down.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-4960
-  url: https://issues.apache.org/jira/browse/SOLR-4960

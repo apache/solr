@@ -1,7 +1,0 @@
-title: add & use responseHeader and response accessors to SolrQueryResponse.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8317
-  url: https://issues.apache.org/jira/browse/SOLR-8317

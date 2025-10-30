@@ -1,9 +1,0 @@
-title: SSLTestConfig has been changed to throw AssumptionViolatedException when tests/seeds
-  request SSL but the JVM appears to be an OpenJDK version known to have SSL bugs
-type: other
-authors:
-- name: hossman
-- name: Cao Manh Dat
-links:
-- name: SOLR-12988
-  url: https://issues.apache.org/jira/browse/SOLR-12988

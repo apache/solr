@@ -1,7 +1,0 @@
-title: Remove backcompat feature solr.useUnsafeOverseerResponse
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-15718
-  url: https://issues.apache.org/jira/browse/SOLR-15718

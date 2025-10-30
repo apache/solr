@@ -1,7 +1,0 @@
-title: Unavailable clustering engines should not fail the core.
-type: other
-authors:
-- name: Dawid Weiss
-links:
-- name: SOLR-7969
-  url: https://issues.apache.org/jira/browse/SOLR-7969

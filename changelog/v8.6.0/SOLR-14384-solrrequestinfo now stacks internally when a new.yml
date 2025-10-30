@@ -1,9 +1,0 @@
-title: SolrRequestInfo now stacks internally when a new request is set/clear'ed. Also
-  fixes SolrIndexSearcher.warm which should have re-instated previous SRI.
-type: changed
-authors:
-- name: Nazerke Seidan
-- name: David Smiley
-links:
-- name: SOLR-14384
-  url: https://issues.apache.org/jira/browse/SOLR-14384

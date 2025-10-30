@@ -1,9 +1,0 @@
-title: LatLonPointSpatialField wasn't working correctly with atomic/partial updates
-  or RTG.
-type: fixed
-authors:
-- name: Thomas Wöckinger
-- name: David Smiley
-links:
-- name: SOLR-13966
-  url: https://issues.apache.org/jira/browse/SOLR-13966

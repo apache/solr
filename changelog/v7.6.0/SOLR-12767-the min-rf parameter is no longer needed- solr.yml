@@ -1,8 +1,0 @@
-title: The min_rf parameter is no longer needed, Solr will always return the achieved
-  replication factor
-type: upgrade_notes
-authors:
-- name: rf
-links:
-- name: SOLR-12767
-  url: https://issues.apache.org/jira/browse/SOLR-12767

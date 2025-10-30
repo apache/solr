@@ -1,8 +1,0 @@
-title: Concurrent core reloads mess up commits when using Schema API
-type: fixed
-authors:
-- name: Bence Szabo
-- name: Andras Salamon
-links:
-- name: SOLR-15830
-  url: https://issues.apache.org/jira/browse/SOLR-15830

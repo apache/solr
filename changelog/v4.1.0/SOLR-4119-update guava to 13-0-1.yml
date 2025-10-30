@@ -1,7 +1,0 @@
-title: Update Guava to 13.0.1
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4119
-  url: https://issues.apache.org/jira/browse/SOLR-4119

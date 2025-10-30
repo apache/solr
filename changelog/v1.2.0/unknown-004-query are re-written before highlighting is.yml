@@ -1,6 +1,0 @@
-title: Query are re-written before highlighting is performed. This enables proper
-  highlighting of prefix and wildcard queries
-type: other
-authors:
-- name: klaas
-links: []

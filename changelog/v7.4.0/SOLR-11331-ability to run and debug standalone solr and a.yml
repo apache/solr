@@ -1,9 +1,0 @@
-title: Ability to run and debug standalone Solr and a single node SolrCloud server
-  from Eclipse. Also being able to run all Lucene and Solr tests as a configuration
-type: other
-authors:
-- name: "Karthik Ramachandran via\n  Varun Thacker"
-- name: Uwe Schindler
-links:
-- name: SOLR-11331
-  url: https://issues.apache.org/jira/browse/SOLR-11331

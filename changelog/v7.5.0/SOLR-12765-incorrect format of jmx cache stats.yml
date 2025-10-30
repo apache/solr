@@ -1,8 +1,0 @@
-title: Incorrect format of JMX cache stats.
-type: fixed
-authors:
-- name: Bojan Smid
-- name: ab
-links:
-- name: SOLR-12765
-  url: https://issues.apache.org/jira/browse/SOLR-12765

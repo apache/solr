@@ -1,8 +1,0 @@
-title: Simplify Interfaces used in Streaming Expressions
-type: other
-authors:
-- name: Dennis Gove
-- name: Joel Bernstein
-links:
-- name: SOLR-7528
-  url: https://issues.apache.org/jira/browse/SOLR-7528

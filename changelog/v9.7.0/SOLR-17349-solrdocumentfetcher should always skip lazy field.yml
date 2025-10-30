@@ -1,7 +1,0 @@
-title: SolrDocumentFetcher should always skip lazy field loading overhead if documentCache==null
-type: changed
-authors:
-- name: Michael Gibney
-links:
-- name: SOLR-17349
-  url: https://issues.apache.org/jira/browse/SOLR-17349

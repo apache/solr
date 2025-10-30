@@ -1,8 +1,0 @@
-title: autoscaling policy support to equally distribute replicas on the basis of arbitrary
-  properties
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-12536
-  url: https://issues.apache.org/jira/browse/SOLR-12536

@@ -1,7 +1,0 @@
-title: Remove AbstractSolrTestCase which has long been supplanted by SolrTestCaseJ4.
-type: other
-authors:
-- name: David Smiley
-links:
-- name: SOLR-11754
-  url: https://issues.apache.org/jira/browse/SOLR-11754

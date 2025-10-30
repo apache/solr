@@ -1,8 +1,0 @@
-title: '- maxChars no longer working on CopyField with javabin'
-type: fixed
-authors:
-- name: Chris Troullis
-- name: noble
-links:
-- name: SOLR-13699
-  url: https://issues.apache.org/jira/browse/SOLR-13699

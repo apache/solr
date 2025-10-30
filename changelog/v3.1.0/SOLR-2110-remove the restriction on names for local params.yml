@@ -1,8 +1,0 @@
-title: Remove the restriction on names for local params substitution/dereferencing.
-  Properly encode local params in distributed faceting.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-2110
-  url: https://issues.apache.org/jira/browse/SOLR-2110

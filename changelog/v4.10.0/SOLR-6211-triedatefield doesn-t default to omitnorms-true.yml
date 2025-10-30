@@ -1,8 +1,0 @@
-title: TrieDateField doesn't default to omitNorms=true.
-type: fixed
-authors:
-- name: Michael Ryan
-- name: Steve Rowe
-links:
-- name: SOLR-6211
-  url: https://issues.apache.org/jira/browse/SOLR-6211

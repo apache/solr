@@ -1,7 +1,0 @@
-title: List of permissions returned to Admin UI is not complete
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-16658
-  url: https://issues.apache.org/jira/browse/SOLR-16658

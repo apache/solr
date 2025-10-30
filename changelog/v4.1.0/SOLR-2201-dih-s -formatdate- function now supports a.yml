@@ -1,8 +1,0 @@
-title: DIH's "formatDate" function now supports a timezone as an optional fourth parameter
-type: added
-authors:
-- name: James Dyer
-- name: Mark Waddle
-links:
-- name: SOLR-2201
-  url: https://issues.apache.org/jira/browse/SOLR-2201

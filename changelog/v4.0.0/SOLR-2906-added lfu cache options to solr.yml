@@ -1,7 +1,0 @@
-title: Added LFU cache options to Solr.
-type: added
-authors:
-- name: Shawn Heisey
-links:
-- name: SOLR-2906
-  url: https://issues.apache.org/jira/browse/SOLR-2906

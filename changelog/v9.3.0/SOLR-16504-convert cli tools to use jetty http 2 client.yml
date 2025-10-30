@@ -1,8 +1,0 @@
-title: Convert CLI tools to use Jetty HTTP 2 client.
-type: changed
-authors:
-- name: Bence Szabo
-- name: Eric Pugh
-links:
-- name: SOLR-16504
-  url: https://issues.apache.org/jira/browse/SOLR-16504

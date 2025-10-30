@@ -1,9 +1,0 @@
-title: SolrClient builders now allow users to specify a "default" collection or core
-  using the `withDefaultCollection` method. Use of the Builder methods is preferable
-  to including the collection in the base URL accepted by certain client implementations.
-type: changed
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-17066
-  url: https://issues.apache.org/jira/browse/SOLR-17066

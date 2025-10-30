@@ -1,9 +1,0 @@
-title: A DELETENODE command to delete all replicas in that node
-type: added
-authors:
-- name: noble
-- name: Nitin Sharma
-- name: Varun Thacker
-links:
-- name: SOLR-9318
-  url: https://issues.apache.org/jira/browse/SOLR-9318

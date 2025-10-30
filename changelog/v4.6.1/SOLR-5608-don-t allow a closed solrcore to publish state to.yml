@@ -1,8 +1,0 @@
-title: Don't allow a closed SolrCore to publish state to ZooKeeper.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Shawn Heisey
-links:
-- name: SOLR-5608
-  url: https://issues.apache.org/jira/browse/SOLR-5608

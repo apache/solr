@@ -1,8 +1,0 @@
-title: Remove unnecessary toString() calls in solr-core's search package's debug logging.
-type: changed
-authors:
-- name: Michael Braun
-- name: Christine Poerschke
-links:
-- name: SOLR-10985
-  url: https://issues.apache.org/jira/browse/SOLR-10985

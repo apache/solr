@@ -1,9 +1,0 @@
-title: New parameter 'indexInfo' (defaults to true) in CoreAdmin STATUS command can
-  be used to omit index specific information
-type: added
-authors:
-- name: Shahar Davidson
-- name: shalin
-links:
-- name: SOLR-4302
-  url: https://issues.apache.org/jira/browse/SOLR-4302

@@ -1,9 +1,0 @@
-title: ReplicationHandler's backup command now supports a 'maxNumberOfBackups' init
-  param that can be used to delete all but the most recent N backups.
-type: added
-authors:
-- name: Torsten Krah
-- name: James Dyer
-links:
-- name: SOLR-3033
-  url: https://issues.apache.org/jira/browse/SOLR-3033

@@ -1,8 +1,0 @@
-title: Kerberos Delegation Tokens don't work without a chrooted ZK
-type: fixed
-authors:
-- name: Ishan Chattopadhyaya
-- name: noble
-links:
-- name: SOLR-9518
-  url: https://issues.apache.org/jira/browse/SOLR-9518

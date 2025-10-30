@@ -1,7 +1,0 @@
-title: SolrJ now preserves the order of facet queries.
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-1815
-  url: https://issues.apache.org/jira/browse/SOLR-1815

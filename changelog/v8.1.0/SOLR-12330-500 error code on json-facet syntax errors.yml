@@ -1,8 +1,0 @@
-title: 500 error code on json.facet syntax errors
-type: fixed
-authors:
-- name: Munendra S N
-- name: Mikhail Khludnev
-links:
-- name: SOLR-12330
-  url: https://issues.apache.org/jira/browse/SOLR-12330

@@ -1,8 +1,0 @@
-title: Solr configuration should log inaccessible/ non-existent relative paths in
-  lib dir=...
-type: other
-authors:
-- name: Dawid Weiss
-links:
-- name: SOLR-4653
-  url: https://issues.apache.org/jira/browse/SOLR-4653

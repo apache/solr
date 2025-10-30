@@ -1,8 +1,0 @@
-title: Improve ref-guide solrj snippets via mock 'print()' method
-type: other
-authors:
-- name: Jason Gerlowski
-- name: hossman
-links:
-- name: SOLR-11575
-  url: https://issues.apache.org/jira/browse/SOLR-11575

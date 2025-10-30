@@ -1,8 +1,0 @@
-title: 'JSON Facet API: add "facet-info" into debug section of response when debugQuery=true'
-type: added
-authors:
-- name: Michael Sun
-- name: yonik
-links:
-- name: SOLR-8230
-  url: https://issues.apache.org/jira/browse/SOLR-8230

@@ -1,7 +1,0 @@
-title: Replace cluster state polling with ZkStateReader#waitFor.
-type: changed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-12898
-  url: https://issues.apache.org/jira/browse/SOLR-12898

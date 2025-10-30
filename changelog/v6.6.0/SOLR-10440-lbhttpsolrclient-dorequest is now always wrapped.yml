@@ -1,8 +1,0 @@
-title: LBHttpSolrClient.doRequest is now always wrapped in a Mapped Diagnostic Context
-  (MDC).
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-10440
-  url: https://issues.apache.org/jira/browse/SOLR-10440

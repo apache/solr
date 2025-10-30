@@ -1,8 +1,0 @@
-title: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could
-  lead to out of order execution of Collection API tasks competing for a lock
-type: fixed
-authors:
-- name: Ilan Ginzburg
-links:
-- name: SOLR-14546
-  url: https://issues.apache.org/jira/browse/SOLR-14546

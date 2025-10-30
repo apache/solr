@@ -1,9 +1,0 @@
-title: Validate that name is pass to Collections API create, and behave the same way
-  as on startup when collection.configName is not explicitly passed.
-type: fixed
-authors:
-- name: Po Rui
-- name: Mark Miller
-links:
-- name: SOLR-4071
-  url: https://issues.apache.org/jira/browse/SOLR-4071

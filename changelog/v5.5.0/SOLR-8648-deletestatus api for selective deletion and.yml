@@ -1,8 +1,0 @@
-title: DELETESTATUS API for selective deletion and flushing of stored async collection
-  API responses.
-type: added
-authors:
-- name: Anshum Gupta
-links:
-- name: SOLR-8648
-  url: https://issues.apache.org/jira/browse/SOLR-8648

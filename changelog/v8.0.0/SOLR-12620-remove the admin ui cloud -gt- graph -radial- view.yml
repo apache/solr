@@ -1,7 +1,0 @@
-title: Remove the Admin UI Cloud -&gt; Graph (Radial) view
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-12620
-  url: https://issues.apache.org/jira/browse/SOLR-12620

@@ -1,8 +1,0 @@
-title: Honour SOLR_HOST parameter with bin/solr{,.cmd}
-type: fixed
-authors:
-- name: Ishan Chattopadhyaya
-- name: Ramkumar Aiyengar
-links:
-- name: SOLR-7545
-  url: https://issues.apache.org/jira/browse/SOLR-7545

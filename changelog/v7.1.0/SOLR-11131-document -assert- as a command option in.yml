@@ -1,8 +1,0 @@
-title: Document 'assert' as a command option in bin/solr, and bin/solr.cmd scripts.
-type: other
-authors:
-- name: Jason Gerlowski
-- name: Anshum Gupta
-links:
-- name: SOLR-11131
-  url: https://issues.apache.org/jira/browse/SOLR-11131

@@ -1,9 +1,0 @@
-title: Extracted functionality to collect eligible replicas from HttpShardHandler.prepDistributed()
-  to a new method
-type: other
-authors:
-- name: Domenico Fabio Marino
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-10799
-  url: https://issues.apache.org/jira/browse/SOLR-10799

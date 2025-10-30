@@ -1,8 +1,0 @@
-title: The Docker image now uses the Solr User ID instead of the User Name, helps
-  with non-root checks
-type: changed
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-16323
-  url: https://issues.apache.org/jira/browse/SOLR-16323

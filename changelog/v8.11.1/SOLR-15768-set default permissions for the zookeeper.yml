@@ -1,8 +1,0 @@
-title: Set default permissions for the zookeeper endpoints so users won't need to
-  configure custom permissions for these
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-15768
-  url: https://issues.apache.org/jira/browse/SOLR-15768

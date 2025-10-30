@@ -1,8 +1,0 @@
-title: Fixed SolrTestCaseJ4.adoc(SolrInputDocument) to respect field and document
-  boosts
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-3988
-  url: https://issues.apache.org/jira/browse/SOLR-3988

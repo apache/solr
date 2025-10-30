@@ -1,9 +1,0 @@
-title: Typo in solr.xml persistence when overriding the solrconfig.xml file name using
-  the "config" attribute prevented the override file from being used.
-type: fixed
-authors:
-- name: Ryan Zezeski
-- name: hossman
-links:
-- name: SOLR-3629
-  url: https://issues.apache.org/jira/browse/SOLR-3629

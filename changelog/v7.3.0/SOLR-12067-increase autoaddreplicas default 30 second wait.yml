@@ -1,9 +1,0 @@
-title: Increase autoAddReplicas default 30 second wait time to 120 seconds.
-type: other
-authors:
-- name: Varun Thacker
-- name: Mark Miller
-- name: shalin
-links:
-- name: SOLR-12067
-  url: https://issues.apache.org/jira/browse/SOLR-12067

@@ -1,7 +1,0 @@
-title: HdfsLockFactory should explicitly create the lock parent directory if necessary.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5540
-  url: https://issues.apache.org/jira/browse/SOLR-5540

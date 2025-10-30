@@ -1,7 +1,0 @@
-title: Remove Data Import Handler (DIH), previously deprecated
-type: removed
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-14783
-  url: https://issues.apache.org/jira/browse/SOLR-14783

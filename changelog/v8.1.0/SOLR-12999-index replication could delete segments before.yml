@@ -1,8 +1,0 @@
-title: Index replication could delete segments before downloading segments from master
-  if there is not enough disk space
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-12999
-  url: https://issues.apache.org/jira/browse/SOLR-12999

@@ -1,7 +1,0 @@
-title: Add QueryLimits support to Learning To Rank rescoring.
-type: fixed
-authors:
-- name: Alessandro Benedetti
-links:
-- name: SOLR-17018
-  url: https://issues.apache.org/jira/browse/SOLR-17018

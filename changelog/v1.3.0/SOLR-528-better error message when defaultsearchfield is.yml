@@ -1,8 +1,0 @@
-title: Better error message when defaultSearchField is bogus or not indexed.
-type: fixed
-authors:
-- name: Lars Kotthoff
-- name: hossman
-links:
-- name: SOLR-528
-  url: https://issues.apache.org/jira/browse/SOLR-528

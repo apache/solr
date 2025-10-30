@@ -1,9 +1,0 @@
-title: SolrResourceLoader will report any encoding errors, rather than silently using
-  replacement characters for invalid inputs
-type: other
-authors:
-- name: blargy
-- name: rmuir
-links:
-- name: SOLR-2003
-  url: https://issues.apache.org/jira/browse/SOLR-2003

@@ -1,7 +1,0 @@
-title: SQL AVG function mis-interprets field type.
-type: fixed
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-10341
-  url: https://issues.apache.org/jira/browse/SOLR-10341

@@ -1,7 +1,0 @@
-title: Reduce Overseer.close() logging (for non-Overseer leaders)
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-12464
-  url: https://issues.apache.org/jira/browse/SOLR-12464

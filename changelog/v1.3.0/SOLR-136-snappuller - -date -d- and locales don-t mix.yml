@@ -1,8 +1,0 @@
-title: Snappuller - "date -d" and locales don't mix.
-type: fixed
-authors:
-- name: Jürgen Hermann
-- name: bill
-links:
-- name: SOLR-136
-  url: https://issues.apache.org/jira/browse/SOLR-136

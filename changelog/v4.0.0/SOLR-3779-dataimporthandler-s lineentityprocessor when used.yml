@@ -1,9 +1,0 @@
-title: DataImportHandler's LineEntityProcessor when used in conjunction with FileListEntityProcessor
-  would only process the first file.
-type: fixed
-authors:
-- name: Ahmet Arslan
-- name: James Dyer
-links:
-- name: SOLR-3779
-  url: https://issues.apache.org/jira/browse/SOLR-3779

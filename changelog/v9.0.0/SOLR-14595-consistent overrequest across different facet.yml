@@ -1,9 +1,0 @@
-title: Consistent overrequest across different facet methods for `sort:index` JSON
-  Facet field
-type: fixed
-authors:
-- name: Michael Gibney
-- name: hossman
-links:
-- name: SOLR-14595
-  url: https://issues.apache.org/jira/browse/SOLR-14595

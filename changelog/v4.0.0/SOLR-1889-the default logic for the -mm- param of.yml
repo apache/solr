@@ -1,8 +1,0 @@
-title: The default logic for the 'mm' param of DismaxQParser and ExtendedDismaxQParser
-  has been changed to be determined based on the effective value of the 'q.op' param
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-1889
-  url: https://issues.apache.org/jira/browse/SOLR-1889

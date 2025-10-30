@@ -1,9 +1,0 @@
-title: MetricsHistoryHandler now uses PKI Auth for metrics collection in background
-  thread
-type: fixed
-authors:
-- name: janhoy
-- name: Lorenzo
-links:
-- name: SOLR-12860
-  url: https://issues.apache.org/jira/browse/SOLR-12860

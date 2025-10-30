@@ -1,7 +1,0 @@
-title: Add split.key support for SPLITSHARD via SolrJ
-type: other
-authors:
-- name: Anshum Gupta
-links:
-- name: SOLR-6881
-  url: https://issues.apache.org/jira/browse/SOLR-6881

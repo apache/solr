@@ -1,7 +1,0 @@
-title: Keep solr's opennlp-tools version in sync with Lucene
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-16684
-  url: https://issues.apache.org/jira/browse/SOLR-16684

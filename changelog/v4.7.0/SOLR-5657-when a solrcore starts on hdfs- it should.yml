@@ -1,8 +1,0 @@
-title: When a SolrCore starts on HDFS, it should gracefully handle HDFS being in safe
-  mode.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5657
-  url: https://issues.apache.org/jira/browse/SOLR-5657

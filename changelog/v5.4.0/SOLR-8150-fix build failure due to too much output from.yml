@@ -1,7 +1,0 @@
-title: Fix build failure due to too much output from QueryResponseTest
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-8150
-  url: https://issues.apache.org/jira/browse/SOLR-8150

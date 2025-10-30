@@ -1,8 +1,0 @@
-title: TestMiniSolrCloudCluster.testStopAllStartAll case plus necessary MiniSolrCloudCluster
-  tweak
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8196
-  url: https://issues.apache.org/jira/browse/SOLR-8196

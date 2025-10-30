@@ -1,9 +1,0 @@
-title: SystemInfoHandler was improved to also show detailed operating system statistics
-  on IBM J9 virtual machines. It also no longer fails on Java 9 with Jigsaw module
-  system.
-type: added
-authors:
-- name: Uwe Schindler
-links:
-- name: LUCENE-6795
-  url: https://issues.apache.org/jira/browse/LUCENE-6795

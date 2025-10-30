@@ -1,7 +1,0 @@
-title: Add kerberos.name.rules.mechanism support to KerberosPlugin
-type: changed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-15617
-  url: https://issues.apache.org/jira/browse/SOLR-15617

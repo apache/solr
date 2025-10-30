@@ -1,8 +1,0 @@
-title: Include fields declared in the schema in table metadata (SQL) even if they
-  are empty
-type: changed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-15570
-  url: https://issues.apache.org/jira/browse/SOLR-15570

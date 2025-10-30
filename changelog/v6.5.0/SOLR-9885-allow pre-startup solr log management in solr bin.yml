@@ -1,8 +1,0 @@
-title: Allow pre-startup Solr log management in Solr bin scripts to be disabled.
-type: added
-authors:
-- name: Mano Kovacs
-- name: Mark Miller
-links:
-- name: SOLR-9885
-  url: https://issues.apache.org/jira/browse/SOLR-9885

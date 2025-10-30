@@ -1,7 +1,0 @@
-title: Admin UI now fully implements Swap Cores interface
-type: fixed
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-9232
-  url: https://issues.apache.org/jira/browse/SOLR-9232

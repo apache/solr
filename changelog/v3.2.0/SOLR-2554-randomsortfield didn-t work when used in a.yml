@@ -1,7 +1,0 @@
-title: RandomSortField didn't work when used in a function query.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-2554
-  url: https://issues.apache.org/jira/browse/SOLR-2554

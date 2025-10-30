@@ -1,9 +1,0 @@
-title: Config parsing should now work useing DOM Level 2 parsers -- Solr previously
-  relied on getTextContent which is a DOM Level 3 addition SOLR-78
-type: other
-authors:
-- name: Alexander Saar
-- name: hossman
-links:
-- name: SOLR-78
-  url: https://issues.apache.org/jira/browse/SOLR-78

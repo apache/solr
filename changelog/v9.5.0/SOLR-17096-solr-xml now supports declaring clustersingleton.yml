@@ -1,8 +1,0 @@
-title: solr.xml now supports declaring clusterSingleton plugins
-type: changed
-authors:
-- name: Paul McArthur
-- name: David Smiley
-links:
-- name: SOLR-17096
-  url: https://issues.apache.org/jira/browse/SOLR-17096

@@ -1,7 +1,0 @@
-title: Facet Module - Implement field/terms faceting over single-valued numeric fields.
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-7522
-  url: https://issues.apache.org/jira/browse/SOLR-7522

@@ -1,9 +1,0 @@
-title: CloudSolrStream and ParallelStream can choose replicas that are not active
-type: fixed
-authors:
-- name: Cao Manh Dat
-- name: Varun Thacker
-- name: Joel Bernstein
-links:
-- name: SOLR-8461
-  url: https://issues.apache.org/jira/browse/SOLR-8461

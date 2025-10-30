@@ -1,8 +1,0 @@
-title: Added RegexFragmenter, which splits text for highlighting based on a given
-  pattern.
-type: added
-authors:
-- name: klaas
-links:
-- name: SOLR-102
-  url: https://issues.apache.org/jira/browse/SOLR-102

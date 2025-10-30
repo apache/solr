@@ -1,8 +1,0 @@
-title: zkcli usage help for makepath doesn't match actual command.
-type: fixed
-authors:
-- name: Daniel Collins
-- name: Mark Miller
-links:
-- name: SOLR-5121
-  url: https://issues.apache.org/jira/browse/SOLR-5121

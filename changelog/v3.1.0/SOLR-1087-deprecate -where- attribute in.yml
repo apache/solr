@@ -1,9 +1,0 @@
-title: Deprecate 'where' attribute in CachedSqlEntityProcessor in favor of cacheKey
-  and cacheLookup.
-type: other
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-1087
-  url: https://issues.apache.org/jira/browse/SOLR-1087

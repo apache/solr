@@ -1,8 +1,0 @@
-title: Use time based expiration cache in all necessary places in HdfsDirectoryFactory.
-type: fixed
-authors:
-- name: Mihaly Toth
-- name: Mark Miller
-links:
-- name: SOLR-11873
-  url: https://issues.apache.org/jira/browse/SOLR-11873

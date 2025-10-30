@@ -1,8 +1,0 @@
-title: Existing violations allow bypassing policy rules when adding new replicas
-type: fixed
-authors:
-- name: noble
-- name: ab
-links:
-- name: SOLR-14409
-  url: https://issues.apache.org/jira/browse/SOLR-14409

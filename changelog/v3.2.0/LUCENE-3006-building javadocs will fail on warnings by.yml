@@ -1,8 +1,0 @@
-title: Building javadocs will fail on warnings by default. Override with -Dfailonjavadocwarning=false
-type: other
-authors:
-- name: sarowe
-- name: gsingers
-links:
-- name: LUCENE-3006
-  url: https://issues.apache.org/jira/browse/LUCENE-3006

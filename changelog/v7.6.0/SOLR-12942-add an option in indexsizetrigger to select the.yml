@@ -1,7 +1,0 @@
-title: Add an option in IndexSizeTrigger to select the split shard method.
-type: added
-authors:
-- name: ab
-links:
-- name: SOLR-12942
-  url: https://issues.apache.org/jira/browse/SOLR-12942

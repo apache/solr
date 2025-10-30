@@ -1,8 +1,0 @@
-title: Add options to remove instance dir or data dir on core unload.
-type: added
-authors:
-- name: Mark Miller
-- name: Per Steffensen
-links:
-- name: SOLR-3562
-  url: https://issues.apache.org/jira/browse/SOLR-3562

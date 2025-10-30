@@ -1,9 +1,0 @@
-title: 'DIH: getTimeElapsedSince() returns incorrect hour value when the elapse is
-  over 60 hours'
-type: fixed
-authors:
-- name: tom liu
-- name: koji
-links:
-- name: SOLR-2310
-  url: https://issues.apache.org/jira/browse/SOLR-2310

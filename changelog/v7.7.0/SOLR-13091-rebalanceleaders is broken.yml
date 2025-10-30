@@ -1,7 +1,0 @@
-title: REBALANCELEADERS is broken
-type: fixed
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-13091
-  url: https://issues.apache.org/jira/browse/SOLR-13091

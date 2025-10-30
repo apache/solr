@@ -1,7 +1,0 @@
-title: SystemInfoHandler leaks filehandles
-type: fixed
-authors:
-- name: siren
-links:
-- name: SOLR-3187
-  url: https://issues.apache.org/jira/browse/SOLR-3187

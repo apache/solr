@@ -1,8 +1,0 @@
-title: QueryElevationComponent now supports fq exclusions
-type: added
-authors:
-- name: Rudi Seitz
-- name: David Smiley
-links:
-- name: SOLR-16496
-  url: https://issues.apache.org/jira/browse/SOLR-16496

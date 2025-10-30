@@ -1,7 +1,0 @@
-title: complexphrase query parser now supports leading wildcards, beware of its' possible
-  heaviness. Users are encouraged to use ReversedWildcardFilter in index time analysis.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-7466
-  url: https://issues.apache.org/jira/browse/SOLR-7466

@@ -1,7 +1,0 @@
-title: Close objects contained inside an ObjectCache.
-type: changed
-authors:
-- name: Vincent Primault
-links:
-- name: SOLR-17094
-  url: https://issues.apache.org/jira/browse/SOLR-17094

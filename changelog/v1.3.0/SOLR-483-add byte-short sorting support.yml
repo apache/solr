@@ -1,7 +1,0 @@
-title: Add byte/short sorting support
-type: added
-authors:
-- name: gsingers
-links:
-- name: SOLR-483
-  url: https://issues.apache.org/jira/browse/SOLR-483

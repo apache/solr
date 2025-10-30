@@ -1,9 +1,0 @@
-title: Solr's CharFilter has been moved to Lucene. Remove CharFilter and related classes
-  from Solr and use Lucene's corresponding code
-type: other
-authors:
-- name: koji
-- name: shalin
-links:
-- name: SOLR-1241
-  url: https://issues.apache.org/jira/browse/SOLR-1241

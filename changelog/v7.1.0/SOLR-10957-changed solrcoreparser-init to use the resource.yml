@@ -1,8 +1,0 @@
-title: Changed SolrCoreParser.init to use the resource loader from getSchema() instead
-  of the resource loader from getCore().
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-10957
-  url: https://issues.apache.org/jira/browse/SOLR-10957

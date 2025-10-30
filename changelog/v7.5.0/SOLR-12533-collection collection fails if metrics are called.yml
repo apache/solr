@@ -1,8 +1,0 @@
-title: Collection collection fails if metrics are called during core creation
-type: fixed
-authors:
-- name: Peter Cseh
-- name: Mano Kovacs
-links:
-- name: SOLR-12533
-  url: https://issues.apache.org/jira/browse/SOLR-12533

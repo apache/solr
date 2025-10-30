@@ -1,8 +1,0 @@
-title: HttpSolrServer sends the stream name and exposes 'useMultiPartPost'
-type: added
-authors:
-- name: Karl Wright
-- name: ryan
-links:
-- name: SOLR-4358
-  url: https://issues.apache.org/jira/browse/SOLR-4358

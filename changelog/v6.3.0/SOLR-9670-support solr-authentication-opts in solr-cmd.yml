@@ -1,7 +1,0 @@
-title: Support SOLR_AUTHENTICATION_OPTS in solr.cmd
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-9670
-  url: https://issues.apache.org/jira/browse/SOLR-9670

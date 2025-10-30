@@ -1,7 +1,0 @@
-title: Improve error message when a large value is stored in an indexed string field.
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-8498
-  url: https://issues.apache.org/jira/browse/SOLR-8498

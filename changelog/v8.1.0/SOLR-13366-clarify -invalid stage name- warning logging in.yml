@@ -1,7 +1,0 @@
-title: Clarify 'Invalid stage name' warning logging in AutoScalingConfig
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-13366
-  url: https://issues.apache.org/jira/browse/SOLR-13366

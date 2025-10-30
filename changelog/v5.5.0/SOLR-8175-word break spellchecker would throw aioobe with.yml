@@ -1,9 +1,0 @@
-title: Word Break Spellchecker would throw AIOOBE with certain queries containing
-  "should" clauses.
-type: fixed
-authors:
-- name: Ryan Josal
-- name: James Dyer
-links:
-- name: SOLR-8175
-  url: https://issues.apache.org/jira/browse/SOLR-8175

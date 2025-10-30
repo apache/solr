@@ -1,8 +1,0 @@
-title: Fix race condition in shard split when a sub-shard is put in recovery state.
-type: fixed
-authors:
-- name: Andy Vuong
-- name: Bruno Roustant
-links:
-- name: SOLR-16473
-  url: https://issues.apache.org/jira/browse/SOLR-16473

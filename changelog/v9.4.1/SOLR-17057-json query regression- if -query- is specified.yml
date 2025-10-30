@@ -1,8 +1,0 @@
-title: 'JSON Query regression: If "query" is specified with a String (not JSON structure),
-  "defType" should parse it. Since 9.4 defType was ignored.'
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-17057
-  url: https://issues.apache.org/jira/browse/SOLR-17057

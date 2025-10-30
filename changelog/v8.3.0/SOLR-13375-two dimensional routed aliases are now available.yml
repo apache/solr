@@ -1,8 +1,0 @@
-title: Two dimensional routed aliases are now available for organizing collections
-  based on the data values of two fields.
-type: added
-authors:
-- name: Gus Heck
-links:
-- name: SOLR-13375
-  url: https://issues.apache.org/jira/browse/SOLR-13375

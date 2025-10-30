@@ -1,8 +1,0 @@
-title: Add log10 Stream Evaluator and allow the pow Stream Evaluator to accept a vector
-  of exponents
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-12862
-  url: https://issues.apache.org/jira/browse/SOLR-12862

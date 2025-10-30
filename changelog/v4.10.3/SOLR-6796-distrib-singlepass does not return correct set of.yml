@@ -1,9 +1,0 @@
-title: distrib.singlePass does not return correct set of fields for multi-fl-parameter
-  requests.
-type: fixed
-authors:
-- name: Per Steffensen
-- name: shalin
-links:
-- name: SOLR-6796
-  url: https://issues.apache.org/jira/browse/SOLR-6796

@@ -1,8 +1,0 @@
-title: When doing zk retries due to connection loss, rather than just retrying for
-  2 minutes, retry in proportion to the session timeout.
-type: changed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4199
-  url: https://issues.apache.org/jira/browse/SOLR-4199

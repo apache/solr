@@ -1,8 +1,0 @@
-title: Added ModifiableSolrParams - a SolrParams implementation that help you change
-  values after initialization.
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-244
-  url: https://issues.apache.org/jira/browse/SOLR-244

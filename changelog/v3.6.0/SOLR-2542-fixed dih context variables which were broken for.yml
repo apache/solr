@@ -1,8 +1,0 @@
-title: Fixed DIH Context variables which were broken for all scopes other then SCOPE_ENTITY
-type: fixed
-authors:
-- name: Linbin Chen & Frank Wesemann
-- name: hossman
-links:
-- name: SOLR-2542
-  url: https://issues.apache.org/jira/browse/SOLR-2542

@@ -1,8 +1,0 @@
-title: Provide simple mechanism for passing additional metadata / context about a
-  server-side SolrException back to the client-side
-type: other
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-6550
-  url: https://issues.apache.org/jira/browse/SOLR-6550

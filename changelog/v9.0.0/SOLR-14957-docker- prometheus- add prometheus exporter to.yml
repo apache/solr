@@ -1,8 +1,0 @@
-title: 'Docker, Prometheus: Add Prometheus Exporter to docker PATH. Fix classpath
-  issues.'
-type: other
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-14957
-  url: https://issues.apache.org/jira/browse/SOLR-14957

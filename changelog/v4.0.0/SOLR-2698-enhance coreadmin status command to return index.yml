@@ -1,9 +1,0 @@
-title: Enhance CoreAdmin STATUS command to return index size.
-type: other
-authors:
-- name: Yury Kats
-- name: hossman
-- name: Mark Miller
-links:
-- name: SOLR-2698
-  url: https://issues.apache.org/jira/browse/SOLR-2698

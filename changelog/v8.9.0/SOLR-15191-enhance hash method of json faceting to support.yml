@@ -1,9 +1,0 @@
-title: Enhance hash method of JSON faceting to support EnumFieldType and perhaps some
-  other/custom field types too.
-type: changed
-authors:
-- name: Thomas Wöckinger
-- name: David Smiley
-links:
-- name: SOLR-15191
-  url: https://issues.apache.org/jira/browse/SOLR-15191

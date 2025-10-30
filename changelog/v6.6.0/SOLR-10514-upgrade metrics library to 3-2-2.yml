@@ -1,7 +1,0 @@
-title: Upgrade Metrics library to 3.2.2.
-type: other
-authors:
-- name: ab
-links:
-- name: SOLR-10514
-  url: https://issues.apache.org/jira/browse/SOLR-10514

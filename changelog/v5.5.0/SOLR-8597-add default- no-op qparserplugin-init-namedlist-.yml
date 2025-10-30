@@ -1,7 +1,0 @@
-title: add default, no-op QParserPlugin.init(NamedList) method
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8597
-  url: https://issues.apache.org/jira/browse/SOLR-8597

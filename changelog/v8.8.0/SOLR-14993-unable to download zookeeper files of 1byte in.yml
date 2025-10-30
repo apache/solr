@@ -1,8 +1,0 @@
-title: Unable to download zookeeper files of 1byte in size
-type: fixed
-authors:
-- name: Erick Erickson
-- name: Allen Sooredoo
-links:
-- name: SOLR-14993
-  url: https://issues.apache.org/jira/browse/SOLR-14993

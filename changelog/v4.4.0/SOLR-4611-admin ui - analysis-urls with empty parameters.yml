@@ -1,7 +1,0 @@
-title: Admin UI - Analysis-Urls with empty parameters create empty result table
-type: changed
-authors:
-- name: steffkes
-links:
-- name: SOLR-4611
-  url: https://issues.apache.org/jira/browse/SOLR-4611

@@ -1,9 +1,0 @@
-title: Use of {!collapse} sometimes doesn't correctly return true for Collector.needsScores(),
-  especially when the query was cached. This can cause an exception when 'q' is a
-  SpanQuery or potentially others.
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-9494
-  url: https://issues.apache.org/jira/browse/SOLR-9494

@@ -1,8 +1,0 @@
-title: The elevate.xml config-file is made optional in the ElevationComponent. The
-  default configset doesn't ship with a elevate.xml file anymore
-type: other
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-11021
-  url: https://issues.apache.org/jira/browse/SOLR-11021

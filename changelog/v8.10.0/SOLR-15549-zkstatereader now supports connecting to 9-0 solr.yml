@@ -1,7 +1,0 @@
-title: ZkStateReader now supports connecting to 9.0 Solr Clouds
-type: changed
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-15549
-  url: https://issues.apache.org/jira/browse/SOLR-15549

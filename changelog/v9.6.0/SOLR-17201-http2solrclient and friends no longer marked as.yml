@@ -1,8 +1,0 @@
-title: Http2SolrClient and friends no longer marked as @lucene.experimental. Krb5HttpClientBuilder
-  and PreemptiveBasicAuthClientBuilderFactory no longer deprecated
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-17201
-  url: https://issues.apache.org/jira/browse/SOLR-17201

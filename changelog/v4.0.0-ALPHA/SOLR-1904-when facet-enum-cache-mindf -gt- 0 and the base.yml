@@ -1,8 +1,0 @@
-title: When facet.enum.cache.minDf &gt; 0 and the base doc set is a SortedIntSet,
-  convert to HashDocSet for better performance.
-type: changed
-authors:
-- name: yonik
-links:
-- name: SOLR-1904
-  url: https://issues.apache.org/jira/browse/SOLR-1904

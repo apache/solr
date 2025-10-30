@@ -1,6 +1,0 @@
-title: Simplified index.jsp and form.jsp, primarily by removing/hiding XML specific
-  params, and adding an option to pick the output type.
-type: other
-authors:
-- name: hossman
-links: []

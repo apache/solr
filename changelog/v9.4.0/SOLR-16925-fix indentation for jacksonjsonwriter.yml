@@ -1,7 +1,0 @@
-title: Fix indentation for JacksonJsonWriter
-type: fixed
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-16925
-  url: https://issues.apache.org/jira/browse/SOLR-16925

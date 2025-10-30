@@ -1,7 +1,0 @@
-title: When legacyCloud=false, cores should not publish itself as DOWN on startup.
-type: changed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-11424
-  url: https://issues.apache.org/jira/browse/SOLR-11424

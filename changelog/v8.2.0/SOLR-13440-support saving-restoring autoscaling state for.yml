@@ -1,7 +1,0 @@
-title: Support saving/restoring autoscaling state for repeatable simulations.
-type: changed
-authors:
-- name: ab
-links:
-- name: SOLR-13440
-  url: https://issues.apache.org/jira/browse/SOLR-13440

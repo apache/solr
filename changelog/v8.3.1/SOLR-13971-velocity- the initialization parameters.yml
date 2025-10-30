@@ -1,9 +1,0 @@
-title: 'Velocity: The initialization parameters "params.resource.loader.enabled" and
-  "solr.resource.loader.enabled" have been removed and replaced by Java system properties
-  "velocity.resourceloader.params.enabled" and "velocity.resourceloader.solr.enabled"
-  respectively (both turned off by default). Please see SOLR-13971 for more details.'
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-13971
-  url: https://issues.apache.org/jira/browse/SOLR-13971

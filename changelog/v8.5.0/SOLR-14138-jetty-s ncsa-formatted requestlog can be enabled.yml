@@ -1,8 +1,0 @@
-title: Jetty's NCSA-formatted RequestLog can be enabled via environment variable,
-  SOLR_REQUESTLOG_ENABLED=true. This will respect SOLR_LOGS_DIR if it is set.
-type: changed
-authors:
-- name: rmuir
-links:
-- name: SOLR-14138
-  url: https://issues.apache.org/jira/browse/SOLR-14138

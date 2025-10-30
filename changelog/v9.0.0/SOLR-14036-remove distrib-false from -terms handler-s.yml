@@ -1,8 +1,0 @@
-title: Remove distrib=false from /terms handler's default parameters
-type: other
-authors:
-- name: David Smiley
-- name: Munendra S N
-links:
-- name: SOLR-14036
-  url: https://issues.apache.org/jira/browse/SOLR-14036

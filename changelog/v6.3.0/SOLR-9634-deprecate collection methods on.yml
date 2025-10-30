@@ -1,7 +1,0 @@
-title: Deprecate collection methods on MiniSolrCloudCluster
-type: other
-authors:
-- name: Alan Woodward
-links:
-- name: SOLR-9634
-  url: https://issues.apache.org/jira/browse/SOLR-9634

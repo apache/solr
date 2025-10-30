@@ -1,8 +1,0 @@
-title: Escape query characters in Solr SQL Array UDF functions
-type: fixed
-authors:
-- name: Kiran Chitturi
-- name: Timothy Potter
-links:
-- name: SOLR-16215
-  url: https://issues.apache.org/jira/browse/SOLR-16215

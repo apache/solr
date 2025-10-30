@@ -1,8 +1,0 @@
-title: If a SolrCore cannot be created it should remove any information it published
-  about itself from ZooKeeper.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4814
-  url: https://issues.apache.org/jira/browse/SOLR-4814

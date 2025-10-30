@@ -1,9 +1,0 @@
-title: Addition of timeouts for distributed searching. Configurable through 'shard-socket-timeout'
-  and 'shard-connection-timeout' parameters in SearchHandler.
-type: added
-authors:
-- name: Patrick O'Leary
-- name: shalin
-links:
-- name: SOLR-850
-  url: https://issues.apache.org/jira/browse/SOLR-850

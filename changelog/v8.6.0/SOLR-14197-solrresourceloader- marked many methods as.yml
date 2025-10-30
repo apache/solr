@@ -1,8 +1,0 @@
-title: 'SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted
-  exiting logic to avoid them.'
-type: other
-authors:
-- name: David Smiley
-links:
-- name: SOLR-14197
-  url: https://issues.apache.org/jira/browse/SOLR-14197

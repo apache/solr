@@ -1,7 +1,0 @@
-title: optimize search with filter when filterCache is null
-type: changed
-authors:
-- name: Robert Muir
-links:
-- name: SOLR-5012
-  url: https://issues.apache.org/jira/browse/SOLR-5012

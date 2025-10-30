@@ -1,7 +1,0 @@
-title: optimize numDocs(Query,DocSet) when filterCache is null
-type: changed
-authors:
-- name: Robert Muir
-links:
-- name: SOLR-5002
-  url: https://issues.apache.org/jira/browse/SOLR-5002

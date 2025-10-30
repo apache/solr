@@ -1,8 +1,0 @@
-title: Refactored common code in CSVRequestHandler and XMLUpdateRequestHandler
-type: other
-authors:
-- name: gsingers
-- name: ehatcher
-links:
-- name: SOLR-852
-  url: https://issues.apache.org/jira/browse/SOLR-852

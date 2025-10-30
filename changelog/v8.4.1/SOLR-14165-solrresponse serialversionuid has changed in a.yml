@@ -1,8 +1,0 @@
-title: SolrResponse serialVersionUID has changed in a backward incompatible way
-type: fixed
-authors:
-- name: Andy Webb
-- name: noble
-links:
-- name: SOLR-14165
-  url: https://issues.apache.org/jira/browse/SOLR-14165

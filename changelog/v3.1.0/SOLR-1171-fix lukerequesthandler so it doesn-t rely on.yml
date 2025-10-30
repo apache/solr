@@ -1,8 +1,0 @@
-title: Fix LukeRequestHandler so it doesn't rely on SolrQueryParser and report incorrect
-  stats when field names contain characters SolrQueryParser considers special.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-1171
-  url: https://issues.apache.org/jira/browse/SOLR-1171

@@ -1,9 +1,0 @@
-title: Add possibility to define replica order with the shards.preference parameter
-  to e.g. prefer PULL replicas for distributed queries.
-type: added
-authors:
-- name: Ere Maijala
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-11982
-  url: https://issues.apache.org/jira/browse/SOLR-11982

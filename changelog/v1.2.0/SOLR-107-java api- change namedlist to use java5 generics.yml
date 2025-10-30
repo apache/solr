@@ -1,8 +1,0 @@
-title: 'JAVA API: Change NamedList to use Java5 generics and implement Iterable&lt;Map.Entry&gt;'
-type: added
-authors:
-- name: Ryan McKinley
-- name: yonik
-links:
-- name: SOLR-107
-  url: https://issues.apache.org/jira/browse/SOLR-107

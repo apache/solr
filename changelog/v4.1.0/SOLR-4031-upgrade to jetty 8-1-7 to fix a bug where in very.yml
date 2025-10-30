@@ -1,9 +1,0 @@
-title: Upgrade to Jetty 8.1.7 to fix a bug where in very rare occasions the content
-  of two concurrent requests get mixed up.
-type: fixed
-authors:
-- name: Per Steffensen
-- name: yonik
-links:
-- name: SOLR-4031
-  url: https://issues.apache.org/jira/browse/SOLR-4031

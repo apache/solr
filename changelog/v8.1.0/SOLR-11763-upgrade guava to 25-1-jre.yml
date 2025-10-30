@@ -1,8 +1,0 @@
-title: Upgrade Guava to 25.1-jre
-type: other
-authors:
-- name: Markus Jelsma
-- name: Kevin Risden
-links:
-- name: SOLR-11763
-  url: https://issues.apache.org/jira/browse/SOLR-11763

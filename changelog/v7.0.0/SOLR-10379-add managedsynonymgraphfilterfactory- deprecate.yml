@@ -1,7 +1,0 @@
-title: Add ManagedSynonymGraphFilterFactory, deprecate ManagedSynonymFilterFactory.
-type: added
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-10379
-  url: https://issues.apache.org/jira/browse/SOLR-10379

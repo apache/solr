@@ -1,7 +1,0 @@
-title: Implement Connection.prepareStatement
-type: added
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-8809
-  url: https://issues.apache.org/jira/browse/SOLR-8809

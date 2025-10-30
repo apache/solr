@@ -1,8 +1,0 @@
-title: Fix ExpandComponent behavior when expanding on numeric fields to differentiate
-  '0' group from null group
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-15078
-  url: https://issues.apache.org/jira/browse/SOLR-15078

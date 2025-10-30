@@ -1,7 +1,0 @@
-title: Remove dependencies on methods defined in the SimplePostTool from Solr core
-  and solrj modules.
-type: other
-authors: []
-links:
-- name: SOLR-16803
-  url: https://issues.apache.org/jira/browse/SOLR-16803

@@ -1,9 +1,0 @@
-title: The routing parameter "shard.keys" is deprecated as part of SOLR-5017 .The
-  new parameter name is '_route_' . The old parameter should continue to work for
-  another release
-type: other
-authors:
-- name: Noble Paul
-links:
-- name: SOLR-5017
-  url: https://issues.apache.org/jira/browse/SOLR-5017

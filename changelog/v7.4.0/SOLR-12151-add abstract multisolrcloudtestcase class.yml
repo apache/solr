@@ -1,7 +1,0 @@
-title: Add abstract MultiSolrCloudTestCase class.
-type: added
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-12151
-  url: https://issues.apache.org/jira/browse/SOLR-12151

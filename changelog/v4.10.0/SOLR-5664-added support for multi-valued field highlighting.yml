@@ -1,7 +1,0 @@
-title: Added support for multi-valued field highlighting in /browse UI.
-type: other
-authors:
-- name: ehatcher
-links:
-- name: SOLR-5664
-  url: https://issues.apache.org/jira/browse/SOLR-5664

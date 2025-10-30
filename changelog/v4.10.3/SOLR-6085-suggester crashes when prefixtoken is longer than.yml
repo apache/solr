@@ -1,7 +1,0 @@
-title: Suggester crashes when prefixToken is longer than surface form
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-6085
-  url: https://issues.apache.org/jira/browse/SOLR-6085

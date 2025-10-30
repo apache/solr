@@ -1,8 +1,0 @@
-title: When authentication enabled, requests fail if sent to a node that doesn't host
-  the collection
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-8422
-  url: https://issues.apache.org/jira/browse/SOLR-8422

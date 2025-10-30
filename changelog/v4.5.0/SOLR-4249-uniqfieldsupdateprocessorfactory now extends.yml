@@ -1,9 +1,0 @@
-title: UniqFieldsUpdateProcessorFactory now extends FieldMutatingUpdateProcessorFactory
-  and supports all of its selector options. Use of the "fields" init param is now
-  deprecated in favor of "fieldName"
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-4249
-  url: https://issues.apache.org/jira/browse/SOLR-4249

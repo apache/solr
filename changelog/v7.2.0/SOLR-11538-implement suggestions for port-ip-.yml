@@ -1,7 +1,0 @@
-title: Implement suggestions for port,ip_*, nodeRole,sysprop.*, metrics:*
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-11538
-  url: https://issues.apache.org/jira/browse/SOLR-11538

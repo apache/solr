@@ -1,8 +1,0 @@
-title: Make message for missing dataimport config in UI more explicit.
-type: other
-authors:
-- name: Shawn Heisey
-- name: "Amrit Sarkar via\n  Cassandra Targett"
-links:
-- name: SOLR-11613
-  url: https://issues.apache.org/jira/browse/SOLR-11613

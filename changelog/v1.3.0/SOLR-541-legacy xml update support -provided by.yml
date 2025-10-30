@@ -1,8 +1,0 @@
-title: Legacy XML update support (provided by SolrUpdateServlet when no RequestHandler
-  is mapped to "/update") now logs error correctly.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-541
-  url: https://issues.apache.org/jira/browse/SOLR-541

@@ -1,7 +1,0 @@
-title: Update dependency commons-cli:commons-cli to v1.6.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2048
-  url: https://github.com/apache/solr/pull/2048

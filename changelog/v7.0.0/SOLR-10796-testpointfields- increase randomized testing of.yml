@@ -1,7 +1,0 @@
-title: 'TestPointFields: increase randomized testing of non-trivial values.'
-type: other
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-10796
-  url: https://issues.apache.org/jira/browse/SOLR-10796

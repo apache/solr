@@ -1,8 +1,0 @@
-title: CloudSolrServer now uses multiple threads to send updates by default.
-type: changed
-authors:
-- name: Joel Bernstein
-- name: Mark Miller
-links:
-- name: SOLR-4816
-  url: https://issues.apache.org/jira/browse/SOLR-4816

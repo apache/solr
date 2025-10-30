@@ -1,7 +1,0 @@
-title: Streaming expressions should support collection alias
-type: added
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-9077
-  url: https://issues.apache.org/jira/browse/SOLR-9077

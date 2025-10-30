@@ -1,7 +1,0 @@
-title: Upgrade Apache Hadoop to 3.3.4
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16423
-  url: https://issues.apache.org/jira/browse/SOLR-16423

@@ -1,9 +1,0 @@
-title: Make ReplicationHandler's commitReserveDuration configurable in SolrCloud mode.
-type: added
-authors:
-- name: Ramsey Haddad
-- name: Christine Poerschke
-- name: hossman
-links:
-- name: SOLR-10962
-  url: https://issues.apache.org/jira/browse/SOLR-10962

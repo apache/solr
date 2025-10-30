@@ -1,8 +1,0 @@
-title: Avoid $SOLR_STOP_WAIT use during 'bin/solr start' if $SOLR_START_WAIT is supplied.
-type: added
-authors:
-- name: Omar Abdelnabi
-- name: Christine Poerschke
-links:
-- name: SOLR-11167
-  url: https://issues.apache.org/jira/browse/SOLR-11167

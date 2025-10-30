@@ -1,8 +1,0 @@
-title: org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has
-  new method 'setMainQuery' which is used to set top-level query. build() would fail
-  if called without setting mainQuery.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-13823
-  url: https://issues.apache.org/jira/browse/SOLR-13823

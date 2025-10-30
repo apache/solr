@@ -1,8 +1,0 @@
-title: Simple faceted search support for fields (enumerating terms) and arbitrary
-  queries added to both StandardRequestHandler and DisMaxRequestHandler. SOLR-44
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-44
-  url: https://issues.apache.org/jira/browse/SOLR-44

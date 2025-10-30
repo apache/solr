@@ -1,8 +1,0 @@
-title: Eliminate special case code in Solr CLI by introducing explicit VersionTool.java.
-type: other
-authors:
-- name: Eric Pugh
-- name: Will White
-links:
-- name: SOLR-16842
-  url: https://issues.apache.org/jira/browse/SOLR-16842

@@ -1,8 +1,0 @@
-title: move uimaConfig to under the uima's update processor in solrconfig.xml.
-type: other
-authors:
-- name: Tommaso Teofili
-- name: koji
-links:
-- name: SOLR-2436
-  url: https://issues.apache.org/jira/browse/SOLR-2436

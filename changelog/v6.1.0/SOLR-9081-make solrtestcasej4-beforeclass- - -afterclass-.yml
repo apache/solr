@@ -1,8 +1,0 @@
-title: Make SolrTestCaseJ4.beforeClass() / .afterClass() public so it works with Mockito
-type: other
-authors:
-- name: Georg Sorst
-- name: Alan Woodward
-links:
-- name: SOLR-9081
-  url: https://issues.apache.org/jira/browse/SOLR-9081
