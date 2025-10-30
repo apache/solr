@@ -114,7 +114,7 @@ This can be done by setting a `SOLR_HOST_BIND` value in your environment's "incl
  SOLR_HOST_BIND="0.0.0.0"
  ----
 
-The same setting is also available as the `-Dsolr.host.bind` System Property. 
+The same setting is also available as the `-Dsolr.host.bind` System Property.
 
 The same is true for the embedded Zookeeper, if it is run with Solr.
 By default, the embedded Zookeeper only listens on the loopback interface ("127.0.0.1")
