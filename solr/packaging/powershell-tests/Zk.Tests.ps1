@@ -126,6 +126,8 @@ BeforeAll {
     Write-Host "Testing: $TestName"
     Write-Host "Running: $SolrCmd $($Arguments -join ' ')"
 
+    # Note that CLI warnings are interpreted as NativeCommandError, since logged to std.err, and therefore may match
+    # strings like "Error"
     $output = & $SolrCmd @Arguments 2>&1
     $outputStr = $output | Out-String
 
@@ -275,7 +277,7 @@ Describe "Solr Zk Command" {
       if (Test-Path $sourceConfigsetDir) {
         $output = Test-CommandOutput @("zk", "upconfig", "-d", $sourceConfigsetDir, "-n", "techproducts_ps_test", "-z", "localhost:$ZK_PORT") "zk upconfig"
         $output | Should -Match "Uploading"
-        $output | Should -Not -Match "ERROR"
+        $LASTEXITCODE | Should -Match 0
       } else {
         Set-ItResult -Skipped -Because "sample_techproducts_configs not found"
       }
@@ -290,7 +292,7 @@ Describe "Solr Zk Command" {
       try {
         $output = Test-CommandOutput @("zk", "downconfig", "-z", "localhost:$ZK_PORT", "-n", "_default", "-d", $downloadDir) "zk downconfig"
         $output | Should -Match "Downloading"
-        $output | Should -Not -Match "ERROR"
+        $LASTEXITCODE | Should -Match 0
       } finally {
         # Cleanup
         if (Test-Path $downloadDir) {
