@@ -1,7 +1,0 @@
-title: Clean up and refactor CoreContainer code around solr.xml and SolrCore management.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4749
-  url: https://issues.apache.org/jira/browse/SOLR-4749

@@ -1,7 +1,0 @@
-title: Add the "films" example to SolrCLI via -e films parameter.
-type: changed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-15786
-  url: https://issues.apache.org/jira/browse/SOLR-15786

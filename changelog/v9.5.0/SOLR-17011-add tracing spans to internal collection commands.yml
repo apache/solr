@@ -1,7 +1,0 @@
-title: Add tracing spans to internal collection commands
-type: changed
-authors:
-- name: Alex Deparvu
-links:
-- name: SOLR-17011
-  url: https://issues.apache.org/jira/browse/SOLR-17011

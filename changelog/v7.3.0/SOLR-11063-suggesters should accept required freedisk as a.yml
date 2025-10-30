@@ -1,7 +1,0 @@
-title: Suggesters should accept required freedisk as a hint
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-11063
-  url: https://issues.apache.org/jira/browse/SOLR-11063

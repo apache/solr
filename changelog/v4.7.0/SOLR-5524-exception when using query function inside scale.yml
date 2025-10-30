@@ -1,8 +1,0 @@
-title: Exception when using Query Function inside Scale Function.
-type: fixed
-authors:
-- name: Trey Grainger
-- name: yonik
-links:
-- name: SOLR-5524
-  url: https://issues.apache.org/jira/browse/SOLR-5524

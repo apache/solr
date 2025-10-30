@@ -1,9 +1,0 @@
-title: When a election is started because a leader went down, the new leader candidate
-  should decline if the last state they published was not active.
-type: fixed
-authors:
-- name: yonik
-- name: Mark Miller
-links:
-- name: SOLR-3833
-  url: https://issues.apache.org/jira/browse/SOLR-3833

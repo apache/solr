@@ -1,7 +1,0 @@
-title: Removed deprecated client/ruby directory, which included solr-ruby and flare.
-type: other
-authors:
-- name: ehatcher
-links:
-- name: SOLR-2607
-  url: https://issues.apache.org/jira/browse/SOLR-2607

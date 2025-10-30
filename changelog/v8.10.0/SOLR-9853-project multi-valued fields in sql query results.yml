@@ -1,7 +1,0 @@
-title: Project multi-valued fields in SQL query results
-type: changed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-9853
-  url: https://issues.apache.org/jira/browse/SOLR-9853

@@ -1,7 +1,0 @@
-title: Support docValues in CollationField and ICUCollationField.
-type: added
-authors:
-- name: Robert Muir
-links:
-- name: SOLR-5506
-  url: https://issues.apache.org/jira/browse/SOLR-5506

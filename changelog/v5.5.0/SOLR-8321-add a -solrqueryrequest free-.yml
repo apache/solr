@@ -1,7 +1,0 @@
-title: add a (SolrQueryRequest free) SortSpecParsing.parseSortSpec variant
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8321
-  url: https://issues.apache.org/jira/browse/SOLR-8321

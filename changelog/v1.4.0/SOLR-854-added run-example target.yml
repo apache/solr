@@ -1,8 +1,0 @@
-title: Added run-example target
-type: other
-authors:
-- name: Mark Miller
-- name: ehatcher
-links:
-- name: SOLR-854
-  url: https://issues.apache.org/jira/browse/SOLR-854

@@ -1,7 +1,0 @@
-title: the abstract DocTransformer class now has an abstract score-less transform
-  method variant.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-11254
-  url: https://issues.apache.org/jira/browse/SOLR-11254

@@ -1,7 +1,0 @@
-title: use double quotes to enclose attributes in solr.xml
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-1215
-  url: https://issues.apache.org/jira/browse/SOLR-1215

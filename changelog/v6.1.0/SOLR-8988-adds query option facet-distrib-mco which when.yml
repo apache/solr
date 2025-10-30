@@ -1,9 +1,0 @@
-title: Adds query option facet.distrib.mco which when set to true allows the use of
-  facet.mincount=1 in cloud mode.
-type: added
-authors:
-- name: Keith Laban
-- name: Dennis Gove
-links:
-- name: SOLR-8988
-  url: https://issues.apache.org/jira/browse/SOLR-8988

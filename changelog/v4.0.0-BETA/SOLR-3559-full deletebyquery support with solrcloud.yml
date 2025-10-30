@@ -1,9 +1,0 @@
-title: Full deleteByQuery support with SolrCloud distributed indexing. All replicas
-  of a shard will be consistent, even if updates arrive in a different order on different
-  replicas.
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-3559
-  url: https://issues.apache.org/jira/browse/SOLR-3559

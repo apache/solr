@@ -1,9 +1,0 @@
-title: If you use multiple fl entries rather than a comma separated list, all but
-  the first entry can be ignored if you are using distributed search.
-type: fixed
-authors:
-- name: Tomás Fernández Löbbe
-- name: Mark Miller
-links:
-- name: SOLR-3214
-  url: https://issues.apache.org/jira/browse/SOLR-3214

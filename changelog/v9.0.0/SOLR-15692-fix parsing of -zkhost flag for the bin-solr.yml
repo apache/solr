@@ -1,7 +1,0 @@
-title: Fix parsing of -zkHost flag for the bin/solr commands
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-15692
-  url: https://issues.apache.org/jira/browse/SOLR-15692

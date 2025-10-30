@@ -1,8 +1,0 @@
-title: Add StreamExpression Support to RollupStream
-type: added
-authors:
-- name: Dennis Gove
-- name: Joel Bernstein
-links:
-- name: SOLR-7707
-  url: https://issues.apache.org/jira/browse/SOLR-7707

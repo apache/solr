@@ -1,7 +1,0 @@
-title: Do not use SolrCore as keys in a WeakHashMap
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-14576
-  url: https://issues.apache.org/jira/browse/SOLR-14576

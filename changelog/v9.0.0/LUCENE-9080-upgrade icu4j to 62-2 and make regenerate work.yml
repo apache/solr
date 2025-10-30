@@ -1,7 +1,0 @@
-title: Upgrade ICU4j to 62.2 and make regenerate work
-type: other
-authors:
-- name: Erick Erickson
-links:
-- name: LUCENE-9080
-  url: https://issues.apache.org/jira/browse/LUCENE-9080

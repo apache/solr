@@ -1,9 +1,0 @@
-title: Replace (instanceof TrieFooField || instanceof FooPointField) constructs with
-  FieldType.getNumberType() or SchemaField.getSortField() where appropriate.
-type: other
-authors:
-- name: hossman
-- name: Steve Rowe
-links:
-- name: SOLR-10400
-  url: https://issues.apache.org/jira/browse/SOLR-10400

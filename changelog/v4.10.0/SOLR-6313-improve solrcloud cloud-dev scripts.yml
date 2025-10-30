@@ -1,8 +1,0 @@
-title: Improve SolrCloud cloud-dev scripts.
-type: other
-authors:
-- name: Mark Miller
-- name: Vamsee Yarlagadda
-links:
-- name: SOLR-6313
-  url: https://issues.apache.org/jira/browse/SOLR-6313

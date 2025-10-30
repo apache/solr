@@ -1,7 +1,0 @@
-title: Fixed binary release packages to include dependencies needed for the solr-test-framework
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-3690
-  url: https://issues.apache.org/jira/browse/SOLR-3690

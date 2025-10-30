@@ -1,7 +1,0 @@
-title: Config API does not work for spellchecker
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-8104
-  url: https://issues.apache.org/jira/browse/SOLR-8104

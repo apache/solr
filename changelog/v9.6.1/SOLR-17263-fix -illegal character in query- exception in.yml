@@ -1,7 +1,0 @@
-title: Fix 'Illegal character in query' exception in HttpJdkSolrClient
-type: fixed
-authors:
-- name: Andy Webb
-links:
-- name: SOLR-17263
-  url: https://issues.apache.org/jira/browse/SOLR-17263

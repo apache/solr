@@ -1,9 +1,0 @@
-title: Fix relatedness() stat in json.facets to no longer cause server errors (or
-  nonsense results) when combined with allBuckets:true.
-type: fixed
-authors:
-- name: Michael Gibney
-- name: hossman
-links:
-- name: SOLR-14467
-  url: https://issues.apache.org/jira/browse/SOLR-14467

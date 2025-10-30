@@ -1,9 +1,0 @@
-title: Specifying the replicationFactor parameter while restoring a collection would
-  lead to extra tlog and pull replicas being created
-type: fixed
-authors:
-- name: Peter Szantai-Kis
-- name: Varun Thacker
-links:
-- name: SOLR-11560
-  url: https://issues.apache.org/jira/browse/SOLR-11560

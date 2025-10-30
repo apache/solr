@@ -1,9 +1,0 @@
-title: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: SOLR-17012
-  url: https://issues.apache.org/jira/browse/SOLR-17012
-- name: PR#1743
-  url: https://github.com/apache/solr/pull/1743

@@ -1,8 +1,0 @@
-title: 'LBHttpSolrClient: ArrayIndexOutOfBoundsException risk if counter overflows'
-type: fixed
-authors:
-- name: longkey
-- name: Noble Paul
-links:
-- name: SOLR-6457
-  url: https://issues.apache.org/jira/browse/SOLR-6457

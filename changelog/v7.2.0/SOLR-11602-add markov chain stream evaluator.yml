@@ -1,7 +1,0 @@
-title: Add Markov Chain Stream Evaluator
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11602
-  url: https://issues.apache.org/jira/browse/SOLR-11602

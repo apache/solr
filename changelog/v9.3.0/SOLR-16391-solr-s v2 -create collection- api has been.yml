@@ -1,9 +1,0 @@
-title: Solr's v2 "create collection" API has been tweaked slightly to be more intuitive.
-  It remains available under `POST /api/collections`, but the top level "create" command-name
-  key has been removed.
-type: changed
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-16391
-  url: https://issues.apache.org/jira/browse/SOLR-16391

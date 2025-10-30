@@ -1,7 +1,0 @@
-title: Change SchemaSimilarityFactory default to BM25Similarity
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-8261
-  url: https://issues.apache.org/jira/browse/SOLR-8261

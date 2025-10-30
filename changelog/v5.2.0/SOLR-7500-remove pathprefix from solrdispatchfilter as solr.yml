@@ -1,8 +1,0 @@
-title: Remove pathPrefix from SolrDispatchFilter as Solr no longer runs as a part
-  of a bigger webapp.
-type: other
-authors:
-- name: Anshum Gupta
-links:
-- name: SOLR-7500
-  url: https://issues.apache.org/jira/browse/SOLR-7500

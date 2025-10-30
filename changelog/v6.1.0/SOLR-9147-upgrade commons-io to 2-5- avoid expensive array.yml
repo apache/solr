@@ -1,7 +1,0 @@
-title: Upgrade commons-io to 2.5, avoid expensive array resizing in EmbeddedSolrServer
-type: changed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-9147
-  url: https://issues.apache.org/jira/browse/SOLR-9147

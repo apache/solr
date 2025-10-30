@@ -1,8 +1,0 @@
-title: Support easier overrides of Carrot2 clustering attributes via XML data sets
-  exported from the Workbench.
-type: added
-authors:
-- name: Dawid Weiss
-links:
-- name: SOLR-5202
-  url: https://issues.apache.org/jira/browse/SOLR-5202

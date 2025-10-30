@@ -1,8 +1,0 @@
-title: Add the countDist aggregation to the stats, facet and timeseries Streaming
-  Expressions
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-15208
-  url: https://issues.apache.org/jira/browse/SOLR-15208

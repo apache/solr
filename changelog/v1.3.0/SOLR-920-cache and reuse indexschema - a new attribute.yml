@@ -1,7 +1,0 @@
-title: Cache and reuse IndexSchema . A new attribute added in solr.xml called 'shareSchema'
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-920
-  url: https://issues.apache.org/jira/browse/SOLR-920

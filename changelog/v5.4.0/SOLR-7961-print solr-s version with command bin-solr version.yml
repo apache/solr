@@ -1,7 +1,0 @@
-title: Print Solr's version with command bin/solr version
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-7961
-  url: https://issues.apache.org/jira/browse/SOLR-7961

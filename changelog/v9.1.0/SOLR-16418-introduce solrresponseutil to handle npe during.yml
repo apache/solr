@@ -1,8 +1,0 @@
-title: Introduce SolrResponseUtil to handle NPE during query timeout or exception
-  when parsing SolrResponse
-type: fixed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16418
-  url: https://issues.apache.org/jira/browse/SOLR-16418

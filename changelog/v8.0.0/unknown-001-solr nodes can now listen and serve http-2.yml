@@ -1,6 +1,0 @@
-title: Solr nodes can now listen and serve HTTP/2 requests. Most of internal requests
-type: upgrade_notes
-authors:
-- name: sent by UpdateShardHandler
-- name: HttpShardHandler
-links: []

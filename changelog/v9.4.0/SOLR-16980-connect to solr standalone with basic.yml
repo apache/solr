@@ -1,7 +1,0 @@
-title: Connect to SOLR standalone with basic authentication
-type: fixed
-authors:
-- name: Alex Deparvu
-links:
-- name: SOLR-16980
-  url: https://issues.apache.org/jira/browse/SOLR-16980

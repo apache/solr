@@ -1,8 +1,0 @@
-title: Fix HDFS BlockCache evictions metric to not count explicit removal due to a
-  directory close.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-10225
-  url: https://issues.apache.org/jira/browse/SOLR-10225

@@ -1,9 +1,0 @@
-title: Add HelloWorldSolrCloudTestCase class
-type: other
-authors:
-- name: Christine Poerschke
-- name: Alan Woodward
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-9625
-  url: https://issues.apache.org/jira/browse/SOLR-9625

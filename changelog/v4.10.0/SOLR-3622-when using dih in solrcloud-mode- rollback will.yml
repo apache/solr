@@ -1,8 +1,0 @@
-title: When using DIH in SolrCloud-mode, rollback will no longer be called when an
-  error occurs.
-type: other
-authors:
-- name: ehatcher
-links:
-- name: SOLR-3622
-  url: https://issues.apache.org/jira/browse/SOLR-3622

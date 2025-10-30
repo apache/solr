@@ -1,8 +1,0 @@
-title: Fixed a error in [child] transformer that could ocur if documentCache was not
-  used
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-12107
-  url: https://issues.apache.org/jira/browse/SOLR-12107

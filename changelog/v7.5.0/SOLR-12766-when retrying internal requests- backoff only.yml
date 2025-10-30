@@ -1,7 +1,0 @@
-title: When retrying internal requests, backoff only once for the full batch of retries
-type: changed
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-12766
-  url: https://issues.apache.org/jira/browse/SOLR-12766

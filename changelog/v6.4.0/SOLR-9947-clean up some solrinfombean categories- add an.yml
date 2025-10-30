@@ -1,8 +1,0 @@
-title: Clean up some SolrInfoMBean categories. Add an alternative hierarchical view
-  in JMX for SolrInfoMBeans, which uses similar conventions to SolrJmxReporter.
-type: added
-authors:
-- name: ab
-links:
-- name: SOLR-9947
-  url: https://issues.apache.org/jira/browse/SOLR-9947

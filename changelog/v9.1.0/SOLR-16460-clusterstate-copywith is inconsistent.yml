@@ -1,7 +1,0 @@
-title: ClusterState.copyWith is inconsistent
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-16460
-  url: https://issues.apache.org/jira/browse/SOLR-16460

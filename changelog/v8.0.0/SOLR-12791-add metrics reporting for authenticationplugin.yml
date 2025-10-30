@@ -1,7 +1,0 @@
-title: Add Metrics reporting for AuthenticationPlugin
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-12791
-  url: https://issues.apache.org/jira/browse/SOLR-12791

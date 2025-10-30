@@ -1,8 +1,0 @@
-title: Http2SolrClient aborts requests on exception
-type: fixed
-authors:
-- name: Daniel Rabus
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-16229
-  url: https://issues.apache.org/jira/browse/SOLR-16229

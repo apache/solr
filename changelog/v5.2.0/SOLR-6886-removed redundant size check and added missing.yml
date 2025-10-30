@@ -1,9 +1,0 @@
-title: Removed redundant size check and added missing calls to DelegatingCollection.finish
-  inside Grouping code.
-type: other
-authors:
-- name: Christine Poerschke
-- name: shalin
-links:
-- name: SOLR-6886
-  url: https://issues.apache.org/jira/browse/SOLR-6886

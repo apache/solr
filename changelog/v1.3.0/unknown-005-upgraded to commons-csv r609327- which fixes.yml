@@ -1,7 +1,0 @@
-title: Upgraded to commons-CSV r609327, which fixes escaping bugs and introduces new
-  escaping and whitespace handling options to increase compatibility with different
-  formats.
-type: other
-authors:
-- name: yonik
-links: []

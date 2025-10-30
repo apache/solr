@@ -1,8 +1,0 @@
-title: Streaming Aggregation for SolrCloud
-type: added
-authors:
-- name: Joel bernstein
-- name: Yonik Seeley
-links:
-- name: SOLR-7082
-  url: https://issues.apache.org/jira/browse/SOLR-7082

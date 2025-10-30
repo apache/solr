@@ -1,9 +1,0 @@
-title: Enhance SpellingQueryConverter to handle UTF-8 instead of ASCII only. Use the
-  NMTOKEN syntax for matching field names.
-type: added
-authors:
-- name: Michael Ludwig
-- name: shalin
-links:
-- name: SOLR-1204
-  url: https://issues.apache.org/jira/browse/SOLR-1204

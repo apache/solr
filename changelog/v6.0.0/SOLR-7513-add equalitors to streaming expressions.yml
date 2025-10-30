@@ -1,8 +1,0 @@
-title: Add Equalitors to Streaming Expressions
-type: other
-authors:
-- name: Dennis Gove
-- name: Joel Bernstein
-links:
-- name: SOLR-7513
-  url: https://issues.apache.org/jira/browse/SOLR-7513

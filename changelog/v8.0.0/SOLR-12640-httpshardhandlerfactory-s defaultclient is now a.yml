@@ -1,9 +1,0 @@
-title: HttpShardHandlerFactory's defaultClient is now a Http2SolrClient (previous
-  HttpSolrClient). This new client does not support 'maxConnections','maxConnectionsPerHost'
-  parameters. LBHttpSolrClient.Req and LBHttpSolrClient.Rsp are marked as deprecated,
-  uses LBSolrClient.Req and LBSolrClient.Rsp instead.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-12640
-  url: https://issues.apache.org/jira/browse/SOLR-12640

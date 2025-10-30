@@ -1,7 +1,0 @@
-title: bin\solr.cmd doesn't use jetty SSL configuration.
-type: fixed
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-7299
-  url: https://issues.apache.org/jira/browse/SOLR-7299

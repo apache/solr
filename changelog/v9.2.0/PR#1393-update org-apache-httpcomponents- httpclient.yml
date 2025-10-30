@@ -1,8 +1,0 @@
-title: Update org.apache.httpcomponents. httpclient v4.5.14, httpcore v4.4.16, httpmime
-  v4.5.14
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#1393
-  url: https://github.com/apache/solr/pull/1393

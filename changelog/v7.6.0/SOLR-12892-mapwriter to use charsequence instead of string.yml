@@ -1,7 +1,0 @@
-title: MapWriter to use CharSequence instead of String
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-12892
-  url: https://issues.apache.org/jira/browse/SOLR-12892

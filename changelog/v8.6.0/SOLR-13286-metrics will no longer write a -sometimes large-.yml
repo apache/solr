@@ -1,9 +1,0 @@
-title: Metrics will no longer write a (sometimes large) log message every minute.
-  This can be re-enabled via log4j2.xml if desired, or other HttpSolrCall log messages
-  may be quieted on a per handler basis.
-type: changed
-authors:
-- name: Gus Heck
-links:
-- name: SOLR-13286
-  url: https://issues.apache.org/jira/browse/SOLR-13286

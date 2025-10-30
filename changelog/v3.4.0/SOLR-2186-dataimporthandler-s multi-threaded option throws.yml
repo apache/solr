@@ -1,9 +1,0 @@
-title: DataImportHandler's multi-threaded option throws NPE
-type: fixed
-authors:
-- name: Lance Norskog
-- name: Frank Wesemann
-- name: shalin
-links:
-- name: SOLR-2186
-  url: https://issues.apache.org/jira/browse/SOLR-2186

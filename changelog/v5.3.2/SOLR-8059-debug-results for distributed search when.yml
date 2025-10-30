@@ -1,9 +1,0 @@
-title: '&debug=results for distributed search when distrib.singlePass (sometimes activated
-  automatically) could result in an NPE.'
-type: fixed
-authors:
-- name: David Smiley
-- name: Markus Jelsma
-links:
-- name: SOLR-8059
-  url: https://issues.apache.org/jira/browse/SOLR-8059

@@ -1,8 +1,0 @@
-title: Static fields have turned to instance's field in SimplePostTool. Enabled TestSolrCLIRunExample.testTechproductsExample().
-type: other
-authors:
-- name: Andrey Kudryavtsev
-- name: Mikhail Khludnev
-links:
-- name: SOLR-10614
-  url: https://issues.apache.org/jira/browse/SOLR-10614

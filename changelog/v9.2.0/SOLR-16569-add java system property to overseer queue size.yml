@@ -1,8 +1,0 @@
-title: Add java system property to overseer queue size
-type: other
-authors:
-- name: Nick Ginther
-- name: noble
-links:
-- name: SOLR-16569
-  url: https://issues.apache.org/jira/browse/SOLR-16569

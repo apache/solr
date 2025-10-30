@@ -1,7 +1,0 @@
-title: A request with a json content type but no body caused a null pointer exception
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-7574
-  url: https://issues.apache.org/jira/browse/SOLR-7574

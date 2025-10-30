@@ -1,7 +1,0 @@
-title: Rename TimeSource.getTime to getTimeNs.
-type: other
-authors:
-- name: ab
-links:
-- name: SOLR-12091
-  url: https://issues.apache.org/jira/browse/SOLR-12091

@@ -1,7 +1,0 @@
-title: Upgrade to errorprone 2.11.0
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16050
-  url: https://issues.apache.org/jira/browse/SOLR-16050

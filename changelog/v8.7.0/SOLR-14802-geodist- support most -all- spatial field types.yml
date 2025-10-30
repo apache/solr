@@ -1,9 +1,0 @@
-title: 'geodist: Support most (all?) spatial field types as an argument like LLPSF,
-  SRPTFT, and others.'
-type: changed
-authors:
-- name: Tom Edge
-- name: Craig Wrigglesworth
-links:
-- name: SOLR-14802
-  url: https://issues.apache.org/jira/browse/SOLR-14802

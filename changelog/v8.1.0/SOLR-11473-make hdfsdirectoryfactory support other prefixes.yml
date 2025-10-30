@@ -1,7 +1,0 @@
-title: Make HDFSDirectoryFactory support other prefixes (besides hdfs:/)
-type: changed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-11473
-  url: https://issues.apache.org/jira/browse/SOLR-11473

@@ -1,9 +1,0 @@
-title: Upgrade to Tika 1.17 when available
-type: other
-authors:
-- name: Tim Allison
-- name: Karthik Ramachandran
-- name: Erick Erickson
-links:
-- name: SOLR-11701
-  url: https://issues.apache.org/jira/browse/SOLR-11701

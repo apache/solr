@@ -1,9 +1,0 @@
-title: Make zkClientTimeout consistent and based on a system property. The default
-  values are stored in a single place referenced everywhere and they are based on
-  system properties
-type: changed
-authors:
-- name: Alex Deparvu
-links:
-- name: SOLR-14667
-  url: https://issues.apache.org/jira/browse/SOLR-14667

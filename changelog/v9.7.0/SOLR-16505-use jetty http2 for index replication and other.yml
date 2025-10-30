@@ -1,8 +1,0 @@
-title: Use Jetty HTTP2 for index replication and other "recovery" operations
-type: other
-authors:
-- name: Sanjay Dutt
-- name: David Smiley
-links:
-- name: SOLR-16505
-  url: https://issues.apache.org/jira/browse/SOLR-16505

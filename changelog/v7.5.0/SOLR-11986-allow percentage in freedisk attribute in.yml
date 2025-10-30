@@ -1,7 +1,0 @@
-title: Allow percentage in freedisk attribute in autoscaling policy rules
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-11986
-  url: https://issues.apache.org/jira/browse/SOLR-11986

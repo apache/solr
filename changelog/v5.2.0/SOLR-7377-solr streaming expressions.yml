@@ -1,9 +1,0 @@
-title: Solr Streaming Expressions
-type: added
-authors:
-- name: Dennis Gove
-- name: Joel Bernstein
-- name: Steven Bower
-links:
-- name: SOLR-7377
-  url: https://issues.apache.org/jira/browse/SOLR-7377

@@ -1,7 +1,0 @@
-title: Upgrade Jetty to 9.4.53.v20231009
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-17025
-  url: https://issues.apache.org/jira/browse/SOLR-17025

@@ -1,8 +1,0 @@
-title: DebugComponent now supports using a NamedList to model Explanation objects
-  in its responses instead of Explanation.toString
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-1915
-  url: https://issues.apache.org/jira/browse/SOLR-1915

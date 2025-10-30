@@ -1,7 +1,0 @@
-title: DIH Create DataSources that return InputStream
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-1583
-  url: https://issues.apache.org/jira/browse/SOLR-1583

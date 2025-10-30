@@ -1,9 +1,0 @@
-title: Use ConfigSet API instead of Zookeeper data node to list out configsets available
-  in Solr Admin UI.
-type: changed
-authors:
-- name: Nazerke Seidan
-- name: Eric Pugh
-links:
-- name: SOLR-15414
-  url: https://issues.apache.org/jira/browse/SOLR-15414

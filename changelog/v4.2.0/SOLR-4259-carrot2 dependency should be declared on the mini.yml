@@ -1,7 +1,0 @@
-title: Carrot2 dependency should be declared on the mini version, not the core.
-type: other
-authors:
-- name: Dawid Weiss
-links:
-- name: SOLR-4259
-  url: https://issues.apache.org/jira/browse/SOLR-4259

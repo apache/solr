@@ -1,9 +1,0 @@
-title: Properly initialize schema plugins loaded by SPI name
-type: fixed
-authors:
-- name: janhoy
-- name: hossman
-- name: Uwe Schindler
-links:
-- name: SOLR-16203
-  url: https://issues.apache.org/jira/browse/SOLR-16203

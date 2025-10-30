@@ -1,9 +1,0 @@
-title: Deprecate SpellingResult.add(Token token, int docFreq), please use SpellingResult.addFrequency(Token
-  token, int docFreq) instead.
-type: other
-authors:
-- name: James Dyer
-- name: rmuir
-links:
-- name: SOLR-2576
-  url: https://issues.apache.org/jira/browse/SOLR-2576

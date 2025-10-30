@@ -1,7 +1,0 @@
-title: Modernize the Solr ref guide's Chinese language analysis coverage.
-type: other
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-10758
-  url: https://issues.apache.org/jira/browse/SOLR-10758

@@ -1,6 +1,0 @@
-title: Add Solr factory for ByteBuffersDirectory.
-type: other
-authors: []
-links:
-- name: SOLR-12861
-  url: https://issues.apache.org/jira/browse/SOLR-12861

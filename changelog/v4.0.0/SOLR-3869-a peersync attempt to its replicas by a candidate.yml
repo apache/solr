@@ -1,8 +1,0 @@
-title: A PeerSync attempt to its replicas by a candidate leader should not fail on
-  o.a.http.conn.ConnectTimeoutException.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3869
-  url: https://issues.apache.org/jira/browse/SOLR-3869

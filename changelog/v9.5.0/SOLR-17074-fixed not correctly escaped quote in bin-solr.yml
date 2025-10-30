@@ -1,8 +1,0 @@
-title: Fixed not correctly escaped quote in bin/solr script
-type: fixed
-authors:
-- name: Dominique Béjean
-- name: Vincenzo D'Amore
-links:
-- name: SOLR-17074
-  url: https://issues.apache.org/jira/browse/SOLR-17074

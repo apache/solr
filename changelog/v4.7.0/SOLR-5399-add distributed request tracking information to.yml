@@ -1,8 +1,0 @@
-title: Add distributed request tracking information to DebugComponent
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-- name: Ryan Ernst
-links:
-- name: SOLR-5399
-  url: https://issues.apache.org/jira/browse/SOLR-5399

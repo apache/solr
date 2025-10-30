@@ -1,8 +1,0 @@
-title: Moved FastWriter, FileUtils, RegexFileFilter, RTimer and SystemIdResolver from
-  org.apache.solr.common to org.apache.solr.util
-type: other
-authors:
-- name: Chris Male
-links:
-- name: SOLR-3343
-  url: https://issues.apache.org/jira/browse/SOLR-3343

@@ -1,9 +1,0 @@
-title: 'Collection API: Support for specifying a list of Solr addresses to spread
-  a new collection across.'
-type: added
-authors:
-- name: Per Steffensen
-- name: Mark Miller
-links:
-- name: SOLR-4120
-  url: https://issues.apache.org/jira/browse/SOLR-4120

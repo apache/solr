@@ -1,9 +1,0 @@
-title: A new 'relatedness()' aggregate function for JSON Faceting to enable building
-  Semantic Knowledge Graphs.
-type: added
-authors:
-- name: Trey Grainger
-- name: hossman
-links:
-- name: SOLR-9480
-  url: https://issues.apache.org/jira/browse/SOLR-9480

@@ -1,8 +1,0 @@
-title: The config API forcefully refreshes all replicas in the collection to ensure
-  all are updated
-type: fixed
-authors:
-- name: Noble Paul
-links:
-- name: SOLR-6924
-  url: https://issues.apache.org/jira/browse/SOLR-6924

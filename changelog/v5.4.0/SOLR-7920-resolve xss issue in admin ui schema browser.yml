@@ -1,8 +1,0 @@
-title: Resolve XSS issue in Admin UI Schema Browser
-type: fixed
-authors:
-- name: David Chiu
-- name: Upayavira
-links:
-- name: SOLR-7920
-  url: https://issues.apache.org/jira/browse/SOLR-7920

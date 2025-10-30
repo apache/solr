@@ -1,7 +1,0 @@
-title: zkcli should allow alternative locations for log4j configuration
-type: other
-authors:
-- name: Gregory Chanan
-links:
-- name: SOLR-9047
-  url: https://issues.apache.org/jira/browse/SOLR-9047

@@ -1,9 +1,0 @@
-title: Control maximum number of documents to cache for any entry in the queryResultCache
-  via queryResultMaxDocsCached solrconfig.xml entry.
-type: added
-authors:
-- name: Koji Sekiguchi
-- name: yonik
-links:
-- name: SOLR-291
-  url: https://issues.apache.org/jira/browse/SOLR-291

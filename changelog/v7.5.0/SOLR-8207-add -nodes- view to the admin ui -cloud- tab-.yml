@@ -1,7 +1,0 @@
-title: Add "Nodes" view to the Admin UI "Cloud" tab, listing nodes and key metrics
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-8207
-  url: https://issues.apache.org/jira/browse/SOLR-8207

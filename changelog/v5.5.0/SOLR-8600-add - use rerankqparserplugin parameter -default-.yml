@@ -1,8 +1,0 @@
-title: add & use ReRankQParserPlugin parameter [default] constants, changed ReRankQuery.toString
-  to use StringBuilder.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8600
-  url: https://issues.apache.org/jira/browse/SOLR-8600

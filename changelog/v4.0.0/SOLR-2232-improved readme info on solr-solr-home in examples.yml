@@ -1,7 +1,0 @@
-title: Improved README info on solr.solr.home in examples
-type: other
-authors:
-- name: Eric Pugh and hossman
-links:
-- name: SOLR-2232
-  url: https://issues.apache.org/jira/browse/SOLR-2232

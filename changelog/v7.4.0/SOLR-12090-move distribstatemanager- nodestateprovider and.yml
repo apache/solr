@@ -1,8 +1,0 @@
-title: Move DistribStateManager, NodeStateProvider and SolrCloudManager interfaces
-  out of the autoscaling package.
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-12090
-  url: https://issues.apache.org/jira/browse/SOLR-12090

@@ -1,7 +1,0 @@
-title: 'Schema API: add-copy-field should accept the maxChars parameter.'
-type: fixed
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-7682
-  url: https://issues.apache.org/jira/browse/SOLR-7682

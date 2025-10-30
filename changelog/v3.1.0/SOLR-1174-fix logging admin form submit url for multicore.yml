@@ -1,8 +1,0 @@
-title: Fix Logging admin form submit url for multicore.
-type: fixed
-authors:
-- name: Jacob Singh
-- name: shalin
-links:
-- name: SOLR-1174
-  url: https://issues.apache.org/jira/browse/SOLR-1174

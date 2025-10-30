@@ -1,8 +1,0 @@
-title: If we are elected the leader of a shard, but we fail to publish this for any
-  reason, we should clean up and re trigger a leader election.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3756
-  url: https://issues.apache.org/jira/browse/SOLR-3756

@@ -1,8 +1,0 @@
-title: Support the merge of multiple indexes as a CoreAdmin and an update command
-type: added
-authors:
-- name: Ning Li
-- name: shalin
-links:
-- name: SOLR-1051
-  url: https://issues.apache.org/jira/browse/SOLR-1051

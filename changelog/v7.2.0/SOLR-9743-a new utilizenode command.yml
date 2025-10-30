@@ -1,7 +1,0 @@
-title: A new UTILIZENODE command
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-9743
-  url: https://issues.apache.org/jira/browse/SOLR-9743

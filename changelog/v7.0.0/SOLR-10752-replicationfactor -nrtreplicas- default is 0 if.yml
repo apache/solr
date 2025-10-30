@@ -1,8 +1,0 @@
-title: replicationFactor (nrtReplicas) default is 0 if tlogReplicas is specified when
-  creating a collection
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-10752
-  url: https://issues.apache.org/jira/browse/SOLR-10752

@@ -1,8 +1,0 @@
-title: Correctly fail schema initialization if a dynamicField is configured to be
-  required, or have a default value.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-5227
-  url: https://issues.apache.org/jira/browse/SOLR-5227

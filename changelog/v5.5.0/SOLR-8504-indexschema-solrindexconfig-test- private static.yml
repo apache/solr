@@ -1,8 +1,0 @@
-title: '(IndexSchema|SolrIndexConfig)Test: private static finals for solrconfig.xml
-  and schema.xml String literals.'
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8504
-  url: https://issues.apache.org/jira/browse/SOLR-8504

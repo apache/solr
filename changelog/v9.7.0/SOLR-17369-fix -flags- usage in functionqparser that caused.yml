@@ -1,8 +1,0 @@
-title: Fix "flags" usage in FunctionQParser that caused some issues in vectorSimilarity()
-  with BYTE vector constants
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-17369
-  url: https://issues.apache.org/jira/browse/SOLR-17369

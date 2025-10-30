@@ -1,9 +1,0 @@
-title: 'DIH: Standardize Evaluator parameter parsing and added helper functions for
-  parsing all evaluator parameters in a standard way.'
-type: other
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-1029
-  url: https://issues.apache.org/jira/browse/SOLR-1029

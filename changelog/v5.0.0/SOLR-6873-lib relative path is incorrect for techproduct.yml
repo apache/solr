@@ -1,8 +1,0 @@
-title: Lib relative path is incorrect for techproduct configset
-type: fixed
-authors:
-- name: Alexandre Rafalovitch
-- name: Erick Erickson
-links:
-- name: SOLR-6873
-  url: https://issues.apache.org/jira/browse/SOLR-6873

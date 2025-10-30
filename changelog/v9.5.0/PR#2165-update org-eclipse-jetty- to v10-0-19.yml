@@ -1,7 +1,0 @@
-title: Update org.eclipse.jetty*:* to v10.0.19
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2165
-  url: https://github.com/apache/solr/pull/2165

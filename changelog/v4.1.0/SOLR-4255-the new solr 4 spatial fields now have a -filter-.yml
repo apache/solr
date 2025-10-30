@@ -1,9 +1,0 @@
-title: The new Solr 4 spatial fields now have a 'filter' boolean local-param that
-  can be set to false to not filter. It's useful when there is already a spatial filter
-  query but you also need to sort or boost by distance.
-type: added
-authors:
-- name: David Smiley
-links:
-- name: SOLR-4255
-  url: https://issues.apache.org/jira/browse/SOLR-4255

@@ -1,7 +1,0 @@
-title: Add documentation of maxRamMB for filter cache and query result cache.
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-11628
-  url: https://issues.apache.org/jira/browse/SOLR-11628

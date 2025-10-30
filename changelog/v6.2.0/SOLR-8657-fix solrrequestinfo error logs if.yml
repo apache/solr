@@ -1,8 +1,0 @@
-title: Fix SolrRequestInfo error logs if QuerySenderListener is being used
-type: fixed
-authors:
-- name: Pascal Chollet
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-8657
-  url: https://issues.apache.org/jira/browse/SOLR-8657

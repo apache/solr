@@ -1,8 +1,0 @@
-title: The `train_and_upload_demo_model.py` script referenced in LTR documentation
-  now uses Python3
-type: other
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-17078
-  url: https://issues.apache.org/jira/browse/SOLR-17078

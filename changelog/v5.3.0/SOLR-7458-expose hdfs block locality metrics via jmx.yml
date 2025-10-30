@@ -1,8 +1,0 @@
-title: Expose HDFS Block Locality Metrics via JMX
-type: added
-authors:
-- name: Mike Drob
-- name: Mark Miller
-links:
-- name: SOLR-7458
-  url: https://issues.apache.org/jira/browse/SOLR-7458

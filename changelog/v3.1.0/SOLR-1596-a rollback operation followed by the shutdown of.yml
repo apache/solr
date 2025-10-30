@@ -1,9 +1,0 @@
-title: 'A rollback operation followed by the shutdown of Solr or the close of a core
-  resulted in a warning: "SEVERE: SolrIndexWriter was not closed prior to finalize()"
-  although there were no other consequences.'
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-1596
-  url: https://issues.apache.org/jira/browse/SOLR-1596

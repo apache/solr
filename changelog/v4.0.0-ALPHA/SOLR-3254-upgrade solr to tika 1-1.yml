@@ -1,7 +1,0 @@
-title: Upgrade Solr to Tika 1.1
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-3254
-  url: https://issues.apache.org/jira/browse/SOLR-3254

@@ -1,8 +1,0 @@
-title: Query Result Cache does not honor maxRamBytes parameter.
-type: changed
-authors:
-- name: ab
-- name: Brian Ecker
-links:
-- name: SOLR-13003
-  url: https://issues.apache.org/jira/browse/SOLR-13003

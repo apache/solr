@@ -1,8 +1,0 @@
-title: CapitalizationFilterFactory uses incorrect term length calculations.
-type: fixed
-authors:
-- name: Robert Muir
-- name: Mark Miller
-links:
-- name: SOLR-1342
-  url: https://issues.apache.org/jira/browse/SOLR-1342

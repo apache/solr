@@ -1,8 +1,0 @@
-title: Autoscaling "cores" preference now retrieves the core count more efficiently,
-  and counts all cores.
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-14472
-  url: https://issues.apache.org/jira/browse/SOLR-14472

@@ -1,9 +1,0 @@
-title: Properly construct V2 base urls instead of replacing substring "/solr" with
-  "/api"
-type: fixed
-authors:
-- name: Andrey Bozhko
-- name: Eric Pugh
-links:
-- name: SOLR-16659
-  url: https://issues.apache.org/jira/browse/SOLR-16659

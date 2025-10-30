@@ -1,7 +1,0 @@
-title: package CLI tool prints error JSONPath
-type: other
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-17072
-  url: https://issues.apache.org/jira/browse/SOLR-17072

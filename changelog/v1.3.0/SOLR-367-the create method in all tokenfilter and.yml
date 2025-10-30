@@ -1,8 +1,0 @@
-title: The create method in all TokenFilter and Tokenizer Factories provided by Solr
-  now declare their specific return types instead of just using "TokenStream"
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-367
-  url: https://issues.apache.org/jira/browse/SOLR-367

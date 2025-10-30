@@ -1,7 +1,0 @@
-title: Solr will reject CREATEALIAS requests if target collections don't exist
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-9874
-  url: https://issues.apache.org/jira/browse/SOLR-9874

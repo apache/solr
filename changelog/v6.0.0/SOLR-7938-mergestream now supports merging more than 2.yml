@@ -1,7 +1,0 @@
-title: MergeStream now supports merging more than 2 streams together
-type: added
-authors:
-- name: Dennis Gove
-links:
-- name: SOLR-7938
-  url: https://issues.apache.org/jira/browse/SOLR-7938

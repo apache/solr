@@ -1,7 +1,0 @@
-title: Updating a cluster policy fails
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-12444
-  url: https://issues.apache.org/jira/browse/SOLR-12444

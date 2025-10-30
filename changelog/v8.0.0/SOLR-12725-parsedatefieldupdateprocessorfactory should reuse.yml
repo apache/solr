@@ -1,7 +1,0 @@
-title: ParseDateFieldUpdateProcessorFactory should reuse ParsePosition.
-type: changed
-authors:
-- name: ab
-links:
-- name: SOLR-12725
-  url: https://issues.apache.org/jira/browse/SOLR-12725

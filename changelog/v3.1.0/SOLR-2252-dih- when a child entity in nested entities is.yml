@@ -1,8 +1,0 @@
-title: 'DIH: When a child entity in nested entities is rootEntity="true", delta-import
-  doesn''t work.'
-type: fixed
-authors:
-- name: koji
-links:
-- name: SOLR-2252
-  url: https://issues.apache.org/jira/browse/SOLR-2252

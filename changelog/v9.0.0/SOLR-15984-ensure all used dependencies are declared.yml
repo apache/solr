@@ -1,7 +1,0 @@
-title: Ensure all used dependencies are declared
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-15984
-  url: https://issues.apache.org/jira/browse/SOLR-15984

@@ -1,7 +1,0 @@
-title: Deprecated SolrClient.shutdown() method removed
-type: other
-authors:
-- name: Alan Woodward
-links:
-- name: SOLR-6954
-  url: https://issues.apache.org/jira/browse/SOLR-6954

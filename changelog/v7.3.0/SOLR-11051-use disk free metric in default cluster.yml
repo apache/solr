@@ -1,7 +1,0 @@
-title: Use disk free metric in default cluster preferences
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-11051
-  url: https://issues.apache.org/jira/browse/SOLR-11051

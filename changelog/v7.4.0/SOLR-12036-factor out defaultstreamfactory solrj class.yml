@@ -1,7 +1,0 @@
-title: Factor out DefaultStreamFactory solrj class.
-type: added
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-12036
-  url: https://issues.apache.org/jira/browse/SOLR-12036

@@ -1,8 +1,0 @@
-title: CoreContainer.load needs to send lazily loaded core descriptors to the proper
-  list rather than send them all to the transient lists.
-type: fixed
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-11177
-  url: https://issues.apache.org/jira/browse/SOLR-11177

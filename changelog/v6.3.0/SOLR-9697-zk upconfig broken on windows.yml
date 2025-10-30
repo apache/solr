@@ -1,8 +1,0 @@
-title: zk upconfig broken on windows
-type: fixed
-authors:
-- name: Xavier Jmlucjav
-- name: janhoy
-links:
-- name: SOLR-9697
-  url: https://issues.apache.org/jira/browse/SOLR-9697

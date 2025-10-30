@@ -1,7 +1,0 @@
-title: SQL result set fields should be ordered by the field list
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-10085
-  url: https://issues.apache.org/jira/browse/SOLR-10085

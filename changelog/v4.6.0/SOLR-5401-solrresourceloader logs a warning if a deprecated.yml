@@ -1,8 +1,0 @@
-title: SolrResourceLoader logs a warning if a deprecated (factory) class is used in
-  schema or config.
-type: other
-authors:
-- name: Uwe Schindler
-links:
-- name: SOLR-5401
-  url: https://issues.apache.org/jira/browse/SOLR-5401

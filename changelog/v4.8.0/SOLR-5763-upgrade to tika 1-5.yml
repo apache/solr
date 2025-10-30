@@ -1,8 +1,0 @@
-title: Upgrade to Tika 1.5
-type: other
-authors:
-- name: Vitaliy Zhovtyuk
-- name: Steve Rowe
-links:
-- name: SOLR-5763
-  url: https://issues.apache.org/jira/browse/SOLR-5763

@@ -1,9 +1,0 @@
-title: Remove Calcite's ENUMERABLE_AGGREGATE_RULE as Solr only supports push-down
-  for LogicalAggregate
-type: fixed
-authors:
-- name: Timothy Potter
-- name: Kiran Chitturi
-links:
-- name: SOLR-15974
-  url: https://issues.apache.org/jira/browse/SOLR-15974

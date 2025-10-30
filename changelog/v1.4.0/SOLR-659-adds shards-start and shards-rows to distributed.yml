@@ -1,9 +1,0 @@
-title: Adds shards.start and shards.rows to distributed search to allow more efficient
-  bulk queries (those that retrieve many or all documents).
-type: added
-authors:
-- name: Brian Whitman
-- name: yonik
-links:
-- name: SOLR-659
-  url: https://issues.apache.org/jira/browse/SOLR-659

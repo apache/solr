@@ -1,8 +1,0 @@
-title: standalone Solr loads UNLOADed core on request
-type: fixed
-authors:
-- name: Erick Erickson
-- name: Mikhail Khludnev
-links:
-- name: SOLR-10857
-  url: https://issues.apache.org/jira/browse/SOLR-10857

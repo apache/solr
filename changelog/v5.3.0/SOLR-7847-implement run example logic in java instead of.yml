@@ -1,8 +1,0 @@
-title: Implement run example logic in Java instead of OS-specific scripts in bin/solr
-  and bin\solr.cmd
-type: other
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-7847
-  url: https://issues.apache.org/jira/browse/SOLR-7847

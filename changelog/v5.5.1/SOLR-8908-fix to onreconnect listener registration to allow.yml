@@ -1,8 +1,0 @@
-title: Fix to OnReconnect listener registration to allow listeners to deregister,
-  such as when a core is reloaded or deleted to avoid a memory leak.
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-8908
-  url: https://issues.apache.org/jira/browse/SOLR-8908

@@ -1,8 +1,0 @@
-title: Fixed Backup failures - typically manifesting as NoSuchFileException - due
-  to race conditions in saving/reserving commit points
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-13872
-  url: https://issues.apache.org/jira/browse/SOLR-13872

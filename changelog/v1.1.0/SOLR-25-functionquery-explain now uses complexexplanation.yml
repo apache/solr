@@ -1,8 +1,0 @@
-title: FunctionQuery.explain now uses ComplexExplanation to provide more accurate
-  score explanations when composed in a BooleanQuery. SOLR-25
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-25
-  url: https://issues.apache.org/jira/browse/SOLR-25

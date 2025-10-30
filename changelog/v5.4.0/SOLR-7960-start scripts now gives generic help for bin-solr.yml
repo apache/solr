@@ -1,7 +1,0 @@
-title: Start scripts now gives generic help for bin/solr -h and bin/solr --help
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-7960
-  url: https://issues.apache.org/jira/browse/SOLR-7960

@@ -1,8 +1,0 @@
-title: Snitch for freedisk uses '/' instead of 'coreRootDirectory'
-type: fixed
-authors:
-- name: Tim Owen
-- name: noble
-links:
-- name: SOLR-9381
-  url: https://issues.apache.org/jira/browse/SOLR-9381

@@ -1,7 +1,0 @@
-title: Fixed CDCR Test failures which were due to leaked resources.
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-9392
-  url: https://issues.apache.org/jira/browse/SOLR-9392

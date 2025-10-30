@@ -1,8 +1,0 @@
-title: Enable leading wildcard in complexphrase query parser, optimize it with ReversedWildcardFilterFactory
-  when it's provided
-type: added
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-7466
-  url: https://issues.apache.org/jira/browse/SOLR-7466

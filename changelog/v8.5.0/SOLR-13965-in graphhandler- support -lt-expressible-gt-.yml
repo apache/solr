@@ -1,9 +1,0 @@
-title: In GraphHandler, support &lt;expressible&gt; configuration and deprecate &lt;streamFunctions&gt;
-  configuration.
-type: changed
-authors:
-- name: Eric Pugh
-- name: Christine Poerschke
-links:
-- name: SOLR-13965
-  url: https://issues.apache.org/jira/browse/SOLR-13965

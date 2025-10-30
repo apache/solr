@@ -1,7 +1,0 @@
-title: Add a “buildOnStartup” option for suggesters.
-type: added
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-6845
-  url: https://issues.apache.org/jira/browse/SOLR-6845

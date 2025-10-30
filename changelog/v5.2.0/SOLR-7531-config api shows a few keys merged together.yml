@@ -1,7 +1,0 @@
-title: config API shows a few keys merged together
-type: fixed
-authors:
-- name: Noble Paul
-links:
-- name: SOLR-7531
-  url: https://issues.apache.org/jira/browse/SOLR-7531

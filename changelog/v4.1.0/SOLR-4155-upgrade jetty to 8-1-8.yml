@@ -1,7 +1,0 @@
-title: Upgrade Jetty to 8.1.8.
-type: other
-authors:
-- name: Robert Muir
-links:
-- name: SOLR-4155
-  url: https://issues.apache.org/jira/browse/SOLR-4155

@@ -1,8 +1,0 @@
-title: Adding test cases for org.apache.solr.util.hll.NumberUtilTest
-type: other
-authors:
-- name: Benoit Vanalderweireldt
-- name: janhoy
-links:
-- name: SOLR-8754
-  url: https://issues.apache.org/jira/browse/SOLR-8754

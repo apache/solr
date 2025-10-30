@@ -1,8 +1,0 @@
-title: Add support for Field level boosting in the MoreLikeThis Handler.
-type: added
-authors:
-- name: Tom Morton
-- name: gsingers
-links:
-- name: SOLR-595
-  url: https://issues.apache.org/jira/browse/SOLR-595

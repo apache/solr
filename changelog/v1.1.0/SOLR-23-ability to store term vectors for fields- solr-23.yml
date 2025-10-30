@@ -1,8 +1,0 @@
-title: Ability to store term vectors for fields. SOLR-23
-type: added
-authors:
-- name: Mike Klaas
-- name: yonik
-links:
-- name: SOLR-23
-  url: https://issues.apache.org/jira/browse/SOLR-23

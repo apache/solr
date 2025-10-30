@@ -1,8 +1,0 @@
-title: CDCR bootstrapping can get into an infinite loop when a core is reloaded
-type: fixed
-authors:
-- name: Amrit Sarkar
-- name: Erick Erickson
-links:
-- name: SOLR-11069
-  url: https://issues.apache.org/jira/browse/SOLR-11069

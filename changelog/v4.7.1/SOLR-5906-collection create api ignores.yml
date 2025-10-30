@@ -1,8 +1,0 @@
-title: Collection create API ignores property.instanceDir parameter.
-type: fixed
-authors:
-- name: Varun Thacker
-- name: shalin
-links:
-- name: SOLR-5906
-  url: https://issues.apache.org/jira/browse/SOLR-5906

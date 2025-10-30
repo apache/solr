@@ -1,9 +1,0 @@
-title: Async collection actions should not hide internal failures
-type: fixed
-authors:
-- name: Mano Kovacs
-- name: Varun Thacker
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-12708
-  url: https://issues.apache.org/jira/browse/SOLR-12708

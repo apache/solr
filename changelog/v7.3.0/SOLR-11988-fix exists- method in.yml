@@ -1,8 +1,0 @@
-title: Fix exists() method in EphemeralDirectoryFactory/MockDirectoryFactory to prevent
-  false positives
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-11988
-  url: https://issues.apache.org/jira/browse/SOLR-11988

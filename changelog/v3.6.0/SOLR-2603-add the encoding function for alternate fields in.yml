@@ -1,8 +1,0 @@
-title: Add the encoding function for alternate fields in highlighting.
-type: added
-authors:
-- name: Massimo Schiavon
-- name: koji
-links:
-- name: SOLR-2603
-  url: https://issues.apache.org/jira/browse/SOLR-2603

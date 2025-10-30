@@ -1,7 +1,0 @@
-title: Update org.apache.logging.log4j:* to v2.21.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2037
-  url: https://github.com/apache/solr/pull/2037

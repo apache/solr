@@ -1,8 +1,0 @@
-title: Propagate property prefix parameters for ADDREPLICA Collections API call.
-type: fixed
-authors:
-- name: Varun Thacker
-- name: Anshum Gupta
-links:
-- name: SOLR-7104
-  url: https://issues.apache.org/jira/browse/SOLR-7104

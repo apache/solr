@@ -1,8 +1,0 @@
-title: Convert/migrate tests using EasyMock to Mockito
-type: other
-authors:
-- name: Cao Manh Dat
-- name: Uwe Schindler
-links:
-- name: SOLR-9966
-  url: https://issues.apache.org/jira/browse/SOLR-9966

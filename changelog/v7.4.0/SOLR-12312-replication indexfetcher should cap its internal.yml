@@ -1,9 +1,0 @@
-title: Replication IndexFetcher should cap its internal buffer size when the file
-  being transferred is small.
-type: changed
-authors:
-- name: Jeff Miller
-- name: David Smiley
-links:
-- name: SOLR-12312
-  url: https://issues.apache.org/jira/browse/SOLR-12312

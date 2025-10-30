@@ -1,8 +1,0 @@
-title: 'Logs: Truncate field values in logs if a doc fails to index.'
-type: changed
-authors:
-- name: Nazerke Seidan
-- name: David Smiley
-links:
-- name: SOLR-16362
-  url: https://issues.apache.org/jira/browse/SOLR-16362

@@ -1,7 +1,0 @@
-title: ConcurrentModificationException in Overseer Status API.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-6685
-  url: https://issues.apache.org/jira/browse/SOLR-6685

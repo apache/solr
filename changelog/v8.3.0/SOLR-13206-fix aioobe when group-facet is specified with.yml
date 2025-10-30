@@ -1,9 +1,0 @@
-title: Fix AIOOBE when group.facet is specified with group.query and return proper
-  error code.
-type: fixed
-authors:
-- name: Marek
-- name: Munendra S N
-links:
-- name: SOLR-13206
-  url: https://issues.apache.org/jira/browse/SOLR-13206

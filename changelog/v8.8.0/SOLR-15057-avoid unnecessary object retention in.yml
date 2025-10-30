@@ -1,7 +1,0 @@
-title: Avoid unnecessary object retention in FacetRangeProcessor.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-15057
-  url: https://issues.apache.org/jira/browse/SOLR-15057

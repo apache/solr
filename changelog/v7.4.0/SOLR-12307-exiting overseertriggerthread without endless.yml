@@ -1,8 +1,0 @@
-title: exiting OverseerTriggerThread without endless noise in log when Zookeeper session
-  is expired
-type: fixed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-12307
-  url: https://issues.apache.org/jira/browse/SOLR-12307

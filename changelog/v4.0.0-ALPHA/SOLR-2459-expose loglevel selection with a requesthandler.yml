@@ -1,9 +1,0 @@
-title: Expose LogLevel selection with a RequestHandler rather then servlet
-type: added
-authors:
-- name: Stefan Matheis
-- name: Upayavira
-- name: ryan
-links:
-- name: SOLR-2459
-  url: https://issues.apache.org/jira/browse/SOLR-2459

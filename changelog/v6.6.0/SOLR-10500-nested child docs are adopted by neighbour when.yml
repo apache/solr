@@ -1,9 +1,0 @@
-title: nested child docs are adopted by neighbour when several parents come in update/json/docs
-type: fixed
-authors:
-- name: Alexey Suprun
-- name: noble
-- name: Mikhail Khludnev
-links:
-- name: SOLR-10500
-  url: https://issues.apache.org/jira/browse/SOLR-10500

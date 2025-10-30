@@ -1,7 +1,0 @@
-title: Ensure Solr always includes the stacktrace for exceptions by using '-OmitStackTraceInFastThrow'
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-14302
-  url: https://issues.apache.org/jira/browse/SOLR-14302

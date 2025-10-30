@@ -1,7 +1,0 @@
-title: SolrZkClient's watch wrapper no longer allows zookeeper to hold the same watch
-  object multiple times.
-type: fixed
-authors: []
-links:
-- name: SOLR-13491
-  url: https://issues.apache.org/jira/browse/SOLR-13491

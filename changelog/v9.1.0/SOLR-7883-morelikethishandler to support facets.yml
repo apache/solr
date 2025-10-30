@@ -1,7 +1,0 @@
-title: MoreLikeThisHandler to support facets
-type: fixed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-7883
-  url: https://issues.apache.org/jira/browse/SOLR-7883

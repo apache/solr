@@ -1,8 +1,0 @@
-title: ConcurrentUpdateSolrServer will sometimes not spawn a new Runner thread even
-  though there are updates in the queue.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5643
-  url: https://issues.apache.org/jira/browse/SOLR-5643

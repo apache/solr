@@ -1,8 +1,0 @@
-title: Fixed a race condition when initializing metrics for new security plugins on
-  security.json change
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-13700
-  url: https://issues.apache.org/jira/browse/SOLR-13700

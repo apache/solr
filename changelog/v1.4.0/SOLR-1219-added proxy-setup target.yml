@@ -1,7 +1,0 @@
-title: Added proxy.setup target
-type: other
-authors:
-- name: koji
-links:
-- name: SOLR-1219
-  url: https://issues.apache.org/jira/browse/SOLR-1219

@@ -1,8 +1,0 @@
-title: Improve the error message reported by DocumentObjectBinder when a setter is
-  not found
-type: other
-authors:
-- name: Gus Heck
-links:
-- name: SOLR-13086
-  url: https://issues.apache.org/jira/browse/SOLR-13086

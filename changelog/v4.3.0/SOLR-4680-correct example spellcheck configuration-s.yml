@@ -1,9 +1,0 @@
-title: Correct example spellcheck configuration's queryAnalyzerFieldType and use "text"
-  field instead of narrower "name" field
-type: fixed
-authors:
-- name: ehatcher
-- name: Mark Bennett
-links:
-- name: SOLR-4680
-  url: https://issues.apache.org/jira/browse/SOLR-4680

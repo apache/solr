@@ -1,7 +1,0 @@
-title: Fix sporadic failures of MetricsHandlerTest.testPropertyFilter on jenkins
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-11088
-  url: https://issues.apache.org/jira/browse/SOLR-11088

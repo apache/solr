@@ -1,7 +1,0 @@
-title: Do not attempt to proxy internal update requests.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5452
-  url: https://issues.apache.org/jira/browse/SOLR-5452

@@ -1,8 +1,0 @@
-title: Admin UI shows Angular placeholders on first load / refresh.
-type: changed
-authors:
-- name: Colvin Cowie
-- name: Eric Pugh
-links:
-- name: SOLR-14422
-  url: https://issues.apache.org/jira/browse/SOLR-14422

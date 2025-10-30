@@ -1,7 +1,0 @@
-title: DataImportHandler does not catch and log Errors
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-864
-  url: https://issues.apache.org/jira/browse/SOLR-864

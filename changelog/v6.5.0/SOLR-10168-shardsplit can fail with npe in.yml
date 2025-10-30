@@ -1,7 +1,0 @@
-title: ShardSplit can fail with NPE in OverseerCollectionMessageHandler#waitForCoreAdminAsyncCallToComplete.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-10168
-  url: https://issues.apache.org/jira/browse/SOLR-10168

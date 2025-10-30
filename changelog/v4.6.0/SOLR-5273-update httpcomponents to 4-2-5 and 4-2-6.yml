@@ -1,7 +1,0 @@
-title: Update HttpComponents to 4.2.5 and 4.2.6.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5273
-  url: https://issues.apache.org/jira/browse/SOLR-5273

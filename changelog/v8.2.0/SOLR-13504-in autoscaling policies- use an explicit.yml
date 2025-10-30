@@ -1,8 +1,0 @@
-title: In autoscaling policies, use an explicit 'nodeset' attribute for filtering
-  nodes instead of using them directly at the toplevel
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-13504
-  url: https://issues.apache.org/jira/browse/SOLR-13504

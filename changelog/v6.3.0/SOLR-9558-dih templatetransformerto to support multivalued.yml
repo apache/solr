@@ -1,8 +1,0 @@
-title: DIH TemplateTransformerto to support multivalued fields
-type: added
-authors:
-- name: Ted Sullivan
-- name: noble
-links:
-- name: SOLR-9558
-  url: https://issues.apache.org/jira/browse/SOLR-9558

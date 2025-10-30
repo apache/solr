@@ -1,9 +1,0 @@
-title: Distributed grouping used a NamedList instead of a SimpleOrderedMap for the
-  top level group commands, causing output formatting differences compared to non-distributed
-  grouping.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-4746
-  url: https://issues.apache.org/jira/browse/SOLR-4746

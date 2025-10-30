@@ -1,8 +1,0 @@
-title: Do not cache merge or 'read once' contexts in the hdfs block cache.
-type: changed
-authors:
-- name: Mark Miller
-- name: Mike Drob
-links:
-- name: SOLR-8856
-  url: https://issues.apache.org/jira/browse/SOLR-8856

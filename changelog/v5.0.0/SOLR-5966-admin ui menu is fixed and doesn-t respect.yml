@@ -1,9 +1,0 @@
-title: Admin UI Menu is fixed and doesn't respect smaller viewports.
-type: fixed
-authors:
-- name: Aman Tandon
-- name: steffkes
-- name: shalin
-links:
-- name: SOLR-5966
-  url: https://issues.apache.org/jira/browse/SOLR-5966

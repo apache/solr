@@ -1,7 +1,0 @@
-title: random Streaming Expression is not registered in /stream or /graph handler
-type: fixed
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-9919
-  url: https://issues.apache.org/jira/browse/SOLR-9919

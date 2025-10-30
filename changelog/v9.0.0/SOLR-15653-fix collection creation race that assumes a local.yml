@@ -1,8 +1,0 @@
-title: Fix collection creation race that assumes a local clusterstate when the collection
-  has only just been created.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-15653
-  url: https://issues.apache.org/jira/browse/SOLR-15653

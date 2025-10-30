@@ -1,8 +1,0 @@
-title: 'LukeRequestHandler (and schema.jsp) have been fixed to include the "1" (ie:
-  2**0) bucket in the term histogram data.'
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-1103
-  url: https://issues.apache.org/jira/browse/SOLR-1103

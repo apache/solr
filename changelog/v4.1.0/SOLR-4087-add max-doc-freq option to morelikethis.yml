@@ -1,8 +1,0 @@
-title: Add MAX_DOC_FREQ option to MoreLikeThis.
-type: added
-authors:
-- name: Andrew Janowczyk
-- name: Mark Miller
-links:
-- name: SOLR-4087
-  url: https://issues.apache.org/jira/browse/SOLR-4087

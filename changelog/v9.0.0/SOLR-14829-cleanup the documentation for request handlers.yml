@@ -1,7 +1,0 @@
-title: Cleanup the documentation for Request Handlers and Search Components
-type: other
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-14829
-  url: https://issues.apache.org/jira/browse/SOLR-14829

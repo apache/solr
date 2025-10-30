@@ -1,9 +1,0 @@
-title: Make it possible to specify dataDir in solr.xml and accept the dataDir as a
-  request parameter for the CoreAdmin create command.
-type: added
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-943
-  url: https://issues.apache.org/jira/browse/SOLR-943

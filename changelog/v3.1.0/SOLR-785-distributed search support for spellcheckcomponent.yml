@@ -1,8 +1,0 @@
-title: Distributed Search support for SpellCheckComponent
-type: added
-authors:
-- name: Matthew Woytowitz
-- name: shalin
-links:
-- name: SOLR-785
-  url: https://issues.apache.org/jira/browse/SOLR-785

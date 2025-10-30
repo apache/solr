@@ -1,9 +1,0 @@
-title: WordDelimiterFilter now respects payloads and other attributes of the original
-  Token by using Token.clone()
-type: fixed
-authors:
-- name: Tricia Williams
-- name: gsingers
-links:
-- name: SOLR-532
-  url: https://issues.apache.org/jira/browse/SOLR-532

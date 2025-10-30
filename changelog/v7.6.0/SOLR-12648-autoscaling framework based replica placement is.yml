@@ -1,8 +1,0 @@
-title: Autoscaling framework based replica placement is not used unless a policy is
-  specified or non-empty cluster policy exists.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-12648
-  url: https://issues.apache.org/jira/browse/SOLR-12648

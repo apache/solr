@@ -1,9 +1,0 @@
-title: A bug in macro expansion of multi-valued parameters caused non-expanded values
-  after the first expanded value in the same multi-valued parameter to be dropped.
-type: fixed
-authors:
-- name: Erik Hatcher
-- name: yonik
-links:
-- name: SOLR-9740
-  url: https://issues.apache.org/jira/browse/SOLR-9740

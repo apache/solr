@@ -1,7 +1,0 @@
-title: SolrRequest is now parametrized by its response type
-type: other
-authors:
-- name: "Alan\n  Woodward"
-links:
-- name: SOLR-7145
-  url: https://issues.apache.org/jira/browse/SOLR-7145

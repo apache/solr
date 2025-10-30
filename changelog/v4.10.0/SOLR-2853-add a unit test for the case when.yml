@@ -1,7 +1,0 @@
-title: Add a unit test for the case when "spellcheck.maxCollationTries=0"
-type: other
-authors:
-- name: James Dyer
-links:
-- name: SOLR-2853
-  url: https://issues.apache.org/jira/browse/SOLR-2853

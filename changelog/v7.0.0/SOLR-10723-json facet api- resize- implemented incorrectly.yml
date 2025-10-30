@@ -1,8 +1,0 @@
-title: 'JSON Facet API: resize() implemented incorrectly for CountSlotAcc, HllAgg.NumericAcc
-  resulting in exceptions when using a hashing faceting method and sorting by hll(numeric_field).'
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-10723
-  url: https://issues.apache.org/jira/browse/SOLR-10723

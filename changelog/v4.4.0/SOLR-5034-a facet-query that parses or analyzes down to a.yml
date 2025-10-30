@@ -1,8 +1,0 @@
-title: A facet.query that parses or analyzes down to a null Query would throw a NPE.
-  Fixed.
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-5034
-  url: https://issues.apache.org/jira/browse/SOLR-5034

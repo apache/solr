@@ -1,8 +1,0 @@
-title: Change Solr's expanded webapp directory to be at a consistent path called solr-webapp
-  rather than a temporary directory.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3609
-  url: https://issues.apache.org/jira/browse/SOLR-3609

@@ -1,7 +1,0 @@
-title: Update dependency org.apache.commons:commons-compress to v1.26.1
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2308
-  url: https://github.com/apache/solr/pull/2308

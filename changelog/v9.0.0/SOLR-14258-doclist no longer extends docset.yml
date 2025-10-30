@@ -1,7 +1,0 @@
-title: DocList no longer extends DocSet.
-type: other
-authors:
-- name: David Smiley
-links:
-- name: SOLR-14258
-  url: https://issues.apache.org/jira/browse/SOLR-14258

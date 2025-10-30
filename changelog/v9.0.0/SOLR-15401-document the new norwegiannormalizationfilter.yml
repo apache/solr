@@ -1,9 +1,0 @@
-title: Document the new NorwegianNormalizationFilter introduced in LUCENE-9929.
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-15401
-  url: https://issues.apache.org/jira/browse/SOLR-15401
-- name: LUCENE-9929
-  url: https://issues.apache.org/jira/browse/LUCENE-9929

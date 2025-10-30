@@ -1,8 +1,0 @@
-title: differentiate between solr home and instanceDir .deprecates the method SolrResourceLoader#locateInstanceDir()
-  and it is renamed to locateSolrHome
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-1214
-  url: https://issues.apache.org/jira/browse/SOLR-1214

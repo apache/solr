@@ -1,9 +1,0 @@
-title: HashDocSet specific implementations of union() and andNot() for a 20x performance
-  improvement for those set operations, and a new hash algorithm speeds up exists()
-  by 10% and intersectionSize() by 8%.
-type: changed
-authors:
-- name: yonik
-links:
-- name: SOLR-114
-  url: https://issues.apache.org/jira/browse/SOLR-114

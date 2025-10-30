@@ -1,8 +1,0 @@
-title: Fix Classloading Exception for inter-node requests when using SSL and HTTP2.
-  All Jetty classes are able to be shared between the Jetty server and webApp now.
-type: fixed
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-16728
-  url: https://issues.apache.org/jira/browse/SOLR-16728

@@ -1,7 +1,0 @@
-title: Implement addReplica Collections API
-type: added
-authors:
-- name: Noble Paul
-links:
-- name: SOLR-5130
-  url: https://issues.apache.org/jira/browse/SOLR-5130

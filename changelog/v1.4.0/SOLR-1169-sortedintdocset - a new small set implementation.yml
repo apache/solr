@@ -1,9 +1,0 @@
-title: SortedIntDocSet - a new small set implementation that saves memory over HashDocSet,
-  is faster to construct, is ordered for easier implementation of skipTo, and is faster
-  in the general case.
-type: changed
-authors:
-- name: yonik
-links:
-- name: SOLR-1169
-  url: https://issues.apache.org/jira/browse/SOLR-1169

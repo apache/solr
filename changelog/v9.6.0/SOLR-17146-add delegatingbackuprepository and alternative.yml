@@ -1,7 +1,0 @@
-title: Add DelegatingBackupRepository and alternative checksum verification
-type: changed
-authors:
-- name: Bruno Roustant
-links:
-- name: SOLR-17146
-  url: https://issues.apache.org/jira/browse/SOLR-17146

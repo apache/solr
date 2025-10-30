@@ -1,8 +1,0 @@
-title: 'SwitchQParserPlugin registered by default as ''switch'' using syntax: {!switch
-  case=XXX case.foo=YYY case.bar=ZZZ default=QQQ}foo'
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-4481
-  url: https://issues.apache.org/jira/browse/SOLR-4481

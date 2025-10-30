@@ -1,8 +1,0 @@
-title: Fix various places that still assume File based paths even when not using a
-  file based DirectoryFactory.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4475
-  url: https://issues.apache.org/jira/browse/SOLR-4475

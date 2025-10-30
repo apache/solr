@@ -1,8 +1,0 @@
-title: Add missing _root_ field to managed-schema template so that the default data
-  driven config set can index nested documents by default.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-7675
-  url: https://issues.apache.org/jira/browse/SOLR-7675

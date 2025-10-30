@@ -1,7 +1,0 @@
-title: SolrResourceLoader no longer caches bad results when asked for wrong type
-type: other
-authors:
-- name: Mike Drob
-links:
-- name: SOLR-13797
-  url: https://issues.apache.org/jira/browse/SOLR-13797

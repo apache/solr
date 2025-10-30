@@ -1,7 +1,0 @@
-title: AddSchemaFieldsUpdateProcessorFactory does not check if the ConfigSet is immutable
-type: fixed
-authors:
-- name: Gregory Chanan
-links:
-- name: SOLR-7967
-  url: https://issues.apache.org/jira/browse/SOLR-7967

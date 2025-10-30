@@ -1,9 +1,0 @@
-title: Expose safe system properties via metrics API as 'system.properties' in 'solr.jvm'
-  group. Add support for selecting specific properties from any compound metric using
-  'property' parameter to /admin/metrics handler.
-type: other
-authors:
-- name: ab
-links:
-- name: SOLR-10418
-  url: https://issues.apache.org/jira/browse/SOLR-10418

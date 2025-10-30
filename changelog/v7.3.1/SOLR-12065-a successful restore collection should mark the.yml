@@ -1,9 +1,0 @@
-title: A successful restore collection should mark the shard state as active and not
-  buffering
-type: fixed
-authors:
-- name: Rohit
-- name: Varun Thacker
-links:
-- name: SOLR-12065
-  url: https://issues.apache.org/jira/browse/SOLR-12065

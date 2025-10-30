@@ -1,8 +1,0 @@
-title: Implement a set-property command for AutoScaling API.
-type: added
-authors:
-- name: ab
-- name: shalin
-links:
-- name: SOLR-11202
-  url: https://issues.apache.org/jira/browse/SOLR-11202

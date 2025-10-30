@@ -1,7 +1,0 @@
-title: Add v2 API for configSet upload, including single-file insertion.
-type: added
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-14907
-  url: https://issues.apache.org/jira/browse/SOLR-14907

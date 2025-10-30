@@ -1,8 +1,0 @@
-title: Resolve variables in encryptKeyFile of DIH's JdbcDataSource
-type: added
-authors:
-- name: Kristine Jetzke
-- name: Mikhail Khludnev
-links:
-- name: SOLR-8610
-  url: https://issues.apache.org/jira/browse/SOLR-8610

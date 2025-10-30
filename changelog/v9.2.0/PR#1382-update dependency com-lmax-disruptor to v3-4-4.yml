@@ -1,7 +1,0 @@
-title: Update dependency com.lmax:disruptor to v3.4.4
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#1382
-  url: https://github.com/apache/solr/pull/1382

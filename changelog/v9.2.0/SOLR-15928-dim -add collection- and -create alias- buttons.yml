@@ -1,7 +1,0 @@
-title: Dim 'Add Collection' and 'Create Alias' buttons when user lacks proper permissions
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-15928
-  url: https://issues.apache.org/jira/browse/SOLR-15928

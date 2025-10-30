@@ -1,9 +1,0 @@
-title: When doing peer sync, we should only count sync attempts that cannot reach
-  the given host as success when the candidate leader is syncing with the replicas
-  - not when replicas are syncing to the leader.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3836
-  url: https://issues.apache.org/jira/browse/SOLR-3836

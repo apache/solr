@@ -1,8 +1,0 @@
-title: When forceNew is used with CachingDirectoryFactory#get, the old CacheValue
-  should give up its path as it will be used by a new Directory instance.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4555
-  url: https://issues.apache.org/jira/browse/SOLR-4555

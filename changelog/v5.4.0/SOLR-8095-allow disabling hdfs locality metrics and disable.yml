@@ -1,9 +1,0 @@
-title: Allow disabling HDFS Locality Metrics and disable by default as it may have
-  performance implications on rapidly changing indexes.
-type: fixed
-authors:
-- name: Mike Drob
-- name: Mark Miller
-links:
-- name: SOLR-8095
-  url: https://issues.apache.org/jira/browse/SOLR-8095

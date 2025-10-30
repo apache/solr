@@ -1,7 +1,0 @@
-title: fixing lazy logic for retrieving ReversedWildcardFilterFactory in SolrQueryParserBase
-type: other
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-9878
-  url: https://issues.apache.org/jira/browse/SOLR-9878

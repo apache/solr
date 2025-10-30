@@ -1,7 +1,0 @@
-title: Avoid exposing Solr's IP in the Location header.
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-17434
-  url: https://issues.apache.org/jira/browse/SOLR-17434

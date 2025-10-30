@@ -1,8 +1,0 @@
-title: Enable edismax and standard query parsers to handle the option combination
-  sow=false / autoGeneratePhraseQueries="true" by setting QueryBuilder.autoGenerateMultiTermSynonymsQuery.
-type: other
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-10357
-  url: https://issues.apache.org/jira/browse/SOLR-10357

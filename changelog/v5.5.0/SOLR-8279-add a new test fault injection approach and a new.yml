@@ -1,8 +1,0 @@
-title: Add a new test fault injection approach and a new SolrCloud test that stops
-  and starts the cluster while indexing data and with random faults.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-8279
-  url: https://issues.apache.org/jira/browse/SOLR-8279

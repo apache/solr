@@ -1,7 +1,0 @@
-title: Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory
-type: added
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16500
-  url: https://issues.apache.org/jira/browse/SOLR-16500

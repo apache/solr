@@ -1,7 +1,0 @@
-title: Support CBOR format for update/query
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-16812
-  url: https://issues.apache.org/jira/browse/SOLR-16812

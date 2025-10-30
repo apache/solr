@@ -1,9 +1,0 @@
-title: 'New dismax parser implementation (accessible as "edismax") that supports full
-  lucene syntax, improved reserved char escaping, fielded queries, improved proximity
-  boosting, and improved stopword handling. Note: status is experimental for now.'
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-1553
-  url: https://issues.apache.org/jira/browse/SOLR-1553

@@ -1,9 +1,0 @@
-title: SolrJ's CommonsHttpSolrServer would retry requests on failure, regardless of
-  the configured maxRetries, due to HttpClient having its own retry mechanism by default.
-  The retryCount of HttpClient is now set to 0, and SolrJ does the retry.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-2466
-  url: https://issues.apache.org/jira/browse/SOLR-2466

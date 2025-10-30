@@ -1,8 +1,0 @@
-title: A SolrCore reload can remove the index from the previous SolrCore during replication
-  index rollover.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-10120
-  url: https://issues.apache.org/jira/browse/SOLR-10120

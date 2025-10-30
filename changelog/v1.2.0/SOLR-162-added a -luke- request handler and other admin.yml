@@ -1,8 +1,0 @@
-title: Added a "Luke" request handler and other admin helpers. This exposes the system
-  status through the standard requestHandler framework.
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-162
-  url: https://issues.apache.org/jira/browse/SOLR-162

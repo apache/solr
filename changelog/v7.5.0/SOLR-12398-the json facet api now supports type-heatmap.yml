@@ -1,8 +1,0 @@
-title: The JSON Facet API now supports type=heatmap facets, just as classic faceting
-  does.
-type: added
-authors:
-- name: David Smiley
-links:
-- name: SOLR-12398
-  url: https://issues.apache.org/jira/browse/SOLR-12398

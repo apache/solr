@@ -1,7 +1,0 @@
-title: The default Solr log file size and number of backups is raised to 32MB and
-  10 respectively
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-11957
-  url: https://issues.apache.org/jira/browse/SOLR-11957

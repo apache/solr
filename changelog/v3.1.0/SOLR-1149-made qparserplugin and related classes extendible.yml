@@ -1,8 +1,0 @@
-title: Made QParserPlugin and related classes extendible as an experimental API.
-type: other
-authors:
-- name: Kaktu Chakarabati
-- name: shalin
-links:
-- name: SOLR-1149
-  url: https://issues.apache.org/jira/browse/SOLR-1149

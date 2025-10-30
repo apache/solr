@@ -1,7 +1,0 @@
-title: Increase thread lingering timeout to 80s.
-type: other
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-12027
-  url: https://issues.apache.org/jira/browse/SOLR-12027

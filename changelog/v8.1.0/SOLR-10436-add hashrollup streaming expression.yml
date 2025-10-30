@@ -1,7 +1,0 @@
-title: Add hashRollup Streaming Expression
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-10436
-  url: https://issues.apache.org/jira/browse/SOLR-10436

@@ -1,8 +1,0 @@
-title: Concurrent requests failing JWT authentication in Admin UI intermittently
-type: fixed
-authors:
-- name: Lamine Idjeraoui
-- name: janhoy
-links:
-- name: SOLR-16991
-  url: https://issues.apache.org/jira/browse/SOLR-16991

@@ -1,7 +1,0 @@
-title: Fencepost error in LeaderInitiatedRecoveryThread
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-6511
-  url: https://issues.apache.org/jira/browse/SOLR-6511

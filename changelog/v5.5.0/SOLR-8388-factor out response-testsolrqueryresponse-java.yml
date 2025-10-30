@@ -1,9 +1,0 @@
-title: factor out response/TestSolrQueryResponse.java from servlet/ResponseHeaderTest.java
-  more TestSolrQueryResponse.java tests; add SolrReturnFields.toString method, ReturnFieldsTest.testToString
-  test;
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8388
-  url: https://issues.apache.org/jira/browse/SOLR-8388

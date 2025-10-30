@@ -1,9 +1,0 @@
-title: Fix XML parsing in XMLUpdateRequestHandler and DocumentAnalysisRequestHandler
-  to respect charset from XML file and only use HTTP header's "Content-Type" as a
-  "hint".
-type: fixed
-authors:
-- name: uschindler
-links:
-- name: SOLR-96
-  url: https://issues.apache.org/jira/browse/SOLR-96

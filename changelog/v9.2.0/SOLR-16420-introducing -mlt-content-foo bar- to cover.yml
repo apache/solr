@@ -1,8 +1,0 @@
-title: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` handler functionality
-  for SolrCloud.
-type: changed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-16420
-  url: https://issues.apache.org/jira/browse/SOLR-16420

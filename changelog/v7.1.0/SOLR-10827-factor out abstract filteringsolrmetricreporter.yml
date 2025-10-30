@@ -1,7 +1,0 @@
-title: Factor out abstract FilteringSolrMetricReporter class.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-10827
-  url: https://issues.apache.org/jira/browse/SOLR-10827

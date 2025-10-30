@@ -1,7 +1,0 @@
-title: Fix CapitalizationFilterFactory to work when keep parameter is not specified.
-type: fixed
-authors:
-- name: ehatcher
-links:
-- name: SOLR-1317
-  url: https://issues.apache.org/jira/browse/SOLR-1317

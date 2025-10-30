@@ -1,7 +1,0 @@
-title: Preserve root cause when wrapping exceptions
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-8971
-  url: https://issues.apache.org/jira/browse/SOLR-8971

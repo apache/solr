@@ -1,8 +1,0 @@
-title: CSV handler now supports "literal.field_name=value" parameters.
-type: added
-authors:
-- name: Simon Rosenthal
-- name: ehatcher
-links:
-- name: SOLR-1032
-  url: https://issues.apache.org/jira/browse/SOLR-1032

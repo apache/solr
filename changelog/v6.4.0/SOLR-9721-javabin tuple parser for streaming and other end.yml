@@ -1,7 +1,0 @@
-title: javabin Tuple parser for streaming and other end points
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-9721
-  url: https://issues.apache.org/jira/browse/SOLR-9721

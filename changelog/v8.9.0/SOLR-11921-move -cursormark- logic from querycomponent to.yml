@@ -1,9 +1,0 @@
-title: Move "cursorMark" logic from QueryComponent to SearchHandler so it can work
-  with things like QueryElevationComponent that modify the SortSpec in prepare(),
-  as well as possible custom "search" components other then QueryComponent.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-11921
-  url: https://issues.apache.org/jira/browse/SOLR-11921

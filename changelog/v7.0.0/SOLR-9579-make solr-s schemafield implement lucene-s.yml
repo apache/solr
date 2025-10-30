@@ -1,9 +1,0 @@
-title: Make Solr's SchemaField implement Lucene's IndexableFieldType, removing the
-  creation of a Lucene FieldType every time a field is indexed.
-type: changed
-authors:
-- name: John Call
-- name: yonik
-links:
-- name: SOLR-9579
-  url: https://issues.apache.org/jira/browse/SOLR-9579

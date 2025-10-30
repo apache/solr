@@ -1,8 +1,0 @@
-title: Change TestConfig.testDefaults to cover all SolrIndexConfig fields
-type: other
-authors:
-- name: Christine Poerschke
-- name: Ramkumar Aiyengar
-links:
-- name: SOLR-7750
-  url: https://issues.apache.org/jira/browse/SOLR-7750

@@ -1,8 +1,0 @@
-title: SyncStrategy closes its http connection manager before the executor that uses
-  it in its close method.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5451
-  url: https://issues.apache.org/jira/browse/SOLR-5451

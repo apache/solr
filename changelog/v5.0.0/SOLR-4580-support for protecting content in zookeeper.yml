@@ -1,8 +1,0 @@
-title: Support for protecting content in ZooKeeper.
-type: added
-authors:
-- name: Per Steffensen
-- name: Mark Miller
-links:
-- name: SOLR-4580
-  url: https://issues.apache.org/jira/browse/SOLR-4580

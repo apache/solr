@@ -1,8 +1,0 @@
-title: Added omitPositions to the schema, so you can omit position information while
-  still indexing term frequencies.
-type: added
-authors:
-- name: rmuir
-links:
-- name: LUCENE-2048
-  url: https://issues.apache.org/jira/browse/LUCENE-2048

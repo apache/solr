@@ -1,8 +1,0 @@
-title: Add grandSum, sumRows, sumColumns, scalarDivide, scalarMultiply, scalarAdd,
-  scalarSubtract Stream Evaluators
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11607
-  url: https://issues.apache.org/jira/browse/SOLR-11607

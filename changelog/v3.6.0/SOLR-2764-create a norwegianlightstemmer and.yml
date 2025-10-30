@@ -1,7 +1,0 @@
-title: Create a NorwegianLightStemmer and NorwegianMinimalStemmer
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-2764
-  url: https://issues.apache.org/jira/browse/SOLR-2764

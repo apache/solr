@@ -1,8 +1,0 @@
-title: 'Fixed core discovery mode (ie: new style solr.xml) to treat ''collection1''
-  as the default core name.'
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-4803
-  url: https://issues.apache.org/jira/browse/SOLR-4803

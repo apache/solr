@@ -1,7 +1,0 @@
-title: BBoxField's 'score' mode should have been optional.
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-6784
-  url: https://issues.apache.org/jira/browse/SOLR-6784

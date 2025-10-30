@@ -1,9 +1,0 @@
-title: DocBasedVersionConstraintsProcessorFactory is more extensible and now supports
-  a list of versioned fields. (versionField config may now be a comma-delimited list).
-type: added
-authors:
-- name: Michael Braun
-- name: David Smiley
-links:
-- name: SOLR-11336
-  url: https://issues.apache.org/jira/browse/SOLR-11336

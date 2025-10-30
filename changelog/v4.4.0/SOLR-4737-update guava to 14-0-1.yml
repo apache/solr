@@ -1,7 +1,0 @@
-title: Update Guava to 14.0.1
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4737
-  url: https://issues.apache.org/jira/browse/SOLR-4737

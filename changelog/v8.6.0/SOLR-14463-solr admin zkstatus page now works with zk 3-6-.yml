@@ -1,9 +1,0 @@
-title: 'Solr Admin ZkStatus page now works with ZK 3.6, without ''For input string:
-  "null"'' error'
-type: fixed
-authors:
-- name: janhoy
-- name: Bernd Wahlen
-links:
-- name: SOLR-14463
-  url: https://issues.apache.org/jira/browse/SOLR-14463

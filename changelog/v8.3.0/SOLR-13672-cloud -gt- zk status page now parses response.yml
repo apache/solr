@@ -1,9 +1,0 @@
-title: Cloud -&gt; Zk Status page now parses response from Zookeeper 3.5.5 correctly
-type: fixed
-authors:
-- name: Jörn Franke
-- name: janhoy
-- name: Shawn Heisey
-links:
-- name: SOLR-13672
-  url: https://issues.apache.org/jira/browse/SOLR-13672

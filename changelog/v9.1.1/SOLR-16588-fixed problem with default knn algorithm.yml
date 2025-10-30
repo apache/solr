@@ -1,8 +1,0 @@
-title: Fixed problem with default knn algorithm
-type: other
-authors:
-- name: Elia Porciani
-- name: Alessandro Benedetti
-links:
-- name: SOLR-16588
-  url: https://issues.apache.org/jira/browse/SOLR-16588

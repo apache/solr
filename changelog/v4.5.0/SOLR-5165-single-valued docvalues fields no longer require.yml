@@ -1,9 +1,0 @@
-title: Single-valued docValues fields no longer require a default value. Additionally
-  they work with sortMissingFirst, sortMissingLast, facet.missing, exists() in function
-  queries, etc.
-type: added
-authors:
-- name: Robert Muir
-links:
-- name: SOLR-5165
-  url: https://issues.apache.org/jira/browse/SOLR-5165

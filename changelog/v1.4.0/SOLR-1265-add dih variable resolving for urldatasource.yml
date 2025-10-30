@@ -1,8 +1,0 @@
-title: Add DIH variable resolving for URLDataSource properties like baseUrl.
-type: other
-authors:
-- name: Chris Eldredge
-- name: ehatcher
-links:
-- name: SOLR-1265
-  url: https://issues.apache.org/jira/browse/SOLR-1265

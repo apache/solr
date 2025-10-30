@@ -1,8 +1,0 @@
-title: Prevent Logging MDC values from leaking between request threads, and set 'trace_id'
-  in MDC as soon as it's available
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-15783
-  url: https://issues.apache.org/jira/browse/SOLR-15783

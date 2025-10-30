@@ -1,8 +1,0 @@
-title: We should share an http connection manager across non search HttpClients and
-  ensure all http connection managers get shutdown.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5496
-  url: https://issues.apache.org/jira/browse/SOLR-5496

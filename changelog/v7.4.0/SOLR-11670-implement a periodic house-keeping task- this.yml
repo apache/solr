@@ -1,9 +1,0 @@
-title: Implement a periodic house-keeping task. This uses a scheduled autoscaling
-  trigger and currently performs cleanup of old inactive shards.
-type: added
-authors:
-- name: ab
-- name: shalin
-links:
-- name: SOLR-11670
-  url: https://issues.apache.org/jira/browse/SOLR-11670

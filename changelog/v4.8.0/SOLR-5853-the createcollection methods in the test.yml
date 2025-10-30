@@ -1,8 +1,0 @@
-title: The createCollection methods in the test framework now reports result of operation
-  in the returned CollectionAdminResponse
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-5853
-  url: https://issues.apache.org/jira/browse/SOLR-5853

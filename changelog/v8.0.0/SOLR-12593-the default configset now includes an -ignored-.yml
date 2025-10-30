@@ -1,7 +1,0 @@
-title: The default configSet now includes an "ignored_*" dynamic field.
-type: added
-authors:
-- name: David Smiley
-links:
-- name: SOLR-12593
-  url: https://issues.apache.org/jira/browse/SOLR-12593

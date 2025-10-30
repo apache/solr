@@ -1,8 +1,0 @@
-title: The SolrZKClient clean method should not try and clear zk paths that start
-  with /zookeeper, as this can fail and stop the removal of further nodes.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4003
-  url: https://issues.apache.org/jira/browse/SOLR-4003

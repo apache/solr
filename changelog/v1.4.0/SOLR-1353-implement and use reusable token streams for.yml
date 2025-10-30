@@ -1,8 +1,0 @@
-title: Implement and use reusable token streams for analysis.
-type: changed
-authors:
-- name: Robert Muir
-- name: yonik
-links:
-- name: SOLR-1353
-  url: https://issues.apache.org/jira/browse/SOLR-1353

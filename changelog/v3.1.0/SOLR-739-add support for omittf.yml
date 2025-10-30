@@ -1,8 +1,0 @@
-title: Add support for OmitTf
-type: added
-authors:
-- name: Mark Miller
-- name: yonik
-links:
-- name: SOLR-739
-  url: https://issues.apache.org/jira/browse/SOLR-739

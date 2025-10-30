@@ -1,8 +1,0 @@
-title: Solr cache/search/update stats counters now use LongAdder which are supposed
-  to have higher throughput under high contention.
-type: changed
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-9335
-  url: https://issues.apache.org/jira/browse/SOLR-9335

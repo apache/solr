@@ -1,7 +1,0 @@
-title: 'SolrResourceLoader: remove deprecated methods and do other improvements.'
-type: removed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-14197
-  url: https://issues.apache.org/jira/browse/SOLR-14197

@@ -1,7 +1,0 @@
-title: bin/solr {config,healthcheck} ignore ZK_HOST in solr.in.{sh,cmd}
-type: fixed
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-12434
-  url: https://issues.apache.org/jira/browse/SOLR-12434

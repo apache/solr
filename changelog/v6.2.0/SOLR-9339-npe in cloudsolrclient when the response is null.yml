@@ -1,7 +1,0 @@
-title: NPE in CloudSolrClient when the response is null
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-9339
-  url: https://issues.apache.org/jira/browse/SOLR-9339

@@ -1,8 +1,0 @@
-title: Updated Solr Admin interface. New look and feel with per core administration
-  and many new options.
-type: added
-authors:
-- name: Stefan Matheis
-links:
-- name: SOLR-2399
-  url: https://issues.apache.org/jira/browse/SOLR-2399

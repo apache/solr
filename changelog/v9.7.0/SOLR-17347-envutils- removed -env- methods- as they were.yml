@@ -1,8 +1,0 @@
-title: 'EnvUtils: Removed "env" methods, as they were problematic. Code should almost
-  never refer to env vars.'
-type: other
-authors:
-- name: David Smiley
-links:
-- name: SOLR-17347
-  url: https://issues.apache.org/jira/browse/SOLR-17347

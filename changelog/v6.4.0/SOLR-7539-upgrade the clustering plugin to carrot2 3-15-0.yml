@@ -1,7 +1,0 @@
-title: Upgrade the clustering plugin to Carrot2 3.15.0.
-type: other
-authors:
-- name: Dawid Weiss
-links:
-- name: SOLR-7539
-  url: https://issues.apache.org/jira/browse/SOLR-7539

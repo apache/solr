@@ -1,7 +1,0 @@
-title: Add transpose Stream Evaluator to support transposing of matrices
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11566
-  url: https://issues.apache.org/jira/browse/SOLR-11566

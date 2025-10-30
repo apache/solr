@@ -1,8 +1,0 @@
-title: CLUSTERPROP API switch case does not call break.
-type: other
-authors:
-- name: Varun Thacker
-- name: shalin
-links:
-- name: SOLR-6883
-  url: https://issues.apache.org/jira/browse/SOLR-6883

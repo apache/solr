@@ -1,8 +1,0 @@
-title: Different exit code for rsyncd-start and snappuller if disabled
-type: other
-authors:
-- name: Thomas Peuss
-- name: billa
-links:
-- name: SOLR-531
-  url: https://issues.apache.org/jira/browse/SOLR-531

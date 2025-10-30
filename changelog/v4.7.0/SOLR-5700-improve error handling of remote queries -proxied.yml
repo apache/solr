@@ -1,9 +1,0 @@
-title: Improve error handling of remote queries (proxied requests).
-type: other
-authors:
-- name: Greg Chanan
-- name: Steve Davids
-- name: Mark Miller
-links:
-- name: SOLR-5700
-  url: https://issues.apache.org/jira/browse/SOLR-5700

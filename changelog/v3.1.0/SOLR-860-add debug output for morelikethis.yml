@@ -1,7 +1,0 @@
-title: Add debug output for MoreLikeThis.
-type: added
-authors:
-- name: koji
-links:
-- name: SOLR-860
-  url: https://issues.apache.org/jira/browse/SOLR-860

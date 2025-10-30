@@ -1,8 +1,0 @@
-title: Ensure that the max value for seeding version buckets is updated after recovery
-  even if the UpdateLog is not replayed.
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-7625
-  url: https://issues.apache.org/jira/browse/SOLR-7625

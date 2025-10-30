@@ -1,7 +1,0 @@
-title: Standardize and fix logger creation and usage so that they aren't shared across
-  source files.(Jason Gerlowski, Uwe Schindler, Anshum Gupta)
-type: other
-authors: []
-links:
-- name: SOLR-8330
-  url: https://issues.apache.org/jira/browse/SOLR-8330

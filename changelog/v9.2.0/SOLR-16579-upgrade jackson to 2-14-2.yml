@@ -1,9 +1,0 @@
-title: Upgrade Jackson to 2.14.2
-type: dependency_update
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16579
-  url: https://issues.apache.org/jira/browse/SOLR-16579
-- name: PR#1379
-  url: https://github.com/apache/solr/pull/1379

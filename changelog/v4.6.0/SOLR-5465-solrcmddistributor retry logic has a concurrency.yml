@@ -1,7 +1,0 @@
-title: SolrCmdDistributor retry logic has a concurrency race bug.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5465
-  url: https://issues.apache.org/jira/browse/SOLR-5465

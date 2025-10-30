@@ -1,7 +1,0 @@
-title: Add multiVariateNormalDistribution Stream Evaluator
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11785
-  url: https://issues.apache.org/jira/browse/SOLR-11785

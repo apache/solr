@@ -1,8 +1,0 @@
-title: The System admin handler should not assume a file system based data directory
-  location.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4699
-  url: https://issues.apache.org/jira/browse/SOLR-4699

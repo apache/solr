@@ -1,7 +1,0 @@
-title: Request forwarding for v2 API is broken
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-12868
-  url: https://issues.apache.org/jira/browse/SOLR-12868

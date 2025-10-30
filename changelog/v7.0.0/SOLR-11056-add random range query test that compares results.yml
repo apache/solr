@@ -1,8 +1,0 @@
-title: Add random range query test that compares results across Trie*, *Point and
-  DocValue-only fields
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-11056
-  url: https://issues.apache.org/jira/browse/SOLR-11056

@@ -1,9 +1,0 @@
-title: Fix bug with compressed files in ExtractingRequestHandler by upgrading commons-compress
-  to 1.7
-type: fixed
-authors:
-- name: Jan Høydahl
-- name: hossman
-links:
-- name: SOLR-5365
-  url: https://issues.apache.org/jira/browse/SOLR-5365

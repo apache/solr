@@ -1,9 +1,0 @@
-title: The DIH VariableResolver obtained from a DataSource's context does not have
-  current data.
-type: fixed
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-838
-  url: https://issues.apache.org/jira/browse/SOLR-838

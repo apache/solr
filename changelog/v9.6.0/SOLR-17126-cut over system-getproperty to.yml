@@ -1,7 +1,0 @@
-title: Cut over System.getProperty to EnvUtils.getProperty
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-17126
-  url: https://issues.apache.org/jira/browse/SOLR-17126

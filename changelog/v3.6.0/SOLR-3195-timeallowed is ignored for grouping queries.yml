@@ -1,8 +1,0 @@
-title: timeAllowed is ignored for grouping queries
-type: fixed
-authors:
-- name: Russell Black
-- name: Martijn van Groningen
-links:
-- name: SOLR-3195
-  url: https://issues.apache.org/jira/browse/SOLR-3195

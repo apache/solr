@@ -1,7 +1,0 @@
-title: Autoscaling policy engine shuffles replicas needlessly
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-12023
-  url: https://issues.apache.org/jira/browse/SOLR-12023

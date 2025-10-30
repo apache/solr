@@ -1,8 +1,0 @@
-title: Shard splitting creates sub shards which have the wrong hash range in cluster
-  state. This happens when numShards is not a power of two and router is compositeId.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-4797
-  url: https://issues.apache.org/jira/browse/SOLR-4797

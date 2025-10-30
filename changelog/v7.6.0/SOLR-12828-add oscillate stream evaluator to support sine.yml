@@ -1,7 +1,0 @@
-title: Add oscillate Stream Evaluator to support sine wave analysis.
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-12828
-  url: https://issues.apache.org/jira/browse/SOLR-12828

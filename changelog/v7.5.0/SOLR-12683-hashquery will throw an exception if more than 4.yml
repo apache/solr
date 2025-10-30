@@ -1,8 +1,0 @@
-title: HashQuery will throw an exception if more than 4 partitionKeys is specified.
-  Earlier after the 4th partitionKey the keys would be silently ignored.
-type: fixed
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-12683
-  url: https://issues.apache.org/jira/browse/SOLR-12683

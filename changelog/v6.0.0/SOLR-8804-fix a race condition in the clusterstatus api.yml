@@ -1,9 +1,0 @@
-title: Fix a race condition in the ClusterStatus API call whereby the call would fail
-  when a concurrent delete collection api command was executed
-type: fixed
-authors:
-- name: Alexey Serba
-- name: Varun Thacker
-links:
-- name: SOLR-8804
-  url: https://issues.apache.org/jira/browse/SOLR-8804

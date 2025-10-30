@@ -1,8 +1,0 @@
-title: Refuse "bin/solr create" if run as root, unless -force is specified
-type: other
-authors:
-- name: janhoy
-- name: Binoy Dalal
-links:
-- name: SOLR-7826
-  url: https://issues.apache.org/jira/browse/SOLR-7826

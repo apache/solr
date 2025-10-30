@@ -1,9 +1,0 @@
-title: The MoreLikeThisComponent now supports the mlt.interestingTerms parameter.
-  Previously this option was unique to the MLT handler.
-type: changed
-authors:
-- name: Alessandro Benedetti
-- name: David Smiley
-links:
-- name: SOLR-12304
-  url: https://issues.apache.org/jira/browse/SOLR-12304

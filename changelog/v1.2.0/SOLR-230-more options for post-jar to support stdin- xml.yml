@@ -1,9 +1,0 @@
-title: More options for post.jar to support stdin, xml on the commandline, and defering
-  commits. Tutorial modified to take advantage of these options so there is no need
-  for curl.
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-230
-  url: https://issues.apache.org/jira/browse/SOLR-230

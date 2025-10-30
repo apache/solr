@@ -1,8 +1,0 @@
-title: Add weblogic.xml to solr webapp to enable correct operation in WebLogic.
-type: fixed
-authors:
-- name: Ilan Rabinovitch
-- name: yonik
-links:
-- name: SOLR-1448
-  url: https://issues.apache.org/jira/browse/SOLR-1448

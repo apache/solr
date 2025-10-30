@@ -1,7 +1,0 @@
-title: Upgrade to Zookeeper 3.7.0
-type: other
-authors:
-- name: Mike Drob
-links:
-- name: SOLR-15409
-  url: https://issues.apache.org/jira/browse/SOLR-15409

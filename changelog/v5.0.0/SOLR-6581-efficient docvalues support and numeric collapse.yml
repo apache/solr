@@ -1,8 +1,0 @@
-title: Efficient DocValues support and numeric collapse field implementations for
-  Collapse and Expand
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-6581
-  url: https://issues.apache.org/jira/browse/SOLR-6581

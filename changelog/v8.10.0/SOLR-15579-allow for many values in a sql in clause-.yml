@@ -1,9 +1,0 @@
-title: Allow for many values in a SQL IN clause; previously using more than 19 would
-  result in the IN clause being ignored, now users are only limited by the `maxBooleanClauses`
-  configured for a collection
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-15579
-  url: https://issues.apache.org/jira/browse/SOLR-15579

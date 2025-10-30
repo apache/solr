@@ -1,7 +1,0 @@
-title: Add FieldCache introspection to stats.jsp and JMX Monitoring via a new SolrFieldCacheMBean.
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-1292
-  url: https://issues.apache.org/jira/browse/SOLR-1292

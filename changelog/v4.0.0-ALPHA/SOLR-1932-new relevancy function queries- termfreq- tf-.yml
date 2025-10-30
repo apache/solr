@@ -1,7 +1,0 @@
-title: 'New relevancy function queries: termfreq, tf, docfreq, idf norm, maxdoc, numdocs.'
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-1932
-  url: https://issues.apache.org/jira/browse/SOLR-1932

@@ -1,8 +1,0 @@
-title: 'TestReplicationHandler.doTestIndexFetchOnLeaderRestart(): handle unexpected
-  replication failures'
-type: fixed
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-12201
-  url: https://issues.apache.org/jira/browse/SOLR-12201

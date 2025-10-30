@@ -1,7 +1,0 @@
-title: bin/post now allows either -url or -c, rather than requiring both.
-type: other
-authors:
-- name: ehatcher
-links:
-- name: SOLR-7832
-  url: https://issues.apache.org/jira/browse/SOLR-7832

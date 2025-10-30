@@ -1,7 +1,0 @@
-title: ZkNodeProps to be able to load from both javabin and JSON
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-13006
-  url: https://issues.apache.org/jira/browse/SOLR-13006

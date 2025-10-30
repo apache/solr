@@ -1,6 +1,0 @@
-title: 'If you use the JSON Facet API (json.facet) with method=stream, you must now
-  set sort=''index asc'' to get the streaming behavior; otherwise it won''t stream.
-  Reminder: "method" is a hint that doesn''t change defaults of other parameters.'
-type: upgrade_notes
-authors: []
-links: []

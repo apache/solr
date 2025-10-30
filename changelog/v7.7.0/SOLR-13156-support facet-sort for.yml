@@ -1,8 +1,0 @@
-title: support facet.sort for facet.field={!terms=foo,bar}field.
-type: changed
-authors:
-- name: Konstantin Perikov
-- name: Mikhail Khludnev
-links:
-- name: SOLR-13156
-  url: https://issues.apache.org/jira/browse/SOLR-13156

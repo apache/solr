@@ -1,8 +1,0 @@
-title: Clean trailing whitespace from 'analytics' contrib
-type: other
-authors:
-- name: Neal Sidhwaney
-- name: Jason Gerlowski
-links:
-- name: SOLR-13629
-  url: https://issues.apache.org/jira/browse/SOLR-13629

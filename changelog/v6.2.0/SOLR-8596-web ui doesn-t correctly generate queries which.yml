@@ -1,8 +1,0 @@
-title: Web UI doesn't correctly generate queries which include local parameters
-type: fixed
-authors:
-- name: Alexandre Rafalovitch
-- name: janhoy
-links:
-- name: SOLR-8596
-  url: https://issues.apache.org/jira/browse/SOLR-8596

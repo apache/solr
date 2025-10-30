@@ -1,8 +1,0 @@
-title: New "vectorSimilarity" QParser for matching documents mased on a minimum vector
-  similarity threshold.
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-17335
-  url: https://issues.apache.org/jira/browse/SOLR-17335

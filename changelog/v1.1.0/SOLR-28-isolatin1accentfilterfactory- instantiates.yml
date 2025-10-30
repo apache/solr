@@ -1,9 +1,0 @@
-title: ISOLatin1AccentFilterFactory, instantiates ISOLatin1AccentFilter to remove
-  accents. SOLR-28
-type: added
-authors:
-- name: Bertrand Delacretaz
-- name: yonik
-links:
-- name: SOLR-28
-  url: https://issues.apache.org/jira/browse/SOLR-28

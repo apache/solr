@@ -1,8 +1,0 @@
-title: Fixed config file replication when subdirectories are used
-type: fixed
-authors:
-- name: Emmanuel Espina
-- name: hossman
-links:
-- name: SOLR-3809
-  url: https://issues.apache.org/jira/browse/SOLR-3809

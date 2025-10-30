@@ -1,6 +1,0 @@
-title: SimpleTracer propagation for manual transaction ids
-type: changed
-authors: []
-links:
-- name: SOLR-16950
-  url: https://issues.apache.org/jira/browse/SOLR-16950

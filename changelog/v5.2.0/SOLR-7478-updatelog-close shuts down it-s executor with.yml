@@ -1,8 +1,0 @@
-title: UpdateLog#close shuts down it's executor with interrupts before running it's
-  close logic, possibly preventing a clean close.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-7478
-  url: https://issues.apache.org/jira/browse/SOLR-7478

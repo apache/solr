@@ -1,9 +1,0 @@
-title: SimpleMLTQParser and CloudMLTQParser did not handle field boosts properly and
-  CloudMLTQParser included extra strings from the field definitions in the query.
-type: fixed
-authors:
-- name: Ere Maijala
-- name: Anshum Gupta
-links:
-- name: SOLR-9644
-  url: https://issues.apache.org/jira/browse/SOLR-9644

@@ -1,7 +1,0 @@
-title: The UnifiedHighlighter hl.weightMatches now defaults to true. If there are
-  unforseen highlight problems, this may be the culprit.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-12754
-  url: https://issues.apache.org/jira/browse/SOLR-12754

@@ -1,9 +1,0 @@
-title: Fix XML parsing in XPathEntityProcessor to correctly expand named entities,
-  but ignore external entities.
-type: changed
-authors:
-- name: uschindler
-- name: hossman
-links:
-- name: SOLR-3614
-  url: https://issues.apache.org/jira/browse/SOLR-3614

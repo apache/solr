@@ -1,8 +1,0 @@
-title: SOLR_LOG_PRESTART_ROTATION now defaults to false, we leverage log4j2 for log
-  rotation on startup
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-12144
-  url: https://issues.apache.org/jira/browse/SOLR-12144

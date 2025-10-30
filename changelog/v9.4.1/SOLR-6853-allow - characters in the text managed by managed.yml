@@ -1,8 +1,0 @@
-title: Allow '/' characters in the text managed by Managed Resources API.
-type: fixed
-authors:
-- name: Nikita Rusetskii
-- name: Eric Pugh
-links:
-- name: SOLR-6853
-  url: https://issues.apache.org/jira/browse/SOLR-6853

@@ -1,8 +1,0 @@
-title: Expose a diagnostics API to return nodes sorted by load in descending order
-  and any policy violations.
-type: added
-authors:
-- name: shalin
-links:
-- name: SOLR-10677
-  url: https://issues.apache.org/jira/browse/SOLR-10677

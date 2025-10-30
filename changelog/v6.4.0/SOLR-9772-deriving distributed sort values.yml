@@ -1,9 +1,0 @@
-title: Deriving distributed sort values (fieldSortValues) should reuse comparator
-  and only invalidate leafComparator.
-type: changed
-authors:
-- name: John Call
-- name: yonik
-links:
-- name: SOLR-9772
-  url: https://issues.apache.org/jira/browse/SOLR-9772

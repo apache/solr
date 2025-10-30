@@ -1,9 +1,0 @@
-title: Lock autoscaling triggers when changes they requested are being made. This
-  helps to ensure that cluster is in a stable state before processing any new trigger
-  events.
-type: changed
-authors:
-- name: ab
-links:
-- name: SOLR-11320
-  url: https://issues.apache.org/jira/browse/SOLR-11320

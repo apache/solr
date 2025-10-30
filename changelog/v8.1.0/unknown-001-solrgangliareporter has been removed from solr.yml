@@ -1,5 +1,0 @@
-title: SolrGangliaReporter has been removed from Solr because support for Ganglia
-  has been removed from Dropwizard Metrics 4 due to a transitive dependency on LGPL.
-type: upgrade_notes
-authors: []
-links: []

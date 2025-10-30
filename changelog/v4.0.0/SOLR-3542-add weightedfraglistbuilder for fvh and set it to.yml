@@ -1,9 +1,0 @@
-title: Add WeightedFragListBuilder for FVH and set it to default fragListBuilder in
-  example solrconfig.xml.
-type: added
-authors:
-- name: Sebastian Lutze
-- name: koji
-links:
-- name: SOLR-3542
-  url: https://issues.apache.org/jira/browse/SOLR-3542

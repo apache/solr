@@ -1,8 +1,0 @@
-title: Introducing SolrClient.ping(collection) in SolrJ
-type: changed
-authors:
-- name: Geza Nagy
-- name: Mikhail Khludnev
-links:
-- name: SOLR-13719
-  url: https://issues.apache.org/jira/browse/SOLR-13719

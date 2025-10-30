@@ -1,9 +1,0 @@
-title: Add CSVResponseWriter (use wt=csv) that returns the list of documents in CSV
-  format.
-type: added
-authors:
-- name: Chris Mattmann
-- name: yonik
-links:
-- name: SOLR-1925
-  url: https://issues.apache.org/jira/browse/SOLR-1925

@@ -1,8 +1,0 @@
-title: We are no longer backing up solr.log and solr_gc.log files in date-stamped
-  copies forever. If you relied on the solr_log_&lt;date&gt; or solr_gc_log_&lt;date&gt;
-  being in the logs folder that will no longer be the case. See SOLR-9570 for details.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-9570
-  url: https://issues.apache.org/jira/browse/SOLR-9570

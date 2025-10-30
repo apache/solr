@@ -1,9 +1,0 @@
-title: Include cyclonedx SBOMs with maven artifacts
-type: other
-authors:
-- name: Arnout Engelen
-- name: Houston Putman
-- name: Kevin Risden
-links:
-- name: SOLR-16796
-  url: https://issues.apache.org/jira/browse/SOLR-16796

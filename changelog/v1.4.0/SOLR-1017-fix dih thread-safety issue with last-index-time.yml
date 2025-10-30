@@ -1,9 +1,0 @@
-title: Fix DIH thread-safety issue with last_index_time for concurrent imports in
-  multiple cores due to unsafe usage of SimpleDateFormat by multiple threads.
-type: fixed
-authors:
-- name: Ryuuichi Kumai
-- name: shalin
-links:
-- name: SOLR-1017
-  url: https://issues.apache.org/jira/browse/SOLR-1017

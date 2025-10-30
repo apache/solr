@@ -1,8 +1,0 @@
-title: Remove SolrMetricManager.overridableRegistryName method
-type: other
-authors:
-- name: Peter Somogyi
-- name: David Smiley
-links:
-- name: SOLR-12652
-  url: https://issues.apache.org/jira/browse/SOLR-12652

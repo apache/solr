@@ -1,7 +1,0 @@
-title: timeseries() expression missing sum() results for empty buckets
-type: fixed
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-12749
-  url: https://issues.apache.org/jira/browse/SOLR-12749

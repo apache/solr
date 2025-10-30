@@ -1,8 +1,0 @@
-title: Allow default UpdateLog syncLevel to be configured by solrconfig.xml
-type: other
-authors:
-- name: Raintung Li
-- name: Mark Miller
-links:
-- name: SOLR-3749
-  url: https://issues.apache.org/jira/browse/SOLR-3749

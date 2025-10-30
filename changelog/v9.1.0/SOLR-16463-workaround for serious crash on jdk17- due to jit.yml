@@ -1,8 +1,0 @@
-title: Workaround for serious crash on JDK17+ due to JIT on caffeinecache
-type: fixed
-authors:
-- name: janhoy
-- name: Uwe Schindler
-links:
-- name: SOLR-16463
-  url: https://issues.apache.org/jira/browse/SOLR-16463

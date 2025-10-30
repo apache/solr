@@ -1,7 +1,0 @@
-title: Better error messages in SolrCLI when authentication required
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-9680
-  url: https://issues.apache.org/jira/browse/SOLR-9680

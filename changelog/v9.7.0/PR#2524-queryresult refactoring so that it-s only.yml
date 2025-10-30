@@ -1,8 +1,0 @@
-title: QueryResult refactoring so that it's only returned from SolrIndexSearcher instead
-  of being provided to it. Deprecated APIs in 9x; should be removed later.
-type: other
-authors:
-- name: David Smiley
-links:
-- name: PR#2524
-  url: https://github.com/apache/solr/pull/2524

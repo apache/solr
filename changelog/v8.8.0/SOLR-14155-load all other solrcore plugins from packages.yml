@@ -1,7 +1,0 @@
-title: Load all other SolrCore plugins from packages
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-14155
-  url: https://issues.apache.org/jira/browse/SOLR-14155

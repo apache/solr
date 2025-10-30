@@ -1,8 +1,0 @@
-title: Do not collect expand documents when expand.rows=0
-type: changed
-authors:
-- name: Marshall Sanders
-- name: Amelia Henderson
-links:
-- name: SOLR-8306
-  url: https://issues.apache.org/jira/browse/SOLR-8306

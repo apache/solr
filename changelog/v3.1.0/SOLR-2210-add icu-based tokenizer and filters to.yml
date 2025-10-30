@@ -1,7 +1,0 @@
-title: Add icu-based tokenizer and filters to contrib/analysis-extras
-type: added
-authors:
-- name: rmuir
-links:
-- name: SOLR-2210
-  url: https://issues.apache.org/jira/browse/SOLR-2210

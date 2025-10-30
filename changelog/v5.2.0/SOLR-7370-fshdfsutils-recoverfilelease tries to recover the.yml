@@ -1,8 +1,0 @@
-title: FSHDFSUtils#recoverFileLease tries to recover the lease every one second after
-  the first four second wait.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-7370
-  url: https://issues.apache.org/jira/browse/SOLR-7370

@@ -1,7 +1,0 @@
-title: The Collections API should only send the reload command to ACTIVE cores.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4609
-  url: https://issues.apache.org/jira/browse/SOLR-4609

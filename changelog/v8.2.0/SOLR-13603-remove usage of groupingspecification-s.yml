@@ -1,7 +1,0 @@
-title: Remove usage of GroupingSpecification's deprecated methods
-type: other
-authors:
-- name: Munendra S N
-links:
-- name: SOLR-13603
-  url: https://issues.apache.org/jira/browse/SOLR-13603

@@ -1,7 +1,0 @@
-title: The default GC has been changed from CMS to G1. To override this (in order
-  to switch to CMS or any other GC), use GC_TUNE section of bin/solr.in.sh or bin/solr.in.cmd.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-13394
-  url: https://issues.apache.org/jira/browse/SOLR-13394

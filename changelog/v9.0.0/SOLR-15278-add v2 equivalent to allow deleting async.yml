@@ -1,7 +1,0 @@
-title: Add V2 equivalent to allow deleting async collection list of statuses.
-type: changed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-15278
-  url: https://issues.apache.org/jira/browse/SOLR-15278

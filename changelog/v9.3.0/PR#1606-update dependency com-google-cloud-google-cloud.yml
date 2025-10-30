@@ -1,7 +1,0 @@
-title: Update dependency com.google.cloud:google-cloud-bom to v0.197.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#1606
-  url: https://github.com/apache/solr/pull/1606

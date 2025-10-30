@@ -1,8 +1,0 @@
-title: Add maxQueryLength option to DirectSolrSpellchecker.
-type: changed
-authors:
-- name: Andy Webb
-- name: Bruno Roustant
-links:
-- name: SOLR-14131
-  url: https://issues.apache.org/jira/browse/SOLR-14131

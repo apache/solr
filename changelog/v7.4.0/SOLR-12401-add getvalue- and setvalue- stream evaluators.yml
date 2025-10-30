@@ -1,8 +1,0 @@
-title: Add getValue() and setValue() Stream Evaluators
-type: added
-authors:
-- name: Joel Bernstein
-- name: janhoy
-links:
-- name: SOLR-12401
-  url: https://issues.apache.org/jira/browse/SOLR-12401

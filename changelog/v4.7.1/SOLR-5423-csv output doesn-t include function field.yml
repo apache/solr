@@ -1,9 +1,0 @@
-title: CSV output doesn't include function field
-type: fixed
-authors:
-- name: Arun Kumar
-- name: hossman
-- name: Steve Rowe
-links:
-- name: SOLR-5423
-  url: https://issues.apache.org/jira/browse/SOLR-5423

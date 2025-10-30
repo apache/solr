@@ -1,9 +1,0 @@
-title: Better error message when parsing solrconfig.xml fails due to malformed XML.
-  Error message notes the name of the file being parsed.
-type: fixed
-authors:
-- name: Michael Henson
-- name: shalin
-links:
-- name: SOLR-991
-  url: https://issues.apache.org/jira/browse/SOLR-991

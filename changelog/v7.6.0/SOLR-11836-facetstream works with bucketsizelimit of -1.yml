@@ -1,9 +1,0 @@
-title: FacetStream works with bucketSizeLimit of -1 which will fetch all the buckets.
-type: fixed
-authors:
-- name: Alfonso Muñoz-Pomer Fuentes
-- name: Amrit Sarkar
-- name: Varun Thacker
-links:
-- name: SOLR-11836
-  url: https://issues.apache.org/jira/browse/SOLR-11836

@@ -1,9 +1,0 @@
-title: Schema API doesn't take class or luceneMatchVersion attributes into account
-  for the analyzer when adding a new field type.
-type: fixed
-authors:
-- name: Marius Grama
-- name: Steve Rowe
-links:
-- name: SOLR-7697
-  url: https://issues.apache.org/jira/browse/SOLR-7697

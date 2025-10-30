@@ -1,8 +1,0 @@
-title: A Package store to store and load package artifacts
-type: added
-authors:
-- name: noble
-- name: Ishan Chattopadhyaya
-links:
-- name: SOLR-13821
-  url: https://issues.apache.org/jira/browse/SOLR-13821

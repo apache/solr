@@ -1,9 +1,0 @@
-title: JavaBinCodec has concurrent modification of CharArr resulting in corrupt internode
-  updates
-type: fixed
-authors:
-- name: Colvin Cowie
-- name: noble
-links:
-- name: SOLR-13963
-  url: https://issues.apache.org/jira/browse/SOLR-13963

@@ -1,9 +1,0 @@
-title: Fix SolrCloud behavior when using "hostContext" containing "_" or"/" characters.
-  This fix also makes SolrCloud more accepting of hostContext values with leading/trailing
-  slashes.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-4136
-  url: https://issues.apache.org/jira/browse/SOLR-4136

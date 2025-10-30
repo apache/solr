@@ -1,8 +1,0 @@
-title: Implement StatementImpl/ResultSetImpl get/set fetch* methods and proper errors
-  for traversal methods
-type: added
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-9020
-  url: https://issues.apache.org/jira/browse/SOLR-9020

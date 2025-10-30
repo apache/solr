@@ -1,9 +1,0 @@
-title: Update requests sent to non-routed aliases that point to multiple collections
-  are no longer accepted. Until now Solr followed an obscure convention of updating
-  only the first collection from the list, which usually was not what the user intended.
-  This change explicitly rejects such update requests.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-13407
-  url: https://issues.apache.org/jira/browse/SOLR-13407

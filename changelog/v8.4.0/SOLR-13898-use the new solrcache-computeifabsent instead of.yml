@@ -1,9 +1,0 @@
-title: Use the new SolrCache.computeIfAbsent instead of non-atomic get / put in order
-  to improve cache hit ratios.
-type: changed
-authors:
-- name: ab
-- name: Ben Manes
-links:
-- name: SOLR-13898
-  url: https://issues.apache.org/jira/browse/SOLR-13898

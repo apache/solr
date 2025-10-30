@@ -1,8 +1,0 @@
-title: prepareCommit command omits commitData causing a failure to trigger replication
-  to slaves.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-3938
-  url: https://issues.apache.org/jira/browse/SOLR-3938

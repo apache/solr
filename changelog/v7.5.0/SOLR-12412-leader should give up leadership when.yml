@@ -1,8 +1,0 @@
-title: Leader should give up leadership when IndexWriter.tragedy occur
-type: other
-authors:
-- name: Cao Manh Dat
-- name: Tomas Fernandez-Lobbe
-links:
-- name: SOLR-12412
-  url: https://issues.apache.org/jira/browse/SOLR-12412

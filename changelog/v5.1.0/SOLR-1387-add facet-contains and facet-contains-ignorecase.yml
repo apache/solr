@@ -1,8 +1,0 @@
-title: Add facet.contains and facet.contains.ignoreCase options
-type: added
-authors:
-- name: Tom Winch
-- name: Alan Woodward
-links:
-- name: SOLR-1387
-  url: https://issues.apache.org/jira/browse/SOLR-1387

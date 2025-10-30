@@ -1,9 +1,0 @@
-title: solr.allowUrls (former solr.shardsWhitelist) should treat hostnames in case
-  insensitive way.
-type: fixed
-authors:
-- name: Paul Blanchaert
-- name: Eric Pugh
-links:
-- name: SOLR-16631
-  url: https://issues.apache.org/jira/browse/SOLR-16631

@@ -1,8 +1,0 @@
-title: SnapPuller fails to clean Old Index Directories on Full Copy
-type: fixed
-authors:
-- name: Jayendra Patil
-- name: yonik
-links:
-- name: SOLR-2156
-  url: https://issues.apache.org/jira/browse/SOLR-2156

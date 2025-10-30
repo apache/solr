@@ -1,7 +1,0 @@
-title: Add a '*_t' and '*_t_sort' dynamic field for single valued text fields
-type: added
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-12006
-  url: https://issues.apache.org/jira/browse/SOLR-12006

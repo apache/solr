@@ -1,7 +1,0 @@
-title: Replace multiple "/replication" strings with one static constant.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-9037
-  url: https://issues.apache.org/jira/browse/SOLR-9037

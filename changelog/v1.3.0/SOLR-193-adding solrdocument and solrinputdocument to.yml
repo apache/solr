@@ -1,9 +1,0 @@
-title: Adding SolrDocument and SolrInputDocument to represent documents outside of
-  the lucene Document infrastructure. This class will be used by clients and for processing
-  documents.
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-193
-  url: https://issues.apache.org/jira/browse/SOLR-193

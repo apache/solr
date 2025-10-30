@@ -1,7 +1,0 @@
-title: Add Random Streaming Expression
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-8986
-  url: https://issues.apache.org/jira/browse/SOLR-8986

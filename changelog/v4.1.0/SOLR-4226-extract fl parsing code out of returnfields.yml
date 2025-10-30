@@ -1,8 +1,0 @@
-title: Extract fl parsing code out of ReturnFields constructor.
-type: other
-authors:
-- name: Ryan Ernst
-- name: Robert Muir
-links:
-- name: SOLR-4226
-  url: https://issues.apache.org/jira/browse/SOLR-4226

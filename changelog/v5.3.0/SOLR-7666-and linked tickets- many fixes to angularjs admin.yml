@@ -1,8 +1,0 @@
-title: '(and linked tickets): Many fixes to AngularJS Admin UI bringing it close to
-  feature parity with existing UI.'
-type: fixed
-authors:
-- name: Upayavira
-links:
-- name: SOLR-7666
-  url: https://issues.apache.org/jira/browse/SOLR-7666

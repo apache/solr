@@ -1,8 +1,0 @@
-title: Fix unlimited number of forwarding the request from one node to another node.
-type: fixed
-authors:
-- name: hossman
-- name: Munendra S N
-links:
-- name: SOLR-14897
-  url: https://issues.apache.org/jira/browse/SOLR-14897

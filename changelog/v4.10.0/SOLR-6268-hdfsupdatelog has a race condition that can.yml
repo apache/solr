@@ -1,9 +1,0 @@
-title: HdfsUpdateLog has a race condition that can expose a closed HDFS FileSystem
-  instance and should close its FileSystem instance if either inherited close method
-  is called.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-6268
-  url: https://issues.apache.org/jira/browse/SOLR-6268

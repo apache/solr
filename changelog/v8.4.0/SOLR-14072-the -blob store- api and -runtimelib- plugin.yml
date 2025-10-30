@@ -1,8 +1,0 @@
-title: The "Blob Store" API and "runtimeLib" plugin mechanism that uses it is now
-  considered deprecated. The replacement to it is the "Package Management" system,
-  which includes a "File Store". These are experimental currently but will grow/stabalize/mature.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-14072
-  url: https://issues.apache.org/jira/browse/SOLR-14072

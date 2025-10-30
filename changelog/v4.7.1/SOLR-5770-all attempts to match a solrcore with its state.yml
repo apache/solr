@@ -1,9 +1,0 @@
-title: All attempts to match a SolrCore with its state in clusterstate.json should
-  be done with the CoreNodeName.
-type: fixed
-authors:
-- name: Steve Davids
-- name: Mark Miller
-links:
-- name: SOLR-5770
-  url: https://issues.apache.org/jira/browse/SOLR-5770

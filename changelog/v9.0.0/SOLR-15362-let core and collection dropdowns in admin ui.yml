@@ -1,9 +1,0 @@
-title: Let core and collection dropdowns in Admin UI float wide to see entire core
-  or collection name.
-type: changed
-authors:
-- name: Matthias Krepp
-- name: Eric Pugh
-links:
-- name: SOLR-15362
-  url: https://issues.apache.org/jira/browse/SOLR-15362

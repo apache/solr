@@ -1,9 +1,0 @@
-title: Synonyms can be individually boosted by marking them with '|&lt;boost&gt;'
-  in the synonyms file, and adding a DelimitedBoostTokenFilter to the analysis chain
-type: added
-authors:
-- name: Alessandro Benedetti
-- name: Alan Woodward
-links:
-- name: SOLR-12238
-  url: https://issues.apache.org/jira/browse/SOLR-12238

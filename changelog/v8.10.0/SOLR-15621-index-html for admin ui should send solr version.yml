@@ -1,8 +1,0 @@
-title: index.html for Admin UI should send Solr version in the request for JavaScript
-  files
-type: other
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-15621
-  url: https://issues.apache.org/jira/browse/SOLR-15621

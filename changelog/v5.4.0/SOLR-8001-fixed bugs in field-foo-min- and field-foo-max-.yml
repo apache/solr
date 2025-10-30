@@ -1,8 +1,0 @@
-title: Fixed bugs in field(foo,min) and field(foo,max) when some docs have no values
-type: fixed
-authors:
-- name: David Smiley
-- name: hossman
-links:
-- name: SOLR-8001
-  url: https://issues.apache.org/jira/browse/SOLR-8001

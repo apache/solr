@@ -1,8 +1,0 @@
-title: Fixed initialization error when using &lt;queryResponseWriter default="true"
-  ... /&gt;
-type: fixed
-authors:
-- name: Bernd Fehling and hossman
-links:
-- name: SOLR-3084
-  url: https://issues.apache.org/jira/browse/SOLR-3084

@@ -1,7 +1,0 @@
-title: command line option to export documents to a file
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-13682
-  url: https://issues.apache.org/jira/browse/SOLR-13682

@@ -1,9 +1,0 @@
-title: Add ReloadCacheRequestHandler to fix ExternalFileField bug (if reopenReaders
-  set to true and no index segments have been changed, commit cannot trigger reload
-  external file).
-type: fixed
-authors:
-- name: koji
-links:
-- name: SOLR-2536
-  url: https://issues.apache.org/jira/browse/SOLR-2536

@@ -1,7 +1,0 @@
-title: Rename catchall _text field in data_driven_schema_configs to _text_
-type: other
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-7290
-  url: https://issues.apache.org/jira/browse/SOLR-7290

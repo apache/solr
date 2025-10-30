@@ -1,8 +1,0 @@
-title: '`DistributedZkUpdateProcessor` now issues commits to local shards and remote
-  shards in parallel, halving the latency of synchronous commits'
-type: changed
-authors:
-- name: Michael Gibney
-links:
-- name: SOLR-15045
-  url: https://issues.apache.org/jira/browse/SOLR-15045

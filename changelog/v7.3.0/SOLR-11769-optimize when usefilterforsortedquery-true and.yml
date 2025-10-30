@@ -1,9 +1,0 @@
-title: Optimize when useFilterForSortedQuery=true and there are no filter queries
-  by avoiding needless match-all-docs bitset construction.
-type: changed
-authors:
-- name: Betim Deva
-- name: David Smiley
-links:
-- name: SOLR-11769
-  url: https://issues.apache.org/jira/browse/SOLR-11769

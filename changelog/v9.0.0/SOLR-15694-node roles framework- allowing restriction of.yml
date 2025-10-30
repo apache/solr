@@ -1,8 +1,0 @@
-title: Node roles framework, allowing restriction of certain nodes to certain tasks
-type: added
-authors:
-- name: Ishan Chattopadhyaya
-- name: noble
-links:
-- name: SOLR-15694
-  url: https://issues.apache.org/jira/browse/SOLR-15694

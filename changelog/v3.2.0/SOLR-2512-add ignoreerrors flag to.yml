@@ -1,9 +1,0 @@
-title: add ignoreErrors flag to UIMAUpdateRequestProcessorFactory so that users can
-  ignore exceptions in AE.
-type: added
-authors:
-- name: Tommaso Teofili
-- name: koji
-links:
-- name: SOLR-2512
-  url: https://issues.apache.org/jira/browse/SOLR-2512

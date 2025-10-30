@@ -1,8 +1,0 @@
-title: Integration of Tika and DataImportHandler
-type: added
-authors:
-- name: Akshay Ukey
-- name: noble
-links:
-- name: SOLR-1358
-  url: https://issues.apache.org/jira/browse/SOLR-1358

@@ -1,8 +1,0 @@
-title: Allow creating more than one shard per instance with the Collection API.
-type: added
-authors:
-- name: Per Steffensen
-- name: Mark Miller
-links:
-- name: SOLR-4114
-  url: https://issues.apache.org/jira/browse/SOLR-4114

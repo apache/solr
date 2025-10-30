@@ -1,8 +1,0 @@
-title: Jetty's InetAccessHandler can be enabled via environment variables, SOLR_IP_WHITELIST
-  and SOLR_IP_BLACKLIST. These variables can restrict access to Solr based on IP addresses/networks.
-type: changed
-authors:
-- name: rmuir
-links:
-- name: SOLR-14136
-  url: https://issues.apache.org/jira/browse/SOLR-14136

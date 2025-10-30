@@ -1,9 +1,0 @@
-title: Upgrade jackson to 2.10.0
-type: other
-authors:
-- name: marungo
-- name: Andras Salamon
-- name: Kevin Risden
-links:
-- name: SOLR-13818
-  url: https://issues.apache.org/jira/browse/SOLR-13818

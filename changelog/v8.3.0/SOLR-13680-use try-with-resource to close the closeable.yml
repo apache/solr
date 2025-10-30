@@ -1,8 +1,0 @@
-title: Use try-with-resource to close the closeable resource
-type: other
-authors:
-- name: Furkan KAMACI
-- name: Munendra S N
-links:
-- name: SOLR-13680
-  url: https://issues.apache.org/jira/browse/SOLR-13680

@@ -1,7 +1,0 @@
-title: Replication can still cause index corruption.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-8077
-  url: https://issues.apache.org/jira/browse/SOLR-8077

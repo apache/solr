@@ -1,9 +1,0 @@
-title: Makes HashJoinStream and OuterHashJoinStream support different field names
-  in the incoming streams, eg. fieldA=fieldB.
-type: fixed
-authors:
-- name: Dennis Gove
-- name: Stephan Osthold
-links:
-- name: SOLR-9058
-  url: https://issues.apache.org/jira/browse/SOLR-9058

@@ -1,8 +1,0 @@
-title: Try and prevent too many recovery requests from stacking up and clean up some
-  faulty cancel recovery logic.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-8371
-  url: https://issues.apache.org/jira/browse/SOLR-8371

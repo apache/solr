@@ -1,8 +1,0 @@
-title: Dropped getSourceID() from SolrInfoMBean and using getClass().getPackage().getSpecificationVersion()
-  for Version.
-type: other
-authors:
-- name: ryan
-links:
-- name: SOLR-3329
-  url: https://issues.apache.org/jira/browse/SOLR-3329

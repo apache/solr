@@ -1,7 +1,0 @@
-title: randomise unload order in UnloadDistributedZkTest.testUnloadShardAndCollection
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8352
-  url: https://issues.apache.org/jira/browse/SOLR-8352

@@ -1,7 +1,0 @@
-title: Upgrade commons-collections to 3.2.2. This fixes a known serialization vulnerability
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-8269
-  url: https://issues.apache.org/jira/browse/SOLR-8269

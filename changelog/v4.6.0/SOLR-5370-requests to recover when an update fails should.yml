@@ -1,7 +1,0 @@
-title: Requests to recover when an update fails should be done in background threads.
-type: changed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5370
-  url: https://issues.apache.org/jira/browse/SOLR-5370

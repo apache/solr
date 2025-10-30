@@ -1,8 +1,0 @@
-title: Improved error message when StringIndex cannot be initialized for a function
-  query
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-1771
-  url: https://issues.apache.org/jira/browse/SOLR-1771

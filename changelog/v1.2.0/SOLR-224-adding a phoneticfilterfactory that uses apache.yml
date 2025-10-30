@@ -1,9 +1,0 @@
-title: 'Adding a PhoneticFilterFactory that uses apache commons codec language encoders
-  to build phonetically similar tokens. This currently supports: DoubleMetaphone,
-  Metaphone, Soundex, and RefinedSoundex'
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-224
-  url: https://issues.apache.org/jira/browse/SOLR-224

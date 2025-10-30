@@ -1,7 +1,0 @@
-title: solr.log is now written to $SOLR_LOGS_DIR without changing log4j.properties
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-9325
-  url: https://issues.apache.org/jira/browse/SOLR-9325

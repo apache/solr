@@ -1,8 +1,0 @@
-title: SolrGraphiteReporter fails to report metrics due to non-thread safe code.
-type: fixed
-authors:
-- name: Erik Persson
-- name: ab
-links:
-- name: SOLR-11413
-  url: https://issues.apache.org/jira/browse/SOLR-11413

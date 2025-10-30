@@ -1,7 +1,0 @@
-title: abandon OverseerExitThread when ZkController is closed.
-type: fixed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-12200
-  url: https://issues.apache.org/jira/browse/SOLR-12200

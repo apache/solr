@@ -1,8 +1,0 @@
-title: 'Moved some spellchecker and suggest APIs to modules/suggest: HighFrequencyDictionary,
-  SortedIterator, TermFreqIterator, and the suggester APIs and implementations.'
-type: other
-authors:
-- name: rmuir
-links:
-- name: LUCENE-2995
-  url: https://issues.apache.org/jira/browse/LUCENE-2995

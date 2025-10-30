@@ -1,7 +1,0 @@
-title: Remove mentions of unimplemented admin-extra from the new Admin UI
-type: other
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-8140
-  url: https://issues.apache.org/jira/browse/SOLR-8140

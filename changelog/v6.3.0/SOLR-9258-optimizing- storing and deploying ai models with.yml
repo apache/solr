@@ -1,8 +1,0 @@
-title: Optimizing, storing and deploying AI models with Streaming Expressions
-type: added
-authors:
-- name: Cao Manh Dat
-- name: Joel Bernstein
-links:
-- name: SOLR-9258
-  url: https://issues.apache.org/jira/browse/SOLR-9258

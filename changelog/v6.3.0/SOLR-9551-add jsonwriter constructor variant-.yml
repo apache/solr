@@ -1,8 +1,0 @@
-title: Add JSONWriter constructor variant, JSONWriterTest.testConstantsUnchanged test.
-type: other
-authors:
-- name: Jonny Marks
-- name: Christine Poerschke
-links:
-- name: SOLR-9551
-  url: https://issues.apache.org/jira/browse/SOLR-9551

@@ -1,7 +1,0 @@
-title: Add BlockMax-WAND support for queries where the score is requested
-type: changed
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-14554
-  url: https://issues.apache.org/jira/browse/SOLR-14554

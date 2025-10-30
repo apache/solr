@@ -1,7 +1,0 @@
-title: config APIs unable to add multiple values with same name
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-9198
-  url: https://issues.apache.org/jira/browse/SOLR-9198

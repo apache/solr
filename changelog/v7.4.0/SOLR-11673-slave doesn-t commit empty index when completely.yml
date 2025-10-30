@@ -1,9 +1,0 @@
-title: Slave doesn't commit empty index when completely new index is detected on master
-  during replication. To return the previous behavior pass false to skipCommitOnLeaderVersionZero
-  in slave section of replication handler configuration, or pass it to the fetchindex
-  command.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-11673
-  url: https://issues.apache.org/jira/browse/SOLR-11673

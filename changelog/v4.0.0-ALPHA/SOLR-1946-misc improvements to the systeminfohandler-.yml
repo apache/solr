@@ -1,7 +1,0 @@
-title: 'Misc improvements to the SystemInfoHandler: /admin/system'
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-1946
-  url: https://issues.apache.org/jira/browse/SOLR-1946

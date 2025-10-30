@@ -1,7 +1,0 @@
-title: Fixed SolrJettyTestBase so it may be reused by end users
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-4853
-  url: https://issues.apache.org/jira/browse/SOLR-4853

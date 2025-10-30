@@ -1,8 +1,0 @@
-title: StreamHandler now supports registering custom streaming expressions from the
-  blob store
-type: added
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-10087
-  url: https://issues.apache.org/jira/browse/SOLR-10087

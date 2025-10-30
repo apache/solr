@@ -1,7 +1,0 @@
-title: bin/solr should activate cloud mode if ZK_HOST is set
-type: other
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-7102
-  url: https://issues.apache.org/jira/browse/SOLR-7102

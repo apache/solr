@@ -1,7 +1,0 @@
-title: Solrj does not propagate the root cause to the user for many errors.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5291
-  url: https://issues.apache.org/jira/browse/SOLR-5291

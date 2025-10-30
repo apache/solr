@@ -1,8 +1,0 @@
-title: Extend Solr client tracing coverage to both Jetty Client and Apache HttpClient
-type: changed
-authors:
-- name: Alex Deparvu
-- name: David Smiley
-links:
-- name: SOLR-16943
-  url: https://issues.apache.org/jira/browse/SOLR-16943

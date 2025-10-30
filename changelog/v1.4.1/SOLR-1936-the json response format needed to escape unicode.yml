@@ -1,9 +1,0 @@
-title: The JSON response format needed to escape unicode code point U+2028 - 'LINE
-  SEPARATOR'
-type: fixed
-authors:
-- name: Robert Hofstra
-- name: yonik
-links:
-- name: SOLR-1936
-  url: https://issues.apache.org/jira/browse/SOLR-1936

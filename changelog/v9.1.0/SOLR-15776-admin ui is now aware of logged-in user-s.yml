@@ -1,7 +1,0 @@
-title: Admin UI is now aware of logged-in user's permissions and can adapt accordingly
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-15776
-  url: https://issues.apache.org/jira/browse/SOLR-15776

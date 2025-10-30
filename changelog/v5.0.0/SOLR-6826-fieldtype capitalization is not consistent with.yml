@@ -1,9 +1,0 @@
-title: fieldType capitalization is not consistent with the rest of case-sensitive
-  field names.
-type: other
-authors:
-- name: Alexandre Rafalovitch
-- name: Erick Erickson
-links:
-- name: SOLR-6826
-  url: https://issues.apache.org/jira/browse/SOLR-6826

@@ -1,7 +1,0 @@
-title: Allow number of logs and records kept by UpdateLog to be configured
-type: added
-authors:
-- name: Ramkumar Aiyengar
-links:
-- name: SOLR-6359
-  url: https://issues.apache.org/jira/browse/SOLR-6359

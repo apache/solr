@@ -1,9 +1,0 @@
-title: Add asynchronous sugar methods to the SolrJ Collections API. You can now call
-  .processAsync() to run a method asynchronously, or .processAndWait() to wait for
-  a call to finish without holding HTTP collections open.
-type: added
-authors:
-- name: Alan Woodward
-links:
-- name: SOLR-8782
-  url: https://issues.apache.org/jira/browse/SOLR-8782

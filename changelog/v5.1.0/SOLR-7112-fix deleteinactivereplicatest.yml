@@ -1,7 +1,0 @@
-title: Fix DeleteInactiveReplicaTest.deleteLiveReplicaTest test failures.
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-7112
-  url: https://issues.apache.org/jira/browse/SOLR-7112

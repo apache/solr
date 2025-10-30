@@ -1,8 +1,0 @@
-title: Cleanup the default configset. The changes involve some documentation corrections,
-  removing the currency field from the examples and a few dynamic fields
-type: other
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-10967
-  url: https://issues.apache.org/jira/browse/SOLR-10967

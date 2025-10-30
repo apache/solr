@@ -1,8 +1,0 @@
-title: Parsing of synonym files did not correctly handle escaped whitespace such as
-  \r\n\t\b\f.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-87
-  url: https://issues.apache.org/jira/browse/SOLR-87

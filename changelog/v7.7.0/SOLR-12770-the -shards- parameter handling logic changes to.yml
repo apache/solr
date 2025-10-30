@@ -1,8 +1,0 @@
-title: The 'shards' parameter handling logic changes to use a new config element to
-  determine what hosts can be requested. Please see Apache Solr Reference Guide chapter
-  "Distributed Requests" for details, as well as SOLR-12770.
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-12770
-  url: https://issues.apache.org/jira/browse/SOLR-12770

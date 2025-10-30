@@ -1,9 +1,0 @@
-title: NamedListCodec is renamed to JavaBinCodec and returns Object instead of NamedList.
-type: other
-authors:
-- name: Noble Paul
-- name: yonik
-- name: shalin
-links:
-- name: SOLR-885
-  url: https://issues.apache.org/jira/browse/SOLR-885

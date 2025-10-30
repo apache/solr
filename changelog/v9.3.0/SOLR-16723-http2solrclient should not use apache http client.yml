@@ -1,7 +1,0 @@
-title: Http2SolrClient should not use Apache Http client classes
-type: fixed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16723
-  url: https://issues.apache.org/jira/browse/SOLR-16723

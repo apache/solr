@@ -1,8 +1,0 @@
-title: No longer require jar/unzip for bin/solr
-type: other
-authors:
-- name: Steven E. Harris
-- name: janhoy
-links:
-- name: SOLR-8486
-  url: https://issues.apache.org/jira/browse/SOLR-8486

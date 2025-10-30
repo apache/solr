@@ -1,7 +1,0 @@
-title: Add scale Stream Evaluator
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-10664
-  url: https://issues.apache.org/jira/browse/SOLR-10664

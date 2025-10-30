@@ -1,8 +1,0 @@
-title: In CachingDirectoryFactory#close, if there are still refs for a Directory outstanding,
-  we need to wait for them to be released before closing.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4001
-  url: https://issues.apache.org/jira/browse/SOLR-4001

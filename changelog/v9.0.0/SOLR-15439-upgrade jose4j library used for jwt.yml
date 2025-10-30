@@ -1,7 +1,0 @@
-title: Upgrade jose4j library used for JWT authentication processing, to v0.7.7
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-15439
-  url: https://issues.apache.org/jira/browse/SOLR-15439

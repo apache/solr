@@ -1,8 +1,0 @@
-title: Lowercase the CLUSTERPROP command in ZkCLI for consistency, print error for
-  unknown cmd
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-7863
-  url: https://issues.apache.org/jira/browse/SOLR-7863

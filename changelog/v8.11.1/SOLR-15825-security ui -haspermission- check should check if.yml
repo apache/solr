@@ -1,8 +1,0 @@
-title: Security UI 'hasPermission' check should check if the user has the "all" permission
-  if the requested permission is not defined to match how the backend works
-type: fixed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-15825
-  url: https://issues.apache.org/jira/browse/SOLR-15825

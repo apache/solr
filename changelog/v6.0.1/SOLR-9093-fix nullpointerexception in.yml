@@ -1,7 +1,0 @@
-title: Fix NullPointerException in TopGroupsShardResponseProcessor.
-type: fixed
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-9093
-  url: https://issues.apache.org/jira/browse/SOLR-9093

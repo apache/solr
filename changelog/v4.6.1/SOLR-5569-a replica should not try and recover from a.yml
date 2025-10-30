@@ -1,8 +1,0 @@
-title: A replica should not try and recover from a leader until it has published that
-  it is ACTIVE.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5569
-  url: https://issues.apache.org/jira/browse/SOLR-5569

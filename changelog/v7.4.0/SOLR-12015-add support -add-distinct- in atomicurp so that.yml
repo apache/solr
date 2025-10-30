@@ -1,9 +1,0 @@
-title: 'Add support "add-distinct" in AtomicURP so that we can use the ''add-distict''
-  as a request parameter e.g: atomic.&lt;multival-field-name&gt;=add-distict'
-type: added
-authors:
-- name: Amrit Sarkar
-- name: noble
-links:
-- name: SOLR-12015
-  url: https://issues.apache.org/jira/browse/SOLR-12015

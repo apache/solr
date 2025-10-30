@@ -1,8 +1,0 @@
-title: The fetch() streaming expression wouldn't work if a value included query syntax
-  chars (like :+-). Fixed, and enhanced the generated query to not pollute the queryCache.
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-10404
-  url: https://issues.apache.org/jira/browse/SOLR-10404

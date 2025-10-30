@@ -1,7 +1,0 @@
-title: Remove redundant deprecated "solr.solr.home" logic
-type: removed
-authors:
-- name: hossman
-links:
-- name: SOLR-14934
-  url: https://issues.apache.org/jira/browse/SOLR-14934

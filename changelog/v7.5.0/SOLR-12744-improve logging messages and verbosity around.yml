@@ -1,8 +1,0 @@
-title: Improve logging messages and verbosity around recoveries
-type: other
-authors:
-- name: Cao Manh Dat
-- name: Varun Thacker
-links:
-- name: SOLR-12744
-  url: https://issues.apache.org/jira/browse/SOLR-12744

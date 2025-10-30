@@ -1,8 +1,0 @@
-title: Correct copyright year(s) in solr/LICENSE.txt file.
-type: other
-authors:
-- name: Christine Poerschke
-- name: Steve Rowe
-links:
-- name: LUCENE-7852
-  url: https://issues.apache.org/jira/browse/LUCENE-7852

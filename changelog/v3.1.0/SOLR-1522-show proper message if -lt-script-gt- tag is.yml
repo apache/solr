@@ -1,7 +1,0 @@
-title: Show proper message if &lt;script&gt; tag is missing for DIH ScriptTransformer
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-1522
-  url: https://issues.apache.org/jira/browse/SOLR-1522

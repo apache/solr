@@ -1,7 +1,0 @@
-title: Upgrade Restlet to 2.4.3
-type: other
-authors:
-- name: marcussorealheis
-links:
-- name: SOLR-14603
-  url: https://issues.apache.org/jira/browse/SOLR-14603

@@ -1,7 +1,0 @@
-title: blockUnknown property makes inter-node communication impossible
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-9188
-  url: https://issues.apache.org/jira/browse/SOLR-9188

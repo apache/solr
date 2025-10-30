@@ -1,7 +1,0 @@
-title: Fix empty columns in Cloud Node UI Screen when replica is in down state.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-16089
-  url: https://issues.apache.org/jira/browse/SOLR-16089

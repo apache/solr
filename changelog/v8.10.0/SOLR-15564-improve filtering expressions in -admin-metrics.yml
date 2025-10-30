@@ -1,7 +1,0 @@
-title: Improve filtering expressions in /admin/metrics.
-type: changed
-authors:
-- name: ab
-links:
-- name: SOLR-15564
-  url: https://issues.apache.org/jira/browse/SOLR-15564

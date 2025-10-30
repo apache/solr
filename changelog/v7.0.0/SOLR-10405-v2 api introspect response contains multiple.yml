@@ -1,8 +1,0 @@
-title: v2 API introspect response contains multiple copies of the experimental format
-  WARNING
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-10405
-  url: https://issues.apache.org/jira/browse/SOLR-10405

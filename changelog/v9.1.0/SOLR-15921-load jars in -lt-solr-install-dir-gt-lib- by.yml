@@ -1,7 +1,0 @@
-title: Load jars in &lt;solr-install-dir&gt;/lib/ by default
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-15921
-  url: https://issues.apache.org/jira/browse/SOLR-15921

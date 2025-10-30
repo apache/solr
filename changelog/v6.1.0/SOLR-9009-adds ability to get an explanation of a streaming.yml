@@ -1,7 +1,0 @@
-title: Adds ability to get an Explanation of a Streaming Expression
-type: added
-authors:
-- name: Dennis Gove
-links:
-- name: SOLR-9009
-  url: https://issues.apache.org/jira/browse/SOLR-9009

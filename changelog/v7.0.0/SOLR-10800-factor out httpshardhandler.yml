@@ -1,8 +1,0 @@
-title: Factor out HttpShardHandler.transformReplicasToShardUrls from HttpShardHandler.prepDistributed.
-type: other
-authors:
-- name: Domenico Fabio Marino
-- name: Christine Poerschke
-links:
-- name: SOLR-10800
-  url: https://issues.apache.org/jira/browse/SOLR-10800

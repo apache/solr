@@ -1,8 +1,0 @@
-title: Allow SolrInfoMBeans to return different statistics for /jmx vs web ui calls.
-type: other
-authors:
-- name: Gregory Chanan
-- name: Mark Miller
-links:
-- name: SOLR-8892
-  url: https://issues.apache.org/jira/browse/SOLR-8892

@@ -1,8 +1,0 @@
-title: Introduce Builder setter for retryExpiryTime on cloud SolrClients. Deprecated
-  direct setter setRetryExpiryTime on cloud SolrClients.
-type: changed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-10463
-  url: https://issues.apache.org/jira/browse/SOLR-10463

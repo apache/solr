@@ -1,9 +1,0 @@
-title: A logical shard that has had all of its SolrCores unloaded should be removed
-  from the cluster state.
-type: fixed
-authors:
-- name: Mark Miller
-- name: Gilles Comeau
-links:
-- name: SOLR-4075
-  url: https://issues.apache.org/jira/browse/SOLR-4075

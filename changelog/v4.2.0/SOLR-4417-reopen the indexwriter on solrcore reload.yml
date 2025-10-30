@@ -1,7 +1,0 @@
-title: Reopen the IndexWriter on SolrCore reload.
-type: added
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4417
-  url: https://issues.apache.org/jira/browse/SOLR-4417

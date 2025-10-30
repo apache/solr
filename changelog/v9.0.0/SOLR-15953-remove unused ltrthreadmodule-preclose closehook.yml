@@ -1,7 +1,0 @@
-title: Remove unused LTRThreadModule.preClose CloseHook logic.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-15953
-  url: https://issues.apache.org/jira/browse/SOLR-15953

@@ -1,7 +1,0 @@
-title: Document updates to SolrCloud can cause a distributed deadlock.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5216
-  url: https://issues.apache.org/jira/browse/SOLR-5216

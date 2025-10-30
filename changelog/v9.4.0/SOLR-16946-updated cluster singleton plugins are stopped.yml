@@ -1,8 +1,0 @@
-title: Updated Cluster Singleton plugins are stopped correctly when the Overseer is
-  closed.
-type: fixed
-authors:
-- name: Paul McArthur
-links:
-- name: SOLR-16946
-  url: https://issues.apache.org/jira/browse/SOLR-16946

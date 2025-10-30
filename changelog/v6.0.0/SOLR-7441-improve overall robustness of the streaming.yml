@@ -1,8 +1,0 @@
-title: 'Improve overall robustness of the Streaming stack: Streaming API, Streaming
-  Expressions, Parallel SQL'
-type: other
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-7441
-  url: https://issues.apache.org/jira/browse/SOLR-7441

@@ -1,7 +1,0 @@
-title: The V2 API threw errors for GET requests to collection handlers like /select.
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-15418
-  url: https://issues.apache.org/jira/browse/SOLR-15418

@@ -1,7 +1,0 @@
-title: Fixed Grafana dashboard filters for collection, shard, replica and core
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-14936
-  url: https://issues.apache.org/jira/browse/SOLR-14936

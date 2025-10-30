@@ -1,8 +1,0 @@
-title: Fix LTR failing tests.
-type: other
-authors:
-- name: Diego Ceccarelli
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-10710
-  url: https://issues.apache.org/jira/browse/SOLR-10710

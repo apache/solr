@@ -1,8 +1,0 @@
-title: Enable QueryResultCache for CollapsingQParserPlugin.
-type: changed
-authors:
-- name: David Boychuck
-- name: Joel Bernstein
-links:
-- name: SOLR-5624
-  url: https://issues.apache.org/jira/browse/SOLR-5624

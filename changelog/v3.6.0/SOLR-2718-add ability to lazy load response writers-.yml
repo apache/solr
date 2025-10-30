@@ -1,7 +1,0 @@
-title: Add ability to lazy load response writers, defined with startup="lazy".
-type: other
-authors:
-- name: ehatcher
-links:
-- name: SOLR-2718
-  url: https://issues.apache.org/jira/browse/SOLR-2718

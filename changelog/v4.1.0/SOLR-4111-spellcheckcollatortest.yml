@@ -1,9 +1,0 @@
-title: SpellCheckCollatorTest#testContextSensitiveCollate to test against both DirectSolrSpellChecker
-  & IndexBasedSpellChecker
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-- name: James Dyer
-links:
-- name: SOLR-4111
-  url: https://issues.apache.org/jira/browse/SOLR-4111

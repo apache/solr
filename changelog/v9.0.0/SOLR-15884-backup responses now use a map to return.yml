@@ -1,8 +1,0 @@
-title: Backup responses now use a map to return information instead of a list
-type: changed
-authors:
-- name: Houston Putman
-- name: Christine Poerschke
-links:
-- name: SOLR-15884
-  url: https://issues.apache.org/jira/browse/SOLR-15884

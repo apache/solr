@@ -1,8 +1,0 @@
-title: Grouped faceting (group.facet=true) did not respect filter exclusions.
-type: fixed
-authors:
-- name: Petter Remen
-- name: yonik
-links:
-- name: SOLR-3819
-  url: https://issues.apache.org/jira/browse/SOLR-3819

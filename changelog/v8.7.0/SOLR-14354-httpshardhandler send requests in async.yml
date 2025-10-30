@@ -1,7 +1,0 @@
-title: HttpShardHandler send requests in async
-type: changed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-14354
-  url: https://issues.apache.org/jira/browse/SOLR-14354

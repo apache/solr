@@ -1,7 +1,0 @@
-title: DistributedUpdateProcessor (initialCapacity) tweaks
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8218
-  url: https://issues.apache.org/jira/browse/SOLR-8218

@@ -1,8 +1,0 @@
-title: Add solr/example/example-schemaless/, an example config set for schemaless
-  mode.
-type: added
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-4897
-  url: https://issues.apache.org/jira/browse/SOLR-4897

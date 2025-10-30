@@ -1,7 +1,0 @@
-title: refactor preferLocalShards implementation
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-9758
-  url: https://issues.apache.org/jira/browse/SOLR-9758

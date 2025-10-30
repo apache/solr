@@ -1,7 +1,0 @@
-title: Clarify in bin/solr help text whether commands can be run remotely
-type: other
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-11902
-  url: https://issues.apache.org/jira/browse/SOLR-11902

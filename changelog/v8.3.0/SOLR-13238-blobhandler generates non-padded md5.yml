@@ -1,8 +1,0 @@
-title: BlobHandler generates non-padded md5
-type: fixed
-authors:
-- name: Jeff Walraven
-- name: janhoy
-links:
-- name: SOLR-13238
-  url: https://issues.apache.org/jira/browse/SOLR-13238

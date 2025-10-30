@@ -1,7 +1,0 @@
-title: Automatically added SystemLogListener should not prevent deleting a trigger.
-type: other
-authors:
-- name: ab
-links:
-- name: SOLR-11270
-  url: https://issues.apache.org/jira/browse/SOLR-11270

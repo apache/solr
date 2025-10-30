@@ -1,6 +1,0 @@
-title: Add a request parameter to execute a streaming expression locally
-type: changed
-authors: []
-links:
-- name: SOLR-13306
-  url: https://issues.apache.org/jira/browse/SOLR-13306

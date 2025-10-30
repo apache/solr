@@ -1,8 +1,0 @@
-title: Factor out a TopGroupsShardResponseProcessor.fillResultIds method.
-type: other
-authors:
-- name: Christine Poerschke
-- name: Diego Ceccarelli
-links:
-- name: SOLR-13576
-  url: https://issues.apache.org/jira/browse/SOLR-13576

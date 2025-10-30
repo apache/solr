@@ -1,8 +1,0 @@
-title: Clean up solr-extraction module to produce solr-extraction-* jar (instead of
-  solr-cell-*).
-type: other
-authors:
-- name: Dawid Weiss
-links:
-- name: SOLR-14912
-  url: https://issues.apache.org/jira/browse/SOLR-14912

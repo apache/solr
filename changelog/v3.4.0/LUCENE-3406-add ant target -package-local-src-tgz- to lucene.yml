@@ -1,9 +1,0 @@
-title: Add ant target 'package-local-src-tgz' to Lucene and Solr to package sources
-  from the local working copy.
-type: other
-authors:
-- name: Seung-Yeoul Yang
-- name: Steve Rowe
-links:
-- name: LUCENE-3406
-  url: https://issues.apache.org/jira/browse/LUCENE-3406

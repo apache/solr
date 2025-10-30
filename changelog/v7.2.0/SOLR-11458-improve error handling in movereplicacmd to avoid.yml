@@ -1,7 +1,0 @@
-title: Improve error handling in MoveReplicaCmd to avoid potential loss of data.
-type: fixed
-authors:
-- name: ab
-links:
-- name: SOLR-11458
-  url: https://issues.apache.org/jira/browse/SOLR-11458

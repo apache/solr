@@ -1,7 +1,0 @@
-title: Add gaussfit Stream Evaluator
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-12634
-  url: https://issues.apache.org/jira/browse/SOLR-12634

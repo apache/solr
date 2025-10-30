@@ -1,9 +1,0 @@
-title: Upgrade to Netty v4.1.89.Final
-type: dependency_update
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16626
-  url: https://issues.apache.org/jira/browse/SOLR-16626
-- name: PR#1392
-  url: https://github.com/apache/solr/pull/1392

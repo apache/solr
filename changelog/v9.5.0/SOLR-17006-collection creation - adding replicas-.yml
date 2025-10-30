@@ -1,9 +1,0 @@
-title: 'Collection creation & adding replicas: User-defined properties are persisted
-  to state.json and applied to new replicas, available for use as property substitution
-  in configuration files.'
-type: added
-authors:
-- name: Vincent Primault
-links:
-- name: SOLR-17006
-  url: https://issues.apache.org/jira/browse/SOLR-17006

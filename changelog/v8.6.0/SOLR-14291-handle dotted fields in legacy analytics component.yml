@@ -1,8 +1,0 @@
-title: Handle dotted fields in legacy Analytics Component
-type: fixed
-authors:
-- name: Anatolii Siuniaev
-- name: Mikhail Khludnev
-links:
-- name: SOLR-14291
-  url: https://issues.apache.org/jira/browse/SOLR-14291

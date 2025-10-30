@@ -1,8 +1,0 @@
-title: edismax now throws an exception when qf refers to a nonexistent field
-type: other
-authors:
-- name: Charles Sanders
-- name: David Smiley
-links:
-- name: SOLR-5163
-  url: https://issues.apache.org/jira/browse/SOLR-5163

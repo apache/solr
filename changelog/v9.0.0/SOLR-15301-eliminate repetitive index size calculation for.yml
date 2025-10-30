@@ -1,7 +1,0 @@
-title: Eliminate repetitive index size calculation for Solr metrics
-type: changed
-authors:
-- name: Andras Salamon
-links:
-- name: SOLR-15301
-  url: https://issues.apache.org/jira/browse/SOLR-15301

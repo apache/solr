@@ -1,7 +1,0 @@
-title: 'Schema API: Add REST support for adding field types to the schema.'
-type: added
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-5098
-  url: https://issues.apache.org/jira/browse/SOLR-5098

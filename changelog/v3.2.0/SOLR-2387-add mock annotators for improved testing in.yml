@@ -1,8 +1,0 @@
-title: add mock annotators for improved testing in contrib/uima,
-type: other
-authors:
-- name: Tommaso Teofili
-- name: rmuir
-links:
-- name: SOLR-2387
-  url: https://issues.apache.org/jira/browse/SOLR-2387

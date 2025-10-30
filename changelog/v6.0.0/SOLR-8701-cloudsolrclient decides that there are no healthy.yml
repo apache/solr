@@ -1,8 +1,0 @@
-title: CloudSolrClient decides that there are no healthy nodes to handle a request
-  too early.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-8701
-  url: https://issues.apache.org/jira/browse/SOLR-8701

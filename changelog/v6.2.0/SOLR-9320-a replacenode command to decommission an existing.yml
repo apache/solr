@@ -1,9 +1,0 @@
-title: A REPLACENODE command to decommission an existing node with another new node
-type: added
-authors:
-- name: noble
-- name: Nitin Sharma
-- name: Varun Thacker
-links:
-- name: SOLR-9320
-  url: https://issues.apache.org/jira/browse/SOLR-9320

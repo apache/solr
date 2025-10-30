@@ -1,8 +1,0 @@
-title: Document zkHost param on topic() stream
-type: other
-authors:
-- name: Vergil Cheynov
-- name: Jason Gerlowski
-links:
-- name: SOLR-13999
-  url: https://issues.apache.org/jira/browse/SOLR-13999

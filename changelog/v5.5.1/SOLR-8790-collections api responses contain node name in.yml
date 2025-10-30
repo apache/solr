@@ -1,8 +1,0 @@
-title: Collections API responses contain node name in the core-level responses that
-  are returned.
-type: fixed
-authors:
-- name: Anshum Gupta
-links:
-- name: SOLR-8790
-  url: https://issues.apache.org/jira/browse/SOLR-8790

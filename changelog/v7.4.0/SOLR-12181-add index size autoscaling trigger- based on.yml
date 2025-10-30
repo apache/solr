@@ -1,7 +1,0 @@
-title: Add index size autoscaling trigger, based on document count or size in bytes.
-type: added
-authors:
-- name: ab
-links:
-- name: SOLR-12181
-  url: https://issues.apache.org/jira/browse/SOLR-12181

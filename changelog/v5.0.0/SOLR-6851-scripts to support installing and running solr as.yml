@@ -1,9 +1,0 @@
-title: Scripts to support installing and running Solr as a service on Linux
-type: added
-authors:
-- name: Timothy Potter
-- name: Hossman
-- name: Steve Rowe
-links:
-- name: SOLR-6851
-  url: https://issues.apache.org/jira/browse/SOLR-6851

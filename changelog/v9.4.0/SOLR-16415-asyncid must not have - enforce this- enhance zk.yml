@@ -1,9 +1,0 @@
-title: asyncId must not have '/'; enforce this. Enhance ZK cleanup to process directories
-  instead of fail.
-type: fixed
-authors:
-- name: David Smiley
-- name: Paul McArthur
-links:
-- name: SOLR-16415
-  url: https://issues.apache.org/jira/browse/SOLR-16415

@@ -1,9 +1,0 @@
-title: AutoAddReplicas makes a call to wait to see live replicas that times out after
-  30 milliseconds instead of 30 seconds.
-type: fixed
-authors:
-- name: Varun Thacker
-- name: Mark Miller
-links:
-- name: SOLR-6850
-  url: https://issues.apache.org/jira/browse/SOLR-6850

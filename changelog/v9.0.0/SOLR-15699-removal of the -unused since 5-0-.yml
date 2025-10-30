@@ -1,8 +1,0 @@
-title: Removal of the (unused since 5.0) "updateHandler/indexWriter/closeWaitsForMerges"
-  solrconfig.xml element.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-15699
-  url: https://issues.apache.org/jira/browse/SOLR-15699

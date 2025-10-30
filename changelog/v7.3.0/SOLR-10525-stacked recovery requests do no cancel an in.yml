@@ -1,8 +1,0 @@
-title: Stacked recovery requests do no cancel an in progress recovery first.
-type: fixed
-authors:
-- name: Mike Drob
-- name: Cao Manh Dat
-links:
-- name: SOLR-10525
-  url: https://issues.apache.org/jira/browse/SOLR-10525
