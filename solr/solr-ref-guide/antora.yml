@@ -19,8 +19,8 @@
 # but there is usually no need besides more up-to-date nightly builds of the ref-guide.
 
 name: solr
-version: '9_10'
-display_version: '9.10-beta'
+version: '9_11'
+display_version: '9.11-beta'
 # Marking a version as 'prerelease: false' is only needed for published branches (minor version branches, branch_x_y, that have had a release)
 prerelease: -beta
 title: Solr Reference Guide
@@ -39,19 +39,19 @@ asciidoc:
     idseparator: '-'
     idprefix: ''
     # 'patch-version' is the 'z' part of x.y.z semantic version
-    page-solr-javadocs: 'https://solr.apache.org/docs/9_10_0'
-    solr-javadocs: 'https://solr.apache.org/docs/9_10_0'
+    page-solr-javadocs: 'https://solr.apache.org/docs/9_11_0'
+    solr-javadocs: 'https://solr.apache.org/docs/9_11_0'
     lucene-javadocs: 'https://lucene.apache.org/core/9_12_3'
     java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
-    solr-docs-version: '9.10'
-    solr-full-version: '9.10.0'
+    solr-docs-version: '9.11'
+    solr-full-version: '9.11.0'
 
-    dep-version-commons-codec: '1.17.1'
+    dep-version-commons-codec: '1.19.0'
     dep-version-dropwizard: '4.2.26'
-    dep-version-hadoop: '3.4.0'
+    dep-version-hadoop: '3.4.1'
     dep-version-log4j: '2.21.0'
     dep-version-opennlp: '1.9.4'
     dep-version-tika: '1.28.5'
-    dep-version-zookeeper: '3.9.2'
+    dep-version-zookeeper: '3.9.4'
     dep-version-lucene: '9.12.3'
-    dep-version-opentelemetry: '1.40.0'
+    dep-version-opentelemetry: '1.53.0'
