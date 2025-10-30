@@ -1,7 +1,0 @@
-title: Lower solr.cloud.wait-for-updates-with-stale-state-pause back down from 7 seconds.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-9848
-  url: https://issues.apache.org/jira/browse/SOLR-9848

@@ -1,9 +1,0 @@
-title: Automatically set urlScheme to https when running secure solr with embedded
-  zookeeper. (Mike Drob) Do not erroneously set solr.jetty.https.port system property
-  when running in http mode
-type: other
-authors:
-- name: Upendra Penegalapati
-links:
-- name: SOLR-14412
-  url: https://issues.apache.org/jira/browse/SOLR-14412

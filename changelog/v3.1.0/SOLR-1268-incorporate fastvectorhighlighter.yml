@@ -1,7 +1,0 @@
-title: Incorporate FastVectorHighlighter
-type: added
-authors:
-- name: koji
-links:
-- name: SOLR-1268
-  url: https://issues.apache.org/jira/browse/SOLR-1268

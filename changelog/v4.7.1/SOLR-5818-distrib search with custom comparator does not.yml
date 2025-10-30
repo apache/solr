@@ -1,7 +1,0 @@
-title: distrib search with custom comparator does not quite work correctly
-type: fixed
-authors:
-- name: Ryan Ernst
-links:
-- name: SOLR-5818
-  url: https://issues.apache.org/jira/browse/SOLR-5818

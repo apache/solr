@@ -1,7 +1,0 @@
-title: REPLACENODE now supports the source node not being live
-type: changed
-authors:
-- name: Vincent Primault
-links:
-- name: SOLR-17204
-  url: https://issues.apache.org/jira/browse/SOLR-17204

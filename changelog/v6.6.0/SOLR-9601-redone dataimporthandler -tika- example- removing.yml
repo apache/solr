@@ -1,8 +1,0 @@
-title: Redone DataImportHandler 'tika' example, removing all unused and irrelevant
-  definitions
-type: other
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-9601
-  url: https://issues.apache.org/jira/browse/SOLR-9601

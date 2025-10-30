@@ -1,8 +1,0 @@
-title: Remove unnecessary Long-to-Integer and back casts in ReplicationHandler.
-type: other
-authors:
-- name: Ramsey Haddad
-- name: Christine Poerschke
-links:
-- name: SOLR-11052
-  url: https://issues.apache.org/jira/browse/SOLR-11052

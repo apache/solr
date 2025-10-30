@@ -1,8 +1,0 @@
-title: Refactored duplicate "Solr Home" logic into a single place to eliminate risk
-  of tests using divergent values for a single solr node.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-14934
-  url: https://issues.apache.org/jira/browse/SOLR-14934

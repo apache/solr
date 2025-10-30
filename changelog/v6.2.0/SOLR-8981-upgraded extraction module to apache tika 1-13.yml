@@ -1,9 +1,0 @@
-title: Upgraded Extraction module to Apache Tika 1.13.
-type: other
-authors:
-- name: Tim Allison
-- name: Lewis John McGibbney
-- name: Uwe Schindler
-links:
-- name: SOLR-8981
-  url: https://issues.apache.org/jira/browse/SOLR-8981

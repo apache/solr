@@ -1,8 +1,0 @@
-title: A new panel with security info in admin UI's dashboard
-type: added
-authors:
-- name: Ishan Chattopadhyaya
-- name: Moshe Bla
-links:
-- name: SOLR-14237
-  url: https://issues.apache.org/jira/browse/SOLR-14237

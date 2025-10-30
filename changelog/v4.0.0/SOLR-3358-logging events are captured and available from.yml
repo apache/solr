@@ -1,7 +1,0 @@
-title: Logging events are captured and available from the /admin/logging request handler.
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-3358
-  url: https://issues.apache.org/jira/browse/SOLR-3358

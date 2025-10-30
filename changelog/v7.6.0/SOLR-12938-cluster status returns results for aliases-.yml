@@ -1,7 +1,0 @@
-title: Cluster Status returns results for aliases, instead of throwing exceptions
-type: added
-authors:
-- name: Gus Heck
-links:
-- name: SOLR-12938
-  url: https://issues.apache.org/jira/browse/SOLR-12938

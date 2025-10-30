@@ -1,7 +1,0 @@
-title: Fix DirectSolrSpellChecker to work when added through the Config API.
-type: fixed
-authors:
-- name: Anshum Gupta
-links:
-- name: SOLR-9154
-  url: https://issues.apache.org/jira/browse/SOLR-9154

@@ -1,7 +1,0 @@
-title: Add support for MultiValued DocValues in PointFields using SortedNumericDocValues
-type: added
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-9987
-  url: https://issues.apache.org/jira/browse/SOLR-9987

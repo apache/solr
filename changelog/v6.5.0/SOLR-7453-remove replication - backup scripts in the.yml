@@ -1,7 +1,0 @@
-title: Remove replication & backup scripts in the solr/scripts directory of the checkout
-type: other
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-7453
-  url: https://issues.apache.org/jira/browse/SOLR-7453

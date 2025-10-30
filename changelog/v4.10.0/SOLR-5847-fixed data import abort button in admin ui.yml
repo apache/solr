@@ -1,7 +1,0 @@
-title: Fixed data import abort button in admin UI.
-type: fixed
-authors:
-- name: ehatcher
-links:
-- name: SOLR-5847
-  url: https://issues.apache.org/jira/browse/SOLR-5847

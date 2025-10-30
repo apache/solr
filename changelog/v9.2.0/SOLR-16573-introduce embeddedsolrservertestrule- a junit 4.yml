@@ -1,8 +1,0 @@
-title: Introduce EmbeddedSolrServerTestRule, a JUnit 4 TestRule for Solr testing
-type: other
-authors:
-- name: Joshua Ouma
-- name: David Smiley
-links:
-- name: SOLR-16573
-  url: https://issues.apache.org/jira/browse/SOLR-16573

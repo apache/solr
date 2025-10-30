@@ -1,7 +1,0 @@
-title: MoveReplicaCmd do not specify ulog dir in case of HDFS
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-11041
-  url: https://issues.apache.org/jira/browse/SOLR-11041

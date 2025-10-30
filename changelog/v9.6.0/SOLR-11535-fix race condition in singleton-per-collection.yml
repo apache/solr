@@ -1,7 +1,0 @@
-title: Fix race condition in singleton-per-collection StateWatcher creation
-type: fixed
-authors:
-- name: Michael Gibney
-links:
-- name: SOLR-11535
-  url: https://issues.apache.org/jira/browse/SOLR-11535

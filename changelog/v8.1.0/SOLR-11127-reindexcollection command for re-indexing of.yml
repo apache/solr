@@ -1,9 +1,0 @@
-title: REINDEXCOLLECTION command for re-indexing of existing collections. This issue
-  also adds a back-compat check of the .system collection to notify users of potential
-  compatibility issues after upgrades or schema changes.
-type: added
-authors:
-- name: ab
-links:
-- name: SOLR-11127
-  url: https://issues.apache.org/jira/browse/SOLR-11127

@@ -1,7 +1,0 @@
-title: Overseer can never process some last messages
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-11771
-  url: https://issues.apache.org/jira/browse/SOLR-11771

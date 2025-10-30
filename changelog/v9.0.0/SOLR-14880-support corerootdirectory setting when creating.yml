@@ -1,8 +1,0 @@
-title: Support coreRootDirectory setting when creating new cores from command line
-  in standalone mode
-type: changed
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-14880
-  url: https://issues.apache.org/jira/browse/SOLR-14880

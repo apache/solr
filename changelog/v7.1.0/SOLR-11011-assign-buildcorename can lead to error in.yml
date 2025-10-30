@@ -1,7 +1,0 @@
-title: Assign.buildCoreName can lead to error in creating a new core when legacyCloud=false
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-11011
-  url: https://issues.apache.org/jira/browse/SOLR-11011

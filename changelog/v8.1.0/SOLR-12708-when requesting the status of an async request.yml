@@ -1,9 +1,0 @@
-title: When requesting the status of an async request via REQUESTSTATUS collections
-  API, the response will include the list of internal async requests (if any) in the
-  "success" or "failed" keys (in addition to them being included outside those keys
-  for backwards compatibility). See SOLR-12708 for more details
-type: upgrade_notes
-authors: []
-links:
-- name: SOLR-12708
-  url: https://issues.apache.org/jira/browse/SOLR-12708

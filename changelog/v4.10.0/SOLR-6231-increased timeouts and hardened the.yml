@@ -1,8 +1,0 @@
-title: Increased timeouts and hardened the RollingRestartTest.
-type: other
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-6231
-  url: https://issues.apache.org/jira/browse/SOLR-6231

@@ -1,9 +1,0 @@
-title: Change SolrPluginUtils.invokeSetters implementation to accommodate setter variants.
-type: fixed
-authors:
-- name: Christine Poerschke
-- name: Steve Rowe
-- name: Uwe Schindler
-links:
-- name: SOLR-9161
-  url: https://issues.apache.org/jira/browse/SOLR-9161

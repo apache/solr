@@ -1,8 +1,0 @@
-title: 'Prometheus: Change default port of prometheus exporter to 8989 because it
-  clashed with default embedded zookeeper port'
-type: changed
-authors:
-- name: janhoy
-links:
-- name: SOLR-14972
-  url: https://issues.apache.org/jira/browse/SOLR-14972

@@ -1,7 +1,0 @@
-title: use autoscaling policies with strict=false to prioritize node allocation
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-12806
-  url: https://issues.apache.org/jira/browse/SOLR-12806

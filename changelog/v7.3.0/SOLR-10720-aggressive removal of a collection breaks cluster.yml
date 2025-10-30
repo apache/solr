@@ -1,8 +1,0 @@
-title: Aggressive removal of a collection breaks cluster status API.
-type: fixed
-authors:
-- name: Alexey Serba
-- name: shalin
-links:
-- name: SOLR-10720
-  url: https://issues.apache.org/jira/browse/SOLR-10720

@@ -1,8 +1,0 @@
-title: Fix indexed="false" on numeric PointFields
-type: fixed
-authors:
-- name: Tomás Fernández Löbbe
-- name: hossman
-links:
-- name: SOLR-10425
-  url: https://issues.apache.org/jira/browse/SOLR-10425

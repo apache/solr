@@ -1,8 +1,0 @@
-title: PeerSync updates and Log Replay updates should not wait for a ZooKeeper connection
-  in order to proceed.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-4257
-  url: https://issues.apache.org/jira/browse/SOLR-4257

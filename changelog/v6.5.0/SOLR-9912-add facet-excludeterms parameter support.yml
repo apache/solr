@@ -1,9 +1,0 @@
-title: Add facet.excludeTerms parameter support.
-type: added
-authors:
-- name: Jonny Marks
-- name: David Smiley
-- name: Christine Poerschke
-links:
-- name: SOLR-9912
-  url: https://issues.apache.org/jira/browse/SOLR-9912

@@ -1,7 +1,0 @@
-title: Solrj client support for hierarchical clusters and other topics marker.
-type: added
-authors:
-- name: Dawid Weiss
-links:
-- name: SOLR-9293
-  url: https://issues.apache.org/jira/browse/SOLR-9293

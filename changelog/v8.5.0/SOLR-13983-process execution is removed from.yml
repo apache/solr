@@ -1,8 +1,0 @@
-title: Process execution is removed from SystemInfoHandler. A best-effort attempt
-  to execute `uname -a` and "`uptime`" on non-Windows platforms is no longer made.
-type: other
-authors:
-- name: rmuir
-links:
-- name: SOLR-13983
-  url: https://issues.apache.org/jira/browse/SOLR-13983

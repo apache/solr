@@ -1,8 +1,0 @@
-title: Use per-segment sorting to share fieldcache elements across unchanged segments.
-  This saves memory and reduces commit times for incremental updates to the index.
-type: changed
-authors:
-- name: yonik
-links:
-- name: SOLR-1111
-  url: https://issues.apache.org/jira/browse/SOLR-1111

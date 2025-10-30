@@ -1,8 +1,0 @@
-title: min() and max() functions now support an arbitrary number of ValueSources
-type: other
-authors:
-- name: Bill Bell
-- name: hossman
-links:
-- name: SOLR-2757
-  url: https://issues.apache.org/jira/browse/SOLR-2757

@@ -1,8 +1,0 @@
-title: Don't build up string messages in SolrCore.execute unless they are necessary
-  for the current log level.
-type: changed
-authors:
-- name: Fuad Efendi and hossman
-links:
-- name: SOLR-1679
-  url: https://issues.apache.org/jira/browse/SOLR-1679

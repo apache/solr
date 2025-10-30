@@ -1,8 +1,0 @@
-title: Fix a bunch of typos across 103 files
-type: other
-authors:
-- name: Bartosz Krasiński
-- name: janhoy
-links:
-- name: SOLR-9105
-  url: https://issues.apache.org/jira/browse/SOLR-9105

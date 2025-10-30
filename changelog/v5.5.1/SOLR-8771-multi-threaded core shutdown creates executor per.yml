@@ -1,8 +1,0 @@
-title: Multi-threaded core shutdown creates executor per core.
-type: fixed
-authors:
-- name: Mike Drob
-- name: Mark Miller
-links:
-- name: SOLR-8771
-  url: https://issues.apache.org/jira/browse/SOLR-8771

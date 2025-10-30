@@ -1,7 +1,0 @@
-title: 'Docker: Ability to customize the FROM image when building.'
-type: other
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-14949
-  url: https://issues.apache.org/jira/browse/SOLR-14949

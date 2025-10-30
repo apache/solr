@@ -1,9 +1,0 @@
-title: Re-implement 'withCollection'. This also adds the placement plugin support
-  for rejecting replica / collection deletions that would violate placement constraints.
-type: added
-authors:
-- name: ab
-- name: ilan
-links:
-- name: SOLR-15055
-  url: https://issues.apache.org/jira/browse/SOLR-15055

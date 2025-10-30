@@ -1,8 +1,0 @@
-title: ZookeeperInfoServlet does not trim path properly.
-type: fixed
-authors:
-- name: Furkan KAMACI
-- name: Mark Miller
-links:
-- name: SOLR-5839
-  url: https://issues.apache.org/jira/browse/SOLR-5839

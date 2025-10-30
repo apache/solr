@@ -1,9 +1,0 @@
-title: Fix inaccurate comments on docValues and StrField in the example schemas
-type: other
-authors:
-- name: Tom Burton-West
-- name: Jason Gerlowski
-- name: Varun Thacker
-links:
-- name: SOLR-11306
-  url: https://issues.apache.org/jira/browse/SOLR-11306

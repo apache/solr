@@ -1,8 +1,0 @@
-title: If legacy mode is disabled don't let cores create slices/replicas/collections
-  . All operations should be performed through collection API
-type: other
-authors:
-- name: Noble Paul
-links:
-- name: SOLR-5609
-  url: https://issues.apache.org/jira/browse/SOLR-5609

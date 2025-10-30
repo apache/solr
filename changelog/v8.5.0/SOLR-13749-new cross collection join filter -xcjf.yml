@@ -1,9 +1,0 @@
-title: New cross collection join filter (XCJF)
-type: added
-authors:
-- name: Dan Fox
-- name: Kevin Watters
-- name: Gus Heck
-links:
-- name: SOLR-13749
-  url: https://issues.apache.org/jira/browse/SOLR-13749

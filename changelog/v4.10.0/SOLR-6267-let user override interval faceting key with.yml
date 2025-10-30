@@ -1,8 +1,0 @@
-title: Let user override Interval Faceting key with LocalParams
-type: added
-authors:
-- name: Tomas Fernandez_Lobbe
-- name: Erick Erickson
-links:
-- name: SOLR-6267
-  url: https://issues.apache.org/jira/browse/SOLR-6267

@@ -1,7 +1,0 @@
-title: Hardening NODEDOWN event in PRS collections
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-15288
-  url: https://issues.apache.org/jira/browse/SOLR-15288

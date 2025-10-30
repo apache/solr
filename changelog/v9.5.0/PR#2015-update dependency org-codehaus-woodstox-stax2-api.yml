@@ -1,7 +1,0 @@
-title: Update dependency org.codehaus.woodstox:stax2-api to v4.2.2
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2015
-  url: https://github.com/apache/solr/pull/2015

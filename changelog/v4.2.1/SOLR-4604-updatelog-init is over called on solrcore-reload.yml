@@ -1,7 +1,0 @@
-title: UpdateLog#init is over called on SolrCore#reload.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4604
-  url: https://issues.apache.org/jira/browse/SOLR-4604

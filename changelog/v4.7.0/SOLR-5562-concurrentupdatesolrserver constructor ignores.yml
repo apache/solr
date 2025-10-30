@@ -1,8 +1,0 @@
-title: ConcurrentUpdateSolrServer constructor ignores supplied httpclient.
-type: fixed
-authors:
-- name: Kyle Halliday
-- name: Mark Miller
-links:
-- name: SOLR-5562
-  url: https://issues.apache.org/jira/browse/SOLR-5562

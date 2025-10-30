@@ -1,8 +1,0 @@
-title: Fix and improvements to SegmentsInfoRequestHandlerTest
-type: fixed
-authors:
-- name: Christine Poerschke
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-10028
-  url: https://issues.apache.org/jira/browse/SOLR-10028

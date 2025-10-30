@@ -1,8 +1,0 @@
-title: New update.partial.requireInPlace=true option to prevent any partial document
-  updates that can't be done In-Place
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-15150
-  url: https://issues.apache.org/jira/browse/SOLR-15150

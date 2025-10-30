@@ -1,8 +1,0 @@
-title: AtomicUpdate 'remove', 'add-distinct' operations now works on numeric, date
-  fields in uncommitted docs
-type: fixed
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-14971
-  url: https://issues.apache.org/jira/browse/SOLR-14971

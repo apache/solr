@@ -1,7 +1,0 @@
-title: Remove support for the long-defunct "collectionDefaults" clusterprops key
-type: other
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-17024
-  url: https://issues.apache.org/jira/browse/SOLR-17024

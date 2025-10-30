@@ -1,7 +1,0 @@
-title: Change normalize function to standardize and make it work with matrices
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11599
-  url: https://issues.apache.org/jira/browse/SOLR-11599

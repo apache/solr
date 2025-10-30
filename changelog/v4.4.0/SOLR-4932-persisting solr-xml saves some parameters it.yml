@@ -1,9 +1,0 @@
-title: persisting solr.xml saves some parameters it shouldn't when they weren't defined
-  in the original. Benign since the default values are saved, but still incorrect.
-type: fixed
-authors:
-- name: Erick Erickson
-- name: thanks Shawn Heisey for helping test!
-links:
-- name: SOLR-4932
-  url: https://issues.apache.org/jira/browse/SOLR-4932

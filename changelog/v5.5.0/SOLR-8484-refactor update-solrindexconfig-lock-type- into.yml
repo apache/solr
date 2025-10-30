@@ -1,7 +1,0 @@
-title: refactor update/SolrIndexConfig.LOCK_TYPE_* into core/DirectoryFactory.LOCK_TYPE_*
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8484
-  url: https://issues.apache.org/jira/browse/SOLR-8484

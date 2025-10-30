@@ -1,7 +1,0 @@
-title: Support range values for replica in autoscaling policy
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-12517
-  url: https://issues.apache.org/jira/browse/SOLR-12517

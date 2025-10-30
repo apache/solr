@@ -1,8 +1,0 @@
-title: Do not close any servlet streams and improve our servlet stream closing prevention
-  code for users and devs.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-12290
-  url: https://issues.apache.org/jira/browse/SOLR-12290

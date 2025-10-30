@@ -1,9 +1,0 @@
-title: /admin/luke was always showing 0 for indexHeapUsageBytes. It should work now.
-type: fixed
-authors:
-- name: Steve Molloy
-- name: Isabelle Giguere
-- name: David Smiley
-links:
-- name: SOLR-8394
-  url: https://issues.apache.org/jira/browse/SOLR-8394

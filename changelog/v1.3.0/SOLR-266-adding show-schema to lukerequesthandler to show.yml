@@ -1,8 +1,0 @@
-title: Adding show=schema to LukeRequestHandler to show the parsed schema fields and
-  field types.
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-266
-  url: https://issues.apache.org/jira/browse/SOLR-266

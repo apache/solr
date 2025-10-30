@@ -1,8 +1,0 @@
-title: Do not update PRS states if local version is newer
-type: fixed
-authors:
-- name: Hitesh Khamesra
-- name: noble
-links:
-- name: SOLR-16452
-  url: https://issues.apache.org/jira/browse/SOLR-16452

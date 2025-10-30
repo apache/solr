@@ -1,9 +1,0 @@
-title: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on
-  OOM.
-type: other
-authors:
-- name: Mike Drob
-- name: Houston Putman
-links:
-- name: SOLR-14978
-  url: https://issues.apache.org/jira/browse/SOLR-14978

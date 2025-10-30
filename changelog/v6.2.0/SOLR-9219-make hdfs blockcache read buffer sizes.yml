@@ -1,7 +1,0 @@
-title: Make hdfs blockcache read buffer sizes configurable and improve cache concurrency.
-type: changed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-9219
-  url: https://issues.apache.org/jira/browse/SOLR-9219

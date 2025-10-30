@@ -1,9 +1,0 @@
-title: Allow access to the collections API through CloudSolrServer without referencing
-  an existing collection.
-type: added
-authors:
-- name: Per Steffensen
-- name: Mark Miller
-links:
-- name: SOLR-4140
-  url: https://issues.apache.org/jira/browse/SOLR-4140

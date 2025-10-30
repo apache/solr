@@ -1,7 +1,0 @@
-title: PhoneticFilterFactory now has support for the Caverphone algorithm.
-type: added
-authors:
-- name: rmuir
-links:
-- name: SOLR-1923
-  url: https://issues.apache.org/jira/browse/SOLR-1923

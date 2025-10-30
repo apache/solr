@@ -1,8 +1,0 @@
-title: A DIH Transformer to read strings from Clob type.
-type: added
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-891
-  url: https://issues.apache.org/jira/browse/SOLR-891

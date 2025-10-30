@@ -1,8 +1,0 @@
-title: Multiple mlt.fl does not work.
-type: fixed
-authors:
-- name: Constantin Mitocaru
-- name: shalin
-links:
-- name: SOLR-7072
-  url: https://issues.apache.org/jira/browse/SOLR-7072

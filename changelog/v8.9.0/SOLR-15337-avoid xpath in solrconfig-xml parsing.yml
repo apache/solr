@@ -1,7 +1,0 @@
-title: Avoid XPath in solrconfig.xml parsing
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-15337
-  url: https://issues.apache.org/jira/browse/SOLR-15337

@@ -1,9 +1,0 @@
-title: Fixed server errors from the json.facet allBuckets:true option when combined
-  with refine:true
-type: fixed
-authors:
-- name: Michael Gibney
-- name: hossman
-links:
-- name: SOLR-14520
-  url: https://issues.apache.org/jira/browse/SOLR-14520

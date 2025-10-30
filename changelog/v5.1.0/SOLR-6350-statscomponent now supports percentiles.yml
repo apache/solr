@@ -1,8 +1,0 @@
-title: StatsComponent now supports Percentiles
-type: added
-authors:
-- name: Xu Zhang
-- name: hossman
-links:
-- name: SOLR-6350
-  url: https://issues.apache.org/jira/browse/SOLR-6350

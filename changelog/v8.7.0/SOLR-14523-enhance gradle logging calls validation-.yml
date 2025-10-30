@@ -1,8 +1,0 @@
-title: 'Enhance gradle logging calls validation: eliminate getMessage()'
-type: changed
-authors:
-- name: Andras Salamon
-- name: Erick Erickson
-links:
-- name: SOLR-14523
-  url: https://issues.apache.org/jira/browse/SOLR-14523

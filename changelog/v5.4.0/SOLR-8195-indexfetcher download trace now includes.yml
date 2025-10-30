@@ -1,7 +1,0 @@
-title: IndexFetcher download trace now includes bytes-downloaded[-per-second]
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8195
-  url: https://issues.apache.org/jira/browse/SOLR-8195

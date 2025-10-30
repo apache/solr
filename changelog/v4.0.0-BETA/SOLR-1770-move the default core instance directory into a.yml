@@ -1,7 +1,0 @@
-title: Move the default core instance directory into a collection1 folder.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-1770
-  url: https://issues.apache.org/jira/browse/SOLR-1770

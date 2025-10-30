@@ -1,8 +1,0 @@
-title: Change SplitShardCmd to not use NodeStateProvider
-type: other
-authors:
-- name: Vinayak Hegde
-- name: David Smiley
-links:
-- name: SOLR-16507
-  url: https://issues.apache.org/jira/browse/SOLR-16507

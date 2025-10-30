@@ -1,8 +1,0 @@
-title: Lazy field loading can be enabled via a solrconfig directive. This will be
-  faster when not all stored fields are needed from a document SOLR-52
-type: other
-authors:
-- name: klaas
-links:
-- name: SOLR-52
-  url: https://issues.apache.org/jira/browse/SOLR-52

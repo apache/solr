@@ -1,7 +1,0 @@
-title: Fix for Invalid Reference to data.followers in Admin UI.
-type: fixed
-authors:
-- name: Dean Pearce
-links:
-- name: SOLR-15216
-  url: https://issues.apache.org/jira/browse/SOLR-15216

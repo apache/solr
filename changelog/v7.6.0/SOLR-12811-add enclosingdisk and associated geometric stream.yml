@@ -1,7 +1,0 @@
-title: Add enclosingDisk and associated geometric Stream Evaluators.
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-12811
-  url: https://issues.apache.org/jira/browse/SOLR-12811

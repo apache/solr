@@ -1,9 +1,0 @@
-title: More DIH bug fixes for the deprecated "threads" parameter.
-type: fixed
-authors:
-- name: Mikhail Khludnev
-- name: Claudio R
-- name: James Dyer
-links:
-- name: SOLR-3360
-  url: https://issues.apache.org/jira/browse/SOLR-3360

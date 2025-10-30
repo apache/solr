@@ -1,8 +1,0 @@
-title: Add an option to activate Gradle build cache, build task cleanups
-type: other
-authors:
-- name: Alexis Tual
-- name: Dawid Weiss
-links:
-- name: SOLR-15603
-  url: https://issues.apache.org/jira/browse/SOLR-15603

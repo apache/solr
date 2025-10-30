@@ -1,7 +1,0 @@
-title: Fixed registry.jsp issue with MBeans
-type: fixed
-authors:
-- name: gsingers
-links:
-- name: SOLR-1427
-  url: https://issues.apache.org/jira/browse/SOLR-1427

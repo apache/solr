@@ -1,7 +1,0 @@
-title: SolrStream.close can hit an NPE
-type: fixed
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-11224
-  url: https://issues.apache.org/jira/browse/SOLR-11224

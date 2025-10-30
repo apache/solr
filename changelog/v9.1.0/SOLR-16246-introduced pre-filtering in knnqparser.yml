@@ -1,8 +1,0 @@
-title: Introduced pre-filtering in KnnQParser
-type: added
-authors:
-- name: Elia Porciani
-- name: Alessandro Benedetti
-links:
-- name: SOLR-16246
-  url: https://issues.apache.org/jira/browse/SOLR-16246

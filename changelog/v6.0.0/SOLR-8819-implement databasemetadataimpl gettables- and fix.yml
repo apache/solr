@@ -1,9 +1,0 @@
-title: Implement DatabaseMetaDataImpl getTables() and fix getSchemas().
-type: other
-authors:
-- name: Trey Cahill
-- name: Joel Bernstein
-- name: Kevin Risden
-links:
-- name: SOLR-8819
-  url: https://issues.apache.org/jira/browse/SOLR-8819

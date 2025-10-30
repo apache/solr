@@ -1,8 +1,0 @@
-title: AutoAddReplicas also consults live_nodes to see if a state change has happened.
-type: fixed
-authors:
-- name: Varun Thacker
-- name: Anshum Gupta
-links:
-- name: SOLR-6923
-  url: https://issues.apache.org/jira/browse/SOLR-6923

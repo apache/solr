@@ -1,7 +1,0 @@
-title: Clean up and document AuditEvent API
-type: changed
-authors:
-- name: janhoy
-links:
-- name: SOLR-13969
-  url: https://issues.apache.org/jira/browse/SOLR-13969

@@ -1,8 +1,0 @@
-title: Kerberos delegation tokens requires Jackson library
-type: fixed
-authors:
-- name: Ishan Chattopadhyaya
-- name: noble
-links:
-- name: SOLR-9542
-  url: https://issues.apache.org/jira/browse/SOLR-9542

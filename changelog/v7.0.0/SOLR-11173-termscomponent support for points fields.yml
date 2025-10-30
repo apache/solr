@@ -1,7 +1,0 @@
-title: TermsComponent support for Points fields.
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-11173
-  url: https://issues.apache.org/jira/browse/SOLR-11173

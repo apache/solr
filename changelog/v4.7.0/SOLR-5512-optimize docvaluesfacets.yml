@@ -1,7 +1,0 @@
-title: Optimize DocValuesFacets.
-type: changed
-authors:
-- name: Robert Muir
-links:
-- name: SOLR-5512
-  url: https://issues.apache.org/jira/browse/SOLR-5512

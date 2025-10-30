@@ -1,7 +1,0 @@
-title: Utils.toUTF8 uses larger buffer than necessary for holding UTF8 data.
-type: changed
-authors:
-- name: shalin
-links:
-- name: SOLR-7983
-  url: https://issues.apache.org/jira/browse/SOLR-7983

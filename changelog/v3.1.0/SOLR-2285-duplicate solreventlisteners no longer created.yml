@@ -1,7 +1,0 @@
-title: duplicate SolrEventListeners no longer created
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-2285
-  url: https://issues.apache.org/jira/browse/SOLR-2285

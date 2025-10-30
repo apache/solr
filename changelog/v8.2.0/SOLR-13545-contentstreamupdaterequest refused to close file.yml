@@ -1,8 +1,0 @@
-title: ContentStreamUpdateRequest refused to close file
-type: fixed
-authors:
-- name: Colvin Cowie
-- name: Mikhail Khludnev
-links:
-- name: SOLR-13545
-  url: https://issues.apache.org/jira/browse/SOLR-13545

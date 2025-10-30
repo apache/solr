@@ -1,8 +1,0 @@
-title: Deleting replicas sometimes fails and causes the replicas to exist in the down
-  state
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-12087
-  url: https://issues.apache.org/jira/browse/SOLR-12087

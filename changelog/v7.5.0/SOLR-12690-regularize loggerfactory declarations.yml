@@ -1,7 +1,0 @@
-title: Regularize LoggerFactory declarations
-type: other
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-12690
-  url: https://issues.apache.org/jira/browse/SOLR-12690

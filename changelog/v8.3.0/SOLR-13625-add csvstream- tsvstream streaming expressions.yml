@@ -1,7 +1,0 @@
-title: Add CsvStream, TsvStream Streaming Expressions and supporting Stream Evaluators
-type: added
-authors:
-- name: Joel bernstein
-links:
-- name: SOLR-13625
-  url: https://issues.apache.org/jira/browse/SOLR-13625

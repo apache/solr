@@ -1,9 +1,0 @@
-title: Avoid picking 'stream' method in JSON facet when any of 'allBuckets', 'numBuckets',
-  and 'missing' parameters are enabled
-type: fixed
-authors:
-- name: hossman
-- name: Munendra S N
-links:
-- name: SOLR-14514
-  url: https://issues.apache.org/jira/browse/SOLR-14514

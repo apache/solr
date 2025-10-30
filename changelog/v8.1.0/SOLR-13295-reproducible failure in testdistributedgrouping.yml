@@ -1,7 +1,0 @@
-title: Reproducible failure in TestDistributedGrouping
-type: fixed
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-13295
-  url: https://issues.apache.org/jira/browse/SOLR-13295

@@ -1,8 +1,0 @@
-title: Better "ignored" field in example schema.xml
-type: other
-authors:
-- name: Peter Wolanin
-- name: hossman
-links:
-- name: SOLR-1022
-  url: https://issues.apache.org/jira/browse/SOLR-1022

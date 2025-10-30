@@ -1,7 +1,0 @@
-title: Improve documentation on how to contribute to Solr
-type: other
-authors:
-- name: Justin Sweeney
-links:
-- name: SOLR-16544
-  url: https://issues.apache.org/jira/browse/SOLR-16544

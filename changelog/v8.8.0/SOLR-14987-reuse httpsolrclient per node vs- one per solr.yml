@@ -1,7 +1,0 @@
-title: Reuse HttpSolrClient per node vs. one per Solr core when using CloudSolrStream
-type: changed
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-14987
-  url: https://issues.apache.org/jira/browse/SOLR-14987

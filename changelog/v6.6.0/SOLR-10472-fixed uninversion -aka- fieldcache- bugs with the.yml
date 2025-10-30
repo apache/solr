@@ -1,8 +1,0 @@
-title: 'Fixed uninversion (aka: FieldCache) bugs with the numeric PointField classes,
-  and CurrencyField'
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-10472
-  url: https://issues.apache.org/jira/browse/SOLR-10472

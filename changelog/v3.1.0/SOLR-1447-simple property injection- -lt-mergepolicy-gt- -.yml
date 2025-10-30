@@ -1,9 +1,0 @@
-title: Simple property injection. &lt;mergePolicy&gt; & &lt;mergeScheduler&gt; syntaxes
-  are now deprecated
-type: added
-authors:
-- name: Jason Rutherglen
-- name: noble
-links:
-- name: SOLR-1447
-  url: https://issues.apache.org/jira/browse/SOLR-1447

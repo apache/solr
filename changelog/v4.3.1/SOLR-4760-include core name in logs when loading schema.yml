@@ -1,7 +1,0 @@
-title: Include core name in logs when loading schema.
-type: other
-authors:
-- name: Shawn Heisey
-links:
-- name: SOLR-4760
-  url: https://issues.apache.org/jira/browse/SOLR-4760

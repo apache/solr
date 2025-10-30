@@ -1,8 +1,0 @@
-title: bin/solr script should return error code &gt;0 when something fails
-type: other
-authors:
-- name: janhoy
-- name: Timothy Potter
-links:
-- name: SOLR-6653
-  url: https://issues.apache.org/jira/browse/SOLR-6653

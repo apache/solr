@@ -1,7 +1,0 @@
-title: Fix EnvVar usage in bin/solr
-type: fixed
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-16232
-  url: https://issues.apache.org/jira/browse/SOLR-16232

@@ -1,9 +1,0 @@
-title: Clarify that ExportTool exports documents in JSON with Lines format, not standard
-  JSON. Add explicit -compress option for gzipping output. Add ability to specific
-  a directory for output along with a specific file when using -out.
-type: changed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-16764
-  url: https://issues.apache.org/jira/browse/SOLR-16764

@@ -1,7 +1,0 @@
-title: add missing solrj dependencies to binary packages.
-type: fixed
-authors:
-- name: Thijs Vonk
-links:
-- name: SOLR-3541
-  url: https://issues.apache.org/jira/browse/SOLR-3541

@@ -1,7 +1,0 @@
-title: Factor out a SearchGroupsFieldCommandResult class.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-7970
-  url: https://issues.apache.org/jira/browse/SOLR-7970

@@ -1,8 +1,0 @@
-title: Speedup SolrQueryTimeoutImpl. Avoid setting a timeout time when timeAllowed
-  parameter is not set.
-type: changed
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-7875
-  url: https://issues.apache.org/jira/browse/SOLR-7875

@@ -1,8 +1,0 @@
-title: Toggle payload support for the default highlighter via hl.payloads. It's auto
-  enabled when the index has payloads.
-type: added
-authors:
-- name: David Smiley
-links:
-- name: SOLR-6916
-  url: https://issues.apache.org/jira/browse/SOLR-6916

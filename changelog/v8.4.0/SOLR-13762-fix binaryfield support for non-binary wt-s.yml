@@ -1,8 +1,0 @@
-title: Fix BinaryField support for non-binary wt's
-type: fixed
-authors:
-- name: Thomas Woeckinger
-- name: Jason Gerlowski
-links:
-- name: SOLR-13762
-  url: https://issues.apache.org/jira/browse/SOLR-13762

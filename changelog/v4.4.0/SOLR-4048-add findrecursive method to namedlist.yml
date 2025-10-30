@@ -1,7 +1,0 @@
-title: Add findRecursive method to NamedList.
-type: added
-authors:
-- name: Shawn Heisey
-links:
-- name: SOLR-4048
-  url: https://issues.apache.org/jira/browse/SOLR-4048

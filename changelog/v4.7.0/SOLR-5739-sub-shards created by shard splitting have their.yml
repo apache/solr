@@ -1,9 +1,0 @@
-title: Sub-shards created by shard splitting have their update log set to buffering
-  mode on restarts.
-type: fixed
-authors:
-- name: Günther Ruck
-- name: shalin
-links:
-- name: SOLR-5739
-  url: https://issues.apache.org/jira/browse/SOLR-5739

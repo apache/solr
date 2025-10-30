@@ -1,8 +1,0 @@
-title: zkTransfer normalizes destination path incorrectly if source is a windows directory
-type: fixed
-authors:
-- name: gopikannan venugopalsamy
-- name: Erick Erickson
-links:
-- name: SOLR-10387
-  url: https://issues.apache.org/jira/browse/SOLR-10387

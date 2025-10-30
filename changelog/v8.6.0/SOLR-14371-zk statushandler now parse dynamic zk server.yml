@@ -1,9 +1,0 @@
-title: Zk StatusHandler now parse dynamic zk server config if supported, fixing Admin
-  UI Zookeeper Status screen in case dynamic reconfig host list differs from static
-  zkHost string
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-14371
-  url: https://issues.apache.org/jira/browse/SOLR-14371

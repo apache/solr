@@ -1,7 +1,0 @@
-title: Http2SolrClient should make sure to shutdown the executor
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16190
-  url: https://issues.apache.org/jira/browse/SOLR-16190

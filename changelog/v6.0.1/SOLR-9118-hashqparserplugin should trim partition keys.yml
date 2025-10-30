@@ -1,7 +1,0 @@
-title: HashQParserPlugin should trim partition keys
-type: fixed
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-9118
-  url: https://issues.apache.org/jira/browse/SOLR-9118

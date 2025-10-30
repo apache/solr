@@ -1,9 +1,0 @@
-title: NPE in QueryResultKey when running clustering search query in some cases.
-type: fixed
-authors:
-- name: Roman Kagan
-- name: Christine Poerschke
-- name: Eric Pugh
-links:
-- name: SOLR-9775
-  url: https://issues.apache.org/jira/browse/SOLR-9775

@@ -1,9 +1,0 @@
-title: Refactor to provide NodeConfig.getSolrDataHome internal API.
-type: other
-authors:
-- name: ab
-- name: janhoy
-- name: shalin
-links:
-- name: SOLR-11037
-  url: https://issues.apache.org/jira/browse/SOLR-11037

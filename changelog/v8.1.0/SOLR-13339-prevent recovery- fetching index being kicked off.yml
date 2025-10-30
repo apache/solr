@@ -1,7 +1,0 @@
-title: Prevent recovery, fetching index being kicked off after SolrCores already closed
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-13339
-  url: https://issues.apache.org/jira/browse/SOLR-13339

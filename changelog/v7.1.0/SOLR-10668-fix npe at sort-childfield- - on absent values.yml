@@ -1,7 +1,0 @@
-title: fix NPE at sort=childfield(..) .. on absent values
-type: fixed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-10668
-  url: https://issues.apache.org/jira/browse/SOLR-10668

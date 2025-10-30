@@ -1,7 +1,0 @@
-title: Remove previous SolrCore as parameter on reload.
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-5864
-  url: https://issues.apache.org/jira/browse/SOLR-5864

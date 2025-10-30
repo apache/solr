@@ -1,7 +1,0 @@
-title: Add an 'enable' attribute to all plugins
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-1385
-  url: https://issues.apache.org/jira/browse/SOLR-1385

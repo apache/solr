@@ -1,8 +1,0 @@
-title: Rule-base Authorization plugin skips authorization if querying node does not
-  have collection replica
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-12514
-  url: https://issues.apache.org/jira/browse/SOLR-12514

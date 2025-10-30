@@ -1,9 +1,0 @@
-title: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname verifier
-  to simplify SSL setup.
-type: other
-authors:
-- name: Steve Davids
-- name: Mark Miller
-links:
-- name: SOLR-5868
-  url: https://issues.apache.org/jira/browse/SOLR-5868

@@ -1,8 +1,0 @@
-title: Solr Configuration ignores 'mergeFactor' parameter, always uses Lucene default.
-type: fixed
-authors:
-- name: Lance Norskog
-- name: Mark Miller
-links:
-- name: SOLR-1580
-  url: https://issues.apache.org/jira/browse/SOLR-1580

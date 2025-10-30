@@ -1,7 +1,0 @@
-title: 'Full parameter substitution for function queries. Example: q=add($v1,$v2)&v1=mul(popularity,5)&v2=20.0'
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-2128
-  url: https://issues.apache.org/jira/browse/SOLR-2128

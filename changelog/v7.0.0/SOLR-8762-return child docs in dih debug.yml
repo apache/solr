@@ -1,8 +1,0 @@
-title: return child docs in DIH debug
-type: other
-authors:
-- name: Gopikannan Venugopalsamy
-- name: Mikhail Khludnev
-links:
-- name: SOLR-8762
-  url: https://issues.apache.org/jira/browse/SOLR-8762

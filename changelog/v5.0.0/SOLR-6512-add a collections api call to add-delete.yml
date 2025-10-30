@@ -1,9 +1,0 @@
-title: Add a collections API call to add/delete arbitrary properties to a specific
-  replica. Optionally adding sliceUnique=true will remove this property from all other
-  replicas within a particular slice.
-type: added
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-6512
-  url: https://issues.apache.org/jira/browse/SOLR-6512

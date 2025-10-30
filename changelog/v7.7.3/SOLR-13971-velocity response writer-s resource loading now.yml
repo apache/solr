@@ -1,9 +1,0 @@
-title: Velocity response writer's resource loading now possible only through startup
-  parameters. Also, removed velocity response writer from _default configset.
-type: fixed
-authors:
-- name: Ishan Chattopadhyaya
-- name: Sachin Pattan
-links:
-- name: SOLR-13971
-  url: https://issues.apache.org/jira/browse/SOLR-13971

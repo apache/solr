@@ -1,7 +1,0 @@
-title: Removed unused 'valType' option from ExternalFileField
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-10929
-  url: https://issues.apache.org/jira/browse/SOLR-10929

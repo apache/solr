@@ -1,7 +1,0 @@
-title: Update dependency org.carrot2:carrot2-core to v4.5.1
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#1641
-  url: https://github.com/apache/solr/pull/1641

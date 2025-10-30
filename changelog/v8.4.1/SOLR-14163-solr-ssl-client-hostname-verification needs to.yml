@@ -1,8 +1,0 @@
-title: SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION needs to work with Jetty server/client
-  SSL contexts
-type: fixed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-14163
-  url: https://issues.apache.org/jira/browse/SOLR-14163

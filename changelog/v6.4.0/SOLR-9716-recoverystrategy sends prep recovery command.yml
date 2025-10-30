@@ -1,9 +1,0 @@
-title: RecoveryStrategy sends prep recovery command without setting read time out
-  which can cause replica recovery to hang indefinitely on network partitions.
-type: fixed
-authors:
-- name: Cao Manh Dat
-- name: shalin
-links:
-- name: SOLR-9716
-  url: https://issues.apache.org/jira/browse/SOLR-9716

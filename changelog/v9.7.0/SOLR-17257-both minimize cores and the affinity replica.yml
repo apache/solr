@@ -1,8 +1,0 @@
-title: Both Minimize Cores and the Affinity replica placement strategies would over-gather
-  cluster metrics. AttributeFetcherImpl was improved accordingly.
-type: changed
-authors:
-- name: Yohann Callea
-links:
-- name: SOLR-17257
-  url: https://issues.apache.org/jira/browse/SOLR-17257

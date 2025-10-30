@@ -1,7 +1,0 @@
-title: OpenTracing support for Solr
-type: added
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-13434
-  url: https://issues.apache.org/jira/browse/SOLR-13434

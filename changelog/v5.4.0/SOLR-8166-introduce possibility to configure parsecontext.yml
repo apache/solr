@@ -1,8 +1,0 @@
-title: Introduce possibility to configure ParseContext in ExtractingRequestHandler/ExtractingDocumentLoader
-type: added
-authors:
-- name: Andriy Binetsky
-- name: Uwe Schindler
-links:
-- name: SOLR-8166
-  url: https://issues.apache.org/jira/browse/SOLR-8166

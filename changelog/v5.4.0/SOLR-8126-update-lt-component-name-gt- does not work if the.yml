@@ -1,8 +1,0 @@
-title: update-&lt;component-name&gt; does not work if the component is only present
-  in solrconfig.xml
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-8126
-  url: https://issues.apache.org/jira/browse/SOLR-8126

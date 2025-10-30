@@ -1,7 +1,0 @@
-title: Removed rule based replica placement
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-14930
-  url: https://issues.apache.org/jira/browse/SOLR-14930

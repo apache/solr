@@ -1,7 +1,0 @@
-title: remove "optimize" from the UI.
-type: other
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-7733
-  url: https://issues.apache.org/jira/browse/SOLR-7733

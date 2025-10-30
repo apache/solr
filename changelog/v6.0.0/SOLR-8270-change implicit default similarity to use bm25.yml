@@ -1,8 +1,0 @@
-title: Change implicit default Similarity to use BM25 when luceneMatchVersion &gt;=
-  6
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-8270
-  url: https://issues.apache.org/jira/browse/SOLR-8270

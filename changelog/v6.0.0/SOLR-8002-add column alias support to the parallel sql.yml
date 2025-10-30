@@ -1,7 +1,0 @@
-title: Add column alias support to the Parallel SQL Interface
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-8002
-  url: https://issues.apache.org/jira/browse/SOLR-8002

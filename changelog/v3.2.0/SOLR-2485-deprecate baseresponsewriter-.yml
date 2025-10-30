@@ -1,8 +1,0 @@
-title: Deprecate BaseResponseWriter, GenericBinaryResponseWriter, and GenericTextResponseWriter.
-  These classes will be removed in 4.0.
-type: other
-authors:
-- name: ryan
-links:
-- name: SOLR-2485
-  url: https://issues.apache.org/jira/browse/SOLR-2485

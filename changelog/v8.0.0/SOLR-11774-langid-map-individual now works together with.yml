@@ -1,9 +1,0 @@
-title: langid.map.individual now works together with langid.map.keepOrig. Also the
-  detectLanguage() API is changed to accept a Reader allowing for more memory efficient
-  implementations
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-11774
-  url: https://issues.apache.org/jira/browse/SOLR-11774

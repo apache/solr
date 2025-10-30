@@ -1,7 +1,0 @@
-title: Add fuzzyKmeans Stream Evaluatory
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-11862
-  url: https://issues.apache.org/jira/browse/SOLR-11862

@@ -1,8 +1,0 @@
-title: 'Distributed search with shards.tolerant: if all shards fail, fail the request'
-type: changed
-authors:
-- name: Aparna Suresh
-- name: David Smiley
-links:
-- name: SOLR-17053
-  url: https://issues.apache.org/jira/browse/SOLR-17053

@@ -1,7 +1,0 @@
-title: Allow QueryElevationComponent to accept elevateIds and excludeIds as http parameters
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-5541
-  url: https://issues.apache.org/jira/browse/SOLR-5541

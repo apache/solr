@@ -1,7 +1,0 @@
-title: Load RequestHandler from blob store
-type: added
-authors:
-- name: Noble Paul
-links:
-- name: SOLR-6801
-  url: https://issues.apache.org/jira/browse/SOLR-6801

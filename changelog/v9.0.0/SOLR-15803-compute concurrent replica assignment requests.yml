@@ -1,8 +1,0 @@
-title: Compute concurrent replica assignment requests together, using the shared context
-  to better distribute replicas.
-type: changed
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-15803
-  url: https://issues.apache.org/jira/browse/SOLR-15803

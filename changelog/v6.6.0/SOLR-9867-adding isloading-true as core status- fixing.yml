@@ -1,8 +1,0 @@
-title: Adding isLoading=true as core status. Fixing start after stop scenario in bin/solr
-type: other
-authors:
-- name: Andrey Kudryavtsev
-- name: Mikhail Khludnev
-links:
-- name: SOLR-9867
-  url: https://issues.apache.org/jira/browse/SOLR-9867

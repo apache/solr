@@ -1,8 +1,0 @@
-title: Overseer doesn't handle PRS and non-PRS messages properly
-type: fixed
-authors:
-- name: Justin Sweeney
-- name: Hitesh Khamesra
-links:
-- name: SOLR-16453
-  url: https://issues.apache.org/jira/browse/SOLR-16453

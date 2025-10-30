@@ -1,8 +1,0 @@
-title: Expose HdfsDirectoryFactory Block Cache statistics via JMX.
-type: added
-authors:
-- name: Mike Drob
-- name: Mark Miller
-links:
-- name: SOLR-6766
-  url: https://issues.apache.org/jira/browse/SOLR-6766

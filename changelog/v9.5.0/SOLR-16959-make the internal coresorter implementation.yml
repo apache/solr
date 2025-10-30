@@ -1,7 +1,0 @@
-title: Make the internal CoreSorter implementation configurable in solr.xml
-type: changed
-authors:
-- name: Vincent Primault
-links:
-- name: SOLR-16959
-  url: https://issues.apache.org/jira/browse/SOLR-16959

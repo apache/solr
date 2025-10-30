@@ -1,9 +1,0 @@
-title: CoreContainer reports incorrect & misleading path for solrconfig.xml when there
-  are loading problems
-type: fixed
-authors:
-- name: Pradeep
-- name: hossman
-links:
-- name: SOLR-5814
-  url: https://issues.apache.org/jira/browse/SOLR-5814

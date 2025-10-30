@@ -1,8 +1,0 @@
-title: DIH XPathEntityProcessor fails with an xpath like /feed/entry/link[@type='text/html']/@href
-type: fixed
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-1040
-  url: https://issues.apache.org/jira/browse/SOLR-1040

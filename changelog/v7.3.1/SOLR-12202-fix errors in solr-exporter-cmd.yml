@@ -1,8 +1,0 @@
-title: Fix errors in solr-exporter.cmd.
-type: fixed
-authors:
-- name: Minoru Osuka
-- name: koji
-links:
-- name: SOLR-12202
-  url: https://issues.apache.org/jira/browse/SOLR-12202

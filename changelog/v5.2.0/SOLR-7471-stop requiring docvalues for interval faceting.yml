@@ -1,7 +1,0 @@
-title: Stop requiring docValues for interval faceting
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-7471
-  url: https://issues.apache.org/jira/browse/SOLR-7471

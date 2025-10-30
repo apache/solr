@@ -1,8 +1,0 @@
-title: Config file replication less error prone
-type: fixed
-authors:
-- name: Jochen Just
-- name: janhoy
-links:
-- name: SOLR-3489
-  url: https://issues.apache.org/jira/browse/SOLR-3489

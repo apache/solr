@@ -1,8 +1,0 @@
-title: Fix ClassCastException in NestableJsonFacet
-type: fixed
-authors:
-- name: Tiago Martinho de Barros
-- name: Munendra S N
-links:
-- name: SOLR-13780
-  url: https://issues.apache.org/jira/browse/SOLR-13780

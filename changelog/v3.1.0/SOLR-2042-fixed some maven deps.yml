@@ -1,8 +1,0 @@
-title: Fixed some Maven deps
-type: other
-authors:
-- name: Drew Farris
-- name: gsingers
-links:
-- name: SOLR-2042
-  url: https://issues.apache.org/jira/browse/SOLR-2042

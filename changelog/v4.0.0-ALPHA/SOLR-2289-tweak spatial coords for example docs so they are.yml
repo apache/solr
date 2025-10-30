@@ -1,8 +1,0 @@
-title: Tweak spatial coords for example docs so they are a bit more spread out
-type: other
-authors:
-- name: Erick Erickson
-- name: hossman
-links:
-- name: SOLR-2289
-  url: https://issues.apache.org/jira/browse/SOLR-2289

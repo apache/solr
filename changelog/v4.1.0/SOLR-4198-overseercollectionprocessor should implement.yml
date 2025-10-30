@@ -1,7 +1,0 @@
-title: OverseerCollectionProcessor should implement ClosableThread.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4198
-  url: https://issues.apache.org/jira/browse/SOLR-4198

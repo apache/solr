@@ -1,8 +1,0 @@
-title: bin/post (SimplePostTool) now streams the standard input instead of buffering
-  fully.
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-8937
-  url: https://issues.apache.org/jira/browse/SOLR-8937

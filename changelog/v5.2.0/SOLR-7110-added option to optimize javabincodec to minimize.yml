@@ -1,7 +1,0 @@
-title: Added option to optimize JavaBinCodec to minimize string Object creation
-type: other
-authors:
-- name: Noble Paul
-links:
-- name: SOLR-7110
-  url: https://issues.apache.org/jira/browse/SOLR-7110

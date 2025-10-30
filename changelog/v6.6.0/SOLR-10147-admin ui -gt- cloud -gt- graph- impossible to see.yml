@@ -1,8 +1,0 @@
-title: 'Admin UI -&gt; Cloud -&gt; Graph: Impossible to see shard state'
-type: other
-authors:
-- name: Amrit Sarkar
-- name: janhoy
-links:
-- name: SOLR-10147
-  url: https://issues.apache.org/jira/browse/SOLR-10147

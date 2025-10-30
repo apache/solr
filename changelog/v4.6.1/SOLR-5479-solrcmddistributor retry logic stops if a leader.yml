@@ -1,8 +1,0 @@
-title: SolrCmdDistributor retry logic stops if a leader for the request cannot be
-  found in 1 second.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5479
-  url: https://issues.apache.org/jira/browse/SOLR-5479

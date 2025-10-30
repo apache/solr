@@ -1,9 +1,0 @@
-title: The collapse QParser would throw a NPE when used on a DocValues field on an
-  empty segment/index.
-type: fixed
-authors:
-- name: Christine Poerschke
-- name: David Smiley
-links:
-- name: SOLR-6510
-  url: https://issues.apache.org/jira/browse/SOLR-6510

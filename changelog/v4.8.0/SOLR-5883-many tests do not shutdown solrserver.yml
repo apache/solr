@@ -1,8 +1,0 @@
-title: Many tests do not shutdown SolrServer.
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-- name: Mark Miller
-links:
-- name: SOLR-5883
-  url: https://issues.apache.org/jira/browse/SOLR-5883

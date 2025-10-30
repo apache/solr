@@ -1,7 +1,0 @@
-title: Adds CommitStream to support sending commits to a collection being updated.
-type: added
-authors:
-- name: Dennis Gove
-links:
-- name: SOLR-8487
-  url: https://issues.apache.org/jira/browse/SOLR-8487

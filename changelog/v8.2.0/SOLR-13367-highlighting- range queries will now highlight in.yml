@@ -1,7 +1,0 @@
-title: 'Highlighting: Range queries will now highlight in hl.method=unified mode.'
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-13367
-  url: https://issues.apache.org/jira/browse/SOLR-13367

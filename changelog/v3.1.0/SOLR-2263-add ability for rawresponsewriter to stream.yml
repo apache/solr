@@ -1,8 +1,0 @@
-title: Add ability for RawResponseWriter to stream binary files as well as text files.
-type: added
-authors:
-- name: Eric Pugh
-- name: yonik
-links:
-- name: SOLR-2263
-  url: https://issues.apache.org/jira/browse/SOLR-2263

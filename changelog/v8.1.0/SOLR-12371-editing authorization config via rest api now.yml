@@ -1,7 +1,0 @@
-title: Editing authorization config via REST API now works in standalone mode
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-12371
-  url: https://issues.apache.org/jira/browse/SOLR-12371

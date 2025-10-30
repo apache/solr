@@ -1,7 +1,0 @@
-title: Adds basic math Streaming Evaluators
-type: added
-authors:
-- name: Dennis Gove
-links:
-- name: SOLR-10356
-  url: https://issues.apache.org/jira/browse/SOLR-10356

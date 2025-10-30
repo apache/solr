@@ -1,9 +1,0 @@
-title: Prevent creating multiple cores with the same name which leads to instabilities
-  (race condition)
-type: fixed
-authors:
-- name: Erick Erickson
-- name: Andreas Hubold
-links:
-- name: SOLR-14969
-  url: https://issues.apache.org/jira/browse/SOLR-14969

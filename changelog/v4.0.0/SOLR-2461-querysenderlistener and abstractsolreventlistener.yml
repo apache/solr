@@ -1,7 +1,0 @@
-title: QuerySenderListener and AbstractSolrEventListener are now public
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-2461
-  url: https://issues.apache.org/jira/browse/SOLR-2461

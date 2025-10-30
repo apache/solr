@@ -1,7 +1,0 @@
-title: autoCommit was not working after delete.
-type: fixed
-authors:
-- name: ryan
-links:
-- name: SOLR-283
-  url: https://issues.apache.org/jira/browse/SOLR-283

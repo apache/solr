@@ -1,9 +1,0 @@
-title: Core discovery was walking paths relative to the Jetty working directory, rather
-  than SOLR_HOME.
-type: fixed
-authors:
-- name: Andreas Hubold
-- name: Alan Woodward
-links:
-- name: SOLR-6718
-  url: https://issues.apache.org/jira/browse/SOLR-6718

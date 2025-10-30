@@ -1,6 +1,0 @@
-title: Remove deprecated JettySolrRunner.getDispatchFilter()
-type: other
-authors: []
-links:
-- name: SOLR-8259
-  url: https://issues.apache.org/jira/browse/SOLR-8259

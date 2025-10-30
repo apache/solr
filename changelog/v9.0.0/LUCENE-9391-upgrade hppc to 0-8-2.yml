@@ -1,7 +1,0 @@
-title: Upgrade HPPC to 0.8.2.
-type: other
-authors:
-- name: Haoyu Zhai
-links:
-- name: LUCENE-9391
-  url: https://issues.apache.org/jira/browse/LUCENE-9391

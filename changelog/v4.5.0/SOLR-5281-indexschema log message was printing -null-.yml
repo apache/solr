@@ -1,8 +1,0 @@
-title: IndexSchema log message was printing '[null]' instead of '[&lt;core name&gt;]'
-type: fixed
-authors:
-- name: Jun Ohtani
-- name: Steve Rowe
-links:
-- name: SOLR-5281
-  url: https://issues.apache.org/jira/browse/SOLR-5281

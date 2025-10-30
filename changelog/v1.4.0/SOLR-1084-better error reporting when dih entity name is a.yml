@@ -1,9 +1,0 @@
-title: Better error reporting when DIH entity name is a reserved word and data-config.xml
-  root node is not &lt;dataConfig&gt;.
-type: other
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-1084
-  url: https://issues.apache.org/jira/browse/SOLR-1084

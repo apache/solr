@@ -1,7 +1,0 @@
-title: Fix listing of Files in a Directory on Solr Admin UI
-type: fixed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-14549
-  url: https://issues.apache.org/jira/browse/SOLR-14549

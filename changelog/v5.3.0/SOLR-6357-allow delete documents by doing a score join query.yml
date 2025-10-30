@@ -1,8 +1,0 @@
-title: Allow delete documents by doing a score join query.
-type: fixed
-authors:
-- name: Mikhail Khludnev
-- name: Timothy Potter
-links:
-- name: SOLR-6357
-  url: https://issues.apache.org/jira/browse/SOLR-6357

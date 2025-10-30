@@ -1,7 +1,0 @@
-title: cluster-wide defaults for numShards, nrtReplicas, tlogReplicas, pullReplicas
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-12387
-  url: https://issues.apache.org/jira/browse/SOLR-12387

@@ -1,8 +1,0 @@
-title: Produce a slim Solr binary and docker image, without the Prometheus Exporter
-  and Solr Modules.
-type: added
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-16742
-  url: https://issues.apache.org/jira/browse/SOLR-16742

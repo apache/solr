@@ -1,8 +1,0 @@
-title: If the JDBCStream sees an unknown column type it will now throw a detailed
-  exception.
-type: fixed
-authors:
-- name: Dennis Gove
-links:
-- name: SOLR-9246
-  url: https://issues.apache.org/jira/browse/SOLR-9246

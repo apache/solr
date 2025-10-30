@@ -1,9 +1,0 @@
-title: PreAnalyzedField type provides a functionality to index (and optionally store)
-  field content that was already processed and split into tokens using some external
-  processing chain. Serialization format is pluggable, and defaults to JSON.
-type: added
-authors:
-- name: ab
-links:
-- name: SOLR-1535
-  url: https://issues.apache.org/jira/browse/SOLR-1535

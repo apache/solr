@@ -1,9 +1,0 @@
-title: v2 APIs are now able to access any applicable solrconfig.xml "requestHandler"
-  configuration.
-type: changed
-authors:
-- name: Alex Deparvu
-- name: Jason Gerlowski
-links:
-- name: SOLR-16847
-  url: https://issues.apache.org/jira/browse/SOLR-16847

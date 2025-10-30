@@ -1,8 +1,0 @@
-title: Use the safe fork of simple-xml for clustering contrib.
-type: fixed
-authors:
-- name: Dawid Weiss
-- name: Sachin Pattan
-links:
-- name: SOLR-13779
-  url: https://issues.apache.org/jira/browse/SOLR-13779

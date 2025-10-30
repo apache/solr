@@ -1,8 +1,0 @@
-title: ADMIN_PATHS is duplicated in two places and inconsistent. This can cause automatic
-  retries to /admin/metrics handler by the CloudSolrClient.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-10281
-  url: https://issues.apache.org/jira/browse/SOLR-10281

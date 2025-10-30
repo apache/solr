@@ -1,9 +1,0 @@
-title: Improve error message and change error code to 400 when collapse field is non-docValued
-  and non-uninvertible
-type: fixed
-authors:
-- name: hossman
-- name: Munendra S N
-links:
-- name: SOLR-12979
-  url: https://issues.apache.org/jira/browse/SOLR-12979

@@ -1,7 +1,0 @@
-title: Improve logging for FileDataSource (basePath, relative resources).
-type: fixed
-authors:
-- name: Dawid Weiss
-links:
-- name: SOLR-4288
-  url: https://issues.apache.org/jira/browse/SOLR-4288

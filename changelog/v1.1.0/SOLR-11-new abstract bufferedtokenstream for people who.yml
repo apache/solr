@@ -1,9 +1,0 @@
-title: New abstract BufferedTokenStream for people who want to write Tokenizers or
-  TokenFilters that require arbitrary buffering of the stream. SOLR-11
-type: added
-authors:
-- name: yonik
-- name: hossman
-links:
-- name: SOLR-11
-  url: https://issues.apache.org/jira/browse/SOLR-11

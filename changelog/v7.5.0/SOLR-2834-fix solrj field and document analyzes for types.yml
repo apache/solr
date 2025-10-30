@@ -1,7 +1,0 @@
-title: Fix SolrJ Field and Document analyzes for types that include CharacterFilter
-type: fixed
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-2834
-  url: https://issues.apache.org/jira/browse/SOLR-2834

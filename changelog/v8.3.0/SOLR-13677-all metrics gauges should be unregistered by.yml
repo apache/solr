@@ -1,8 +1,0 @@
-title: All Metrics Gauges should be unregistered by components that registered them.
-type: fixed
-authors:
-- name: noble
-- name: ab
-links:
-- name: SOLR-13677
-  url: https://issues.apache.org/jira/browse/SOLR-13677

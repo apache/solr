@@ -1,9 +1,0 @@
-title: Remove classes and methods deprecated in 4.x
-type: other
-authors:
-- name: Alan Woodward
-- name: "Noble\n  Paul"
-- name: Chris Hostetter
-links:
-- name: SOLR-6976
-  url: https://issues.apache.org/jira/browse/SOLR-6976

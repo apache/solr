@@ -1,7 +1,0 @@
-title: Use perl regex to improve accuracy of finding latest snapshot in snapinstaller
-type: fixed
-authors:
-- name: billa
-links:
-- name: SOLR-346
-  url: https://issues.apache.org/jira/browse/SOLR-346

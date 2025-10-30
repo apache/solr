@@ -1,8 +1,0 @@
-title: SolrDocument and SolrInputDocument now implement the Map&lt;String,?&gt; interface.
-  This should make plugging into other standard tools easier.
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-928
-  url: https://issues.apache.org/jira/browse/SOLR-928

@@ -1,8 +1,0 @@
-title: 'FreeTextSuggester: Better error message when doing a lookup during dictionary
-  build. Used to be nullpointer'
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-7084
-  url: https://issues.apache.org/jira/browse/SOLR-7084

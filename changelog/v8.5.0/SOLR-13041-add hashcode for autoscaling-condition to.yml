@@ -1,8 +1,0 @@
-title: Add hashCode for autoscaling.Condition to accompany the already present equals.
-type: fixed
-authors:
-- name: Zsolt Gyulavari
-- name: Christine Poerschke
-links:
-- name: SOLR-13041
-  url: https://issues.apache.org/jira/browse/SOLR-13041

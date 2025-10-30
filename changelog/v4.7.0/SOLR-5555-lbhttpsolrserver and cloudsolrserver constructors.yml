@@ -1,8 +1,0 @@
-title: LBHttpSolrServer and CloudSolrServer constructors don't need to declare MalformedURLExceptions
-type: other
-authors:
-- name: Sushil Bajracharya
-- name: Alan Woodward
-links:
-- name: SOLR-5555
-  url: https://issues.apache.org/jira/browse/SOLR-5555

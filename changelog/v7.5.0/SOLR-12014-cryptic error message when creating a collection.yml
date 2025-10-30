@@ -1,8 +1,0 @@
-title: Cryptic error message when creating a collection with sharding that violates
-  autoscaling policies
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-12014
-  url: https://issues.apache.org/jira/browse/SOLR-12014

@@ -1,8 +1,0 @@
-title: A new leader on cluster startup should also run the leader sync process in
-  case there was a bad cluster shutdown.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3834
-  url: https://issues.apache.org/jira/browse/SOLR-3834

@@ -1,7 +1,0 @@
-title: Provide pluggable context tool support for VelocityResponseWriter
-type: added
-authors:
-- name: Erik Hatcher
-links:
-- name: SOLR-7915
-  url: https://issues.apache.org/jira/browse/SOLR-7915

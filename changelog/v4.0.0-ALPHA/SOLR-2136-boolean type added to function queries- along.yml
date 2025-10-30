@@ -1,8 +1,0 @@
-title: Boolean type added to function queries, along with new functions exists(),
-  if(), and(), or(), xor(), not(), def(), and true and false constants.
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-2136
-  url: https://issues.apache.org/jira/browse/SOLR-2136

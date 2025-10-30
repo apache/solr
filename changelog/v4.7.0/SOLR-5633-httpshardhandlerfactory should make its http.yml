@@ -1,7 +1,0 @@
-title: HttpShardHandlerFactory should make its http client available to subclasses.
-type: other
-authors:
-- name: Ryan Ernst
-links:
-- name: SOLR-5633
-  url: https://issues.apache.org/jira/browse/SOLR-5633

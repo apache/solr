@@ -1,7 +1,0 @@
-title: support creation of a coreless collection via createNodeSet=EMPTY
-type: added
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-7766
-  url: https://issues.apache.org/jira/browse/SOLR-7766

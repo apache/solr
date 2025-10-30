@@ -1,8 +1,0 @@
-title: Add explicit option to run DataImportHandler in synchronous mode
-type: added
-authors:
-- name: Alexey Serba
-- name: noble
-links:
-- name: SOLR-1721
-  url: https://issues.apache.org/jira/browse/SOLR-1721

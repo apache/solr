@@ -1,8 +1,0 @@
-title: Remove unused "Admin Extra" files and mentions.
-type: other
-authors:
-- name: Eric Pugh
-- name: Christine Poerschke
-links:
-- name: SOLR-11480
-  url: https://issues.apache.org/jira/browse/SOLR-11480

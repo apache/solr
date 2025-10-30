@@ -1,7 +1,0 @@
-title: Do not attempt to start Solr server when embedded ZK fails
-type: other
-authors:
-- name: Mike Drob
-links:
-- name: SOLR-15113
-  url: https://issues.apache.org/jira/browse/SOLR-15113

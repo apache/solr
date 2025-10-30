@@ -1,7 +1,0 @@
-title: Optimized getDocSet() for term queries resulting in a 36% speedup of facet.field
-  queries where DocSets aren't cached (for example, if the number of terms in the
-  field is larger than the filter cache.)
-type: changed
-authors:
-- name: yonik
-links: []

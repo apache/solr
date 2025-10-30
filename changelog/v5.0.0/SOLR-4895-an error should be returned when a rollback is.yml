@@ -1,8 +1,0 @@
-title: An error should be returned when a rollback is attempted in SolrCloud mode.
-type: fixed
-authors:
-- name: Vamsee Yarlagadda
-- name: Mark Miller
-links:
-- name: SOLR-4895
-  url: https://issues.apache.org/jira/browse/SOLR-4895

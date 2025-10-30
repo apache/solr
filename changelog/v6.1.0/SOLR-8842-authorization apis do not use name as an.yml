@@ -1,8 +1,0 @@
-title: authorization APIs do not use name as an identifier for a permission for update,
-  delete commands and 'before' attribute
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-8842
-  url: https://issues.apache.org/jira/browse/SOLR-8842

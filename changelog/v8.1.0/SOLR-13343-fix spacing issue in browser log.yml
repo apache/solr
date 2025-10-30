@@ -1,8 +1,0 @@
-title: Fix spacing issue in browser log
-type: fixed
-authors:
-- name: Marcus Eagan
-- name: Jason Gerlowski
-links:
-- name: SOLR-13343
-  url: https://issues.apache.org/jira/browse/SOLR-13343

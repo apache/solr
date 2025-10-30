@@ -1,8 +1,0 @@
-title: 'SimplePostTool: Improvements for posting files Support for auto mode, recursive
-  and wildcards'
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-3672
-  url: https://issues.apache.org/jira/browse/SOLR-3672

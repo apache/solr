@@ -1,8 +1,0 @@
-title: Validation of filename params in ReplicationHandler
-type: other
-authors:
-- name: Hrishikesh Gadre
-- name: janhoy
-links:
-- name: SOLR-10031
-  url: https://issues.apache.org/jira/browse/SOLR-10031

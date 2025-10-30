@@ -1,8 +1,0 @@
-title: filter in BoolQParser and {"bool":{"filter":..}} in Query DSL are cached by
-  default
-type: changed
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-13808
-  url: https://issues.apache.org/jira/browse/SOLR-13808

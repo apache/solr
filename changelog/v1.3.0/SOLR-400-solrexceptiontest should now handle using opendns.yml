@@ -1,7 +1,0 @@
-title: SolrExceptionTest should now handle using OpenDNS as a DNS provider
-type: fixed
-authors:
-- name: gsingers
-links:
-- name: SOLR-400
-  url: https://issues.apache.org/jira/browse/SOLR-400

@@ -1,7 +1,0 @@
-title: AbstractDistribZkTestBase.verifyReplicaStatus could throw NPE
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8414
-  url: https://issues.apache.org/jira/browse/SOLR-8414

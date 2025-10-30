@@ -1,9 +1,0 @@
-title: 'DIH: Documents are collected in unsynchronized list in multi-threaded debug
-  mode'
-type: fixed
-authors:
-- name: Michael McCandless
-- name: shalin
-links:
-- name: SOLR-2695
-  url: https://issues.apache.org/jira/browse/SOLR-2695

@@ -1,7 +1,0 @@
-title: analysis.jsp can be given a fieldtype instead of a field name.
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-305
-  url: https://issues.apache.org/jira/browse/SOLR-305

@@ -1,8 +1,0 @@
-title: MoreLikeThis MLT is biased for uncommon fields
-type: changed
-authors:
-- name: Andy Hind
-- name: Anshum Gupta
-links:
-- name: LUCENE-8984
-  url: https://issues.apache.org/jira/browse/LUCENE-8984

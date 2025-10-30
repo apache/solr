@@ -1,8 +1,0 @@
-title: Null Pointer Exception when querying collection through collection alias.
-type: fixed
-authors:
-- name: Jörn Franke
-- name: ab
-links:
-- name: SOLR-13475
-  url: https://issues.apache.org/jira/browse/SOLR-13475

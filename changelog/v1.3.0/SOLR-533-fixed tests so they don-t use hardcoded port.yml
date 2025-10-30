@@ -1,7 +1,0 @@
-title: Fixed tests so they don't use hardcoded port numbers.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-533
-  url: https://issues.apache.org/jira/browse/SOLR-533

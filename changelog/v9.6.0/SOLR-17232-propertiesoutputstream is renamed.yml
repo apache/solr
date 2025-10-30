@@ -1,8 +1,0 @@
-title: PropertiesOutputStream is renamed IndexOutputOutputStream and overrides write(byte[],
-  int, int).
-type: other
-authors:
-- name: Bruno Roustant
-links:
-- name: SOLR-17232
-  url: https://issues.apache.org/jira/browse/SOLR-17232

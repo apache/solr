@@ -1,9 +1,0 @@
-title: Cleanup enum/string action types in Overseer, OverseerCollectionProcessor and
-  CollectionHandler.
-type: other
-authors:
-- name: Erick Erickson
-- name: shalin
-links:
-- name: SOLR-6115
-  url: https://issues.apache.org/jira/browse/SOLR-6115

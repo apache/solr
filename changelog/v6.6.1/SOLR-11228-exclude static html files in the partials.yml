@@ -1,9 +1,0 @@
-title: Exclude static html files in the partials directory from authentication and
-  authorization checks. The UI will open correctly with kerberos enabled
-type: fixed
-authors:
-- name: Ishan Chattopadhyaya
-- name: Varun Thacker
-links:
-- name: SOLR-11228
-  url: https://issues.apache.org/jira/browse/SOLR-11228

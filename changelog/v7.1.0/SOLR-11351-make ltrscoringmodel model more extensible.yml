@@ -1,7 +1,0 @@
-title: Make LTRScoringModel model more extensible.
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-11351
-  url: https://issues.apache.org/jira/browse/SOLR-11351

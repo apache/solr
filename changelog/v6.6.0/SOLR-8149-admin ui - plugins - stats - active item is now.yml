@@ -1,8 +1,0 @@
-title: Admin UI - Plugins / Stats - active item is now highlighted
-type: fixed
-authors:
-- name: Labuzov Dmitriy
-- name: janhoy
-links:
-- name: SOLR-8149
-  url: https://issues.apache.org/jira/browse/SOLR-8149

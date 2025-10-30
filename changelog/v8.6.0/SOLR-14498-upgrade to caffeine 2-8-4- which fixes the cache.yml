@@ -1,8 +1,0 @@
-title: Upgrade to Caffeine 2.8.4, which fixes the cache poisoning issue.
-type: fixed
-authors:
-- name: Jakub Zytka
-- name: ab
-links:
-- name: SOLR-14498
-  url: https://issues.apache.org/jira/browse/SOLR-14498

@@ -1,8 +1,0 @@
-title: LBHttpSolrServer ignores ResponseParser passed in constructor.
-type: added
-authors:
-- name: Steve Molloy
-- name: Mark Miller
-links:
-- name: SOLR-4166
-  url: https://issues.apache.org/jira/browse/SOLR-4166

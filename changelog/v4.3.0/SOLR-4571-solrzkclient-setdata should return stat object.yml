@@ -1,7 +1,0 @@
-title: SolrZkClient#setData should return Stat object.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4571
-  url: https://issues.apache.org/jira/browse/SOLR-4571

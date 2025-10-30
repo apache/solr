@@ -1,7 +1,0 @@
-title: Performance problem when not using hdfs block cache.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5667
-  url: https://issues.apache.org/jira/browse/SOLR-5667

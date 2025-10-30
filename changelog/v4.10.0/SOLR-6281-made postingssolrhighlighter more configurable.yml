@@ -1,7 +1,0 @@
-title: Made PostingsSolrHighlighter more configurable via subclass extension.
-type: other
-authors:
-- name: David Smiley
-links:
-- name: SOLR-6281
-  url: https://issues.apache.org/jira/browse/SOLR-6281

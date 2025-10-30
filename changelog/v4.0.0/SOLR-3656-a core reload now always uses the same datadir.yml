@@ -1,8 +1,0 @@
-title: A core reload now always uses the same dataDir.
-type: fixed
-authors:
-- name: Mark Miller
-- name: yonik
-links:
-- name: SOLR-3656
-  url: https://issues.apache.org/jira/browse/SOLR-3656

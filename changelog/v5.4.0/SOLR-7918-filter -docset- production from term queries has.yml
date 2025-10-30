@@ -1,8 +1,0 @@
-title: Filter (DocSet) production from term queries has been optimized and is anywhere
-  from 20% to over 100% faster and produces less garbage on average.
-type: changed
-authors:
-- name: yonik
-links:
-- name: SOLR-7918
-  url: https://issues.apache.org/jira/browse/SOLR-7918

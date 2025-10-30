@@ -1,7 +1,0 @@
-title: Replace Java serialization with Javabin in the Overseer queues
-type: changed
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-14095
-  url: https://issues.apache.org/jira/browse/SOLR-14095

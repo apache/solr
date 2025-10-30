@@ -1,7 +1,0 @@
-title: Full pagination in JSON Facet API using offset does not work.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-10480
-  url: https://issues.apache.org/jira/browse/SOLR-10480

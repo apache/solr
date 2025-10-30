@@ -1,8 +1,0 @@
-title: /mlt now has a v2 API available at `GET /api/collections/collName/mlt`
-type: changed
-authors:
-- name: Ameer Albahem
-- name: Jason Gerlowski
-links:
-- name: SOLR-16397
-  url: https://issues.apache.org/jira/browse/SOLR-16397

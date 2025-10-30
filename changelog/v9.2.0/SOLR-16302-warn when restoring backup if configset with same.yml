@@ -1,8 +1,0 @@
-title: WARN when restoring backup if ConfigSet with same name already exists
-type: changed
-authors:
-- name: Albert Moser
-- name: Kevin Risden
-links:
-- name: SOLR-16302
-  url: https://issues.apache.org/jira/browse/SOLR-16302

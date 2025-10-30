@@ -1,7 +1,0 @@
-title: Upgrade to Tika 1.23 when available
-type: other
-authors:
-- name: Tim Allison
-links:
-- name: SOLR-14054
-  url: https://issues.apache.org/jira/browse/SOLR-14054

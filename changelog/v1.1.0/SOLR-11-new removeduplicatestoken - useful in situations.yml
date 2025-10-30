@@ -1,9 +1,0 @@
-title: New RemoveDuplicatesToken - useful in situations where synonyms, stemming,
-  or word-deliminater-ing produce identical tokens at the same position. SOLR-11
-type: added
-authors:
-- name: yonik
-- name: hossman
-links:
-- name: SOLR-11
-  url: https://issues.apache.org/jira/browse/SOLR-11

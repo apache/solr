@@ -1,7 +1,0 @@
-title: In Angular UI, add a Collections UI when in cloud mode
-type: added
-authors:
-- name: Upayavira
-links:
-- name: SOLR-4388
-  url: https://issues.apache.org/jira/browse/SOLR-4388

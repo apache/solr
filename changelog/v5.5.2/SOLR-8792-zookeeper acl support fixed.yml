@@ -1,9 +1,0 @@
-title: ZooKeeper ACL support fixed.
-type: fixed
-authors:
-- name: Esther Quansah
-- name: Ishan Chattopadhyaya
-- name: Steve Rowe
-links:
-- name: SOLR-8792
-  url: https://issues.apache.org/jira/browse/SOLR-8792

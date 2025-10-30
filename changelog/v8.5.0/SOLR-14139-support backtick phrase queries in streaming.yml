@@ -1,7 +1,0 @@
-title: Support backtick phrase queries in Streaming Expressions
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-14139
-  url: https://issues.apache.org/jira/browse/SOLR-14139

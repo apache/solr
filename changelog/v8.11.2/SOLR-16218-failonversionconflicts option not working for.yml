@@ -1,9 +1,0 @@
-title: failOnVersionConflicts option not working for in-place updates
-type: fixed
-authors:
-- name: Lamine Idjeraoui
-- name: Houston Putman
-- name: Anshum Gupta
-links:
-- name: SOLR-16218
-  url: https://issues.apache.org/jira/browse/SOLR-16218

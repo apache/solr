@@ -1,7 +1,0 @@
-title: autoCommit can be specified every so many documents added SOLR-65
-type: added
-authors:
-- name: klaas
-links:
-- name: SOLR-65
-  url: https://issues.apache.org/jira/browse/SOLR-65

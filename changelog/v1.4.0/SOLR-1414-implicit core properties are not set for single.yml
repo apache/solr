@@ -1,7 +1,0 @@
-title: implicit core properties are not set for single core
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-1414
-  url: https://issues.apache.org/jira/browse/SOLR-1414

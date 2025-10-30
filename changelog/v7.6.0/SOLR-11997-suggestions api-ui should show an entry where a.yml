@@ -1,7 +1,0 @@
-title: Suggestions API/UI should show an entry where a violation could not be resolved
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-11997
-  url: https://issues.apache.org/jira/browse/SOLR-11997

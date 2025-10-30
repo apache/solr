@@ -1,8 +1,0 @@
-title: Ability to ignore commit and/or optimize requests from clients when running
-  in SolrCloud mode using the IgnoreCommitOptimizeUpdateProcessorFactory.
-type: added
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-6761
-  url: https://issues.apache.org/jira/browse/SOLR-6761

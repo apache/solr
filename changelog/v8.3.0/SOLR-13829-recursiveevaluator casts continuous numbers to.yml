@@ -1,8 +1,0 @@
-title: RecursiveEvaluator casts Continuous numbers to Discrete Numbers, causing mismatch
-type: fixed
-authors:
-- name: Trey Grainger
-- name: Joel Bernstein
-links:
-- name: SOLR-13829
-  url: https://issues.apache.org/jira/browse/SOLR-13829

@@ -1,7 +1,0 @@
-title: Replica which failed to register in Zk can become leader
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-12110
-  url: https://issues.apache.org/jira/browse/SOLR-12110

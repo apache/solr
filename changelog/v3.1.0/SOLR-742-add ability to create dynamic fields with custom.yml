@@ -1,9 +1,0 @@
-title: Add ability to create dynamic fields with custom DataImportHandler transformers
-type: fixed
-authors:
-- name: Wojtek Piaseczny
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-742
-  url: https://issues.apache.org/jira/browse/SOLR-742

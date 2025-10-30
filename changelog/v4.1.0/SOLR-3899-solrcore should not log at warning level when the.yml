@@ -1,9 +1,0 @@
-title: SolrCore should not log at warning level when the index directory changes -
-  it's an info event.
-type: other
-authors:
-- name: Tobias Bergman
-- name: Mark Miller
-links:
-- name: SOLR-3899
-  url: https://issues.apache.org/jira/browse/SOLR-3899

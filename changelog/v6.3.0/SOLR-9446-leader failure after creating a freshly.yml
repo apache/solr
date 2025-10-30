@@ -1,9 +1,0 @@
-title: Leader failure after creating a freshly replicated index can send nodes into
-  recovery even if index was not changed
-type: changed
-authors:
-- name: Pushkar Raste
-- name: noble
-links:
-- name: SOLR-9446
-  url: https://issues.apache.org/jira/browse/SOLR-9446

@@ -1,7 +1,0 @@
-title: The new 'large' attribute had been forgotten in /schema/fieldtypes?showDefaults=true
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-10549
-  url: https://issues.apache.org/jira/browse/SOLR-10549

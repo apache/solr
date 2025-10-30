@@ -1,9 +1,0 @@
-title: OrderedNodePlacementPlugin will give an even more optimal replica placements
-  during ReplicaMigration commands
-type: changed
-authors:
-- name: Houston Putman
-- name: Yohann Callea
-links:
-- name: SOLR-17331
-  url: https://issues.apache.org/jira/browse/SOLR-17331

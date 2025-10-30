@@ -1,7 +1,0 @@
-title: Allow zplot to visualize 2D clusters and convex hulls
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-13589
-  url: https://issues.apache.org/jira/browse/SOLR-13589

@@ -1,7 +1,0 @@
-title: Nested documents with unknown fields don't work in schemaless mode.
-type: fixed
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-7091
-  url: https://issues.apache.org/jira/browse/SOLR-7091

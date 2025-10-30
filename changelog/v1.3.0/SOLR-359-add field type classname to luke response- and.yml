@@ -1,9 +1,0 @@
-title: Add field type className to Luke response, and enabled access to the detailed
-  field information from the solrj client API.
-type: added
-authors:
-- name: Grant Ingersoll
-- name: ehatcher
-links:
-- name: SOLR-359
-  url: https://issues.apache.org/jira/browse/SOLR-359

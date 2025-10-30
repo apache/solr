@@ -1,7 +1,0 @@
-title: Remove deprecated SolrException.ignorePatterns and related code
-type: removed
-authors:
-- name: hossman
-links:
-- name: SOLR-15716
-  url: https://issues.apache.org/jira/browse/SOLR-15716

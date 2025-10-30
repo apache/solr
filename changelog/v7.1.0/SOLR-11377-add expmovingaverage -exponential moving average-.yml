@@ -1,9 +1,0 @@
-title: Add expMovingAverage (exponential moving average) and binomialCoefficient Stream
-  Evaluators
-type: added
-authors:
-- name: Mathew Skaria
-- name: Joel Bernstein
-links:
-- name: SOLR-11377
-  url: https://issues.apache.org/jira/browse/SOLR-11377

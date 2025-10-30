@@ -1,7 +1,0 @@
-title: bin/solr start script should not enable autoSoftCommit by default
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-6696
-  url: https://issues.apache.org/jira/browse/SOLR-6696

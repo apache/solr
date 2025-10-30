@@ -1,8 +1,0 @@
-title: Make sure ReturnFields only returns the requested fields from (fl=) evn when
-  DocumentTransformers ask for getExtraRequestFields()
-type: fixed
-authors:
-- name: ryan
-links:
-- name: SOLR-8902
-  url: https://issues.apache.org/jira/browse/SOLR-8902

@@ -1,7 +1,0 @@
-title: ThreadDumpHandler has been enhanced to show lock ownership
-type: changed
-authors:
-- name: hossman
-links:
-- name: SOLR-14635
-  url: https://issues.apache.org/jira/browse/SOLR-14635

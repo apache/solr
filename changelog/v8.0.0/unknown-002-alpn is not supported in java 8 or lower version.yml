@@ -1,7 +1,0 @@
-title: ALPN is not supported in Java 8 or lower version therefore when a node started
-  in Java 8 or a lower version with SSL enabled, it will send and can only be able
-  to handle HTTP/1.1 requests. In case of using SSL Java 9 or latter versions are
-  recommended.
-type: upgrade_notes
-authors: []
-links: []

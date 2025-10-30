@@ -1,9 +1,0 @@
-title: Remove check for bare "var" declarations in validate-source-patterns
-type: other
-authors:
-- name: Erick Erickson
-- name: Alex Bulygin
-- name: janhoy
-links:
-- name: SOLR-13671
-  url: https://issues.apache.org/jira/browse/SOLR-13671

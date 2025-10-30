@@ -1,8 +1,0 @@
-title: New Facet Module should respect shards.tolerant and process all non-failing
-  shards instead of throwing an exception.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-7518
-  url: https://issues.apache.org/jira/browse/SOLR-7518

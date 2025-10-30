@@ -1,7 +1,0 @@
-title: Update Jetty to 9.4.27 and dropwizard-metrics version to 4.1.5
-type: other
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-14386
-  url: https://issues.apache.org/jira/browse/SOLR-14386

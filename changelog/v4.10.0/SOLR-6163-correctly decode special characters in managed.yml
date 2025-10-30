@@ -1,9 +1,0 @@
-title: Correctly decode special characters in managed stopwords and synonym endpoints.
-type: fixed
-authors:
-- name: Vitaliy Zhovtyuk
-- name: Timo Schmidt
-- name: Timothy Potter
-links:
-- name: SOLR-6163
-  url: https://issues.apache.org/jira/browse/SOLR-6163

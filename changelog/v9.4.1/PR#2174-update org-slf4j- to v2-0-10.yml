@@ -1,7 +1,0 @@
-title: Update org.slf4j:* to v2.0.10
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2174
-  url: https://github.com/apache/solr/pull/2174

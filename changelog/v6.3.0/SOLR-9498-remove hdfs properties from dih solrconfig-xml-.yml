@@ -1,9 +1,0 @@
-title: Remove HDFS properties from DIH solrconfig.xml, as started in SOLR-6943
-type: other
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-9498
-  url: https://issues.apache.org/jira/browse/SOLR-9498
-- name: SOLR-6943
-  url: https://issues.apache.org/jira/browse/SOLR-6943

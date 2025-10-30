@@ -1,7 +1,0 @@
-title: Fix parameter names in Solr JSON documentation
-type: other
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-12600
-  url: https://issues.apache.org/jira/browse/SOLR-12600

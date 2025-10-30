@@ -1,9 +1,0 @@
-title: Refactor ZK related SolrCli tools to separate SolrZkClient and CloudSolrClient
-  instantiation/usage
-type: other
-authors:
-- name: Lamine Idjeraoui
-- name: Eric Pugh
-links:
-- name: SOLR-17248
-  url: https://issues.apache.org/jira/browse/SOLR-17248

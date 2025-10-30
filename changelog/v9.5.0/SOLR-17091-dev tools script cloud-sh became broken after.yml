@@ -1,8 +1,0 @@
-title: dev tools script cloud.sh became broken after changes in 9.3 added a new -slim.tgz
-  file it was not expecting cloud.sh has been updated to ignore the -slim.tgz version
-  of the tarball.
-type: other
-authors: []
-links:
-- name: SOLR-17091
-  url: https://issues.apache.org/jira/browse/SOLR-17091

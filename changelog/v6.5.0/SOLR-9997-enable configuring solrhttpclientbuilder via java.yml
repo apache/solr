@@ -1,8 +1,0 @@
-title: Enable configuring SolrHttpClientBuilder via java system property.
-type: added
-authors:
-- name: Hrishikesh Gadre
-- name: Mark Miller
-links:
-- name: SOLR-9997
-  url: https://issues.apache.org/jira/browse/SOLR-9997

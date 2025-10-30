@@ -1,9 +1,0 @@
-title: The Learning To Rank FieldValueFeature now uses DocValues when docValues=true
-  and stored=true are combined.
-type: changed
-authors:
-- name: Christine Poerschke
-- name: Tom Gilke
-links:
-- name: SOLR-15440
-  url: https://issues.apache.org/jira/browse/SOLR-15440

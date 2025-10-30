@@ -1,7 +1,0 @@
-title: Solr should consistently call SolrServer#shutdown
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5371
-  url: https://issues.apache.org/jira/browse/SOLR-5371

@@ -1,7 +1,0 @@
-title: DirectUpdateHandler2 should not throw UnknownFormatConversionException
-type: fixed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16363
-  url: https://issues.apache.org/jira/browse/SOLR-16363

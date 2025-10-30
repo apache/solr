@@ -1,8 +1,0 @@
-title: StandardDirectoryFactory should use optimizations for all FilterDirectorys
-  not just NRTCachingDirectory.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-9899
-  url: https://issues.apache.org/jira/browse/SOLR-9899

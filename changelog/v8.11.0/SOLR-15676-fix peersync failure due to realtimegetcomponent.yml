@@ -1,9 +1,0 @@
-title: Fix PeerSync failure due to RealTimeGetComponent returning duplicates.
-type: fixed
-authors:
-- name: Ramsey Haddad
-- name: Christine Poerschke
-- name: David Smiley
-links:
-- name: SOLR-15676
-  url: https://issues.apache.org/jira/browse/SOLR-15676

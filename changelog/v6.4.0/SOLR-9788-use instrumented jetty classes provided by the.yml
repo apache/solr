@@ -1,7 +1,0 @@
-title: Use instrumented jetty classes provided by the dropwizard metric library.
-type: added
-authors:
-- name: shalin
-links:
-- name: SOLR-9788
-  url: https://issues.apache.org/jira/browse/SOLR-9788

@@ -1,8 +1,0 @@
-title: Make CloneFieldUpdateProcessorFactory null safe
-type: fixed
-authors:
-- name: Steve Davids
-- name: ehatcher
-links:
-- name: SOLR-6735
-  url: https://issues.apache.org/jira/browse/SOLR-6735

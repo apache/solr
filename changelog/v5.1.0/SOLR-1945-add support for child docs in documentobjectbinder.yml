@@ -1,8 +1,0 @@
-title: Add support for child docs in DocumentObjectBinder
-type: added
-authors:
-- name: Noble Paul
-- name: Mark Miller
-links:
-- name: SOLR-1945
-  url: https://issues.apache.org/jira/browse/SOLR-1945

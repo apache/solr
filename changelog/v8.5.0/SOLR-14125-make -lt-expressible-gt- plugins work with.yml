@@ -1,7 +1,0 @@
-title: Make &lt;expressible&gt; plugins work with packages
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-14125
-  url: https://issues.apache.org/jira/browse/SOLR-14125

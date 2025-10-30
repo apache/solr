@@ -1,7 +1,0 @@
-title: TestAuthenticationFramework.testBasics to preserve/restore the original request(Username|Password)
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-7877
-  url: https://issues.apache.org/jira/browse/SOLR-7877

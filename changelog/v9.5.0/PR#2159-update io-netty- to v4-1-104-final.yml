@@ -1,7 +1,0 @@
-title: Update io.netty:* to v4.1.104.Final
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2159
-  url: https://github.com/apache/solr/pull/2159

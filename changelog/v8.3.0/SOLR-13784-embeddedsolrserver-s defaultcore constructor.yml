@@ -1,7 +1,0 @@
-title: EmbeddedSolrServer's defaultCore constructor argument is now optional
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-13784
-  url: https://issues.apache.org/jira/browse/SOLR-13784

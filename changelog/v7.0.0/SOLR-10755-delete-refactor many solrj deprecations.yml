@@ -1,7 +1,0 @@
-title: delete/refactor many solrj deprecations
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-10755
-  url: https://issues.apache.org/jira/browse/SOLR-10755

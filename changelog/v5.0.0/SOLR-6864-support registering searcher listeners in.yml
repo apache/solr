@@ -1,8 +1,0 @@
-title: Support registering searcher listeners in SolrCoreAware.inform(SolrCore) method.
-  Existing components rely on this.
-type: fixed
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-6864
-  url: https://issues.apache.org/jira/browse/SOLR-6864

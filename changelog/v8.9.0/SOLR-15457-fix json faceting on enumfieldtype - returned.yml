@@ -1,9 +1,0 @@
-title: Fix JSON Faceting on EnumFieldType -- returned values should not be internal
-  ordinals.
-type: fixed
-authors:
-- name: Thomas Wöckinger
-- name: David Smiley
-links:
-- name: SOLR-15457
-  url: https://issues.apache.org/jira/browse/SOLR-15457

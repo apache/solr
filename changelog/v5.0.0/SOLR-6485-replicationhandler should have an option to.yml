@@ -1,8 +1,0 @@
-title: ReplicationHandler should have an option to throttle the speed of replication
-type: added
-authors:
-- name: Varun Thacker
-- name: Noble Paul
-links:
-- name: SOLR-6485
-  url: https://issues.apache.org/jira/browse/SOLR-6485

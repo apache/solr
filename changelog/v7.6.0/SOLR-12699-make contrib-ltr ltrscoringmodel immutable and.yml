@@ -1,9 +1,0 @@
-title: Make contrib/ltr LTRScoringModel immutable and cache its hashCode.
-type: changed
-authors:
-- name: Stanislav Livotov
-- name: Edward Ribeiro
-- name: Christine Poerschke
-links:
-- name: SOLR-12699
-  url: https://issues.apache.org/jira/browse/SOLR-12699

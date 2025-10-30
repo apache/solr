@@ -1,9 +1,0 @@
-title: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`.
-  Collection listing, previously at this path, can still be accessed at `GET /api/collections`.
-type: changed
-authors:
-- name: Joshua Ouma
-- name: Jason Gerlowski
-links:
-- name: SOLR-15748
-  url: https://issues.apache.org/jira/browse/SOLR-15748

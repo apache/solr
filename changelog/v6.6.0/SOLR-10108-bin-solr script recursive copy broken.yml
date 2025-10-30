@@ -1,7 +1,0 @@
-title: bin/solr script recursive copy broken
-type: fixed
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-10108
-  url: https://issues.apache.org/jira/browse/SOLR-10108

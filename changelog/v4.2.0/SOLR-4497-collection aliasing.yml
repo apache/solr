@@ -1,7 +1,0 @@
-title: Collection Aliasing.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4497
-  url: https://issues.apache.org/jira/browse/SOLR-4497

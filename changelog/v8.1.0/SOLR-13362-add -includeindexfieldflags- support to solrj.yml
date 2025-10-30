@@ -1,7 +1,0 @@
-title: Add 'includeIndexFieldFlags' support to SolrJ LukeRequest
-type: fixed
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-13362
-  url: https://issues.apache.org/jira/browse/SOLR-13362

@@ -1,8 +1,0 @@
-title: Upgrade JQuery to 3.5.1 in velocity contrib module
-type: fixed
-authors:
-- name: Bence Szabo
-- name: Jan Høydahl
-links:
-- name: SOLR-16095
-  url: https://issues.apache.org/jira/browse/SOLR-16095

@@ -1,9 +1,0 @@
-title: EnumField's error reporting to now indicate the field name in failure log
-type: fixed
-authors:
-- name: Lanny Ripple
-- name: Ann Addicks
-- name: Ishan Chattopadhyaya
-links:
-- name: SOLR-8984
-  url: https://issues.apache.org/jira/browse/SOLR-8984

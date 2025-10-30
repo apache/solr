@@ -1,8 +1,0 @@
-title: Clean up a few details left over from pluggable transient core and untangling
-  CoreDescriptor/CoreContainer references
-type: fixed
-authors:
-- name: Erick Erickson
-links:
-- name: SOLR-10910
-  url: https://issues.apache.org/jira/browse/SOLR-10910

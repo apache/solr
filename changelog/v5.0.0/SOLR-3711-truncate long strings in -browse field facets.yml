@@ -1,7 +1,0 @@
-title: Truncate long strings in /browse field facets
-type: other
-authors:
-- name: ehatcher
-links:
-- name: SOLR-3711
-  url: https://issues.apache.org/jira/browse/SOLR-3711

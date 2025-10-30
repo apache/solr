@@ -1,8 +1,0 @@
-title: There are a couple of bugs in the sync process when a leader goes down and
-  a new leader is elected.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3663
-  url: https://issues.apache.org/jira/browse/SOLR-3663

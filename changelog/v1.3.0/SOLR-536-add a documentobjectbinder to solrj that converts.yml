@@ -1,8 +1,0 @@
-title: Add a DocumentObjectBinder to solrj that converts Objects to and from SolrDocuments.
-type: added
-authors:
-- name: Noble Paul
-- name: ryan
-links:
-- name: SOLR-536
-  url: https://issues.apache.org/jira/browse/SOLR-536

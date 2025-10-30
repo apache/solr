@@ -1,8 +1,0 @@
-title: Binary fields, including trie-based numeric fields, caused null pointer exceptions
-  in the luke request handler.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-1563
-  url: https://issues.apache.org/jira/browse/SOLR-1563

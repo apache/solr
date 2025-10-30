@@ -1,8 +1,0 @@
-title: Don't fetch the PRS states while registering the collection watch
-type: other
-authors:
-- name: Hitesh Khamesra
-- name: Ishan Chattopadhyaya
-links:
-- name: SOLR-16451
-  url: https://issues.apache.org/jira/browse/SOLR-16451

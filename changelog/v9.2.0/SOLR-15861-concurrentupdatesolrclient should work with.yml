@@ -1,8 +1,0 @@
-title: ConcurrentUpdateSolrClient should work with ManagedExecutorService
-type: other
-authors:
-- name: Sammy Chu
-- name: Kevin Risden
-links:
-- name: SOLR-15861
-  url: https://issues.apache.org/jira/browse/SOLR-15861

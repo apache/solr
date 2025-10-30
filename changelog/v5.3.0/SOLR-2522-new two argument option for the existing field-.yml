@@ -1,9 +1,0 @@
-title: 'new two argument option for the existing field() function; picks the min/max
-  value of a docValues field to use as a ValueSource: "field(field_name,min)" and
-  "field(field_name,max)"'
-type: added
-authors:
-- name: hossman
-links:
-- name: SOLR-2522
-  url: https://issues.apache.org/jira/browse/SOLR-2522

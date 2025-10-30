@@ -1,7 +1,0 @@
-title: Upgrade scriptDepVersions
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16053
-  url: https://issues.apache.org/jira/browse/SOLR-16053

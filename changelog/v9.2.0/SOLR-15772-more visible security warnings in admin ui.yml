@@ -1,7 +1,0 @@
-title: More visible security warnings in Admin UI
-type: changed
-authors:
-- name: janhoy
-links:
-- name: SOLR-15772
-  url: https://issues.apache.org/jira/browse/SOLR-15772

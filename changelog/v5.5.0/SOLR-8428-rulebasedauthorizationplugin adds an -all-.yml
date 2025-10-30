@@ -1,7 +1,0 @@
-title: RuleBasedAuthorizationPlugin adds an 'all' permission
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-8428
-  url: https://issues.apache.org/jira/browse/SOLR-8428

@@ -1,7 +1,0 @@
-title: Refactor schema loading to not use XPath
-type: changed
-authors:
-- name: noble
-links:
-- name: SOLR-14827
-  url: https://issues.apache.org/jira/browse/SOLR-14827

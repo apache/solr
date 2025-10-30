@@ -1,7 +1,0 @@
-title: In Admin UI, do not attempt to highlight CSV output
-type: fixed
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-9624
-  url: https://issues.apache.org/jira/browse/SOLR-9624

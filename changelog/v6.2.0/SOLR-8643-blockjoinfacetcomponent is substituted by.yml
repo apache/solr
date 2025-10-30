@@ -1,8 +1,0 @@
-title: BlockJoinFacetComponent is substituted by BlockJoinFacetDocSetComponent. It
-  doesn't need to change solrconfig.xml
-type: other
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-8643
-  url: https://issues.apache.org/jira/browse/SOLR-8643

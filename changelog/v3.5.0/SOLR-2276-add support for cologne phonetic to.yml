@@ -1,8 +1,0 @@
-title: Add support for cologne phonetic to PhoneticFilterFactory.
-type: added
-authors:
-- name: Marc Pompl
-- name: rmuir
-links:
-- name: SOLR-2276
-  url: https://issues.apache.org/jira/browse/SOLR-2276

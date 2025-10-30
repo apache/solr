@@ -1,9 +1,0 @@
-title: Added payload support for term vectors. New "termPayloads" option for fields
-  / types in the schema, and "tv.payloads" param for the term vector component.
-type: added
-authors:
-- name: Mike McCandless
-- name: David Smiley
-links:
-- name: SOLR-5911
-  url: https://issues.apache.org/jira/browse/SOLR-5911

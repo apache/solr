@@ -1,7 +1,0 @@
-title: A new autoscaling/suggestions API end-point which gives autoscaling suggestions
-type: added
-authors:
-- name: noble
-links:
-- name: SOLR-11524
-  url: https://issues.apache.org/jira/browse/SOLR-11524

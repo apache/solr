@@ -1,9 +1,0 @@
-title: Fix document exclusion in mlt query parser in Cloud mode for schemas that have
-  non-"id" unique field
-type: fixed
-authors:
-- name: Erik Hatcher
-- name: Anshum Gupta
-links:
-- name: SOLR-8769
-  url: https://issues.apache.org/jira/browse/SOLR-8769

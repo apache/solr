@@ -1,8 +1,0 @@
-title: Added explicit media-type with UTF* charset to *.xsl files that don't already
-  have one.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-514
-  url: https://issues.apache.org/jira/browse/SOLR-514

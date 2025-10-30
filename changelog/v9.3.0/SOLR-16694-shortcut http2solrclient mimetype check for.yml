@@ -1,8 +1,0 @@
-title: Shortcut Http2SolrClient mimeType check for default response parse
-type: changed
-authors:
-- name: Tomás Fernández Löbbe
-- name: Alex Deparvu
-links:
-- name: SOLR-16694
-  url: https://issues.apache.org/jira/browse/SOLR-16694

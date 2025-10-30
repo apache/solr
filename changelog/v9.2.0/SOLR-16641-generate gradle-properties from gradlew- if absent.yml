@@ -1,7 +1,0 @@
-title: Generate gradle.properties from gradlew, if absent
-type: other
-authors:
-- name: Colvin Cowie
-links:
-- name: SOLR-16641
-  url: https://issues.apache.org/jira/browse/SOLR-16641

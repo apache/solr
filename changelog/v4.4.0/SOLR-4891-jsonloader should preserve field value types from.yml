@@ -1,7 +1,0 @@
-title: JsonLoader should preserve field value types from the JSON content stream.
-type: fixed
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-4891
-  url: https://issues.apache.org/jira/browse/SOLR-4891

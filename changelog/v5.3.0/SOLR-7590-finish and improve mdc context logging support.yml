@@ -1,7 +1,0 @@
-title: Finish and improve MDC context logging support.
-type: other
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-7590
-  url: https://issues.apache.org/jira/browse/SOLR-7590

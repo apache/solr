@@ -1,9 +1,0 @@
-title: Retry update requests sent by leaders to it's followers
-type: changed
-authors:
-- name: Varun Thacker
-- name: Mark Miller
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-11881
-  url: https://issues.apache.org/jira/browse/SOLR-11881

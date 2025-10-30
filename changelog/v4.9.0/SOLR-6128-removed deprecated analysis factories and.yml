@@ -1,7 +1,0 @@
-title: Removed deprecated analysis factories and fieldTypes from the example schema.xml
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-6128
-  url: https://issues.apache.org/jira/browse/SOLR-6128

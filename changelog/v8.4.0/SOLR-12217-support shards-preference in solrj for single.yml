@@ -1,9 +1,0 @@
-title: Support shards.preference in SolrJ for single shard collections. The parameter
-  is now used by the CloudSolrClient and Streaming Expressions.
-type: added
-authors:
-- name: Houston Putman
-- name: Tomas Fernandez-Lobbe
-links:
-- name: SOLR-12217
-  url: https://issues.apache.org/jira/browse/SOLR-12217

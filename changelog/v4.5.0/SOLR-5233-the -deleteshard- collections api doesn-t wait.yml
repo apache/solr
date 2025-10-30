@@ -1,9 +1,0 @@
-title: The "deleteshard" collections API doesn't wait for cluster state to update,
-  can fail if some nodes of the deleted shard were down and had incorrect logging.
-type: fixed
-authors:
-- name: Christine Poerschke
-- name: shalin
-links:
-- name: SOLR-5233
-  url: https://issues.apache.org/jira/browse/SOLR-5233

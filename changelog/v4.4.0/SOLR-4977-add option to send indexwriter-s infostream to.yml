@@ -1,8 +1,0 @@
-title: Add option to send IndexWriter's infostream to the logging system.
-type: added
-authors:
-- name: Ryan Ernst
-- name: Robert Muir
-links:
-- name: SOLR-4977
-  url: https://issues.apache.org/jira/browse/SOLR-4977

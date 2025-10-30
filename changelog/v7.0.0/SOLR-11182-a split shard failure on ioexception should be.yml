@@ -1,7 +1,0 @@
-title: A split shard failure on IOException should be logged
-type: fixed
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-11182
-  url: https://issues.apache.org/jira/browse/SOLR-11182

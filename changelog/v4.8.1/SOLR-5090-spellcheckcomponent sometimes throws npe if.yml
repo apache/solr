@@ -1,8 +1,0 @@
-title: SpellCheckComponent sometimes throws NPE if "spellcheck.alternativeTermCount"
-  is set to zero
-type: fixed
-authors:
-- name: James Dyer
-links:
-- name: SOLR-5090
-  url: https://issues.apache.org/jira/browse/SOLR-5090

@@ -1,8 +1,0 @@
-title: 'Solr QParsers may now be directly invoked in the lucene query syntax without
-  the _query_ magic field hack. Example: foo AND {!term f=myfield v=$qq}'
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-4093
-  url: https://issues.apache.org/jira/browse/SOLR-4093

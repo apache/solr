@@ -1,8 +1,0 @@
-title: Raw value DocTransformers (`[xml]`, `[json]`, `[geo w=GeoJSON]`) now work in
-  a distributed/SolrCloud context
-type: changed
-authors:
-- name: Michael Gibney
-links:
-- name: SOLR-9376
-  url: https://issues.apache.org/jira/browse/SOLR-9376

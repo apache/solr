@@ -1,9 +1,0 @@
-title: Add a test to assert that [elevated] DocTransfer works correctly with javabin
-  response format.
-type: other
-authors:
-- name: Ray
-- name: shalin
-links:
-- name: SOLR-4854
-  url: https://issues.apache.org/jira/browse/SOLR-4854

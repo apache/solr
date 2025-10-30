@@ -1,7 +1,0 @@
-title: Code refactored to have collection name, slice name in Replica, Slice
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-13992
-  url: https://issues.apache.org/jira/browse/SOLR-13992

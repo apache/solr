@@ -1,7 +1,0 @@
-title: Fix display positioning of multiple tokens at the same position in analysis.jsp
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-168
-  url: https://issues.apache.org/jira/browse/SOLR-168

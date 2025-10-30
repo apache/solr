@@ -1,8 +1,0 @@
-title: Atomic update on uniqueKey field itself causes duplicate document.
-type: fixed
-authors:
-- name: Eric Spencer
-- name: yonik
-links:
-- name: SOLR-3998
-  url: https://issues.apache.org/jira/browse/SOLR-3998

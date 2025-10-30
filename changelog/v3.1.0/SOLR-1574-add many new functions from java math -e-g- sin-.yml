@@ -1,7 +1,0 @@
-title: Add many new functions from java Math (e.g. sin, cos)
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-1574
-  url: https://issues.apache.org/jira/browse/SOLR-1574

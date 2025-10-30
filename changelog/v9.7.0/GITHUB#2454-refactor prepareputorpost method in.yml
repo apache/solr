@@ -1,7 +1,0 @@
-title: Refactor preparePutOrPost method in HttpJdkSolrClient
-type: other
-authors:
-- name: Andy Webb
-links:
-- name: GITHUB#2454
-  url: https://github.com/apache/solr/pull/2454

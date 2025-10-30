@@ -1,7 +1,0 @@
-title: /v2/ should not be an alias for /v2/collections
-type: fixed
-authors:
-- name: Cao Manh Dat
-links:
-- name: SOLR-10715
-  url: https://issues.apache.org/jira/browse/SOLR-10715

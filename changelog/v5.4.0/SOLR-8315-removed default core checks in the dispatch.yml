@@ -1,8 +1,0 @@
-title: Removed default core checks in the dispatch filter since we don't have a default
-  core anymore
-type: other
-authors:
-- name: Varun Thacker
-links:
-- name: SOLR-8315
-  url: https://issues.apache.org/jira/browse/SOLR-8315

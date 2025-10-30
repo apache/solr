@@ -1,9 +1,0 @@
-title: Add support for Leaky ReLU and TanH activations in contrib/ltr NeuralNetworkModel
-  class.
-type: added
-authors:
-- name: Kamuela Lau
-- name: Christine Poerschke
-links:
-- name: SOLR-12780
-  url: https://issues.apache.org/jira/browse/SOLR-12780

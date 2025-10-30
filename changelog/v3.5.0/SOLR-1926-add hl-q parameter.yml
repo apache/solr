@@ -1,7 +1,0 @@
-title: Add hl.q parameter.
-type: added
-authors:
-- name: koji
-links:
-- name: SOLR-1926
-  url: https://issues.apache.org/jira/browse/SOLR-1926

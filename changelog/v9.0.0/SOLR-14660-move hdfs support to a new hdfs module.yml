@@ -1,8 +1,0 @@
-title: Move HDFS support to a new HDFS module
-type: other
-authors:
-- name: Istvan Farkas
-- name: Kevin Risden
-links:
-- name: SOLR-14660
-  url: https://issues.apache.org/jira/browse/SOLR-14660

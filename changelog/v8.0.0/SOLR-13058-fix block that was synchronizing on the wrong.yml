@@ -1,7 +1,0 @@
-title: Fix block that was synchronizing on the wrong collection in OverseerTaskProcessor
-type: fixed
-authors:
-- name: Gus Heck
-links:
-- name: SOLR-13058
-  url: https://issues.apache.org/jira/browse/SOLR-13058

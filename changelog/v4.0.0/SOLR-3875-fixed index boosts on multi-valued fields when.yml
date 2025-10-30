@@ -1,7 +1,0 @@
-title: Fixed index boosts on multi-valued fields when docBoost is used
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-3875
-  url: https://issues.apache.org/jira/browse/SOLR-3875

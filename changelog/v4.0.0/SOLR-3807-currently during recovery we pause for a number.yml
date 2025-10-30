@@ -1,9 +1,0 @@
-title: Currently during recovery we pause for a number of seconds after waiting for
-  the leader to see a recovering state so that any previous updates will have finished
-  before our commit on the leader - we don't need this wait for peersync.
-type: changed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3807
-  url: https://issues.apache.org/jira/browse/SOLR-3807

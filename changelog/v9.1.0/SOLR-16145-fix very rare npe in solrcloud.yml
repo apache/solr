@@ -1,7 +1,0 @@
-title: Fix very rare NPE in SolrCloud rejoinOverseerElection.
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-16145
-  url: https://issues.apache.org/jira/browse/SOLR-16145

@@ -1,9 +1,0 @@
-title: SolrDispatchFilter's use of a "close shield" in tests should not be applied
-  to further servlet chain processing.
-type: other
-authors:
-- name: Jeff Miller
-- name: David Smiley
-links:
-- name: SOLR-11692
-  url: https://issues.apache.org/jira/browse/SOLR-11692

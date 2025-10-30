@@ -1,7 +1,0 @@
-title: TestSearchPerf no longer needs to duplicate SolrIndexSearcher.(NO_CHECK_QCACHE|NO_CHECK_FILTERCACHE)
-type: other
-authors:
-- name: Christine Poerschke
-links:
-- name: SOLR-8481
-  url: https://issues.apache.org/jira/browse/SOLR-8481

@@ -1,8 +1,0 @@
-title: fix false positives on range queries with ReversedWildcardFilterFactory
-type: fixed
-authors:
-- name: Yonik Seeley
-- name: Mikhail Khludnev
-links:
-- name: SOLR-9900
-  url: https://issues.apache.org/jira/browse/SOLR-9900

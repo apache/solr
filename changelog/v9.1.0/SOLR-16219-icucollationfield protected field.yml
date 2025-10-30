@@ -1,7 +1,0 @@
-title: ICUCollationField protected field IllegalAccessException from different classloader
-type: fixed
-authors:
-- name: Michael Gibney
-links:
-- name: SOLR-16219
-  url: https://issues.apache.org/jira/browse/SOLR-16219

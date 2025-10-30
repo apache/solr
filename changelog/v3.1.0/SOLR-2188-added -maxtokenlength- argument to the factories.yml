@@ -1,8 +1,0 @@
-title: Added "maxTokenLength" argument to the factories for ClassicTokenizer, StandardTokenizer,
-  and UAX29URLEmailTokenizer.
-type: added
-authors:
-- name: Steven Rowe
-links:
-- name: SOLR-2188
-  url: https://issues.apache.org/jira/browse/SOLR-2188

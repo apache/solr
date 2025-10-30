@@ -1,8 +1,0 @@
-title: Eliminate support for the abortOnConfigurationError option. It has never worked
-  very well, and in recent versions of Solr hasn't worked at all.
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-1846
-  url: https://issues.apache.org/jira/browse/SOLR-1846

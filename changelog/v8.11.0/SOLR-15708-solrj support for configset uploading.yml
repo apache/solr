@@ -1,8 +1,0 @@
-title: SolrJ support for ConfigSet uploading
-type: added
-authors:
-- name: ab
-- name: hossman
-links:
-- name: SOLR-15708
-  url: https://issues.apache.org/jira/browse/SOLR-15708

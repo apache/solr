@@ -1,9 +1,0 @@
-title: ReplicationHandler "numberToKeep" & "maxNumberOfBackups" parameters would keep
-  only 1 backup, even if more than 1 was specified
-type: fixed
-authors:
-- name: Neil Hooey
-- name: James Dyer
-links:
-- name: SOLR-3168
-  url: https://issues.apache.org/jira/browse/SOLR-3168

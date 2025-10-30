@@ -1,9 +1,0 @@
-title: In case of in-place updates, failure in leader to follower replica update request
-  now throws the follower replica in leader-initiated-recovery
-type: fixed
-authors:
-- name: Ishan Chattopadhyaya
-- name: Steve Rowe
-links:
-- name: SOLR-10261
-  url: https://issues.apache.org/jira/browse/SOLR-10261

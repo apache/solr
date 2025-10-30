@@ -1,8 +1,0 @@
-title: SurroundQParserPlugin highlighting tests
-type: other
-authors:
-- name: Ahmet Arslan
-- name: hossman
-links:
-- name: SOLR-3060
-  url: https://issues.apache.org/jira/browse/SOLR-3060

@@ -1,8 +1,0 @@
-title: Hadoop dependencies have been upgraded to Hadoop 3.2.0 from 2.7.2.
-type: other
-authors:
-- name: Mark Miller
-- name: Kevin Risden
-links:
-- name: SOLR-9515
-  url: https://issues.apache.org/jira/browse/SOLR-9515

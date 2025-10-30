@@ -1,7 +1,0 @@
-title: Modify collection API should support un-setting properties.
-type: added
-authors:
-- name: shalin
-links:
-- name: SOLR-12507
-  url: https://issues.apache.org/jira/browse/SOLR-12507

@@ -1,9 +1,0 @@
-title: ConcurrentUpdateSolrClient ignores the collection parameter in some methods.
-type: fixed
-authors:
-- name: Nicolas Gavalda
-- name: Jorge Luis Betancourt Gonzalez
-- name: Mark Miller
-links:
-- name: SOLR-7729
-  url: https://issues.apache.org/jira/browse/SOLR-7729

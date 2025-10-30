@@ -1,9 +1,0 @@
-title: Change to updateable documents to create the document if it doesn't already
-  exist. To assert that the document must exist, use the optimistic concurrency feature
-  by specifying a _version_ of 1.
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-139
-  url: https://issues.apache.org/jira/browse/SOLR-139

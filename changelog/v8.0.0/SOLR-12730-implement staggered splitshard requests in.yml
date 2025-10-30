@@ -1,7 +1,0 @@
-title: Implement staggered SPLITSHARD requests in IndexSizeTrigger.
-type: added
-authors:
-- name: ab
-links:
-- name: SOLR-12730
-  url: https://issues.apache.org/jira/browse/SOLR-12730

@@ -1,8 +1,0 @@
-title: WordBreakSolrSpellchecker will no longer add parenthesis in collations when
-  breaking words in non-boolean queries.
-type: fixed
-authors:
-- name: James Dyer
-links:
-- name: SOLR-12284
-  url: https://issues.apache.org/jira/browse/SOLR-12284

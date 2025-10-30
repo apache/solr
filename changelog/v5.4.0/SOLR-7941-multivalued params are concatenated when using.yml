@@ -1,7 +1,0 @@
-title: multivalued params are concatenated when using config API
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-7941
-  url: https://issues.apache.org/jira/browse/SOLR-7941

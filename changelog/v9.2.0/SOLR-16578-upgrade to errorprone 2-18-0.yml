@@ -1,7 +1,0 @@
-title: Upgrade to errorprone 2.18.0
-type: dependency_update
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16578
-  url: https://issues.apache.org/jira/browse/SOLR-16578

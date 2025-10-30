@@ -1,7 +1,0 @@
-title: Better randomization of MergePolicy in Solr tests
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-4951
-  url: https://issues.apache.org/jira/browse/SOLR-4951

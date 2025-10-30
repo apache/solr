@@ -1,9 +1,0 @@
-title: 'Removed three core level admin API endpoints because they are already registered
-  at the node level where they really belong: /admin/threads, /admin/properties, /admin/logging'
-type: other
-authors:
-- name: Nazerke Seidan
-- name: David Smiley
-links:
-- name: SOLR-15124
-  url: https://issues.apache.org/jira/browse/SOLR-15124

@@ -1,8 +1,0 @@
-title: Support handling OPTIONS request for Hadoop authentication filter
-type: fixed
-authors:
-- name: Peter Cseh
-- name: Kevin Risden
-links:
-- name: SOLR-11554
-  url: https://issues.apache.org/jira/browse/SOLR-11554

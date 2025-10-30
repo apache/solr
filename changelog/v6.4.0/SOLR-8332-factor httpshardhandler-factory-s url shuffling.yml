@@ -1,9 +1,0 @@
-title: Factor HttpShardHandler[Factory]'s url shuffling out into a ReplicaListTransformer
-  class.
-type: other
-authors:
-- name: Christine Poerschke
-- name: Noble Paul
-links:
-- name: SOLR-8332
-  url: https://issues.apache.org/jira/browse/SOLR-8332

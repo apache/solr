@@ -1,8 +1,0 @@
-title: Merge up Solr MapReduce contrib code to latest external changes. Includes a
-  few minor bug fixes.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5824
-  url: https://issues.apache.org/jira/browse/SOLR-5824

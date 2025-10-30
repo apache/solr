@@ -1,9 +1,0 @@
-title: Converted ValueSource.ValueSourceSortField over to new rewriteable Lucene SortFields.
-  ValueSourceSortField instances must be rewritten before they can be used. This is
-  done by SolrIndexSearcher when necessary.
-type: added
-authors:
-- name: Chris Male
-links:
-- name: SOLR-2533
-  url: https://issues.apache.org/jira/browse/SOLR-2533

@@ -1,7 +1,0 @@
-title: Allow tagging and exclusion of main query for faceting.
-type: added
-authors:
-- name: yonik
-links:
-- name: SOLR-2325
-  url: https://issues.apache.org/jira/browse/SOLR-2325

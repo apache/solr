@@ -1,7 +1,0 @@
-title: equals method should compare this and other of DocList in DocSetBase
-type: fixed
-authors:
-- name: koji
-links:
-- name: SOLR-1207
-  url: https://issues.apache.org/jira/browse/SOLR-1207

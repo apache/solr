@@ -1,9 +1,0 @@
-title: Relocate (BinaryResponse|JSON|Smile)Writer tests to org.apache.solr.response
-  which is the package of the classes they test.
-type: other
-authors:
-- name: Jonny Marks
-- name: Christine Poerschke
-links:
-- name: SOLR-9538
-  url: https://issues.apache.org/jira/browse/SOLR-9538

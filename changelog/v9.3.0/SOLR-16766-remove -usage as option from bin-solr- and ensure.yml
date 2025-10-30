@@ -1,8 +1,0 @@
-title: Remove -usage as option from bin/solr, and ensure both -help and -h work.
-type: changed
-authors:
-- name: Bence Szabo
-- name: Eric Pugh
-links:
-- name: SOLR-16766
-  url: https://issues.apache.org/jira/browse/SOLR-16766

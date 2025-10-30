@@ -1,9 +1,0 @@
-title: Limit the number of concurrent expensive core admin operations by running them
-  in a dedicated thread pool. Backup, Restore and Split are expensive operations.
-type: changed
-authors:
-- name: Pierre Salagnac
-- name: David Smiley
-links:
-- name: SOLR-16879
-  url: https://issues.apache.org/jira/browse/SOLR-16879

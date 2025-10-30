@@ -1,8 +1,0 @@
-title: Dataimport of CLOB fields fails when getCharacterStream() is defined in a superclass.
-type: fixed
-authors:
-- name: Gunnar Gauslaa Bergem
-- name: rmuir
-links:
-- name: SOLR-1794
-  url: https://issues.apache.org/jira/browse/SOLR-1794

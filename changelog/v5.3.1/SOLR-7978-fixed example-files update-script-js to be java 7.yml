@@ -1,7 +1,0 @@
-title: Fixed example/files update-script.js to be Java 7 and 8 compatible.
-type: fixed
-authors:
-- name: Erik Hatcher
-links:
-- name: SOLR-7978
-  url: https://issues.apache.org/jira/browse/SOLR-7978

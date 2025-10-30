@@ -1,9 +1,0 @@
-title: Creating backup snapshot results in null pointer exception.
-type: fixed
-authors:
-- name: Ryan Hesson
-- name: Varun Thacker
-- name: shalin
-links:
-- name: SOLR-6775
-  url: https://issues.apache.org/jira/browse/SOLR-6775

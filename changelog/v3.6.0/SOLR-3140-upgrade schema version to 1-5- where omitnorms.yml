@@ -1,8 +1,0 @@
-title: Upgrade schema version to 1.5, where omitNorms defaults to "true" for all primitive
-  (non-analyzed) field types such as int, float, date, bool, string..
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-3140
-  url: https://issues.apache.org/jira/browse/SOLR-3140

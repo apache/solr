@@ -1,8 +1,0 @@
-title: Better errors when PatternTokenizerFactory is configured with an invalid pattern,
-  and include the 'name' whenever possible in plugin init error messages.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-3446
-  url: https://issues.apache.org/jira/browse/SOLR-3446

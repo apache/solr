@@ -1,8 +1,0 @@
-title: JWTAuthPlugin now supports separate config for what SSL certs to trust when
-  talking to IdPs
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-15423
-  url: https://issues.apache.org/jira/browse/SOLR-15423

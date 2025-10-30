@@ -1,9 +1,0 @@
-title: 'New parameters for input: stream.contentType for specifying or overriding
-  the content type of input, and stream.file for reading local files.'
-type: added
-authors:
-- name: Ryan McKinley
-- name: yonik
-links:
-- name: SOLR-197
-  url: https://issues.apache.org/jira/browse/SOLR-197

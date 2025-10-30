@@ -1,7 +1,0 @@
-title: Improve HDFS tests
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-13330
-  url: https://issues.apache.org/jira/browse/SOLR-13330

@@ -1,8 +1,0 @@
-title: HTMLStripReader tokenizers now preserve correct source offsets for highlighting.
-type: fixed
-authors:
-- name: Grant Ingersoll
-- name: yonik
-links:
-- name: SOLR-42
-  url: https://issues.apache.org/jira/browse/SOLR-42

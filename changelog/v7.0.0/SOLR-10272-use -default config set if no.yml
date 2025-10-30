@@ -1,7 +1,0 @@
-title: Use _default config set if no collection.configName is specified with CREATE
-type: added
-authors:
-- name: Ishan Chattopadhyaya
-links:
-- name: SOLR-10272
-  url: https://issues.apache.org/jira/browse/SOLR-10272

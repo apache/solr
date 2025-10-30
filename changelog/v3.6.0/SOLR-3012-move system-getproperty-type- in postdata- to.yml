@@ -1,9 +1,0 @@
-title: Move System.getProperty("type") in postData() to main() and add type argument
-  so that the client applications of SimplePostTool can set content type via method
-  argument.
-type: changed
-authors:
-- name: koji
-links:
-- name: SOLR-3012
-  url: https://issues.apache.org/jira/browse/SOLR-3012

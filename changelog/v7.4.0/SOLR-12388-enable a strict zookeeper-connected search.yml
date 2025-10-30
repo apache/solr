@@ -1,9 +1,0 @@
-title: Enable a strict ZooKeeper-connected search request mode, in which search requests
-  will fail when the coordinating node can't communicate with ZooKeeper, by setting
-  the "shards.tolerant" param to "requireZkConnected".
-type: added
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-12388
-  url: https://issues.apache.org/jira/browse/SOLR-12388

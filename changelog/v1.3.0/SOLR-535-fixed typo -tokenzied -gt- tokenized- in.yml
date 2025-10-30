@@ -1,8 +1,0 @@
-title: Fixed typo (Tokenzied -&gt; Tokenized) in schema.jsp
-type: fixed
-authors:
-- name: Thomas Peuss
-- name: billa
-links:
-- name: SOLR-535
-  url: https://issues.apache.org/jira/browse/SOLR-535

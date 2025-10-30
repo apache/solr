@@ -1,8 +1,0 @@
-title: Possible deadlock around SolrCoreState update lock.
-type: fixed
-authors:
-- name: Erick Erickson
-- name: Mark Miller
-links:
-- name: SOLR-4505
-  url: https://issues.apache.org/jira/browse/SOLR-4505

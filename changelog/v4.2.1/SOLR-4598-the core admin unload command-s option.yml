@@ -1,8 +1,0 @@
-title: The Core Admin unload command's option 'deleteDataDir', should use the DirectoryFactory
-  API to remove the data dir.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4598
-  url: https://issues.apache.org/jira/browse/SOLR-4598

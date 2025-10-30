@@ -1,9 +1,0 @@
-title: All shipped configurations still have `maxBooleanClauses` default to 1024.
-  But if the `solr.max.booleanClauses` sysprop is specified, that will override the
-  1024 default. This enables users to update this property across the board more easily.
-type: changed
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-13090
-  url: https://issues.apache.org/jira/browse/SOLR-13090

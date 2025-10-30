@@ -1,7 +1,0 @@
-title: ReplicationHandler does not destroy all of it's created SnapPullers.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-6793
-  url: https://issues.apache.org/jira/browse/SOLR-6793

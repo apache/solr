@@ -1,7 +1,0 @@
-title: Implement Connection.setReadOnly, Statement.set/getFetchSize, ResultSet.getType
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-8810
-  url: https://issues.apache.org/jira/browse/SOLR-8810

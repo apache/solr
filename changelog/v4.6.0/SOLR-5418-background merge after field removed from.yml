@@ -1,9 +1,0 @@
-title: Background merge after field removed from solr.xml causes error.
-type: fixed
-authors:
-- name: Reported on user's list
-- name: Robert M's patch
-- name: Erick Erickson
-links:
-- name: SOLR-5418
-  url: https://issues.apache.org/jira/browse/SOLR-5418

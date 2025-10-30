@@ -1,8 +1,0 @@
-title: No need to log exceptions (as warn) generated when creating MBean stats if
-  the core is shutting down
-type: other
-authors:
-- name: Timothy Potter
-links:
-- name: SOLR-6918
-  url: https://issues.apache.org/jira/browse/SOLR-6918

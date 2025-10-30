@@ -1,9 +1,0 @@
-title: DistributedUpdateProcess processCommit/deleteByQuery call finish on DUP and
-  SolrCmdDistributor, which violates the lifecycle and can cause bugs.
-type: fixed
-authors:
-- name: hossman
-- name: Mark Miller
-links:
-- name: SOLR-8633
-  url: https://issues.apache.org/jira/browse/SOLR-8633

@@ -1,7 +1,0 @@
-title: NPE in tvrh if no field is specified and document doesn't contain any fields
-  with term vectors
-type: fixed
-authors: []
-links:
-- name: SOLR-11770
-  url: https://issues.apache.org/jira/browse/SOLR-11770

@@ -1,8 +1,0 @@
-title: dataimporter.functions.escapeSql() does not escape backslash character
-type: fixed
-authors:
-- name: Sean Timm
-- name: noble
-links:
-- name: SOLR-1767
-  url: https://issues.apache.org/jira/browse/SOLR-1767

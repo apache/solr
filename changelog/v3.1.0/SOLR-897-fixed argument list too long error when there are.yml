@@ -1,8 +1,0 @@
-title: Fixed Argument list too long error when there are lots of snapshots/backups
-type: fixed
-authors:
-- name: Dan Rosher
-- name: billa
-links:
-- name: SOLR-897
-  url: https://issues.apache.org/jira/browse/SOLR-897

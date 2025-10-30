@@ -1,7 +1,0 @@
-title: Improve TestIntervalFacets.testRandom
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-11071
-  url: https://issues.apache.org/jira/browse/SOLR-11071

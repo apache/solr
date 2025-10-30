@@ -1,8 +1,0 @@
-title: Fixed TermVectorComponent to work with distributed search
-type: fixed
-authors:
-- name: Hang Xie
-- name: hossman
-links:
-- name: SOLR-3229
-  url: https://issues.apache.org/jira/browse/SOLR-3229

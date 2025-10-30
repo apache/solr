@@ -1,8 +1,0 @@
-title: You cannot delete a collection fully from ZooKeeper unless all nodes are up
-  and functioning correctly.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-4710
-  url: https://issues.apache.org/jira/browse/SOLR-4710

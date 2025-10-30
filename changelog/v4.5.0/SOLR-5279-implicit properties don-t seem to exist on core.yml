@@ -1,9 +1,0 @@
-title: Implicit properties don't seem to exist on core RELOAD
-type: fixed
-authors:
-- name: elyograg
-- name: hossman
-- name: Steve Rowe
-links:
-- name: SOLR-5279
-  url: https://issues.apache.org/jira/browse/SOLR-5279

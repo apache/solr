@@ -1,8 +1,0 @@
-title: Add CharFilter so that characters can be filtered (e.g. character normalization)
-  before Tokenizer/TokenFilters.
-type: added
-authors:
-- name: koji
-links:
-- name: SOLR-822
-  url: https://issues.apache.org/jira/browse/SOLR-822

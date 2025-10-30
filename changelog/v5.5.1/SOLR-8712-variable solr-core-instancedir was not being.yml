@@ -1,9 +1,0 @@
-title: Variable solr.core.instanceDir was not being resolved
-type: fixed
-authors:
-- name: "Kristine\n  Jetzke"
-- name: Shawn Heisey
-- name: Alan Woodward
-links:
-- name: SOLR-8712
-  url: https://issues.apache.org/jira/browse/SOLR-8712

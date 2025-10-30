@@ -1,7 +1,0 @@
-title: Allow the monteCarlo Stream Evaluator to support variables
-type: added
-authors:
-- name: Joel Bernstein
-links:
-- name: SOLR-12158
-  url: https://issues.apache.org/jira/browse/SOLR-12158

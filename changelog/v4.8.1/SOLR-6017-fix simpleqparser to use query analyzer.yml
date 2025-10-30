@@ -1,7 +1,0 @@
-title: Fix SimpleQParser to use query analyzer
-type: fixed
-authors:
-- name: Ryan Ernst
-links:
-- name: SOLR-6017
-  url: https://issues.apache.org/jira/browse/SOLR-6017

@@ -1,7 +1,0 @@
-title: Upgrade Apache Tika to 1.28.4
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16141
-  url: https://issues.apache.org/jira/browse/SOLR-16141

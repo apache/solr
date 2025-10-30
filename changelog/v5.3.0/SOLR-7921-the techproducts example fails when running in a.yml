@@ -1,8 +1,0 @@
-title: The techproducts example fails when running in a directory that contains spaces.
-type: fixed
-authors:
-- name: Ishan Chattopadhyaya
-- name: Timothy Potter
-links:
-- name: SOLR-7921
-  url: https://issues.apache.org/jira/browse/SOLR-7921

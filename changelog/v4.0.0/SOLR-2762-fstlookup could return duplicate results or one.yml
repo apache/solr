@@ -1,8 +1,0 @@
-title: FSTLookup could return duplicate results or one results less than requested.
-type: fixed
-authors:
-- name: David Smiley
-- name: Dawid Weiss
-links:
-- name: SOLR-2762
-  url: https://issues.apache.org/jira/browse/SOLR-2762

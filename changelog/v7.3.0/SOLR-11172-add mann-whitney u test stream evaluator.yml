@@ -1,8 +1,0 @@
-title: Add Mann-Whitney U test Stream Evaluator
-type: added
-authors:
-- name: Mathew Skaria
-- name: Joel Bernstein
-links:
-- name: SOLR-11172
-  url: https://issues.apache.org/jira/browse/SOLR-11172

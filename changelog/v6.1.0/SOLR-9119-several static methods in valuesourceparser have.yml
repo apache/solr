@@ -1,7 +1,0 @@
-title: several static methods in ValueSourceParser have been made private
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-9119
-  url: https://issues.apache.org/jira/browse/SOLR-9119

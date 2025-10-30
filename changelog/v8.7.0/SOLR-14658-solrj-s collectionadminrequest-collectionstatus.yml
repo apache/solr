@@ -1,8 +1,0 @@
-title: SolrJ's CollectionAdminRequest.collectionStatus(collection) would internally
-  get all collection statuses instead of just the specified collection.
-type: changed
-authors:
-- name: Andy Vuong
-links:
-- name: SOLR-14658
-  url: https://issues.apache.org/jira/browse/SOLR-14658

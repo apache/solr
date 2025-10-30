@@ -1,7 +1,0 @@
-title: Automated release signing process.
-type: other
-authors:
-- name: gsingers
-links:
-- name: SOLR-1522
-  url: https://issues.apache.org/jira/browse/SOLR-1522

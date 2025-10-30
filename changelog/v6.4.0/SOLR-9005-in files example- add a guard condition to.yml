@@ -1,7 +1,0 @@
-title: In files example, add a guard condition to javascript URP script
-type: fixed
-authors:
-- name: Alexandre Rafalovitch
-links:
-- name: SOLR-9005
-  url: https://issues.apache.org/jira/browse/SOLR-9005

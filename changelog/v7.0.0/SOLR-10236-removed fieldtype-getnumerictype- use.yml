@@ -1,7 +1,0 @@
-title: Removed FieldType.getNumericType(). Use getNumberType() instead.
-type: other
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-10236
-  url: https://issues.apache.org/jira/browse/SOLR-10236

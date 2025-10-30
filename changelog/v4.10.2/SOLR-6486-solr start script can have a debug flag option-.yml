@@ -1,8 +1,0 @@
-title: solr start script can have a debug flag option; use -a to set arbitrary options
-type: other
-authors:
-- name: Noble Paul
-- name: Timothy Potter
-links:
-- name: SOLR-6486
-  url: https://issues.apache.org/jira/browse/SOLR-6486

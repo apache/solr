@@ -1,8 +1,0 @@
-title: Fixed misleading error message in HdfsDirectoryFactory
-type: other
-authors:
-- name: Andras Salamon
-- name: janhoy
-links:
-- name: SOLR-15280
-  url: https://issues.apache.org/jira/browse/SOLR-15280

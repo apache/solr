@@ -1,7 +1,0 @@
-title: Fixed NPE when paginating MatchAllDocs with non-zero start offset, like q=*:*&start=10
-type: fixed
-authors:
-- name: Michael Gibney
-links:
-- name: SOLR-16585
-  url: https://issues.apache.org/jira/browse/SOLR-16585

@@ -1,7 +1,0 @@
-title: 'Schema API: Add REST support for adding dynamic fields to the schema.'
-type: added
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-5097
-  url: https://issues.apache.org/jira/browse/SOLR-5097

@@ -1,8 +1,0 @@
-title: Dont ignore 'mm' localparam on edismax queries using operators
-type: fixed
-authors:
-- name: Yuriy Koval
-- name: Jason Gerlowski
-links:
-- name: SOLR-14517
-  url: https://issues.apache.org/jira/browse/SOLR-14517

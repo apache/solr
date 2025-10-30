@@ -1,8 +1,0 @@
-title: Configurable Content-Type headers for PHPResponseWriters and PHPSerializedResponseWriter.
-type: added
-authors:
-- name: Dominik Siebel
-- name: Mark Miller
-links:
-- name: SOLR-4110
-  url: https://issues.apache.org/jira/browse/SOLR-4110

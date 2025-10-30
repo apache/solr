@@ -1,8 +1,0 @@
-title: Fix null pointer exception for the JSON response writer based formats when
-  nl.json=arrarr with null keys.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-898
-  url: https://issues.apache.org/jira/browse/SOLR-898

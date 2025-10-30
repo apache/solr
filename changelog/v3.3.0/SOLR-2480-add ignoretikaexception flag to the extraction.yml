@@ -1,9 +1,0 @@
-title: Add ignoreTikaException flag to the extraction request handler so that users
-  can ignore TikaException but index meta data.
-type: added
-authors:
-- name: Shinichiro Abe
-- name: koji
-links:
-- name: SOLR-2480
-  url: https://issues.apache.org/jira/browse/SOLR-2480

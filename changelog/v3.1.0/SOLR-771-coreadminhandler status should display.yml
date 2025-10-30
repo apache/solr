@@ -1,9 +1,0 @@
-title: CoreAdminHandler STATUS should display 'normalized' paths
-type: fixed
-authors:
-- name: koji
-- name: hossman
-- name: shalin
-links:
-- name: SOLR-771
-  url: https://issues.apache.org/jira/browse/SOLR-771

@@ -1,8 +1,0 @@
-title: Refactor HttpShardHandlerFactory so load-balancing logic can be customized.
-type: other
-authors:
-- name: Ryan Ernst
-- name: Robert Muir
-links:
-- name: SOLR-4544
-  url: https://issues.apache.org/jira/browse/SOLR-4544

@@ -1,8 +1,0 @@
-title: Sharing non thread safe WeakHashMap across thread can cause problems.
-type: fixed
-authors:
-- name: Bojan Smid
-- name: Mark Miller
-links:
-- name: SOLR-5691
-  url: https://issues.apache.org/jira/browse/SOLR-5691

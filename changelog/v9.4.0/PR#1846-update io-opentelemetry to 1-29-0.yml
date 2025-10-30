@@ -1,7 +1,0 @@
-title: Update io.opentelemetry to 1.29.0
-type: dependency_update
-authors:
-- name: Alex Deparvu
-links:
-- name: PR#1846
-  url: https://github.com/apache/solr/pull/1846

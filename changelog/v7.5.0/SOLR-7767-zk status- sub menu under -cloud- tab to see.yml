@@ -1,7 +1,0 @@
-title: '"ZK Status" sub menu under "Cloud" tab to see status of zookeeper ensemble'
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-7767
-  url: https://issues.apache.org/jira/browse/SOLR-7767

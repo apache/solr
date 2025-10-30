@@ -1,7 +1,0 @@
-title: Fixing the entropy warning threshold using scaling based on poolsize
-type: fixed
-authors:
-- name: Raghavan Muthuregunathan
-links:
-- name: SOLR-16644
-  url: https://issues.apache.org/jira/browse/SOLR-16644

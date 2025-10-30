@@ -1,7 +1,0 @@
-title: New parameter -u &lt;user:pass&gt; in bin/post to pass basicauth credentials
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-9662
-  url: https://issues.apache.org/jira/browse/SOLR-9662

@@ -1,9 +1,0 @@
-title: The hdfs write cache can cause a reader to see a corrupted state. It now defaults
-  to off, and if you were using solr.hdfs.blockcache.write.enabled explicitly, you
-  should set it to false.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-5907
-  url: https://issues.apache.org/jira/browse/SOLR-5907

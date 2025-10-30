@@ -1,7 +1,0 @@
-title: Better alignment of Admin UI graph
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-17152
-  url: https://issues.apache.org/jira/browse/SOLR-17152

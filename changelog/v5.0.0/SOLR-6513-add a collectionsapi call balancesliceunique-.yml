@@ -1,8 +1,0 @@
-title: Add a collectionsAPI call BALANCESLICEUNIQUE. Allows the even distribution
-  of custom replica properties across nodes making up a collection, at most one node
-  per slice will have the property.
-type: added
-authors: []
-links:
-- name: SOLR-6513
-  url: https://issues.apache.org/jira/browse/SOLR-6513

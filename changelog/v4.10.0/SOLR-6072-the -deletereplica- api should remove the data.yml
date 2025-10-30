@@ -1,7 +1,0 @@
-title: The 'deletereplica' API should remove the data and instance directory by default.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-6072
-  url: https://issues.apache.org/jira/browse/SOLR-6072

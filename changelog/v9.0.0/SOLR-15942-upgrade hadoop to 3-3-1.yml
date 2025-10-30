@@ -1,7 +1,0 @@
-title: Upgrade Hadoop to 3.3.1
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-15942
-  url: https://issues.apache.org/jira/browse/SOLR-15942

@@ -1,7 +1,0 @@
-title: Added accessor methods to Lucene based spell checkers
-type: added
-authors:
-- name: gsingers
-links:
-- name: SOLR-679
-  url: https://issues.apache.org/jira/browse/SOLR-679

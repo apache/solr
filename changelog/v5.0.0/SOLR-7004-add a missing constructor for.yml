@@ -1,8 +1,0 @@
-title: Add a missing constructor for CollectionAdminRequest.BalanceShardUnique that
-  sets the collection action.
-type: fixed
-authors:
-- name: Anshum Gupta
-links:
-- name: SOLR-7004
-  url: https://issues.apache.org/jira/browse/SOLR-7004

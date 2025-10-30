@@ -1,9 +1,0 @@
-title: Race condition could trigger error on concurrent SizeLimitedDistributedMap
-  cleanup
-type: fixed
-authors:
-- name: Patson Luk
-- name: noble
-links:
-- name: SOLR-16412
-  url: https://issues.apache.org/jira/browse/SOLR-16412

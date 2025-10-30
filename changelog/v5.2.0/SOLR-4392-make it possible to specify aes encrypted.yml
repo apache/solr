@@ -1,7 +1,0 @@
-title: Make it possible to specify AES encrypted password in dataconfig.xml
-type: added
-authors:
-- name: Noble Paul
-links:
-- name: SOLR-4392
-  url: https://issues.apache.org/jira/browse/SOLR-4392

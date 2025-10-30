@@ -1,7 +1,0 @@
-title: '"mergeindexes" should not use UninvertingReader (FieldCache).'
-type: other
-authors:
-- name: David Smiley
-links:
-- name: SOLR-15356
-  url: https://issues.apache.org/jira/browse/SOLR-15356

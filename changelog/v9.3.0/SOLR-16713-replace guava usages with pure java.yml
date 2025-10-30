@@ -1,7 +1,0 @@
-title: Replace Guava usages with pure Java
-type: other
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-16713
-  url: https://issues.apache.org/jira/browse/SOLR-16713

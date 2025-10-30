@@ -1,8 +1,0 @@
-title: Optimize using cache for DistributedQueue in case of single-consumer
-type: changed
-authors:
-- name: Cao Manh Dat
-- name: Scott Blum
-links:
-- name: SOLR-10619
-  url: https://issues.apache.org/jira/browse/SOLR-10619

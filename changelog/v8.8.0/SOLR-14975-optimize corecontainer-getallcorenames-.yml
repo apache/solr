@@ -1,7 +1,0 @@
-title: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors.
-type: changed
-authors:
-- name: Bruno Roustant
-links:
-- name: SOLR-14975
-  url: https://issues.apache.org/jira/browse/SOLR-14975

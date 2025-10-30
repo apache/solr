@@ -1,7 +1,0 @@
-title: fixed CSVResponseWriter to respect globs in the 'fl' param
-type: fixed
-authors:
-- name: Keith Fligg
-links:
-- name: SOLR-3370
-  url: https://issues.apache.org/jira/browse/SOLR-3370

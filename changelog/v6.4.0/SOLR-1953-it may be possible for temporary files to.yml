@@ -1,9 +1,0 @@
-title: It may be possible for temporary files to accumulate until the Solr process
-  is shut down.
-type: fixed
-authors:
-- name: Karl Wright
-- name: Mark Miller
-links:
-- name: SOLR-1953
-  url: https://issues.apache.org/jira/browse/SOLR-1953

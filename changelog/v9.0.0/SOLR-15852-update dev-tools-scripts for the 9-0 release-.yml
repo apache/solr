@@ -1,7 +1,0 @@
-title: Update dev-tools/scripts for the 9.0 release, including releaseWizard
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-15852
-  url: https://issues.apache.org/jira/browse/SOLR-15852

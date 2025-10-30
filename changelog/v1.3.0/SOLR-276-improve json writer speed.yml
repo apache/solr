@@ -1,7 +1,0 @@
-title: improve JSON writer speed.
-type: changed
-authors:
-- name: yonik
-links:
-- name: SOLR-276
-  url: https://issues.apache.org/jira/browse/SOLR-276

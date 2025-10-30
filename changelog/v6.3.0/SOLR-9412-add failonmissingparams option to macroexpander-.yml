@@ -1,8 +1,0 @@
-title: Add failOnMissingParams option to MacroExpander, add TestMacroExpander class.
-type: other
-authors:
-- name: Jon Dorando
-- name: Christine Poerschke
-links:
-- name: SOLR-9412
-  url: https://issues.apache.org/jira/browse/SOLR-9412

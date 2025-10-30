@@ -1,7 +1,0 @@
-title: Scoring for query time join
-type: added
-authors:
-- name: Mikhail Khludnev
-links:
-- name: SOLR-6234
-  url: https://issues.apache.org/jira/browse/SOLR-6234

@@ -1,8 +1,0 @@
-title: 'DIH: Check for abort more frequently during delta-imports.'
-type: changed
-authors:
-- name: Marc Sturlese
-- name: shalin
-links:
-- name: SOLR-1004
-  url: https://issues.apache.org/jira/browse/SOLR-1004

@@ -1,8 +1,0 @@
-title: Support exposing Solr statistics through JMX
-type: added
-authors:
-- name: Sharad Agrawal
-- name: shalin
-links:
-- name: SOLR-256
-  url: https://issues.apache.org/jira/browse/SOLR-256

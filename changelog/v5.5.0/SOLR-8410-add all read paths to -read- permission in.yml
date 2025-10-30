@@ -1,7 +1,0 @@
-title: Add all read paths to 'read' permission in RuleBasedAuthorizationPlugin
-type: other
-authors:
-- name: noble
-links:
-- name: SOLR-8410
-  url: https://issues.apache.org/jira/browse/SOLR-8410

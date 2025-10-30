@@ -1,7 +1,0 @@
-title: Autoscaling suggestions fail randomly with sorting
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-12358
-  url: https://issues.apache.org/jira/browse/SOLR-12358

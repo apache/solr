@@ -1,8 +1,0 @@
-title: Fix instanceof check in ConstDoubleSource.equals
-type: fixed
-authors:
-- name: Pushkar Raste
-- name: Christine Poerschke
-links:
-- name: SOLR-10083
-  url: https://issues.apache.org/jira/browse/SOLR-10083

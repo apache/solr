@@ -1,7 +1,0 @@
-title: UpdateShardHandler was not correctly setting max total connections on the HttpClient.
-type: fixed
-authors:
-- name: Shawn Heisey
-links:
-- name: SOLR-5741
-  url: https://issues.apache.org/jira/browse/SOLR-5741

@@ -1,9 +1,0 @@
-title: Adding support for document updates in binary format and corresponding support
-  in Solrj client.
-type: added
-authors:
-- name: Noble Paul
-- name: shalin
-links:
-- name: SOLR-865
-  url: https://issues.apache.org/jira/browse/SOLR-865

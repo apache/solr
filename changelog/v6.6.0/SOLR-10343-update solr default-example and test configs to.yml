@@ -1,7 +1,0 @@
-title: Update Solr default/example and test configs to use SynonymGraphFilterFactory.
-type: other
-authors:
-- name: Steve Rowe
-links:
-- name: SOLR-10343
-  url: https://issues.apache.org/jira/browse/SOLR-10343

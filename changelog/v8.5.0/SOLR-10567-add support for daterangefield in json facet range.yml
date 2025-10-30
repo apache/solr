@@ -1,8 +1,0 @@
-title: Add Support for DateRangeField in JSON Facet range
-type: changed
-authors:
-- name: Stephen Weiss
-- name: Munendra S N
-links:
-- name: SOLR-10567
-  url: https://issues.apache.org/jira/browse/SOLR-10567

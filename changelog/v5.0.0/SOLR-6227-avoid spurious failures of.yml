@@ -1,8 +1,0 @@
-title: Avoid spurious failures of ChaosMonkeySafeLeaderTest by ensuring there's at
-  least one jetty to kill.
-type: other
-authors:
-- name: shalin
-links:
-- name: SOLR-6227
-  url: https://issues.apache.org/jira/browse/SOLR-6227

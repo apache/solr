@@ -1,7 +1,0 @@
-title: Update ZooKeeper to 3.3.6 for a variety of bug fixes.
-type: fixed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-3639
-  url: https://issues.apache.org/jira/browse/SOLR-3639

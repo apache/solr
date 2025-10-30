@@ -1,8 +1,0 @@
-title: Refactored DIH internal data classes. All entities in data-config.xml must
-  have a name
-type: other
-authors:
-- name: James Dyer
-links:
-- name: SOLR-3422
-  url: https://issues.apache.org/jira/browse/SOLR-3422

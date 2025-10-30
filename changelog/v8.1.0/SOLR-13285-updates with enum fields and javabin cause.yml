@@ -1,7 +1,0 @@
-title: Updates with enum fields and javabin cause ClassCastException
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-13285
-  url: https://issues.apache.org/jira/browse/SOLR-13285

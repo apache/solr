@@ -1,8 +1,0 @@
-title: DIH-TikaEntityprocessor, create lat-lon field from Metadata
-type: added
-authors:
-- name: Tim Allison
-- name: Noble Paul
-links:
-- name: SOLR-7231
-  url: https://issues.apache.org/jira/browse/SOLR-7231

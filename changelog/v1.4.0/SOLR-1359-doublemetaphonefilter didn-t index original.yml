@@ -1,8 +1,0 @@
-title: DoubleMetaphoneFilter didn't index original tokens if there was no alternative,
-  and could incorrectly skip or reorder tokens.
-type: fixed
-authors:
-- name: yonik
-links:
-- name: SOLR-1359
-  url: https://issues.apache.org/jira/browse/SOLR-1359

@@ -1,8 +1,0 @@
-title: Solr Config now supports XInclude for XML engines that can support it.
-type: added
-authors:
-- name: Bryan Talbot
-- name: gsingers
-links:
-- name: SOLR-1167
-  url: https://issues.apache.org/jira/browse/SOLR-1167

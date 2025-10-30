@@ -1,8 +1,0 @@
-title: Hierarchical JDK log level selector for SOLR Admin replaces logging.jsp
-type: added
-authors:
-- name: Sean Timm
-- name: shalin
-links:
-- name: SOLR-554
-  url: https://issues.apache.org/jira/browse/SOLR-554

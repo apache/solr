@@ -1,7 +1,0 @@
-title: Added SolrCore.getSearchComponents() to return an unmodifiable Map.
-type: added
-authors:
-- name: gsingers
-links:
-- name: SOLR-557
-  url: https://issues.apache.org/jira/browse/SOLR-557

@@ -1,9 +1,0 @@
-title: Upgrade jackson from 2.5.4 to 2.9.5
-type: other
-authors:
-- name: Shashank Pedamallu
-- name: Shawn Heisey
-- name: Varun Thacker
-links:
-- name: SOLR-10036
-  url: https://issues.apache.org/jira/browse/SOLR-10036

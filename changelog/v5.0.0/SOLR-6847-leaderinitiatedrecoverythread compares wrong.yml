@@ -1,7 +1,0 @@
-title: LeaderInitiatedRecoveryThread compares wrong replica's state with lirState.
-type: fixed
-authors:
-- name: shalin
-links:
-- name: SOLR-6847
-  url: https://issues.apache.org/jira/browse/SOLR-6847

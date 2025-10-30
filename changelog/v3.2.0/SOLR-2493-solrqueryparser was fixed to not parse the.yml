@@ -1,9 +1,0 @@
-title: SolrQueryParser was fixed to not parse the SolrConfig DOM tree on each instantiation
-  which is a huge slowdown.
-type: fixed
-authors:
-- name: Stephane Bailliez
-- name: uschindler
-links:
-- name: SOLR-2493
-  url: https://issues.apache.org/jira/browse/SOLR-2493

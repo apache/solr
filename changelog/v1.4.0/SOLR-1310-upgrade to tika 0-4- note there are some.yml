@@ -1,9 +1,0 @@
-title: Upgrade to Tika 0.4. Note there are some differences in detecting Languages
-  now in extracting request handler. See http://www.lucidimagination.com/search/document/d6f1899a85b2a45c/vote_apache_tika_0_4_release_candidate_2#d6f1899a85b2a45c
-  for discussion on language detection. See http://www.apache.org/dist/lucene/tika/CHANGES-0.4.txt.
-type: other
-authors:
-- name: gsingers
-links:
-- name: SOLR-1310
-  url: https://issues.apache.org/jira/browse/SOLR-1310

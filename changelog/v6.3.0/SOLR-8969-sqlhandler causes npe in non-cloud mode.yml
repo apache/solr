@@ -1,8 +1,0 @@
-title: SQLHandler causes NPE in non-cloud mode
-type: other
-authors:
-- name: Markus Jelsma
-- name: Kevin Risden
-links:
-- name: SOLR-8969
-  url: https://issues.apache.org/jira/browse/SOLR-8969

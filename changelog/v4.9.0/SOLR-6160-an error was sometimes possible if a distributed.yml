@@ -1,8 +1,0 @@
-title: An error was sometimes possible if a distributed search included grouping with
-  group.facet, faceting on facet.field and either facet.range or facet.query.
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-6160
-  url: https://issues.apache.org/jira/browse/SOLR-6160

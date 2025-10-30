@@ -1,7 +1,0 @@
-title: Parsing dynamic ZK config sometimes cause NuberFormatException
-type: fixed
-authors:
-- name: janhoy
-links:
-- name: SOLR-14671
-  url: https://issues.apache.org/jira/browse/SOLR-14671

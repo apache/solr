@@ -1,8 +1,0 @@
-title: Adding a query elevation component. This is an optional component to elevate
-  some documents to the top positions (or exclude them) for a given query.
-type: added
-authors:
-- name: ryan
-links:
-- name: SOLR-418
-  url: https://issues.apache.org/jira/browse/SOLR-418

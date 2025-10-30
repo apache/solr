@@ -1,8 +1,0 @@
-title: FieldType argument changed from String to Object Conversion from SolrInputDocument
-  &gt; Object &gt; Fieldable is now managed by FieldType rather then DocumentBuilder.
-type: other
-authors:
-- name: ryan
-links:
-- name: SOLR-2423
-  url: https://issues.apache.org/jira/browse/SOLR-2423

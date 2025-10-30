@@ -1,7 +1,0 @@
-title: Let CloudHttp2SolrClient accept an external Http2SolrClient Builder
-type: changed
-authors:
-- name: Tomás Fernández Löbbe
-links:
-- name: SOLR-15155
-  url: https://issues.apache.org/jira/browse/SOLR-15155

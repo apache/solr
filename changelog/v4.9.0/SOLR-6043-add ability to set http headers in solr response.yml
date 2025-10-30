@@ -1,8 +1,0 @@
-title: Add ability to set http headers in solr response
-type: added
-authors:
-- name: Tomás Fernández Löbbe
-- name: Ryan Ernst
-links:
-- name: SOLR-6043
-  url: https://issues.apache.org/jira/browse/SOLR-6043

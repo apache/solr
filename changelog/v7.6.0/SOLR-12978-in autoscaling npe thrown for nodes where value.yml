@@ -1,7 +1,0 @@
-title: In autoscaling NPE thrown for nodes where value is absent
-type: fixed
-authors:
-- name: noble
-links:
-- name: SOLR-12978
-  url: https://issues.apache.org/jira/browse/SOLR-12978

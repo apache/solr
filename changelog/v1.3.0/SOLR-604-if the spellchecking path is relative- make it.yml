@@ -1,8 +1,0 @@
-title: If the spellchecking path is relative, make it relative to the Solr Data Directory.
-type: fixed
-authors:
-- name: Shalin Shekhar Mangar
-- name: gsingers
-links:
-- name: SOLR-604
-  url: https://issues.apache.org/jira/browse/SOLR-604

@@ -1,8 +1,0 @@
-title: Improve IndexFetcher's exception logging upon replication errors.
-type: other
-authors:
-- name: Torsten Bøgh Köster
-- name: Christine Poerschke
-links:
-- name: SOLR-15377
-  url: https://issues.apache.org/jira/browse/SOLR-15377

@@ -1,8 +1,0 @@
-title: Added post group faceting. Facet counts are based on the most relevant document
-  of each group matching the query. This feature has the same impact on the StatsComponent.
-type: added
-authors:
-- name: Martijn van Groningen
-links:
-- name: SOLR-2665
-  url: https://issues.apache.org/jira/browse/SOLR-2665

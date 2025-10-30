@@ -1,8 +1,0 @@
-title: Upgrade Jetty to 9.2.13.v20150730.
-type: other
-authors:
-- name: Bill Bell
-- name: shalin
-links:
-- name: SOLR-7943
-  url: https://issues.apache.org/jira/browse/SOLR-7943

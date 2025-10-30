@@ -1,7 +1,0 @@
-title: OpenExchangeRates.Org Exchange Rate Provider for CurrencyField
-type: added
-authors:
-- name: janhoy
-links:
-- name: SOLR-3255
-  url: https://issues.apache.org/jira/browse/SOLR-3255

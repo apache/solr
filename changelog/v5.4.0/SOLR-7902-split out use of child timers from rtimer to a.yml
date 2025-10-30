@@ -1,7 +1,0 @@
-title: Split out use of child timers from RTimer to a sub-class
-type: other
-authors:
-- name: Ramkumar Aiyengar
-links:
-- name: SOLR-7902
-  url: https://issues.apache.org/jira/browse/SOLR-7902

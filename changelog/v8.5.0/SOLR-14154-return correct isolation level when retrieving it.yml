@@ -1,8 +1,0 @@
-title: Return correct isolation level when retrieving it from the SQL Connection
-type: changed
-authors:
-- name: Nick Vercammen
-- name: Kevin Risden
-links:
-- name: SOLR-14154
-  url: https://issues.apache.org/jira/browse/SOLR-14154

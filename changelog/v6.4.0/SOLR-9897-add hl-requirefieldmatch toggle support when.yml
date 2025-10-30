@@ -1,8 +1,0 @@
-title: Add hl.requireFieldMatch toggle support when using the UnifiedHighlighter.
-  Defaults to false like the other highlighters that support this.
-type: added
-authors:
-- name: David Smiley
-links:
-- name: SOLR-9897
-  url: https://issues.apache.org/jira/browse/SOLR-9897

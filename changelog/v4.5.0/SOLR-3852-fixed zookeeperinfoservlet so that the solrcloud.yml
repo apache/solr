@@ -1,8 +1,0 @@
-title: Fixed ZookeeperInfoServlet so that the SolrCloud Admin UI pages will work even
-  if ZK contains nodes with data which are not utf8 text.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-3852
-  url: https://issues.apache.org/jira/browse/SOLR-3852

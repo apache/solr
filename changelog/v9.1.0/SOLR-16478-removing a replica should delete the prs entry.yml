@@ -1,9 +1,0 @@
-title: removing a replica should delete the PRS entry from the hostnode and not from
-  overseer
-type: fixed
-authors:
-- name: Patson Luk
-- name: noble
-links:
-- name: SOLR-16478
-  url: https://issues.apache.org/jira/browse/SOLR-16478

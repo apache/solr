@@ -1,9 +1,0 @@
-title: 'Removed RequestHandlerUtils#addExperimentalFormatWarning(), which removes
-  "experimental" warning from two places: replication handler details command and
-  DataImportHandler responses.'
-type: other
-authors:
-- name: ehatcher
-links:
-- name: SOLR-3957
-  url: https://issues.apache.org/jira/browse/SOLR-3957

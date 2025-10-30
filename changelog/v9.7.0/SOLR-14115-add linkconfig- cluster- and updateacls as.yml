@@ -1,8 +1,0 @@
-title: Add linkconfig, cluster, and updateacls as commands to SolrCLI. Allow bin/solr
-  commands to have parity with zkcli.sh commands.
-type: changed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-14115
-  url: https://issues.apache.org/jira/browse/SOLR-14115

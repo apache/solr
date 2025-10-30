@@ -1,7 +1,0 @@
-title: Deprecated unused LengthFilter since already core in Lucene-Java
-type: other
-authors:
-- name: hossman
-links:
-- name: SOLR-520
-  url: https://issues.apache.org/jira/browse/SOLR-520

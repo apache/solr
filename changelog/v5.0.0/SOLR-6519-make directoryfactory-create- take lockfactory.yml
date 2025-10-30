@@ -1,7 +1,0 @@
-title: Make DirectoryFactory#create() take LockFactory.
-type: other
-authors:
-- name: Uwe Schindler
-links:
-- name: SOLR-6519
-  url: https://issues.apache.org/jira/browse/SOLR-6519
