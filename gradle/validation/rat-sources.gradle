@@ -99,6 +99,7 @@ allprojects {
                     exclude "CHANGELOG.md"
                     exclude "changelog/**/version-summary.md"
                     exclude "changelog/.templates/*.md"
+                    exclude "changelog/archive.md"
 
                     // The root project also includes patterns for the boostrap (buildSrc) and composite
                     // projects. Include their sources in the scan.
