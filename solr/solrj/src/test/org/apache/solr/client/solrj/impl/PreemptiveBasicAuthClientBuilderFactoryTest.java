@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 
 public class PreemptiveBasicAuthClientBuilderFactoryTest extends SolrTestCase {
 

@@ -14,12 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.apache;
 
 import java.io.IOException;
 import java.util.List;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider;
+import org.apache.solr.client.solrj.impl.Http2ClusterStateProvider;
 
 /**
  * Retrieves cluster state via Solr HTTP APIs
