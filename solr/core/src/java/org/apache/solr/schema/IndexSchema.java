@@ -1311,7 +1311,7 @@ public class IndexSchema {
 
     /**
      * Generates a destination field name based on this source pattern, by substituting the
-     * remainder of this source pattern into the the given destination pattern.
+     * remainder of this source pattern into the given destination pattern.
      */
     public SchemaField getTargetField(String sourceField) {
       String remainder = pattern.remainder(sourceField);

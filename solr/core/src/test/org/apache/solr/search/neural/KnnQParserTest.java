@@ -757,7 +757,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
 
     // These req's are equivalent: pre-filter nothing
     // So 1,4,2,10,3,7 are the topK=6
-    // Only 7 matches both of the the regular fq params
+    // Only 7 matches both of the regular fq params
     for (SolrQueryRequest req :
         Arrays.asList(
             // explicit local empty preFilter

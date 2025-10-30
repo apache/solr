@@ -20,6 +20,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class TikaLanguageIdentifierUpdateProcessorFactoryTest
     extends LanguageIdentifierUpdateProcessorFactoryTestCase {
   @Override

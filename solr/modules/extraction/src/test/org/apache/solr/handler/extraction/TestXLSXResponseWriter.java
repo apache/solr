@@ -40,6 +40,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@SuppressWarnings("removal")
 public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
 
   private static XLSXResponseWriter writerXlsx;

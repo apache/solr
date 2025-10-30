@@ -441,6 +441,20 @@ public class SolrCLI implements CLIO {
     return val == null ? def : val;
   }
 
+  /**
+   * Returns the value of the option with the given name, or the value from a given system property,
+   * or the value of the deprecated option. If all values are null, then it returns the default
+   * value.
+   */
+  public static String getOptionWithDeprecatedAndDefault(
+      CommandLine cli, Option opt, String deprecated, String def, String sysProp) {
+    String val = SolrCLI.getCliOptionOrPropValue(cli, opt, sysProp, def);
+    if (val == null) {
+      val = cli.getOptionValue(deprecated);
+    }
+    return val == null ? def : val;
+  }
+
   // TODO: SOLR-17429 - remove the custom logic when Commons CLI is upgraded and
   // makes stderr the default, or makes Option.toDeprecatedString() public.
   public static void deprecatedHandlerStdErr(Option o) {
@@ -798,7 +812,7 @@ public class SolrCLI implements CLIO {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
 
-    String zkHost = getOptionWithDeprecatedAndDefault(cli, "zk-host", "zkHost", null);
+    String zkHost = getOptionWithDeprecatedAndDefault(cli, OPTION_ZKHOST, "zkHost", null, "zkHost");
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }
@@ -929,5 +943,23 @@ public class SolrCLI implements CLIO {
     } else {
       CLIO.out(String.valueOf(message));
     }
+  }
+
+  /**
+   * Get the value of the specified CLI option with fallback to system property and default value.
+   *
+   * @param cli the command line
+   * @param option the commons cli {@link Option}
+   * @param sysprop the system property to fall back to
+   * @param defaultValue the default value. Use null if no default value is desired
+   * @return the value of the option or system property or the default value
+   */
+  public static String getCliOptionOrPropValue(
+      CommandLine cli, Option option, String sysprop, String defaultValue) {
+    String value = cli.getOptionValue(option);
+    if (value == null) {
+      value = EnvUtils.getProperty(sysprop, defaultValue);
+    }
+    return value;
   }
 }

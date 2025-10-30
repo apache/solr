@@ -20,14 +20,15 @@ import java.time.format.DateTimeFormatter
 
 plugins {
   id 'base'
-  id 'com.palantir.consistent-versions' version '2.16.0'
+  id 'com.palantir.consistent-versions' version '2.32.0'
   id 'org.owasp.dependencycheck' version '12.1.3'
   id 'ca.cutterslade.analyze' version '1.10.0'
-  id 'de.thetaphi.forbiddenapis' version '3.9' apply false
+  id 'de.thetaphi.forbiddenapis' version '3.10' apply false
   id 'de.undercouch.download' version '5.6.0' apply false
   id 'net.ltgt.errorprone' version '3.1.0' apply false
   id 'com.diffplug.spotless' version '7.2.1' apply false
   id 'com.github.node-gradle.node' version '7.1.0' apply false
+  id 'dev.logchange' version '1.19.10'
 }
 
 apply from: file('gradle/globals.gradle')
@@ -37,14 +38,14 @@ apply from: file('gradle/globals.gradle')
 // Calculate project version:
 version = {
   // Release manager: update base version here after release:
-  String baseVersion = '9.10.0'
+  String baseVersion = '9.11.0'
 
   // On a release explicitly set release version in one go:
   //  -Dversion.release=x.y.z
-  
+
   // Jenkins can just set just a suffix, overriding SNAPSHOT, e.g. using build id:
   //  -Dversion.suffix=jenkins123
-  
+
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
   String v = propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
   if (v.endsWith("-")) {
@@ -93,8 +94,8 @@ ext {
     logger.info("External tool '${name}' resolved to: ${resolved}")
     return resolved
   }
-  
-  luceneBaseVersionProvider = project.provider { 
+
+  luceneBaseVersionProvider = project.provider {
     def luceneVersion = getVersion('org.apache.lucene:lucene-core')
     def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
     if (!m) {
@@ -206,3 +207,5 @@ apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 apply from: file('gradle/ant-compat/solr.post-jar.gradle')
 
 apply from: file('gradle/node.gradle')
+
+apply from: file('gradle/changelog.gradle')

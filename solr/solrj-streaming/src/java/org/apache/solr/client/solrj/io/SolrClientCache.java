@@ -133,7 +133,7 @@ public class SolrClientCache implements Closeable {
     var builder = new CloudHttp2SolrClient.Builder(hosts, Optional.empty());
     builder.canUseZkACLs(canUseACLs);
     // using internal builder to ensure the internal client gets closed
-    builder = builder.withInternalClientBuilder(newHttp2SolrClientBuilder(null, http2SolrClient));
+    builder = builder.withHttpClientBuilder(newHttp2SolrClientBuilder(null, http2SolrClient));
     var client = builder.build();
     try {
       client.connect();
