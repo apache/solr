@@ -30,13 +30,14 @@ solr/
 └── changelog/
     ├── unreleased/         ← new fragments live here
     |   └── SOLR-12345-fix-memory-leak.yml
-    ├── v10.0.0/            ← changes in already released version
-    └── v10.0.1/
+    ├── v9.8.0/            ← changes in already released versions
+    ├── v9.8.0/
+    └── v9.9.0/
 ----
 
 == 3. The YAML format
 
-Below is an example of a changelog yaml fragment. The full yaml format is xref:https://logchange.dev/tools/logchange/reference/#tasks[documented here], but we normally only need `title`, `type`, `authors` and `links`:
+Below is an example of a changelog yaml fragment. The full yaml format is xref:https://logchange.dev/tools/logchange/reference/#tasks[documented here], but we normally only need `title`, `type`, `authors` and `links`. For a change without a JIRA, you can add the PR number in `issues`:
 
 [source, yaml]
 ----
