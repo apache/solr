@@ -202,7 +202,7 @@ REM set SOLR_GZIP_ENABLED=true
 REM When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
 REM list of hosts needs to be defined in an allow-list or Solr will forbid the request. The allow-list can be configured
 REM in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.allowUrls".
-REM Alternatively host checking can be disabled by using the system property "solr.disable.allowUrls"
+REM Alternatively host checking can be disabled by setting the system property "solr.security.allow.urls.enabled=false"
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.allowUrls=http://localhost:8983,http://localhost:8984
 
 REM For a visual indication in the Admin UI of what type of environment this cluster is, configure

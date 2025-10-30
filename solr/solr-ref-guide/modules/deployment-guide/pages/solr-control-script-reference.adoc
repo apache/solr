@@ -1663,8 +1663,8 @@ Name of the collection to run an export against.
 +
 The file format of the export, `json` (default) or `jsonl` or `javabin`, this also specifies the file extension to be used.
 `json` and `jsonl` both export documents in the same format as using `wt=json`.  The `json` output file is suitable for
-immediately posting back to solr via the `/update/json` endpoint.  `jsonl` outputs each Solr document on it's own line,
-and it useful for parallel processing tasks. Learn more at https://jsonlines.org/.
+immediately posting back to solr via the `/update/json` endpoint.  `jsonl` outputs each Solr document on its own line,
+and is useful for parallel processing tasks. Learn more at https://jsonlines.org/.
 Choosing `javabin` exports in the native binary Solr format and is compact and faster to import.
 
 `--output <path>`::

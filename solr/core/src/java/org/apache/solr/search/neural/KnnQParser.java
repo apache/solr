@@ -23,6 +23,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
 
 public class KnnQParser extends AbstractVectorQParserBase {
@@ -30,10 +31,11 @@ public class KnnQParser extends AbstractVectorQParserBase {
   // retrieve the top K results based on the distance similarity function
   protected static final String TOP_K = "topK";
   protected static final int DEFAULT_TOP_K = 10;
+  protected static final String SEED_QUERY = "seedQuery";
+  protected static final String FILTERED_SEARCH_THRESHOLD = "filteredSearchThreshold";
 
   // parameters for PatienceKnnVectorQuery, a version of knn vector query that exits early when HNSW
-  // queue
-  // saturates over a {@code #saturationThreshold} for more than {@code #patience} times.
+  // queue saturates over a {@code #saturationThreshold} for more than {@code #patience} times.
   protected static final String EARLY_TERMINATION = "earlyTermination";
   protected static final boolean DEFAULT_EARLY_TERMINATION = false;
   protected static final String SATURATION_THRESHOLD = "saturationThreshold";
@@ -88,13 +90,26 @@ public class KnnQParser extends AbstractVectorQParserBase {
     return new EarlyTerminationParams(enabled, saturationThreshold, patience);
   }
 
+  protected Query getSeedQuery() throws SolrException, SyntaxError {
+    String seed = localParams.get(SEED_QUERY);
+    if (seed == null) return null;
+    if (seed.isBlank()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "'seedQuery' parameter is present but is blank: please provide a valid query");
+    }
+    final QParser seedParser = subQuery(seed, null);
+    return seedParser.getQuery();
+  }
+
   @Override
   public Query parse() throws SyntaxError {
     final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
     final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
     final String vectorToSearch = getVectorToSearch();
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
-    final int efSearch = localParams.getInt("ef-search", topK * 2);
+    final int efSearch = localParams.getInt("efSearch", topK * 2);
+    final Integer filteredSearchThreshold = localParams.getInt(FILTERED_SEARCH_THRESHOLD);
 
     return denseVectorType.getKnnVectorQuery(
         schemaField.getName(),
@@ -102,6 +117,8 @@ public class KnnQParser extends AbstractVectorQParserBase {
         topK,
         efSearch,
         getFilterQuery(),
-        getEarlyTerminationParams());
+        getSeedQuery(),
+        getEarlyTerminationParams(),
+        filteredSearchThreshold);
   }
 }

@@ -442,7 +442,6 @@ And you should see the following as output:
     "x": "y",
     "rows": "10"},
   "context":{
-    "webapp": "/solr",
     "path": "/mypath",
     "httpMethod": "GET"}}
 ----

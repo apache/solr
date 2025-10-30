@@ -4,6 +4,56 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
+==================  11.0.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
+==================  10.1.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  10.0.0 ==================
 
 New Features
@@ -21,11 +71,21 @@ New Features
 
 * SOLR-17780: Add support for scalar quantized dense vectors (Kevin Liang via Alessandro Benedetti)
 
+* SOLR-17892: Add support for cuVS-Lucene as a pluggable codec in Solr (Vivek Narang, Ishan Chattopadhyaya)
+
 * SOLR-17812: Add support for binary quantized dense vectors (Kevin Liang via Alessandro Benedetti)
 
 * SOLR-17023: Use Modern NLP Models from Apache OpenNLP with Solr (Jeff Zemerick, Eric Pugh)
 
 * SOLR-17814: Add support for PatienceKnnVectorQuery. (Ilaria Petreti via Alessandro Benedetti)
+
+* SOLR-17948: Support indexing primitive float[] values for DenseVectorField via JavaBin (Puneet Ahuja, Noble Paul)
+
+* SOLR-17813: Add support for SeededKnnVectorQuery (Ilaria Petreti via Alessandro Benedetti)
+
+* SOLR-16667: LTR Add feature vector caching for ranking. (Anna Ruggero, Alessandro Benedetti)
+
+* SOLR-17815: Add parameter to regulate for ACORN-based filtering in vector search. (Anna Ruggero, Alessandro Benedetti)
 
 * SOLR-17928: Add efSearch parameter to KNN query. (Puneet Ahuja)
 
@@ -69,6 +129,22 @@ Improvements
 
 * GITHUB#3666: Removing redundant check if field exists in TextToVectorUpdateProcessorFactory (Renato Haeberli via Alessandro Benedetti)
 
+* SOLR-17926: Improve tracking of time already spent to discount the limit for sub-requests when `timeAllowed` is used. (Andrzej Bialecki, hossman)
+
+* SOLR-17930: MultiAuthPlugin now looks up for auth plugins configured with "xBasic" as scheme if
+  "Basic" authentication used and no plugin with "Basic" scheme found. This allows the new UI to
+  authenticate in browser without a credentials prompt being displayed. The MultiAuthPlugin can now
+  also be configured with a single plugin.
+
+* SOLR-17541: `LBHttp2SolrClient` now maintains a separate internal/delegate client per Solr Base URL.  Both `LBHttp2SolrClient` and `CloudHttp2SolrClient`
+  always create and manage these internal clients.  The ability for callers to provide a pre-built client is removed.  Callers may specify the internal client
+  details by providing an instance of either `Http2SolrClient.Builder` or `HttpJdkSolrClient.Builder`. (James Dyer)
+
+* SOLR-17943: `Http2ClusterStateProvider` now also can work with `HttpJdkSolrClient`. (James Dyer)
+
+* SOLR-17771: `CloudHttp2SolrClient.Builder` now also can work with `HttpJdkSolrClient`. (James Dyer)
+
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -79,8 +155,12 @@ Bug Fixes
 * SOLR-17772: Tests for CLI examples were failing on Windows due to a legacy bug uncovered by fix in SOLR-7962.
   Additionally achieves simplification of CLI tests (Rahul Goswami via Eric Pugh)
 
+* SOLR-17940: Fix DelegatingCollector to prevent the delegate from calling setMinCompetitiveScore if the scoreMode is not TOP_SCORES (hossman)
+
 Deprecation Removals
 ----------------------
+
+* SOLR-17957: XLSXResponseWriter has been removed. (Jan Høydahl)
 
 * SOLR-16535: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry' (janhoy)
 
@@ -169,17 +249,28 @@ Deprecation Removals
 
 * SOLR-17932: Remove transient Solr cores capability. (Eric Pugh, David Smiley)
 
+* SOLR-17925: Remove obsolete QueryCommand.timeAllowed replaced by QueryLimits. (Andrzej Bialecki)
+
+* SOLR-17935: Remove deprecated NoOpResponseParser. (Eric Pugh, David Smiley)
+
+* SOLR-17182: Remove `solr.useExitableDirectoryReader` property. (Andrzej Bialecki)
+
+* SOLR-17771: Remove `CloudSolrClient.Builder`. (James Dyer)
+
 Dependency Upgrades
 ---------------------
 
 * SOLR-16984: Upgraded Jetty to 12 (Jakarta EE 10 namespace). Updated related dependencies including amazon-awssdk to 2.28.11. (Sanjay Dutt, David Smiley, Kevin Risden)
 
-* SOLR-17631: Upgrade to Lucene 10.2.1 (Ishan Chattopadhyaya, noble, Jason Gerlowski, Eric Pugh, janhoy, Christine Poerschke)
+* SOLR-17631, SOLR-17917: Upgrade to Lucene 10.3.1 (Ishan Chattopadhyaya, noble, Jason Gerlowski, Eric Pugh, janhoy, Christine Poerschke, hossman)
 
 * SOLR-17445: The base docker image has been upgraded from Ubuntu 22 (Jammy) to Ubuntu 24 (Noble). (Jan Høydahl)
 
 Other Changes
 ---------------------
+
+* SOLR-17960: Removed TikaLanguageIdentifierUpdateProcessor. Use LangDetectLanguageIdentifierUpdateProcessor
+  or OpenNLPLangDetectUpdateProcessor instead. (janhoy)
 
 * SOLR-15730: SolrJ modules like SolrJ-Zookeeper are now opt-in from a Maven POM perspective.
   Previously, the modules would come transitively.
@@ -215,8 +306,6 @@ Other Changes
 
 * SOLR-17675: Remove DirContext param from DirectoryFactory.create method. (Bruno Roustant, David Smiley)
 
-* SOLR-16903: Switch CoreContainer#getSolrHome to return Path instead of String (Andrey Bozhko)
-
 * SOLR-17682: QueryResponseWriter: refactor the hierarchy.  Base abstraction is now byte oriented,
   thus BinaryQueryResponseWriter is gone.  Added TextQueryResponseWriter for the text ones.
   Stopped using RawResponseWriter when not needed.  Rename BinaryResponseWriter to JavaBinResponseWriter.
@@ -244,10 +333,27 @@ Other Changes
   overseerEnabled cluster property and an env var SOLR_CLOUD_OVERSEER_ENABLED.  Read more in the
   upgrade guide.  (David Smiley)
 
+* SOLR-17929: Remove obsolete overseer internal work queue. This queue was read-only since Solr 8. (Pierre Salagnac)
+
+* SOLR-17182: Remove `solr.useExitableDirectoryReader` property. Using `ExitableDirectoryReader`
+  apparently has negligible impact on search performance so it's used now for all queries regardless of
+  their query limits params. (Andrzej Bialecki)
+
+* PR#3758: Logs: removed webapp=/solr and also removed from internal context map.
+
+* SOLR-17963: These SolrCloud commands no longer aquire locks (waiting or blocking on other commands that do):
+  COLLECTIONPROP, ADDREPLICAPROP, DELETEREPLICAPROP.  (David Smiley)
+
 ==================  9.10.0 ==================
 New Features
 ---------------------
 * SOLR-17915: shards.preference=replica.location now supports the "host" option for routing to replicas on the same host. (Houston Putman)
+
+* SOLR-17923: Add fullOuterJoin stream function (Andy Webb)
+
+* SOLR-7632: The Extraction Request Handler, aka Solr Cell, now supports delegating the parsing of rich documents to
+  an external Tika Server. This allows for a more stable Solr server, and easier to configure and scale parsing
+  independently. The local in-process Tika parser is now deprecated. (Jan Høydahl, Eric Pugh)
 
 Improvements
 ---------------------
@@ -262,6 +368,9 @@ Improvements
 
 * SOLR-17921: SolrJ CloudSolrClient configured with a Solr URL (not ZK) now refreshes liveNodes in the background.
   This will reduce spikes in request latency when the cached liveNodes have expired. (Houston Putman, David Smiley)
+
+* SOLR-17897: CloudSolrClient now recognizes UnknownHostException as a case to refetch the cluster
+  state and retry.  (David Smiley)
 
 Optimizations
 ---------------------
@@ -297,6 +406,17 @@ Other Changes
 * SOLR-17879: A Solr node will now fail to start if it's major.minor version (e.g. 9.10) is *lower* than that of any existing
   Solr node in a SolrCloud cluster (as reported by info in "live_node").  (David Smiley)
 
+* SOLR-17712: Deprecating waitForFinalState parameter in any SolrCloud command that accepts it.
+  It remains defaulted to false in 9, but will become true and likely removed.  (Abhishek Umarjikar, David Smiley)
+
+* SOLR-17956: XLSXResponseWriter has been deprecated and will be removed in a future release. (Jan Høydahl)
+
+* SOLR-17958: The Tika Language Identifier is deprecated. Use one of the other detectors instead. (Jan Høydahl)
+
+* SOLR-17952: Stream decorator test refactoring - use underscore rather than dot in aliases (Andy Webb)
+
+* SOLR-17771: Deprecate `CloudSolrClient.Builder` in favor of `CloudHttp2SolrClient.Builder`. (James Dyer)
+
 ==================  9.9.1 ==================
 Bug Fixes
 ---------------------
@@ -314,6 +434,8 @@ Bug Fixes
   disabled on the shared instance. (David Smiley)
 
 * SOLR-3696: Fix for LB/Cloud SolrClients that could leak on close() if concurrent request failed and triggered zombie server logic. (hossman)
+
+* SOLR-17883: SolrCLI tools such as "bin/solr zk" can now access jars located in `<install_dir>/lib`.
 
 Dependency Upgrades
 ---------------------
@@ -457,7 +579,7 @@ Bug Fixes
 
 * SOLR-17726: MoreLikeThis to support copy-fields (Ilaria Petreti via Alessandro Benedetti)
 
-* SOLR-16667: Fixed dense/sparse representation in LTR module. (Anna Ruggero, Alessandro Benedetti)
+* SOLR-17760: Fixed dense/sparse representation in LTR module. (Anna Ruggero, Alessandro Benedetti)
 
 * SOLR-17800: Security Manager should handle symlink on /tmp (Kevin Risden)
 
@@ -3790,7 +3912,7 @@ Improvements
 * SOLR-8673: Make JSON Facets extendable (Tim Owen via Mikhail Khludnev)
 
 * SOLR-14965: metrics: Adds two metrics to the SolrCloud Overseer: solr_metrics_overseer_stateUpdateQueueSize
-  and solr_metrics_overseer_collectionWorkQueueSize with corresponding entries in the the Prometheus exporter's
+  and solr_metrics_overseer_collectionWorkQueueSize with corresponding entries in the Prometheus exporter's
   default/stock configuration.  (Saatchi Bhalla, Megan Carey, Andrzej Białecki, David Smiley)
 
 * SOLR-14827: Refactor schema loading to not use XPath (noble)
@@ -5338,7 +5460,7 @@ Improvements
   nodes instead of using them directly at the toplevel (noble)
 
 * SOLR-13329: In autoscaling policies, use an explicit 'put : on-each-node'
-  to specify the the rules is applied on each node  (noble)
+  to specify the rules is applied on each node  (noble)
 
 * SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
 
@@ -23298,7 +23420,7 @@ This problem is corrected in Solr 1.3, but DateField users that might
 have been affected by indexing inconsistent formats of equivalent
 dates (ie: 1995-12-31T23:59:59Z vs 1995-12-31T23:59:59.000Z) may want
 to consider reindexing to correct these inconsistencies.  Users who
-depend on some of the the "broken" behavior of DateField in Solr 1.2
+depend on some of the "broken" behavior of DateField in Solr 1.2
 (specificly: accepting any input that ends in a 'Z') should consider
 using the LegacyDateField class as a possible alternative.  Users that
 desire 100% backwards compatibility should consider using the Solr 1.2
@@ -24268,7 +24390,7 @@ Bug Fixes
     possible for path based request handlers.  (ryan)
 
 14. SOLR-214: Some servlet containers (including Tomcat and Resin) do not
-    obey the specified charset.  Rather then letting the the container handle
+    obey the specified charset.  Rather than letting the container handle
     it solr now uses the charset from the header contentType to decode posted
     content.  Using the contentType: "text/xml; charset=utf-8" will force
     utf-8 encoding.  If you do not specify a contentType, it will use the

@@ -19,6 +19,7 @@ package org.apache.solr.search.neural;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.knn.KnnSearchStrategy;
 
 public class SolrKnnFloatVectorQuery extends KnnFloatVectorQuery {
   private final int topK;
@@ -26,6 +27,17 @@ public class SolrKnnFloatVectorQuery extends KnnFloatVectorQuery {
   public SolrKnnFloatVectorQuery(
       String field, float[] target, int topK, int efSearch, Query filter) {
     super(field, target, efSearch, filter);
+    this.topK = topK;
+  }
+
+  public SolrKnnFloatVectorQuery(
+      String field,
+      float[] target,
+      int topK,
+      int efSearch,
+      Query filter,
+      KnnSearchStrategy searchStrategy) {
+    super(field, target, efSearch, filter, searchStrategy);
     this.topK = topK;
   }
 

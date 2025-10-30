@@ -19,12 +19,24 @@ package org.apache.solr.search.neural;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.knn.KnnSearchStrategy;
 
 public class SolrKnnByteVectorQuery extends KnnByteVectorQuery {
   private final int topK;
 
   public SolrKnnByteVectorQuery(String field, byte[] target, int topK, int efSearch, Query filter) {
     super(field, target, efSearch, filter);
+    this.topK = topK;
+  }
+
+  public SolrKnnByteVectorQuery(
+      String field,
+      byte[] target,
+      int topK,
+      int efSearch,
+      Query filter,
+      KnnSearchStrategy searchStrategy) {
+    super(field, target, efSearch, filter, searchStrategy);
     this.topK = topK;
   }
 

@@ -224,7 +224,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
    */
   private boolean sendError(HttpServletResponse response, boolean v2, String message)
       throws IOException {
-    numErrors.mark();
+    numErrors.inc();
     log.error(message);
     response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), v2 ? HEADER_V2 : HEADER);
     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, message);

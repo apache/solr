@@ -786,6 +786,118 @@ fetch(addresses,
 
 The example above fetches addresses for users by matching the username in the tuple with the userId field in the addresses collection.
 
+== fullOuterJoin
+
+The `fullOuterJoin` function wraps two streams, Left and Right, and emits tuples from both.
+If there is a tuple in Right equal to that in the Left (as defined by `on`) then the values in that tuple will be included in the emitted tuple.
+An equal tuple in one stream *need not* exist for a tuple in the other to be emitted.
+This supports one-to-one, one-to-many, many-to-one, and many-to-many full outer join scenarios.
+The tuples are emitted in the order in which they appear in the streams.
+Both streams must be sorted by the fields being used to determine equality (using the `on` parameter).
+If both tuples contain a field of the same name then the value from the Right stream will be used in the emitted tuple.
+
+You can wrap the incoming streams with a `select` function to be specific about which field values are included in the emitted tuple.
+
+=== fullOuterJoin Parameters
+
+* `StreamExpression for StreamLeft`
+* `StreamExpression for StreamRight`
+* `on`: Fields to be used for checking equality of tuples between Left and Right.
+Can be of the format `on="fieldName"`, `on="fieldNameInLeft=fieldNameInRight"`, or `on="fieldName, otherFieldName=rightOtherFieldName"`.
+
+=== fullOuterJoin Syntax
+
+[source,text]
+----
+fullOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  search(pets, q="type:cat", qt="/export", fl="personId,petName", sort="personId asc"),
+  on="personId"
+)
+
+fullOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  search(pets, q="type:cat", qt="/export", fl="ownerId,petName", sort="ownerId asc"),
+  on="personId=ownerId"
+)
+
+fullOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  select(
+    search(pets, q="type:cat", qt="/export", fl="ownerId,name", sort="ownerId asc"),
+    ownerId,
+    name as petName
+  ),
+  on="personId=ownerId"
+)
+----
+
+=== Reciprocal Rank Fusion (RRF) using fullOuterJoin
+
+The `fullOuterJoin` function can be used to construct an RRF algorithm for merging together result sets, as illustrated below.
+
+(In a real-world example the two `sort/list/tuple` blocks would likely use `search` instead.)
+
+[source,text]
+----
+top(
+    n=10,
+    sort(
+        select(
+            fullOuterJoin(
+                sort(
+                    select(
+                        sort(
+                            list(
+                                tuple(id=1, title="L 1", left="a", score=4.5),
+                                tuple(id=2, title="L 2", left="b", score=3.5),
+                                tuple(id=3, title="L 3", left="c", score=2.5),
+                                tuple(id=4, title="L 4", left="d", score=2.5),
+                                tuple(id=5, title="L 5", left="e", score=2.5),
+                                tuple(id=6, title="L 6", left="f", score=2.5),
+                            ),
+                            by="score desc"
+                        ),
+                        *,
+                        score as scoreL,
+                        add(recNum(),1) as rankL,
+                        div(1,add(rankL,60)) as rrL
+                    ),
+                    by="id asc"
+                ),
+                sort(
+                    select(
+                        sort(
+                            list(
+                                tuple(id=3, title="R 3", right="g", score=0.9),
+                                tuple(id=2, title="R 2", right="h", score=0.8),
+                                tuple(id=4, title="R 4", right="i", score=0.7),
+                                tuple(id=7, title="R 7", right="j", score=0.6),
+                                tuple(id=8, title="R 8", right="k", score=0.5),
+                                tuple(id=9, title="R 9", right="l", score=0.5),
+                            ),
+                            by="score desc"
+                        ),
+                        *,
+                        score as scoreR,
+                        add(recNum(),1) as rankR,
+                        div(1,add(rankR,60)) as rrR
+                    ),
+                    by="id asc"
+                ),
+                on="id"
+            ),
+            *,
+            replace(rrL,null,withValue=0),
+            replace(rrR,null,withValue=0),
+            add(rrL,rrR) as rrf,
+        ),
+        by="rrf desc"
+    ),
+    sort="rrf desc"
+)
+----
+
 == having
 
 The `having` expression wraps a stream and applies a boolean operation to each tuple.
@@ -816,52 +928,6 @@ having(rollup(over=a_s,
 ----
 
 In this example, the `having` expression iterates the aggregated tuples from the `rollup` expression and emits all tuples where the field `sum(a_i)` is greater than 100 and less than 110.
-
-== leftOuterJoin
-
-The `leftOuterJoin` function wraps two streams, Left and Right, and emits tuples from Left.
-If there is a tuple in Right equal (as defined by `on`) then the values in that tuple will be included in the emitted tuple.
-An equal tuple in Right *need not* exist for the Left tuple to be emitted.
-This supports one-to-one, one-to-many, many-to-one, and many-to-many left outer join scenarios.
-The tuples are emitted in the order in which they appear in the Left stream.
-Both streams must be sorted by the fields being used to determine equality (using the `on` parameter).
-If both tuples contain a field of the same name then the value from the Right stream will be used in the emitted tuple.
-
-You can wrap the incoming streams with a `select` function to be specific about which field values are included in the emitted tuple.
-
-=== leftOuterJoin Parameters
-
-* `StreamExpression for StreamLeft`
-* `StreamExpression for StreamRight`
-* `on`: Fields to be used for checking equality of tuples between Left and Right.
-Can be of the format `on="fieldName"`, `on="fieldNameInLeft=fieldNameInRight"`, or `on="fieldName, otherFieldName=rightOtherFieldName"`.
-
-=== leftOuterJoin Syntax
-
-[source,text]
-----
-leftOuterJoin(
-  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
-  search(pets, q="type:cat", qt="/export", fl="personId,petName", sort="personId asc"),
-  on="personId"
-)
-
-leftOuterJoin(
-  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
-  search(pets, q="type:cat", qt="/export", fl="ownerId,petName", sort="ownerId asc"),
-  on="personId=ownerId"
-)
-
-leftOuterJoin(
-  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
-  select(
-    search(pets, q="type:cat", qt="/export", fl="ownerId,name", sort="ownerId asc"),
-    ownerId,
-    name as petName
-  ),
-  on="personId=ownerId"
-)
-----
 
 == hashJoin
 
@@ -983,6 +1049,52 @@ intersect(
   search(collection1, q="a_s:(setA || setAB)", qt="/export", fl="id,a_s,a_i", sort="a_i asc, a_s asc"),
   search(collection1, q="a_s:(setB || setAB)", qt="/export", fl="id,a_s,a_i", sort="a_i asc, a_s asc"),
   on="a_i,a_s"
+)
+----
+
+== leftOuterJoin
+
+The `leftOuterJoin` function wraps two streams, Left and Right, and emits tuples from Left.
+If there is a tuple in Right equal (as defined by `on`) then the values in that tuple will be included in the emitted tuple.
+An equal tuple in Right *need not* exist for the Left tuple to be emitted.
+This supports one-to-one, one-to-many, many-to-one, and many-to-many left outer join scenarios.
+The tuples are emitted in the order in which they appear in the Left stream.
+Both streams must be sorted by the fields being used to determine equality (using the `on` parameter).
+If both tuples contain a field of the same name then the value from the Right stream will be used in the emitted tuple.
+
+You can wrap the incoming streams with a `select` function to be specific about which field values are included in the emitted tuple.
+
+=== leftOuterJoin Parameters
+
+* `StreamExpression for StreamLeft`
+* `StreamExpression for StreamRight`
+* `on`: Fields to be used for checking equality of tuples between Left and Right.
+Can be of the format `on="fieldName"`, `on="fieldNameInLeft=fieldNameInRight"`, or `on="fieldName, otherFieldName=rightOtherFieldName"`.
+
+=== leftOuterJoin Syntax
+
+[source,text]
+----
+leftOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  search(pets, q="type:cat", qt="/export", fl="personId,petName", sort="personId asc"),
+  on="personId"
+)
+
+leftOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  search(pets, q="type:cat", qt="/export", fl="ownerId,petName", sort="ownerId asc"),
+  on="personId=ownerId"
+)
+
+leftOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  select(
+    search(pets, q="type:cat", qt="/export", fl="ownerId,name", sort="ownerId asc"),
+    ownerId,
+    name as petName
+  ),
+  on="personId=ownerId"
 )
 ----
 

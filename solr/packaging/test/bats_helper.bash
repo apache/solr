@@ -33,7 +33,7 @@ common_setup() {
     load "${BATS_LIB_PREFIX}/bats-assert/load.bash"
     load "${BATS_LIB_PREFIX}/bats-file/load.bash"
 
-    PATH="${SOLR_TIP:-.}/bin:${SOLR_TIP:-.}/prometheus-exporter/bin:$PATH"
+    PATH="${SOLR_TIP:-.}/bin:$PATH"
     export SOLR_ULIMIT_CHECKS=false
 }
 
@@ -60,13 +60,6 @@ save_home_on_failure() {
 
 shutdown_all() {
   solr stop --all >/dev/null 2>&1
-}
-
-shutdown_exporter(){
-  EXPORTER_PID=$(ps auxww | grep org.apache.solr.prometheus.exporter.SolrExporter | awk "/-classpath/"' {print $2}' | sort -r)
-  if [[ -n $EXPORTER_PID ]]; then
-    kill -9 $EXPORTER_PID
-  fi
 }
 
 delete_all_collections() {
@@ -102,4 +95,43 @@ collection_exists() {
   done
 
   return 1
+}
+
+# Wait for a collection to be queryable
+wait_for_collection() {
+  local collection="$1"
+  local timeout=${2:-180}
+  local start_ts
+  start_ts=$(date +%s)
+  while true; do
+    if curl -s -S -f "http://localhost:${SOLR_PORT}/solr/${collection}/select?q=*:*" | grep -q '"responseHeader"'; then
+      return 0
+    fi
+    local now
+    now=$(date +%s)
+    if [ $(( now - start_ts )) -ge ${timeout} ]; then
+      echo "Timed out waiting for collection '${collection}' to become queryable" >&2
+      return 1
+    fi
+    sleep 3
+  done
+}
+
+# Apply the ExtractingRequestHandler via Config API and print error body on failure
+apply_extract_handler() {
+  local collection="$1"
+  local json="{\"add-requesthandler\":{\"name\":\"/update/extract\",\"class\":\"org.apache.solr.handler.extraction.ExtractingRequestHandler\",\"tikaserver.url\":\"http://localhost:${TIKA_PORT}\",\"defaults\":{\"lowernames\":\"true\",\"captureAttr\":\"true\"}}}"
+  local url="http://localhost:${SOLR_PORT}/solr/${collection}/config"
+  # Capture body and status code
+  local resp code body
+  sleep 5
+  resp=$(curl -s -S -w "\n%{http_code}" -X POST -H 'Content-type:application/json' -d "$json" "$url")
+  code="${resp##*$'\n'}"
+  body="${resp%$'\n'*}"
+  if [ "$code" = "200" ]; then
+    return 0
+  else
+    echo "Config API error applying ExtractingRequestHandler to ${collection} (HTTP ${code}): ${body}" >&3
+    return 1
+  fi
 }
