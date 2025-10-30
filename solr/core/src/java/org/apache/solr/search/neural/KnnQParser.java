@@ -109,6 +109,11 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final String vectorToSearch = getVectorToSearch();
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
     final int efSearch = localParams.getInt("efSearch", topK * 2);
+    if (efSearch < topK) {
+      throw new IllegalArgumentException(
+          "efSearch (" + efSearch + ") must be >= topK (" + topK + ")");
+    }
+
     final Integer filteredSearchThreshold = localParams.getInt(FILTERED_SEARCH_THRESHOLD);
 
     return denseVectorType.getKnnVectorQuery(

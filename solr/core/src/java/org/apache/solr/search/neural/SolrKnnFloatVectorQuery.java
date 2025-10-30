@@ -26,6 +26,8 @@ public class SolrKnnFloatVectorQuery extends KnnFloatVectorQuery {
 
   public SolrKnnFloatVectorQuery(
       String field, float[] target, int topK, int efSearch, Query filter) {
+    // efSearch is used as 'k' to explore this many vectors in HNSW then topK results are returned
+    // to the user
     super(field, target, efSearch, filter);
     this.topK = topK;
   }
@@ -44,5 +46,19 @@ public class SolrKnnFloatVectorQuery extends KnnFloatVectorQuery {
   @Override
   protected TopDocs mergeLeafResults(TopDocs[] perLeafResults) {
     return TopDocs.merge(topK, perLeafResults);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (!super.equals(obj)) return false;
+    if (getClass() != obj.getClass()) return false;
+    SolrKnnFloatVectorQuery other = (SolrKnnFloatVectorQuery) obj;
+    return this.topK == other.topK;
+  }
+
+  @Override
+  public int hashCode() {
+    return 31 * super.hashCode() + Integer.hashCode(topK);
   }
 }
