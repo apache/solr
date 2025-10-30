@@ -87,8 +87,6 @@ New Features
 
 * SOLR-17815: Add parameter to regulate for ACORN-based filtering in vector search. (Anna Ruggero, Alessandro Benedetti)
 
-* SOLR-17928: Add efSearch parameter to KNN query. (Puneet Ahuja)
-
 Improvements
 ---------------------
 
