@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.junit.Test;
 
 public class CloudSolrClientBuilderTest extends SolrTestCase {
