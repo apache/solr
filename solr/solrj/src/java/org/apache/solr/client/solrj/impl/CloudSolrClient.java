@@ -119,11 +119,11 @@ public abstract class CloudSolrClient extends SolrClient {
 
   protected volatile Object[] locks = objectList(3);
 
-  static class StateCache extends ConcurrentHashMap<String, ExpiringCachedDocCollection> {
+  protected static class StateCache extends ConcurrentHashMap<String, ExpiringCachedDocCollection> {
     final AtomicLong puts = new AtomicLong();
     final AtomicLong hits = new AtomicLong();
     final Lock evictLock = new ReentrantLock(true);
-    protected volatile long timeToLiveMs = 60 * 1000L;
+    public volatile long timeToLiveMs = 60 * 1000L;
 
     @Override
     public ExpiringCachedDocCollection get(Object key) {

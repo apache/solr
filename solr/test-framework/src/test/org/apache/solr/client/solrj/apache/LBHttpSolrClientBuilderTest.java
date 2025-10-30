@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.apache;
 
 import java.io.IOException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
+import org.apache.solr.client.solrj.apache.LBHttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 

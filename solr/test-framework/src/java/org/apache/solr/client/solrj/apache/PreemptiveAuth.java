@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.apache;
 
 import java.io.IOException;
 import org.apache.http.HttpException;

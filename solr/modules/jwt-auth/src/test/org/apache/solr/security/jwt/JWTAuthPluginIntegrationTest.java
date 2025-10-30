@@ -57,7 +57,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
