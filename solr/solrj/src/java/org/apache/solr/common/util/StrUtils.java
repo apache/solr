@@ -381,6 +381,45 @@ public class StrUtils {
     return !isBlank(string);
   }
 
+  public static boolean isAllLowerCase(CharSequence string) {
+    if (string == null || string.isEmpty()) {
+      return false;
+    }
+    int length = string.length();
+    for (int i = 0; i < length; i++) {
+      if (!Character.isLowerCase(string.charAt(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public static boolean isAllUpperCase(CharSequence string) {
+    if (string == null || string.isEmpty()) {
+      return false;
+    }
+    int length = string.length();
+    for (int i = 0; i < length; i++) {
+      if (!Character.isUpperCase(string.charAt(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public static boolean isNumeric(CharSequence string) {
+    if (string == null || string.isEmpty()) {
+      return false;
+    }
+    int length = string.length();
+    for (int i = 0; i < length; i++) {
+      if (!Character.isDigit(string.charAt(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   public static String stringFromReader(Reader inReader) throws IOException {
     try (Reader reader = inReader) {
       StringWriter stringWriter = new StringWriter();

@@ -48,6 +48,14 @@ allprojects {
             }
         }
     }
+
+    plugins.withId("java-library") {
+        dependencies {
+            constraints{
+                api("org.apache.commons:commons-lang3:${libs.versions.apache.commons.lang3.get()}")
+            }
+        }
+    }
 }
 
 // Configure version catalog cleanups plugin.

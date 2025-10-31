@@ -18,7 +18,6 @@ package org.apache.solr.request;
 
 import java.util.function.Predicate;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.util.SuppressForbidden;
 
 /**
  * An implementation of {@link Predicate} which returns true if the BytesRef contains a given
@@ -50,8 +49,20 @@ public class SubstringBytesRefFilter implements Predicate<BytesRef> {
     return includeString(term.utf8ToString());
   }
 
-  @SuppressForbidden(reason = "Uses Stringutils.containsIgnoreCase")
-  private boolean containsIgnoreCase(final CharSequence str, final CharSequence searchStr) {
-    return org.apache.commons.lang3.StringUtils.containsIgnoreCase(str, searchStr);
+  private boolean containsIgnoreCase(final String str, final String searchStr) {
+    if (str == null || searchStr == null || searchStr.isEmpty()) {
+      return false;
+    }
+
+    final int len = str.length();
+    final int searchLen = searchStr.length();
+    final int max = len - searchLen;
+
+    for (int i = 0; i <= max; i++) {
+      if (str.regionMatches(true, i, searchStr, 0, searchLen)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

@@ -67,7 +67,6 @@ dependencies {
     exclude group: 'io.netty', module: '*'
     exclude group: 'commons-io', module: 'commons-io'
     exclude group: 'commons-codec', module: 'commons-codec'
-    exclude group: 'org.apache.commons', module: 'commons-lang3'
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
     exclude group: 'org.codehaus.woodstox', module: 'stax2-api'
     exclude group: 'org.springframework.boot', module: 'spring-boot-actuator-autoconfigure'
