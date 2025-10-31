@@ -24,7 +24,7 @@
   <str name="configSetsHandler">testConfigSetsHandler</str>
   <str name="managementPath">testManagementPath</str>
   <str name="sharedLib">testSharedLib</str>
-  <str name="allowPaths">${solr.allowPaths:}</str>
+  <str name="allowPaths">${solr.security.allow.paths:}</str>
   <str name="shareSchema">${shareSchema:true}</str>
   <str name="coresLocator">testCoresLocator</str>
   <str name="coreSorter">testCoreSorter</str>
