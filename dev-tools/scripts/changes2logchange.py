@@ -183,6 +183,10 @@ class AuthorParser:
     # and then end of string
     AUTHOR_PATTERN = re.compile(r'\s+\(([^()]+)\)\s*[.,]?\s*$', re.MULTILINE)
 
+    # Pattern to detect JIRA/GitHub issue references (should be extracted as links, not authors)
+    # Matches: SOLR-65, LUCENE-123, INFRA-456, PR#789, PR-789, GITHUB#123
+    ISSUE_PATTERN = re.compile(r'^(?:SOLR|LUCENE|INFRA)-\d+$|^PR[#-]\d+$|^GITHUB#\d+$')
+
     @staticmethod
     def parse_authors(entry_text: str) -> Tuple[str, List[Author]]:
         """
@@ -199,6 +203,9 @@ class AuthorParser:
 
         Only matches author attribution at the END of the entry text,
         not in the middle of descriptions like (aka Standalone)
+
+        Note: JIRA/GitHub issue IDs found in the author section are NOT added as authors,
+        but are preserved in the returned text so IssueExtractor can process them as links.
         """
         # Find ALL matches and use the LAST one (rightmost)
         # This ensures we get the actual author attribution, not mid-text parentheses
@@ -214,14 +221,25 @@ class AuthorParser:
         cleaned_text = entry_text[:match.start()].rstrip()
 
         authors = []
+        found_issues = []  # Track JIRA issues found in author section
 
-        # Split by comma, but be aware of "via" keyword
-        # Pattern: "Author via Committer" or just "Author"
-        segments = [seg.strip() for seg in author_text.split(',')]
+        # Split by comma and slash, which are both used as delimiters in author sections
+        # Patterns handled:
+        # - "Author1, Author2" (comma delimiter)
+        # - "Author1 / Author2" (slash delimiter)
+        # - "Author1, Issue1 / Author2" (mixed delimiters)
+        # Also aware of "via" keyword: "Author via Committer"
+        segments = [seg.strip() for seg in re.split(r'[,/]', author_text)]
 
         for segment in segments:
             segment = segment.strip()
             if not segment:
+                continue
+
+            # Check if this is a JIRA/GitHub issue reference
+            if AuthorParser.ISSUE_PATTERN.match(segment):
+                # Don't add as author, but remember to add it back to text for IssueExtractor
+                found_issues.append(segment)
                 continue
 
             # Handle "via" prefix (standalone or after author name)
@@ -229,24 +247,29 @@ class AuthorParser:
                 # Malformed: standalone "via Committer" (comma was added incorrectly)
                 # Extract just the committer name
                 committer_name = segment[4:].strip()  # Remove "via " prefix
-                if committer_name:
+                if committer_name and not AuthorParser.ISSUE_PATTERN.match(committer_name):
                     authors.append(Author(name=committer_name))
             elif ' via ' in segment:
                 # Format: "Author via Committer"
                 parts = segment.split(' via ')
                 author_name = parts[0].strip()
+                committer_name = parts[1].strip() if len(parts) > 1 else ""
 
-                if author_name:
-                    # Normal case: "Author via Committer" - add the author
+                # Add author if not an issue ID
+                if author_name and not AuthorParser.ISSUE_PATTERN.match(author_name):
                     authors.append(Author(name=author_name))
-                else:
-                    # Should not happen, but handle it
-                    committer_name = parts[1].strip() if len(parts) > 1 else ""
-                    if committer_name:
-                        authors.append(Author(name=committer_name))
+
+                # Also add committer (the part after "via") as an author
+                if committer_name and not AuthorParser.ISSUE_PATTERN.match(committer_name):
+                    authors.append(Author(name=committer_name))
             else:
-                # Just an author name
-                authors.append(Author(name=segment))
+                # Just an author name (if not an issue ID)
+                if not AuthorParser.ISSUE_PATTERN.match(segment):
+                    authors.append(Author(name=segment))
+
+        # Add found issues back to the cleaned text so IssueExtractor can find them
+        if found_issues:
+            cleaned_text = cleaned_text + " " + " ".join(found_issues)
 
         return cleaned_text, authors
 
@@ -304,7 +327,9 @@ class SlugGenerator:
         """
         Generate a slug from issue ID and title.
 
-        Format: ISSUE-12345-short-slug or VERSION-entry-001-short-slug
+        Format: ISSUE-12345 short slug or VERSION entry 001 short slug
+        Note: Previous slug formats used dashes ("ISSUE-12345-short-slug"), but this script now uses spaces between components (e.g., "ISSUE-12345 short slug").
+        Spaces are preferred over dashes for improved readability, better preservation of word boundaries, and to avoid unnecessary character substitutions. This change also ensures that filenames remain filesystem-safe while being more human-friendly.
         Uses the actual issue ID without forcing SOLR- prefix
         Ensures filesystem-safe filenames and respects word boundaries
         Whitespace is preserved as spaces (not converted to dashes)
@@ -316,7 +341,7 @@ class SlugGenerator:
         title_slug = SlugGenerator._sanitize_filename_part(title)
 
         # Limit to reasonable length while respecting word boundaries
-        # Target max length: 50 chars for slug (leaving room for base_issue and dash)
+        # Target max length: 50 chars for slug (leaving room for base_issue and space)
         if len(title_slug) > 50:
             # Find last word/space boundary within 50 chars
             truncated = title_slug[:50]
@@ -333,7 +358,7 @@ class SlugGenerator:
                     # If no good boundary, use hard limit and clean up
                     title_slug = truncated.rstrip(' -')
 
-        return f"{base_issue}-{title_slug}"
+        return f"{base_issue} {title_slug}"
 
     @staticmethod
     def _sanitize_issue_id(issue_id: str) -> str:
@@ -360,9 +385,9 @@ class SlugGenerator:
         """
         Sanitize text for use in filenames.
         - Convert to lowercase
-        - Replace unsafe characters with dashes
-        - Convert any whitespace to space (preserved in filename)
-        - Remove multiple consecutive spaces or dashes
+        - Remove quotes, colons, backticks
+        - Replace other unsafe characters with dashes
+        - Convert any whitespace to single space
         - Strip leading/trailing spaces and dashes
         """
         # Convert to lowercase
@@ -371,17 +396,31 @@ class SlugGenerator:
         # Normalize all whitespace to single spaces
         text = re.sub(r'\s+', ' ', text)
 
-        # Replace unsafe characters with dash
+        # Remove quotes, colons, backticks entirely (don't replace with dash)
+        text = re.sub(r'["\':´`]', '', text)
+
+        # Replace other unsafe characters (from UNSAFE_CHARS_PATTERN) with dash
+        # This covers: < > " / \ | ? * and control characters
+        # Note: we already removed quotes and colons above
         text = SlugGenerator.UNSAFE_CHARS_PATTERN.sub('-', text)
 
-        # Replace other non-alphanumeric (except space and dash) with dash
-        text = re.sub(r'[^a-z0-9\s-]+', '-', text)
+        # Replace other non-alphanumeric (except space, dash, and dot) with dash
+        text = re.sub(r'[^a-z0-9\s.\-]+', '-', text)
 
         # Replace multiple consecutive dashes with single dash (but preserve spaces)
         text = re.sub(r'-+', '-', text)
 
-        # Strip leading/trailing spaces and dashes
-        text = text.strip(' -')
+        # Remove trailing dashes before we clean up space-dash sequences
+        text = text.rstrip('-')
+
+        # Handle " -" and "- " sequences: collapse to single space
+        text = re.sub(r'\s*-\s*', ' ', text)
+
+        # Replace multiple consecutive spaces with single space
+        text = re.sub(r'\s+', ' ', text)
+
+        # Strip leading/trailing spaces
+        text = text.strip(' ')
 
         return text
 
@@ -406,7 +445,8 @@ class ChangesParser:
     """Main parser for CHANGES.txt file."""
 
     # Pattern to match version headers: ==================  10.0.0 ==================
-    VERSION_HEADER_PATTERN = re.compile(r'=+\s+([\d.]+)\s+=+')
+    # Also supports pre-release versions: 4.0.0-ALPHA, 4.0.0-BETA, 4.0.0-RC1, etc.
+    VERSION_HEADER_PATTERN = re.compile(r'=+\s+([\d.]+(?:-[A-Za-z0-9]+)?)\s+=+')
 
     # Pattern to match section headers: "Section Name" followed by dashes
     # Matches patterns like "New Features\n---------------------"
@@ -643,6 +683,206 @@ class ReleaseDate:
         return version_dates, latest_version
 
 
+class VersionWriter:
+    """Handles version enumeration, comparison, and release-date.txt writing."""
+
+    def __init__(self, changes_file_path: str, changelog_dir: str):
+        self.changes_file_path = changes_file_path
+        self.changelog_dir = Path(changelog_dir)
+        self.parser = ChangesParser(changes_file_path)
+
+        # Fetch release dates from Apache projects JSON
+        version_dates_raw, _ = ReleaseDate.fetch_release_dates_and_latest()
+
+        # Normalize version keys for consistent lookup (e.g., "3.1" -> "3.1.0")
+        self.version_dates = {}
+        for version, date in version_dates_raw.items():
+            normalized = self._normalize_version(version)
+            # Keep the first occurrence (most canonical form)
+            if normalized not in self.version_dates:
+                self.version_dates[normalized] = date
+
+    def run(self):
+        """Execute version comparison and release-date.txt writing."""
+        print("Parsing CHANGES.txt for versions...")
+        self.parser.parse()
+
+        # Extract versions from CHANGES.txt
+        changes_versions = set(vs.version for vs in self.parser.versions)
+        print(f"Found {len(changes_versions)} versions in CHANGES.txt")
+
+        # Get existing version folders
+        existing_folders = self.get_existing_version_folders()
+        print(f"Found {len(existing_folders)} existing version folders in changelog/")
+
+        # Get versions from solr.json (which is what ReleaseDate fetches)
+        solr_json_versions = set(self.version_dates.keys())
+        print(f"Found {len(solr_json_versions)} versions in solr.json\n")
+
+        # Build normalized version mappings for matching (supports semver like 3.1 == 3.1.0)
+        changes_normalized = {self._normalize_version(v): v for v in changes_versions}
+        existing_normalized = {self._normalize_version(v): v for v in existing_folders}
+        solr_normalized = {self._normalize_version(v): v for v in solr_json_versions}
+
+        # Combine all normalized versions
+        all_normalized = sorted(set(changes_normalized.keys()) | set(solr_normalized.keys()) | set(existing_normalized.keys()),
+                               key=self._version_sort_key)
+
+        # Print comparison report
+        self._print_comparison_report(all_normalized, changes_normalized, solr_normalized, existing_normalized)
+
+        # Write release-date.txt for existing folders
+        self._write_release_dates(existing_normalized)
+
+    def get_existing_version_folders(self) -> set:
+        """Get all existing vX.Y.Z folders in changelog/."""
+        if not self.changelog_dir.exists():
+            return set()
+
+        folders = set()
+        for item in self.changelog_dir.iterdir():
+            if item.is_dir() and item.name.startswith('v') and item.name[1:].replace('.', '').isdigit():
+                # Extract version without 'v' prefix
+                version = item.name[1:]
+                folders.add(version)
+
+        return folders
+
+    @staticmethod
+    def _normalize_version(version: str) -> str:
+        """
+        Normalize incomplete version strings to X.Y.Z format.
+        Complete versions (3+ numeric parts) are left unchanged.
+        Incomplete versions are padded with zeros.
+        Pre-release versions (e.g., 4.0.0-ALPHA) are handled correctly.
+
+        Supports semantic versioning where "3.1" matches "3.1.0".
+        But keeps distinct versions separate: 3.6.0, 3.6.1, 3.6.2 are NOT normalized to the same value.
+
+        Examples:
+        - "3.1" -> "3.1.0" (2 parts, pad to 3)
+        - "3" -> "3.0.0" (1 part, pad to 3)
+        - "3.1.0" -> "3.1.0" (3 parts, unchanged)
+        - "3.6.1" -> "3.6.1" (3 parts, unchanged)
+        - "3.6.2" -> "3.6.2" (3 parts, unchanged - NOT collapsed!)
+        - "4.0.0-ALPHA" -> "4.0.0-ALPHA" (pre-release, unchanged)
+        - "4.0-ALPHA" -> "4.0.0-ALPHA" (incomplete pre-release, pad to 3 numeric parts)
+        - "4.0.0-ALPHA.0" -> "4.0.0-ALPHA" (remove spurious .0 from pre-release)
+        - "3.1.0.0" -> "3.1.0.0" (4 parts, unchanged)
+        """
+        # Check if this is a pre-release version (contains dash)
+        if '-' in version:
+            # Split on the dash to separate numeric version from pre-release identifier
+            base_version, prerelease = version.split('-', 1)
+            base_parts = base_version.split('.')
+
+            # Pad the base version to 3 parts
+            while len(base_parts) < 3:
+                base_parts.append('0')
+
+            # Take only first 3 numeric parts, then rejoin with pre-release identifier
+            # This prevents "4.0.0-ALPHA.0" from being added
+            normalized_base = '.'.join(base_parts[:3])
+            return f"{normalized_base}-{prerelease}"
+        else:
+            # Non-pre-release version - use original logic
+            parts = version.split('.')
+
+            # If already 3+ parts, return as-is (complete version)
+            if len(parts) >= 3:
+                return version
+
+            # If less than 3 parts, pad with zeros to make it 3 parts
+            while len(parts) < 3:
+                parts.append('0')
+            return '.'.join(parts)
+
+    def _version_sort_key(self, version: str) -> tuple:
+        """Convert version string to sortable tuple for proper ordering."""
+        try:
+            from packaging import version as pkg_version
+            return (pkg_version.parse(version),)
+        except Exception:
+            return (version,)
+
+    def _print_comparison_report(self, all_normalized_versions: list, changes_normalized: dict,
+                                solr_normalized: dict, existing_normalized: dict):
+        """
+        Print a comparison report of versions across sources.
+
+        Args:
+            all_normalized_versions: List of normalized versions to display
+            changes_normalized: Dict mapping normalized version -> original version from CHANGES.txt
+            solr_normalized: Dict mapping normalized version -> original version from solr.json
+            existing_normalized: Dict mapping normalized version -> original version from folders
+        """
+        print("=" * 100)
+        print(f"{'Normalized':<15} | {'CHANGES.txt':<15} | {'solr.json':<15} | {'Folder':<15} | {'Release Date':<20}")
+        print("-" * 100)
+
+        for norm_version in all_normalized_versions:
+            in_changes = "✓" if norm_version in changes_normalized else " "
+            in_solr_json = "✓" if norm_version in solr_normalized else " "
+            has_folder = "✓" if norm_version in existing_normalized else " "
+
+            # Get original version strings for display
+            orig_changes = changes_normalized.get(norm_version, "")
+            orig_solr = solr_normalized.get(norm_version, "")
+            orig_folder = existing_normalized.get(norm_version, "")
+
+            # Get release date using normalized version (all version_dates keys are normalized)
+            release_date = self.version_dates.get(norm_version, "(no date)")
+
+            # Format original versions as "orig" if different from normalized
+            changes_str = f"{orig_changes}" if orig_changes and orig_changes != norm_version else ""
+            solr_str = f"{orig_solr}" if orig_solr and orig_solr != norm_version else ""
+            folder_str = f"{orig_folder}" if orig_folder and orig_folder != norm_version else ""
+
+            print(f"{norm_version:<15} | {in_changes} {changes_str:<13} | {in_solr_json} {solr_str:<13} | {has_folder} {folder_str:<13} | {release_date:<20}")
+
+        print("=" * 100)
+
+    def _write_release_dates(self, existing_normalized: dict):
+        """
+        Write release-date.txt files for existing version folders that don't have them.
+
+        Args:
+            existing_normalized: Dict mapping normalized version -> original folder version string
+        """
+        written_count = 0
+        skipped_count = 0
+
+        print("\nWriting release-date.txt files:")
+        for norm_version in sorted(existing_normalized.keys(), key=self._version_sort_key):
+            orig_folder_version = existing_normalized[norm_version]
+            version_dir = self.changelog_dir / f"v{orig_folder_version}"
+            release_date_file = version_dir / "release-date.txt"
+
+            # Get release date using normalized version (all version_dates keys are normalized)
+            release_date = self.version_dates.get(norm_version)
+
+            if release_date:
+                if release_date_file.exists():
+                    existing_content = release_date_file.read_text().strip()
+                    if existing_content == release_date:
+                        print(f"  ✓ {orig_folder_version}: already has release-date.txt")
+                    else:
+                        print(f"  ⚠ {orig_folder_version}: already has release-date.txt with different date ({existing_content})")
+                    skipped_count += 1
+                else:
+                    with open(release_date_file, 'w', encoding='utf-8') as f:
+                        f.write(release_date + '\n')
+                    version_display = f"{orig_folder_version} (normalized: {norm_version})" if orig_folder_version != norm_version else orig_folder_version
+                    print(f"  ✓ {version_display}: wrote release-date.txt ({release_date})")
+                    written_count += 1
+            else:
+                version_display = f"{orig_folder_version} (normalized: {norm_version})" if orig_folder_version != norm_version else orig_folder_version
+                print(f"  ⚠ {version_display}: no date found in solr.json")
+                skipped_count += 1
+
+        print(f"\nSummary: {written_count} files written, {skipped_count} skipped/existing")
+
+
 class MigrationRunner:
     """Orchestrates the complete migration process."""
 
@@ -707,8 +947,8 @@ class MigrationRunner:
 
         print(f"  Found {len(version_section.entries)} entries")
 
-        # Write release-date.txt if we have a date for this version
-        if version_section.version in self.version_dates:
+        # Write release-date.txt if we have a date for this version (only for released versions)
+        if not is_unreleased and version_section.version in self.version_dates:
             release_date = self.version_dates[version_section.version]
             release_date_file = version_dir / "release-date.txt"
             version_dir.mkdir(parents=True, exist_ok=True)
@@ -910,6 +1150,11 @@ def main():
         help="Last released version (e.g., 9.9.0). Versions newer than this go to unreleased/. "
              "If not specified, fetches from Apache projects JSON."
     )
+    parser.add_argument(
+        "--write-versions",
+        action="store_true",
+        help="Parse CHANGES.txt to enumerate versions, compare with solr.json, and write release-date.txt files to existing changelog folders"
+    )
 
     args = parser.parse_args()
 
@@ -922,6 +1167,13 @@ def main():
         print(f"Error: CHANGES.txt file not found: {args.changes_file}", file=sys.stderr)
         sys.exit(1)
 
+    # Handle --write-versions mode
+    if args.write_versions:
+        writer = VersionWriter(args.changes_file, args.output_dir)
+        writer.run()
+        return
+
+    # Standard migration mode
     runner = MigrationRunner(args.changes_file, args.output_dir, args.last_released)
     runner.run()
 
