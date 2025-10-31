@@ -133,10 +133,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     systemClearPropertySolrEnableUrlAllowList();
   }
 
-  private static String getHostContextSuitableForServletContext() {
-    return "/solr";
-  }
-
   protected BaseDistributedSearchTestCase() {
     String solrHostContext = "/solr";
     this.deadServers =
