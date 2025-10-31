@@ -30,14 +30,14 @@ configure(rootProject) {
 def resources = scriptResources(buildscript)
 
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     // Create a [sourceSetName]EcjLint task for each source set
     // with a non-empty java.srcDirs. These tasks are then
     // attached to project's "ecjLint" task.
-    def lintTasks = sourceSets.collect { sourceSet ->
+    def lintTasks = sourceSets.collect { SourceSet sourceSet ->
       def srcDirs = sourceSet.java.srcDirs.findAll { dir -> dir.exists() }
 
-      tasks.create(sourceSet.getTaskName("ecjLint", null), JavaExec, {task ->
+      tasks.register(sourceSet.getTaskName("ecjLint", null), JavaExec) { task ->
         // This dependency is on a configuration; technically it causes
         // all dependencies to be resolved before this task executes
         // (this includes scheduling tasks that compile the
@@ -92,10 +92,10 @@ allprojects {
           // directories instead:
           args += srcDirs
         }
-      })
+      }
     }
 
-    task ecjLint() {
+    tasks.register("ecjLint") {
       description "Lint Java sources using ECJ."
       group "Verification"
 

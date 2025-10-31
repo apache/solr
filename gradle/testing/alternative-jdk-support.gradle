@@ -46,7 +46,7 @@ JvmMetadataDetector jvmDetector = project.services.get(JvmMetadataDetector)
 
 if (jvmGradle != jvmCurrent) {
   configure(rootProject) {
-    task altJvmWarning() {
+    tasks.register("altJvmWarning") {
       doFirst {
 
         def jvmInfo = { JavaInfo javaInfo ->
@@ -64,13 +64,13 @@ if (jvmGradle != jvmCurrent) {
 
   allprojects {
     // Any tests
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
       dependsOn ":altJvmWarning"
       executable = jvmCurrent.javaExecutable
     }
 
     // Any javac compilation tasks
-    tasks.withType(JavaCompile) {
+    tasks.withType(JavaCompile).configureEach {
       dependsOn ":altJvmWarning"
       options.fork = true
       options.forkOptions.javaHome = jvmCurrent.javaHome

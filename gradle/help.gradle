@@ -33,7 +33,7 @@ configure(rootProject) {
   ]
 
   helpFiles.each { section, path, sectionInfo ->
-    task "help${section}" {
+    tasks.register("help${section}") {
       group = 'Help (developer guides and hints)'
       description = sectionInfo
       doFirst {
@@ -57,7 +57,7 @@ configure(rootProject) {
     }
   }
 
-  task allHelpFilesExit() {
+  tasks.register("allHelpFilesExit") {
     doFirst {
       helpFiles.each { section, path, sectionInfo ->
         if (!rootProject.file(path).exists()) {

@@ -17,7 +17,7 @@
 
 // Adapt to custom folder convention.
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     sourceSets {
       main.java.srcDirs = ['src/java']
       main.resources.srcDirs = ['src/resources']

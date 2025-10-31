@@ -34,7 +34,7 @@ jmhReport {
   jmhReportOutput = project.file('build/reports/jmh')
 }
 
-task echoCp {
+tasks.register("echoCp") {
   doLast {
     print "${(sourceSets.main.runtimeClasspath + sourceSets.main.resources).asPath}"
   }

@@ -90,7 +90,7 @@ ext {
   useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
 }
 
-task run(type: JavaExec) {
+tasks.register("run", JavaExec) {
   group = 'application'
   description = 'Run the main class with JavaExecTask'
   mainClass = project.ext.mainClass

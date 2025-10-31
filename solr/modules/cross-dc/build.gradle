@@ -65,7 +65,7 @@ dependencies {
 
 // Make sure that the cloud-minimal.zip artifact is up-to-date with cloud-minimal/conf
 // We keep this checked into github, so that the unit tests can be run in intelliJ without gradle
-task zipCloudConfigSet(type: Zip) {
+tasks.register("zipCloudConfigSet", Zip) {
   from "${projectDir}/src/test-files/configs/cloud-minimal/conf/"
   getArchiveFileName().set("cloud-minimal.zip")
   setDestinationDirectory(file("${projectDir.toString()}/src/test-files/configs"))

@@ -62,7 +62,7 @@ configure(rootProject) {
     projectSeedLong = rootSeedLong ^ project.path.hashCode()
   }
 
-  task randomizationInfo() {
+  tasks.register("randomizationInfo") {
     doFirst {
       logger.lifecycle("Running tests with randomization seed: tests.seed=${rootSeed}")
     }
@@ -71,14 +71,14 @@ configure(rootProject) {
 
 // Any test task will trigger display of randomization settings.
 allprojects {
-  tasks.withType(Test) { task ->
+  tasks.withType(Test).configureEach { task ->
     task.dependsOn rootProject.randomizationInfo
   }
 }
 
 // Configure test property defaults and their descriptions.
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     project.ext {
       testOptions += [
           // seed, repetition and amplification.
@@ -125,7 +125,7 @@ allprojects {
 
 // Add Solr-specific test configs settings.
 configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     project.ext {
       testOptions += [
           [propName: 'tests.src.home', value: null, description: "See SOLR-14023."],
@@ -137,7 +137,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
 
 // Resolve test option values after all evaluation is complete.
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     afterEvaluate {
       project.ext.testOptionsResolved = testOptions.findAll { opt ->
         propertyOrDefault(opt.propName, opt.value) != null
@@ -175,7 +175,7 @@ allprojects {
       }
 
       // Append resolved test properties to the test task.
-      tasks.withType(Test) { task ->
+      tasks.withType(Test).configureEach { task ->
         // TODO: we could remove some options that are only relevant to the build environment
         // and not the test JVM itself.
         systemProperties testOptionsResolved
@@ -234,8 +234,8 @@ allprojects {
 // Add a helper task to display resolved test property values with their defaults
 // and descriptions.
 allprojects {
-  plugins.withType(JavaPlugin) {
-    task testOpts() {
+  plugins.withType(JavaPlugin).configureEach {
+    tasks.register("testOpts") {
       group = 'Help (developer guides and hints)'
       description = "Display values of randomization settings for a given seed"
 

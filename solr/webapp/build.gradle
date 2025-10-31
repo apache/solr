@@ -49,7 +49,7 @@ dependencies {
   }
 }
 
-task syncJSClientSourceCode(type: Sync) {
+tasks.register("syncJSClientSourceCode", Sync) {
   group = 'Solr JS Client'
   from configurations.generatedJSClient
 
@@ -61,7 +61,7 @@ task syncJSClientSourceCode(type: Sync) {
   }
 }
 
-task jsClientDownloadDeps(type: NpmTask) {
+tasks.register("jsClientDownloadDeps", NpmTask) {
   group = 'Solr JS Client'
   dependsOn tasks.syncJSClientSourceCode
 
@@ -73,7 +73,7 @@ task jsClientDownloadDeps(type: NpmTask) {
   outputs.dir("${jsClientWorkspace}/node_modules")
 }
 
-task jsClientBuild(type: NpmTask) {
+tasks.register("jsClientBuild", NpmTask) {
   group = 'Solr JS Client'
   dependsOn tasks.jsClientDownloadDeps
 
@@ -86,7 +86,7 @@ task jsClientBuild(type: NpmTask) {
   outputs.dir("${jsClientWorkspace}/dist")
 }
 
-task downloadBrowserify(type: NpmTask) {
+tasks.register("downloadBrowserify", NpmTask) {
   group = 'Build Dependency Download'
   args = ["install", "browserify@${libs.versions.browserify.get()}"]
 
@@ -114,7 +114,7 @@ if (gradle.ext.withUiModule) {
   }
 }
 
-task generateJsClientBundle(type: NpxTask) {
+tasks.register("generateJsClientBundle", NpxTask) {
   group = 'Solr JS Client'
   dependsOn tasks.downloadBrowserify
   dependsOn tasks.jsClientBuild
@@ -129,7 +129,7 @@ task generateJsClientBundle(type: NpxTask) {
   outputs.file("${jsClientBuildDir}/index.js")
 }
 
-task finalizeJsBundleDir(type: Sync) {
+tasks.register("finalizeJsBundleDir", Sync) {
   group = 'Solr JS Client'
 
   from configurations.generatedJSClient {

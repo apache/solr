@@ -66,13 +66,13 @@ def fullDistTarTask = rootProject.getTasksByName("fullDistTar", true)[0]
 def slimDistTarTask = rootProject.getTasksByName("slimDistTar", true)[0]
 
 // Compute checksums for release archives.
-task computeChecksums(type: buildinfra.checksumClass()) {
+tasks.register("computeChecksums", buildinfra.checksumClass()) {
 
   files = objects.fileCollection()
   [
-      tasks.assembleSourceTgz,
-      fullDistTarTask,
-      slimDistTarTask
+          tasks.assembleSourceTgz,
+          fullDistTarTask,
+          slimDistTarTask
   ].each { dep ->
     dependsOn dep
     files += dep.outputs.files
@@ -83,18 +83,18 @@ task computeChecksums(type: buildinfra.checksumClass()) {
   outputDir = file("${buildDir}/checksums")
 }
 
-task signFullBinaryTgz(type: Sign) {
+tasks.register("signFullBinaryTgz", Sign) {
   sign fullDistTarTask
 }
-task signSlimBinaryTgz(type: Sign) {
+tasks.register("signSlimBinaryTgz", Sign) {
   sign slimDistTarTask
 }
-task signSourceTgz(type: Sign) {
+tasks.register("signSourceTgz", Sign) {
   // The source tgz is not an archive task so be explicit about the outputs to sign.
   dependsOn tasks.assembleSourceTgz
   sign tasks.assembleSourceTgz.destination
 }
-task signOpenApiSpec(type: Sign) {
+tasks.register("signOpenApiSpec", Sign) {
   dependsOn configurations.openApiSpecFile
   // This is not an artifact, so we need to use "file" not "configuration" signing
   doFirst {
@@ -102,7 +102,7 @@ task signOpenApiSpec(type: Sign) {
   }
 }
 
-task signReleaseArchives(type: Sync) {
+tasks.register("signReleaseArchives", Sync) {
   from tasks.signFullBinaryTgz
   from tasks.signSlimBinaryTgz
   from tasks.signSourceTgz
@@ -111,7 +111,7 @@ task signReleaseArchives(type: Sync) {
   into "${buildDir}/signatures"
 }
 
-task prepareGitRev() {
+tasks.register("prepareGitRev") {
   dependsOn ":gitStatus"
 
   ext.outputFile = file("${buildDir}/.gitrev")
@@ -126,7 +126,7 @@ task prepareGitRev() {
 
 
 // Assemble everything needed in the release folder structure.
-task assembleRelease(type: Sync) {
+tasks.register("assembleRelease", Sync) {
   description "Assemble all Solr artifacts for a release."
   dependsOn ":mavenToLocalFolder"
 
@@ -181,6 +181,6 @@ task assembleRelease(type: Sync) {
 tasks.matching {it.name in [
     "assembleSourceTgz",
     "assembleRelease",
-]}.all {
+]}.configureEach {
   group "distribution"
 }

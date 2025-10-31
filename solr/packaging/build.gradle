@@ -169,7 +169,7 @@ installDist {
   dependsOn tasks.installSlimDist
 }
 
-task devFull(type: Copy) {
+tasks.register("devFull", Copy) {
   description "Assemble Full Solr distribution into 'development' folder at ${devDir}"
   group "build"
 
@@ -177,7 +177,7 @@ task devFull(type: Copy) {
   into devDir
 }
 
-task devSlim(type: Copy) {
+tasks.register("devSlim", Copy) {
   description "Assemble Slim Solr distribution into 'development' folder at ${slimDevDir}"
   group "build"
 
@@ -185,7 +185,7 @@ task devSlim(type: Copy) {
   into slimDevDir
 }
 
-task dev {
+tasks.register("dev") {
   description "Assemble Solr distributions into 'development' folders at ${devDir} and ${slimDevDir}"
   group "build"
 
@@ -215,7 +215,7 @@ artifacts {
   solrSlimTgz(slimDistTar)
 }
 
-task downloadBats(type: NpmTask) {
+tasks.register("downloadBats", NpmTask) {
   group = 'Build Dependency Download'
   args = ["install", "https://github.com/bats-core/bats-core#v${libs.versions.bats.core.get()}",
                      "https://github.com/bats-core/bats-assert#v${libs.versions.bats.assert.get()}",
@@ -229,7 +229,7 @@ task downloadBats(type: NpmTask) {
   outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-file")
 }
 
-task integrationTests(type: BatsTask) {
+tasks.register("integrationTests", BatsTask) {
   dependsOn installFullDist
   dependsOn downloadBats
 
