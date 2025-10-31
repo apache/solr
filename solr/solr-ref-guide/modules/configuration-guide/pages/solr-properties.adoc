@@ -84,6 +84,13 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.security.auth.basicauth.credentials|basicauth||Defines basic authentication credentials.
 
+|solr.security.allow.paths|solr.allowPaths||A comma seperated list of paths for reading from.
+
+|solr.security.allow.urls|solr.allowUrls||A comma seperated list of urls for reading from.
+
+|solr.security.allow.urls.enabled|!solr.disable.allow.urls|false|If using an allow list of accessible urls is enabled. 
+
+
 |solr.security.auth.plugin|authenticationPlugin||Specifies the authentication plugin to use.
 
 |solr.solrj.cloud.max.stale.retries|cloudSolrClientMaxStaleRetries|5|Sets the maximum number of retries for stale connection attempts in SolrJ cloud client.
