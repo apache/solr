@@ -46,7 +46,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicHeader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;

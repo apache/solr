@@ -82,7 +82,8 @@ Users who previously relied on collection-specific URLs to avoid including the c
 * Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to JavaBinRequestWriter, JavaBinResponseParser, StreamingJavaBinResponseParser.
 This makes it clear that they pertain specifically to “JavaBin” rather than binary in general.
 
-* The system property `solr.httpclient.builder.factory` now only configures SolrClients using a Jetty based HttpClient, not an Apache one.
+* The deprecated SolrClient implementations based on Apache HttpClient are removed from Solrj,  thus the related dependencies are no longer present.
+The system property `solr.httpclient.builder.factory` now only configures SolrClients using a Jetty based HttpClient.
 
 === SolrCloud Overseer
 
