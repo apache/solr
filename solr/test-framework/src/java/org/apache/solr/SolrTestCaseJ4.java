@@ -175,9 +175,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY =
       "solr.tests.mergePolicyFactory";
 
-  public static final String TEST_URL_ALLOW_LIST =
-      "solr.tests." + AllowListUrlChecker.URL_ALLOW_LIST;
-
+  public static final String TEST_URL_ALLOW_LIST = "solr.tests.security.allow.urls";
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000; // default socket connection timeout in ms
