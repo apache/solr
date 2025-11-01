@@ -33,5 +33,8 @@ dependencies {
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.junit.junit
   testImplementation libs.commonsio.commonsio
+
+  // lucene-backward-codecs is a transitive dependency from cuvs-lucene but required in lockfile
+  permitUnusedDeclared libs.apache.lucene.backward.codecs
 }
 
