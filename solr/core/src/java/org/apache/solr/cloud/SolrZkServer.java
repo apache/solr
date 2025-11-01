@@ -42,6 +42,7 @@ public class SolrZkServer {
 
   public static final String ZK_WHITELIST_PROPERTY = "zookeeper.4lw.commands.whitelist";
 
+  // nocommit figure out if we even need.  would we have a SolrZkServer if this isn't enabled?
   boolean zkServerEnabled;
   String zkHost;
 
@@ -95,7 +96,6 @@ public class SolrZkServer {
       // set default data dir
       // TODO: use something based on IP+port???  support ensemble all from same solr home?
       zkProps.setDataDir(dataHome);
-      zkProps.zkRun = zkServerEnabled;
       zkProps.solrPort = Integer.toString(solrPort);
     }
 
@@ -164,20 +164,11 @@ public class SolrZkServer {
             },
             "embeddedZkServer");
 
-    if (zkProps.getServers().size() > 1) {
-      if (log.isInfoEnabled()) {
-        log.info(
-            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
-            zkProps.getClientPortAddress().getPort(),
-            zkProps.getClientPortAddress().getAddress().getHostAddress());
-      }
-    } else {
-      if (log.isInfoEnabled()) {
-        log.info(
-            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
-            zkProps.getClientPortAddress().getPort(),
-            zkProps.getClientPortAddress().getAddress().getHostAddress());
-      }
+    if (log.isInfoEnabled()) {
+      log.info(
+          "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
+          zkProps.getClientPortAddress().getPort(),
+          zkProps.getClientPortAddress().getAddress().getHostAddress());
     }
 
     zkThread.setDaemon(true);
@@ -217,7 +208,6 @@ class SolrZkServerProps extends QuorumPeerConfig {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   String solrPort; // port that Solr is listening on
-  boolean zkRun;
 
   /**
    * Parse a ZooKeeper configuration file
