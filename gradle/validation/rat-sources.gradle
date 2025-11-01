@@ -24,6 +24,9 @@ configure(rootProject) {
     }
 
     dependencies {
+        constraints {
+            ratDeps("org.apache.commons:commons-lang3:${libs.versions.apache.commons.lang3.get()}")
+        }
         ratDeps libs.apache.rat.rat
     }
 }
