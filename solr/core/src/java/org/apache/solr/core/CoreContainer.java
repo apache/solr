@@ -920,10 +920,10 @@ public class CoreContainer {
           try {
             var fileStore = Files.getFileStore(dataHome);
             measurement.record(
-                fileStore.getTotalSpace() / (1024 * 1024 * 1024),
+                fileStore.getTotalSpace() / (1024 * 1024),
                 containerAttrs.toBuilder().put(TYPE_ATTR, "total_space").build());
             measurement.record(
-                fileStore.getUsableSpace() / (1024 * 1024 * 1024),
+                fileStore.getUsableSpace() / (1024 * 1024),
                 containerAttrs.toBuilder().put(TYPE_ATTR, "usable_space").build());
           } catch (IOException e) {
             throw new SolrException(
@@ -932,7 +932,7 @@ public class CoreContainer {
                 e);
           }
         },
-        OtelUnit.GIGABYTES);
+        OtelUnit.MEGABYTES);
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
     fieldCacheBean.initializeMetrics(
@@ -946,6 +946,7 @@ public class CoreContainer {
                 new SolrNamedThreadFactory("coreLoadExecutor")),
             solrMetricsContext,
             SolrInfoBean.Category.CONTAINER,
+            "solr_node_executor",
             "coreLoadExecutor");
 
     coreSorter =

@@ -135,6 +135,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
             coreAdminAsyncTracker.standardExecutor,
             solrMetricsContext,
             getCategory(),
+            "solr_admin_executor",
             "parallelCoreAdminExecutor");
 
     coreAdminAsyncTracker.expensiveExecutor =
@@ -142,6 +143,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
             coreAdminAsyncTracker.expensiveExecutor,
             solrMetricsContext,
             getCategory(),
+            "solr_admin_executor",
             "parallelCoreExpensiveAdminExecutor");
   }
 

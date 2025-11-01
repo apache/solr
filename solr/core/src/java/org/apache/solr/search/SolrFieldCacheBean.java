@@ -63,7 +63,7 @@ public class SolrFieldCacheBean implements SolrInfoBean {
             "solr_core_field_cache_entries", "Number of field cache entries");
     var solrCacheSize =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_core_field_cache_size_bytes", "Size of field cache in bytes", OtelUnit.BYTES);
+            "solr_core_field_cache_size", "Size of field cache in bytes", OtelUnit.BYTES);
     this.toClose =
         solrMetricsContext.batchCallback(
             () -> {

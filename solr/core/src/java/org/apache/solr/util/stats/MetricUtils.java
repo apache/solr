@@ -116,7 +116,8 @@ public class MetricUtils {
       ExecutorService delegate,
       SolrMetricsContext ctx,
       SolrInfoBean.Category category,
+      String metricPrefix,
       String name) {
-    return new OtelInstrumentedExecutorService(delegate, ctx, category, name);
+    return new OtelInstrumentedExecutorService(delegate, ctx, category, metricPrefix, name);
   }
 }
