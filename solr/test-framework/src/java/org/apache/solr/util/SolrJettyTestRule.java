@@ -21,7 +21,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettyConfig;
@@ -112,7 +112,7 @@ public class SolrJettyTestRule extends SolrClientTestRule {
   }
 
   protected SolrClient newSolrClient(String collection) {
-    return new HttpSolrClient.Builder(getBaseUrl())
+    return new HttpApacheSolrClient.Builder(getBaseUrl())
         .withDefaultCollection(collection) // Properly handles when collection is 'null'
         .build();
   }

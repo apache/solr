@@ -23,7 +23,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
@@ -68,7 +68,7 @@ public class SecurityHeadersTest extends SolrCloudTestCase {
     // same...
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       try (SolrClient solrClient = jetty.newClient()) {
-        final HttpClient client = ((HttpSolrClient) solrClient).getHttpClient();
+        final HttpClient client = ((HttpApacheSolrClient) solrClient).getHttpClient();
 
         // path shouldn't matter -- even if bogus / 404
         for (String path : Arrays.asList("/select", "/bogus")) {

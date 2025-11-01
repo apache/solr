@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -62,7 +62,7 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
 
     // create a client that does not have the /collection1 as part of the URL.
     try (SolrClient rootClient =
-        new HttpSolrClient.Builder(buildUrl(jettys.get(which).getLocalPort())).build()) {
+        new HttpApacheSolrClient.Builder(buildUrl(jettys.get(which).getLocalPort())).build()) {
       NamedList<?> namedListResponse = rootClient.request(request);
       final var statusByCore =
           JacksonContentWriter.DEFAULT_MAPPER.convertValue(

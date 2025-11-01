@@ -46,8 +46,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -531,7 +531,7 @@ public class TestPackages extends SolrCloudTestCase {
       Utils.InputStreamConsumer<?> parser,
       Map<String, Object> expected)
       throws Exception {
-    try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
+    try (var client = (HttpApacheSolrClient) jetty.newClient()) {
       TestDistribFileStore.assertResponseValues(
           10,
           () ->
@@ -690,7 +690,7 @@ public class TestPackages extends SolrCloudTestCase {
           new Callable<NavigableObject>() {
             @Override
             public NavigableObject call() throws Exception {
-              try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
+              try (var solrClient = (HttpApacheSolrClient) jetty.newClient()) {
                 return (NavigableObject)
                     HttpClientUtil.executeGET(
                         solrClient.getHttpClient(), path, Utils.JAVABINCONSUMER);

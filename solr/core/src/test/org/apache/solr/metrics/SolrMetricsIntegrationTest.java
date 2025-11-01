@@ -28,8 +28,8 @@ import java.util.Set;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -130,7 +130,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     }
 
     try (SolrClient solrClient = j.newClient()) {
-      HttpClient httpClient = ((HttpSolrClient) solrClient).getHttpClient();
+      HttpClient httpClient = ((HttpApacheSolrClient) solrClient).getHttpClient();
       var initialChildrenFetched =
           SolrMetricTestUtils.getCounterDatapoint(
                   reader, "solr_zk_cumulative_children_fetched", baseLabels)

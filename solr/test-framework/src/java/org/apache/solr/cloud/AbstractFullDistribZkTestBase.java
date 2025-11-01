@@ -46,13 +46,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -357,7 +358,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
 
     controlClient =
-        new HttpSolrClient.Builder(controlJetty.getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(controlJetty.getBaseUrl().toString())
             .withDefaultCollection("control_collection")
             .build();
     if (sliceCount <= 0) {
@@ -2185,7 +2186,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected SolrClient createNewSolrClient(String coreName, int port) {
     String baseUrl = buildUrl(port);
-    return new HttpSolrClient.Builder(baseUrl)
+    return new HttpApacheSolrClient.Builder(baseUrl)
         .withDefaultCollection(coreName)
         .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
         .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
@@ -2727,7 +2728,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected long getIndexVersion(Replica replica) throws IOException {
     try (SolrClient client =
-        new HttpSolrClient.Builder(replica.getBaseUrl())
+        new HttpApacheSolrClient.Builder(replica.getBaseUrl())
             .withDefaultCollection(replica.getCoreName())
             .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -2777,7 +2778,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected void logReplicationDetails(Replica replica, StringBuilder builder) throws IOException {
     try (SolrClient client =
-        new HttpSolrClient.Builder(replica.getBaseUrl())
+        new HttpApacheSolrClient.Builder(replica.getBaseUrl())
             .withDefaultCollection(replica.getCoreName())
             .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();

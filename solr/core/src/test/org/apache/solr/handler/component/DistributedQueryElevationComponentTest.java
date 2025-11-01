@@ -20,7 +20,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -168,7 +168,7 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     // Force javabin format
     final String clientUrl = jettys.get(0).getBaseUrl().toString();
     try (SolrClient client =
-        new HttpSolrClient.Builder(clientUrl)
+        new HttpApacheSolrClient.Builder(clientUrl)
             .withDefaultCollection("collection1")
             .withResponseParser(new JavaBinResponseParser())
             .build(); ) {

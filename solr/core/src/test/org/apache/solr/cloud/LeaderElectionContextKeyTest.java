@@ -23,7 +23,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
@@ -93,7 +93,7 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
     assertNotNull(replica);
 
     try (SolrClient shardLeaderClient =
-        new HttpSolrClient.Builder(replica.get("base_url").toString()).build()) {
+        new HttpApacheSolrClient.Builder(replica.get("base_url").toString()).build()) {
       assertEquals(
           1L, getElectionNodes(TEST_COLLECTION_1, shard, stateReader.getZkClient()).size());
       List<String> collection2Shard1Nodes =

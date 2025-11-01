@@ -36,7 +36,7 @@ import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -315,7 +315,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     runner.start();
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(runner.getBaseUrl().toString())
             .withDefaultCollection("corex")
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
@@ -327,7 +327,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     }
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(runner.getBaseUrl().toString())
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
@@ -342,7 +342,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     // 2> is deleted after rename properly.
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(runner.getBaseUrl().toString())
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
@@ -356,7 +356,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     }
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(runner.getBaseUrl().toString())
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
@@ -389,7 +389,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     runner.start();
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(runner.getBaseUrl().toString())
             .withDefaultCollection("corex")
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
@@ -401,7 +401,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     }
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(runner.getBaseUrl().toString())
             .withDefaultCollection("corex")
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
@@ -411,7 +411,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     }
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(runner.getBaseUrl().toString())
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
@@ -426,7 +426,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
             SolrClient.RemoteSolrException.class,
             () -> {
               try (SolrClient client =
-                  new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+                  new HttpApacheSolrClient.Builder(runner.getBaseUrl().toString())
                       .withDefaultCollection("corex")
                       .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
                       .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT * 1000, TimeUnit.MILLISECONDS)
@@ -454,7 +454,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     runner.start();
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(runner.getBaseUrl().toString())
             .withDefaultCollection("corex")
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
@@ -481,7 +481,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         StandardCopyOption.REPLACE_EXISTING);
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(runner.getBaseUrl().toString())
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {

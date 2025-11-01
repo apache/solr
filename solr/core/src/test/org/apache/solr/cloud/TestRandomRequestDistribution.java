@@ -30,7 +30,7 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.ClusterState;
@@ -109,7 +109,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     String baseUrl = replicas.iterator().next().getBaseUrl();
     if (!baseUrl.endsWith("/")) baseUrl += "/";
     try (SolrClient client =
-        new HttpSolrClient.Builder(baseUrl)
+        new HttpApacheSolrClient.Builder(baseUrl)
             .withDefaultCollection("a1x2")
             .withConnectionTimeout(2000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(5000, TimeUnit.MILLISECONDS)
@@ -221,7 +221,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     String baseUrl = notLeader.getBaseUrl();
     log.info("Firing queries against path={} and collection=football", baseUrl);
     try (SolrClient client =
-        new HttpSolrClient.Builder(baseUrl)
+        new HttpApacheSolrClient.Builder(baseUrl)
             .withDefaultCollection("football")
             .withConnectionTimeout(2000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(5000, TimeUnit.MILLISECONDS)

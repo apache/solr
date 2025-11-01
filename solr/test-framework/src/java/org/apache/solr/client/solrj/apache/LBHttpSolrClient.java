@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
@@ -103,7 +104,7 @@ public class LBHttpSolrClient extends LBSolrClient {
   private final HttpClient httpClient;
   private final boolean clientIsInternal;
   private final ConcurrentHashMap<String, HttpSolrClient> urlToClient = new ConcurrentHashMap<>();
-  private final HttpSolrClient.Builder httpSolrClientBuilder;
+  private final HttpApacheSolrClient.Builder httpSolrClientBuilder;
   private volatile Set<String> urlParamNames = new HashSet<>();
 
   final int connectionTimeoutMillis;
@@ -140,8 +141,8 @@ public class LBHttpSolrClient extends LBSolrClient {
     return HttpClientUtil.createClient(params);
   }
 
-  protected HttpSolrClient makeSolrClient(Endpoint server) {
-    HttpSolrClient client;
+  protected HttpApacheSolrClient makeSolrClient(Endpoint server) {
+    HttpApacheSolrClient client;
     if (httpSolrClientBuilder != null) {
       synchronized (this) {
         httpSolrClientBuilder
@@ -163,7 +164,7 @@ public class LBHttpSolrClient extends LBSolrClient {
       }
     } else {
       final var clientBuilder =
-          new HttpSolrClient.Builder(server.getBaseUrl())
+          new HttpApacheSolrClient.Builder(server.getBaseUrl())
               .withDefaultCollection(server.getCore())
               .withHttpClient(httpClient)
               .withResponseParser(parser)
@@ -218,7 +219,7 @@ public class LBHttpSolrClient extends LBSolrClient {
 
     public static final int CHECK_INTERVAL = 60 * 1000; // 1 minute between checks
     protected final List<Endpoint> solrEndpoints;
-    protected HttpSolrClient.Builder httpSolrClientBuilder;
+    protected HttpApacheSolrClient.Builder httpSolrClientBuilder;
     private int aliveCheckInterval = CHECK_INTERVAL;
 
     public Builder() {
@@ -226,7 +227,7 @@ public class LBHttpSolrClient extends LBSolrClient {
       this.responseParser = new JavaBinResponseParser();
     }
 
-    public HttpSolrClient.Builder getHttpSolrClientBuilder() {
+    public HttpApacheSolrClient.Builder getHttpSolrClientBuilder() {
       return httpSolrClientBuilder;
     }
 
@@ -321,10 +322,10 @@ public class LBHttpSolrClient extends LBSolrClient {
     }
 
     /**
-     * Provides a {@link HttpSolrClient.Builder} to be used for building the internally used
+     * Provides a {@link HttpApacheSolrClient.Builder} to be used for building the internally used
      * clients.
      */
-    public Builder withHttpSolrClientBuilder(HttpSolrClient.Builder builder) {
+    public Builder withHttpSolrClientBuilder(HttpApacheSolrClient.Builder builder) {
       this.httpSolrClientBuilder = builder;
       return this;
     }

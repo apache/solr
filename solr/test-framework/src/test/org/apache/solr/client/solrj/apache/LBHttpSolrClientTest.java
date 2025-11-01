@@ -42,7 +42,7 @@ public class LBHttpSolrClientTest extends SolrTestCase {
                 .withHttpClient(httpClient)
                 .withResponseParser(null)
                 .build();
-        HttpSolrClient httpSolrClient =
+        var httpSolrClient =
             testClient.makeSolrClient(new LBSolrClient.Endpoint("http://127.0.0.1:8080"))) {
       assertNull("Generated server should have null parser.", httpSolrClient.getParser());
     } finally {
@@ -57,7 +57,7 @@ public class LBHttpSolrClientTest extends SolrTestCase {
                   .withHttpClient(httpClient)
                   .withResponseParser(parser)
                   .build();
-          HttpSolrClient httpSolrClient =
+          var httpSolrClient =
               testClient.makeSolrClient(new LBSolrClient.Endpoint("http://127.0.0.1:8080"))) {
         assertEquals(
             "Invalid parser passed to generated server.", parser, httpSolrClient.getParser());

@@ -37,7 +37,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -621,8 +621,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       // However using solr client would drop cache response header, hence we need to use the
       // underlying httpClient which has SSL correctly configured
 
-      try (HttpSolrClient solrClient =
-          new HttpSolrClient.Builder(coordinatorJetty.getBaseUrl().toString()).build()) {
+      try (var solrClient =
+          new HttpApacheSolrClient.Builder(coordinatorJetty.getBaseUrl().toString()).build()) {
         HttpResponse response =
             solrClient
                 .getHttpClient()
@@ -900,8 +900,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         System.clearProperty(NodeRoles.NODE_ROLES_PROP);
       }
 
-      try (HttpSolrClient coordinatorClient =
-          new HttpSolrClient.Builder(coordinatorJetty.getBaseUrl().toString()).build()) {
+      try (var coordinatorClient =
+          new HttpApacheSolrClient.Builder(coordinatorJetty.getBaseUrl().toString()).build()) {
         HttpResponse response =
             coordinatorClient
                 .getHttpClient()
