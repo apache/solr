@@ -83,7 +83,7 @@ public class ZkContainer {
   public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
     final boolean zkServerEnabled =
         EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
-    // TODO NOCOMMIT - understand when zkRun is set
+    // TODO NOCOMMIT - understand when zkServerEnabled is set
     boolean zkQuorumNode = false;
     if (NodeRoles.MODE_ON.equals(cc.nodeRoles.getRoleMode(NodeRoles.Role.ZOOKEEPER_QUORUM))) {
       zkQuorumNode = true;
