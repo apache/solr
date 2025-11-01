@@ -107,14 +107,14 @@ Solr is not designed to be exposed on the open internet.
 It is also strongly recommended that Solr listen to only those network interfaces that are strictly required.
 To prevent administrators from unintentionally exposing Solr more broadly, Solr only listens on the loopback interface ("127.0.0.1") by default.
 Most deployments will need to change this value to something less restrictive so that it can be reached from other boxes.
-This can be done by setting a `SOLR_JETTY_HOST` value in your environment's "include script" (`solr.in.sh` or `solr.in.cmd`):
+This can be done by setting a `SOLR_HOST_BIND` value in your environment's "include script" (`solr.in.sh` or `solr.in.cmd`):
 
 [source,bash]
  ----
- SOLR_JETTY_HOST="0.0.0.0"
+ SOLR_HOST_BIND="0.0.0.0"
  ----
 
-The same setting is also available as the `-Dsolr.jetty.host` System Property.
+The same setting is also available as the `-Dsolr.host.bind` System Property.
 
 The same is true for the embedded Zookeeper, if it is run with Solr.
 By default, the embedded Zookeeper only listens on the loopback interface ("127.0.0.1")

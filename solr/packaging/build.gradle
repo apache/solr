@@ -263,6 +263,7 @@ task integrationTests(type: BatsTask) {
   environment SOLR_TIP: distDir.toString()
   environment SOLR_HOME: solrHome
   environment SOLR_PID_DIR: solrHome
+  environment SOLR_PORT_LISTEN: solrPort
   environment SOLR_PORT: solrPort
   environment SOLR2_PORT: solrPort + 1
   environment SOLR3_PORT: solrPort + 2

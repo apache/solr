@@ -159,7 +159,7 @@ if [ $# -gt 1 ]; then
               print_usage "Port is required when using the $1 option!"
               exit 1
             fi
-            SOLR_PORT="$2"
+            SOLR_PORT_LISTEN="$2"
             shift 2
         ;;
         -f)
@@ -220,8 +220,8 @@ if [ -z "$SOLR_USER" ]; then
   SOLR_USER=solr
 fi
 
-if [ -z "$SOLR_PORT" ]; then
-  SOLR_PORT=8983
+if [ -z "$SOLR_PORT_LISTEN" ]; then
+  SOLR_PORT_LISTEN=8983
 fi
 
 if [ -z "$SOLR_UPGRADE" ]; then
@@ -330,7 +330,7 @@ SOLR_PID_DIR=\"$SOLR_VAR_DIR\"
 SOLR_HOME=\"$SOLR_VAR_DIR/data\"
 LOG4J_PROPS=\"$SOLR_VAR_DIR/log4j2.xml\"
 SOLR_LOGS_DIR=\"$SOLR_VAR_DIR/logs\"
-SOLR_PORT=\"$SOLR_PORT\"
+SOLR_PORT_LISTEN=\"$SOLR_PORT_LISTEN\"
 " >> "/etc/default/$SOLR_SERVICE.in.sh"
 fi
 chown root:${SOLR_USER} "/etc/default/$SOLR_SERVICE.in.sh"

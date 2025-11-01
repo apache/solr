@@ -172,8 +172,8 @@ teardown() {
   sleep 1
 
   # Need to unset SOLR_PORT to avoid the tool being smart and look at SOLR_PORT
-  export SOLR_PORT_KEEP=$SOLR_PORT
-  unset SOLR_PORT
+  export SOLR_PORT_KEEP=$SOLR_PORT_LISTEN
+  unset SOLR_PORT_LISTEN
 
   # First test a command that will fail (no ZK_HOST set, no SOLR_PORT)
   run solr zk ls / --recursive
@@ -186,6 +186,6 @@ teardown() {
   assert_output --partial "aliases.json"
 
   # Restore SOLR_PORT
-  export SOLR_PORT=$SOLR_PORT_KEEP
+  export SOLR_PORT_LISTEN=$SOLR_PORT_KEEP
   unset ZK_HOST
 }

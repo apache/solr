@@ -61,10 +61,11 @@ public class SolrProcessManager {
     if (Constants.WINDOWS) {
       pidToWindowsCommandLineMap.putAll(commandLinesWindows());
     }
+
     pidProcessMap =
         ProcessHandle.allProcesses()
             .filter(p -> p.info().command().orElse("").contains("java"))
-            .filter(p -> commandLine(p).orElse("").contains("-Djetty.port="))
+            .filter(p -> commandLine(p).orElse("").contains("-Dsolr.port.listen="))
             .filter(
                 p -> !enableTestingMode || commandLine(p).orElse("").contains("-DmockSolr=true"))
             .collect(
@@ -145,7 +146,7 @@ public class SolrProcessManager {
   private Optional<Integer> parsePortFromProcess(ProcessHandle ph) {
     Optional<String> portStr =
         arguments(ph).stream()
-            .filter(a -> a.contains("-Djetty.port="))
+            .filter(a -> a.contains("-Dsolr.port.listen="))
             .map(s -> s.split("=")[1])
             .findFirst();
     return portStr.isPresent() ? portStr.map(Integer::parseInt) : Optional.empty();
