@@ -249,7 +249,7 @@ public class MiniSolrCloudCluster {
 
   /**
    * Create a MiniSolrCloudCluster. Note - this constructor visibility is changed to package
-   * protected so as to discourage its usage. Ideally *new* functionality should use {@linkplain
+   * protected to discourage its usage. Ideally *new* functionality should use {@linkplain
    * SolrCloudTestCase} to configure any additional parameters.
    *
    * @param numServers number of Solr servers to start
@@ -479,18 +479,16 @@ public class MiniSolrCloudCluster {
       if (!zkClient.exists("/solr", true)) {
         zkClient.makePath("/solr", false, true);
       }
-      if (!zkClient.exists("/solr/initialized", true)) {
-        zkClient.makePath("/solr/initialized", "yes".getBytes(Charset.defaultCharset()), true);
-        if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
-          zkClient.makePath(
-              "/solr" + ZkStateReader.CLUSTER_PROPS,
-              "{'urlScheme':'https'}".getBytes(StandardCharsets.UTF_8),
-              true);
-        }
-        if (securityJson.isPresent()) {
-          zkClient.makePath(
-              "/solr/security.json", securityJson.get().getBytes(Charset.defaultCharset()), true);
-        }
+
+      if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
+        zkClient.makePath(
+            "/solr" + ZkStateReader.CLUSTER_PROPS,
+            "{'urlScheme':'https'}".getBytes(StandardCharsets.UTF_8),
+            true);
+      }
+      if (securityJson.isPresent()) {
+        zkClient.makePath(
+            "/solr/security.json", securityJson.get().getBytes(Charset.defaultCharset()), true);
       }
     }
 
