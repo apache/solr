@@ -1,8 +1,0 @@
-title: Avoid creating grouping shard requests when timeAllowed has already run out.
-type: fixed
-authors:
-- name: Andrzej Bialecki
-- name: hossman
-links:
-- name: SOLR-17869
-  url: https://issues.apache.org/jira/browse/SOLR-17869

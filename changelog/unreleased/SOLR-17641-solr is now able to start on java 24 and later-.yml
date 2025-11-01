@@ -1,8 +1,0 @@
-title: Solr is now able to start on Java 24 and later, but with Security Manager disabled
-type: changed
-authors:
-- name: Houston Putman
-- name: Jan Høydahl
-links:
-- name: SOLR-17641
-  url: https://issues.apache.org/jira/browse/SOLR-17641

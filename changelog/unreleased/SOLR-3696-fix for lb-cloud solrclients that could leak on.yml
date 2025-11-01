@@ -1,8 +1,0 @@
-title: Fix for LB/Cloud SolrClients that could leak on close() if concurrent request
-  failed and triggered zombie server logic.
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-3696
-  url: https://issues.apache.org/jira/browse/SOLR-3696

@@ -1,7 +1,0 @@
-title: Stream decorator test refactoring - use underscore rather than dot in aliases
-type: other
-authors:
-- name: Andy Webb
-links:
-- name: SOLR-17952
-  url: https://issues.apache.org/jira/browse/SOLR-17952

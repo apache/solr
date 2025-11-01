@@ -1,9 +1,0 @@
-title: Http2SolrClient wasn't honoring idle timeout configuration above 30 seconds
-  -- a regression.
-type: fixed
-authors:
-- name: Thomas Wöckinger
-- name: David Smiley
-links:
-- name: SOLR-17871
-  url: https://issues.apache.org/jira/browse/SOLR-17871

@@ -1,7 +1,0 @@
-title: Speed up Remote Proxy for high QPS, utilizing ClusterState caching.
-type: changed
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-17893
-  url: https://issues.apache.org/jira/browse/SOLR-17893
