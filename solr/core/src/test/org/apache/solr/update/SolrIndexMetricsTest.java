@@ -64,7 +64,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var indexSize =
           SolrMetricTestUtils.getGaugeDatapoint(
               core,
-              "solr_core_index_size_bytes",
+              "solr_core_index_size_megabytes",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label("category", "CORE")
                   .build());
