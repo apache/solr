@@ -1,7 +1,0 @@
-title: DocBasedVersionConstraintsProcessorFactory now supports PULL replicas.
-type: changed
-authors:
-- name: Houston Putman
-links:
-- name: SOLR-17860
-  url: https://issues.apache.org/jira/browse/SOLR-17860

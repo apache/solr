@@ -1,8 +1,0 @@
-# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Add Amazon Linux as known distro for installing Solr as a service.
-type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
-authors:
-  - name: Eric Pugh
-  - name: Andreas Rütten
-issues:
-  - 3778
