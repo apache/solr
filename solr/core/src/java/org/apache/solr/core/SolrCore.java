@@ -1347,7 +1347,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     var baseSearcherTimerMetric =
         parentContext.longHistogram(
-            "solr_searcher_timer", "Timer for opening new searchers", OtelUnit.MILLISECONDS);
+            "solr_core_indexsearcher_open_time", "Timer for opening new searchers", OtelUnit.MILLISECONDS);
 
     newSearcherCounter =
         new AttributedLongCounter(
@@ -1406,18 +1406,18 @@ public class SolrCore implements SolrInfoBean, Closeable {
                       .build();
               try {
                 observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getTotalSpace(), totalSpaceAttributes);
+                    Files.getFileStore(dataDirPath).getTotalSpace() / (1024 * 1024 * 1024), totalSpaceAttributes);
               } catch (IOException e) {
                 observableLongMeasurement.record(0L, totalSpaceAttributes);
               }
               try {
                 observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getUsableSpace(), usableSpaceAttributes);
+                    Files.getFileStore(dataDirPath).getUsableSpace() / (1024 * 1024 * 1024), usableSpaceAttributes);
               } catch (IOException e) {
                 observableLongMeasurement.record(0L, usableSpaceAttributes);
               }
             }),
-            OtelUnit.BYTES));
+            OtelUnit.GIGABYTES));
 
     observables.add(
         parentContext.observableLongGauge(
@@ -1425,9 +1425,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
             "Index size for a Solr core",
             (observableLongMeasurement -> {
               if (!isClosed())
-                observableLongMeasurement.record(getIndexSize(), baseGaugeCoreAttributes);
+                observableLongMeasurement.record(getIndexSize() / (1024 * 1024), baseGaugeCoreAttributes);
             }),
-            OtelUnit.BYTES));
+            OtelUnit.MEGABYTES));
 
     parentContext.observableLongGauge(
         "solr_core_segments",

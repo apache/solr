@@ -61,6 +61,28 @@ public abstract class MetricImpl<T> implements Metric<T> {
         return sizeInBytes / GB;
       };
 
+  /**
+   * Megabytes to gigabytes converter. Supports converting number or string representations of raw
+   * values expressed in megabytes.
+   */
+  public static final Function<Object, Double> MB_TO_GB_CONVERTER =
+      v -> {
+        double sizeInMB;
+        if (!(v instanceof Number)) {
+          if (v == null) {
+            return null;
+          }
+          try {
+            sizeInMB = Double.parseDouble(String.valueOf(v));
+          } catch (Exception nfe) {
+            return null;
+          }
+        } else {
+          sizeInMB = ((Number) v).doubleValue();
+        }
+        return sizeInMB / 1024.0;
+      };
+
   protected final String name;
   protected final String internalName;
   protected final Function<Object, T> converter;

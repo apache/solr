@@ -920,10 +920,10 @@ public class CoreContainer {
           try {
             var fileStore = Files.getFileStore(dataHome);
             measurement.record(
-                fileStore.getTotalSpace(),
+                fileStore.getTotalSpace() / (1024 * 1024 * 1024),
                 containerAttrs.toBuilder().put(TYPE_ATTR, "total_space").build());
             measurement.record(
-                fileStore.getUsableSpace(),
+                fileStore.getUsableSpace() / (1024 * 1024 * 1024),
                 containerAttrs.toBuilder().put(TYPE_ATTR, "usable_space").build());
           } catch (IOException e) {
             throw new SolrException(
@@ -932,7 +932,7 @@ public class CoreContainer {
                 e);
           }
         },
-        OtelUnit.BYTES);
+        OtelUnit.GIGABYTES);
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
     fieldCacheBean.initializeMetrics(
