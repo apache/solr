@@ -119,7 +119,6 @@ public class ZkContainer {
             EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString());
         zkServer =
             new SolrZkServer(
-                zkServerEnabled,
                 stripChroot(config.getZkHost()),
                 Path.of(zkDataHome),
                 zkConfHome,
@@ -191,7 +190,7 @@ public class ZkContainer {
           Files.createDirectories(zkDataDir);
           Files.writeString(zkDataDir.resolve("myid"), String.valueOf(myId));
           // Run ZKSE
-          startZKSE(zkPort, zkHomeDir.toString());
+          startZooKeeperServerEmbedded(zkPort, zkHomeDir.toString());
         } catch (Exception e) {
           throw new ZooKeeperException(
               SolrException.ErrorCode.SERVER_ERROR,
@@ -346,7 +345,7 @@ public class ZkContainer {
     }
   }
 
-  private void startZKSE(int port, String zkHomeDir) throws Exception {
+  private void startZooKeeperServerEmbedded(int port, String zkHomeDir) throws Exception {
     Properties p = new Properties();
     try (FileReader fr = new FileReader(zkHomeDir + "/zoo.cfg", StandardCharsets.UTF_8)) {
       p.load(fr);

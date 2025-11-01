@@ -42,8 +42,6 @@ public class SolrZkServer {
 
   public static final String ZK_WHITELIST_PROPERTY = "zookeeper.4lw.commands.whitelist";
 
-  // nocommit figure out if we even need.  would we have a SolrZkServer if this isn't enabled?
-  boolean zkServerEnabled;
   String zkHost;
 
   int solrPort;
@@ -55,9 +53,7 @@ public class SolrZkServer {
   private Path dataHome; // o.a.zookeeper.**.QuorumPeerConfig needs a File not a Path
   private String confHome;
 
-  public SolrZkServer(
-      boolean zkServerEnabled, String zkHost, Path dataHome, String confHome, int solrPort) {
-    this.zkServerEnabled = zkServerEnabled;
+  public SolrZkServer(String zkHost, Path dataHome, String confHome, int solrPort) {
     this.zkHost = zkHost;
     this.dataHome = dataHome;
     this.confHome = confHome;
@@ -70,11 +66,6 @@ public class SolrZkServer {
     }
 
     if (zkProps == null) {
-      return null;
-    }
-
-    // if the string wasn't passed as zkHost, then use the standalone server we started
-    if (!zkServerEnabled) {
       return null;
     }
 
@@ -114,7 +105,7 @@ public class SolrZkServer {
 
     try {
       props = SolrZkServerProps.getProperties(zooCfgPath);
-      SolrZkServerProps.injectServers(props, zkServerEnabled, zkHost);
+      SolrZkServerProps.injectServers(props, zkHost);
       // This is the address that the embedded Zookeeper will bind to. Like Solr, it defaults to
       // "127.0.0.1".
       props.setProperty(
@@ -124,9 +115,8 @@ public class SolrZkServer {
       }
       zkProps.parseProperties(props);
     } catch (QuorumPeerConfig.ConfigException | IOException e) {
-      if (zkServerEnabled) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
+
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -135,9 +125,6 @@ public class SolrZkServer {
   }
 
   public void start() {
-    if (!zkServerEnabled) {
-      return;
-    }
 
     if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
       System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
@@ -195,9 +182,7 @@ public class SolrZkServer {
   }
 
   public void stop() {
-    if (!zkServerEnabled) {
-      return;
-    }
+
     zkThread.interrupt();
   }
 }
@@ -236,10 +221,10 @@ class SolrZkServerProps extends QuorumPeerConfig {
   // Given zkHost=localhost:1111,localhost:2222 this will inject
   // server.0=localhost:1112:1113
   // server.1=localhost:2223:2224
-  public static void injectServers(Properties props, boolean zkRun, String zkHost) {
+  public static void injectServers(Properties props, String zkHost) {
 
     // if clientPort not already set, use zkRun
-    if (zkRun && props.getProperty("clientPort") == null) {
+    if (props.getProperty("clientPort") == null) {
       // int portIdx = zkRun.lastIndexOf(':');
       int portIdx = "".lastIndexOf(':');
       if (portIdx > 0) {
