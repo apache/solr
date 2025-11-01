@@ -68,6 +68,10 @@ public class ZkContainer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected ZkController zkController;
+
+  // zkServer (and SolrZkServer) wrap a ZooKeeperServerMain if standalone mode, but in quorum we
+  // just use ZooKeeperServerEmbedded
+  // directly!  Why?  Can we use ZooKeeperServerEmbedded in one node directly instead?
   private SolrZkServer zkServer;
   private ZooKeeperServerEmbedded zkServerEmbedded;
 
@@ -105,92 +109,95 @@ public class ZkContainer {
 
     String zookeeperHost = config.getZkHost();
     final var solrHome = cc.getSolrHome();
+    if (zkServerEnabled) {
+      if (!runAsQuorum) {
+        // Old school ZooKeeperServerMain being used under the covers.
+        String zkDataHome =
+            EnvUtils.getProperty(
+                "solr.zookeeper.server.datadir", solrHome.resolve("zoo_data").toString());
+        String zkConfHome =
+            EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString());
+        zkServer =
+            new SolrZkServer(
+                zkServerEnabled,
+                stripChroot(config.getZkHost()),
+                Path.of(zkDataHome),
+                zkConfHome,
+                config.getSolrHostPort());
+        zkServer.parseConfig();
+        zkServer.start();
 
-    if (zkServerEnabled && !runAsQuorum) {
-      String zkDataHome =
-          EnvUtils.getProperty(
-              "solr.zookeeper.server.datadir", solrHome.resolve("zoo_data").toString());
-      String zkConfHome =
-          EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString());
-      zkServer =
-          new SolrZkServer(
-              zkServerEnabled,
-              stripChroot(config.getZkHost()),
-              Path.of(zkDataHome),
-              zkConfHome,
-              config.getSolrHostPort());
-      zkServer.parseConfig();
-      zkServer.start();
-
-      // set client from server config if not already set
-      if (zookeeperHost == null) {
-        zookeeperHost = zkServer.getClientString();
-      }
-      // TODO NOCOMMIT - should this code go in SolrZkServer to augment or replace its current
-      // capabilities?  Doing so
-      //  would definitely keep ZkContainer cleaner...
-    } else if (zkServerEnabled && runAsQuorum) {
-      // Figure out where to put zoo-data
-      final var zkHomeDir = solrHome.resolve("zoo_home");
-      final var zkDataDir = zkHomeDir.resolve("data");
-
-      // Populate a zoo.cfg
-      final String zooCfgTemplate =
-          ""
-              + "tickTime=2000\n"
-              + "initLimit=10\n"
-              + "syncLimit=5\n"
-              + "dataDir=@@DATA_DIR@@\n"
-              + "4lw.commands.whitelist=mntr,conf,ruok\n"
-              + "admin.enableServer=false\n"
-              + "clientPort=@@ZK_CLIENT_PORT@@\n";
-
-      final int zkPort = config.getSolrHostPort() + 1000;
-      String zooCfgContents =
-          zooCfgTemplate
-              .replace("@@DATA_DIR@@", zkDataDir.toString())
-              .replace("@@ZK_CLIENT_PORT@@", String.valueOf(zkPort));
-      final String[] zkHosts = config.getZkHost().split(",");
-      int myId = -1;
-      final String targetConnStringSection = config.getHost() + ":" + zkPort;
-      if (log.isInfoEnabled()) {
-        log.info(
-            "Trying to match {} against zkHostString {} to determine myid",
-            targetConnStringSection,
-            config.getZkHost());
-      }
-      for (int i = 0; i < zkHosts.length; i++) {
-        final String host = zkHosts[i];
-        if (targetConnStringSection.equals(zkHosts[i])) {
-          myId = (i + 1);
+        // set client from server config if not already set
+        if (zookeeperHost == null) {
+          zookeeperHost = zkServer.getClientString();
         }
-        final var hostComponents = host.split(":");
-        final var zkServer = hostComponents[0];
-        final var zkClientPort = Integer.valueOf(hostComponents[1]);
-        final var zkQuorumPort = zkClientPort - 4000;
-        final var zkLeaderPort = zkClientPort - 3000;
-        final String configEntry =
-            "server." + (i + 1) + "=" + zkServer + ":" + zkQuorumPort + ":" + zkLeaderPort + "\n";
-        zooCfgContents = zooCfgContents + configEntry;
-      }
+        // TODO NOCOMMIT - should this code go in SolrZkServer to augment or replace its current
+        // capabilities?  Doing so
+        //  would definitely keep ZkContainer cleaner...
+      } else {
+        // ZooKeeperServerEmbedded being used under the covers.
+        // Figure out where to put zoo-data
+        final var zkHomeDir = solrHome.resolve("zoo_home");
+        final var zkDataDir = zkHomeDir.resolve("data");
 
-      if (myId == -1) {
-        throw new IllegalStateException(
-            "Unable to determine ZK 'myid' for target " + targetConnStringSection);
-      }
+        // Populate a zoo.cfg
+        final String zooCfgTemplate =
+            ""
+                + "tickTime=2000\n"
+                + "initLimit=10\n"
+                + "syncLimit=5\n"
+                + "dataDir=@@DATA_DIR@@\n"
+                + "4lw.commands.whitelist=mntr,conf,ruok\n"
+                + "admin.enableServer=false\n"
+                + "clientPort=@@ZK_CLIENT_PORT@@\n";
 
-      try {
-        Files.createDirectories(zkHomeDir);
-        Files.writeString(zkHomeDir.resolve("zoo.cfg"), zooCfgContents);
-        Files.createDirectories(zkDataDir);
-        Files.writeString(zkDataDir.resolve("myid"), String.valueOf(myId));
-        // Run ZKSE
-        startZKSE(zkPort, zkHomeDir.toString());
-      } catch (Exception e) {
-        throw new ZooKeeperException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "IOException bootstrapping zk quorum instance",
-            e);
+        final int zkPort = config.getSolrHostPort() + 1000;
+        String zooCfgContents =
+            zooCfgTemplate
+                .replace("@@DATA_DIR@@", zkDataDir.toString())
+                .replace("@@ZK_CLIENT_PORT@@", String.valueOf(zkPort));
+        final String[] zkHosts = config.getZkHost().split(",");
+        int myId = -1;
+        final String targetConnStringSection = config.getHost() + ":" + zkPort;
+        if (log.isInfoEnabled()) {
+          log.info(
+              "Trying to match {} against zkHostString {} to determine myid",
+              targetConnStringSection,
+              config.getZkHost());
+        }
+        for (int i = 0; i < zkHosts.length; i++) {
+          final String host = zkHosts[i];
+          if (targetConnStringSection.equals(zkHosts[i])) {
+            myId = (i + 1);
+          }
+          final var hostComponents = host.split(":");
+          final var zkServer = hostComponents[0];
+          final var zkClientPort = Integer.valueOf(hostComponents[1]);
+          final var zkQuorumPort = zkClientPort - 4000;
+          final var zkLeaderPort = zkClientPort - 3000;
+          final String configEntry =
+              "server." + (i + 1) + "=" + zkServer + ":" + zkQuorumPort + ":" + zkLeaderPort + "\n";
+          zooCfgContents = zooCfgContents + configEntry;
+        }
+
+        if (myId == -1) {
+          throw new IllegalStateException(
+              "Unable to determine ZK 'myid' for target " + targetConnStringSection);
+        }
+
+        try {
+          Files.createDirectories(zkHomeDir);
+          Files.writeString(zkHomeDir.resolve("zoo.cfg"), zooCfgContents);
+          Files.createDirectories(zkDataDir);
+          Files.writeString(zkDataDir.resolve("myid"), String.valueOf(myId));
+          // Run ZKSE
+          startZKSE(zkPort, zkHomeDir.toString());
+        } catch (Exception e) {
+          throw new ZooKeeperException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "IOException bootstrapping zk quorum instance",
+              e);
+        }
       }
     }
 
