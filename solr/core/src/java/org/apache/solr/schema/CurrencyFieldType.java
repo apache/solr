@@ -300,8 +300,8 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
    * values returned by this value source would represent the equivalent number of "cents" (ie:
    * value in dollars * 100) after converting each document's native currency to USD -- because the
    * default fractional digits for <code>USD</code> is "<code>2</code>". So for a document whose
-   * indexed value was currently equivalent to "<code>5.43,USD</code>" using the the exchange
-   * provider for this field, this ValueSource would return a value of "<code>543</code>"
+   * indexed value was currently equivalent to "<code>5.43,USD</code>" using the exchange provider
+   * for this field, this ValueSource would return a value of "<code>543</code>"
    *
    * @see #PARAM_DEFAULT_CURRENCY
    * @see #DEFAULT_DEFAULT_CURRENCY
@@ -323,8 +323,8 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
    * <p>For example: If the <code>targetCurrencyCode</code> param is set to <code>USD</code>, then
    * the values returned by this value source would represent the equivalent number of dollars after
    * converting each document's raw value to <code>USD</code>. So for a document whose indexed value
-   * was currently equivalent to "<code>5.43,USD</code>" using the the exchange provider for this
-   * field, this ValueSource would return a value of "<code>5.43</code>"
+   * was currently equivalent to "<code>5.43,USD</code>" using the exchange provider for this field,
+   * this ValueSource would return a value of "<code>5.43</code>"
    *
    * @param targetCurrencyCode The target currency for the resulting value source, if null the
    *     defaultCurrency for this field type will be used

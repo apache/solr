@@ -227,9 +227,9 @@
 
 # When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
 # list of hosts needs to be defined in an allow-list or Solr will forbid the request. The allow-list can be configured
-# in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.allowUrls".
-# Alternatively host checking can be disabled by using the system property "solr.disable.allowUrls"
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowUrls=http://localhost:8983,http://localhost:8984"
+# in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.security.allow.urls".
+# Alternatively host checking can be disabled by setting the system property "solr.security.allow.urls.enabled=false"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.security.allow.urls=http://localhost:8983,http://localhost:8984"
 
 # For a visual indication in the Admin UI of what type of environment this cluster is, configure
 # a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
@@ -260,7 +260,7 @@
 # Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 # Sometimes it may be necessary to place a core or a backup on a different location or a different disk
 # This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowPaths=/mnt/bigdisk,/other/path"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.security.allow.paths=/mnt/bigdisk,/other/path"
 
 # Solr can attempt to take a heap dump on out of memory errors. To enable this, uncomment the line setting
 # SOLR_HEAP_DUMP below. Heap dumps will be saved to SOLR_LOG_DIR/dumps by default. Alternatively, you can specify any

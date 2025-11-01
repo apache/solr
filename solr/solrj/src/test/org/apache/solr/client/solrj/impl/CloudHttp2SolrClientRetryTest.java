@@ -47,13 +47,28 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
 
   @Test
   public void testRetry() throws Exception {
-    String collectionName = "testRetry";
-    String prometheusMetric =
-        "solr_core_requests_total{category=\"UPDATE\",collection=\"testRetry\",core=\"testRetry_shard1_replica_n1\",handler=\"/update\",otel_scope_name=\"org.apache.solr\",replica_type=\"NRT\",shard=\"shard1\"}";
-    try (CloudSolrClient solrClient =
+
+    // Randomly decide to use either the Jetty Http Client or the JDK Http Client
+    var jettyClientBuilder = new Http2SolrClient.Builder();
+
+    // forcing Http/1.1 to avoid an extra HEAD request with the first update.
+    // (This causes the counts to be 1 greater than what we test for here.)
+    var jdkClientBuilder =
+        new HttpJdkSolrClient.Builder()
+            .useHttp1_1(true)
+            .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
+
+    var cloudSolrclientBuilder =
         new CloudHttp2SolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .build()) {
+            Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty());
+    cloudSolrclientBuilder.withHttpClientBuilder(
+        random().nextBoolean() ? jettyClientBuilder : jdkClientBuilder);
+
+    try (CloudSolrClient solrClient = cloudSolrclientBuilder.build()) {
+      String collectionName = "testRetry";
+      String prometheusMetric =
+          "solr_core_requests_total{category=\"UPDATE\",collection=\"testRetry\",core=\"testRetry_shard1_replica_n1\",handler=\"/update\",otel_scope_name=\"org.apache.solr\",replica_type=\"NRT\",shard=\"shard1\"}";
+
       CollectionAdminRequest.createCollection(collectionName, 1, 1).process(solrClient);
 
       solrClient.add(collectionName, new SolrInputDocument("id", "1"));

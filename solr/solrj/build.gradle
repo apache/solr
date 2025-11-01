@@ -43,14 +43,10 @@ dependencies {
   implementation libs.eclipse.jetty.io
   runtimeOnly libs.eclipse.jetty.alpnjavaclient
 
-  implementation(libs.apache.httpcomponents.httpmime, {
-    exclude group: "commons-codec", module: "commons-codec"
-    exclude group: "commons-logging", module: "commons-logging"
-  })
-  implementation libs.apache.httpcomponents.httpclient
-  implementation libs.apache.httpcomponents.httpcore
-
   compileOnly libs.stephenc.jcip.annotations
+
+  testImplementation libs.apache.httpcomponents.httpclient
+  testImplementation libs.apache.httpcomponents.httpcore
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
@@ -92,7 +88,6 @@ dependencies {
   testRuntimeOnly(libs.apache.log4j.slf4j2impl, {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
-  testImplementation libs.apache.commons.lang3
   testImplementation libs.fasterxml.jackson.core.core
 }
 

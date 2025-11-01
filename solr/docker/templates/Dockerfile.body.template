@@ -69,7 +69,7 @@ RUN set -ex; \
 
 RUN set -ex; \
     apt-get update; \
-    apt-get -y --no-install-recommends install acl lsof procps wget netcat-openbsd gosu tini jattach; \
+    apt-get -y --no-install-recommends install curl acl lsof procps wget netcat-openbsd gosu tini jattach; \
     rm -rf /var/lib/apt/lists/*;
 
 VOLUME /var/solr
