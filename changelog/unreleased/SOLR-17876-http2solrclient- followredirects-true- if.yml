@@ -1,9 +1,0 @@
-title: 'Http2SolrClient: followRedirects=true: if Http2SolrClient was created with
-  followRedirects=true, and then was used to create future clients (via builder.withHttpClient),
-  then redirect processing was wrongly disabled on the shared instance.'
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-17876
-  url: https://issues.apache.org/jira/browse/SOLR-17876

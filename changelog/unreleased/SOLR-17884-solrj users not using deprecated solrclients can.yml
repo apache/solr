@@ -1,8 +1,0 @@
-title: SolrJ users not using deprecated SolrClients can safely exclude Apache HttpClient
-  dependencies.
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-17884
-  url: https://issues.apache.org/jira/browse/SOLR-17884
