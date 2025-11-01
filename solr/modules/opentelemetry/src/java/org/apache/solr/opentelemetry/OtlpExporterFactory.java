@@ -42,8 +42,12 @@ public class OtlpExporterFactory implements MetricExporterFactory {
     }
 
     return switch (OTLP_EXPORTER_PROTOCOL) {
-      case "grpc" -> OtlpGrpcMetricExporter.getDefault();
-      case "http" -> OtlpHttpMetricExporter.getDefault();
+      case "grpc" -> OtlpGrpcMetricExporter.getDefault().toBuilder()
+          .setEndpoint(OTLP_EXPORTER_GRPC_ENDPOINT)
+          .build();
+      case "http" -> OtlpHttpMetricExporter.getDefault().toBuilder()
+          .setEndpoint(OTLP_EXPORTER_HTTP_ENDPOINT)
+          .build();
       case "none" -> null;
       default -> {
         log.warn(

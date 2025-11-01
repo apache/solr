@@ -659,7 +659,7 @@ For examples using this feature, see the section xref:query-guide:learning-to-ra
 *Prometheus Exporter*
 
 * The `./bin` scripts included with the Prometheus Exporter now allow use of custom java options with environment variables.
-See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc#environment-variable-options[Environment Variable Options] for more details.
+See the section https://solr.apache.org/guide/solr/9_9/deployment-guide/monitoring-with-prometheus-and-grafana.html#environment-variable-options[Environment Variable Options] for more details.
 * The default Grafana dashboards now include panels for query performance monitoring.
 The default Prometheus Exporter configuration includes metrics like queries-per-second (QPS) and 95th percentiles (P95) to populate the new panels.
 * The default Prometheus Exporter configuration also includes the two new metrics mentioned in the Metrics above.

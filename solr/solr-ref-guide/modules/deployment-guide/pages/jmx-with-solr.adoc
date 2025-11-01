@@ -22,20 +22,13 @@ In essence, it is a standard interface by which complex systems can be viewed an
 Solr, like any other good citizen of the Java universe, can be controlled via a JMX interface.
 Once enabled, you can use a JMX client, like jconsole, to connect with Solr.
 
-If you are unfamiliar with JMX, you may  find the following overview useful: http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html.
+If you are unfamiliar with JMX, you may find the following overview useful: http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html.
 
 == Configuring JMX
 
-JMX support is configured by defining a metrics reporter, as described in the section the section xref:metrics-reporting.adoc#jmx-reporter[JMX Reporter].
-
-If you have an existing MBean server running in Solr's JVM, or if you start Solr with the system property `-Dcom.sun.management.jmxremote`, Solr will automatically identify its location on startup even if you have not defined a reporter explicitly in `solr.xml`.
-You can also define the location of the MBean server with parameters defined in the reporter definition.
+If you have an existing MBean server running in Solr's JVM, or if you start Solr with the system property `-Dcom.sun.management.jmxremote`, Solr will automatically identify its location on startup.
 
 == Configuring MBean Servers
-
-Versions of Solr prior to 7.0 defined JMX support in `solrconfig.xml`.
-This has been changed to the metrics reporter configuration defined above.
-Parameters for the reporter configuration allow defining the location or address of an existing MBean server.
 
 An MBean server can be started at the time of Solr's startup by passing the system parameter `-Dcom.sun.management.jmxremote`.
 See Oracle's documentation for additional settings available to start and control an MBean server at http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html.

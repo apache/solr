@@ -61,8 +61,6 @@
 ** xref:metrics-reporting.adoc[]
 ** xref:performance-statistics-reference.adoc[]
 ** xref:plugins-stats-screen.adoc[]
-** xref:mbean-request-handler.adoc[]
-** xref:monitoring-with-prometheus-and-grafana.adoc[]
 ** xref:jmx-with-solr.adoc[]
 ** xref:thread-dump.adoc[]
 ** xref:distributed-tracing.adoc[]

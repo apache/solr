@@ -65,10 +65,6 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
     <int name="connTimeout">${connTimeout:60000}</int>
   </shardHandlerFactory>
 
-  <metrics enabled="${metricsEnabled:true}">
-    <!--reporter name="jmx_metrics" group="core" class="org.apache.solr.metrics.reporters.SolrJmxReporter"/-->
-  </metrics>
-
 </solr>
 ----
 
@@ -695,13 +691,6 @@ The `name` attribute is required and must be unique for each `clusterSingleton`.
 
 The `class` attribute should be set to the FQN (fully qualified name) of a class that extends `ClusterSingleton`.
 Sub-elements are specific to the implementation, `value1` is provided as an example here.
-
-=== The <metrics> Element
-
-The `<metrics>` element in `solr.xml` allows you to customize the metrics reported by Solr.
-You can define system properties that should not be returned, or define custom suppliers and reporters.
-
-If you would like to customize the metrics for your installation, see the xref:deployment-guide:metrics-reporting.adoc#metrics-configuration[Metrics Configuration] section.
 
 === The <caches> Element
 

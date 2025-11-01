@@ -30,5 +30,12 @@ public interface MetricExporterFactory {
   public static final int OTLP_EXPORTER_INTERVAL =
       Integer.parseInt(EnvUtils.getProperty("solr.metrics.otlpExporterInterval", "60000"));
 
+  public static final String OTLP_EXPORTER_GRPC_ENDPOINT =
+      EnvUtils.getProperty("solr.metrics.otlpGrpcExporterEndpoint", "http://localhost:4317");
+
+  public static final String OTLP_EXPORTER_HTTP_ENDPOINT =
+      EnvUtils.getProperty(
+          "solr.metrics.otlpHttpExporterEndpoint", "http://localhost:4318/v1/metrics");
+
   MetricExporter getExporter();
 }
