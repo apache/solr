@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  *   <li>All resources are properly closed on shutdown
  * </ul>
  */
-public class TestEmbeddedZkQuorum extends SolrCloudWithEmbeddedZkQuorumTestCase {
+public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -57,13 +57,12 @@ public class TestEmbeddedZkQuorum extends SolrCloudWithEmbeddedZkQuorumTestCase 
 
     // Configure cluster with 3 nodes, each running embedded ZK
     cluster =
-        configureClusterWithEmbeddedZkQuorum(NUM_NODES).addConfig("conf1", configPath).build();
-
+        configureCluster(NUM_NODES).addConfig("conf1", configPath).withEmbeddedZkQuorum().build();
     log.info("Cluster configured with {} nodes", NUM_NODES);
   }
 
   @Test
-  public void testBasicQuorumFunctionality() throws Exception {
+  public void testBasicQuorumFunctionality() {
     log.info("Starting testBasicQuorumFunctionality");
 
     // Verify all nodes are running
