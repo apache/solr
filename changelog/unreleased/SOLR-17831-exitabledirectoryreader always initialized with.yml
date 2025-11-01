@@ -1,7 +1,0 @@
-title: ExitableDirectoryReader always initialized with QueryLimits.NONE
-type: fixed
-authors:
-- name: Andrzej Białecki
-links:
-- name: SOLR-17831
-  url: https://issues.apache.org/jira/browse/SOLR-17831

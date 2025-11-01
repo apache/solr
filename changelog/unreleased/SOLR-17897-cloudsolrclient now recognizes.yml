@@ -1,8 +1,0 @@
-title: CloudSolrClient now recognizes UnknownHostException as a case to refetch the
-  cluster state and retry.
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-17897
-  url: https://issues.apache.org/jira/browse/SOLR-17897

@@ -1,7 +1,0 @@
-title: Add fullOuterJoin stream function
-type: added
-authors:
-- name: Andy Webb
-links:
-- name: SOLR-17923
-  url: https://issues.apache.org/jira/browse/SOLR-17923
