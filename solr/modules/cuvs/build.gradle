@@ -26,7 +26,6 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
   implementation libs.apache.lucene.core
-  implementation libs.apache.lucene.backward.codecs
   implementation libs.slf4j.api
 
   testImplementation project(':solr:test-framework')
