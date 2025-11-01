@@ -1,7 +1,0 @@
-title: RecoveryStrategy.pingLeader could NPE when there's no shard leader
-type: fixed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-17824
-  url: https://issues.apache.org/jira/browse/SOLR-17824
