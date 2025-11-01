@@ -1345,10 +1345,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
             .put(CATEGORY_ATTR, Category.CORE.toString())
             .build();
 
-    var baseSearcherTimerMetric =
-        parentContext.longHistogram(
-            "solr_searcher_timer", "Timer for opening new searchers", OtelUnit.MILLISECONDS);
-
     newSearcherCounter =
         new AttributedLongCounter(
             parentContext.longCounter(
@@ -1370,13 +1366,19 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     newSearcherTimer =
         new AttributedLongTimer(
-            baseSearcherTimerMetric,
-            Attributes.builder().putAll(baseSearcherAttributes).put(TYPE_ATTR, "new").build());
+            parentContext.longHistogram(
+                "solr_core_indexsearcher_open_time",
+                "Time to open new searchers",
+                OtelUnit.MILLISECONDS),
+            baseSearcherAttributes);
 
     newSearcherWarmupTimer =
         new AttributedLongTimer(
-            baseSearcherTimerMetric,
-            Attributes.builder().putAll(baseSearcherAttributes).put(TYPE_ATTR, "warmup").build());
+            parentContext.longHistogram(
+                "solr_core_indexsearcher_open_warmup_time",
+                "Time to warmup new searchers",
+                OtelUnit.MILLISECONDS),
+            baseSearcherAttributes);
 
     observables.add(
         parentContext.observableLongGauge(
@@ -1406,18 +1408,20 @@ public class SolrCore implements SolrInfoBean, Closeable {
                       .build();
               try {
                 observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getTotalSpace(), totalSpaceAttributes);
+                    Files.getFileStore(dataDirPath).getTotalSpace() / (1024 * 1024),
+                    totalSpaceAttributes);
               } catch (IOException e) {
                 observableLongMeasurement.record(0L, totalSpaceAttributes);
               }
               try {
                 observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getUsableSpace(), usableSpaceAttributes);
+                    Files.getFileStore(dataDirPath).getUsableSpace() / (1024 * 1024),
+                    usableSpaceAttributes);
               } catch (IOException e) {
                 observableLongMeasurement.record(0L, usableSpaceAttributes);
               }
             }),
-            OtelUnit.BYTES));
+            OtelUnit.MEGABYTES));
 
     observables.add(
         parentContext.observableLongGauge(
@@ -1425,9 +1429,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
             "Index size for a Solr core",
             (observableLongMeasurement -> {
               if (!isClosed())
-                observableLongMeasurement.record(getIndexSize(), baseGaugeCoreAttributes);
+                observableLongMeasurement.record(
+                    getIndexSize() / (1024 * 1024), baseGaugeCoreAttributes);
             }),
-            OtelUnit.BYTES));
+            OtelUnit.MEGABYTES));
 
     parentContext.observableLongGauge(
         "solr_core_segments",

@@ -156,7 +156,6 @@ import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.StartupLoggingUtils;
-import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
@@ -920,10 +919,10 @@ public class CoreContainer {
           try {
             var fileStore = Files.getFileStore(dataHome);
             measurement.record(
-                fileStore.getTotalSpace(),
+                fileStore.getTotalSpace() / (1024 * 1024),
                 containerAttrs.toBuilder().put(TYPE_ATTR, "total_space").build());
             measurement.record(
-                fileStore.getUsableSpace(),
+                fileStore.getUsableSpace() / (1024 * 1024),
                 containerAttrs.toBuilder().put(TYPE_ATTR, "usable_space").build());
           } catch (IOException e) {
             throw new SolrException(
@@ -932,7 +931,7 @@ public class CoreContainer {
                 e);
           }
         },
-        OtelUnit.BYTES);
+        OtelUnit.MEGABYTES);
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
     fieldCacheBean.initializeMetrics(
@@ -940,13 +939,13 @@ public class CoreContainer {
 
     // setup executor to load cores in parallel
     coreLoadExecutor =
-        MetricUtils.instrumentedExecutorService(
+        solrMetricsContext.instrumentedExecutorService(
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
                 new SolrNamedThreadFactory("coreLoadExecutor")),
-            solrMetricsContext,
-            SolrInfoBean.Category.CONTAINER,
-            "coreLoadExecutor");
+            "solr_node_executor",
+            "coreLoadExecutor",
+            SolrInfoBean.Category.CONTAINER);
 
     coreSorter =
         loader.newInstance(

@@ -189,7 +189,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
           var dp =
               SolrMetricTestUtils.getGaugeDatapoint(
                   core,
-                  "solr_replication_is_replicating",
+                  "solr_core_replication_is_replicating",
                   SolrMetricTestUtils.newCloudLabelsBuilder(core)
                       .label("category", SolrInfoBean.Category.REPLICATION.toString())
                       .label("handler", "/replication")
@@ -198,7 +198,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
           double isReplicating = dp.getValue();
           assertTrue(
-              "solr_replication_is_replicating should be 0 or 1, got: " + isReplicating,
+              "solr_core_replication_is_replicating should be 0 or 1, got: " + isReplicating,
               isReplicating == 0.0 || isReplicating == 1.0);
         }
       }

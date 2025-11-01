@@ -64,8 +64,8 @@ public class NodeValueFetcher {
 
   /** Various well known tags that can be fetched from a node */
   public enum Metrics {
-    FREEDISK("freedisk", "solr_disk_space_bytes", "type", "usable_space"),
-    TOTALDISK("totaldisk", "solr_disk_space_bytes", "type", "total_space"),
+    FREEDISK("freedisk", "solr_disk_space_megabytes", "type", "usable_space"),
+    TOTALDISK("totaldisk", "solr_disk_space_megabytes", "type", "total_space"),
     CORES("cores", "solr_cores_loaded") {
       @Override
       public Object extractFromPrometheus(List<String> prometheusLines) {
@@ -257,9 +257,8 @@ public class NodeValueFetcher {
   /**
    * Retrieve values that match metrics. Metrics names are structured like below:
    *
-   * <p>"metrics:solr_cores_filesystem_disk_space_bytes:type=usable_space" or
-   * "metrics:jvm_cpu_count". Metrics are fetched from /admin/metrics and parsed using shared
-   * utility methods.
+   * <p>"metrics:solr_disk_space_megabytes:type=usable_space" or "metrics:jvm_cpu_count". Metrics
+   * are fetched from /admin/metrics and parsed using shared utility methods.
    */
   private void getRemoteMetrics(
       Set<String> requestedTagNames, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
@@ -346,7 +345,7 @@ public class NodeValueFetcher {
 
     /**
      * Create a MetricRequest from a metric tag string like "metrics:jvm_cpu_count" or
-     * "metrics:solr_cores_filesystem_disk_space_bytes:type=usable_space"
+     * "metrics:solr_disk_space_megabytes:type=usable_space"
      */
     public static MetricRequest fromTag(String tag) {
       String[] parts = tag.split(":");

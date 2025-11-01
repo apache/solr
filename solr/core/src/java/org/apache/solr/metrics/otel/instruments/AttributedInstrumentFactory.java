@@ -16,10 +16,8 @@
  */
 package org.apache.solr.metrics.otel.instruments;
 
-import static org.apache.solr.handler.component.SearchHandler.INTERNAL_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
-import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_TYPE_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.SHARD_ATTR;
 
 import io.opentelemetry.api.common.AttributeKey;
@@ -36,16 +34,19 @@ import org.apache.solr.metrics.otel.OtelUnit;
  * Factory for creating metrics instruments that can write to either single or dual registries (core
  * and node).
  */
+// TODO consider making this a base abstraction with a simple impl and another "Dual" one.
 public class AttributedInstrumentFactory {
 
+  // These attributes are on a core but don't want to aggregate them.
   private static final Set<AttributeKey<?>> FILTER_ATTRS_SET =
-      Set.of(COLLECTION_ATTR, CORE_ATTR, SHARD_ATTR, REPLICA_TYPE_ATTR, INTERNAL_ATTR);
+      Set.of(COLLECTION_ATTR, CORE_ATTR, SHARD_ATTR);
+
   private final SolrMetricsContext primaryMetricsContext;
   private final Attributes primaryAttributes;
   private final boolean aggregateToNodeRegistry;
   private final boolean primaryIsNodeRegistry;
-  private SolrMetricsContext nodeMetricsContext = null;
-  private Attributes nodeAttributes = null;
+  private final SolrMetricsContext nodeMetricsContext;
+  private final Attributes nodeAttributes;
 
   public AttributedInstrumentFactory(
       SolrMetricsContext primaryMetricsContext,
@@ -66,6 +67,9 @@ public class AttributedInstrumentFactory {
           new SolrMetricsContext(
               primaryMetricsContext.getMetricManager(), SolrMetricManager.NODE_REGISTRY);
       this.nodeAttributes = createNodeAttributes(primaryAttributes);
+    } else {
+      this.nodeMetricsContext = null;
+      this.nodeAttributes = null;
     }
   }
 
@@ -77,13 +81,11 @@ public class AttributedInstrumentFactory {
       Attributes finalNodeAttrs = appendAttributes(nodeAttributes, additionalAttributes);
 
       LongCounter primaryCounter = primaryMetricsContext.longCounter(metricName, description);
-      LongCounter nodeCounter =
-          nodeMetricsContext.longCounter(toNodeMetricName(metricName), description);
+      LongCounter nodeCounter = nodeMetricsContext.longCounter(metricName, description);
       return new DualRegistryAttributedLongCounter(
           primaryCounter, finalPrimaryAttrs, nodeCounter, finalNodeAttrs);
     } else {
-      String finalMetricName = primaryIsNodeRegistry ? toNodeMetricName(metricName) : metricName;
-      LongCounter counter = primaryMetricsContext.longCounter(finalMetricName, description);
+      LongCounter counter = primaryMetricsContext.longCounter(metricName, description);
       return new AttributedLongCounter(counter, finalPrimaryAttrs);
     }
   }
@@ -97,14 +99,11 @@ public class AttributedInstrumentFactory {
 
       LongUpDownCounter primaryCounter =
           primaryMetricsContext.longUpDownCounter(metricName, description);
-      LongUpDownCounter nodeCounter =
-          nodeMetricsContext.longUpDownCounter(toNodeMetricName(metricName), description);
+      LongUpDownCounter nodeCounter = nodeMetricsContext.longUpDownCounter(metricName, description);
       return new DualRegistryAttributedLongUpDownCounter(
           primaryCounter, finalPrimaryAttrs, nodeCounter, finalNodeAttrs);
     } else {
-      String finalMetricName = primaryIsNodeRegistry ? toNodeMetricName(metricName) : metricName;
-      LongUpDownCounter counter =
-          primaryMetricsContext.longUpDownCounter(finalMetricName, description);
+      LongUpDownCounter counter = primaryMetricsContext.longUpDownCounter(metricName, description);
       return new AttributedLongUpDownCounter(counter, finalPrimaryAttrs);
     }
   }
@@ -117,21 +116,13 @@ public class AttributedInstrumentFactory {
       Attributes finalNodeAttrs = appendAttributes(nodeAttributes, additionalAttributes);
       LongHistogram primaryHistogram =
           primaryMetricsContext.longHistogram(metricName, description, unit);
-      LongHistogram nodeHistogram =
-          nodeMetricsContext.longHistogram(toNodeMetricName(metricName), description, unit);
+      LongHistogram nodeHistogram = nodeMetricsContext.longHistogram(metricName, description, unit);
       return new DualRegistryAttributedLongTimer(
           primaryHistogram, finalPrimaryAttrs, nodeHistogram, finalNodeAttrs);
     } else {
-      String finalMetricName = primaryIsNodeRegistry ? toNodeMetricName(metricName) : metricName;
-      LongHistogram histogram =
-          primaryMetricsContext.longHistogram(finalMetricName, description, unit);
+      LongHistogram histogram = primaryMetricsContext.longHistogram(metricName, description, unit);
       return new AttributedLongTimer(histogram, finalPrimaryAttrs);
     }
-  }
-
-  /** Replace core metric name prefix to node prefix */
-  private String toNodeMetricName(String coreMetricName) {
-    return coreMetricName.replace("solr_core", "solr_node");
   }
 
   /** Filter out core attributes and keep all others for node-level metrics */

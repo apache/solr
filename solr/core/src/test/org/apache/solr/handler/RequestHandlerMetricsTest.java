@@ -121,30 +121,34 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
           (CounterSnapshot.CounterDataPointSnapshot)
               SolrMetricTestUtils.getDataPointSnapshot(
                   nodeReader,
-                  "solr_node_requests",
+                  "solr_core_requests",
                   Labels.builder()
                       .label("category", "QUERY")
                       .label("handler", "/select")
+                      .label("internal", "false")
+                      .label("replica_type", "NRT")
                       .label("otel_scope_name", "org.apache.solr")
                       .build());
       CounterSnapshot.CounterDataPointSnapshot nodeUpdateRequests =
           (CounterSnapshot.CounterDataPointSnapshot)
               SolrMetricTestUtils.getDataPointSnapshot(
                   nodeReader,
-                  "solr_node_requests",
+                  "solr_core_requests",
                   Labels.builder()
                       .label("category", "UPDATE")
                       .label("handler", "/update")
+                      .label("replica_type", "NRT")
                       .label("otel_scope_name", "org.apache.solr")
                       .build());
       CounterSnapshot.CounterDataPointSnapshot nodeSubmittedOps =
           (CounterSnapshot.CounterDataPointSnapshot)
               SolrMetricTestUtils.getDataPointSnapshot(
                   nodeReader,
-                  "solr_node_update_submitted_ops",
+                  "solr_core_update_submitted_ops",
                   Labels.builder()
                       .label("category", "UPDATE")
                       .label("ops", "adds")
+                      .label("replica_type", "NRT")
                       .label("otel_scope_name", "org.apache.solr")
                       .build());
 
