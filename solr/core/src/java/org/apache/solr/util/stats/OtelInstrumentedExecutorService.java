@@ -20,7 +20,6 @@ import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,9 +60,9 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
   public OtelInstrumentedExecutorService(
       ExecutorService delegate,
       SolrMetricsContext ctx,
-      SolrInfoBean.Category category,
       String metricPrefix,
-      String executorName) {
+      String executorName,
+      SolrInfoBean.Category category) {
     this.delegate = delegate;
     this.executorName = executorName;
     this.observableMetrics = new ArrayList<>();
@@ -217,13 +216,13 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
   @Override
   public void shutdown() {
     delegate.shutdown();
-    observableMetrics.stream().forEach(IOUtils::closeQuietly);
+    IOUtils.closeQuietly(observableMetrics);
   }
 
   @Override
   public List<Runnable> shutdownNow() {
     List<Runnable> tasks = delegate.shutdownNow();
-    observableMetrics.stream().forEach(IOUtils::closeQuietly);
+    IOUtils.closeQuietly(observableMetrics);
     return tasks;
   }
 

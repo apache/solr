@@ -20,16 +20,14 @@ import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.OperatingSystemMXBean;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Metrics specific utility functions. */
+@Deprecated
 public class MetricUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -110,14 +108,4 @@ public class MetricUtils {
         "com.sun.management.UnixOperatingSystemMXBean",
         "com.ibm.lang.management.OperatingSystemMXBean"
       };
-
-  /** Returns an instrumented wrapper over the given executor service. */
-  public static ExecutorService instrumentedExecutorService(
-      ExecutorService delegate,
-      SolrMetricsContext ctx,
-      SolrInfoBean.Category category,
-      String metricPrefix,
-      String name) {
-    return new OtelInstrumentedExecutorService(delegate, ctx, category, metricPrefix, name);
-  }
 }

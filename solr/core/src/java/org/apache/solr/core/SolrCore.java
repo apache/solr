@@ -1408,13 +1408,15 @@ public class SolrCore implements SolrInfoBean, Closeable {
                       .build();
               try {
                 observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getTotalSpace() / (1024 * 1024), totalSpaceAttributes);
+                    Files.getFileStore(dataDirPath).getTotalSpace() / (1024 * 1024),
+                    totalSpaceAttributes);
               } catch (IOException e) {
                 observableLongMeasurement.record(0L, totalSpaceAttributes);
               }
               try {
                 observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getUsableSpace() / (1024 * 1024), usableSpaceAttributes);
+                    Files.getFileStore(dataDirPath).getUsableSpace() / (1024 * 1024),
+                    usableSpaceAttributes);
               } catch (IOException e) {
                 observableLongMeasurement.record(0L, usableSpaceAttributes);
               }
@@ -1427,7 +1429,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
             "Index size for a Solr core",
             (observableLongMeasurement -> {
               if (!isClosed())
-                observableLongMeasurement.record(getIndexSize() / (1024 * 1024), baseGaugeCoreAttributes);
+                observableLongMeasurement.record(
+                    getIndexSize() / (1024 * 1024), baseGaugeCoreAttributes);
             }),
             OtelUnit.MEGABYTES));
 

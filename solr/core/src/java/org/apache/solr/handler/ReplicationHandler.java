@@ -852,7 +852,9 @@ public class ReplicationHandler extends RequestHandlerBase
 
     ObservableLongMeasurement indexSizeMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_core_replication_index_size", "Size of the index in megabytes", OtelUnit.MEGABYTES);
+            "solr_core_replication_index_size",
+            "Size of the index in megabytes",
+            OtelUnit.MEGABYTES);
 
     ObservableLongMeasurement indexVersionMetric =
         solrMetricsContext.longGaugeMeasurement(
@@ -876,11 +878,13 @@ public class ReplicationHandler extends RequestHandlerBase
 
     ObservableLongMeasurement isPollingDisabledMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_core_replication_is_polling_disabled", "Whether polling is disabled (1) or not (0)");
+            "solr_core_replication_is_polling_disabled",
+            "Whether polling is disabled (1) or not (0)");
 
     ObservableLongMeasurement isReplicatingMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_core_replication_is_replicating", "Whether replication is in progress (1) or not (0)");
+            "solr_core_replication_is_replicating",
+            "Whether replication is in progress (1) or not (0)");
 
     ObservableLongMeasurement timeElapsedMetric =
         solrMetricsContext.longGaugeMeasurement(

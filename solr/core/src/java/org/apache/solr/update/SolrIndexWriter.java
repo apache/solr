@@ -261,7 +261,8 @@ public class SolrIndexWriter extends IndexWriter {
             "solr_core_indexwriter_merges", "Number of total merge operations, " + descSuffix);
     mergeDocsCounter =
         solrMetricsContext.longCounter(
-            "solr_core_indexwriter_merge_docs", "Number of documents involved in merge, " + descSuffix);
+            "solr_core_indexwriter_merge_docs",
+            "Number of documents involved in merge, " + descSuffix);
     mergeSegmentsCounter =
         solrMetricsContext.longCounter(
             "solr_core_indexwriter_merge_segments",

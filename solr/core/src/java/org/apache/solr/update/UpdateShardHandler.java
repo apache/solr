@@ -37,7 +37,6 @@ import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
-import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,11 +166,11 @@ public class UpdateShardHandler implements SolrInfoBean {
     solrMetricsContext = parentContext.getChildContext(this);
     trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty());
     updateExecutor =
-        MetricUtils.instrumentedExecutorService(
-            updateExecutor, solrMetricsContext, getCategory(), "solr_core_executor", "updateOnlyExecutor");
+        solrMetricsContext.instrumentedExecutorService(
+            updateExecutor, "solr_core_executor", "updateOnlyExecutor", getCategory());
     recoveryExecutor =
-        MetricUtils.instrumentedExecutorService(
-            recoveryExecutor, solrMetricsContext, getCategory(), "solr_core_executor", "recoveryExecutor");
+        solrMetricsContext.instrumentedExecutorService(
+            recoveryExecutor, "solr_core_executor", "recoveryExecutor", getCategory());
   }
 
   @Override

@@ -61,7 +61,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
-import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -436,7 +435,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     solrMetricsContext = parentContext.getChildContext(this);
     httpListenerFactory.initializeMetrics(solrMetricsContext, Attributes.empty());
     commExecutor =
-        MetricUtils.instrumentedExecutorService(
-            commExecutor, solrMetricsContext, SolrInfoBean.Category.QUERY, "solr_query_executor", "httpShardExecutor");
+        solrMetricsContext.instrumentedExecutorService(
+            commExecutor, "solr_core_executor", "httpShardExecutor", SolrInfoBean.Category.QUERY);
   }
 }

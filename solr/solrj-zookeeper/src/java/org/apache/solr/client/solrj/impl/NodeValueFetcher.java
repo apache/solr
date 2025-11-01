@@ -257,9 +257,8 @@ public class NodeValueFetcher {
   /**
    * Retrieve values that match metrics. Metrics names are structured like below:
    *
-   * <p>"metrics:solr_disk_space_megabytes:type=usable_space" or
-   * "metrics:jvm_cpu_count". Metrics are fetched from /admin/metrics and parsed using shared
-   * utility methods.
+   * <p>"metrics:solr_disk_space_megabytes:type=usable_space" or "metrics:jvm_cpu_count". Metrics
+   * are fetched from /admin/metrics and parsed using shared utility methods.
    */
   private void getRemoteMetrics(
       Set<String> requestedTagNames, SolrClientNodeStateProvider.RemoteCallCtx ctx) {

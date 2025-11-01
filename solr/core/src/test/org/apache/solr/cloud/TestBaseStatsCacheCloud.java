@@ -254,8 +254,8 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
   }
 
   /**
-   * Extract numeric value from Prometheus format line. "solr_core_indexsearcher_termstats_cache{...} 123.0" ->
-   * 123
+   * Extract numeric value from Prometheus format line.
+   * "solr_core_indexsearcher_termstats_cache{...} 123.0" -> 123
    */
   private long extractMetricValue(String line) {
     String valueStr = line.substring(line.lastIndexOf(' ') + 1);

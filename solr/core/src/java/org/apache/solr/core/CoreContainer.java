@@ -156,7 +156,6 @@ import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.StartupLoggingUtils;
-import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
@@ -940,14 +939,13 @@ public class CoreContainer {
 
     // setup executor to load cores in parallel
     coreLoadExecutor =
-        MetricUtils.instrumentedExecutorService(
+        solrMetricsContext.instrumentedExecutorService(
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
                 new SolrNamedThreadFactory("coreLoadExecutor")),
-            solrMetricsContext,
-            SolrInfoBean.Category.CONTAINER,
             "solr_node_executor",
-            "coreLoadExecutor");
+            "coreLoadExecutor",
+            SolrInfoBean.Category.CONTAINER);
 
     coreSorter =
         loader.newInstance(

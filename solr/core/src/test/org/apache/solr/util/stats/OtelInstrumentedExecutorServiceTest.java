@@ -224,8 +224,8 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
   }
 
   private static ExecutorService testExecutor(String name, ExecutorService exec) {
-    return MetricUtils.instrumentedExecutorService(
-        exec, metricsContext, SolrInfoBean.Category.ADMIN, "solr_admin_executor", name);
+    return metricsContext.instrumentedExecutorService(
+        exec, "solr_node_executor", name, SolrInfoBean.Category.ADMIN);
   }
 
   private static CounterDataPointSnapshot getCounterData(CounterSnapshot snapshot, String type) {
