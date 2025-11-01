@@ -7,8 +7,8 @@
 <!-- !!! ⚠️ DO NOT MODIFY THIS FILE, YOUR CHANGES WILL BE LOST ⚠️ !!! -->
 
 
-[9.10.0] - 2025-11-01
----------------------
+[9.10.0]
+--------
 
 ### Added (4 changes)
 
