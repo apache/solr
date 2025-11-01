@@ -72,6 +72,7 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -101,7 +102,7 @@ import org.slf4j.MDC;
  * @deprecated Please use {@link Http2SolrClient} or {@link HttpJdkSolrClient}
  */
 @Deprecated(since = "9.0")
-public class HttpApacheSolrClient extends SolrClient {
+public class HttpApacheSolrClient extends HttpSolrClient {
 
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final long serialVersionUID = -946812319974801896L;
@@ -112,9 +113,6 @@ public class HttpApacheSolrClient extends SolrClient {
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
 
   static final Class<HttpApacheSolrClient> cacheKey = HttpApacheSolrClient.class;
-
-  /** The URL of the Solr server. */
-  protected volatile String baseUrl;
 
   /**
    * Default value: null / empty.
@@ -154,10 +152,7 @@ public class HttpApacheSolrClient extends SolrClient {
 
   /** Use the builder to create this client */
   protected HttpApacheSolrClient(Builder builder) {
-    this.baseUrl = builder.baseSolrUrl;
-    if (baseUrl.endsWith("/")) {
-      baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
-    }
+    super(extractBaseUrl(builder));
 
     if (baseUrl.indexOf('?') >= 0) {
       throw new RuntimeException(
@@ -190,6 +185,14 @@ public class HttpApacheSolrClient extends SolrClient {
     this.useMultiPartPost = builder.useMultiPartPost;
     this.urlParamNames = builder.urlParamNames;
     this.defaultCollection = builder.defaultCollection;
+  }
+
+  private static String extractBaseUrl(Builder builder) {
+    String baseUrl = builder.baseSolrUrl;
+    if (baseUrl.endsWith("/")) {
+      baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+    }
+    return baseUrl;
   }
 
   public Set<String> getUrlParamNames() {
@@ -845,7 +848,7 @@ public class HttpApacheSolrClient extends SolrClient {
      * <p>The provided URL must point to the root Solr path ("/solr"), for example:
      *
      * <pre>
-     *   SolrClient client = new HttpSolrClient.Builder("http://my-solr-server:8983/solr")
+     *   SolrClient client = new HttpApacheSolrClient.Builder("http://my-solr-server:8983/solr")
      *       .withDefaultCollection("core1")
      *       .build();
      *   QueryResponse resp = client.query(new SolrQuery("*:*"));
