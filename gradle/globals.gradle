@@ -29,6 +29,10 @@ allprojects {
     maven {
       name "SearchScale"
       url "https://maven.searchscale.com/snapshots"
+      content {
+        // Only look for cuvs-lucene in SearchScale repo (not yet on Maven Central)
+        includeGroup "com.nvidia.cuvs.lucene"
+      }
     }
     /* Reenable this if we need it again in future
     maven {
