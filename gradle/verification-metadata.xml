@@ -1,0 +1,2280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<verification-metadata xmlns="https://schema.gradle.org/dependency-verification"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="https://schema.gradle.org/dependency-verification https://schema.gradle.org/dependency-verification/dependency-verification-1.3.xsd">
+  <configuration>
+    <verify-metadata>true</verify-metadata>
+    <verify-signatures>false</verify-signatures>
+  </configuration>
+  <components>
+    <component group="biz.aQute.bnd" name="biz.aQute.bnd.annotation" version="6.4.1">
+      <artifact name="biz.aQute.bnd.annotation-6.4.1.jar">
+        <sha1 value="381d53a2e2f48c2623e04990f4a2b06b6885cab1" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.adobe.testing.s3mock" name="s3mock" version="3.12.0">
+      <artifact name="s3mock-3.12.0.jar">
+        <sha1 value="537838135b4d9915c39d778839b4d33286d57adf" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.adobe.testing.s3mock" name="s3mock-junit4" version="3.12.0">
+      <artifact name="s3mock-junit4-3.12.0.jar">
+        <sha1 value="234d4fb61129a5f49a0cc7a73a19ed0cdd6aaad7" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.adobe.testing.s3mock" name="s3mock-testsupport-common" version="3.12.0">
+      <artifact name="s3mock-testsupport-common-3.12.0.jar">
+        <sha1 value="cdb3d66d4bc0a88e9790b1d51c8803b8bd6ba249" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.amazonaws" name="aws-java-sdk-core" version="1.12.779">
+      <artifact name="aws-java-sdk-core-1.12.779.jar">
+        <sha1 value="d33131fafcee508aceb3b51c518adf26be03ec63" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.amazonaws" name="aws-java-sdk-kms" version="1.12.779">
+      <artifact name="aws-java-sdk-kms-1.12.779.jar">
+        <sha1 value="0120d00cd2b87e3fb8e47711d9873f78a9d90c9f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.amazonaws" name="aws-java-sdk-s3" version="1.12.779">
+      <artifact name="aws-java-sdk-s3-1.12.779.jar">
+        <sha1 value="3280fa3c59817acdee6b06ea11fcd607c4386288" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.amazonaws" name="jmespath-java" version="1.12.779">
+      <artifact name="jmespath-java-1.12.779.jar">
+        <sha1 value="56d4e644c5923b452ab7571fd1b71c709e504d72" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.carrotsearch" name="hppc" version="0.10.0">
+      <artifact name="hppc-0.10.0.jar">
+        <sha1 value="847513ce33b28fdf56882b0ce84213ba3b158d89" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.carrotsearch.randomizedtesting" name="randomizedtesting-runner" version="2.8.3">
+      <artifact name="randomizedtesting-runner-2.8.3.jar">
+        <sha1 value="09f20521fa3f9988c469affc69a9fdd449f4bf07" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.cybozu.labs" name="langdetect-1.1" version="20120112">
+      <artifact name="langdetect-1.1-20120112.jar">
+        <sha1 value="99091df19fff62f815d56d23b412610baf38fe97" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.core" name="jackson-annotations" version="2.20">
+      <artifact name="jackson-annotations-2.20.jar">
+        <sha1 value="6a5e7291ea3f2b590a7ce400adb7b3aea4d7e12c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.core" name="jackson-core" version="2.20.0">
+      <artifact name="jackson-core-2.20.0.jar">
+        <sha1 value="3c97f7fad069f7cfae639d790bd93d6a0b2dff31" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.core" name="jackson-databind" version="2.20.0">
+      <artifact name="jackson-databind-2.20.0.jar">
+        <sha1 value="f0a5e62fbd21285e9a5498a60dccb097e1ef793b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.dataformat" name="jackson-dataformat-cbor" version="2.20.0">
+      <artifact name="jackson-dataformat-cbor-2.20.0.jar">
+        <sha1 value="c10e9032bec62df3089ca1cbdef43a1453aca261" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.dataformat" name="jackson-dataformat-csv" version="2.20.0">
+      <artifact name="jackson-dataformat-csv-2.20.0.jar">
+        <sha1 value="0fe14918fcb823216be7c181e393f29b06cf95af" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.dataformat" name="jackson-dataformat-smile" version="2.20.0">
+      <artifact name="jackson-dataformat-smile-2.20.0.jar">
+        <sha1 value="9cee634578c474142bf367a8d8f6feb526bbb0f8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.dataformat" name="jackson-dataformat-xml" version="2.20.0">
+      <artifact name="jackson-dataformat-xml-2.20.0.jar">
+        <sha1 value="18a57479c8fa39bb136ee595b9e6351e9ba3ded8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.datatype" name="jackson-datatype-jdk8" version="2.20.0">
+      <artifact name="jackson-datatype-jdk8-2.20.0.jar">
+        <sha1 value="3c5fdd700b08c2120afd8c899ce0f139b30f21d1" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.datatype" name="jackson-datatype-jsr310" version="2.20.0">
+      <artifact name="jackson-datatype-jsr310-2.20.0.jar">
+        <sha1 value="1af763a5ad4efa536235fafe6b3e690a1d8f071c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.module" name="jackson-module-jakarta-xmlbind-annotations" version="2.20.0">
+      <artifact name="jackson-module-jakarta-xmlbind-annotations-2.20.0.jar">
+        <sha1 value="ebb6e8e61dc8fabbceafedb6770d52a43440b8b4" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.module" name="jackson-module-kotlin" version="2.20.0">
+      <artifact name="jackson-module-kotlin-2.20.0.jar">
+        <sha1 value="4008f53ae3b50ecab1da28fe31dd104349b3d5b7" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.module" name="jackson-module-parameter-names" version="2.20.0">
+      <artifact name="jackson-module-parameter-names-2.20.0.jar">
+        <sha1 value="2f1b85a823e67241793dc138c3ff1e4481dd6f09" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.jackson.module" name="jackson-module-scala_2.13" version="2.20.0">
+      <artifact name="jackson-module-scala_2.13-2.20.0.jar">
+        <sha1 value="03ad0b05152a74a1ee8bca4186a611158ed9b7b2" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.woodstox" name="woodstox-core" version="7.0.0">
+      <artifact name="woodstox-core-7.0.0.jar">
+        <sha1 value="beb19c02e7e28a8a4acf4a9cc8c3280ec3b94722" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.fasterxml.woodstox" name="woodstox-core" version="7.1.1">
+      <artifact name="woodstox-core-7.1.1.jar">
+        <sha1 value="76baad1b94513ea896e0a17388890a4c81edd0e0" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.github.ben-manes.caffeine" name="caffeine" version="3.2.2">
+      <artifact name="caffeine-3.2.2.jar">
+        <sha1 value="8b0a31cb57ac00e18161d5586759912bd2637398" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.github.docker-java" name="docker-java-api" version="3.4.0">
+      <artifact name="docker-java-api-3.4.0.jar">
+        <sha1 value="9ef23dcc93693f15e69b64632be096c38e31bc44" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.github.docker-java" name="docker-java-transport" version="3.4.0">
+      <artifact name="docker-java-transport-3.4.0.jar">
+        <sha1 value="c058705684d782effc4b2edfdef1a87544ba4af8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.github.docker-java" name="docker-java-transport-zerodep" version="3.4.0">
+      <artifact name="docker-java-transport-zerodep-3.4.0.jar">
+        <sha1 value="c4ce6d8695cfdb0027872f99cc20f8f679f8a969" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.github.hazendaz" name="lang-tag" version="1.7">
+      <artifact name="lang-tag-1.7.jar">
+        <sha1 value="97c73ecd70bc7e8eefb26c5eea84f251a63f1031" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.github.luben" name="zstd-jni" version="1.5.6-4">
+      <artifact name="zstd-jni-1.5.6-4.jar">
+        <sha1 value="ba9e303e0b5e94cdd0017390d7d8c06f47fd61f7" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.github.rholder" name="duct-tape" version="1.0.8">
+      <artifact name="duct-tape-1.0.8.jar">
+        <sha1 value="92edc22a9ab2f3e17c9bf700aaee377d50e8b530" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.github.stephenc.jcip" name="jcip-annotations" version="1.0-1">
+      <artifact name="jcip-annotations-1.0-1.jar">
+        <sha1 value="ef31541dd28ae2cefdd17c7ebf352d93e9058c63" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.api" name="api-common" version="2.53.1">
+      <artifact name="api-common-2.53.1.jar">
+        <sha1 value="1f107d65a50aaaab23a469c2ec7bd29ca1bdcc06" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.api" name="gax" version="2.70.1">
+      <artifact name="gax-2.70.1.jar">
+        <sha1 value="6e8b55ea6700a5b9cfc3908d230590956b15c58a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.api" name="gax-grpc" version="2.50.0">
+      <artifact name="gax-grpc-2.50.0.jar">
+        <sha1 value="526b493917d951b82ebb34d0a7cc79ff07264b0e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.api" name="gax-httpjson" version="2.70.1">
+      <artifact name="gax-httpjson-2.70.1.jar">
+        <sha1 value="2ed35417c8d6549c89103dcaa2418f4ddaab4fcc" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.api-client" name="google-api-client" version="2.7.2">
+      <artifact name="google-api-client-2.7.2.jar">
+        <sha1 value="495d58d6e31c2c5e24a707a50d6355ba92dd3d0c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.api.grpc" name="grpc-google-cloud-storage-v2" version="2.40.1-alpha">
+      <artifact name="grpc-google-cloud-storage-v2-2.40.1-alpha.jar">
+        <sha1 value="7f281914b3ec9e0039531eb1f193f1099d74b45c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.api.grpc" name="proto-google-common-protos" version="2.61.1">
+      <artifact name="proto-google-common-protos-2.61.1.jar">
+        <sha1 value="ff95d540fab274675a49cd51306e07969561a821" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.api.grpc" name="proto-google-iam-v1" version="1.56.1">
+      <artifact name="proto-google-iam-v1-1.56.1.jar">
+        <sha1 value="5bfe3a2c555803bc5bcb0e61c82899ca99b8974e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.apis" name="google-api-services-storage-v1-rev20240621" version="2.0.0">
+      <artifact name="google-api-services-storage-v1-rev20240621-2.0.0.jar">
+        <sha1 value="260d4c88612b1fe65e7332550a023dced06943f4" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.auth" name="google-auth-library-credentials" version="1.39.0">
+      <artifact name="google-auth-library-credentials-1.39.0.jar">
+        <sha1 value="f112a60fe51099a0cba7469caef911487a6f5844" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.auth" name="google-auth-library-oauth2-http" version="1.39.0">
+      <artifact name="google-auth-library-oauth2-http-1.39.0.jar">
+        <sha1 value="9d7d3d3ae9de7cced318fb0a5a1b8317a7b0e2c7" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.auto.valu" name="auto-value-annotations" version="1.11.0">
+      <artifact name="auto-value-annotations-1.11.0.jar">
+        <sha1 value="f0d047931d07cfbc6fa4079854f181ff62891d6f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.cloud" name="gapic-google-cloud-storage-v2" version="2.40.1-alpha">
+      <artifact name="gapic-google-cloud-storage-v2-2.40.1-alpha.jar">
+        <sha1 value="c0cde24ebb3db3fd6a062717a1818981d34a8591" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.cloud" name="google-cloud-core" version="2.60.1">
+      <artifact name="google-cloud-core-2.60.1.jar">
+        <sha1 value="4ec3044c35c20ba950a644850ed862401ec7cd85" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.cloud" name="google-cloud-core-grpc" version="2.40.0">
+      <artifact name="google-cloud-core-grpc-2.40.0.jar">
+        <sha1 value="29cf12a64d738cc67d729342246a72e40c27a137" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.cloud" name="google-cloud-core-http" version="2.60.1">
+      <artifact name="google-cloud-core-http-2.60.1.jar">
+        <sha1 value="f2b36991cadb7d8c37b384db85af38b8c8dfa202" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.cloud" name="google-cloud-nio" version="0.127.20">
+      <artifact name="google-cloud-nio-0.127.20.jar">
+        <sha1 value="997a712f567451a548951bd887953d26aa90a1fe" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.cloud" name="google-cloud-storage" version="2.40.1">
+      <artifact name="google-cloud-storage-2.40.1.jar">
+        <sha1 value="33e67ce2dc4e91edb85a8bdd9ea154735aa4a88f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.cloud" name="proto-google-cloud-storage-v2" version="2.40.1-alpha">
+      <artifact name="proto-google-cloud-storage-v2-2.40.1-alpha.jar">
+        <sha1 value="0b99831c99943417c29ba27b72ddb99d215c880c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.code.gson" name="gson" version="2.13.1">
+      <artifact name="gson-2.13.1.jar">
+        <sha1 value="853ce06c11316b33a8eae5e9095da096a9528b8f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.errorprone" name="error_prone_annotations" version="2.41.0">
+      <artifact name="error_prone_annotations-2.41.0.jar">
+        <sha1 value="4381275efdef6ddfae38f002c31e84cd001c97f0" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.guava" name="failureaccess" version="1.0.3">
+      <artifact name="failureaccess-1.0.3.jar">
+        <sha1 value="aeaffd00d57023a2c947393ed251f0354f0985fc" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.guava" name="guava" version="33.4.8-jre">
+      <artifact name="guava-33.4.8-jre.jar">
+        <sha1 value="e70a3268e6cd3e7d458aa15787ce6811c34e96ae" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.guava" name="listenablefuture" version="9999.0-empty-to-avoid-conflict-with-guava">
+      <artifact name="listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar">
+        <sha1 value="b421526c5f297295adef1c886e5246c39d4ac629" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.http-client" name="google-http-client" version="1.47.1">
+      <artifact name="google-http-client-1.47.1.jar">
+        <sha1 value="eabad78d440226732a453d6a300663a9770f5b7e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.http-client" name="google-http-client-apache-v2" version="1.45.2">
+      <artifact name="google-http-client-apache-v2-1.45.2.jar">
+        <sha1 value="0709e720ca21bf6e201dd244137d38281548172e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.http-client" name="google-http-client-appengine" version="1.47.1">
+      <artifact name="google-http-client-appengine-1.47.1.jar">
+        <sha1 value="487e80e93247912e7f9e33dcd1f5cb6aa2fce107" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.http-client" name="google-http-client-gson" version="1.47.1">
+      <artifact name="google-http-client-gson-1.47.1.jar">
+        <sha1 value="04331c43544544d60df28055c295949e22ba60a4" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.http-client" name="google-http-client-jackson2" version="1.44.2">
+      <artifact name="google-http-client-jackson2-1.44.2.jar">
+        <sha1 value="3046eb6db11805ba7f90ad5bb6be31877468a7cf" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.j2objc" name="j2objc-annotations" version="3.1">
+      <artifact name="j2objc-annotations-3.1.jar">
+        <sha1 value="a892ca9507839bbdb900d64310ac98256cab992f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.oauth-client" name="google-oauth-client" version="1.36.0">
+      <artifact name="google-oauth-client-1.36.0.jar">
+        <sha1 value="dc3f07bc8f49dd52fe8fcc15958f3cfeb003e20f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.protobuf" name="protobuf-java" version="3.25.8">
+      <artifact name="protobuf-java-3.25.8.jar">
+        <sha1 value="2ba593767658038775b2ea9724c3686609874470" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.protobuf" name="protobuf-java-util" version="3.25.8">
+      <artifact name="protobuf-java-util-3.25.8.jar">
+        <sha1 value="0be3cb8bef1415d3b87cf5bf4de0b9149f6a0990" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.re2j" name="re2j" version="1.7">
+      <artifact name="re2j-1.7.jar">
+        <sha1 value="2949632c1b4acce0d7784f28e3152e9cf3c2ec7a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.google.s2geometry" name="s2-geometry-library-java" version="1.0.0">
+      <artifact name="s2-geometry-library-java-1.0.0.jar">
+        <sha1 value="f95b25589b40b5b0965deb592445073ff3efa299" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.googlecode.json-simple" name="json-simple" version="1.1.1">
+      <artifact name="json-simple-1.1.1.jar">
+        <sha1 value="c9ad4a0850ab676c5c64461a05ca524cdfff59f1" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.helger" name="profiler" version="1.1.1">
+      <artifact name="profiler-1.1.1.jar">
+        <sha1 value="c92a582728b09b47de38b1b97bd2e5b0c8cd553c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.ibm.icu" name="icu4j" version="77.1">
+      <artifact name="icu4j-77.1.jar">
+        <sha1 value="38693cf0b1d7362a8b726af74dc06026a7c23809" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.j256.simplemagic" name="simplemagic" version="1.17">
+      <artifact name="simplemagic-1.17.jar">
+        <sha1 value="b6e2d1e47d7172e57fa858a2e3940c09a590e61e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.jayway.jsonpath" name="json-path" version="2.9.0">
+      <artifact name="json-path-2.9.0.jar">
+        <sha1 value="37fe2217f577b0b68b18e62c4d17a8858ecf9b69" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.knuddels" name="jtokkit" version="1.1.0">
+      <artifact name="jtokkit-1.1.0.jar">
+        <sha1 value="b7370f801db3eb8c7c6a2c2c06231909ac6de0b0" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.lmax" name="disruptor" version="3.4.4">
+      <artifact name="disruptor-3.4.4.jar">
+        <sha1 value="588321627643b6de45db44c6575e750fea3ae3f5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.microsoft.onnxruntime" name="onnxruntime" version="1.23.0">
+      <artifact name="onnxruntime-1.23.0.jar">
+        <sha1 value="2ca305e937b558f390e8d85a0a419d137b0ae259" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.nimbusds" name="content-type" version="2.2">
+      <artifact name="content-type-2.2.jar">
+        <sha1 value="9a894bce7646dd4086652d85b88013229f23724b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.nimbusds" name="nimbus-jose-jwt" version="10.5">
+      <artifact name="nimbus-jose-jwt-10.5.jar">
+        <sha1 value="8ef880fa881a4eb9676dd6c419126aa7753d49f2" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.nimbusds" name="oauth2-oidc-sdk" version="10.10.1">
+      <artifact name="oauth2-oidc-sdk-10.10.1.jar">
+        <sha1 value="a9a0d131feff0f8a059c306bd5fca886bf8195cc" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.nvidia.cuvs" name="cuvs-java" version="25.10.0">
+      <artifact name="cuvs-java-25.10.0.jar">
+        <sha1 value="885ad074984741128c7cc723851e790711f91a6e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.nvidia.cuvs.lucene" name="cuvs-lucene" version="25.10.0">
+      <artifact name="cuvs-lucene-25.10.0.jar">
+        <sha1 value="735cac75bcf3b55763941cfd1e473dfcf47fbf97" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.squareup.okhttp3" name="mockwebserver" version="4.12.0">
+      <artifact name="mockwebserver-4.12.0.jar">
+        <sha1 value="3bc54cc5c87cd632031d0881f3c313d3799a1476" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.squareup.okhttp3" name="okhttp" version="4.12.0">
+      <artifact name="okhttp-4.12.0.jar">
+        <sha1 value="2f4525d4a200e97e1b87449c2cd9bd2e25b7e8cd" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.squareup.okhttp3" name="okhttp-jvm" version="5.1.0">
+      <artifact name="okhttp-jvm-5.1.0.jar">
+        <sha1 value="c17340f19b33c1d28a47b8dc4ae15018aff6dc10" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.squareup.okhttp3" name="okhttp-sse" version="4.12.0">
+      <artifact name="okhttp-sse-4.12.0.jar">
+        <sha1 value="eca9c68c54ae7fd18d465beba65d80a44e9667e4" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.squareup.okio" name="okio-jvm" version="3.15.0">
+      <artifact name="okio-jvm-3.15.0.jar">
+        <sha1 value="cb3c285187640f543150fcac1ae012bdd778c0e1" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.squareup.okio" name="okio-jvm" version="3.6.0">
+      <artifact name="okio-jvm-3.6.0.jar">
+        <sha1 value="5600569133b7bdefe1daf9ec7f4abeb6d13e1786" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.squareup.retrofit" name="converter-jackson" version="2.9.0">
+      <artifact name="converter-jackson-2.9.0.jar">
+        <sha1 value="19b4010914e747601e26f46c6a403044bbe0b2bf" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.squareup.retrofit2" name="retrofit" version="2.9.0">
+      <artifact name="retrofit-2.9.0.jar">
+        <sha1 value="d8fdfbd5da952141a665a403348b74538efc05ff" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.sun.istack" name="istack-commons-runtime" version="4.1.2">
+      <artifact name="istack-commons-runtime-4.1.2.jar">
+        <sha1 value="18ec117c85f3ba0ac65409136afa8e42bc74e739" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.tdunning" name="t-digest" version="3.3">
+      <artifact name="t-digest-3.3.jar">
+        <sha1 value="5e96c4fd7d63b05828cf5ef41da20649195b1b78" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.theokanning.openai-gpt3-java" name="openai4j" version="0.22.0">
+      <artifact name="openai4j-0.22.0.jar">
+        <sha1 value="a9c8a0cdbf43cd31a08ee7ce957ab84991b67427" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.thoughtworks.paranamer" name="paranamer" version="2.8.3">
+      <artifact name="paranamer-2.8.3.jar">
+        <sha1 value="75ae4eb129574b7fc0df5fa8808d7ed625be815d" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.typesafe.scala-logging" name="scala-logging_2.13" version="3.9.5">
+      <artifact name="scala-logging_2.13-3.9.5.jar">
+        <sha1 value="d5a0f61168371d8cff1c510f55407aa46bea8366" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="com.yammer.metrics" name="metrics-core" version="2.2.0">
+      <artifact name="metrics-core-2.2.0.jar">
+        <sha1 value="f82c035cfa786d3cbec362c38c22a5f5b1bc8724" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="dev.langchain4j" name="langchain4j-cohere" version="0.35.0">
+      <artifact name="langchain4j-cohere-0.35.0.jar">
+        <sha1 value="737ebd43f49e1820b17b18b6e3154bf94e0b2853" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="dev.langchain4j" name="langchain4j-core" version="0.35.0">
+      <artifact name="langchain4j-core-0.35.0.jar">
+        <sha1 value="1ac1bf8b9aa2864ac3fcae7d46a5d9f80a582b30" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="dev.langchain4j" name="langchain4j-hugging-face" version="0.35.0">
+      <artifact name="langchain4j-hugging-face-0.35.0.jar">
+        <sha1 value="4eb72d70b9e26473d3e02f9199ccdf3a9bc24cbf" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="dev.langchain4j" name="langchain4j-mistral-ai" version="0.35.0">
+      <artifact name="langchain4j-mistral-ai-0.35.0.jar">
+        <sha1 value="4f1165e6ee19430dcadc6cb260d798a40fd49ef0" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="dev.langchain4j" name="langchain4j-open-ai" version="0.35.0">
+      <artifact name="langchain4j-open-ai-0.35.0.jar">
+        <sha1 value="d77645377c517e18fd5e0ca2ca56d4a38e21495a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.dropwizard.metrics" name="metrics-annotation" version="4.2.26">
+      <artifact name="metrics-annotation-4.2.26.jar">
+        <sha1 value="427bd7a811650125bdb337d0182e9abc92fa3e83" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.dropwizard.metrics" name="metrics-core" version="4.2.26">
+      <artifact name="metrics-core-4.2.26.jar">
+        <sha1 value="9cd762999669e726f694a3ac8f9d8a1400cdb332" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.dropwizard.metrics" name="metrics-healthchecks" version="4.2.26">
+      <artifact name="metrics-healthchecks-4.2.26.jar">
+        <sha1 value="50819fda1745b03673eff3bdcddf914999045673" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.dropwizard.metrics" name="metrics-jakarta-servlets" version="4.2.26">
+      <artifact name="metrics-jakarta-servlets-4.2.26.jar">
+        <sha1 value="da590186279c40e3187b50ca05ad9a6c4503db33" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.dropwizard.metrics" name="metrics-json" version="4.2.26">
+      <artifact name="metrics-json-4.2.26.jar">
+        <sha1 value="1eac3853bb964647b38d7e1d7b66e515443437d6" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.dropwizard.metrics" name="metrics-jvm" version="4.2.26">
+      <artifact name="metrics-jvm-4.2.26.jar">
+        <sha1 value="a7df0386df8c8938dea6cfacdc67972b9fd1a01e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.dropwizard.metrics5" name="metrics-jetty12" version="4.2.26">
+      <artifact name="metrics-jetty12-4.2.26.jar">
+        <sha1 value="7d4bdf5d9915b45c8202aac4861956932956ce26" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.dropwizard.metrics5" name="metrics-jetty12-ee10" version="4.2.26">
+      <artifact name="metrics-jetty12-ee10-4.2.26.jar">
+        <sha1 value="ac14c220fd14d23b6041b66c82fedb35b923506e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.github.microutils" name="kotlin-logging-jvm" version="3.0.5">
+      <artifact name="kotlin-logging-jvm-3.0.5.jar">
+        <sha1 value="82f2256aeedccfd9c27ea585274a50bf06517383" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-alts" version="1.65.1">
+      <artifact name="grpc-alts-1.65.1.jar">
+        <sha1 value="5e5f37b03451ecf79a003c21c620758005247eaf" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-api" version="1.65.1">
+      <artifact name="grpc-api-1.65.1.jar">
+        <sha1 value="052a4193296c4471871b90dbbdaebb8e9bb87182" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-api" version="1.70.0">
+      <artifact name="grpc-api-1.70.0.jar">
+        <sha1 value="c0d185f8435e2dbc9b0f430d1e89600858ee24ee" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-auth" version="1.65.1">
+      <artifact name="grpc-auth-1.65.1.jar">
+        <sha1 value="8824fde1fa75e8f86716e9f2f72d97cd87e0b3cd" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-context" version="1.65.1">
+      <artifact name="grpc-context-1.65.1.jar">
+        <sha1 value="d65b37d9523f5ad0c8eda4cbf999fed4b933a594" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-context" version="1.70.0">
+      <artifact name="grpc-context-1.70.0.jar">
+        <sha1 value="375570c198b9ff46f2202731d11271bb5cb396fa" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-core" version="1.65.1">
+      <artifact name="grpc-core-1.65.1.jar">
+        <sha1 value="7b80ccb2678b7d3ff2ec90bbe4ffbb0ff956eb54" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-googleapis" version="1.65.1">
+      <artifact name="grpc-googleapis-1.65.1.jar">
+        <sha1 value="3f0d075e0a0b3a4eb443098394bf1cd4f9f93627" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-grpclb" version="1.65.1">
+      <artifact name="grpc-grpclb-1.65.1.jar">
+        <sha1 value="daa916d2d605d2bacbb1ecb047ebb12e6fd6d2f2" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-inprocess" version="1.65.1">
+      <artifact name="grpc-inprocess-1.65.1.jar">
+        <sha1 value="3409a0dfbe0b47d9f3131b58cbf4024144425ef1" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-netty" version="1.65.1">
+      <artifact name="grpc-netty-1.65.1.jar">
+        <sha1 value="048f24fbe5d26affe44b916461d62dcc9f34f8da" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-netty-shaded" version="1.65.1">
+      <artifact name="grpc-netty-shaded-1.65.1.jar">
+        <sha1 value="b66df7a116527604f1aa70ea588e94a762c7d531" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-protobuf" version="1.65.1">
+      <artifact name="grpc-protobuf-1.65.1.jar">
+        <sha1 value="007e25214bd216bbf5c4f2092a984b6586759124" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-protobuf-lite" version="1.65.1">
+      <artifact name="grpc-protobuf-lite-1.65.1.jar">
+        <sha1 value="f9427f4e41726d7510dc3b721cac62535eb6949c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-rls" version="1.65.1">
+      <artifact name="grpc-rls-1.65.1.jar">
+        <sha1 value="e67e414f798be9d302005ec5ebbf2983c7d7dfb4" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-services" version="1.65.1">
+      <artifact name="grpc-services-1.65.1.jar">
+        <sha1 value="91f8a5bedd34b59ac20e5b0a4ba30a5ef8728372" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-stub" version="1.65.1">
+      <artifact name="grpc-stub-1.65.1.jar">
+        <sha1 value="52f605e45be9c43079d8c8a6bc7142cab662ac62" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-util" version="1.65.1">
+      <artifact name="grpc-util-1.65.1.jar">
+        <sha1 value="54121cb0fd19af2f0e93321a5dc78d283ecefef8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.grpc" name="grpc-xds" version="1.65.1">
+      <artifact name="grpc-xds-1.65.1.jar">
+        <sha1 value="cc01598b9d5d1670b097b232abf9c91345f2351e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.micrometer" name="micrometer-commons" version="1.13.3">
+      <artifact name="micrometer-commons-1.13.3.jar">
+        <sha1 value="47b6b093cd6ba80c9da8d973ea79c7ef69a878d5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.micrometer" name="micrometer-core" version="1.13.3">
+      <artifact name="micrometer-core-1.13.3.jar">
+        <sha1 value="c3d676424063cea7a1825f57128bc9bf74672b3b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.micrometer" name="micrometer-jakarta9" version="1.13.3">
+      <artifact name="micrometer-jakarta9-1.13.3.jar">
+        <sha1 value="c976f1677936dfb710fffe5476ab3b1ef79f6d63" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.micrometer" name="micrometer-observation" version="1.13.3">
+      <artifact name="micrometer-observation-1.13.3.jar">
+        <sha1 value="0099840eb14ecf95d349f39123c867c2ca33808d" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-buffer" version="4.2.6.Final">
+      <artifact name="netty-buffer-4.2.6.Final.jar">
+        <sha1 value="4dfa898e145ea6910b9e99388f35e0ad483a6dfa" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-codec-base" version="4.2.6.Final">
+      <artifact name="netty-codec-base-4.2.6.Final.jar">
+        <sha1 value="fd6ff9613696f99857daeca37d4cfed22b1eb69e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-codec-compression" version="4.2.6.Final">
+      <artifact name="netty-codec-compression-4.2.6.Final.jar">
+        <sha1 value="fadf334ce949ae99b96b4b9d95d59c30a5dc2614" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-codec-http" version="4.2.6.Final">
+      <artifact name="netty-codec-http-4.2.6.Final.jar">
+        <sha1 value="26da0fb9215bde2ecd551b941ccb974f65f59884" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-codec-http2" version="4.2.6.Final">
+      <artifact name="netty-codec-http2-4.2.6.Final.jar">
+        <sha1 value="55b556602dd5ae7adf7a0ef4720195138018a623" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-codec-socks" version="4.2.6.Final">
+      <artifact name="netty-codec-socks-4.2.6.Final.jar">
+        <sha1 value="6e9de561de0b5764cf05be667c90a4fe06aba40c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-common" version="4.2.6.Final">
+      <artifact name="netty-common-4.2.6.Final.jar">
+        <sha1 value="5746874869298a07b468dd50b5991f457e773620" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-handler" version="4.2.6.Final">
+      <artifact name="netty-handler-4.2.6.Final.jar">
+        <sha1 value="311ea62f27b26685b306dc24c4bbf765bc1950d9" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-handler-proxy" version="4.2.6.Final">
+      <artifact name="netty-handler-proxy-4.2.6.Final.jar">
+        <sha1 value="1f0f9fb2f321cc697f13d802cf80c37889ce421a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-resolver" version="4.2.6.Final">
+      <artifact name="netty-resolver-4.2.6.Final.jar">
+        <sha1 value="121223f223094539282b916c303ac52c7875b9aa" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-tcnative-boringssl-static" version="2.0.70.Final">
+      <artifact name="netty-tcnative-boringssl-static-2.0.70.Final.jar">
+        <sha1 value="d0525335b569b05cfbfb60ecbba6c811157cf035" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-tcnative-classes" version="2.0.70.Final">
+      <artifact name="netty-tcnative-classes-2.0.70.Final.jar">
+        <sha1 value="5f75accc769e69f2e6c1e56ba3a08b6c4bcc25f8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-transport" version="4.2.6.Final">
+      <artifact name="netty-transport-4.2.6.Final.jar">
+        <sha1 value="15af02f1735db36455f2af2fd11b64e9f4499008" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-transport-classes-epoll" version="4.2.6.Final">
+      <artifact name="netty-transport-classes-epoll-4.2.6.Final.jar">
+        <sha1 value="b61968c0cb9c474df7a0ddc7cd577fed677efbbb" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-transport-native-epoll" version="4.2.6.Final-linux-x86_64">
+      <artifact name="netty-transport-native-epoll-4.2.6.Final-linux-x86_64.jar">
+        <sha1 value="c4a2ba3782e65b34bbb54c3a6636b466955dc1c6" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.netty" name="netty-transport-native-unix-common" version="4.2.6.Final">
+      <artifact name="netty-transport-native-unix-common-4.2.6.Final.jar">
+        <sha1 value="cacd60c080051c74b9487074cf89d28ec892d71c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opencensus" name="opencensus-api" version="0.31.1">
+      <artifact name="opencensus-api-0.31.1.jar">
+        <sha1 value="66a60c7201c2b8b20ce495f0295b32bb0ccbbc57" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opencensus" name="opencensus-contrib-http-util" version="0.31.1">
+      <artifact name="opencensus-contrib-http-util-0.31.1.jar">
+        <sha1 value="3c13fc5715231fadb16a9b74a44d9d59c460cfa8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opencensus" name="opencensus-proto" version="0.2.0">
+      <artifact name="opencensus-proto-0.2.0.jar">
+        <sha1 value="c05b6b32b69d5d9144087ea0ebc6fab183fb9151" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-api" version="1.53.0">
+      <artifact name="opentelemetry-api-1.53.0.jar">
+        <sha1 value="fc6d4f6a0f5c5a97cbafbd198f5008ba8a023c3f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-api-incubator" version="1.45.0-alpha">
+      <artifact name="opentelemetry-api-incubator-1.45.0-alpha.jar">
+        <sha1 value="0cc65a1e165136850c086a45d13f75e8985e22b3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-common" version="1.53.0">
+      <artifact name="opentelemetry-common-1.53.0.jar">
+        <sha1 value="e9ee5d5738ee7a8e00a12922920af3f05daa9c42" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-context" version="1.53.0">
+      <artifact name="opentelemetry-context-1.53.0.jar">
+        <sha1 value="9733ca6c3741f0f40de6c99f9874fc239ed066cf" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-exporter-common" version="1.53.0">
+      <artifact name="opentelemetry-exporter-common-1.53.0.jar">
+        <sha1 value="a42984afaa0216de2667d56f5996926055b5f8d8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-exporter-otlp" version="1.53.0">
+      <artifact name="opentelemetry-exporter-otlp-1.53.0.jar">
+        <sha1 value="092aa3e070ab3f70f9edaa457a777a4bcdc0570b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-exporter-otlp-common" version="1.53.0">
+      <artifact name="opentelemetry-exporter-otlp-common-1.53.0.jar">
+        <sha1 value="fb3f8b04344b47ffe4b78db487ba9997e0fbb36d" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-exporter-prometheus" version="1.50.0-alpha">
+      <artifact name="opentelemetry-exporter-prometheus-1.50.0-alpha.jar">
+        <sha1 value="087b606101ac171a9d9ba927a2fd8718a0fcc819" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-sdk" version="1.53.0">
+      <artifact name="opentelemetry-sdk-1.53.0.jar">
+        <sha1 value="c49f224a0d8a4cb5392aa8fbc4742248d6c71a85" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-sdk-common" version="1.53.0">
+      <artifact name="opentelemetry-sdk-common-1.53.0.jar">
+        <sha1 value="2180d1e384d1de5dddd00b7ca66513846aff70d8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-sdk-extension-autoconfigure" version="1.53.0">
+      <artifact name="opentelemetry-sdk-extension-autoconfigure-1.53.0.jar">
+        <sha1 value="c708fa8294ffa0a1452ef29c442d804246ca6e35" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-sdk-extension-autoconfigure-spi" version="1.53.0">
+      <artifact name="opentelemetry-sdk-extension-autoconfigure-spi-1.53.0.jar">
+        <sha1 value="c2fff90b3070662d292071487db0ae180dbfded3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-sdk-logs" version="1.53.0">
+      <artifact name="opentelemetry-sdk-logs-1.53.0.jar">
+        <sha1 value="26f1c04034202b0645cfe6f320c8d65ec6753275" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-sdk-metrics" version="1.53.0">
+      <artifact name="opentelemetry-sdk-metrics-1.53.0.jar">
+        <sha1 value="b264c6929feffe6632b99a0b9812278ff1779135" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-sdk-testing" version="1.53.0">
+      <artifact name="opentelemetry-sdk-testing-1.53.0.jar">
+        <sha1 value="4a0823a93b52322bbbca2c7ba3b0637465b1f429" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry" name="opentelemetry-sdk-trace" version="1.53.0">
+      <artifact name="opentelemetry-sdk-trace-1.53.0.jar">
+        <sha1 value="d5f3c5243bfe5452db3941ce048f621415aac3a1" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry.instrumentation" name="opentelemetry-instrumentation-api" version="2.11.0">
+      <artifact name="opentelemetry-instrumentation-api-2.11.0.jar">
+        <sha1 value="2cd6f15d226eec6c23dc1175adacefe3101573ee" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry.instrumentation" name="opentelemetry-instrumentation-api-incubator" version="2.11.0-alpha">
+      <artifact name="opentelemetry-instrumentation-api-incubator-2.11.0-alpha.jar">
+        <sha1 value="02fdfd940eb281b3af79ba2cd56fe00202489361" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry.instrumentation.runtimetelemetry-java17" name="opentelemetry-runtime-telemetry-java17" version="2.11.0-alpha">
+      <artifact name="opentelemetry-runtime-telemetry-java17-2.11.0-alpha.jar">
+        <sha1 value="d547b1fee8c4c3f645ea78f3928780aa9695c676" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry.instrumentation.runtimetelemetry-java8" name="opentelemetry-runtime-telemetry-java8" version="2.11.0-alpha">
+      <artifact name="opentelemetry-runtime-telemetry-java8-2.11.0-alpha.jar">
+        <sha1 value="8ee521187c20f95420090907b2fd06813c2fbfc3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry.semconv" name="opentelemetry-exporter-sender-okhttp" version="1.53.0">
+      <artifact name="opentelemetry-exporter-sender-okhttp-1.53.0.jar">
+        <sha1 value="27f729e20bd15d32b3e971d62332064cee503d5a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.opentelemetry.semconv" name="opentelemetry-semconv" version="1.29.0-alpha">
+      <artifact name="opentelemetry-semconv-1.29.0-alpha.jar">
+        <sha1 value="613d7f7743eb2b974680ad1af1685802e6a7cb58" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.perfmark" name="perfmark-api" version="0.27.0">
+      <artifact name="perfmark-api-0.27.0.jar">
+        <sha1 value="f86f575a41b091786a4b027cd9c0c1d2e3fc1c01" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.prometheus" name="prometheus-metrics-exposition-formats" version="1.1.0">
+      <artifact name="prometheus-metrics-exposition-formats-1.1.0.jar">
+        <sha1 value="466f12bdde0dcb5b5469d1bd01370db7b62bead3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.prometheus" name="prometheus-metrics-model" version="1.1.0">
+      <artifact name="prometheus-metrics-model-1.1.0.jar">
+        <sha1 value="4a6093076e5b526aff26611e6c4f0eb4518211b3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.soabase.record-builder" name="value-annotations" version="2.10.1">
+      <artifact name="value-annotations-2.10.1.jar">
+        <sha1 value="78082897427a5174d4a43b1d1e2a18cff5ab834c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="io.swagger.core.v3" name="swagger-annotations-jakarta" version="2.2.22">
+      <artifact name="swagger-annotations-jakarta-2.2.22.jar">
+        <sha1 value="1efc0b0af32fce629f0786062c89e8b117abe120" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.activation" name="jakarta.activation-api" version="2.1.3">
+      <artifact name="jakarta.activation-api-2.1.3.jar">
+        <sha1 value="fa165bd70cda600368eee31555222776a46b881f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.annotation" name="jakarta.annotation-api" version="2.1.1">
+      <artifact name="jakarta.annotation-api-2.1.1.jar">
+        <sha1 value="48b9bda22b091b1f48b13af03fe36db3be6e1ae3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.enterprise" name="jakarta.enterprise.cdi-api" version="4.0.1">
+      <artifact name="jakarta.enterprise.cdi-api-4.0.1.jar">
+        <sha1 value="2012f388c6de83e29101cbf82c3ed2bd37931c64" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.enterprise.lang-model" name="jakarta.enterprise.lang-model" version="4.0.1">
+      <artifact name="jakarta.enterprise.lang-model-4.0.1.jar">
+        <sha1 value="2b195781faad31c1724d8122136909c34c3ae79e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.inject" name="jakarta.inject-api" version="2.0.1">
+      <artifact name="jakarta.inject-api-2.0.1.jar">
+        <sha1 value="4c28afe1991a941d7702fe1362c365f0a8641d1e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.interceptor" name="jakarta.interceptor-api" version="2.1.0">
+      <artifact name="jakarta.interceptor-api-2.1.0.jar">
+        <sha1 value="1d06a662708601400af4556577ee514c4ad01549" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.servlet" name="jakarta.servlet-api" version="6.0.0">
+      <artifact name="jakarta.servlet-api-6.0.0.jar">
+        <sha1 value="abecc699286e65035ebba9844c03931357a6a963" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.transaction" name="jakarta.transaction-api" version="2.0.1">
+      <artifact name="jakarta.transaction-api-2.0.1.jar">
+        <sha1 value="51a520e3fae406abb84e2e1148e6746ce3f80a1a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.validation" name="jakarta.validation-api" version="3.0.2">
+      <artifact name="jakarta.validation-api-3.0.2.jar">
+        <sha1 value="92b6631659ba35ca09e44874d3eb936edfeee532" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.websocket" name="jakarta.websocket-api" version="2.1.1">
+      <artifact name="jakarta.websocket-api-2.1.1.jar">
+        <sha1 value="d3614cd4fe86803efe3f94d57f17925d3edff712" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.websocket" name="jakarta.websocket-client-api" version="2.1.1">
+      <artifact name="jakarta.websocket-client-api-2.1.1.jar">
+        <sha1 value="bc149b7e22d6b2372835a3124cbcf24924982874" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.ws.rs" name="jakarta.ws.rs-api" version="3.1.0">
+      <artifact name="jakarta.ws.rs-api-3.1.0.jar">
+        <sha1 value="15ce10d249a38865b58fc39521f10f29ab0e3363" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="jakarta.xml.bind" name="jakarta.xml.bind-api" version="4.0.2">
+      <artifact name="jakarta.xml.bind-api-4.0.2.jar">
+        <sha1 value="6cd5a999b834b63238005b7144136379dc36cad2" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="javax.inject" name="javax.inject" version="1">
+      <artifact name="javax.inject-1.jar">
+        <sha1 value="6975da39a7040257bd51d21a231b76c915872d38" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="joda-time" name="joda-time" version="2.14.0">
+      <artifact name="joda-time-2.14.0.jar">
+        <sha1 value="1fa665c1ce64a2c8c94f63fc5c1ee7bd742d2022" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="junit" name="junit" version="4.13.2">
+      <artifact name="junit-4.13.2.jar">
+        <sha1 value="8ac9e16d933b6fb43bc7f576336b8f4d7eb5ba12" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="net.arnx" name="jsonic" version="1.2.7">
+      <artifact name="jsonic-1.2.7.jar">
+        <sha1 value="9efb491fa27424c5e4773db449e8a2c551a75de5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="net.bytebuddy" name="byte-buddy" version="1.17.7">
+      <artifact name="byte-buddy-1.17.7.jar">
+        <sha1 value="3856bfab61beb23e099a0d6629f2ba8de4b98ace" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="net.bytebuddy" name="byte-buddy-agent" version="1.17.7">
+      <artifact name="byte-buddy-agent-1.17.7.jar">
+        <sha1 value="fbf3d6d649ed37fc9e9c59480a05be0a26e3c2da" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="net.java.dev.jna" name="jna" version="5.13.0">
+      <artifact name="jna-5.13.0.jar">
+        <sha1 value="1200e7ebeedbe0d10062093f32925a912020e747" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="net.minidev" name="accessors-smart" version="2.4.9">
+      <artifact name="accessors-smart-2.4.9.jar">
+        <sha1 value="32e540749224c22c9b17de8137e916aae9057e22" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="net.minidev" name="json-smart" version="2.4.10">
+      <artifact name="json-smart-2.4.10.jar">
+        <sha1 value="91cb329e9424bf32131eeb1ce2d17bf31b9899bc" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="net.sf.jopt-simple" name="jopt-simple" version="5.0.4">
+      <artifact name="jopt-simple-5.0.4.jar">
+        <sha1 value="4fdac2fbe92dfad86aa6e9301736f6b4342a3f5c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="net.sourceforge.argparse4j" name="argparse4j" version="0.7.0">
+      <artifact name="argparse4j-0.7.0.jar">
+        <sha1 value="6f0621d0c3888de39e0f06d01f37ba53a798e657" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="no.nav.security" name="mock-oauth2-server" version="0.5.10">
+      <artifact name="mock-oauth2-server-0.5.10.jar">
+        <sha1 value="1d1b2d193db1c5646d530e87b1dd5510b8192ece" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.antlr" name="antlr4-runtime" version="4.13.2">
+      <artifact name="antlr4-runtime-4.13.2.jar">
+        <sha1 value="fc3db6d844df652a3d5db31c87fa12757f13691d" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.calcite" name="calcite-core" version="1.37.0">
+      <artifact name="calcite-core-1.37.0.jar">
+        <sha1 value="537a3281dfefbd7939d27785732a2aafddd3abcb" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.calcite" name="calcite-linq4j" version="1.37.0">
+      <artifact name="calcite-linq4j-1.37.0.jar">
+        <sha1 value="92446d8dfc8e57289e6120a7efc6932650ed3410" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.calcite.avatica" name="avatica-core" version="1.25.0">
+      <artifact name="avatica-core-1.25.0.jar">
+        <sha1 value="73b9a0e7032a5ae89f294091bc6cbb9a67a21101" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.calcite.avatica" name="avatica-metrics" version="1.25.0">
+      <artifact name="avatica-metrics-1.25.0.jar">
+        <sha1 value="152f846d9f30a3e026530c2087ecd65c39bb304b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-beanutils" version="1.9.4">
+      <artifact name="commons-beanutils-1.9.4.jar">
+        <sha1 value="d52b9abcd97f38c81342bb7e7ae1eee9b73cba51" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-cli" version="1.10.0">
+      <artifact name="commons-cli-1.10.0.jar">
+        <sha1 value="6fd35d70709c2b3da6122e72278266bc02b5eaa3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-codec" version="1.19.0">
+      <artifact name="commons-codec-1.19.0.jar">
+        <sha1 value="8c0dbe3ae883fceda9b50a6c76e745e548073388" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-collections" version="3.2.2">
+      <artifact name="commons-collections-3.2.2.jar">
+        <sha1 value="8ad72fe39fa8c91eaaf12aadb21e0c3661fe26d5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-compiler" version="3.1.11">
+      <artifact name="commons-compiler-3.1.11.jar">
+        <sha1 value="19d5bfd402f91de0e670ef5783bf5c0a3f5ab478" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-compress" version="1.28.0">
+      <artifact name="commons-compress-1.28.0.jar">
+        <sha1 value="e482f2c7a88dac3c497e96aa420b6a769f59c8d7" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-digester" version="2.1">
+      <artifact name="commons-digester-2.1.jar">
+        <sha1 value="73a8001e7a54a255eef0f03521ec1805dc738ca0" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-exec" version="1.5.0">
+      <artifact name="commons-exec-1.5.0.jar">
+        <sha1 value="d83ddeb0b9e0f3011a6902984551fc2d3aa1fe7c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-io" version="2.20.0">
+      <artifact name="commons-io-2.20.0.jar">
+        <sha1 value="36f3474daec2849c149e877614e7f979b2082cd2" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-lang3" version="3.19.0">
+      <artifact name="commons-lang3-3.19.0.jar">
+        <sha1 value="d6524b169a6574cd253760c472d419b47bfd37e6" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-math3" version="3.6.1">
+      <artifact name="commons-math3-3.6.1.jar">
+        <sha1 value="e4ba98f1d4b3c80ec46392f25e094a6a2e58fcbf" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-text" version="1.14.0">
+      <artifact name="commons-text-1.14.0.jar">
+        <sha1 value="adcb0d4c67eabc79682604b47eb852aaff21138a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.commons" name="commons-validator" version="1.7">
+      <artifact name="commons-validator-1.7.jar">
+        <sha1 value="76069c915de3787f3ddd8726a56f47a95bfcbb0e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.curator" name="curator-client" version="5.9.0">
+      <artifact name="curator-client-5.9.0.jar">
+        <sha1 value="220a0d2f5af16f1df2388741f7640d206f56e60c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.curator" name="curator-framework" version="5.9.0">
+      <artifact name="curator-framework-5.9.0.jar">
+        <sha1 value="fe8d516d75dc00a49a7a37764d7fb9b2ea8a1129" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.curator" name="curator-test" version="5.9.0">
+      <artifact name="curator-test-5.9.0.jar">
+        <sha1 value="5730748ae651aa8827a144d2906de8c04c43f73c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.httpcomponents" name="httpclient" version="4.5.14">
+      <artifact name="httpclient-4.5.14.jar">
+        <sha1 value="1194890e6f56ec29177673f2f12d0b8e627dec98" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.httpcomponents" name="httpclient5" version="5.2.1">
+      <artifact name="httpclient5-5.2.1.jar">
+        <sha1 value="0c900514d3446d9ce5d9dbd90c21192048125440" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.httpcomponents" name="httpcore" version="4.4.16">
+      <artifact name="httpcore-4.4.16.jar">
+        <sha1 value="51cf043c87253c9f58b539c9f7e44c8894223850" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.httpcomponents" name="httpcore5" version="5.2.3">
+      <artifact name="httpcore5-5.2.3.jar">
+        <sha1 value="687cede1a44f70c7741abfab6ee2aa53dd2bfb54" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.httpcomponents" name="httpcore5-h2" version="5.2">
+      <artifact name="httpcore5-h2-5.2.jar">
+        <sha1 value="698bd8c759ccc7fd7398f3179ff45d0e5a7ccc16" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.httpcomponents" name="httpmime" version="4.5.14">
+      <artifact name="httpmime-4.5.14.jar">
+        <sha1 value="6662758a1f1cb1149cf916bdac28332e0902ec44" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-clients" version="3.9.1">
+      <artifact name="kafka-clients-3.9.1-test.jar">
+        <sha1 value="bf2ea67f7d5c4fa96b3d3a01b537c9cf49a34419" origin="solr/license folder"/>
+      </artifact>
+      <artifact name="kafka-clients-3.9.1.jar">
+        <sha1 value="86ca079953ed5606257ff298c24666b26da6985b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-group-coordinator" version="3.9.1">
+      <artifact name="kafka-group-coordinator-3.9.1.jar">
+        <sha1 value="b8b0284102248d466ee1df04d412832100edc67b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-group-coordinator-api" version="3.9.1">
+      <artifact name="kafka-group-coordinator-api-3.9.1.jar">
+        <sha1 value="4f90e77bae45b5a9f4571f7f24b6a71510255526" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-metadata" version="3.9.1">
+      <artifact name="kafka-metadata-3.9.1.jar">
+        <sha1 value="a5875f00903c7fd25a8ca51ebc51a4883aaa5682" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-raft" version="3.9.1">
+      <artifact name="kafka-raft-3.9.1.jar">
+        <sha1 value="6ff623be57743da37ac7df6e0ef01c0508f15d4a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-server" version="3.9.1">
+      <artifact name="kafka-server-3.9.1.jar">
+        <sha1 value="62f5d1c40ec9a7eef1b6cbd9b1fadbc2b3024cbf" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-server-common" version="3.9.1">
+      <artifact name="kafka-server-common-3.9.1.jar">
+        <sha1 value="529c5b2cf2f047136a68b5f9e107dbde1ec69d7b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-server-common" version="3.9.1-test">
+      <artifact name="kafka-server-common-3.9.1-test.jar">
+        <sha1 value="df6568691900d7916e52459230780f5b2570dcfb" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-storage" version="3.9.1">
+      <artifact name="kafka-storage-3.9.1.jar">
+        <sha1 value="e6def675771e5f07fd4ded7d9e55b91ce9372518" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-storage-api" version="3.9.1">
+      <artifact name="kafka-storage-api-3.9.1.jar">
+        <sha1 value="214d034ff9412e3357d27f251dbb38510c6ba062" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-streams" version="3.9.1">
+      <artifact name="kafka-streams-3.9.1.jar">
+        <sha1 value="0027e040cd62483e3a962ce0f6d96b07c6934a73" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-streams" version="3.9.1-test">
+      <artifact name="kafka-streams-3.9.1-test.jar">
+        <sha1 value="30e65dab982da1ea2eda77bc10c1e3feb1e48b69" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-tools-api" version="3.9.1">
+      <artifact name="kafka-tools-api-3.9.1.jar">
+        <sha1 value="cf141878a00601b826fa771e2630c400c7f3ff75" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka-transaction-coordinator" version="3.9.1">
+      <artifact name="kafka-transaction-coordinator-3.9.1.jar">
+        <sha1 value="385f78f00961bb766332b7bc64dbb13dfb829714" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.kafka" name="kafka_2.13" version="3.9.1">
+      <artifact name="kafka_2.13-3.9.1-test.jar">
+        <sha1 value="2dd918c601dd5207c90682d81f90bbae33a5eac3" origin="solr/license folder"/>
+      </artifact>
+      <artifact name="kafka_2.13-3.9.1.jar">
+        <sha1 value="c940303cc9bd1a92f4eced9404656f6f374f6e65" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.logging.log4j" name="log4j-1.2-api" version="2.21.0">
+      <artifact name="log4j-1.2-api-2.21.0.jar">
+        <sha1 value="12bad3819a9570807f3c97315930699584c12152" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.logging.log4j" name="log4j-api" version="2.21.0">
+      <artifact name="log4j-api-2.21.0.jar">
+        <sha1 value="760192f2b69eacf4a4afc78e5a1d7a8de054fcbd" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.logging.log4j" name="log4j-core" version="2.21.0">
+      <artifact name="log4j-core-2.21.0.jar">
+        <sha1 value="122e1a9e0603cc9eae07b0846a6ff01f2454bc49" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.logging.log4j" name="log4j-layout-template-json" version="2.21.0">
+      <artifact name="log4j-layout-template-json-2.21.0.jar">
+        <sha1 value="c90f410a98ddbbfe90b4ebe7f1e23526d72c0c96" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.logging.log4j" name="log4j-slf4j2-impl" version="2.21.0">
+      <artifact name="log4j-slf4j2-impl-2.21.0.jar">
+        <sha1 value="070c38c479f4c495cab11da8396348eebffefcb2" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.logging.log4j" name="log4j-web" version="2.21.0">
+      <artifact name="log4j-web-2.21.0.jar">
+        <sha1 value="5b6f3db6a2b00b033ec2c9ca8eabb08a00728df2" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-analysis-common" version="10.3.1">
+      <artifact name="lucene-analysis-common-10.3.1.jar">
+        <sha1 value="9c60fcbb87908349527db7c4c19e069a7156fc3a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-analysis-icu" version="10.3.1">
+      <artifact name="lucene-analysis-icu-10.3.1.jar">
+        <sha1 value="e8d40bfadd7810de290a0d20772c25b1a7cea23c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-analysis-kuromoji" version="10.3.1">
+      <artifact name="lucene-analysis-kuromoji-10.3.1.jar">
+        <sha1 value="f02182aee7f0a95f0dc36c7814347863476648f1" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-analysis-morfologik" version="10.3.1">
+      <artifact name="lucene-analysis-morfologik-10.3.1.jar">
+        <sha1 value="11727455ac9b8f2e9f83c7f28a4fcaec5a5b4d36" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-analysis-nori" version="10.3.1">
+      <artifact name="lucene-analysis-nori-10.3.1.jar">
+        <sha1 value="91175e30ea9e1ca94ca5029a004dc343c7ec97c8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-analysis-opennlp" version="10.3.1">
+      <artifact name="lucene-analysis-opennlp-10.3.1.jar">
+        <sha1 value="987478b58072c9de278c71b935f9a9a54313ac5b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-analysis-phonetic" version="10.3.1">
+      <artifact name="lucene-analysis-phonetic-10.3.1.jar">
+        <sha1 value="e77d452325d010f5d3239c27e3d4bc6c3f0eca0c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-analysis-smartcn" version="10.3.1">
+      <artifact name="lucene-analysis-smartcn-10.3.1.jar">
+        <sha1 value="f9b118a70bee80f9b2958658680a1686bb5bdd07" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-analysis-stempel" version="10.3.1">
+      <artifact name="lucene-analysis-stempel-10.3.1.jar">
+        <sha1 value="935fdb8970ce262a9eb87387f989e676fd0dc732" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-backward-codecs" version="10.3.1">
+      <artifact name="lucene-backward-codecs-10.3.1.jar">
+        <sha1 value="eff56ed4d97bcc57895404e6f702d82111028842" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-classification" version="10.3.1">
+      <artifact name="lucene-classification-10.3.1.jar">
+        <sha1 value="f5b64f9a41fe4ad1fe105fbcd9f132241a724099" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-codecs" version="10.3.1">
+      <artifact name="lucene-codecs-10.3.1.jar">
+        <sha1 value="2e7a8493a514d66449e1acbce8608de396418722" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-core" version="10.3.1">
+      <artifact name="lucene-core-10.3.1.jar">
+        <sha1 value="b0ea7e448e7377bd71892d818635cf9546299f4a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-expressions" version="10.3.1">
+      <artifact name="lucene-expressions-10.3.1.jar">
+        <sha1 value="623dbba838d274b2801bcc4e65751af8e85fc74a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-facet" version="10.3.1">
+      <artifact name="lucene-facet-10.3.1.jar">
+        <sha1 value="1d7d516e0c0e480d6325aba8a7fa2c1b4d4c513d" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-grouping" version="10.3.1">
+      <artifact name="lucene-grouping-10.3.1.jar">
+        <sha1 value="baa6b2891084d94e8c5a60c564a1beec860cdf9f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-highlighter" version="10.3.1">
+      <artifact name="lucene-highlighter-10.3.1.jar">
+        <sha1 value="565fe5b07af59cb17d44665976f6de8ebf150080" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-join" version="10.3.1">
+      <artifact name="lucene-join-10.3.1.jar">
+        <sha1 value="3ebb9a7507f7ccb082079783115cb9deb3997a48" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-memory" version="10.3.1">
+      <artifact name="lucene-memory-10.3.1.jar">
+        <sha1 value="8e1a22b54460e96e0ba4d890727e6de61119e5af" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-misc" version="10.3.1">
+      <artifact name="lucene-misc-10.3.1.jar">
+        <sha1 value="3d278c37ed0467545aff3a26712a7666eb3d4de3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-queries" version="10.3.1">
+      <artifact name="lucene-queries-10.3.1.jar">
+        <sha1 value="b4a2e8877832d92238ebd35ef1daec46513b8fc9" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-queryparser" version="10.3.1">
+      <artifact name="lucene-queryparser-10.3.1.jar">
+        <sha1 value="bd79873a43346c436beee173e9bf7c6a0d0def0c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-sandbox" version="10.3.1">
+      <artifact name="lucene-sandbox-10.3.1.jar">
+        <sha1 value="09d9101439f89cc1dd0312773e26ac797ba10cc4" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-spatial-extras" version="10.3.1">
+      <artifact name="lucene-spatial-extras-10.3.1.jar">
+        <sha1 value="2f9161056794551b67bcb7236e4964a954b919cb" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-spatial3d" version="10.3.1">
+      <artifact name="lucene-spatial3d-10.3.1.jar">
+        <sha1 value="17253a087ede8755ff00623a65403e79d0bc555a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-suggest" version="10.3.1">
+      <artifact name="lucene-suggest-10.3.1.jar">
+        <sha1 value="fc3ca91714ea9c41482bf1076d73f5212d48e45b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.lucene" name="lucene-test-framework" version="10.3.1">
+      <artifact name="lucene-test-framework-10.3.1.jar">
+        <sha1 value="dc0c9079bf5c7d660989bb37e822cd53e65ae103" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.opennlp" name="opennlp-dl" version="2.5.6">
+      <artifact name="opennlp-dl-2.5.6.jar">
+        <sha1 value="434b4b17b02789bb2b2346640fc16a3bcf43ae12" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.opennlp" name="opennlp-tools" version="2.5.6">
+      <artifact name="opennlp-tools-2.5.6.jar">
+        <sha1 value="9d5d38502b8c16d08ae4990f105a65893da099a1" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.tika" name="tika-core" version="3.2.3">
+      <artifact name="tika-core-3.2.3.jar">
+        <sha1 value="4b1b82f8cce72c9bd3676532c8b613e24041d96c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.tomcat" name="annotations-api" version="6.0.53">
+      <artifact name="annotations-api-6.0.53.jar">
+        <sha1 value="94cfa8a6ebc6b36e966bff433d4eeebf933f3f41" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.tomcat.embed" name="tomcat-embed-el" version="10.1.28">
+      <artifact name="tomcat-embed-el-10.1.28.jar">
+        <sha1 value="3220f687c5ffc8650559f08ecac5b149838627b3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.zookeeper" name="zookeeper" version="3.9.4">
+      <artifact name="zookeeper-3.9.4-tests.jar">
+        <sha1 value="c4afb93bf1bf14be5f46fdc6197c3a87253e12de" origin="solr/license folder"/>
+      </artifact>
+      <artifact name="zookeeper-3.9.4.jar">
+        <sha1 value="5ab49d76fcac9a33c255b0585bc1fc92e24166db" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apache.zookeeper" name="zookeeper-jute" version="3.9.4">
+      <artifact name="zookeeper-jute-3.9.4.jar">
+        <sha1 value="db554b1c2b284a95274626126d9e1acb0e21ae4a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.apiguardian" name="apiguardian-api" version="1.1.2">
+      <artifact name="apiguardian-api-1.1.2.jar">
+        <sha1 value="a231e0d844d2721b0fa1b238006d15c6ded6842a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.bitbucket.b_c" name="jose4j" version="0.9.6">
+      <artifact name="jose4j-0.9.6.jar">
+        <sha1 value="357a3836bb5da16f314f3a1e954518e5468cd915" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.bouncycastle" name="bcpkix-jdk15on" version="1.70">
+      <artifact name="bcpkix-jdk15on-1.70.jar">
+        <sha1 value="f81e5af49571a9d5a109a88f239a73ce87055417" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.bouncycastle" name="bcpkix-jdk18on" version="1.81">
+      <artifact name="bcpkix-jdk18on-1.81.jar">
+        <sha1 value="819fd6f5d170c8b8bf8c5acc73816e9c36574042" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.bouncycastle" name="bcprov-jdk15on" version="1.70">
+      <artifact name="bcprov-jdk15on-1.70.jar">
+        <sha1 value="4636a0d01f74acaf28082fb62b317f1080118371" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.bouncycastle" name="bcprov-jdk18on" version="1.81">
+      <artifact name="bcprov-jdk18on-1.81.jar">
+        <sha1 value="d17c094daef57dbd80af71687a475aa6df7cbe54" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.bouncycastle" name="bcutil-jdk15on" version="1.70">
+      <artifact name="bcutil-jdk15on-1.70.jar">
+        <sha1 value="54280e7195a7430d7911ded93fc01e07300b9526" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.bouncycastle" name="bcutil-jdk18on" version="1.81">
+      <artifact name="bcutil-jdk18on-1.81.jar">
+        <sha1 value="e2dd79395ab435094142b6aba219f35adcba0f01" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.carrot2" name="carrot2-core" version="4.8.1">
+      <artifact name="carrot2-core-4.8.1.jar">
+        <sha1 value="a6c032b32747e38e5abaf7ae18b6425a021776a5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.carrot2" name="morfologik-fsa" version="2.1.9">
+      <artifact name="morfologik-fsa-2.1.9.jar">
+        <sha1 value="a12005eacfbbbe256fd4d41f80f6e3675d7e314e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.carrot2" name="morfologik-polish" version="2.1.9">
+      <artifact name="morfologik-polish-2.1.9.jar">
+        <sha1 value="0a9f1d18c6ecbe4439cf7f92182f7d9ff451fc4d" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.carrot2" name="morfologik-stemming" version="2.1.9">
+      <artifact name="morfologik-stemming-2.1.9.jar">
+        <sha1 value="c3a590409efce30f84154044eaea49a4313535bd" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.carrot2" name="morfologik-ukrainian-search" version="4.9.1">
+      <artifact name="morfologik-ukrainian-search-4.9.1.jar">
+        <sha1 value="98541e2d3e95d69244829c2855b10686b344c3b3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.checkerframework" name="checker-qual" version="3.44.0">
+      <artifact name="checker-qual-3.44.0.jar">
+        <sha1 value="e026b198319ea9dd3f221fab367d2099215079e5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.codehaus.janino" name="janino" version="3.1.11">
+      <artifact name="janino-3.1.11.jar">
+        <sha1 value="878a02f3ab98d37206c9852c025a46b86dc882d0" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.codehaus.woodstox" name="stax2-api" version="4.2.2">
+      <artifact name="stax2-api-4.2.2.jar">
+        <sha1 value="b0d746cadea928e5264f2ea294ea9a1bf815bbde" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.conscrypt" name="conscrypt-openjdk-uber" version="2.5.2">
+      <artifact name="conscrypt-openjdk-uber-2.5.2.jar">
+        <sha1 value="d858f142ea189c62771c505a6548d8606ac098fe" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.angus" name="angus-activation" version="2.0.2">
+      <artifact name="angus-activation-2.0.2.jar">
+        <sha1 value="41f1e0ddd157c856926ed149ab837d110955a9fc" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-alpn-client" version="12.0.27">
+      <artifact name="jetty-alpn-client-12.0.27.jar">
+        <sha1 value="a4919da7bd02d080a38a6e4359f995188e104d45" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-alpn-java-client" version="12.0.27">
+      <artifact name="jetty-alpn-java-client-12.0.27.jar">
+        <sha1 value="1f91fa2ad31a54dd4375feae3b63c1c16e7f4afc" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-alpn-java-server" version="12.0.27">
+      <artifact name="jetty-alpn-java-server-12.0.27.jar">
+        <sha1 value="b07b74ac870dfc35ef27014422fe8883ebb77df4" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-alpn-server" version="12.0.27">
+      <artifact name="jetty-alpn-server-12.0.27.jar">
+        <sha1 value="f298bf6313f9fa0c030520b4fef4f703246b2f56" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-client" version="12.0.27">
+      <artifact name="jetty-client-12.0.27.jar">
+        <sha1 value="87e73058b2408077c15b68aaf9592ca932ddebcb" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-deploy" version="12.0.27">
+      <artifact name="jetty-deploy-12.0.27.jar">
+        <sha1 value="1346ba11b6b040c2509649667d5457413325fd87" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-ee" version="12.0.27">
+      <artifact name="jetty-ee-12.0.27.jar">
+        <sha1 value="434fa7441ae77c1ecd444edb37d4338bd09bb67c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-http" version="12.0.27">
+      <artifact name="jetty-http-12.0.27.jar">
+        <sha1 value="a87f269dbac2a0aae6d9020b26e853bbe6bb8b8e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-http2-client" version="12.0.27">
+      <artifact name="jetty-http2-client-12.0.27.jar">
+        <sha1 value="a5b4037dd5aab36ee7c7fcae4f840af7b13f8880" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-http2-client-transport" version="12.0.27">
+      <artifact name="jetty-http2-client-transport-12.0.27.jar">
+        <sha1 value="3464670cfacbac7cb7c9630a57348005123ebe75" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-http2-common" version="12.0.27">
+      <artifact name="jetty-http2-common-12.0.27.jar">
+        <sha1 value="469ba2f35593ca1e35fbd1c287b42b51d3768be5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-http2-hpack" version="12.0.27">
+      <artifact name="jetty-http2-hpack-12.0.27.jar">
+        <sha1 value="b731cc791a3ac7cb7fa108990e6f32789bdf0315" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-http2-server" version="12.0.27">
+      <artifact name="jetty-http2-server-12.0.27.jar">
+        <sha1 value="85377da89d0cb68cd67cd754f3d7e27940d8aed8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-io" version="12.0.27">
+      <artifact name="jetty-io-12.0.27.jar">
+        <sha1 value="94dd6f745e8aed4923d7fa146474b8f734c27238" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-jmx" version="12.0.27">
+      <artifact name="jetty-jmx-12.0.27.jar">
+        <sha1 value="27d77cd172a83041a646126c4099880886dca332" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-rewrite" version="12.0.27">
+      <artifact name="jetty-rewrite-12.0.27.jar">
+        <sha1 value="a8f0a17275bee831f0205cf4b4447e0cdc7c69d5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-security" version="12.0.27">
+      <artifact name="jetty-security-12.0.27.jar">
+        <sha1 value="ac09a862d369681cf37dbd07d61c196bec0c8b20" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-server" version="12.0.27">
+      <artifact name="jetty-server-12.0.27.jar">
+        <sha1 value="65f40754e873638394ff06df7410f30967d15fdd" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-session" version="12.0.27">
+      <artifact name="jetty-session-12.0.27.jar">
+        <sha1 value="67db9c9400816769d835b7f96e06b45f73491477" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-start" version="12.0.27-shaded">
+      <artifact name="jetty-start-12.0.27-shaded.jar">
+        <sha1 value="3b32da9297780ce9ab72ddcee5aa3579a064260b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-util" version="12.0.27">
+      <artifact name="jetty-util-12.0.27.jar">
+        <sha1 value="1d1dac972fcd46ea9de83c2429bfa74c09438c84" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-websocket-core-client" version="12.0.12">
+      <artifact name="jetty-websocket-core-client-12.0.12.jar">
+        <sha1 value="217f26a2deb1686bb5398b143e9cd7f288fbc9f1" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-websocket-core-common" version="12.0.12">
+      <artifact name="jetty-websocket-core-common-12.0.12.jar">
+        <sha1 value="5a98e94ecef3d66d04de39f93e3e42f816fcad71" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-websocket-core-server" version="12.0.12">
+      <artifact name="jetty-websocket-core-server-12.0.12.jar">
+        <sha1 value="6a65999b7d381e82e1634620cda906b7a9d0d399" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-websocket-jetty-api" version="12.0.12">
+      <artifact name="jetty-websocket-jetty-api-12.0.12.jar">
+        <sha1 value="ebaf89b021bab6d4fa4721824b5506d5119534d7" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-websocket-jetty-common" version="12.0.12">
+      <artifact name="jetty-websocket-jetty-common-12.0.12.jar">
+        <sha1 value="0945d8bf7a6cb15bec26216f835544e9bacbe76c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty" name="jetty-xml" version="12.0.27">
+      <artifact name="jetty-xml-12.0.27.jar">
+        <sha1 value="bc4f991cd02d7e7321554f3a3e1b52d035848043" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty.ee10" name="jetty-ee10-annotations" version="12.0.12">
+      <artifact name="jetty-ee10-annotations-12.0.12.jar">
+        <sha1 value="68c1e1f62e0513ad222a086957739b58574260ac" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty.ee10" name="jetty-ee10-plus" version="12.0.12">
+      <artifact name="jetty-ee10-plus-12.0.12.jar">
+        <sha1 value="ea0f165e44c2eb111772e2405a5c0f02ddf03952" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty.ee10" name="jetty-ee10-servlet" version="12.0.27">
+      <artifact name="jetty-ee10-servlet-12.0.27.jar">
+        <sha1 value="41d485e553c0e0d5e134fd4fba83400c335ef44e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty.ee10" name="jetty-ee10-servlets" version="12.0.27">
+      <artifact name="jetty-ee10-servlets-12.0.27.jar">
+        <sha1 value="6f6863d6c3efdb0ede7a432dd63f3d52033fe06f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty.ee10" name="jetty-ee10-webapp" version="12.0.27">
+      <artifact name="jetty-ee10-webapp-12.0.27.jar">
+        <sha1 value="51e49edaacd889b041deef79f1cf8dbffe37ea18" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty.ee10.websocket" name="jetty-ee10-websocket-jetty-server" version="12.0.12">
+      <artifact name="jetty-ee10-websocket-jetty-server-12.0.12.jar">
+        <sha1 value="968c5ebbc131e553f2a43b869d520c2c635c1bb0" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty.ee10.websocket" name="jetty-ee10-websocket-servlet" version="12.0.12">
+      <artifact name="jetty-ee10-websocket-servlet-12.0.12.jar">
+        <sha1 value="cd48d14c70ad51610dd05a35e4c7fe329b11d72e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty.ee10.websocket.jakarta" name="jetty-ee10-websocket-jakarta-client" version="12.0.12">
+      <artifact name="jetty-ee10-websocket-jakarta-client-12.0.12.jar">
+        <sha1 value="a5eaaf2722c9607e7699228d84d6277573bebeb3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty.ee10.websocket.jakarta" name="jetty-ee10-websocket-jakarta-common" version="12.0.12">
+      <artifact name="jetty-ee10-websocket-jakarta-common-12.0.12.jar">
+        <sha1 value="b0c5929d9c5b0422b052f1301447eebcc359365a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty.ee10.websocket.jakarta" name="jetty-ee10-websocket-jakarta-server" version="12.0.12">
+      <artifact name="jetty-ee10-websocket-jakarta-server-12.0.12.jar">
+        <sha1 value="9dd9e2cb21fc933dfef087771350e2283b8510bd" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.eclipse.jetty.toolchain" name="jetty-jakarta-servlet-api" version="5.0.2">
+      <artifact name="jetty-jakarta-servlet-api-5.0.2.jar">
+        <sha1 value="027fce6d666a203526236d33d00e202a4136230f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.freemarker" name="freemarker" version="2.3.32">
+      <artifact name="freemarker-2.3.32.jar">
+        <sha1 value="8607259125d4fbe982754227ea4f75dd513c6d19" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.hk2" name="hk2-api" version="3.1.1">
+      <artifact name="hk2-api-3.1.1.jar">
+        <sha1 value="18d114e0da203809052f5f000803f2db6c9e9cf5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.hk2" name="hk2-locator" version="3.1.1">
+      <artifact name="hk2-locator-3.1.1.jar">
+        <sha1 value="620df6f26ca3c67984907d9531a2d3f9f831ba08" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.hk2" name="hk2-utils" version="3.1.1">
+      <artifact name="hk2-utils-3.1.1.jar">
+        <sha1 value="d7f6959b2a724d479d8b1420c4aa03751eb4447f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.hk2.external" name="aopalliance-repackaged" version="3.1.1">
+      <artifact name="aopalliance-repackaged-3.1.1.jar">
+        <sha1 value="271bbab4cb1e3e5c556acf2580f75cb184818c1f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.hk2.external" name="osgi-resource-locator" version="1.0.3">
+      <artifact name="osgi-resource-locator-1.0.3.jar">
+        <sha1 value="de3b21279df7e755e38275137539be5e2c80dd58" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.jaxb" name="jaxb-core" version="4.0.5">
+      <artifact name="jaxb-core-4.0.5.jar">
+        <sha1 value="007b4b11ea5542eea4ad55e1080b23be436795b3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.jaxb" name="jaxb-runtime" version="4.0.5">
+      <artifact name="jaxb-runtime-4.0.5.jar">
+        <sha1 value="ca84c2a7169b5293e232b9d00d1e4e36d4c3914a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.jaxb" name="txw2" version="4.0.5">
+      <artifact name="txw2-4.0.5.jar">
+        <sha1 value="f36a4ef12120a9bb06d766d6a0e54b144fd7ed98" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.jersey.containers" name="jersey-container-jetty-http" version="2.39.1">
+      <artifact name="jersey-container-jetty-http-2.39.1.jar">
+        <sha1 value="24bf9bf446f1899b35e7e70c930951f3f70453e4" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.jersey.core" name="jersey-client" version="3.1.11">
+      <artifact name="jersey-client-3.1.11.jar">
+        <sha1 value="d33fa8450c53b5d4c3405e9fecdf68e8d190af64" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.jersey.core" name="jersey-common" version="3.1.11">
+      <artifact name="jersey-common-3.1.11.jar">
+        <sha1 value="058cea05a20223bc23ffd96ade81536d61a26ac3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.jersey.core" name="jersey-server" version="3.1.11">
+      <artifact name="jersey-server-3.1.11.jar">
+        <sha1 value="b65a67a4ce399063cd88107b360d210d434f1e9a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.jersey.ext" name="jersey-entity-filtering" version="3.1.11">
+      <artifact name="jersey-entity-filtering-3.1.11.jar">
+        <sha1 value="d4e618838d81c88972989451880e55baa2143ade" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.jersey.inject" name="jersey-hk2" version="3.1.11">
+      <artifact name="jersey-hk2-3.1.11.jar">
+        <sha1 value="3f51dfcd27ed8a773eb42f0317c9a4de07328d07" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.glassfish.jersey.media" name="jersey-media-json-jackson" version="3.1.11">
+      <artifact name="jersey-media-json-jackson-3.1.11.jar">
+        <sha1 value="c6f8fcee52cbfdacb2e611c37dc8d4fced320f21" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.hamcrest" name="hamcrest" version="3.0">
+      <artifact name="hamcrest-3.0.jar">
+        <sha1 value="8fd9b78a8e6a6510a078a9e30e9e86a6035cfaf7" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.hdrhistogram" name="HdrHistogram" version="2.2.2">
+      <artifact name="HdrHistogram-2.2.2.jar">
+        <sha1 value="7959933ebcc0f05b2eaa5af0a0c8689fa257b15c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.hsqldb" name="hsqldb" version="2.7.4">
+      <artifact name="hsqldb-2.7.4.jar">
+        <sha1 value="4aad3c109b5b04927d3bc663bf13535f830401ce" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.javassist" name="javassist" version="3.30.2-GA">
+      <artifact name="javassist-3.30.2-GA.jar">
+        <sha1 value="284580b5e42dfa1b8267058566435d9e93fae7f7" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.jctools" name="jctools-core" version="4.0.5">
+      <artifact name="jctools-core-4.0.5.jar">
+        <sha1 value="9ab38ca19877236986db4894ef1400a7ca23db80" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.jetbrains.kotlin" name="kotlin-reflect" version="2.0.21">
+      <artifact name="kotlin-reflect-2.0.21.jar">
+        <sha1 value="669e1d35e4ca1797f9ddb2830dd6c36c0ca531e4" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.jetbrains.kotlin" name="kotlin-stdlib" version="2.2.0">
+      <artifact name="kotlin-stdlib-2.2.0.jar">
+        <sha1 value="fdfc65fbc42fda253a26f61dac3c0aca335fae96" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.jetbrains.kotlin" name="kotlin-stdlib-jdk7" version="2.2.0">
+      <artifact name="kotlin-stdlib-jdk7-2.2.0.jar">
+        <sha1 value="bfd42edfc4f88de5a02131108ab800fb32d53d03" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.jetbrains.kotlin" name="kotlin-stdlib-jdk8" version="2.2.0">
+      <artifact name="kotlin-stdlib-jdk8-2.2.0.jar">
+        <sha1 value="ed572b04cd66acce7837ad753e4fe64d9c536025" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.jspecify" name="jspecify" version="1.0.0">
+      <artifact name="jspecify-1.0.0.jar">
+        <sha1 value="7425a601c1c7ec76645a78d22b8c6a627edee507" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.junit.jupiter" name="junit-jupiter-api" version="5.6.2">
+      <artifact name="junit-jupiter-api-5.6.2.jar">
+        <sha1 value="c9ba885abfe975cda123bf6f8f0a69a1b46956d0" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.junit.platform" name="junit-platform-commons" version="1.6.2">
+      <artifact name="junit-platform-commons-1.6.2.jar">
+        <sha1 value="7644a14b329e76b5fe487628b50fb5eab6ba7d26" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.latencyutils" name="LatencyUtils" version="2.0.3">
+      <artifact name="LatencyUtils-2.0.3.jar">
+        <sha1 value="769c0b82cb2421c8256300e907298a9410a2a3d3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.locationtech.jts" name="jts-core" version="1.19.0">
+      <artifact name="jts-core-1.19.0.jar">
+        <sha1 value="3ff3baa0074445384f9e0068df81fbd0a168395a" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.locationtech.jts" name="jts-io-common" version="1.19.0">
+      <artifact name="jts-io-common-1.19.0.jar">
+        <sha1 value="4c7018119aeb66335746e6748456c821e304d3a2" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.locationtech.proj4j" name="proj4j" version="1.2.2">
+      <artifact name="proj4j-1.2.2.jar">
+        <sha1 value="6eb2c27f1b7d048a6912a42a0637e470cdc46562" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.locationtech.spatial4j" name="spatial4j" version="0.8">
+      <artifact name="spatial4j-0.8.jar">
+        <sha1 value="f3ff59c2c540102ae157a1786cb80e82ce9c9f19" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.lz4" name="lz4-java" version="1.8.0">
+      <artifact name="lz4-java-1.8.0.jar">
+        <sha1 value="4b986a99445e49ea5fbf5d149c4b63f6ed6c6780" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.mockito" name="mockito-core" version="5.19.0">
+      <artifact name="mockito-core-5.19.0.jar">
+        <sha1 value="82b320935809e3c8ff92c2007dae5dff88d76f32" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.mockito" name="mockito-subclass" version="5.19.0">
+      <artifact name="mockito-subclass-5.19.0.jar">
+        <sha1 value="d034273be93922da8a6784008f752c3bf142c21f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.objenesis" name="objenesis" version="3.3">
+      <artifact name="objenesis-3.3.jar">
+        <sha1 value="1049c09f1de4331e8193e579448d0916d75b7631" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.openjdk.jmh" name="jmh-core" version="1.37">
+      <artifact name="jmh-core-1.37.jar">
+        <sha1 value="896f27e49105b35ea1964319c83d12082e7a79ef" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.opentest4j" name="opentest4j" version="1.2.0">
+      <artifact name="opentest4j-1.2.0.jar">
+        <sha1 value="28c11eb91f9b6d8e200631d46e20a7f407f2a046" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.osgi" name="org.osgi.resource" version="1.0.0">
+      <artifact name="org.osgi.resource-1.0.0.jar">
+        <sha1 value="343c88949132984b3f2d4175a72c40b77dc65619" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.osgi" name="org.osgi.service.serviceloader" version="1.0.0">
+      <artifact name="org.osgi.service.serviceloader-1.0.0.jar">
+        <sha1 value="3728ff37909c6a3c1870b3e851342d9f2bd3cc63" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.osgi" name="osgi.annotation" version="8.1.0">
+      <artifact name="osgi.annotation-8.1.0.jar">
+        <sha1 value="59d42736bcc0af2144ba5c1a12ff7c08ea4b7e12" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.ow2.asm" name="asm" version="9.8">
+      <artifact name="asm-9.8.jar">
+        <sha1 value="dc19ecb3f7889b7860697215cae99c0f9b6f6b4b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.ow2.asm" name="asm-commons" version="9.8">
+      <artifact name="asm-commons-9.8.jar">
+        <sha1 value="36e4d212970388e5bd2c5180292012502df461bb" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.ow2.asm" name="asm-tree" version="9.8">
+      <artifact name="asm-tree-9.8.jar">
+        <sha1 value="018419ca5b77a2f81097c741e7872e6ab8d2f40d" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.pcollections" name="pcollections" version="4.0.1">
+      <artifact name="pcollections-4.0.1.jar">
+        <sha1 value="059f3bf5fb28c5f5386804dcf129267416b75d7c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.quicktheories" name="quicktheories" version="0.26">
+      <artifact name="quicktheories-0.26.jar">
+        <sha1 value="a06f1989cd28a4a1051d2df95a783cdf4857d08b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.reactivestreams" name="reactive-streams" version="1.0.4">
+      <artifact name="reactive-streams-1.0.4.jar">
+        <sha1 value="3864a1320d97d7b045f729a326e1e077661f31b7" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.rocksdb" name="rocksdbjni" version="7.9.2">
+      <artifact name="rocksdbjni-7.9.2.jar">
+        <sha1 value="6409b667493149191b09fe1fce94bada6096a3e9" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.scala-lang" name="scala-library" version="2.13.16">
+      <artifact name="scala-library-2.13.16.jar">
+        <sha1 value="9e064d9304904fd7b6bd2b55a9e601b8c1c9006e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.scala-lang" name="scala-reflect" version="2.13.15">
+      <artifact name="scala-reflect-2.13.15.jar">
+        <sha1 value="355927b10366563a8f1b56c1f34ff376f2f7c8c5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.scala-lang.modules" name="scala-collection-compat_2.13" version="2.10.0">
+      <artifact name="scala-collection-compat_2.13-2.10.0.jar">
+        <sha1 value="2464528d14329ff2b44bceff918d6c00300adcf4" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.scala-lang.modules" name="scala-java8-compat_2.13" version="1.0.2">
+      <artifact name="scala-java8-compat_2.13-1.0.2.jar">
+        <sha1 value="5b54f60ccf03e41e24c466462a72475ee918c304" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.semver4j" name="semver4j" version="6.0.0">
+      <artifact name="semver4j-6.0.0.jar">
+        <sha1 value="995a8afc0b9d9a700c7858843a36ece815852d72" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.slf4j" name="jcl-over-slf4j" version="2.0.17">
+      <artifact name="jcl-over-slf4j-2.0.17.jar">
+        <sha1 value="76ea503eb688f06556a9ba69995d7eab63e34531" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.slf4j" name="jul-to-slf4j" version="2.0.17">
+      <artifact name="jul-to-slf4j-2.0.17.jar">
+        <sha1 value="524cb6ccc2b68a57604750e1ab8b13b5a786a6aa" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.slf4j" name="slf4j-api" version="2.0.17">
+      <artifact name="slf4j-api-2.0.17.jar">
+        <sha1 value="d9e58ac9c7779ba3bf8142aff6c830617a7fe60f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework" name="spring-aop" version="6.1.12">
+      <artifact name="spring-aop-6.1.12.jar">
+        <sha1 value="5fce5ff02455fad179fc0ea05435dfb79bbeaa66" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework" name="spring-beans" version="6.1.12">
+      <artifact name="spring-beans-6.1.12.jar">
+        <sha1 value="f0344fa934f114a15f02c2b1a199189ec12b7eb5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework" name="spring-context" version="6.1.12">
+      <artifact name="spring-context-6.1.12.jar">
+        <sha1 value="e69d476d1334935529a61f403749c6b8593e3272" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework" name="spring-core" version="6.1.12">
+      <artifact name="spring-core-6.1.12.jar">
+        <sha1 value="5f4162fb645c4f72b57b21d721fce9f26edb9bb9" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework" name="spring-expression" version="6.1.12">
+      <artifact name="spring-expression-6.1.12.jar">
+        <sha1 value="644bbc2e65eb40feb7284b8570d7a7eb8b1fe8df" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework" name="spring-jcl" version="6.1.12">
+      <artifact name="spring-jcl-6.1.12.jar">
+        <sha1 value="f46d6016fd1dd3801a0e6fcd64789ac468254944" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework" name="spring-web" version="6.1.12">
+      <artifact name="spring-web-6.1.12.jar">
+        <sha1 value="b60e69b3ec87f8e001537a0fa7e3e2732dfafa7e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework" name="spring-webmvc" version="6.1.12">
+      <artifact name="spring-webmvc-6.1.12.jar">
+        <sha1 value="86bb0c203d68adb4b2675765f5a372f4c5254b2d" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework.boot" name="spring-boot" version="3.3.3">
+      <artifact name="spring-boot-3.3.3.jar">
+        <sha1 value="f34dba93611823e521800a47043267715184911b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework.boot" name="spring-boot-autoconfigure" version="3.3.3">
+      <artifact name="spring-boot-autoconfigure-3.3.3.jar">
+        <sha1 value="4445f0bbf838c1e3aeb5a83bf2367fbd1013237f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework.boot" name="spring-boot-starter" version="3.3.3">
+      <artifact name="spring-boot-starter-3.3.3.jar">
+        <sha1 value="174d6cb1c59036a01756d6bf4d8945325f94155f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework.boot" name="spring-boot-starter-actuator" version="3.3.3">
+      <artifact name="spring-boot-starter-actuator-3.3.3.jar">
+        <sha1 value="8f44e7b6d6cd17ebe82cb4ecd4554bab8cc4ccb5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework.boot" name="spring-boot-starter-jetty" version="3.3.3">
+      <artifact name="spring-boot-starter-jetty-3.3.3.jar">
+        <sha1 value="14376327cb10e3fef579f5a3347927804422fbc0" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework.boot" name="spring-boot-starter-json" version="3.3.3">
+      <artifact name="spring-boot-starter-json-3.3.3.jar">
+        <sha1 value="3dde3b6089f772a77763020cc97a219307a8f39f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework.boot" name="spring-boot-starter-logging" version="3.3.3">
+      <artifact name="spring-boot-starter-logging-3.3.3.jar">
+        <sha1 value="043d07b2e6bbb628c7fc5df103d35ee2eb091522" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.springframework.boot" name="spring-boot-starter-web" version="3.3.3">
+      <artifact name="spring-boot-starter-web-3.3.3.jar">
+        <sha1 value="f19325fefd33dc920c0f68547a798ed731a8c70c" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.testcontainers" name="testcontainers" version="1.20.4">
+      <artifact name="testcontainers-1.20.4.jar">
+        <sha1 value="ee2fe3afc9fa6cb2e6a43233998f3633f761692f" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.threeten" name="threetenbp" version="1.7.0">
+      <artifact name="threetenbp-1.7.0.jar">
+        <sha1 value="8703e893440e550295aa358281db468625bc9a05" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.xerial.snappy" name="snappy-java" version="1.1.10.8">
+      <artifact name="snappy-java-1.1.10.8.jar">
+        <sha1 value="ccbaa2b5ea6a023a27c44daf2d6cdec0e138592d" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="org.yaml" name="snakeyaml" version="2.2">
+      <artifact name="snakeyaml-2.2.jar">
+        <sha1 value="3af797a25458550a16bf89acc8e4ab2b7f2bfce0" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="annotations" version="2.32.31">
+      <artifact name="annotations-2.32.31.jar">
+        <sha1 value="291bd6091d423b41c46fafacd1698e347017e2fa" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="annotations" version="26.0.2">
+      <artifact name="annotations-26.0.2.jar">
+        <sha1 value="c7ce3cdeda3d18909368dfe5977332dfad326c6d" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="annotations" version="4.1.1.4">
+      <artifact name="annotations-4.1.1.4.jar">
+        <sha1 value="a1678ba907bf92691d879fef34e1a187038f9259" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="apache-client" version="2.32.31">
+      <artifact name="apache-client-2.32.31.jar">
+        <sha1 value="e73ec85e21aef27a553e7c2f06716172069b25d8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="arns" version="2.32.31">
+      <artifact name="arns-2.32.31.jar">
+        <sha1 value="c043a6e7369551331262f3c21674e00e8523ab94" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="auth" version="2.32.31">
+      <artifact name="auth-2.32.31.jar">
+        <sha1 value="bb1b9e77d6f18469177a9c0f06a45e792afbddf3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="aws-core" version="2.32.31">
+      <artifact name="aws-core-2.32.31.jar">
+        <sha1 value="9dfb57dd2eba89986f23554429472a5211995668" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="aws-query-protocol" version="2.32.31">
+      <artifact name="aws-query-protocol-2.32.31.jar">
+        <sha1 value="f76d4abd5b76758aa204659a2c874268a8bfa134" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="aws-xml-protocol" version="2.32.31">
+      <artifact name="aws-xml-protocol-2.32.31.jar">
+        <sha1 value="ed19768d4c071b554360794b3cee5d9007cbd5ca" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="checksums" version="2.32.31">
+      <artifact name="checksums-2.32.31.jar">
+        <sha1 value="aca3e8fc6b64c03dfb1e82222d26b7a176784da8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="checksums-spi" version="2.32.31">
+      <artifact name="checksums-spi-2.32.31.jar">
+        <sha1 value="25fc42be741f8d1be608d6a05d5ca9209ee00c5d" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="endpoints-spi" version="2.32.31">
+      <artifact name="endpoints-spi-2.32.31.jar">
+        <sha1 value="a52a5fb9211fc6f2a9f89ea661ae566073acd9e8" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="http-auth" version="2.32.31">
+      <artifact name="http-auth-2.32.31.jar">
+        <sha1 value="788fd09ea6efa252fc03adfa8ccf3b4078498732" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="http-auth-aws" version="2.32.31">
+      <artifact name="http-auth-aws-2.32.31.jar">
+        <sha1 value="7fba39709c28257c0f435ad709a890bc8781edde" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="http-auth-aws-eventstream" version="2.32.31">
+      <artifact name="http-auth-aws-eventstream-2.32.31.jar">
+        <sha1 value="01faf454e7dda996babe4b240235bafb0c050738" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="http-auth-spi" version="2.32.31">
+      <artifact name="http-auth-spi-2.32.31.jar">
+        <sha1 value="f74e126e2b57d875603c21a84975bccee2abec9b" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="http-client-spi" version="2.32.31">
+      <artifact name="http-client-spi-2.32.31.jar">
+        <sha1 value="1815b4c63209a5e6d6fee3dfc554b9ff82f727e7" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="identity-spi" version="2.32.31">
+      <artifact name="identity-spi-2.32.31.jar">
+        <sha1 value="2459d64f49e1747aacb493be58d90f00f09f4615" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="json-utils" version="2.32.31">
+      <artifact name="json-utils-2.32.31.jar">
+        <sha1 value="7b51cec16140872346068ef5223fad7e70fd2509" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="metrics-spi" version="2.32.31">
+      <artifact name="metrics-spi-2.32.31.jar">
+        <sha1 value="2dc5190bf743ed2db772ad243c85099b0e7370eb" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="profiles" version="2.32.31">
+      <artifact name="profiles-2.32.31.jar">
+        <sha1 value="b215ea75cb3baf9b819f5bc0bce3a78ec7b7037e" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="protocol-core" version="2.32.31">
+      <artifact name="protocol-core-2.32.31.jar">
+        <sha1 value="108696a6e5b51e0ba1582a4b8481834645d4c0e5" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="regions" version="2.32.31">
+      <artifact name="regions-2.32.31.jar">
+        <sha1 value="5f35240e1c4ccc7799fe832a3016fafc728bba65" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="retries" version="2.32.31">
+      <artifact name="retries-2.32.31.jar">
+        <sha1 value="d24f452f7cd363efa71424273a7e7d0e4401c562" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="retries-spi" version="2.32.31">
+      <artifact name="retries-spi-2.32.31.jar">
+        <sha1 value="cdebec1d599d0adb0dd667961d2e1f59fadf7187" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="s3" version="2.32.31">
+      <artifact name="s3-2.32.31.jar">
+        <sha1 value="10d613ee83fcab98547fd0b4f00d4f3e9151b985" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="sdk-core" version="2.32.31">
+      <artifact name="sdk-core-2.32.31.jar">
+        <sha1 value="69a3437acbcaec1daf15d63b95dace84c8bbdd41" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="sts" version="2.32.31">
+      <artifact name="sts-2.32.31.jar">
+        <sha1 value="2039f03dda4554552e59bfb700d25314cf840d3d" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="third-party-jackson-core" version="2.32.31">
+      <artifact name="third-party-jackson-core-2.32.31.jar">
+        <sha1 value="5ea05fee152e65db1da5fbaaa2ef02b42303df10" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="url-connection-client" version="2.32.31">
+      <artifact name="url-connection-client-2.32.31.jar">
+        <sha1 value="b8a1ac285b67c5eda6dcd2effaf116ad4347ecc4" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk" name="utils" version="2.32.31">
+      <artifact name="utils-2.32.31.jar">
+        <sha1 value="ffe15a53846d8618072825fe3e2a882a26282ba3" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.awssdk.crt" name="crt-core" version="2.32.31">
+      <artifact name="crt-core-2.32.31.jar">
+        <sha1 value="0244663a916f672b3c2e578d03d55cde887e1c48" origin="solr/license folder"/>
+      </artifact>
+    </component>
+    <component group="software.amazon.eventstream" name="eventstream" version="1.0.1">
+      <artifact name="eventstream-1.0.1.jar">
+        <sha1 value="6ff8649dffc5190366ada897ba8525a836297784" origin="solr/license folder"/>
+      </artifact>
+    </component>
+  </components>
+</verification-metadata>
