@@ -1,0 +1,8 @@
+
+title: Introduce org.apache.solr.client.solrj.HttpSolrClient, implemented by the Jetty & JDK HttpClient based SolrClients.
+type: other
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-17968
+    url: https://issues.apache.org/jira/browse/SOLR-17968
