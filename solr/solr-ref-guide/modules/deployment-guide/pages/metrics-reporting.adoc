@@ -163,7 +163,7 @@ OpenMetrics can be used to pull/scrape metrics to a Prometheus server or any Ope
 
 ==== Prometheus setup with exemplars
 
-OpenMetrics includes `exemplars` that provide additional information and allow users to leverage Solr's xref:deployment-guide:distributed-tracing.adoc#distributed-tracing[OpenTelemetry distributed tracing module] and metrics in a cohesive view for correlating traces and metrics.
+OpenMetrics includes `exemplars` that provide additional information and allow users to leverage Solr's xref:deployment-guide:distributed-tracing.adoc[OpenTelemetry distributed tracing module] and metrics in a cohesive view for correlating traces and metrics.
 
 Distributed tracing must be enabled to see exemplars. Exemplars will never appear in OpenMetrics format otherwise. You can then scrape OpenMetrics format to a Prometheus server or OpenMetrics-compatible backend.
 
@@ -190,7 +190,10 @@ If you are using Grafana, follow the https://grafana.com/docs/grafana/latest/fun
 
 A fixed set of parameters is available to filter metrics by either metric name or base core labels. You can combine these parameters to filter only the specific metrics you need:
 
-*NOTE: All parameters can be specified with more than one value in a request; multiple values should be separated by a comma.*
+[NOTE]
+====
+All parameters can be specified with more than one value in a request; multiple values should be separated by a comma.
+====
 
 `name`::
 +
