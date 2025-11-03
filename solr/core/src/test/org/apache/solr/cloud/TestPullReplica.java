@@ -91,6 +91,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   public static void createTestCluster() throws Exception {
     System.setProperty("solr.solrj.cloud.max.stale.retries", "1");
     System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "1000");
+    System.setProperty("metricsEnabled", "true");
 
     configureCluster(2) // 2 + random().nextInt(3)
         .addConfig("conf", configset("cloud-minimal"))

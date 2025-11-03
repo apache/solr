@@ -19,6 +19,7 @@ package org.apache.solr.metrics;
 import static org.apache.solr.metrics.otel.MetricExporterFactory.OTLP_EXPORTER_ENABLED;
 import static org.apache.solr.metrics.otel.MetricExporterFactory.OTLP_EXPORTER_INTERVAL;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.BatchCallback;
 import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.DoubleCounterBuilder;
@@ -36,6 +37,7 @@ import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongHistogramBuilder;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
+import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.metrics.ObservableDoubleCounter;
 import io.opentelemetry.api.metrics.ObservableDoubleGauge;
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
@@ -64,8 +66,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
@@ -93,11 +93,11 @@ import org.slf4j.LoggerFactory;
  * following:
  *
  * <ul>
- *   <li>MeterProvider creation and removal.
+ *   <li>MeterProvider creation and removal (NOOP when disabled).
  *   <li>Access to metric instruments such as {@link LongCounter}, {@link LongUpDownCounter}, {@link
  *       LongGauge}, {@link LongHistogram} and observable instruments to a specific MeterProvider
- *       instances
- *   <li>{@link FilterablePrometheusMetricReader} for reading and fitlering OpenTelemetry metrics in
+ *       instances (NOOP implementations when disabled)
+ *   <li>{@link FilterablePrometheusMetricReader} for reading and filtering OpenTelemetry metrics in
  *       Prometheus Format from all MeterProviders
  *   <li>Enablement of optional OTLP exporter
  * </ul>
@@ -124,9 +124,6 @@ public class SolrMetricManager {
   public static final String NODE_REGISTRY =
       REGISTRY_NAME_PREFIX + SolrInfoBean.Group.node.toString();
 
-  private final Lock reportersLock = new ReentrantLock();
-  private final Lock swapLock = new ReentrantLock();
-
   public static final int DEFAULT_CLOUD_REPORTER_PERIOD = 60;
 
   private final MetricsConfig metricsConfig;
@@ -134,8 +131,9 @@ public class SolrMetricManager {
   private final ConcurrentMap<String, MeterProviderAndReaders> meterProviderAndReaders =
       new ConcurrentHashMap<>();
 
-  private final MetricExporter metricExporter;
-  private OtelRuntimeJvmMetrics otelRuntimeJvmMetrics;
+  private final boolean metricsEnabled;
+  private MetricExporter metricExporter = null;
+  private OtelRuntimeJvmMetrics otelRuntimeJvmMetrics = null;
 
   private static final List<Double> SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES =
       List.of(
@@ -154,15 +152,21 @@ public class SolrMetricManager {
           100_000_000.0,
           1_000_000_000.0);
 
-  public SolrMetricManager(MetricExporter exporter) {
-    metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
-    metricExporter = exporter;
+  public SolrMetricManager(MetricExporter exporter, MetricsConfig metricsConfig) {
+    this.metricsConfig = metricsConfig;
+    this.metricsEnabled = metricsConfig.isEnabled();
+    if (metricsConfig.isEnabled()) {
+      metricExporter = exporter;
+    }
   }
 
   public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
     this.metricsConfig = metricsConfig;
-    this.metricExporter = loadMetricExporter(loader);
-    this.otelRuntimeJvmMetrics = new OtelRuntimeJvmMetrics().initialize(this, JVM_REGISTRY);
+    this.metricsEnabled = metricsConfig.isEnabled();
+    if (metricsEnabled) {
+      this.metricExporter = loadMetricExporter(loader);
+      this.otelRuntimeJvmMetrics = new OtelRuntimeJvmMetrics().initialize(this, JVM_REGISTRY);
+    }
   }
 
   public LongCounter longCounter(
@@ -440,12 +444,17 @@ public class SolrMetricManager {
   }
 
   /**
-   * Get (or create if not present) a named {@link SdkMeterProvider}.
+   * Get (or create if not present) a named {@link SdkMeterProvider}. If metrics are disabled,
+   * returns a NOOP implementation from OpenTelemetry.
    *
    * @param providerName name of the meter provider and prometheus metric reader
-   * @return existing or newly created meter provider
+   * @return existing or newly created meter provider, or NOOP if metrics disabled
    */
-  public SdkMeterProvider meterProvider(String providerName) {
+  public MeterProvider meterProvider(String providerName) {
+    if (!metricsEnabled) {
+      return OpenTelemetry.noop().getMeterProvider();
+    }
+
     providerName = enforcePrefix(providerName);
     return meterProviderAndReaders
         .computeIfAbsent(

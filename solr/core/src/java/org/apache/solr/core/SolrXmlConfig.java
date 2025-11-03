@@ -705,30 +705,6 @@ public class SolrXmlConfig {
       return builder.build();
     }
 
-    builder.setCounterSupplier(getPluginInfo(metrics.get("suppliers").get("counter")));
-    builder.setMeterSupplier(getPluginInfo(metrics.get("suppliers").get("meter")));
-    builder.setTimerSupplier(getPluginInfo(metrics.get("suppliers").get("timer")));
-    builder.setHistogramSupplier(getPluginInfo(metrics.get("suppliers").get("histogram")));
-
-    if (metrics.get("missingValues").exists()) {
-      NamedList<Object> missingValues = metrics.get("missingValues").childNodesToNamedList();
-      builder.setNullNumber(decodeNullValue(missingValues.get("nullNumber")));
-      builder.setNotANumber(decodeNullValue(missingValues.get("notANumber")));
-      builder.setNullString(decodeNullValue(missingValues.get("nullString")));
-      builder.setNullObject(decodeNullValue(missingValues.get("nullObject")));
-    }
-
-    ConfigNode caching = metrics.get("solr/metrics/caching");
-    if (caching != null) {
-      Object threadsCachingIntervalSeconds =
-          caching.childNodesToNamedList().get("threadsIntervalSeconds");
-      builder.setCacheConfig(
-          new MetricsConfig.CacheConfig(
-              threadsCachingIntervalSeconds == null
-                  ? null
-                  : Integer.parseInt(threadsCachingIntervalSeconds.toString())));
-    }
-
     return builder.build();
   }
 

@@ -900,8 +900,6 @@ public class CoreContainer {
         solrMetricsContext, Attributes.builder().put(HANDLER_ATTR, AUTHZ_PATH).build());
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
 
-    PluginInfo[] metricReporters = cfg.getMetricsConfig().getMetricReporters();
-
     containerProperties.putAll(cfg.getSolrProperties());
 
     Attributes containerAttrs =

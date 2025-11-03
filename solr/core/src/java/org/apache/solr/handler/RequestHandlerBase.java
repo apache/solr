@@ -21,6 +21,7 @@ import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -35,6 +36,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -177,7 +179,11 @@ public abstract class RequestHandlerBase
   public static class HandlerMetrics {
     public static final HandlerMetrics NO_OP =
         new HandlerMetrics(
-            new SolrMetricsContext(new SolrMetricManager(null), "NO_OP"),
+            new SolrMetricsContext(
+                new SolrMetricManager(
+                    (MetricExporter) null,
+                    new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build()),
+                "NO_OP"),
             Attributes.empty(),
             false);
 

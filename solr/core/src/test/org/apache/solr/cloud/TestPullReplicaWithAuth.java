@@ -53,6 +53,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .withSecurityJson(SecurityJson.SIMPLE)
