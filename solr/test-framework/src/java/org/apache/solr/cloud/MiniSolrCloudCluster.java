@@ -106,7 +106,7 @@ public class MiniSolrCloudCluster {
       "<solr>\n"
           + "\n"
           + "  <str name=\"shareSchema\">${shareSchema:false}</str>\n"
-          + "  <str name=\"allowPaths\">${solr.allowPaths:}</str>\n"
+          + "  <str name=\"allowPaths\">${solr.security.allow.paths:}</str>\n"
           + "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n"
           + "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n"
           + "  <str name=\"collectionsHandler\">${collectionsHandler:solr.CollectionsHandler}</str>\n"
