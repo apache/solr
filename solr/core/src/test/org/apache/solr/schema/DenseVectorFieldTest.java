@@ -157,6 +157,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(type1.getKnnAlgorithm(), is("hnsw"));
       assertThat(type1.getHnswM(), is(10));
       assertThat(type1.getHnswEfConstruction(), is(40));
+      assertThat(type1.getHnswMaxConn(), is(type1.getHnswM()));
+      assertThat(type1.getHnswBeamWidth(), is(type1.getHnswEfConstruction()));
 
       SchemaField vector2 = schema.getField("vector2");
       assertNotNull(vector2);
@@ -167,6 +169,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(type2.getKnnAlgorithm(), is("hnsw"));
       assertThat(type2.getHnswM(), is(6));
       assertThat(type2.getHnswEfConstruction(), is(60));
+      assertThat(type2.getHnswMaxConn(), is(type2.getHnswM()));
+      assertThat(type2.getHnswBeamWidth(), is(type2.getHnswEfConstruction()));
 
       SchemaField vector3 = schema.getField("vector3");
       assertNotNull(vector3);
@@ -178,6 +182,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(type3.getKnnAlgorithm(), is("hnsw"));
       assertThat(type3.getHnswM(), is(8));
       assertThat(type3.getHnswEfConstruction(), is(46));
+      assertThat(type3.getHnswMaxConn(), is(type3.getHnswM()));
+      assertThat(type3.getHnswBeamWidth(), is(type3.getHnswEfConstruction()));
 
       SchemaField vectorDefault = schema.getField("vector_default");
       assertNotNull(vectorDefault);
@@ -188,6 +194,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(typeDefault.getDimension(), is(4));
       assertThat(typeDefault.getHnswM(), is(16));
       assertThat(typeDefault.getHnswEfConstruction(), is(100));
+      assertThat(typeDefault.getHnswMaxConn(), is(typeDefault.getHnswM()));
+      assertThat(typeDefault.getHnswBeamWidth(), is(typeDefault.getHnswEfConstruction()));
     } finally {
       deleteCore();
     }
@@ -921,8 +929,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void
-      testFilteredSearchThreshold_earlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
-          throws Exception {
+  testFilteredSearchThreshold_earlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
+      throws Exception {
     try {
       KnnQParser.EarlyTerminationParams earlyTermination =
           new KnnQParser.EarlyTerminationParams(true, 0.995, 7);
@@ -948,8 +956,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void
-      testFilteredSearchThreshold_seededAndEarlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
-          throws Exception {
+  testFilteredSearchThreshold_seededAndEarlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
+      throws Exception {
     try {
       Query seedQuery = new BooleanQuery.Builder().build();
       KnnQParser.EarlyTerminationParams earlyTermination =
@@ -1061,8 +1069,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void
-      testFilteredSearchThreshold_earlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
-          throws Exception {
+  testFilteredSearchThreshold_earlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
+      throws Exception {
     try {
       KnnQParser.EarlyTerminationParams earlyTermination =
           new KnnQParser.EarlyTerminationParams(true, 0.995, 7);
@@ -1094,8 +1102,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void
-      testFilteredSearchThreshold_seededAndEarlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
-          throws Exception {
+  testFilteredSearchThreshold_seededAndEarlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
+      throws Exception {
     try {
       Query seedQuery = new BooleanQuery.Builder().build();
       KnnQParser.EarlyTerminationParams earlyTermination =
