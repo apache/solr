@@ -783,11 +783,6 @@ public class HttpApacheSolrClient extends HttpSolrClient {
     return invariantParams;
   }
 
-  /** Typically looks like {@code http://localhost:8983/solr} (no core or collection) */
-  public String getBaseURL() {
-    return baseUrl;
-  }
-
   public ResponseParser getParser() {
     return parser;
   }
