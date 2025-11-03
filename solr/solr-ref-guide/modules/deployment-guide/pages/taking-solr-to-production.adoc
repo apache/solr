@@ -203,7 +203,7 @@ Apr 16 20:42:01 localhost.localdomain systemd[1]: Started Apache Solr.
 
 If the `status` command is not successful, look for error messages in `/var/solr/logs/solr.log`.
 
-Additionally, if you can't connect to running Solr from an external location, check your xref:securing-solr.adoc#security-network-binding-1[`SOLR_HOST_BIND` setting] to make sure Solr is accessible to the network.
+Additionally, if you can't connect to running Solr from an external location, check your `SOLR_HOST_BIND` setting to make sure Solr is accessible to the network.
 
 == Fine-Tune Your Production Setup
 
