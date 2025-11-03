@@ -120,7 +120,12 @@ The logchange gradle plugin offers some tasks, here are the two most important:
 
 | `logchangeRelease`
 | Creates a new changelog release by moving files from `changelog/unreleased/` directory to `changelog/vX.Y.Z` directory
+
+| `logchangeArchive`
+| Archives the list of released versions up to (and including) the specified version by transferring their summaries to the `archive.md` file, merging all existing archives, and deleting the corresponding version directories.
 |===
+
+The `logchangeRelease` and `logchangeGenerate` tasks are used by ReleaseWizard. The `logchangeArchive` task can be ran once for every major release or when the number of versioned changelog folders grow too large.
 
 These are integrated in the Release Wizard.
 
