@@ -33,8 +33,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around {@link
- * HttpSolrClient}. This is useful when you have multiple Solr servers (also called endpoints) and
- * requests need to be Load Balanced among them.
+ * HttpApacheSolrClient}. This is useful when you have multiple Solr servers (also called endpoints)
+ * and requests need to be Load Balanced among them.
  *
  * <p>Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be
  * sent to the correct leader; no inter-node routing is done.

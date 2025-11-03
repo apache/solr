@@ -290,14 +290,14 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       assertEquals("get", DebugServlet.lastMethod);
       // agent
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       // default wt
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
       // agent
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       // keepalive
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
@@ -314,14 +314,14 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
       assertEquals("post", DebugServlet.lastMethod);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
       assertEquals(
@@ -335,14 +335,14 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
       assertEquals("put", DebugServlet.lastMethod);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
       assertEquals(
@@ -362,14 +362,14 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
       assertEquals("get", DebugServlet.lastMethod);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
 
@@ -380,14 +380,14 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
       assertEquals("post", DebugServlet.lastMethod);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
       assertEquals(
@@ -400,14 +400,14 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
       assertEquals("put", DebugServlet.lastMethod);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
       assertEquals(
@@ -431,14 +431,14 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       assertEquals("post", DebugServlet.lastMethod);
       // agent
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       // default wt
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
       // agent
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       // keepalive
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
@@ -458,12 +458,12 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
       assertEquals("post", DebugServlet.lastMethod);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
     }
@@ -497,7 +497,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       assertEquals("post", DebugServlet.lastMethod);
       // agent
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       // default wt
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
@@ -524,7 +524,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
       assertEquals("post", DebugServlet.lastMethod);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
@@ -548,7 +548,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
       assertEquals("post", DebugServlet.lastMethod);
       assertEquals(
-          "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
+          "Solr[" + HttpApacheSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
