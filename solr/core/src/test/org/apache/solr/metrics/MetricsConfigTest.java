@@ -52,15 +52,11 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     SolrMetricManager mgr =
         new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
 
-    MeterProvider meterProvider = mgr.meterProvider(REGISTRY_NAME);
-    MeterProvider noopMeterProvider = OpenTelemetry.noop().getMeterProvider();
+    MeterProvider actual = mgr.meterProvider(REGISTRY_NAME);
 
     assertEquals(
-        "Returned MeterProvider should be NOOP",
-        noopMeterProvider.getClass(),
-        meterProvider.getClass());
+        "Returned MeterProvider should be NOOP", OpenTelemetry.noop().getMeterProvider(), actual);
 
-    // Test that metric instruments are NOOP
     LongCounter longCounter =
         mgr.longCounter(REGISTRY_NAME, "test_counter", "A test counter", null);
     DoubleCounter doubleCounter =
