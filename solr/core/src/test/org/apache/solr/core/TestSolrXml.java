@@ -192,7 +192,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   }
 
   public void testExplicitNullGivesDefaults() {
-    System.setProperty("jetty.port", "8000");
+    System.setProperty("solr.port.listen", "8000");
     String solrXml =
         "<solr>"
             + "<null name=\"maxBooleanClauses\"/>"
