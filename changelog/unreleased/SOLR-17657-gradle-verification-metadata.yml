@@ -1,0 +1,11 @@
+title: Replace custom checksum verification with Gradle Verification Metadata
+type: changed
+authors:
+- name: Piotr P. Karwasz
+  nick: ppkarwasz
+  url: https://people.apache.org/phonebook.html?uid=pkarwasz
+merge-requests:
+- id: 3828
+links:
+- name: SOLR-17657
+  url: https://issues.apache.org/jira/browse/SOLR-17657
