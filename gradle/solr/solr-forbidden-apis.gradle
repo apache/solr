@@ -19,7 +19,7 @@
 // Why does solr exclude these from forbidden API checks?
 
 configure(project(":solr:core")) {
-  tasks.matching { it.name == "forbiddenApisMain" || it.name == "forbiddenApisTest" }.all {
+  tasks.matching { it.name == "forbiddenApisMain" || it.name == "forbiddenApisTest" }.configureEach {
     exclude "org/apache/solr/internal/**"
   }
 }

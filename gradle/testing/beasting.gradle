@@ -26,7 +26,7 @@
 def beastingMode = gradle.startParameter.taskNames.any{ name -> name == 'beast' || name.endsWith(':beast') }
 
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     project.ext {
       testOptions += [
           [propName: 'tests.dups', value: 0, description: "Reiterate runs of entire test suites ('beast' task)."]
@@ -41,8 +41,8 @@ if (beastingMode) {
   }
 
   allprojects {
-    plugins.withType(JavaPlugin) {
-      task beast(type: BeastTask) {
+    plugins.withType(JavaPlugin).configureEach {
+      tasks.register("beast", BeastTask) {
         description "Run a test suite (or a set of tests) many times over (duplicate 'test' task)."
         group "Verification"
       }
@@ -56,7 +56,7 @@ if (beastingMode) {
       // the test filter will be applied by the beast task once it is received from
       // command line.
       def subtasks = (1..dups).collect { value ->
-        return tasks.create(name: "test_${value}", type: Test, {
+        return tasks.register("test_${value}", Test) {
           failFast = true
           doFirst {
             // If there is a global root seed, use it (all duplicated tasks will run
@@ -66,7 +66,7 @@ if (beastingMode) {
                   String.format("%08X", new Random(rootProject.rootSeedLong + value).nextLong()))
             }
           }
-        })
+        }
       }
 
       beast.dependsOn subtasks

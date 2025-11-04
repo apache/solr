@@ -60,7 +60,7 @@ dependencies {
   testImplementation libs.commonsio.commonsio
 }
 
-task copyPythonClientToExample(type: Sync) {
+tasks.register("copyPythonClientToExample", Sync) {
   group = "Solr Python Client"
   from configurations.generatedPythonClient
   into project.pythonClientCopyDir

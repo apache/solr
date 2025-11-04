@@ -38,7 +38,7 @@ buildscript {
 }
 
 configure(rootProject) {
-  task gitStatus() {
+  tasks.register("gitStatus") {
     doFirst {
       try {
         def repository = new FileRepositoryBuilder()
@@ -61,7 +61,7 @@ configure(rootProject) {
   }
 
   // Verify git working copy does not have any unstaged modified files.
-  task checkWorkingCopyClean() {
+  tasks.register("checkWorkingCopyClean") {
     dependsOn gitStatus
     doFirst {
       def status = rootProject.ext.gitStatus

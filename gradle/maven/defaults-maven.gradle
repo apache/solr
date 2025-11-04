@@ -60,23 +60,25 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
   }
 
   // Do not generate gradle metadata files.
-  tasks.withType(GenerateModuleMetadata) {
+  tasks.withType(GenerateModuleMetadata).configureEach {
     enabled = false
   }
 
-  plugins.withType(JavaPlugin) {
-    task sourcesJar(type: Jar, dependsOn: classes) {
+  plugins.withType(JavaPlugin).configureEach {
+    tasks.register("sourcesJar", Jar) {
+      dependsOn classes
       archiveClassifier = 'sources'
       from sourceSets.main.allJava
     }
 
-    task javadocJar(type: Jar, dependsOn: javadoc) {
+    tasks.register("javadocJar", Jar) {
+      dependsOn javadoc
       archiveClassifier = 'javadoc'
       from javadoc.destinationDir
     }
 
     // Add aliases of convention tasks with shorter names.
-    task mavenToApacheSnapshots() {
+    tasks.register("mavenToApacheSnapshots") {
       group "Publishing"
       description "Publish Maven JARs and POMs to Apache Snapshots repository: ${apacheNexusSnapshots}"
 

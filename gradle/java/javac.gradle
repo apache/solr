@@ -18,11 +18,11 @@
 // Configure Java project defaults.
 
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     sourceCompatibility = project.minJavaVersion
     targetCompatibility = project.minJavaVersion
     // Use 'release' flag instead of 'source' and 'target'
-    tasks.withType(JavaCompile) {
+    tasks.withType(JavaCompile).configureEach {
       compileTestJava {
         sourceCompatibility = project.minJavaTestVersion
         targetCompatibility = project.minJavaTestVersion
@@ -33,7 +33,7 @@ allprojects {
       }
     }
     // Configure warnings.
-    tasks.withType(JavaCompile) {
+    tasks.withType(JavaCompile).configureEach {
       options.encoding = "UTF-8"
       options.compilerArgs += [
         "-Xlint:-deprecation",
@@ -71,7 +71,7 @@ allprojects {
 }
 
 configure(project(":solr:benchmark")) {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     tasks.named('compileJava').configure {
       options.compilerArgs -= [ "-Werror", "-proc:none" ]
       options.compilerArgs += "-Xlint:none"

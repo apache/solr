@@ -18,7 +18,7 @@
 // This adds top-level 'precommit' task.
 
 configure(rootProject) {
-  task precommit() {
+  tasks.register("precommit") {
     group = 'Precommit'
     description = "All precommit checks"
 

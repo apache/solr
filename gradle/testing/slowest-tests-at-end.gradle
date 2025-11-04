@@ -21,7 +21,7 @@ def allTests = []
 def allSuites = []
 
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     project.ext {
       testOptions += [
           [propName: 'tests.slowestTests', value: true, description: "Print the summary of the slowest tests."],
@@ -29,7 +29,7 @@ allprojects {
       ]
     }
 
-    tasks.withType(Test) { task ->
+    tasks.withType(Test).configureEach { task ->
       if (resolvedTestOption("tests.slowestTests").toBoolean()) {
         afterTest { desc, result ->
           def duration = (result.getEndTime() - result.getStartTime())

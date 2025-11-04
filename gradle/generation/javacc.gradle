@@ -29,7 +29,7 @@ configure(rootProject) {
     javacc libs.javacc.javacc
   }
 
-  task javacc() {
+  tasks.register("javacc") {
     description "Regenerate sources for corresponding javacc grammar files."
     group "generation"
 
@@ -91,7 +91,7 @@ import org.apache.lucene.queryparser.charstream.CharStream;'''.trim())
 }
 
 configure(project(":solr:core")) {
-  task javacc(type: JavaCCTask) {
+  tasks.register("javacc", JavaCCTask) {
     description "Regenerate Solr query parser"
     group "generation"
 

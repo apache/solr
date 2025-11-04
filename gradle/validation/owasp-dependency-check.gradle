@@ -34,7 +34,7 @@ configure(rootProject) {
     }
   }
 
-  task owasp() {
+  tasks.register("owasp") {
     group "Verification"
     description "Check project dependencies against OWASP vulnerability database."
     dependsOn dependencyCheckAggregate

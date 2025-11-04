@@ -19,7 +19,7 @@
 // Per-project test summary.
 
 allprojects {
-  tasks.withType(Test) { task ->
+  tasks.withType(Test).configureEach { task ->
     afterSuite { desc, result ->
       if (!desc.parent) {
         if (result.testCount > 0) {
