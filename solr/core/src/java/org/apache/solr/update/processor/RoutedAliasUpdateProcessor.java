@@ -22,6 +22,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -266,13 +267,13 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private SolrCmdDistributor.Node lookupShardLeaderOfCollection(String collection) {
-    final Slice[] activeSlices =
-        zkController.getClusterState().getCollection(collection).getActiveSlicesArr();
-    if (activeSlices.length == 0) {
+    final List<Slice> activeSlices =
+        new ArrayList<>(zkController.getClusterState().getCollection(collection).getActiveSlices());
+    if (activeSlices.isEmpty()) {
       throw new SolrException(
           SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Cannot route to collection " + collection);
     }
-    final Slice slice = activeSlices[0];
+    final Slice slice = activeSlices.getFirst();
     return getLeaderNode(collection, slice);
   }
 

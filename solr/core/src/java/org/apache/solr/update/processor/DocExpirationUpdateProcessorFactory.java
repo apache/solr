@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -464,13 +463,13 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
     String col = desc.getCollectionName();
 
     DocCollection docCollection = zk.getClusterState().getCollection(col);
-    if (docCollection.getActiveSlicesArr().length == 0) {
+    if (docCollection.getActiveSlices().isEmpty()) {
       log.error("Collection {} has no active Slices?", col);
       return false;
     }
-    List<Slice> slices = new ArrayList<>(Arrays.asList(docCollection.getActiveSlicesArr()));
+    List<Slice> slices = new ArrayList<>(docCollection.getActiveSlices());
     slices.sort(COMPARE_SLICES_BY_NAME);
-    Replica firstSliceLeader = slices.get(0).getLeader();
+    Replica firstSliceLeader = slices.getFirst().getLeader();
     if (null == firstSliceLeader) {
       log.warn("Slice in charge of periodic deletes for {} does not currently have a leader", col);
       return false;

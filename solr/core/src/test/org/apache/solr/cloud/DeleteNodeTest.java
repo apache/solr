@@ -29,7 +29,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -74,9 +73,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     List<Replica> replicas = docColl.getReplicasOnNode(nodeToBeDecommissioned);
     if (replicas != null) {
       for (Replica replica : replicas) {
-        String shard =
-            docColl.getShardId(
-                nodeToBeDecommissioned, replica.getStr(ZkStateReader.CORE_NAME_PROP));
+        String shard = replica.getShard();
         Slice slice = docColl.getSlice(shard);
         boolean hasOtherNonPullReplicas = false;
         for (Replica r : slice.getReplicas()) {

@@ -60,6 +60,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -1119,8 +1120,9 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     Map<String, Object> response = new HashMap<>();
 
     DocCollection coll = zkStateReader().getCollection(mutableId);
-    if (coll.getActiveSlicesArr().length > 0) {
-      String coreName = coll.getActiveSlicesArr()[0].getLeader().getCoreName();
+    if (!coll.getActiveSlices().isEmpty()) {
+      List<Slice> activeSlices = new ArrayList<>(coll.getActiveSlices());
+      String coreName = activeSlices.getFirst().getLeader().getCoreName();
       response.put("core", coreName);
     }
 

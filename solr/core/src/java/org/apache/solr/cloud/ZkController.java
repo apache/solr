@@ -55,6 +55,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.client.api.util.SolrVersion;
@@ -2069,15 +2070,26 @@ public class ZkController implements Closeable {
     if (log.isDebugEnabled()) {
       log.debug("waiting to find shard id in clusterstate for {}", cd.getName());
     }
+
+    Predicate<Replica> replicaPredicate = (Replica r) -> cd.getName().equals(r.getCoreName());
     try {
       DocCollection collection =
           zkStateReader.waitForState(
               cd.getCollectionName(),
               320,
               TimeUnit.SECONDS,
-              c -> c != null && c.getShardId(getNodeName(), cd.getName()) != null);
+              c ->
+                  c != null
+                      && c.getReplicasOnNode(getNodeName()) != null
+                      && c.getReplicasOnNode(getNodeName()).stream().anyMatch(replicaPredicate));
       // Read outside the predicate to avoid multiple potential writes
-      cd.getCloudDescriptor().setShardId(collection.getShardId(getNodeName(), cd.getName()));
+      String shardId =
+          collection.getReplicasOnNode(getNodeName()).stream()
+              .filter(replicaPredicate)
+              .map(Replica::getShard)
+              .findFirst()
+              .orElseThrow();
+      cd.getCloudDescriptor().setShardId(shardId);
     } catch (TimeoutException | InterruptedException e) {
       SolrZkClient.checkInterrupted(e);
       throw new SolrException(
