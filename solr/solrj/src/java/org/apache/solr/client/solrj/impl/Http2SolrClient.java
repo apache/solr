@@ -55,6 +55,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -1047,7 +1048,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (cookieStore == null) {
         return cookieStore;
       }
-      if (Boolean.getBoolean("solr.http.disableCookies")) {
+      if (!EnvUtils.getPropertyAsBool("solr.http.cookies.enabled", false))
         return new HttpCookieStore.Empty();
       }
       /*
