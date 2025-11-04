@@ -1,0 +1,8 @@
+title: Replace the use of the deprecated java.util.Locale constructor with Locale
+  Builder API.
+type: other
+authors:
+- name: Sanjay Dutt
+links:
+- name: SOLR-17399
+  url: https://issues.apache.org/jira/browse/SOLR-17399

@@ -501,8 +501,8 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     Path file =
         tmpDir.resolve("solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
 
-    String[] args =
-        new String[] {"cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, file.toString()};
+    // Not setting --zk-host, will fall back to sysProp 'zkHost'
+    String[] args = new String[] {"cp", "zk:" + getNode, file.toString()};
 
     assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
     assertArrayEquals(data, Files.readAllBytes(file));

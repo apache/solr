@@ -84,7 +84,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     System.setProperty("createCollectionWaitTimeTillActive", "5");
     TestInjection.randomDelayInCoreCreation = "true:5";
     System.setProperty("validateAfterInactivity", "200");
-    System.setProperty("solr.allowPaths", "*");
+    System.setProperty("solr.security.allow.paths", "*");
   }
 
   @Override
