@@ -48,12 +48,11 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
   /**
    * Sets up the test class by initializing the core and setting system properties. This method is
    * executed before all test methods in the class.
-   *
-   * @throws Exception if any exception occurs during initialization
    */
   @BeforeClass
-  public static void setUpClass() throws Exception {
-    initCore("solrconfig-combined-query.xml", "schema-vector-catchall.xml");
+  public static void setUpClass() {
+    schemaString = "schema-vector-catchall.xml";
+    configString = "solrconfig-combined-query.xml";
     System.setProperty("validateAfterInactivity", "200");
     System.setProperty("solr.httpclient.retries", "0");
     System.setProperty("distribUpdateSoTimeout", "5000");

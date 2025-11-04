@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -37,12 +36,15 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
   private static final int NUM_DOCS = 10;
   private static final String vectorField = "vector";
 
-  @BeforeClass
-  public static void setUpClass() throws Exception {
-    initCore("solrconfig-combined-query.xml", "schema-vector-catchall.xml");
-    System.setProperty("validateAfterInactivity", "200");
-    System.setProperty("solr.httpclient.retries", "0");
-    System.setProperty("distribUpdateSoTimeout", "5000");
+  public CombinedQuerySolrCloudTest() {
+    super();
+    sliceCount = 2;
+    fixShardCount(2);
+  }
+
+  @Override
+  protected String getCloudSchemaFile() {
+    return "schema-vector-catchall.xml";
   }
 
   @Override
@@ -52,7 +54,6 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
 
   private synchronized void prepareIndexDocs() throws Exception {
     List<SolrInputDocument> docs = new ArrayList<>();
-    fixShardCount(2);
     for (int i = 1; i <= NUM_DOCS; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", Integer.toString(i));
@@ -136,7 +137,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     String jsonQuery =
         "{\"queries\":"
             + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^1 OR 5^2 OR 7^3 OR 10^1)\"}}},"
             + "\"limit\":5,\"sort\":\"mod3_idv desc\""
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
