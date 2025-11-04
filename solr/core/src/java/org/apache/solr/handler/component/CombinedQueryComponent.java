@@ -410,11 +410,11 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       shardDocMap.put(queriesToCombineKeys[queryIndex], shardDocsPerQuery);
       numFound = max(numFound, queryNumFound);
       approximateTotalHits = max(approximateTotalHits, queryApproximateTotalHits);
-    }
+    } // for each query to combine
 
-    SolrDocumentList responseDocs = new SolrDocumentList();
     rb.rsp.addToLog("hits", numFound);
 
+    SolrDocumentList responseDocs = new SolrDocumentList();
     responseDocs.setNumFound(numFound);
     responseDocs.setNumFoundExact(hitCountIsExact);
     responseDocs.setStart(ss.getOffset());
@@ -424,20 +424,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
 
     populateNextCursorMarkFromMergedShards(rb);
 
-    postMergeIds(
-        rb,
-        thereArePartialResults,
-        segmentTerminatedEarly,
-        maxHitsTerminatedEarly,
-        approximateTotalHits);
-  }
-
-  private static void postMergeIds(
-      ResponseBuilder rb,
-      boolean thereArePartialResults,
-      Boolean segmentTerminatedEarly,
-      boolean maxHitsTerminatedEarly,
-      long approximateTotalHits) {
     if (thereArePartialResults) {
       rb.rsp
           .getResponseHeader()
@@ -477,6 +463,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     }
   }
 
+  /**
+   * Populate shardInfo from mostly ShardResponse. Returns failedShardCount (may be increased from
+   * the param).
+   */
   private int addShardInfo(
       NamedList<Object> shardInfo,
       int failedShardCount,
@@ -484,65 +474,64 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       ResponseBuilder rb,
       String queryKey,
       SolrDocumentList docs) {
-    if (shardInfo != null) {
-      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
-      NamedList<?> responseHeader;
-      if (srsp.getException() != null) {
-        Throwable t = srsp.getException();
-        if (t instanceof SolrServerException && t.getCause() != null) {
-          t = t.getCause();
-        }
-        nl.add("error", t.toString());
-        if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
-          StringWriter trace = new StringWriter();
-          t.printStackTrace(new PrintWriter(trace));
-          nl.add("trace", trace.toString());
-        }
-        if (!StrUtils.isNullOrEmpty(srsp.getShardAddress())) {
-          nl.add("shardAddress", srsp.getShardAddress());
-        }
-      } else {
-        responseHeader =
-            (NamedList<?>)
-                SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "responseHeader", false);
-        if (responseHeader == null) {
-          return failedShardCount;
-        }
-        final Object rhste =
-            responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
-        if (rhste != null) {
-          nl.add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, rhste);
-        }
-        final Object rhmhte =
-            responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY);
-        if (rhmhte != null) {
-          nl.add(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY, rhmhte);
-        }
-        final Object rhath =
-            responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
-        if (rhath != null) {
-          nl.add(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, rhath);
-        }
-        if (docs == null) {
-          return failedShardCount;
-        }
-        nl.add("numFound", docs.getNumFound());
-        nl.add("numFoundExact", docs.getNumFoundExact());
-        nl.add("maxScore", docs.getMaxScore());
+    if (shardInfo == null) {
+      return failedShardCount;
+    }
+    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
+    NamedList<?> responseHeader;
+    if (srsp.getException() != null) {
+      Throwable t = srsp.getException();
+      if (t instanceof SolrServerException && t.getCause() != null) {
+        t = t.getCause();
+      }
+      nl.add("error", t.toString());
+      if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+        StringWriter trace = new StringWriter();
+        t.printStackTrace(new PrintWriter(trace));
+        nl.add("trace", trace.toString());
+      }
+      if (!StrUtils.isNullOrEmpty(srsp.getShardAddress())) {
         nl.add("shardAddress", srsp.getShardAddress());
       }
-      if (srsp.getSolrResponse() != null) {
-        nl.add("time", srsp.getSolrResponse().getElapsedTime());
+    } else {
+      responseHeader =
+          (NamedList<?>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "responseHeader", false);
+      if (responseHeader == null) {
+        return failedShardCount;
       }
-      // This ought to be better, but at least this ensures no duplicate keys in JSON result
-      String shard = srsp.getShard() + "_" + queryKey;
-      if (StrUtils.isNullOrEmpty(shard)) {
-        failedShardCount += 1;
-        shard = "unknown_shard_" + queryKey + "_" + failedShardCount;
+      final Object rhste =
+          responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
+      if (rhste != null) {
+        nl.add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, rhste);
       }
-      nl.add("queryKey", queryKey);
-      shardInfo.add(shard, nl);
+      final Object rhmhte =
+          responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY);
+      if (rhmhte != null) {
+        nl.add(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY, rhmhte);
+      }
+      final Object rhath =
+          responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
+      if (rhath != null) {
+        nl.add(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, rhath);
+      }
+      if (docs == null) {
+        return failedShardCount;
+      }
+      nl.add("numFound", docs.getNumFound());
+      nl.add("numFoundExact", docs.getNumFoundExact());
+      nl.add("maxScore", docs.getMaxScore());
+      nl.add("shardAddress", srsp.getShardAddress());
     }
+
+    if (srsp.getSolrResponse() != null) {
+      nl.add("time", srsp.getSolrResponse().getElapsedTime());
+    }
+    nl.add("queryKey", queryKey);
+
+    // This ought to be better, but at least this ensures no duplicate keys in JSON result
+    String shard = srsp.getShard() + "_" + queryKey;
+    shardInfo.add(shard, nl);
     return failedShardCount;
   }
 
