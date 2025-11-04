@@ -31,7 +31,6 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
 import org.junit.Test;
 
-/** */
 public class MetricsConfigTest extends SolrTestCaseJ4 {
   private final String REGISTRY_NAME = "testRegistry";
 
