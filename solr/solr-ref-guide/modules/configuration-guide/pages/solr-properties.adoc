@@ -62,6 +62,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.host.bind|solr.jetty.host| |This is the host that Solr's Jetty binds to, and only accepts requests to.
 
+|solr.http.cookies.enabled|solr.http.disableCookies| false |If Http2SolrClient should support cookies.
+
 |solr.index.replication.fingerprint.enabled|!solr.disableFingerprint|true|Controls whether index fingerprinting for replication is disabled.
 
 |solr.index.updatelog.enabled|enable.update.log|true (in default solrconfig.xml)|Controls whether the UpdateLog is enabled. The UpdateLog is required for atomic updates, real-time get, and transaction log replay. May be disabled in testing environments or with schemas that don't support versioning (older schemas) to improve performance at the cost of data durability.
