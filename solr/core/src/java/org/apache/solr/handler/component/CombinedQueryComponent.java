@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -406,7 +407,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         } // end for-each-doc-in-response
       } // end for-each-response
       List<ShardDoc> shardDocsPerQuery = new ArrayList<>(queuePerQuery.resultIds(0).values());
-      shardDocsPerQuery.sort((a, b) -> Double.compare(b.score, a.score));
+      shardDocsPerQuery.sort(Comparator.comparingInt(a -> a.positionInResponse));
       shardDocMap.put(queriesToCombineKeys[queryIndex], shardDocsPerQuery);
       numFound = max(numFound, queryNumFound);
       approximateTotalHits = max(approximateTotalHits, queryApproximateTotalHits);

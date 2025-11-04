@@ -117,7 +117,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     String jsonQuery =
         "{\"queries\":"
             + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
             + "\"limit\":5,"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
@@ -137,13 +137,13 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     String jsonQuery =
         "{\"queries\":"
             + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^1 OR 5^2 OR 7^3 OR 10^1)\"}}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^2 OR 7^3 OR 10^1)\"}}},"
             + "\"limit\":5,\"sort\":\"mod3_idv desc\""
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
     assertEquals(5, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "5", "2", "7", "4", "10");
+    assertFieldValues(rsp.getResults(), id, "8", "5", "2", "7", "10");
   }
 
   /**
@@ -159,18 +159,18 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
             CommonParams.JSON,
             "{\"queries\":"
                 + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
             CommonParams.QT,
             "/search");
-    assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6", "3", "10", "4");
+    assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6", "3", "10", "8");
     rsp =
         query(
             CommonParams.JSON,
             "{\"queries\":"
                 + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
                 + "\"limit\":4,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
@@ -182,14 +182,14 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
             CommonParams.JSON,
             "{\"queries\":"
                 + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
                 + "\"limit\":4,\"offset\":3,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
             CommonParams.QT,
             "/search");
     assertEquals(4, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "6", "3", "10", "4");
+    assertFieldValues(rsp.getResults(), id, "6", "3", "10", "8");
   }
 
   /**
@@ -224,7 +224,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     String jsonQuery =
         "{\"queries\":"
             + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
             + "\"limit\":4,"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\","
@@ -234,7 +234,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     assertEquals(4, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6");
     assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
-    assertEquals("[1 (3), 0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
+    assertEquals("[2 (3), 0 (2), 1 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
     assertEquals(4, rsp.getHighlighting().size());
     assertEquals(
         "title <em>test</em> for <em>doc</em> 2",
