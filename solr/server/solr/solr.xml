@@ -59,4 +59,6 @@
     <int name="connTimeout">${connTimeout:60000}</int>
   </shardHandlerFactory>
 
+  <metrics enabled="${metricsEnabled:true}"/>
+
 </solr>

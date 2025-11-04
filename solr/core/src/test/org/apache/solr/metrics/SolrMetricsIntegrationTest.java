@@ -23,7 +23,6 @@ import io.prometheus.metrics.model.snapshots.Labels;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.Set;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.SolrTestCaseJ4;
@@ -53,8 +52,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    String solrXml =
-        Files.readString(home.resolve("solr-metricreporter.xml"), StandardCharsets.UTF_8);
+    String solrXml = Files.readString(home.resolve("solr.xml"), StandardCharsets.UTF_8);
     NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
     cc =
         createCoreContainer(
@@ -197,9 +195,5 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
           SolrMetricTestUtils.newStandaloneSelectRequestsDatapoint(h.getCore()).getValue(),
           0.0);
     }
-  }
-
-  private long findDelta(Map<String, Object> m1, Map<String, Object> m2, String k) {
-    return ((Number) m2.get(k)).longValue() - ((Number) m1.get(k)).longValue();
   }
 }
