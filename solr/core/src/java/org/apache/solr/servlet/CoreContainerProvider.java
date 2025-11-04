@@ -282,7 +282,7 @@ public class CoreContainerProvider implements ServletContextListener {
   }
 
   private String getSolrPort() {
-    return System.getProperty("jetty.port");
+    return EnvUtils.getProperty("solr.port.listen");
   }
 
   /**
