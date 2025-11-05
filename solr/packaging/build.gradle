@@ -227,7 +227,7 @@ tasks.register('runDevSlim', JavaExec) {
   doFirst {
     println "To attach a debugger, at the CLI pass: --debug-jvm"
     println "To pass JVM args, at the CLI pass: -PjvmArgs='--add-modules jdk.incubator.vector'"
-    println "To pass system properties, at the CLI pass: -Djetty.port=8983"
+    println "To pass system properties, at the CLI pass: -Dsolr.port.listen=8983"
   }
 
   maxHeapSize = project.findProperty('maxHeapSize') ?: '1G'
@@ -235,13 +235,12 @@ tasks.register('runDevSlim', JavaExec) {
   jvmArgs = [] // don't use defaults from our build that assume this is a typical build task
   jvmArgs((project.findProperty('jvmArgs') ?: '').split())
 
-  systemProperty 'host', 'localhost'
-  systemProperty 'jetty.port', '8983'
+  systemProperty 'solr.port.listen', '8983'
   systemProperty 'solr.install.dir', file("$workingDir/..")
   systemProperty 'solr.logs.dir', file("$workingDir/logs")
   systemProperty 'solr.zookeeper.server.enabled', 'true' // SolrCloud; embedded ZK
 
-  // Propagate CLI system properties
+  // Propagate CLI system properties (override defaults above)
   systemProperties += gradle.startParameter.systemPropertiesArgs
 
   classpath = files("$workingDir/start.jar")
