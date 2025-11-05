@@ -215,7 +215,7 @@ artifacts {
   solrSlimTgz(slimDistTar)
 }
 
-tasks.register('runDevSlim', JavaExec) {
+tasks.register('runDev', JavaExec) {
   group = 'application'
   description = 'Starts Solr for local experimentation.  Does NOT use the bin/solr script.'
   dependsOn 'devSlim'

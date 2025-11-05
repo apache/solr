@@ -32,7 +32,7 @@ gradlew -p solr/packaging assemble
 ls solr/packaging/build/solr-*               # expanded directory
 
 Build & run Solr directly from Gradle, skipping "bin/solr", retaining data between runs:
-gradlew -p solr/packaging runDevSlim
+gradlew -p solr/packaging runDev
 
 Build & run Solr, retaining data between runs:
 gradlew -p solr/packaging devSlim
