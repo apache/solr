@@ -27,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Metrics specific utility functions. */
-@Deprecated
 public class MetricUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -86,6 +85,16 @@ public class MetricUtils {
    */
   public static double nsToMs(double ns) {
     return ns / TimeUnit.MILLISECONDS.toNanos(1);
+  }
+
+  /**
+   * Converts bytes to megabytes.
+   *
+   * @param bytes the number of bytes
+   * @return the number of megabytes
+   */
+  public static double bytesToMegabytes(long bytes) {
+    return bytes / (1024.0 * 1024.0);
   }
 
   // optionally convert ns to ms

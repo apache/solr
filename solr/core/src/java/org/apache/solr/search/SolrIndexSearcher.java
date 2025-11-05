@@ -120,6 +120,7 @@ import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.util.IOFunction;
 import org.apache.solr.util.ThreadCpuTimer;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -2682,7 +2683,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             }));
     // size of the currently opened commit
     toClose.add(
-        solrMetricsContext.observableLongGauge(
+        solrMetricsContext.observableDoubleGauge(
             "solr_core_indexsearcher_index_commit_size_megabytes",
             "Size of the current index commit (megabytes)",
             obs -> {
@@ -2691,7 +2692,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 for (String file : reader.getIndexCommit().getFileNames()) {
                   total += DirectoryFactory.sizeOf(reader.directory(), file);
                 }
-                obs.record(total / (1024 * 1024), baseAttributes);
+                obs.record(MetricUtils.bytesToMegabytes(total), baseAttributes);
               } catch (Exception e) {
                 // skip recording if unavailable (no nullNumber in OTel)
               }

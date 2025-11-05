@@ -114,6 +114,7 @@ import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -850,8 +851,8 @@ public class ReplicationHandler extends RequestHandlerBase
             .build();
     super.initializeMetrics(parentContext, replicationAttributes);
 
-    ObservableLongMeasurement indexSizeMetric =
-        solrMetricsContext.longGaugeMeasurement(
+    ObservableDoubleMeasurement indexSizeMetric =
+        solrMetricsContext.doubleGaugeMeasurement(
             "solr_core_replication_index_size",
             "Size of the index in megabytes",
             OtelUnit.MEGABYTES);
@@ -906,7 +907,8 @@ public class ReplicationHandler extends RequestHandlerBase
         solrMetricsContext.batchCallback(
             () -> {
               if (core != null && !core.isClosed()) {
-                indexSizeMetric.record(core.getIndexSize() / (1024 * 1024), replicationAttributes);
+                indexSizeMetric.record(
+                    MetricUtils.bytesToMegabytes(core.getIndexSize()), replicationAttributes);
 
                 CommitVersionInfo vInfo = getIndexVersion();
                 if (vInfo != null) {

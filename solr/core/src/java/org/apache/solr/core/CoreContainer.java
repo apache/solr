@@ -156,6 +156,7 @@ import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.StartupLoggingUtils;
+import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
@@ -912,17 +913,17 @@ public class CoreContainer {
     Path dataHome =
         cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
 
-    solrMetricsContext.observableLongGauge(
+    solrMetricsContext.observableDoubleGauge(
         "solr_disk_space",
         "Disk metrics for Solr's data home directory (" + dataHome + ")",
         measurement -> {
           try {
             var fileStore = Files.getFileStore(dataHome);
             measurement.record(
-                fileStore.getTotalSpace() / (1024 * 1024),
+                MetricUtils.bytesToMegabytes(fileStore.getTotalSpace()),
                 containerAttrs.toBuilder().put(TYPE_ATTR, "total_space").build());
             measurement.record(
-                fileStore.getUsableSpace() / (1024 * 1024),
+                MetricUtils.bytesToMegabytes(fileStore.getUsableSpace()),
                 containerAttrs.toBuilder().put(TYPE_ATTR, "usable_space").build());
           } catch (IOException e) {
             throw new SolrException(

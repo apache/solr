@@ -181,6 +181,7 @@ import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -1389,10 +1390,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
             })));
 
     observables.add(
-        parentContext.observableLongGauge(
+        parentContext.observableDoubleGauge(
             "solr_core_disk_space",
             "Solr core disk space metrics",
-            (observableLongMeasurement -> {
+            (observableDoubleMeasurement -> {
 
               // initialize disk total / free metrics
               Path dataDirPath = Path.of(dataDir);
@@ -1407,30 +1408,30 @@ public class SolrCore implements SolrInfoBean, Closeable {
                       .put(TYPE_ATTR, "usable_space")
                       .build();
               try {
-                observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getTotalSpace() / (1024 * 1024),
+                observableDoubleMeasurement.record(
+                    MetricUtils.bytesToMegabytes(Files.getFileStore(dataDirPath).getTotalSpace()),
                     totalSpaceAttributes);
               } catch (IOException e) {
-                observableLongMeasurement.record(0L, totalSpaceAttributes);
+                observableDoubleMeasurement.record(0.0, totalSpaceAttributes);
               }
               try {
-                observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getUsableSpace() / (1024 * 1024),
+                observableDoubleMeasurement.record(
+                    MetricUtils.bytesToMegabytes(Files.getFileStore(dataDirPath).getUsableSpace()),
                     usableSpaceAttributes);
               } catch (IOException e) {
-                observableLongMeasurement.record(0L, usableSpaceAttributes);
+                observableDoubleMeasurement.record(0.0, usableSpaceAttributes);
               }
             }),
             OtelUnit.MEGABYTES));
 
     observables.add(
-        parentContext.observableLongGauge(
+        parentContext.observableDoubleGauge(
             "solr_core_index_size",
             "Index size for a Solr core",
-            (observableLongMeasurement -> {
+            (observableDoubleMeasurement -> {
               if (!isClosed())
-                observableLongMeasurement.record(
-                    getIndexSize() / (1024 * 1024), baseGaugeCoreAttributes);
+                observableDoubleMeasurement.record(
+                    MetricUtils.bytesToMegabytes(getIndexSize()), baseGaugeCoreAttributes);
             }),
             OtelUnit.MEGABYTES));
 
