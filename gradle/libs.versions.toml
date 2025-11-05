@@ -83,7 +83,6 @@ dockerfile-baseimage-java = "25"
 dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.39.0"
 eclipse-jetty = "12.0.27"
-eclipse-jettytoolchain = "5.0.2"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.3.0.202506031305-r"
 essenty = "2.5.0"
@@ -351,7 +350,6 @@ eclipse-jetty-security = { module = "org.eclipse.jetty:jetty-security", version.
 eclipse-jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "eclipse-jetty" }
 eclipse-jetty-session = { module = "org.eclipse.jetty:jetty-session", version.ref = "eclipse-jetty" }
 eclipse-jetty-start = { module = "org.eclipse.jetty:jetty-start", version.ref = "eclipse-jetty" }
-eclipse-jetty-toolchain-servletapi = { module = "org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api", version.ref = "eclipse-jettytoolchain" }
 eclipse-jetty-util = { module = "org.eclipse.jetty:jetty-util", version.ref = "eclipse-jetty" }
 eclipse-jetty-xml = { module = "org.eclipse.jetty:jetty-xml", version.ref = "eclipse-jetty" }
 eclipse-jgit-jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "eclipse-jgit" }
