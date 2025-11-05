@@ -20,15 +20,21 @@ apply plugin: 'java-library'
 description = 'cuVS plugin'
 
 dependencies {
-  implementation libs.cuvs.lucene
+  implementation(libs.cuvs.lucene) {
+    changing = true
+  }
   implementation project(':solr:core')
   implementation project(':solr:solrj')
   implementation libs.apache.lucene.core
+  implementation libs.apache.lucene.backward.codecs
   implementation libs.slf4j.api
 
   testImplementation project(':solr:test-framework')
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.junit.junit
   testImplementation libs.commonsio.commonsio
+
+  // lucene-backward-codecs is a transitive dependency from cuvs-lucene but required in lockfile
+  permitUnusedDeclared libs.apache.lucene.backward.codecs
 }
 

@@ -25,31 +25,37 @@ logchange {
 task writeChangelog {
   description = 'Generates a change/log description file (YAML)'
   doLast {
+    def gitBranchFull = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim()
+
+    // Prevent running on main or branches prefixed with 'branch_'
+    if (gitBranchFull == 'main' || gitBranchFull.startsWith('branch_')) {
+      throw new GradleException("Cannot create changelog on branch '${gitBranchFull}'. This task should only be run on feature branches.")
+    }
+
+    def gitBranch = gitBranchFull.replaceFirst(/^.*\//, "")
+
     def gitUserName = 'git config user.name'.execute().text.trim()
     def configuredName = providers.gradleProperty("user.name").getOrElse(gitUserName)
     def githubId = providers.gradleProperty("user.githubid").getOrElse(null)
     def nick = githubId ? "\n    nick: ${githubId}" : ""
     def asfId = providers.gradleProperty("user.asfid").getOrElse(null)
     def asfIdUrl = asfId ? "\n    url: https://home.apache.org/phonebook.html?uid=${asfId}" : ""
-    def gitBranch = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim()
-    def jiraMatcher = gitBranch =~ /SOLR-\d+/
-    def jiraRef = jiraMatcher ? jiraMatcher[0] : "SOLR-XXXX"
+    def jiraMatcher = gitBranch =~ /(?i)SOLR-\d\d\d+/
+    def jiraRef = jiraMatcher ? jiraMatcher[0].toUpperCase() : "SOLR-XXXX"
     def jiraUrl = "https://issues.apache.org/jira/browse/${jiraRef}"
     def jiraLinks = jiraMatcher ? "links:\n  - name: ${jiraRef}\n    url: ${jiraUrl}" : ""
-    def githubMatcher = gitBranch =~ /(PR|GH|GITHUB|#)?(\d+)/
-    def githubRef = githubMatcher ? githubMatcher.group(2) : ""
-    def githubLink = githubMatcher ? "issues:\n  - ${githubRef}" : ""
-    def branchWithoutJira = gitBranch.replaceFirst(/(SOLR|LUCENE|INFRA)-\d+-/, "").replaceFirst(/(PR|GH|GITHUB|#)?(\d+)/, "").replace("-", " ").capitalize()
-    def fileName = "changelog/unreleased/${gitBranch}.yml"
+    def title = gitBranch.replaceFirst(/(?i)SOLR-\d\d\d+-/, "").replace("-", " ").capitalize()
+    // Strip everything before and including '/', then sanitize special characters
+    def sanitizedBranchName = gitBranch.replaceAll(/^.*\//, "").replaceAll(/[^a-zA-Z0-9._-]/, "-")
+    def fileName = "changelog/unreleased/${sanitizedBranchName}.yml"
     def file = new File(fileName)
     file.parentFile.mkdirs()
     file.text = """# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: ${branchWithoutJira}
+title: ${title}
 type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: ${configuredName}${nick}${asfIdUrl}
 ${jiraLinks}
-${githubLink}
 """
 
     println "Generated file: ${fileName} -- open it"

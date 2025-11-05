@@ -1,0 +1,8 @@
+title: Removed deprecated `transform()` from `DocTransformer`.
+type: removed
+authors:
+- name: Abhishek Umarjikar
+- name: Houston Putman
+links:
+- name: SOLR-17738
+  url: https://issues.apache.org/jira/browse/SOLR-17738

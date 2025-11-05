@@ -1,0 +1,16 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Switch from Dropwizard to OpenTelemetry. This change provides native Prometheus support on the /admin/metrics API, OTLP support, exemplar support for tracing correlation with OpenMetrics format and native attributes and labels on all metrics.
+type: changed
+authors:
+  - name: Matthew Biscocho
+  - name: David Smiley
+  - name: Sanjay Dutt
+  - name: Jude Muriithi
+  - name: Luke Kot-Zaniewski
+  - name: Carlos Ugarte
+  - name: Kevin Liang
+  - name: Bryan Jacobowitz
+  - name: Adam Quigley
+links:
+  - name: SOLR-17458
+    url: https://issues.apache.org/jira/browse/SOLR-17458

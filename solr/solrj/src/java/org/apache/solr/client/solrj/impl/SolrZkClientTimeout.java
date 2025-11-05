@@ -26,7 +26,7 @@ public class SolrZkClientTimeout {
   public static final int DEFAULT_ZK_CONNECT_TIMEOUT =
       EnvUtils.getPropertyAsInteger("solr.zookeeper.client.connect.timeout", 15000);
 
-  interface SolrZkClientTimeoutAware {
+  public interface SolrZkClientTimeoutAware {
     void setZkClientTimeout(int zkClientTimeout);
 
     void setZkConnectTimeout(int zkConnectTimeout);
