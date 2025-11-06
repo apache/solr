@@ -31,6 +31,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -112,6 +113,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
     return req;
   }
 
+  @SuppressForbidden(reason = "tests needn't comply")
   private static HttpServletResponse newResponse() {
     HttpServletResponse resp = Mockito.mock(HttpServletResponse.class);
     try {

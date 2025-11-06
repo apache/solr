@@ -110,6 +110,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     public static final int PACKET_MS = 500;
 
     @Override
+    @SuppressForbidden(reason = "don't forbid in tests")
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
       String countStr = req.getParameter("count");
       IntStream.range(0, countStr == null ? 10 : Integer.parseInt(countStr))
