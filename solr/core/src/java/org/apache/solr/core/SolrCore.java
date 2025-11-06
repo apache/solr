@@ -490,7 +490,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /**
-   * Recalculates the index size.
+   * Calculates the index size.
    *
    * <p>Should only be called from {@code getIndexSize}.
    *
@@ -516,6 +516,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return size;
   }
 
+  /** The index size in bytes, of the index that the current searcher is pointed to. */
   public long getIndexSize() {
     SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
     if (requestInfo != null) {

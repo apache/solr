@@ -18,21 +18,14 @@ package org.apache.solr.util.stats;
 
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
-import java.lang.invoke.MethodHandles;
 import java.lang.management.OperatingSystemMXBean;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import org.apache.solr.common.util.NamedList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Metrics specific utility functions. */
 public class MetricUtils {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String METRIC_NAME = "metric";
   public static final String VALUE = "value";
-  public static final String VALUES = "values";
 
   private static final String MS = "_ms";
 
@@ -55,8 +48,6 @@ public class MetricUtils {
   private static final String P99_MS = P99 + MS;
   private static final String P999 = "p999";
   private static final String P999_MS = P999 + MS;
-
-  public static final Predicate<CharSequence> ALL_PROPERTIES = (name) -> true;
 
   /**
    * Adds metrics from a Timer to a NamedList, using well-known back-compat names.
@@ -95,15 +86,6 @@ public class MetricUtils {
    */
   public static double bytesToMegabytes(long bytes) {
     return bytes / (1024.0 * 1024.0);
-  }
-
-  // optionally convert ns to ms
-  static double nsToMs(boolean convert, double value) {
-    if (convert) {
-      return nsToMs(value);
-    } else {
-      return value;
-    }
   }
 
   /**

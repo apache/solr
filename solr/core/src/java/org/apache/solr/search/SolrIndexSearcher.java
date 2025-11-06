@@ -2684,7 +2684,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // size of the currently opened commit
     toClose.add(
         solrMetricsContext.observableDoubleGauge(
-            "solr_core_indexsearcher_index_commit_size_megabytes",
+            "solr_core_indexsearcher_index_commit_size",
             "Size of the current index commit (megabytes)",
             obs -> {
               try {
@@ -2696,7 +2696,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               } catch (Exception e) {
                 // skip recording if unavailable (no nullNumber in OTel)
               }
-            }));
+            },
+            OtelUnit.MEGABYTES));
   }
 
   public long getWarmupTime() {
