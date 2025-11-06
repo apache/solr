@@ -132,7 +132,6 @@ grant {
   permission javax.management.MBeanServerPermission "releaseMBeanServer";
   permission javax.management.MBeanTrustPermission "register";
 
-  
   // needed by crossdc
   permission javax.security.auth.AuthPermission "getLoginConfiguration";
   permission javax.security.auth.AuthPermission "setLoginConfiguration";
@@ -202,8 +201,8 @@ grant {
   permission java.io.FilePermission "${solr.logs.dir}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.logs.dir}${/}-", "read,write,delete,readlink";
 
-  permission java.io.FilePermission "${solr.allowPaths}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.allowPaths}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.security.allow.paths}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.security.allow.paths}${/}-", "read,write,delete,readlink";
 
   permission java.io.FilePermission "${solr.sharedLib}", "read,readlink";
   permission java.io.FilePermission "${solr.sharedLib}${/}-", "read,readlink";
@@ -220,4 +219,9 @@ grant {
 
   // CUDA for GPU module (cuVS)
   permission java.lang.RuntimePermission "loadLibrary.cudart";
+};
+
+// Permissions for OTEL Runtime Java 17 telemetry and metrics
+grant {
+  permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
 };

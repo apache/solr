@@ -36,4 +36,31 @@ public interface Metric<T> {
    * @return converted value
    */
   T convert(Object value);
+
+  /**
+   * Return the label key for Prometheus metrics filtering, if any.
+   *
+   * @return label key or null if no label filtering is needed
+   */
+  default String getLabelKey() {
+    return null;
+  }
+
+  /**
+   * Return the label value for Prometheus metrics filtering, if any.
+   *
+   * @return label value or null if no label filtering is needed
+   */
+  default String getLabelValue() {
+    return null;
+  }
+
+  /**
+   * Return true if this metric has label filtering.
+   *
+   * @return true if both label key and value are non-null
+   */
+  default boolean hasLabels() {
+    return getLabelKey() != null && getLabelValue() != null;
+  }
 }

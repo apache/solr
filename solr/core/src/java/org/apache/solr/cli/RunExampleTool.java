@@ -44,6 +44,7 @@ import org.apache.commons.exec.Executor;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
@@ -301,10 +302,12 @@ public class RunExampleTool extends ToolBase {
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
     boolean isCloudMode = !cli.hasOption(USER_MANAGED_OPTION);
-    String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION);
+    String zkHost =
+        CLIUtils.getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
     int port =
         Integer.parseInt(
-            cli.getOptionValue(PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT", "8983")));
+            cli.getOptionValue(
+                PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983")));
     Map<String, Object> nodeStatus = startSolr(solrHomeDir, isCloudMode, cli, port, zkHost, 30);
 
     String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
@@ -518,9 +521,11 @@ public class RunExampleTool extends ToolBase {
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
     int defaultPort =
         Integer.parseInt(
-            cli.getOptionValue(PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT", "8983")));
+            cli.getOptionValue(
+                PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983")));
     if (defaultPort != 8983) {
-      // Override the old default port numbers if user has started the example overriding SOLR_PORT
+      // Override the old default port numbers if user has started the example overriding
+      // SOLR_PORT_LISTEN
       cloudPorts = new int[] {defaultPort, defaultPort + 1, defaultPort + 2, defaultPort + 3};
     }
 
@@ -580,7 +585,8 @@ public class RunExampleTool extends ToolBase {
     }
 
     // deal with extra args passed to the script to run the example
-    String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION);
+    String zkHost =
+        CLIUtils.getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
 
     // start the first node (most likely with embedded ZK)
     Map<String, Object> nodeStatus =
@@ -629,7 +635,8 @@ public class RunExampleTool extends ToolBase {
   /** wait until the number of live nodes == numNodes. */
   protected void waitToSeeLiveNodes(String zkHost, int numNodes) {
     try (CloudSolrClient cloudClient =
-        new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
+        new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+            .build()) {
       cloudClient.connect();
       Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
       int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;

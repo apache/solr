@@ -52,9 +52,9 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -2154,7 +2154,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
    * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   * org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} class directly
    */
   public static CloudSolrClient getCloudSolrClient(
       String zkHost,

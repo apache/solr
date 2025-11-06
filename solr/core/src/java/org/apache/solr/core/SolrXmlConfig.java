@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +36,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.management.MBeanServer;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
@@ -45,17 +43,16 @@ import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
-import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.DataConfigNode;
-import org.apache.solr.util.JmxUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -503,8 +500,8 @@ public class SolrXmlConfig {
     int hostPort =
         parseInt("hostPort", required("solrcloud", "hostPort", removeValue(nl, "hostPort")));
     if (hostPort <= 0) {
-      // Default to the port that jetty is listening on, or 8983 if that is not provided.
-      hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
+      // Default to the port that Solr is listening on, or 8983 if that is not provided.
+      hostPort = EnvUtils.getPropertyAsInteger("solr.port.listen", 8983);
     }
     String hostName = required("solrcloud", "host", removeValue(nl, "host"));
 
@@ -733,8 +730,7 @@ public class SolrXmlConfig {
                   : Integer.parseInt(threadsCachingIntervalSeconds.toString())));
     }
 
-    PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(metrics);
-    return builder.setMetricReporterPlugins(reporterPlugins).build();
+    return builder.build();
   }
 
   private static Map<String, CacheConfig> getCachesConfig(
@@ -762,36 +758,6 @@ public class SolrXmlConfig {
       }
     }
     return o;
-  }
-
-  private static PluginInfo[] getMetricReporterPluginInfos(ConfigNode metrics) {
-    List<PluginInfo> configs = new ArrayList<>();
-    boolean hasJmxReporter = false;
-    for (ConfigNode node : metrics.getAll("reporter")) {
-      PluginInfo info = getPluginInfo(node);
-      if (info == null) {
-        continue;
-      }
-      String clazz = info.className;
-      if (clazz != null && clazz.equals(SolrJmxReporter.class.getName())) {
-        hasJmxReporter = true;
-      }
-      configs.add(info);
-    }
-
-    // if there's an MBean server running but there was no JMX reporter then add a default one
-    MBeanServer mBeanServer = JmxUtil.findFirstMBeanServer();
-    if (mBeanServer != null && !hasJmxReporter) {
-      log.debug(
-          "MBean server found: {}, but no JMX reporters were configured - adding default JMX reporter.",
-          mBeanServer);
-      Map<String, Object> attributes = new HashMap<>();
-      attributes.put("name", "default");
-      attributes.put("class", SolrJmxReporter.class.getName());
-      PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
-      configs.add(defaultPlugin);
-    }
-    return configs.toArray(new PluginInfo[0]);
   }
 
   /**

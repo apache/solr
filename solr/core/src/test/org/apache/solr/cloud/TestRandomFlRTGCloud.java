@@ -40,9 +40,9 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -423,8 +423,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
   }
 
-  private static final ResponseParser RAW_XML_RESPONSE_PARSER = new NoOpResponseParser("xml");
-  private static final ResponseParser RAW_JSON_RESPONSE_PARSER = new NoOpResponseParser("json");
+  private static final ResponseParser RAW_XML_RESPONSE_PARSER =
+      new InputStreamResponseParser("xml");
+  private static final ResponseParser RAW_JSON_RESPONSE_PARSER =
+      new InputStreamResponseParser("json");
 
   /** Helper to convert from wt string parameter to actual SolrClient. */
   private static SolrClient getSolrClient(final String jettyBaseUrl, final String wt) {
@@ -526,7 +528,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       final NamedList<Object> nlRsp = client.request(new QueryRequest(params));
       assertNotNull(params.toString(), nlRsp);
       rsp = nlRsp;
-      final String textResult = (String) nlRsp.get("response");
+      final String textResult = InputStreamResponseParser.consumeResponseToString(nlRsp);
       switch (wt) {
         case "json":
           docs = getDocsFromJsonResponse(askForList, textResult);

@@ -311,7 +311,6 @@ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
   "params":{
     "omitHeader":"true"},
   "context":{
-    "webapp":"/solr",
     "path":"/test",
     "httpMethod":"GET"},
   "class":"org.apache.solr.core.RuntimeLibReqHandler",
@@ -396,7 +395,6 @@ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
     "omitHeader": "true"
   },
   "context": {
-    "webapp": "/solr",
     "path": "/test",
     "httpMethod": "GET"
   },

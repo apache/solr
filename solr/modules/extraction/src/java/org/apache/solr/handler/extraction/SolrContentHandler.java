@@ -23,6 +23,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -30,8 +31,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.metadata.TikaMetadataKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
@@ -57,7 +56,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   protected final SolrInputDocument document;
 
-  protected final Metadata metadata;
+  protected final ExtractionMetadata metadata;
   protected final SolrParams params;
   protected final StringBuilder catchAllBuilder = new StringBuilder(2048);
   protected final IndexSchema schema;
@@ -74,7 +73,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   private Set<String> literalFieldNames = null;
 
-  public SolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
+  public SolrContentHandler(ExtractionMetadata metadata, SolrParams params, IndexSchema schema) {
     this.document = new SolrInputDocument();
     this.metadata = metadata;
     this.params = params;
@@ -152,6 +151,13 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     addField(contentFieldName, catchAllBuilder.toString(), null);
   }
 
+  /** Append pre-extracted plain text content to the catch-all builder. */
+  public void appendToContent(String text) {
+    if (text != null && !text.isEmpty()) {
+      catchAllBuilder.append(text);
+    }
+  }
+
   /**
    * Add in the literals to the document using the {@link #params} and the {@link #LITERALS_PREFIX}.
    */
@@ -170,10 +176,10 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   /** Add in any metadata using {@link #metadata} as the source. */
   protected void addMetadata() {
-    for (String name : metadata.names()) {
+    for (String name : metadata.keySet()) {
       if (literalsOverride && literalFieldNames.contains(name)) continue;
-      String[] vals = metadata.getValues(name);
-      addField(name, null, vals);
+      List<String> vals = metadata.get(name);
+      addField(name, null, vals.toArray(new String[0]));
     }
   }
 
@@ -200,7 +206,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       sf = schema.getFieldOrNull(name);
     } else if (sf == null
         && defaultField.length() > 0
-        && name.equals(TikaMetadataKeys.RESOURCE_NAME_KEY)
+        && name.equals(ExtractingMetadataConstants.RESOURCE_NAME_KEY)
             == false /*let the fall through below handle this*/) {
       name = defaultField;
       sf = schema.getFieldOrNull(name);
@@ -213,7 +219,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     // you?
     if (sf == null
         && unknownFieldPrefix.length() == 0
-        && Objects.equals(name, TikaMetadataKeys.RESOURCE_NAME_KEY)) {
+        && Objects.equals(name, ExtractingMetadataConstants.RESOURCE_NAME_KEY)) {
       return;
     }
 

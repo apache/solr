@@ -1,0 +1,8 @@
+title: 'multiThreaded=true: changed queue implementation from unlimited to 1000 max,
+  after which the caller thread will execute.'
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17648
+  url: https://issues.apache.org/jira/browse/SOLR-17648

@@ -1,0 +1,73 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+logchange {
+  rootPath = "."
+  inputDir = "changelog"
+  outputFile = "CHANGELOG.md"
+  generateChangesXml = false
+}
+
+task writeChangelog {
+  description = 'Generates a change/log description file (YAML)'
+  doLast {
+    def gitBranchFull = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim()
+
+    // Prevent running on main or branches prefixed with 'branch_'
+    if (gitBranchFull == 'main' || gitBranchFull.startsWith('branch_')) {
+      throw new GradleException("Cannot create changelog on branch '${gitBranchFull}'. This task should only be run on feature branches.")
+    }
+
+    def gitBranch = gitBranchFull.replaceFirst(/^.*\//, "")
+
+    def gitUserName = 'git config user.name'.execute().text.trim()
+    def configuredName = providers.gradleProperty("user.name").getOrElse(gitUserName)
+    def githubId = providers.gradleProperty("user.githubid").getOrElse(null)
+    def nick = githubId ? "\n    nick: ${githubId}" : ""
+    def asfId = providers.gradleProperty("user.asfid").getOrElse(null)
+    def asfIdUrl = asfId ? "\n    url: https://home.apache.org/phonebook.html?uid=${asfId}" : ""
+    def jiraMatcher = gitBranch =~ /(?i)SOLR-\d\d\d+/
+    def jiraRef = jiraMatcher ? jiraMatcher[0].toUpperCase() : "SOLR-XXXX"
+    def jiraUrl = "https://issues.apache.org/jira/browse/${jiraRef}"
+    def jiraLinks = jiraMatcher ? "links:\n  - name: ${jiraRef}\n    url: ${jiraUrl}" : ""
+    def title = gitBranch.replaceFirst(/(?i)SOLR-\d\d\d+-/, "").replace("-", " ").capitalize()
+    // Strip everything before and including '/', then sanitize special characters
+    def sanitizedBranchName = gitBranch.replaceAll(/^.*\//, "").replaceAll(/[^a-zA-Z0-9._-]/, "-")
+    def fileName = "changelog/unreleased/${sanitizedBranchName}.yml"
+    def file = new File(fileName)
+    file.parentFile.mkdirs()
+    file.text = """# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: ${title}
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: ${configuredName}${nick}${asfIdUrl}
+${jiraLinks}
+"""
+
+    println "Generated file: ${fileName} -- open it"
+  }
+}
+
+task changelog {
+  dependsOn writeChangelog
+  description = 'Generates a change/log description file (YAML)'
+}
+
+task newChangelog {
+  dependsOn writeChangelog
+  description = 'Generates a change/log description file (YAML)'
+}

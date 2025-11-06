@@ -16,6 +16,7 @@
  */
 package org.apache.solr.security;
 
+import io.opentelemetry.api.common.Attributes;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -189,10 +190,11 @@ public class MultiAuthPlugin extends AuthenticationPlugin
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     for (AuthenticationPlugin plugin : pluginMap.values()) {
-      plugin.initializeMetrics(parentContext, scope);
+      plugin.initializeMetrics(parentContext, Attributes.empty());
     }
+    super.initializeMetrics(parentContext, attributes);
   }
 
   private String getSchemeFromAuthHeader(final String authHeader) {

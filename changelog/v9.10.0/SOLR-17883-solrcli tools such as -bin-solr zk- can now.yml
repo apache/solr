@@ -1,0 +1,6 @@
+title: SolrCLI tools such as "bin/solr zk" can now access jars located in `&lt;install_dir&gt;/lib`.
+type: fixed
+authors: []
+links:
+- name: SOLR-17883
+  url: https://issues.apache.org/jira/browse/SOLR-17883

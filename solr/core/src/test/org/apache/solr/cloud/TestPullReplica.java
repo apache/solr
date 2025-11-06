@@ -40,11 +40,10 @@ import org.apache.http.entity.StringEntity;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -55,6 +54,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -269,7 +269,6 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
   }
 
-  @SuppressWarnings("unchecked")
   public void testAddDocs() throws Exception {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
@@ -310,17 +309,26 @@ public class TestPullReplica extends SolrCloudTestCase {
               : s.getReplicas(EnumSet.of(Replica.Type.PULL));
       waitForNumDocsInAllReplicas(numDocs, pullReplicas);
 
-      for (Replica r : pullReplicas) {
-        try (SolrClient pullReplicaClient = getHttpSolrClient(r)) {
-          SolrQuery req = new SolrQuery("qt", "/admin/plugins", "stats", "true");
-          QueryResponse statsResponse = pullReplicaClient.query(req);
-          // The adds gauge metric should be null for pull replicas since they don't process adds
-          assertNull(
-              "Replicas shouldn't process the add document request: " + statsResponse,
-              ((Map<String, Object>)
-                      (statsResponse.getResponse())
-                          ._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
-                  .get("UPDATE.updateHandler.adds"));
+      for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+        CoreContainer cc = jetty.getCoreContainer();
+        for (String coreName : cc.getAllCoreNames()) {
+          try (SolrCore core = cc.getCore(coreName)) {
+            var addOpsDatapoint =
+                org.apache.solr.util.SolrMetricTestUtils.getCounterDatapoint(
+                    core,
+                    "solr_core_update_committed_ops",
+                    org.apache.solr.util.SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "UPDATE")
+                        .label("ops", "adds")
+                        .build());
+            // The adds gauge metric should be null for pull replicas since they don't process adds
+            if ((core.getCoreDescriptor().getCloudDescriptor().getReplicaType()
+                == Replica.Type.PULL)) {
+              assertNull(addOpsDatapoint);
+            } else {
+              assertNotNull(addOpsDatapoint);
+            }
+          }
         }
       }
 

@@ -2941,6 +2941,8 @@ Spanish stemmer, Spanish words:
 This filter discards, or _stops_ analysis of, tokens that are on the given stop words list.
 A standard stop words list is included in the Solr `conf` directory, named `stopwords.txt`, which is appropriate for typical English language text.
 
+Note that the xref:query-guide:edismax-query-parser.adoc[eDisMax] query parser disables the stop filter if all query terms are stop words unless its `alwaysStopwords` option is enabled.
+
 *Factory class:* `solr.StopFilterFactory`
 
 *Arguments:*

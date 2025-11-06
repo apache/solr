@@ -18,11 +18,11 @@ the full tests.
     usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--not-signed] [--local-keys PATH] [--revision REVISION] [--version X.Y.Z(-ALPHA|-BETA)?] [--test-alt-java TEST_ALT_JAVA] [--download-only] [--dev-mode] url ...
 
     Utility to test a release.
-    
+
     positional arguments:
       url                   Url pointing to release to test
       test_args             Arguments to pass to gradle for testing, e.g. -Dwhat=ever.
-    
+
     options:
       -h, --help            show this help message and exit
       --tmp-dir PATH        Temporary directory to test inside, defaults to /tmp/smoke_solr_$version_$revision
@@ -35,32 +35,32 @@ the full tests.
                             Path to Java alternative home directory, to run tests with if specified
       --download-only       Only perform download and sha hash check steps
       --dev-mode            Enable dev mode, will not check branch compatibility
-    
+
     Example usage:
     python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-c7510a0...
 
 
 ### releaseWizard.py
 
-The Release Wizard guides the Release Manager through the release process step 
+The Release Wizard guides the Release Manager through the release process step
 by step, helping you to to run the right commands in the right order, generating
 e-mail templates with the correct texts, versions, paths etc, obeying
 the voting rules and much more. It also serves as a documentation of all the
 steps, with timestamps, preserving log files from each command etc, showing only
 the steps and commands required for a major/minor/bugfix release. It also lets
-you generate a full Asciidoc guide for the release. The wizard will execute many 
-of the other tools in this folder. 
+you generate a full Asciidoc guide for the release. The wizard will execute many
+of the other tools in this folder.
 
     usage: releaseWizard.py [-h] [--dry-run] [--init]
-    
+
     Script to guide a RM through the whole release process
-    
+
     optional arguments:
       -h, --help  show this help message and exit
       --dry-run   Do not execute any commands, but echo them instead. Display
                   extra debug info
       --init      Re-initialize root and version
-    
+
     Go push that release!
 
 ### buildAndPushRelease.py
@@ -68,9 +68,9 @@ of the other tools in this folder.
     usage: buildAndPushRelease.py [-h] [--no-prepare] [--local-keys PATH] [--push-local PATH] [--sign FINGERPRINT]
     [--sign-method-gradle] [--gpg-pass-noprompt] [--gpg-home PATH] [--rc-num NUM]
     [--root PATH] [--logfile PATH] [--dev-mode]
-    
+
     Utility to build, push, and test a release.
-    
+
     optional arguments:
     -h, --help            show this help message and exit
     --no-prepare          Use the already built release in the provided checkout
@@ -89,45 +89,27 @@ of the other tools in this folder.
     --root PATH           Root of Git working tree for solr. Default: "." (the current directory)
     --logfile PATH        Specify log file path (default /tmp/release.log)
     --dev-mode            Enable development mode, which disables some strict checks
-    
+
     Example usage for a Release Manager:
     python3 -u dev-tools/scripts/buildAndPushRelease.py --push-local /tmp/releases/6.0.1 --sign 3782CBB60147010B330523DD26FBCC7836BF353A --rc-num 1
 
 ### addVersion.py
 
     usage: addVersion.py [-h] [-l LUCENE_VERSION] version
-    
+
     Add a new version to CHANGES, to Version.java, build.gradle and solrconfig.xml files
-    
+
     positional arguments:
       version            New Solr version
-    
+
     optional arguments:
       -h, --help         show this help message and exit
       -l LUCENE_VERSION  Optional lucene version. By default will read gradle/libs.versions.toml
 
-### releasedJirasRegex.py
-
-Pulls out all JIRAs mentioned at the beginning of bullet items
-under the given version in the given CHANGES.txt file
-and prints a regular expression that will match all of them
-
-    usage: releasedJirasRegex.py [-h] version changes
-    
-    Prints a regex matching JIRAs fixed in the given version by parsing the given
-    CHANGES.txt file
-    
-    positional arguments:
-      version     Version of the form X.Y.Z
-      changes     CHANGES.txt file to parse
-    
-    optional arguments:
-      -h, --help  show this help message and exit
-
 ### reproduceJenkinsFailures.py
 
     usage: reproduceJenkinsFailures.py [-h] [--no-git] [--iters N] URL
-    
+
     Must be run from a Solr git workspace. Downloads the Jenkins
     log pointed to by the given URL, parses it for Git revision and failed
     Solr tests, checks out the Git revision in the local workspace,
@@ -136,10 +118,10 @@ and prints a regular expression that will match all of them
     in each module of interest, failing at the end if any of the runs fails.
     To control the maximum number of concurrent JVMs used for each module's
     test run, set 'tests.jvms', e.g. in ~/lucene.build.properties
-    
+
     positional arguments:
       URL         Points to the Jenkins log to parse
-    
+
     optional arguments:
       -h, --help  show this help message and exit
       --no-git    Do not run "git" at all
@@ -148,9 +130,9 @@ and prints a regular expression that will match all of them
 ### githubPRs.py
 
     usage: githubPRs.py [-h] [--json] [--token TOKEN]
-    
+
     Find open Pull Requests that need attention
-    
+
     optional arguments:
       -h, --help     show this help message and exit
       --json         Output as json
@@ -162,18 +144,56 @@ Scaffold a new module and include it into the build. It will set up the folders
 and all for you, so the only thing you need to do is add classes, tests and test-data.
 
     usage: scaffoldNewModule.py [-h] name full_name description
-    
+
     Scaffold new module into solr/modules/<name>
-    
+
     positional arguments:
         name         code-name/id, e.g. my-module
         full_name    Readable name, e.g. "My Module"
         description  Short description for docs
-    
+
     optional arguments:
      -h, --help   show this help message and exit
 
     Example: ./scaffoldNewModule.py foo "My Module" "Very Useful module here"
+
+### changes2logchange.py
+
+Migrates the legacy CHANGES.txt file format to the new logchange YAML-based format.
+This script parses the monolithic CHANGES.txt file and generates individual YAML
+files for each changelog entry, organized by version (v10.0.0/, v9.9.0/, etc.).
+
+Each YAML file complies with the schema outlined in `dev-docs/changelog.adoc`.
+
+    usage: changes2logchange.py [-h] [-o OUTPUT_DIR] [--last-released VERSION] changes_file
+
+    Positional arguments:
+      changes_file         Path to the CHANGES.txt file to migrate
+
+    Optional arguments:
+      -h, --help                    Show this help message and exit
+      -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+                                    Output directory for changelog structure (default: ./changelog)
+      --last-released VERSION       Override auto-detected latest released version (e.g., 9.5.0)
+                                    Versions newer than this will be routed to unreleased/ folder
+
+    Example usage:
+
+    # Default behavior
+    python3 dev-tools/scripts/changes2logchange.py solr/CHANGES.txt
+
+### validateChangelogs.py
+
+Validates changelog folder structure and feature distribution across development branches (main, stable, release). See dev-docs for more.
+
+### parseContributorsFromChanges.py
+
+Extracts unique author names from all YAML changelog files in a version folder and outputs them as a comma-separated list sorted alphabetically. Used by RM to assemble release notes.
+
+    usage: parseContributorsFromChanges.py <version>
+
+    # Example: Extract contributors for version 9.10.0
+    python3 dev-tools/scripts/parseContributorsFromChanges.py 9.10.0
 
 ### gitignore-gen.sh
 
@@ -191,11 +211,11 @@ TBD
      -r <remote> Specify remote to push to. Defaults to 'origin'
      -p          Push to remote. Only done if both cherry-pick and tests succeeded
      WARNING: Never push changes to a remote branch before a thorough local test
-    
+
     Simple script for aiding in back-porting one or more (trivial) commits to other branches.
     On merge conflict the script will run 'git mergetool'. See 'git mergetool --help'
     for help on configuring your favourite merge tool. Check out Sublime Merge (smerge).
-    
+
     Example:
       # Backport two commits to both stable and release branches
       dev-tools/scripts/cherrypick.sh -b branch_9x -b branch_9_0 deadbeef0000 cafebabe1111

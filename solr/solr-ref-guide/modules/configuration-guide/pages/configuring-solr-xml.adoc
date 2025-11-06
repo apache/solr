@@ -35,13 +35,13 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
   <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
   <str name="sharedLib">${solr.sharedLib:}</str>
   <str name="modules">${solr.modules:}</str>
-  <str name="allowPaths">${solr.allowPaths:}</str>
-  <str name="allowUrls">${solr.allowUrls:}</str>
+  <str name="allowPaths">${solr.security.allow.paths:}</str>
+  <str name="allowUrls">${solr.security.allow.urls:}</str>
   <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
 
   <solrcloud>
 
-    <str name="host">${host:}</str>
+    <str name="host">${solr.host.advertise:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
 
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
@@ -64,10 +64,6 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
     <int name="socketTimeout">${socketTimeout:600000}</int>
     <int name="connTimeout">${connTimeout:60000}</int>
   </shardHandlerFactory>
-
-  <metrics enabled="${metricsEnabled:true}">
-    <!--reporter name="jmx_metrics" group="core" class="org.apache.solr.metrics.reporters.SolrJmxReporter"/-->
-  </metrics>
 
 </solr>
 ----
@@ -285,8 +281,8 @@ When running Solr as a user-managed cluster and using the `shards` parameter, a 
 +
 In SolrCloud mode, the allow-list is automatically configured to include all live nodes in the cluster.
 +
-The allow-list can also be configured with the `solr.allowUrls` system property in `solr.in.sh` / `solr.in.cmd`.
-If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.allowUrls=true`.
+The allow-list can also be configured with the `solr.security.allow.urls` system property in `solr.in.sh` / `solr.in.cmd`.
+If you need to disable this feature for backwards compatibility, you can set the system property `solr.security.allow.urls.enabled=false`.
 
 `hideStackTrace`::
 +
@@ -399,7 +395,7 @@ For example, if the Solr node is running behind a proxy or in a cloud environmen
 `hostPort` is the port that the Solr instance wants other nodes to contact it at.
 +
 In the default `solr.xml` file, this is set to `${solr.port.advertise:0}`.
-If no port is passed via the `solr.xml` (i.e., `0`), then Solr will default to the port that jetty is listening on, defined by `${jetty.port}`.
+If no port is passed via the `solr.xml` (i.e., `0`), then Solr will default to the port that jetty is listening on, defined by `${solr.port.listen}`.
 
 `leaderVoteWait`::
 +
@@ -695,13 +691,6 @@ The `name` attribute is required and must be unique for each `clusterSingleton`.
 
 The `class` attribute should be set to the FQN (fully qualified name) of a class that extends `ClusterSingleton`.
 Sub-elements are specific to the implementation, `value1` is provided as an example here.
-
-=== The <metrics> Element
-
-The `<metrics>` element in `solr.xml` allows you to customize the metrics reported by Solr.
-You can define system properties that should not be returned, or define custom suppliers and reporters.
-
-If you would like to customize the metrics for your installation, see the xref:deployment-guide:metrics-reporting.adoc#metrics-configuration[Metrics Configuration] section.
 
 === The <caches> Element
 
