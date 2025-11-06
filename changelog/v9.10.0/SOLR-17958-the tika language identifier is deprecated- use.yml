@@ -1,0 +1,8 @@
+title: The Tika Language Identifier is deprecated. Use one of the other detectors
+  instead.
+type: other
+authors:
+- name: Jan Høydahl
+links:
+- name: SOLR-17958
+  url: https://issues.apache.org/jira/browse/SOLR-17958

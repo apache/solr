@@ -180,8 +180,7 @@ public class NodeValueFetcher {
 
       String baseUrl =
           ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(ctx.getNode());
-      SimpleSolrResponse rsp =
-          ctx.cloudSolrClient.getHttpClient().requestWithBaseUrl(baseUrl, req::process);
+      SimpleSolrResponse rsp = ctx.http2SolrClient().requestWithBaseUrl(baseUrl, req::process);
 
       // TODO come up with a better solution to stream this response instead of loading in memory
       try (InputStream prometheusStream = (InputStream) rsp.getResponse().get(STREAM_KEY)) {

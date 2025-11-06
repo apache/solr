@@ -1,0 +1,8 @@
+title: Removed the handleSelect option of &lt;requestDispatcher&gt;.
+type: removed
+authors:
+- name: Gaurav Tuli
+- name: David Smiley
+links:
+- name: SOLR-17742
+  url: https://issues.apache.org/jira/browse/SOLR-17742

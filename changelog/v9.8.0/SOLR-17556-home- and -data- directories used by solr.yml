@@ -1,0 +1,9 @@
+title: '"home" and "data" directories used by Solr examples have been updated to align
+  with documented best practices.'
+type: other
+authors:
+- name: Eric Pugh
+- name: Houston Putman
+links:
+- name: SOLR-17556
+  url: https://issues.apache.org/jira/browse/SOLR-17556

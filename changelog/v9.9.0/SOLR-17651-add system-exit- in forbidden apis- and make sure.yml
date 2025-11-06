@@ -1,0 +1,8 @@
+title: Add System.exit() in forbidden APIs, and make sure CLI unit tests never call
+  it.
+type: other
+authors:
+- name: Pierre Salagnac
+links:
+- name: SOLR-17651
+  url: https://issues.apache.org/jira/browse/SOLR-17651
