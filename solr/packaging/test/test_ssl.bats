@@ -526,14 +526,14 @@ teardown() {
   # server1 will run on $SOLR_PORT and will use server1.keystore
   export SOLR_SSL_KEY_STORE=$ssl_dir/server1.keystore.p12
   export SOLR_SSL_TRUST_STORE=$ssl_dir/server1.keystore.p12
-  solr start --jvm-opts "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
+  solr start --jvm-opts "-Dsolr.jetty.ssl.context.reload.scan.interval.secs=1 -DsocketTimeout=5000"
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
 
   # server2 will run on $SOLR2_PORT and will use server2.keystore. Initially, this is the same as server1.keystore
   export SOLR_SSL_KEY_STORE=$ssl_dir/server2.keystore.p12
   export SOLR_SSL_TRUST_STORE=$ssl_dir/server2.keystore.p12
   
-  solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT} --jvm-opts "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
+  solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT} --jvm-opts "-Dsolr.jetty.ssl.context.reload.scan.interval.secs=1 -DsocketTimeout=5000"
   solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000
 
   # "test" collection is two shards, meaning there must be communication between shards for queries (handled by http shard handler factory)
