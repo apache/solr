@@ -194,7 +194,7 @@ NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zook
 Start each Solr node with the Solr control script as shown in the examples below.
 Customize the values for the parameters shown as necessary and add any used in your system.
 
-If you created the SSL key without all DNS names or IP addresses on which Solr nodes run, you can tell Solr to skip hostname verification for inter-node communications by setting the `-Dsolr.ssl.checkPeerName=false` system property.
+If you created the SSL key without all DNS names or IP addresses on which Solr nodes run, you can tell Solr to skip hostname verification for inter-node communications by setting the `-Dsolr.ssl.check.peer.name.enabled=false` system property.
 
 [tabs#cloud]
 ======
