@@ -118,7 +118,7 @@ teardown() {
 
   # Restart the server enabling the SNI hostcheck
   export SOLR_SSL_CHECK_PEER_NAME=false
-  export SOLR_OPTS="${SOLR_OPTS} -Dsolr.jetty.ssl.sniHostCheck=true"
+  export SOLR_OPTS="${SOLR_OPTS} -Dsolr.jetty.ssl.sni.host.check.enabled=true"
   solr restart
   # This should fail the SNI Hostname check
   run ! solr api --verbose --solr-url "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"

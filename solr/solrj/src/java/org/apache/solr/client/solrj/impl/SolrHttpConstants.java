@@ -52,7 +52,7 @@ public interface SolrHttpConstants {
    * System property consulted to determine if HTTP based SolrClients will require hostname
    * validation of SSL Certificates. The default behavior is to enforce peer name validation.
    */
-  String SYS_PROP_CHECK_PEER_NAME = "solr.ssl.checkPeerName";
+  String SYS_PROP_CHECK_PEER_NAME = "solr.ssl.peer.name.enabled";
 
   /** Basic auth username */
   String PROP_BASIC_AUTH_USER = "httpBasicAuthUser";
