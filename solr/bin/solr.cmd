@@ -129,7 +129,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
     set SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
   )
   IF "%SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION%"=="true" (
-    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.verify.client.hostname=HTTPS"
   )
 
   IF DEFINED SOLR_SSL_NEED_CLIENT_AUTH (
