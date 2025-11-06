@@ -274,7 +274,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   fi
 
   if [ -n "$SOLR_SSL_CHECK_PEER_NAME" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.ssl.check.peer.name=$SOLR_SSL_CHECK_PEER_NAME -Dsolr.jetty.ssl.sni.host.check.enabled=$SOLR_SSL_CHECK_PEER_NAME"
+    SOLR_SSL_OPTS+=" -Dsolr.ssl.check.peer.name.enabled=$SOLR_SSL_CHECK_PEER_NAME -Dsolr.jetty.ssl.sni.host.check.enabled=$SOLR_SSL_CHECK_PEER_NAME"
   fi
 
   if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
