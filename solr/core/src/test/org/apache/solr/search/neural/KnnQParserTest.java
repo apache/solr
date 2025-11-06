@@ -990,7 +990,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "debugQuery",
             "true"),
         "//result[@numFound='5']",
-        "//str[@name='parsedquery'][.='SolrKnnFloatVectorQuery(SolrKnnFloatVectorQuery:vector[1.0,...][10])']");
+        "//str[@name='parsedquery'][.='SolrKnnFloatVectorQuery(SolrKnnFloatVectorQuery:vector[1.0,...][5])']");
   }
 
   @Test
@@ -1008,7 +1008,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "debugQuery",
             "true"),
         "//result[@numFound='5']",
-        "//str[@name='parsedquery'][.='SolrKnnFloatVectorQuery(SolrKnnFloatVectorQuery:vector[1.0,...][10])']");
+        "//str[@name='parsedquery'][.='SolrKnnFloatVectorQuery(SolrKnnFloatVectorQuery:vector[1.0,...][5])']");
   }
 
   @Test
@@ -1029,7 +1029,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String expectedParsedQuery =
         String.format(
             Locale.US,
-            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][20]})",
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][10]})",
             defaultSaturationThreshold,
             defaultPatience);
 
@@ -1068,7 +1068,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String expectedParsedQuery =
         String.format(
             Locale.US,
-            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][20]})",
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][10]})",
             explicitSaturationThreshold,
             explicitPatience);
 
@@ -1101,7 +1101,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String expectedParsedQuery =
         String.format(
             Locale.US,
-            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnByteVectorQuery:vector_byte_encoding[2,...][10]})",
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnByteVectorQuery:vector_byte_encoding[2,...][5]})",
             explicitSaturationThreshold,
             explicitPatience);
 
@@ -1133,7 +1133,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String expectedParsedQuery =
         String.format(
             Locale.US,
-            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][20]})",
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][10]})",
             explicitSaturationThreshold,
             explicitPatience);
 
@@ -1219,7 +1219,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "debugQuery",
             "true"),
         "//result[@numFound='4']",
-        "//str[@name='parsedquery'][.='SeededKnnVectorQuery(SeededKnnVectorQuery{seed=id:1 id:4 id:7 id:8 id:9, seedWeight=null, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][8]})']");
+        "//str[@name='parsedquery'][.='SeededKnnVectorQuery(SeededKnnVectorQuery{seed=id:1 id:4 id:7 id:8 id:9, seedWeight=null, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][4]})']");
   }
 
   @Test
@@ -1239,7 +1239,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "debugQuery",
             "true"),
         "//result[@numFound='4']",
-        "//str[@name='parsedquery'][.='SeededKnnVectorQuery(SeededKnnVectorQuery{seed=id:1 id:4 id:7 id:8 id:9, seedWeight=null, delegate=SolrKnnByteVectorQuery:vector_byte_encoding[2,...][8]})']");
+        "//str[@name='parsedquery'][.='SeededKnnVectorQuery(SeededKnnVectorQuery{seed=id:1 id:4 id:7 id:8 id:9, seedWeight=null, delegate=SolrKnnByteVectorQuery:vector_byte_encoding[2,...][4]})']");
   }
 
   @Test
@@ -1286,7 +1286,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "debugQuery",
             "true"),
         "//result[@numFound='4']",
-        "//str[@name='parsedquery'][.='SeededKnnVectorQuery(SeededKnnVectorQuery{seed=SolrKnnFloatVectorQuery:vector[0.1,...][8], seedWeight=null, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][8]})']");
+        "//str[@name='parsedquery'][.='SeededKnnVectorQuery(SeededKnnVectorQuery{seed=SolrKnnFloatVectorQuery:vector[0.1,...][4], seedWeight=null, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][4]})']");
   }
 
   @Test
@@ -1318,7 +1318,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         // Verify that the final delegate is a SolrKnnFloatVectorQuery with the expected vector and
         // topK
         // value
-        "//str[@name='parsedquery'][contains(.,'delegate=SolrKnnFloatVectorQuery:vector[1.0,...][8]')]");
+        "//str[@name='parsedquery'][contains(.,'delegate=SolrKnnFloatVectorQuery:vector[1.0,...][4]')]");
   }
 
   @Test

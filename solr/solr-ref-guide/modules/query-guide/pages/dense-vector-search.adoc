@@ -452,24 +452,24 @@ Our recommendation is to rely on the default value and change this parameter onl
 +
 This parameter must be used together with `saturationThreshold`; either specify both to customize the behavior, or omit both to rely on the default values.
 
-`efSearch`::
+`efSearchScaleFactor`::
 +
 [%autowidth,frame=none]
 |===
-|Optional | Default: `topK * 2`
+|Optional | Default: `1.0`
 |===
 +
-(advanced) Controls how many candidates the HNSW algorithm examines during search.
+(advanced) Multiplier factor for calculating how many candidates the HNSW algorithm examines during search.
 +
-The algorithm fetches more results than the requested `topK` and then selects the best ones. Higher values fetch more candidates, improving recall but slowing down the search. Lower values fetch fewer candidates for faster performance but may miss some good matches.
+The effective `efSearch` value is calculated internally as `efSearchScaleFactor * topK`. Lower values fetch fewer candidates for faster performance but may miss some good matches. Higher values fetch more candidates, improving recall but slowing down the search.
 +
 Accepted values:
-Any positive integer.
+Any float >= 1.0.
 
 Here's an example of a `knn` search using the early termination with input parameters:
 
 [source,text]
-?q={!knn f=vector topK=10 earlyTermination=true saturationThreshold=0.989 patience=10 efSearch=30}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=10 earlyTermination=true saturationThreshold=0.989 patience=10 efSearchScaleFactor=3.0}[1.0, 2.0, 3.0, 4.0]
 
 `seedQuery`::
 +

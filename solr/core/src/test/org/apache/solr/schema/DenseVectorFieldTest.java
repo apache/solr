@@ -860,7 +860,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField type = (DenseVectorField) vectorField.getType();
       KnnFloatVectorQuery vectorQuery =
           (KnnFloatVectorQuery)
-              type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, 6, null, null, null, null);
+              type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, 3, null, null, null, null);
       KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
       Integer threshold = strategy.filteredSearchThreshold();
 
@@ -884,7 +884,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       KnnFloatVectorQuery vectorQuery =
           (KnnFloatVectorQuery)
               type.getKnnVectorQuery(
-                  "vector", "[2, 1, 3, 4]", 3, 6, null, null, null, expectedThreshold);
+                  "vector", "[2, 1, 3, 4]", 3, 3, null, null, null, expectedThreshold);
       KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
       Integer threshold = strategy.filteredSearchThreshold();
 
@@ -909,7 +909,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       SeededKnnVectorQuery vectorQuery =
           (SeededKnnVectorQuery)
               type.getKnnVectorQuery(
-                  "vector", "[2, 1, 3, 4]", 3, 6, null, seedQuery, null, expectedThreshold);
+                  "vector", "[2, 1, 3, 4]", 3, 3, null, seedQuery, null, expectedThreshold);
       KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
       Integer threshold = strategy.filteredSearchThreshold();
 
@@ -936,7 +936,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       PatienceKnnVectorQuery vectorQuery =
           (PatienceKnnVectorQuery)
               type.getKnnVectorQuery(
-                  "vector", "[2, 1, 3, 4]", 3, 6, null, null, earlyTermination, expectedThreshold);
+                  "vector", "[2, 1, 3, 4]", 3, 3, null, null, earlyTermination, expectedThreshold);
       KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
       Integer threshold = strategy.filteredSearchThreshold();
 
@@ -967,7 +967,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                   "vector",
                   "[2, 1, 3, 4]",
                   3,
-                  6,
+                  3,
                   null,
                   seedQuery,
                   earlyTermination,
@@ -995,7 +995,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       KnnByteVectorQuery vectorQuery =
           (KnnByteVectorQuery)
               type.getKnnVectorQuery(
-                  "vector_byte_encoding", "[2, 1, 3, 4]", 3, 6, null, null, null, null);
+                  "vector_byte_encoding", "[2, 1, 3, 4]", 3, 3, null, null, null, null);
       KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
       Integer threshold = strategy.filteredSearchThreshold();
 
@@ -1022,7 +1022,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                   "vector_byte_encoding",
                   "[2, 1, 3, 4]",
                   3,
-                  6,
+                  3,
                   null,
                   null,
                   null,
@@ -1054,7 +1054,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                   "vector_byte_encoding",
                   "[2, 1, 3, 4]",
                   3,
-                  6,
+                  3,
                   null,
                   seedQuery,
                   null,
@@ -1088,7 +1088,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                   "vector_byte_encoding",
                   "[2, 1, 3, 4]",
                   3,
-                  6,
+                  3,
                   null,
                   null,
                   earlyTermination,
@@ -1123,7 +1123,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                   "vector_byte_encoding",
                   "[2, 1, 3, 4]",
                   3,
-                  6,
+                  3,
                   null,
                   seedQuery,
                   earlyTermination,

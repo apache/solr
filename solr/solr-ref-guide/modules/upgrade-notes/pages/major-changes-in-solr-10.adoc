@@ -128,7 +128,7 @@ It is available as part of the `analysis-extras` module.
 
 === Vector Search Enhancements
 
-* The `efSearch` parameter is now available for the KNN query parser (SOLR-17928). This parameter controls how many candidate vectors are explored during HNSW graph traversal, allowing users to independently tune search accuracy versus the number of results returned. Previously, improving accuracy required increasing `topK` (which returns more results), but `efSearch` enables exploring more candidates while still receiving exactly `topK` results. Default value is `topK * 2`.
+* The `efSearchScaleFactor` parameter is now available for the KNN query parser (SOLR-17928). This parameter controls how many candidate vectors are explored during HNSW graph traversal, allowing users to independently tune search accuracy versus the number of results returned. Previously, improving accuracy required increasing `topK` (which returns more results), but `efSearchScaleFactor` enables exploring more candidates while still receiving exactly `topK` results. The `efSearch` value is calculated internally as `efSearchScaleFactor * topK`. Default value is `1.0`, which means `efSearch` defaults to `topK`.
 
 === Deprecation removals
 
