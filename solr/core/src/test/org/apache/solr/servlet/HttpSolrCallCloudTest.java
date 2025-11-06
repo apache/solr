@@ -17,17 +17,14 @@
 
 package org.apache.solr.servlet;
 
-import jakarta.servlet.ReadListener;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.UnavailableException;
-import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
@@ -100,35 +97,16 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
 
   private static HttpServletRequest newRequest(String path) {
     HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+    Mockito.when(req.getMethod()).thenReturn("GET");
     Mockito.when(req.getRequestURI()).thenReturn(path);
     Mockito.when(req.getServletPath()).thenReturn(path);
     Mockito.when(req.getQueryString()).thenReturn("version=2");
     Mockito.when(req.getContentType()).thenReturn("application/json");
     Mockito.when(req.getHeader("Content-Type")).thenReturn("application/json");
-    Mockito.when(req.getMethod()).thenReturn("GET");
     try {
       Mockito.when(req.getInputStream())
-          .thenReturn(
-              new ServletInputStream() {
-                @Override
-                public boolean isFinished() {
-                  return true;
-                }
-
-                @Override
-                public boolean isReady() {
-                  return true;
-                }
-
-                @Override
-                public void setReadListener(ReadListener readListener) {}
-
-                @Override
-                public int read() {
-                  return -1;
-                }
-              });
-    } catch (IOException e) {
+          .thenReturn(ServletUtils.ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM);
+    } catch (IOException e) { // impossible; only required because we mock methods that throw
       throw new RuntimeException(e);
     }
     return req;
@@ -138,21 +116,10 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
     HttpServletResponse resp = Mockito.mock(HttpServletResponse.class);
     try {
       Mockito.when(resp.getOutputStream())
-          .thenReturn(
-              new ServletOutputStream() {
-                @Override
-                public boolean isReady() {
-                  return true;
-                }
-
-                @Override
-                public void setWriteListener(WriteListener writeListener) {}
-
-                @Override
-                public void write(int b) {}
-              });
-      Mockito.when(resp.getWriter()).thenReturn(new PrintWriter(System.out));
-    } catch (IOException e) {
+          .thenReturn(ServletUtils.ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM);
+      Mockito.when(resp.getWriter())
+          .thenReturn(new PrintWriter(System.out, false, StandardCharsets.UTF_8));
+    } catch (IOException e) { // impossible; only required because we mock methods that throw
       throw new RuntimeException(e);
     }
     return resp;
