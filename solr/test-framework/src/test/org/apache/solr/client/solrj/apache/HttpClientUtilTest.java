@@ -45,7 +45,7 @@ public class HttpClientUtilTest extends SolrTestCase {
 
   @Rule
   public TestRule syspropRestore =
-      new TestRuleRestoreSystemProperties(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
+      new TestRuleRestoreSystemProperties(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME_ENABLED);
 
   @After
   public void resetHttpClientBuilder() {
@@ -64,17 +64,17 @@ public class HttpClientUtilTest extends SolrTestCase {
     assertSSLHostnameVerifier(
         DefaultHostnameVerifier.class, HttpClientUtil.getSocketFactoryRegistryProvider());
 
-    System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "true");
+    System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME_ENABLED, "true");
     resetHttpClientBuilder();
     assertSSLHostnameVerifier(
         DefaultHostnameVerifier.class, HttpClientUtil.getSocketFactoryRegistryProvider());
 
-    System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "");
+    System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME_ENABLED, "");
     resetHttpClientBuilder();
     assertSSLHostnameVerifier(
         DefaultHostnameVerifier.class, HttpClientUtil.getSocketFactoryRegistryProvider());
 
-    System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "false");
+    System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME_ENABLED, "false");
     resetHttpClientBuilder();
     assertSSLHostnameVerifier(
         NoopHostnameVerifier.class, HttpClientUtil.getSocketFactoryRegistryProvider());

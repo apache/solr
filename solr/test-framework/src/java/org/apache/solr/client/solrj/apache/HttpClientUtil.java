@@ -247,7 +247,7 @@ public class HttpClientUtil implements SolrHttpConstants {
   }
 
   /**
-   * @see #SYS_PROP_CHECK_PEER_NAME
+   * @see #SYS_PROP_CHECK_PEER_NAME_ENABLED
    */
   public static void setSocketFactoryRegistryProvider(
       SocketFactoryRegistryProvider newRegistryProvider) {
@@ -259,7 +259,7 @@ public class HttpClientUtil implements SolrHttpConstants {
   }
 
   /**
-   * @see #SYS_PROP_CHECK_PEER_NAME
+   * @see #SYS_PROP_CHECK_PEER_NAME_ENABLED
    */
   public static SocketFactoryRegistryProvider getSocketFactoryRegistryProvider() {
     return socketFactoryRegistryProvider;
@@ -286,7 +286,7 @@ public class HttpClientUtil implements SolrHttpConstants {
       SSLConnectionSocketFactory sslConnectionSocketFactory = null;
       boolean sslCheckPeerName =
           toBooleanDefaultIfNull(
-              toBooleanObject(System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME)), true);
+              toBooleanObject(System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME_ENABLED)), true);
       if (sslCheckPeerName) {
         sslConnectionSocketFactory = SSLConnectionSocketFactory.getSystemSocketFactory();
       } else {
@@ -294,7 +294,7 @@ public class HttpClientUtil implements SolrHttpConstants {
             new SSLConnectionSocketFactory(
                 SSLContexts.createSystemDefault(), NoopHostnameVerifier.INSTANCE);
         log.debug(
-            "{} is false, hostname checks disabled.", HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
+            "{} is false, hostname checks disabled.", HttpClientUtil.SYS_PROP_CHECK_PEER_NAME_ENABLED);
       }
       builder.register("https", sslConnectionSocketFactory);
 

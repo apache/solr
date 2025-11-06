@@ -65,7 +65,7 @@
     <Set name="sendServerVersion"><Property name="solr.jetty.send.server.version" default="false" /></Set>
     <Set name="sendDateHeader"><Property name="solr.jetty.send.date.header" default="false" /></Set>
     <Set name="headerCacheSize"><Property name="solr.jetty.header.cache.size" default="512" /></Set>
-    <Set name="delayDispatchUntilContent"><Property name="solr.jetty.delayDispatchUntilContent" default="false"/></Set>
+    <Set name="delayDispatchUntilContent"><Property name="solr.jetty.delay.dispatch.until.content" default="false"/></Set>
     <Set name="relativeRedirectAllowed">true</Set><!-- can remove in Jetty 12, which has this default -->
     <!-- Uncomment to enable handling of X-Forwarded- style headers
     <Call name="addCustomizer">

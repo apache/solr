@@ -1109,7 +1109,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   /* package-private for testing */
   static SslContextFactory.Client getDefaultSslContextFactory() {
-    String checkPeerNameStr = System.getProperty(SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME);
+    String checkPeerNameStr = System.getProperty(SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME_ENABLED);
     boolean sslCheckPeerName = !"false".equalsIgnoreCase(checkPeerNameStr);
 
     SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(!sslCheckPeerName);

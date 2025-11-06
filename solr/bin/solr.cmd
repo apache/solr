@@ -109,7 +109,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"
     IF "%SOLR_SSL_RELOAD_ENABLED%"=="true" (
       IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
-        set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystoreParentPath=%SOLR_SSL_KEY_STORE%/.."
+        set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore.parent.path=%SOLR_SSL_KEY_STORE%/.."
       )
     )
   )
@@ -557,7 +557,7 @@ IF "%firstChar%"=="-" (
   goto invalid_cmd_line
 )
 
-set SOLR_HOST=%~2
+set SOLR_HOST_ADVERTISE=%~2
 set "PASS_TO_RUN_EXAMPLE=--host %~2 !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 SHIFT

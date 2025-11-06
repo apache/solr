@@ -45,6 +45,8 @@ The previous `SOLR_HOST` and 'host' are deprecated and now use `SOLR_HOST_ADVERT
 
 The previous `jetty.port` is deprecated and now use `solr.port.listen`.
 
+Many of the properties in the various `solr/server/etc/jetty-*.xml` files have been updated to be dot seperated names.
+
 
 === Solr CLI and Scripts
 
