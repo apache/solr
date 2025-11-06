@@ -33,6 +33,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -1120,9 +1121,9 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     Map<String, Object> response = new HashMap<>();
 
     DocCollection coll = zkStateReader().getCollection(mutableId);
-    if (!coll.getActiveSlices().isEmpty()) {
-      List<Slice> activeSlices = new ArrayList<>(coll.getActiveSlices());
-      String coreName = activeSlices.getFirst().getLeader().getCoreName();
+    Collection<Slice> activeSlices = coll.getActiveSlices();
+    if (!activeSlices.isEmpty()) {
+      String coreName = activeSlices.stream().findAny().orElseThrow().getLeader().getCoreName();
       response.put("core", coreName);
     }
 
