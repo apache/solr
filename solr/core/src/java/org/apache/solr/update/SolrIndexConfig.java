@@ -20,7 +20,7 @@ import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
+import java.lang.invoke.VarHandle;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
@@ -254,7 +254,7 @@ public class SolrIndexConfig implements MapSerializable {
 
     if (ramPerThreadHardLimitMB != -1) {
       if (ramPerThreadHardLimitMB > 2048) {
-        setPerThreadRAMLimitViaReflection(iwc, ramPerThreadHardLimitMB);
+        setPerThreadRAMLimitViaVarHandle(iwc, ramPerThreadHardLimitMB);
       } else {
         iwc.setRAMPerThreadHardLimitMB(ramPerThreadHardLimitMB);
       }
@@ -359,28 +359,31 @@ public class SolrIndexConfig implements MapSerializable {
   }
 
   @SuppressForbidden(reason = "Need to override Lucene's 2GB per-thread limit for large datasets")
-  private static void setPerThreadRAMLimitViaReflection(IndexWriterConfig config, int limitMB) {
+  private static void setPerThreadRAMLimitViaVarHandle(IndexWriterConfig config, int limitMB) {
+    MethodHandles.Lookup lookup = MethodHandles.lookup();
+    VarHandle fieldHandle = null;
+    Class<?> currentClass = config.getClass();
+
+    // Traverse the hierarchy to find the field
+    while (currentClass != null && fieldHandle == null) {
+      try {
+        MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(currentClass, lookup);
+        fieldHandle = privateLookup.findVarHandle(currentClass, "perThreadHardLimitMB", int.class);
+      } catch (IllegalAccessException | NoSuchFieldException e) {
+        currentClass = currentClass.getSuperclass();
+      }
+    }
+
+    if (fieldHandle == null) {
+      log.error("Could not find VarHandle for perThreadHardLimitMB field");
+      return;
+    }
+
     try {
-      Field field = null;
-      Class<?> currentClass = config.getClass();
-
-      while (currentClass != null && field == null) {
-        try {
-          field = currentClass.getDeclaredField("perThreadHardLimitMB");
-        } catch (NoSuchFieldException e) {
-          currentClass = currentClass.getSuperclass();
-        }
-      }
-
-      if (field != null) {
-        field.setAccessible(true);
-        field.setInt(config, limitMB);
-        log.info("Set perThreadHardLimitMB to {} MB via reflection", limitMB);
-      } else {
-        log.error("Could not find perThreadHardLimitMB field");
-      }
-    } catch (Exception e) {
-      log.error("Failed to set per-thread RAM limit via reflection", e);
+      fieldHandle.set(config, limitMB);
+      log.info("Set perThreadHardLimitMB to {} MB via VarHandle", limitMB);
+    } catch (RuntimeException | Error e) {
+      log.error("Failed to set per-thread RAM limit via VarHandle", e);
     }
   }
 }
