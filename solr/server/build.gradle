@@ -121,14 +121,13 @@ task assemblePackaging(type: Sync) {
     }
   })
 
-  // Add in the intersection of serverLib and solrCore
-  from(configurations.libExt + (configurations.serverLib - (configurations.serverLib - configurations.solrCore)), {
+  from(configurations.libExt) {
     into "lib/ext"
-  })
+  }
 
-  from(configurations.serverLib - configurations.libExt - configurations.solrCore, {
+  from(configurations.serverLib - configurations.libExt) {
     into "lib/"
-  })
+  }
 
   from { project.configurations.startJar.singleFile } {
     rename { file -> 'start.jar' }
