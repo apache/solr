@@ -96,7 +96,7 @@ Defines how merging segments is done.
 
 The default in Solr is to use `TieredMergePolicy`, which merges segments of approximately equal size, subject to an allowed number of segments per tier.
 
-Other policies available are the `LogByteSizeMergePolicy` and `LogDocMergePolicy`.
+Other policies available are the `LogByteSizeMergePolicy`, `LogDocMergePolicy` and `MergeOnFlushMergePolicy`.
 For more information on these policies, please see {lucene-javadocs}/core/org/apache/lucene/index/MergePolicy.html[the MergePolicy javadocs].
 
 [source,xml]
@@ -133,6 +133,9 @@ Choosing the best merge factors is generally a trade-off of indexing speed vs. s
 Having fewer segments in the index generally accelerates searches, because there are fewer places to look.
 It also can also result in fewer physical files on disk.
 But to keep the number of segments low, merges will occur more often, which can add load to the system and slow down updates to the index.
+
+`MergeOnFlushMergePolicy` allows users to ensure that all segments are larger than a specified `smallSegmentThresholdMB` option (default `100`).
+When using this merge policy, all segments smaller than the given threshold will be merged during a commit.
 
 Conversely, keeping more segments can accelerate indexing, because merges happen less often, making an update is less likely to trigger a merge.
 But searches become more computationally expensive and will likely be slower, because search terms must be looked up in more index segments.

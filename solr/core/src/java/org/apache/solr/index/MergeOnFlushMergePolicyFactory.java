@@ -18,36 +18,32 @@ package org.apache.solr.index;
 
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.sandbox.index.MergeOnFlushMergePolicy;
-import org.apache.lucene.search.Sort;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.SortSpecParsing;
-
-import static org.apache.solr.common.params.CommonParams.SORT;
 
 /** A {@link MergePolicyFactory} for {@code SortingMergePolicy} objects. */
 public class MergeOnFlushMergePolicyFactory extends WrapperMergePolicyFactory {
 
-  private static final String SSTB = "smallSegmentThresholdBytes";
+  private static final String SSTMB = "smallSegmentThresholdMB";
 
-  protected final Long smallSegmentThresholdBytes;
+  protected final Double smallSegmentThresholdMB;
 
   public MergeOnFlushMergePolicyFactory(
       SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(resourceLoader, args, schema);
-    final String smallSegmentThresholdBytesArg = (String) args.remove(SSTB);
-    if (smallSegmentThresholdBytesArg == null) {
-      this.smallSegmentThresholdBytes = null;
+    final String smallSegmentThresholdMBArg = (String) args.remove(SSTMB);
+    if (smallSegmentThresholdMBArg == null) {
+      this.smallSegmentThresholdMB = null;
     } else {
-      this.smallSegmentThresholdBytes = Long.parseLong(smallSegmentThresholdBytesArg);
+      this.smallSegmentThresholdMB = Double.parseDouble(smallSegmentThresholdMBArg);
     }
   }
 
   @Override
   protected MergePolicy getMergePolicyInstance(MergePolicy wrappedMP) {
     final MergeOnFlushMergePolicy mp = new MergeOnFlushMergePolicy(wrappedMP);
-    if (smallSegmentThresholdBytes != null) {
-      mp.setSmallSegmentThresholdMB(smallSegmentThresholdBytes);
+    if (smallSegmentThresholdMB != null) {
+      mp.setSmallSegmentThresholdMB(smallSegmentThresholdMB);
     }
     return mp;
   }
