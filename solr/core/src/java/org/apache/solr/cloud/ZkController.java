@@ -1194,8 +1194,7 @@ public class ZkController implements Closeable {
           (collectionState) -> {
             if (collectionState == null) return false;
             boolean allStatesCorrect =
-                Optional.ofNullable(collectionState.getReplicasOnNode(nodeName)).stream()
-                    .flatMap(List::stream)
+                collectionState.getReplicasOnNode(nodeName).stream()
                     .allMatch(replica -> replica.getState() == Replica.State.DOWN);
 
             if (allStatesCorrect
@@ -2080,7 +2079,6 @@ public class ZkController implements Closeable {
               TimeUnit.SECONDS,
               c ->
                   c != null
-                      && c.getReplicasOnNode(getNodeName()) != null
                       && c.getReplicasOnNode(getNodeName()).stream().anyMatch(replicaPredicate));
       // Read outside the predicate to avoid multiple potential writes
       String shardId =

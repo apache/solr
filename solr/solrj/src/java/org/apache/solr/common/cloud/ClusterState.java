@@ -176,7 +176,7 @@ public class ClusterState implements MapWriter {
         .forEach(
             col -> {
               List<Replica> replicas = col.getReplicasOnNode(nodeName);
-              if (replicas != null && !replicas.isEmpty()) {
+              if (!replicas.isEmpty()) {
                 replicaNamesPerCollectionOnNode.put(col.getName(), replicas);
               }
             });
