@@ -85,7 +85,8 @@ public class AttributedInstrumentFactory {
       return new DualRegistryAttributedLongCounter(
           primaryCounter, finalPrimaryAttrs, nodeCounter, finalNodeAttrs);
     } else {
-      LongCounter counter = primaryMetricsContext.longCounter(metricName, description);
+      String finalMetricName = primaryIsNodeRegistry ? toNodeMetricName(metricName) : metricName;
+      LongCounter counter = primaryMetricsContext.longCounter(finalMetricName, description);
       return new AttributedLongCounter(counter, finalPrimaryAttrs);
     }
   }
@@ -103,7 +104,9 @@ public class AttributedInstrumentFactory {
       return new DualRegistryAttributedLongUpDownCounter(
           primaryCounter, finalPrimaryAttrs, nodeCounter, finalNodeAttrs);
     } else {
-      LongUpDownCounter counter = primaryMetricsContext.longUpDownCounter(metricName, description);
+      String finalMetricName = primaryIsNodeRegistry ? toNodeMetricName(metricName) : metricName;
+      LongUpDownCounter counter =
+          primaryMetricsContext.longUpDownCounter(finalMetricName, description);
       return new AttributedLongUpDownCounter(counter, finalPrimaryAttrs);
     }
   }
@@ -120,9 +123,16 @@ public class AttributedInstrumentFactory {
       return new DualRegistryAttributedLongTimer(
           primaryHistogram, finalPrimaryAttrs, nodeHistogram, finalNodeAttrs);
     } else {
-      LongHistogram histogram = primaryMetricsContext.longHistogram(metricName, description, unit);
+      String finalMetricName = primaryIsNodeRegistry ? toNodeMetricName(metricName) : metricName;
+      LongHistogram histogram =
+          primaryMetricsContext.longHistogram(finalMetricName, description, unit);
       return new AttributedLongTimer(histogram, finalPrimaryAttrs);
     }
+  }
+
+  /** Replace core metric name prefix to node prefix */
+  private String toNodeMetricName(String coreMetricName) {
+    return coreMetricName.replace("solr_core", "solr_node");
   }
 
   /** Filter out core attributes and keep all others for node-level metrics */
