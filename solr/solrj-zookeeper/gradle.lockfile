@@ -136,7 +136,6 @@ org.eclipse.jetty.http2:jetty-http2-client:12.0.27=compileClasspath,jarValidatio
 org.eclipse.jetty.http2:jetty-http2-common:12.0.27=compileClasspath,jarValidation,permitTestUsedUndeclared,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.eclipse.jetty.http2:jetty-http2-hpack:12.0.27=compileClasspath,jarValidation,permitTestUsedUndeclared,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.eclipse.jetty.http2:jetty-http2-server:12.0.27=jarValidation,testRuntimeClasspath
-org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2=jarValidation,testRuntimeClasspath
 org.eclipse.jetty:jetty-alpn-client:12.0.27=compileClasspath,jarValidation,permitTestUsedUndeclared,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.eclipse.jetty:jetty-alpn-java-client:12.0.27=jarValidation,permitTestUsedUndeclared,runtimeClasspath,testRuntimeClasspath
 org.eclipse.jetty:jetty-alpn-java-server:12.0.27=jarValidation,testRuntimeClasspath
