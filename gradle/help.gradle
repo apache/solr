@@ -46,7 +46,7 @@ configure(rootProject) {
     doLast {
       println ""
       println "This is the Solr gradle build. See some guidelines, "
-      println "ant-equivalent commands, etc. under help/*; or type:"
+      println "ant-equivalent commands, etc. under dev-docs/gradle-help/*; or type:"
       println ""
       helpFiles.each { section, path, sectionInfo ->
         println String.format(Locale.ROOT,
