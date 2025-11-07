@@ -67,11 +67,11 @@ dependencies {
   implementation libs.jersey.core.common
   implementation libs.jersey.core.server
   implementation libs.hk2.api
+
   implementation libs.jakarta.inject.api
   implementation libs.jakarta.ws.rsapi
   implementation libs.jakarta.annotation.api
-
-  // Non-API below; although there are exceptions
+  implementation libs.jakarta.servlet.api
 
   runtimeOnly libs.apache.lucene.analysis.kuromoji
   runtimeOnly libs.apache.lucene.analysis.nori
@@ -116,7 +116,6 @@ dependencies {
   implementation libs.eclipse.jetty.client
   implementation libs.eclipse.jetty.http
   implementation libs.eclipse.jetty.io
-  implementation libs.eclipse.jetty.toolchain.servletapi
   implementation libs.eclipse.jetty.util
 
   // ZooKeeper
