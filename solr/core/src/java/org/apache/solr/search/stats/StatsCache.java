@@ -336,7 +336,7 @@ public abstract class StatsCache implements PluginInfoInitialized, SolrInfoBean 
             .build();
     this.toClose =
         solrMetricsContext.observableLongGauge(
-            "solr_searcher_termstats_cache",
+            "solr_core_indexsearcher_termstats_cache",
             "Operation counts for the searcher term statistics cache, reported per operation type",
             obs -> {
               var cacheMetrics = getCacheMetrics();
