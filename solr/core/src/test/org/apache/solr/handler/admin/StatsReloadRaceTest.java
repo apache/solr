@@ -144,7 +144,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
             var datapoint =
                 SolrMetricTestUtils.getGaugeDatapoint(
                     reader,
-                    "solr_searcher_index_version",
+                    "solr_core_indexsearcher_index_version",
                     SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                         .label("category", "SEARCHER")
                         .build());
