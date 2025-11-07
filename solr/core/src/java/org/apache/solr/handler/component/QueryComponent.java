@@ -837,7 +837,7 @@ public class QueryComponent extends SearchComponent {
       // if the client set shards.rows set this explicity
       shardRows = rb.shards_rows;
     } else {
-      shardRows =  rb.getSortSpec().getCount();
+      shardRows = rb.getSortSpec().getCount();
       if (shardRows > 0) {
         // If rows = -1 (grouped requests) or rows = 0, then there is no need to add the offset.
         shardRows += rb.getSortSpec().getOffset();
