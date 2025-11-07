@@ -435,7 +435,7 @@ public class Builders {
             if (initialSizeGBPerShard != null) {
               replicaMetricsBuilder.addMetric(
                   ReplicaMetricImpl.INDEX_SIZE_GB,
-                  initialSizeGBPerShard.get(shardNumber - 1) * ReplicaMetricImpl.GB);
+                  initialSizeGBPerShard.get(shardNumber - 1) * 1024); // GB to MB
             }
             if (leader == null && type != Replica.ReplicaType.PULL) {
               leader = replicaBuilder;
