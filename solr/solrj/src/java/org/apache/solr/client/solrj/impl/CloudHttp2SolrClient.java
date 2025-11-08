@@ -34,8 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This {@link CloudSolrClient} is a base implementation using a {@link HttpSolrClientBase}.
- * The '2' in the name has no differentiating significance anymore.
+ * This {@link CloudSolrClient} is a base implementation using a {@link HttpSolrClientBase}. The '2'
+ * in the name has no differentiating significance anymore.
  *
  * @since solr 8.0
  */
@@ -65,7 +65,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     } catch (Throwable t) {
       // Class not present or incompatible; leave ctor as null to indicate unavailability
       if (log.isTraceEnabled()) {
-        log.trace("Http2SolrClient$Builder not available on classpath; will use HttpJdkSolrClient", t);
+        log.trace(
+            "Http2SolrClient$Builder not available on classpath; will use HttpJdkSolrClient", t);
       }
     }
     HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR = ctor;

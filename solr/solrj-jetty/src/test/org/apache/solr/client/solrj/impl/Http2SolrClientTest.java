@@ -139,7 +139,8 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client = new Http2SolrClient.Builder(null).build()) {
       try {
         // if client base url is null, request url will be used in exception message
-        client.requestWithBaseUrlNl(getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CORE, new SolrPing());
+        client.requestWithBaseUrlNl(
+            getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CORE, new SolrPing());
 
         fail("Didn't get excepted exception from oversided request");
       } catch (SolrException e) {

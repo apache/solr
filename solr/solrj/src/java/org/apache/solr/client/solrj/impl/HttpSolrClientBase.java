@@ -350,9 +350,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
   /** Experimental; subject to change! */
   @Deprecated // for internal use; expected to change soon
   public abstract NamedList<Object> requestWithBaseUrlNl(
-      String baseUrl,
-      String collection,
-      SolrRequest<?> solrRequest)
+      String baseUrl, String collection, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException;
 
   /**

@@ -34,9 +34,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.MDC;
 
-/**
- * A {@link LBSolrClient} using Jetty {@code HttpClient}.
- */
+/** A {@link LBSolrClient} using Jetty {@code HttpClient}. */
 public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClient {
   // nocommit rename to LBJettySolrClient and ditch the parameterized type
 

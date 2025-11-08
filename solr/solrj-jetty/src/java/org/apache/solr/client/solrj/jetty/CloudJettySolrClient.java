@@ -23,8 +23,8 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 
 /**
- * A {@link org.apache.solr.client.solrj.impl.CloudSolrClient} using Jetty {@code HttpClient}
- * for HTTP communication.  This is Solr's most robust CloudSolrClient.
+ * A {@link org.apache.solr.client.solrj.impl.CloudSolrClient} using Jetty {@code HttpClient} for
+ * HTTP communication. This is Solr's most robust CloudSolrClient.
  */
 public class CloudJettySolrClient extends CloudHttp2SolrClient {
 
