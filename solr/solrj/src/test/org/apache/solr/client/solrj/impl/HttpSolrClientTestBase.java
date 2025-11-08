@@ -42,6 +42,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.ServletFixtures.DebugServlet;
+import org.apache.solr.client.solrj.impl.ServletFixtures.RedirectServlet;
+import org.apache.solr.client.solrj.impl.ServletFixtures.SlowServlet;
+import org.apache.solr.client.solrj.impl.ServletFixtures.SlowStreamServlet;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -74,15 +78,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig =
         JettyConfig.builder()
-            .withServlet(
-                new ServletHolder(ServletFixtures.RedirectServlet.class),
-                REDIRECT_SERVLET_REGEX)
-            .withServlet(
-                new ServletHolder(ServletFixtures.SlowServlet.class), SLOW_SERVLET_REGEX)
-            .withServlet(new ServletHolder(ServletFixtures.DebugServlet.class), DEBUG_SERVLET_REGEX)
-            .withServlet(
-                new ServletHolder(ServletFixtures.SlowStreamServlet.class),
-                SLOW_STREAM_SERVLET_REGEX)
+            .withServlet(new ServletHolder(RedirectServlet.class), REDIRECT_SERVLET_REGEX)
+            .withServlet(new ServletHolder(SlowServlet.class), SLOW_SERVLET_REGEX)
+            .withServlet(new ServletHolder(DebugServlet.class), DEBUG_SERVLET_REGEX)
+            .withServlet(new ServletHolder(SlowStreamServlet.class), SLOW_STREAM_SERVLET_REGEX)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
@@ -92,7 +91,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   public void tearDown() throws Exception {
     System.clearProperty("solr.security.auth.basicauth.credentials");
     System.clearProperty(HttpClientBuilderFactory.CLIENT_CUSTOMIZER_SYSPROP);
-    ServletFixtures.DebugServlet.clear();
+    DebugServlet.clear();
     super.tearDown();
   }
 
@@ -107,126 +106,126 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   public void testQueryGet() throws Exception {
     testQuerySetup(SolrRequest.METHOD.GET, null);
     // default method
-    assertEquals("get", ServletFixtures.DebugServlet.lastMethod);
+    assertEquals("get", DebugServlet.lastMethod);
     // agent
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     // default wt
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get(CommonParams.WT).length);
-    assertEquals("javabin", ServletFixtures.DebugServlet.parameters.get(CommonParams.WT)[0]);
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
+    assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
     // agent
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     // content-type
-    assertNull(ServletFixtures.DebugServlet.headers.get("content-type"));
+    assertNull(DebugServlet.headers.get("content-type"));
     // param encoding
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("a").length);
-    assertEquals(MUST_ENCODE, ServletFixtures.DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("a").length);
+    assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
     // case sensitive param
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("case_sensitive_param").length);
-    assertEquals("lowercase", ServletFixtures.DebugServlet.parameters.get("case_sensitive_param")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
-    assertEquals("uppercase", ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
   }
 
   public void testQueryPost() throws Exception {
     testQuerySetup(SolrRequest.METHOD.POST, null);
 
-    assertEquals("post", ServletFixtures.DebugServlet.lastMethod);
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get(CommonParams.WT).length);
-    assertEquals("javabin", ServletFixtures.DebugServlet.parameters.get(CommonParams.WT)[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("a").length);
-    assertEquals(MUST_ENCODE, ServletFixtures.DebugServlet.parameters.get("a")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("case_sensitive_param").length);
-    assertEquals("lowercase", ServletFixtures.DebugServlet.parameters.get("case_sensitive_param")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
-    assertEquals("uppercase", ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
-    assertEquals("application/x-www-form-urlencoded", ServletFixtures.DebugServlet.headers.get("content-type"));
+    assertEquals("post", DebugServlet.lastMethod);
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
+    assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
+    assertEquals(1, DebugServlet.parameters.get("a").length);
+    assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+    assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
     // this validates that URI encoding has been applied - the content-length is smaller if not
-    assertEquals("93", ServletFixtures.DebugServlet.headers.get("content-length"));
+    assertEquals("93", DebugServlet.headers.get("content-length"));
   }
 
   public void testQueryPut() throws Exception {
     testQuerySetup(SolrRequest.METHOD.PUT, null);
 
-    assertEquals("put", ServletFixtures.DebugServlet.lastMethod);
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get(CommonParams.WT).length);
-    assertEquals("javabin", ServletFixtures.DebugServlet.parameters.get(CommonParams.WT)[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("a").length);
-    assertEquals(MUST_ENCODE, ServletFixtures.DebugServlet.parameters.get("a")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("case_sensitive_param").length);
-    assertEquals("lowercase", ServletFixtures.DebugServlet.parameters.get("case_sensitive_param")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
-    assertEquals("uppercase", ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
-    assertEquals("application/x-www-form-urlencoded", ServletFixtures.DebugServlet.headers.get("content-type"));
-    assertEquals("93", ServletFixtures.DebugServlet.headers.get("content-length"));
+    assertEquals("put", DebugServlet.lastMethod);
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
+    assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
+    assertEquals(1, DebugServlet.parameters.get("a").length);
+    assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+    assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
+    assertEquals("93", DebugServlet.headers.get("content-length"));
   }
 
   public void testQueryXmlGet() throws Exception {
     testQuerySetup(SolrRequest.METHOD.GET, new XMLResponseParser());
 
-    assertEquals("get", ServletFixtures.DebugServlet.lastMethod);
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get(CommonParams.WT).length);
-    assertEquals("xml", ServletFixtures.DebugServlet.parameters.get(CommonParams.WT)[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("a").length);
-    assertEquals(MUST_ENCODE, ServletFixtures.DebugServlet.parameters.get("a")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("case_sensitive_param").length);
-    assertEquals("lowercase", ServletFixtures.DebugServlet.parameters.get("case_sensitive_param")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
-    assertEquals("uppercase", ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
+    assertEquals("get", DebugServlet.lastMethod);
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
+    assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
+    assertEquals(1, DebugServlet.parameters.get("a").length);
+    assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
   }
 
   public void testQueryXmlPost() throws Exception {
     testQuerySetup(SolrRequest.METHOD.POST, new XMLResponseParser());
 
-    assertEquals("post", ServletFixtures.DebugServlet.lastMethod);
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get(CommonParams.WT).length);
-    assertEquals("xml", ServletFixtures.DebugServlet.parameters.get(CommonParams.WT)[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("a").length);
-    assertEquals(MUST_ENCODE, ServletFixtures.DebugServlet.parameters.get("a")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("case_sensitive_param").length);
-    assertEquals("lowercase", ServletFixtures.DebugServlet.parameters.get("case_sensitive_param")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
-    assertEquals("uppercase", ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
-    assertEquals("application/x-www-form-urlencoded", ServletFixtures.DebugServlet.headers.get("content-type"));
+    assertEquals("post", DebugServlet.lastMethod);
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
+    assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
+    assertEquals(1, DebugServlet.parameters.get("a").length);
+    assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+    assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
   }
 
   public void testQueryXmlPut() throws Exception {
     testQuerySetup(SolrRequest.METHOD.PUT, new XMLResponseParser());
 
-    assertEquals("put", ServletFixtures.DebugServlet.lastMethod);
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get(CommonParams.WT).length);
-    assertEquals("xml", ServletFixtures.DebugServlet.parameters.get(CommonParams.WT)[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("a").length);
-    assertEquals(MUST_ENCODE, ServletFixtures.DebugServlet.parameters.get("a")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("case_sensitive_param").length);
-    assertEquals("lowercase", ServletFixtures.DebugServlet.parameters.get("case_sensitive_param")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
-    assertEquals("uppercase", ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
-    assertEquals("application/x-www-form-urlencoded", ServletFixtures.DebugServlet.headers.get("content-type"));
+    assertEquals("put", DebugServlet.lastMethod);
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
+    assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
+    assertEquals(1, DebugServlet.parameters.get("a").length);
+    assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+    assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
   }
 
   protected void validateDelete() {
     // default method
-    assertEquals("post", ServletFixtures.DebugServlet.lastMethod);
+    assertEquals("post", DebugServlet.lastMethod);
     // agent
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     // default wt
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get(CommonParams.WT).length);
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
     // agent
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
   }
 
   public void testGetById(HttpSolrClientBase client) throws Exception {
-    ServletFixtures.DebugServlet.clear();
+    DebugServlet.clear();
     Collection<String> ids = Collections.singletonList("a");
     try {
       client.getById("a");
@@ -262,7 +261,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         SolrException.ErrorCode.UNKNOWN,
         SolrException.ErrorCode.getErrorCode(status));
 
-    ServletFixtures.DebugServlet.setErrorCode(status);
+    DebugServlet.setErrorCode(status);
     try {
       SolrQuery q = new SolrQuery("foo");
       client.query(q, SolrRequest.METHOD.GET);
@@ -279,7 +278,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
   protected void testUpdate(HttpSolrClientBase client, WT wt, String contentType, String docIdValue)
       throws Exception {
-    ServletFixtures.DebugServlet.clear();
+    DebugServlet.clear();
     UpdateRequest req = new UpdateRequest();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", docIdValue);
@@ -295,24 +294,24 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     } catch (SolrClient.RemoteSolrException ignored) {
     }
 
-    assertEquals("post", ServletFixtures.DebugServlet.lastMethod);
-    assertEquals(expectedUserAgent(), ServletFixtures.DebugServlet.headers.get("user-agent"));
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get(CommonParams.WT).length);
+    assertEquals("post", DebugServlet.lastMethod);
+    assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
     assertEquals(
-        wt.toString().toLowerCase(Locale.ROOT), ServletFixtures.DebugServlet.parameters.get(CommonParams.WT)[0]);
-    assertEquals(contentType, ServletFixtures.DebugServlet.headers.get("content-type"));
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("a").length);
-    assertEquals(MUST_ENCODE, ServletFixtures.DebugServlet.parameters.get("a")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("case_sensitive_param").length);
-    assertEquals("lowercase", ServletFixtures.DebugServlet.parameters.get("case_sensitive_param")[0]);
-    assertEquals(1, ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
-    assertEquals("uppercase", ServletFixtures.DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
+        wt.toString().toLowerCase(Locale.ROOT), DebugServlet.parameters.get(CommonParams.WT)[0]);
+    assertEquals(contentType, DebugServlet.headers.get("content-type"));
+    assertEquals(1, DebugServlet.parameters.get("a").length);
+    assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
 
     if (wt == WT.XML) {
-      String requestBody = new String(ServletFixtures.DebugServlet.requestBody, StandardCharsets.UTF_8);
+      String requestBody = new String(DebugServlet.requestBody, StandardCharsets.UTF_8);
       assertTrue(requestBody, requestBody.contains("<field name=\"id\">" + docIdValue));
     } else if (wt == WT.JAVABIN) {
-      assertNotNull(ServletFixtures.DebugServlet.requestBody);
+      assertNotNull(DebugServlet.requestBody);
     }
   }
 
@@ -363,12 +362,12 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
                   || (request.getQueryParams() != null && request.getQueryParams().contains(name));
           assertEquals(
               shouldBeInQueryString,
-              ServletFixtures.DebugServlet.queryString.contains(
+              DebugServlet.queryString.contains(
                   name + "=" + URLEncoder.encode(value, StandardCharsets.UTF_8.name())));
           // in either case, it should be in the parameters
-          assertNotNull(ServletFixtures.DebugServlet.parameters.get(name));
-          assertEquals(1, ServletFixtures.DebugServlet.parameters.get(name).length);
-          assertEquals(value, ServletFixtures.DebugServlet.parameters.get(name)[0]);
+          assertNotNull(DebugServlet.parameters.get(name));
+          assertEquals(1, DebugServlet.parameters.get(name).length);
+          assertEquals(value, DebugServlet.parameters.get(name)[0]);
         }
       }
     }
@@ -384,7 +383,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
             .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
             .build()) {
       // test without request query params
-      ServletFixtures.DebugServlet.clear();
+      DebugServlet.clear();
       setReqParamsOf(req, "serverOnly", "notServer");
 
       try {
@@ -394,7 +393,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       verifyServletState(client, req);
 
       // test without server query params
-      ServletFixtures.DebugServlet.clear();
+      DebugServlet.clear();
     }
     try (HttpSolrClientBase client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
@@ -410,7 +409,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       verifyServletState(client, req);
 
       // test with both request and server query params
-      ServletFixtures.DebugServlet.clear();
+      DebugServlet.clear();
     }
     try (HttpSolrClientBase client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
@@ -431,7 +430,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
             .build()) {
 
       // test with both request and server query params with single stream
-      ServletFixtures.DebugServlet.clear();
+      DebugServlet.clear();
       req = new UpdateRequest();
       req.add(new SolrInputDocument());
       req.setQueryParams(Set.of("requestOnly", "both"));
@@ -449,7 +448,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   }
 
   protected void testGetRawStream(HttpSolrClientBase client) throws Exception {
-    ServletFixtures.DebugServlet.clear();
+    DebugServlet.clear();
     final var req = new QueryRequest(params("q", "*:*"));
     req.setResponseParser(new InputStreamResponseParser("xml"));
     final var rsp = req.process(client);
@@ -470,10 +469,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       // expected
     }
     unIgnoreException("Error from server");
-    assertTrue(ServletFixtures.DebugServlet.headers.size() > 0);
-    String authorizationHeader = ServletFixtures.DebugServlet.headers.get("authorization");
+    assertTrue(DebugServlet.headers.size() > 0);
+    String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNotNull(
-        "No authorization information in headers found. Headers: " + ServletFixtures.DebugServlet.headers,
+        "No authorization information in headers found. Headers: " + DebugServlet.headers,
         authorizationHeader);
     assertEquals(
         "Basic "
@@ -491,10 +490,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       // expected
     }
     unIgnoreException("Error from server");
-    assertTrue(ServletFixtures.DebugServlet.headers.size() > 0);
-    String authorizationHeader = ServletFixtures.DebugServlet.headers.get("authorization");
+    assertTrue(DebugServlet.headers.size() > 0);
+    String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNotNull(
-        "No authorization information in headers found. Headers: " + ServletFixtures.DebugServlet.headers,
+        "No authorization information in headers found. Headers: " + DebugServlet.headers,
         authorizationHeader);
     assertEquals(
         "Basic "
@@ -513,8 +512,8 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     }
     unIgnoreException("Error from server");
     assertFalse(
-        "Expecting no authorization header but got: " + ServletFixtures.DebugServlet.headers,
-        ServletFixtures.DebugServlet.headers.containsKey("authorization"));
+        "Expecting no authorization header but got: " + DebugServlet.headers,
+        DebugServlet.headers.containsKey("authorization"));
   }
 
   protected void testUseOptionalCredentials(HttpSolrClientBase client) {
@@ -526,10 +525,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       // expected
     }
     unIgnoreException("Error from server");
-    assertTrue(ServletFixtures.DebugServlet.headers.size() > 0);
-    String authorizationHeader = ServletFixtures.DebugServlet.headers.get("authorization");
+    assertTrue(DebugServlet.headers.size() > 0);
+    String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNotNull(
-        "No authorization information in headers found. Headers: " + ServletFixtures.DebugServlet.headers,
+        "No authorization information in headers found. Headers: " + DebugServlet.headers,
         authorizationHeader);
     assertEquals(
         "Basic "
@@ -547,10 +546,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       // expected
     }
     unIgnoreException("Error from server");
-    assertTrue(ServletFixtures.DebugServlet.headers.size() > 0);
-    String authorizationHeader = ServletFixtures.DebugServlet.headers.get("authorization");
+    assertTrue(DebugServlet.headers.size() > 0);
+    String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNull(
-        "No authorization headers expected. Headers: " + ServletFixtures.DebugServlet.headers, authorizationHeader);
+        "No authorization headers expected. Headers: " + DebugServlet.headers, authorizationHeader);
   }
 
   protected void testUpdateAsync() throws Exception {
@@ -598,15 +597,15 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   }
 
   protected void testQueryAsync(HttpSolrClientBuilderBase<?, ?> builder) throws Exception {
-    ServletFixtures.DebugServlet.clear();
-    ServletFixtures.DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
     int limit = 10;
 
     List<CompletableFuture<NamedList<Object>>> futures = new ArrayList<>();
 
     try (HttpSolrClientBase client = builder.build()) {
       for (int i = 0; i < limit; i++) {
-        ServletFixtures.DebugServlet.responseBodyByQueryFragment.put(
+        DebugServlet.responseBodyByQueryFragment.put(
             ("id=KEY-" + i),
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
                 + i
@@ -633,8 +632,8 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
   protected void testAsyncExceptionBase() throws Exception {
     ResponseParser rp = new XMLResponseParser();
-    ServletFixtures.DebugServlet.clear();
-    ServletFixtures.DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
