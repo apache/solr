@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 /**
  * A {@link org.apache.solr.client.solrj.impl.CloudSolrClient} using Jetty {@code HttpClient}
  * for HTTP communication.  This is Solr's most robust CloudSolrClient.
- * {@inheritDoc}
  */
 public class CloudJettySolrClient extends CloudHttp2SolrClient {
 

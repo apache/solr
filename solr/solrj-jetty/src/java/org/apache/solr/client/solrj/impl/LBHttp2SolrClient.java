@@ -36,7 +36,6 @@ import org.slf4j.MDC;
 
 /**
  * A {@link LBSolrClient} using Jetty {@code HttpClient}.
- * {@inheritDoc}
  */
 public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClient {
   // nocommit rename to LBJettySolrClient and ditch the parameterized type
