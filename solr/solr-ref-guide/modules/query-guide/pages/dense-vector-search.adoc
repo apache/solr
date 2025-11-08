@@ -103,6 +103,9 @@ the cosine similarity scores returned by Solr are normalized like this : `(1 + c
 [NOTE]
 the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
 
+[NOTE]
+The HNSW parameters `hnswM` and `hnswEfConstruction`, previously known as `hnswMaxConnections` and `hnswBeamWidth` respectively.
+
 To use the following advanced parameters that customise the codec format
 and the hyperparameter of the HNSW algorithm, make sure the xref:configuration-guide:codec-factory.adoc[Schema Codec Factory], is in use.
 
