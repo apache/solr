@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.apache.solr.client.solrj.HttpClientBuilderFactory;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.util.SolrBasicAuthentication;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -39,6 +41,7 @@ import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
  * scheme.
  */
 public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilderFactory {
+  // nocommit rename to PreemptiveBasicAuthClientCustomizer
   /**
    * A system property used to specify a properties file containing default parameters used for
    * creating an HTTP client. This is specifically useful for configuring the HTTP basic auth
@@ -66,15 +69,16 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
   }
 
   @Override
-  public void close() throws IOException {}
-
-  @Override
-  public void setup(Http2SolrClient client) {
+  public void setup(SolrClient client) {
+    if (client instanceof Http2SolrClient == false) {
+      return;
+    }
+    Http2SolrClient jettyClient = (Http2SolrClient) client;
     final String basicAuthUser =
         CREDENTIAL_RESOLVER.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_USER);
     final String basicAuthPass =
         CREDENTIAL_RESOLVER.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_PASS);
-    this.setup(client, basicAuthUser, basicAuthPass);
+    this.setup(jettyClient, basicAuthUser, basicAuthPass);
   }
 
   public void setup(Http2SolrClient client, String basicAuthUser, String basicAuthPass) {

@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.HttpClientBuilderFactory;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -490,7 +491,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     System.setProperty(
         PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo:bar");
     System.setProperty(
-        Http2SolrClient.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY,
+        HttpClientBuilderFactory.CLIENT_CUSTOMIZER_SYSPROP,
         PreemptiveBasicAuthClientBuilderFactory.class.getName());
     // Hack to ensure we get a new set of parameters for this test
     PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(
@@ -518,7 +519,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
           authorizationHeader);
     } finally {
       System.clearProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS);
-      System.clearProperty(Http2SolrClient.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+      System.clearProperty(HttpClientBuilderFactory.CLIENT_CUSTOMIZER_SYSPROP);
       PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(SolrParams.of());
     }
   }
@@ -595,7 +596,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testBadHttpFactory() {
-    System.setProperty(Http2SolrClient.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
+    System.setProperty(HttpClientBuilderFactory.CLIENT_CUSTOMIZER_SYSPROP, "FakeClassName");
     try {
       SolrClient client =
           new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)

@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.HttpClientBuilderFactory;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrClientFunction;
@@ -105,11 +106,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
   // nocommit rename to HttpJettySolrClient
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  /**
-   * A Java system property to select the {@linkplain HttpClientBuilderFactory} used for configuring
-   * HTTP based SolrClients.
-   */
-  public static final String SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY = "solr.httpclient.builder.factory"; // nocommit
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
   private static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
@@ -194,7 +190,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private void applyHttpClientBuilderFactory() {
     String factoryClassName =
-        System.getProperty(SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+        System.getProperty(HttpClientBuilderFactory.CLIENT_CUSTOMIZER_SYSPROP);
     if (factoryClassName != null) {
       log.debug("Using Http Builder Factory: {}", factoryClassName);
       HttpClientBuilderFactory factory;

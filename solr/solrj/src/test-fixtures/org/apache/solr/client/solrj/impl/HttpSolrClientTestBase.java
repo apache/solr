@@ -36,6 +36,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.HttpClientBuilderFactory;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -90,7 +91,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   @Override
   public void tearDown() throws Exception {
     System.clearProperty("solr.security.auth.basicauth.credentials");
-    System.clearProperty(Http2SolrClient.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+    System.clearProperty(HttpClientBuilderFactory.CLIENT_CUSTOMIZER_SYSPROP);
     ServletFixtures.DebugServlet.clear();
     super.tearDown();
   }
