@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: 'SolrJ: separated Jetty HttpClient using classes to a new solrj-jetty module,
+package org.apache.solr.solrj.jetty, and did some renames.'
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-17161
+    url: https://issues.apache.org/jira/browse/SOLR-17161
