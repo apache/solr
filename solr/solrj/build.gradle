@@ -148,6 +148,7 @@ def generatedFiles = files("${project.generatedCodeDir}/src/main/java") {
 /**
  * Setup Spotless (Code formatting) for the generated java files
  */
+// nocommit
 //def generatedExt = new JavaExtension(spotless)
 //project.spotlessJavaSetup.execute(generatedExt)
 //generatedExt.target(generatedFiles)
