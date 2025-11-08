@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove check for CHANGES txt edits
+type: removed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Vivek Narang
+links:
+  - name: SOLR-17986
+    url: https://issues.apache.org/jira/browse/SOLR-17986
