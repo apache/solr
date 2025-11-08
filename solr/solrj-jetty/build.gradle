@@ -35,7 +35,7 @@ dependencies {
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
-  testImplementation(testFixtures(project(":solr:solrj")))
+  testImplementation(project(path: ":solr:solrj", configuration: "tests"))
 
   testImplementation libs.apache.lucene.core
   testImplementation libs.apache.lucene.testframework

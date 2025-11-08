@@ -19,8 +19,9 @@ plugins {
   alias(libs.plugins.openapi.generator)
   alias(libs.plugins.diffplug.spotless)
   id 'java-library'
-  id 'java-test-fixtures'
 }
+
+import com.diffplug.gradle.spotless.JavaExtension
 
 description = 'Solrj - Solr Java Client'
 
@@ -41,7 +42,7 @@ dependencies {
   testImplementation libs.apache.httpcomponents.httpclient
   testImplementation libs.apache.httpcomponents.httpcore
 
-  testFixturesApi project(':solr:test-framework')
+  testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
 
   // ideally ZK centric tests move to solrj-zookeeper but sometimes we depend on ZK here anyway
@@ -53,25 +54,24 @@ dependencies {
   testImplementation libs.apache.zookeeper.jute
 
   testImplementation libs.apache.lucene.core
-  testFixturesApi libs.apache.lucene.testframework
+  testImplementation libs.apache.lucene.testframework
 
-  testFixturesApi libs.carrotsearch.randomizedtesting.runner
-  testFixturesApi libs.junit.junit
-  testFixturesApi libs.hamcrest.hamcrest
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
+  testImplementation libs.hamcrest.hamcrest
 
   testImplementation libs.commonsio.commonsio
   testImplementation libs.fasterxml.jackson.dataformat.cbor
 
-  testFixturesApi libs.jakarta.servlet.api
+  testImplementation libs.jakarta.servlet.api
 
-  testFixturesApi libs.eclipse.jetty.server
-  testFixturesApi libs.eclipse.jetty.ee10.servlet
-  testFixturesApi libs.eclipse.jetty.ee10.webapp
-  testFixturesRuntimeOnly(libs.eclipse.jetty.alpnjavaserver, {
+  testImplementation libs.eclipse.jetty.server
+  testImplementation libs.eclipse.jetty.ee10.servlet
+  testImplementation libs.eclipse.jetty.ee10.webapp
+  testRuntimeOnly(libs.eclipse.jetty.alpnjavaserver, {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
-  //testFixturesApi libs.eclipse.jetty.session
-
+  testImplementation libs.eclipse.jetty.session
   testImplementation(libs.mockito.core, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
@@ -82,20 +82,6 @@ dependencies {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
   testImplementation libs.fasterxml.jackson.core.core
-}
-
-sourceSets {
-  testFixtures {
-    java {
-      srcDir 'src/test-fixtures'
-    }
-  }
-}
-
-compileTestFixturesJava {
-  sourceCompatibility = compileTestJava.sourceCompatibility
-  targetCompatibility = compileTestJava.targetCompatibility
-  options.compilerArgs += ["--release", targetCompatibility]
 }
 
 /**
@@ -148,15 +134,14 @@ def generatedFiles = files("${project.generatedCodeDir}/src/main/java") {
 /**
  * Setup Spotless (Code formatting) for the generated java files
  */
-// nocommit
-//def generatedExt = new JavaExtension(spotless)
-//project.spotlessJavaSetup.execute(generatedExt)
-//generatedExt.target(generatedFiles)
-//def generatedSpotlessTask = generatedExt.createIndependentApplyTask("generatedSpotless")
-//generatedSpotlessTask.group("build")
-//generatedSpotlessTask.description("Apply formatting for generated code")
-//
-//tasks.openApiGenerate.finalizedBy generatedSpotlessTask
+def generatedExt = new JavaExtension(spotless)
+project.spotlessJavaSetup.execute(generatedExt)
+generatedExt.target(generatedFiles)
+def generatedSpotlessTask = generatedExt.createIndependentApplyTask("generatedSpotless")
+generatedSpotlessTask.group("build")
+generatedSpotlessTask.description("Apply formatting for generated code")
+
+tasks.openApiGenerate.finalizedBy generatedSpotlessTask
 
 /**
  * Add the Generated code to the SolrJ Source paths
@@ -168,4 +153,30 @@ sourceSets {
       srcDir generatedFiles
     }
   }
+}
+
+
+// Expose SolrJ tests as a consumable configuration (without using java-test-fixtures)
+configurations {
+  tests {
+    canBeConsumed = true
+    canBeResolved = false
+    extendsFrom testImplementation, testRuntimeOnly
+    attributes {
+      attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, Category.LIBRARY))
+      attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+      attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling, Bundling.EXTERNAL))
+      attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+      attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, JavaVersion.current().majorVersion.toInteger())
+    }
+  }
+}
+
+tasks.register('testJar', Jar) {
+  archiveClassifier = 'tests'
+  from sourceSets.test.output
+}
+
+artifacts {
+  tests tasks.named('testJar')
 }
