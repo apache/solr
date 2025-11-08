@@ -43,12 +43,6 @@ public interface SolrHttpConstants {
   String PROP_MAX_CONNECTIONS = "maxConnections";
 
   /**
-   * A Java system property to select the {@linkplain HttpClientBuilderFactory} used for configuring
-   * HTTP based SolrClients.
-   */
-  String SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY = "solr.httpclient.builder.factory";
-
-  /**
    * System property consulted to determine if HTTP based SolrClients will require hostname
    * validation of SSL Certificates. The default behavior is to enforce peer name validation.
    */

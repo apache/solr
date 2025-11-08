@@ -21,6 +21,7 @@ description = 'Solrj-Streaming - SolrJ requiring Streaming Expressions'
 
 dependencies {
   implementation project(':solr:solrj')
+  implementation project(':solr:solrj-jetty') // unfortunate
 
   // declare dependencies we use even though already declared by solrj-core
   implementation libs.slf4j.api

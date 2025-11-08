@@ -100,21 +100,21 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testDelete() throws Exception {
-    DebugServlet.clear();
+    ServletFixtures.DebugServlet.clear();
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     try (HttpJdkSolrClient client = builder(url).build()) {
       try {
         client.deleteById("id");
       } catch (SolrClient.RemoteSolrException ignored) {
       }
-      assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
+      assertEquals("javabin", ServletFixtures.DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
     }
   }
 
   @Test
   public void testDeleteXml() throws Exception {
-    DebugServlet.clear();
+    ServletFixtures.DebugServlet.clear();
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     try (HttpJdkSolrClient client =
         builder(url).withResponseParser(new XMLResponseParser()).build()) {
@@ -122,21 +122,21 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
         client.deleteByQuery("*:*");
       } catch (SolrClient.RemoteSolrException ignored) {
       }
-      assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
+      assertEquals("xml", ServletFixtures.DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
     }
   }
 
   @Override
   protected void testQuerySetup(SolrRequest.METHOD method, ResponseParser rp) throws Exception {
-    DebugServlet.clear();
+    ServletFixtures.DebugServlet.clear();
     if (rp instanceof XMLResponseParser) {
-      DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-      DebugServlet.responseBodyByQueryFragment.put(
+      ServletFixtures.DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
+      ServletFixtures.DebugServlet.responseBodyByQueryFragment.put(
           "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
     } else {
-      DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
-      DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
+      ServletFixtures.DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
+      ServletFixtures.DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
     }
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
@@ -150,15 +150,15 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client = b.build()) {
       client.query(q, method);
       assertEquals(
-          client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
+          client.getParser().getWriterType(), ServletFixtures.DebugServlet.parameters.get(CommonParams.WT)[0]);
     }
   }
 
   @Test
   public void testRequestWithBaseUrl() throws Exception {
-    DebugServlet.clear();
-    DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
-    DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
+    ServletFixtures.DebugServlet.clear();
+    ServletFixtures.DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
+    ServletFixtures.DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
     String someOtherUrl = getBaseUrl() + "/some/other/base/url";
     String intendedUrl = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
@@ -167,15 +167,15 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     HttpJdkSolrClient.Builder b =
         builder(someOtherUrl).withResponseParser(new JavaBinResponseParser());
     try (HttpJdkSolrClient client = b.build()) {
-      client.requestWithBaseUrl(intendedUrl, new QueryRequest(q, SolrRequest.METHOD.GET), null);
+      client.requestWithBaseUrlNl(intendedUrl, null, new QueryRequest(q, SolrRequest.METHOD.GET));
       assertEquals(
-          client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
+          client.getParser().getWriterType(), ServletFixtures.DebugServlet.parameters.get(CommonParams.WT)[0]);
     }
   }
 
   @Test
   public void testGetById() throws Exception {
-    DebugServlet.clear();
+    ServletFixtures.DebugServlet.clear();
     try (HttpJdkSolrClient client = builder(getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
       super.testGetById(client);
     }
@@ -289,7 +289,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client = builder(getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
       super.testSolrExceptionCodeNotFromSolr(client);
     } finally {
-      DebugServlet.clear();
+      ServletFixtures.DebugServlet.clear();
     }
   }
 
@@ -500,15 +500,15 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testMaybeTryHeadRequestHasContentType() throws Exception {
-    DebugServlet.clear();
+    ServletFixtures.DebugServlet.clear();
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     try (HttpJdkSolrClient client = builder(url).build()) {
       assertTrue(client.maybeTryHeadRequest(url));
 
       // if https, the client won't attempt a HEAD request
       if (!client.headSucceededByBaseUri.isEmpty()) {
-        assertEquals("head", DebugServlet.lastMethod);
-        assertTrue(DebugServlet.headers.containsKey("content-type"));
+        assertEquals("head", ServletFixtures.DebugServlet.lastMethod);
+        assertTrue(ServletFixtures.DebugServlet.headers.containsKey("content-type"));
       }
     }
   }

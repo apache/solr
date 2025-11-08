@@ -84,9 +84,9 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
@@ -2529,18 +2529,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * A variant of {@link org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} that will
    * randomize some internal settings.
    */
-  public static class RandomizingCloudHttp2SolrClientBuilder extends CloudHttp2SolrClient.Builder {
-
-    public RandomizingCloudHttp2SolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
-      super(zkHosts, zkChroot);
-      randomizeCloudSolrClient();
-    }
-
-    public RandomizingCloudHttp2SolrClientBuilder(ClusterStateProvider stateProvider) {
-      super(new ArrayList<>());
-      this.stateProvider = stateProvider;
-      randomizeCloudSolrClient();
-    }
+  public static class RandomizingCloudHttp2SolrClientBuilder extends CloudJettySolrClient.Builder {
 
     public RandomizingCloudHttp2SolrClientBuilder(MiniSolrCloudCluster cluster) {
       super(new ArrayList<>());

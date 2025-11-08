@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.ServletFixtures.DebugServlet;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.common.SolrException;
@@ -137,7 +138,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client = new Http2SolrClient.Builder(null).build()) {
       try {
         // if client base url is null, request url will be used in exception message
-        client.requestWithBaseUrl(getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CORE, new SolrPing());
+        client.requestWithBaseUrlNl(getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CORE, new SolrPing());
 
         fail("Didn't get excepted exception from oversided request");
       } catch (SolrException e) {
@@ -230,7 +231,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(defaultUrl).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
-        client.requestWithBaseUrl(urlToUse, null, new QueryRequest(queryParams));
+        client.requestWithBaseUrlNl(urlToUse, null, new QueryRequest(queryParams));
       } catch (SolrClient.RemoteSolrException rse) {
       }
 
@@ -489,7 +490,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     System.setProperty(
         PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo:bar");
     System.setProperty(
-        SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY,
+        Http2SolrClient.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY,
         PreemptiveBasicAuthClientBuilderFactory.class.getName());
     // Hack to ensure we get a new set of parameters for this test
     PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(
@@ -517,7 +518,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
           authorizationHeader);
     } finally {
       System.clearProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS);
-      System.clearProperty(SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+      System.clearProperty(Http2SolrClient.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
       PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(SolrParams.of());
     }
   }
@@ -594,7 +595,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testBadHttpFactory() {
-    System.setProperty(SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
+    System.setProperty(Http2SolrClient.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
     try {
       SolrClient client =
           new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
@@ -675,7 +676,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
       // too little time to succeed
       int packets = LuceneTestCase.RANDOM_MULTIPLIER == 1 ? 10 : 80; // 60 crosses a default timeout
-      long timeToSendMs = (long) packets * BasicHttpSolrClientTest.SlowStreamServlet.PACKET_MS;
+      long timeToSendMs = (long) packets * ServletFixtures.SlowStreamServlet.PACKET_MS;
       QueryRequest req = new QueryRequest(SolrParams.of("count", "" + packets));
       req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
       assertIsTimeout(expectThrows(SolrServerException.class, () -> oldClient.request(req)));

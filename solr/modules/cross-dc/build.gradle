@@ -31,6 +31,7 @@ dependencies {
   implementation platform(project(':platform'))
   api project(':solr:core')
   implementation project(':solr:solrj')
+  implementation project(':solr:solrj-jetty')
   implementation project(':solr:solrj-zookeeper')
 
   implementation libs.slf4j.api

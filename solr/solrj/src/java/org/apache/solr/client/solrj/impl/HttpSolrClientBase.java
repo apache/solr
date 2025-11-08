@@ -48,6 +48,10 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 
+/**
+ * Utility/base functionality for direct HTTP client implementations. The abstraction is internal
+ * and subject to change.
+ */
 public abstract class HttpSolrClientBase extends SolrClient {
 
   protected static final String DEFAULT_PATH = ClientUtils.DEFAULT_PATH;
@@ -100,6 +104,9 @@ public abstract class HttpSolrClientBase extends SolrClient {
   }
 
   public abstract HttpSolrClientBuilderBase<?, ?> builder();
+
+  // very experimental
+  protected abstract LBSolrClient getLBSolrClient();
 
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
@@ -339,6 +346,14 @@ public abstract class HttpSolrClientBase extends SolrClient {
   }
 
   protected abstract void updateDefaultMimeTypeForParser();
+
+  /** Experimental; subject to change! */
+  @Deprecated // for internal use; expected to change soon
+  public abstract NamedList<Object> requestWithBaseUrlNl(
+      String baseUrl,
+      String collection,
+      SolrRequest<?> solrRequest)
+      throws SolrServerException, IOException;
 
   /**
    * Execute an asynchronous request against a Solr server for a given collection.

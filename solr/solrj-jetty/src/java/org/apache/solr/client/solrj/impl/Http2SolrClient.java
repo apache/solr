@@ -102,7 +102,14 @@ import org.slf4j.MDC;
  * HttpJettySolrClient}.
  */
 public class Http2SolrClient extends HttpSolrClientBase {
+  // nocommit rename to HttpJettySolrClient
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  /**
+   * A Java system property to select the {@linkplain HttpClientBuilderFactory} used for configuring
+   * HTTP based SolrClients.
+   */
+  public static final String SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY = "solr.httpclient.builder.factory"; // nocommit
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
   private static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
@@ -187,7 +194,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private void applyHttpClientBuilderFactory() {
     String factoryClassName =
-        System.getProperty(SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+        System.getProperty(SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
     if (factoryClassName != null) {
       log.debug("Using Http Builder Factory: {}", factoryClassName);
       HttpClientBuilderFactory factory;
@@ -626,6 +633,13 @@ public class Http2SolrClient extends HttpSolrClientBase {
     return requestWithBaseUrl(baseUrl, (c) -> req.process(c, collection));
   }
 
+  @Override
+  public NamedList<Object> requestWithBaseUrlNl(
+      String baseUrl, String collection, SolrRequest<?> solrRequest)
+      throws SolrServerException, IOException {
+    return requestWithBaseUrl(baseUrl, (c) -> c.request(solrRequest, collection));
+  }
+
   /**
    * Temporarily modifies the client to use a different base URL and runs the provided lambda
    *
@@ -643,6 +657,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
     try (final var derivedClient = new NoCloseHttp2SolrClient(baseUrl, this)) {
       return clientFunction.apply(derivedClient);
     }
+  }
+
+  @Override
+  protected LBSolrClient getLBSolrClient() {
+    return new LBHttp2SolrClient.Builder<>(this).build();
   }
 
   @Override

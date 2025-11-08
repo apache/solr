@@ -49,6 +49,7 @@ import org.slf4j.MDC;
 
 /** A Solr client using {@link Http2SolrClient} to send concurrent updates to Solr. */
 public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
+  // nocommit rename to ConcurrentUpdateJettySolrClient
   private static final long serialVersionUID = 1L;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Update END_UPDATE = new Update(null, null);

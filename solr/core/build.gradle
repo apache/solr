@@ -50,6 +50,7 @@ dependencies {
   api project(':solr:solrj')
   api project(':solr:solrj-zookeeper')
   api project(':solr:solrj-streaming')
+  implementation project(":solr:solrj-jetty")
 
   implementation libs.dropwizard.metrics.core
 

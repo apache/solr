@@ -61,6 +61,64 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+/**
+ * This "LoadBalanced Http Solr Client" is a load balancing wrapper around a Http Solr Client. This
+ * is useful when you have multiple Solr endpoints and requests need to be Load Balanced among them.
+ *
+ * <p>Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be
+ * sent to the correct leader; no inter-node routing is done.
+ *
+ * <p>In SolrCloud (leader/replica) scenarios, it is usually better to use {@link CloudSolrClient},
+ * but this class may be used for updates because the server will forward them to the appropriate
+ * leader.
+ *
+ * <p>It offers automatic failover when a server goes down, and it detects when the server comes
+ * back up.
+ *
+ * <p>Load balancing is done using a simple round-robin on the list of endpoints. Endpoint URLs are
+ * expected to point to the Solr "root" path (i.e. "/solr").
+ *
+ * <blockquote>
+ *
+ * <pre>
+ * SolrClient client = new LBHttp2SolrClient.Builder(http2SolrClient,
+ *         new LBSolrClient.Endpoint("http://host1:8080/solr"), new LBSolrClient.Endpoint("http://host2:8080/solr"))
+ *     .build();
+ * </pre>
+ *
+ * </blockquote>
+ *
+ * Users who wish to balance traffic across a specific set of replicas or cores may specify each
+ * endpoint as a root-URL and core-name pair. For example:
+ *
+ * <blockquote>
+ *
+ * <pre>
+ * SolrClient client = new LBHttp2SolrClient.Builder(http2SolrClient,
+ *         new LBSolrClient.Endpoint("http://host1:8080/solr", "coreA"),
+ *         new LBSolrClient.Endpoint("http://host2:8080/solr", "coreB"))
+ *     .build();
+ * </pre>
+ *
+ * </blockquote>
+ *
+ * <p>If a request to an endpoint fails by an IOException due to a connection timeout or read
+ * timeout then the host is taken off the list of live endpoints and moved to a 'dead endpoint list'
+ * and the request is resent to the next live endpoint. This process is continued till it tries all
+ * the live endpoints. If at least one endpoint is alive, the request succeeds, and if not it fails.
+ *
+ * <p>Dead endpoints are periodically healthchecked on a fixed interval controlled by {@code
+ * LBHttp2SolrClient.Builder#setAliveCheckInterval(int, TimeUnit)}. The default is set to one
+ * minute.
+ *
+ * <p><b>When to use this?</b><br>
+ * This can be used as a software load balancer when you do not wish to set up an external load
+ * balancer. Alternatives to this code are to use a dedicated hardware load balancer or using Apache
+ * httpd with mod_proxy_balancer as a load balancer. See <a
+ * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>
+ *
+ * @since solr 8.0
+ */
 public abstract class LBSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -506,10 +564,8 @@ public abstract class LBSolrClient extends SolrClient {
     // Some implementations of LBSolrClient.getClient(...) return a Http2SolrClient that may not be
     // pointed at the desired URL (or any URL for that matter).  We special case that here to ensure
     // the appropriate URL is provided.
-    if (solrClient instanceof Http2SolrClient httpSolrClient) {
-      return httpSolrClient.requestWithBaseUrl(baseUrl, (c) -> c.request(solrRequest, collection));
-    } else if (solrClient instanceof HttpJdkSolrClient) {
-      return ((HttpJdkSolrClient) solrClient).requestWithBaseUrl(baseUrl, solrRequest, collection);
+    if (solrClient instanceof HttpSolrClientBase hasReqWithUrl) {
+      return hasReqWithUrl.requestWithBaseUrlNl(baseUrl, collection, solrRequest);
     }
 
     // Assume provided client already uses 'baseUrl'

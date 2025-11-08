@@ -120,7 +120,7 @@ public abstract class HttpSolrClientBuilderBase<
       }
     }
     this.basicAuthAuthorizationStr =
-        Http2SolrClient.basicAuthCredentialsToAuthorizationString(user, pass);
+        HttpSolrClientBase.basicAuthCredentialsToAuthorizationString(user, pass);
     return (B) this;
   }
 

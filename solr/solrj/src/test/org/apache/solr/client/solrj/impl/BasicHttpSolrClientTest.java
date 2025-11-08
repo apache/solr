@@ -16,26 +16,17 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
@@ -64,6 +55,10 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.apache.SolrPortAwareCookieSpecFactory;
+import org.apache.solr.client.solrj.impl.ServletFixtures.DebugServlet;
+import org.apache.solr.client.solrj.impl.ServletFixtures.RedirectServlet;
+import org.apache.solr.client.solrj.impl.ServletFixtures.SlowServlet;
+import org.apache.solr.client.solrj.impl.ServletFixtures.SlowStreamServlet;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -73,7 +68,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
@@ -85,141 +79,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String UA_VERSION = SolrVersion.LATEST_STRING;
-
-  public static class RedirectServlet extends HttpServlet {
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
-      resp.sendRedirect("/solr/collection1/select?" + req.getQueryString());
-    }
-  }
-
-  public static class SlowServlet extends HttpServlet {
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
-      try {
-        Thread.sleep(5000);
-      } catch (InterruptedException ignored) {
-      }
-    }
-  }
-
-  public static class SlowStreamServlet extends HttpServlet {
-
-    public static final int PACKET_MS = 500;
-
-    @Override
-    @SuppressForbidden(reason = "don't forbid in tests")
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-      String countStr = req.getParameter("count");
-      IntStream.range(0, countStr == null ? 10 : Integer.parseInt(countStr))
-          .forEach(
-              i -> {
-                try {
-                  Thread.sleep(PACKET_MS);
-                  resp.getOutputStream().write(String.valueOf(i).getBytes(StandardCharsets.UTF_8));
-                  resp.getOutputStream().flush();
-                } catch (IOException | InterruptedException e) {
-                  throw new RuntimeException(e);
-                }
-              });
-    }
-  }
-
-  public static class DebugServlet extends HttpServlet {
-    public static void clear() {
-      lastMethod = null;
-      headers = null;
-      parameters = null;
-      errorCode = null;
-      queryString = null;
-      cookies = null;
-    }
-
-    public static Integer errorCode = null;
-    public static String lastMethod = null;
-    public static HashMap<String, String> headers = null;
-    public static Map<String, String[]> parameters = null;
-    public static String queryString = null;
-    public static jakarta.servlet.http.Cookie[] cookies = null;
-
-    public static void setErrorCode(Integer code) {
-      errorCode = code;
-    }
-
-    @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
-      lastMethod = "delete";
-      recordRequest(req, resp);
-    }
-
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
-      lastMethod = "get";
-      recordRequest(req, resp);
-    }
-
-    @Override
-    protected void doHead(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
-      lastMethod = "head";
-      recordRequest(req, resp);
-    }
-
-    private void setHeaders(HttpServletRequest req) {
-      Enumeration<String> headerNames = req.getHeaderNames();
-      headers = new HashMap<>();
-      while (headerNames.hasMoreElements()) {
-        final String name = headerNames.nextElement();
-        headers.put(name, req.getHeader(name));
-      }
-    }
-
-    @SuppressForbidden(reason = "fake servlet only")
-    private void setParameters(HttpServletRequest req) {
-      parameters = req.getParameterMap();
-    }
-
-    private void setQueryString(HttpServletRequest req) {
-      queryString = req.getQueryString();
-    }
-
-    private void setCookies(HttpServletRequest req) {
-      jakarta.servlet.http.Cookie[] ck = req.getCookies();
-      cookies = req.getCookies();
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
-      lastMethod = "post";
-      recordRequest(req, resp);
-    }
-
-    @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
-      lastMethod = "put";
-      recordRequest(req, resp);
-    }
-
-    private void recordRequest(HttpServletRequest req, HttpServletResponse resp) {
-      setHeaders(req);
-      setParameters(req);
-      setQueryString(req);
-      setCookies(req);
-      if (null != errorCode) {
-        try {
-          resp.sendError(errorCode);
-        } catch (IOException e) {
-          throw new RuntimeException("sendError IO fail in DebugServlet", e);
-        }
-      }
-    }
-  }
 
   @BeforeClass
   public static void beforeTest() throws Exception {

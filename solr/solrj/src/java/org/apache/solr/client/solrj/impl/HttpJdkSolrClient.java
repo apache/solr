@@ -35,6 +35,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -50,6 +51,7 @@ import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -165,8 +167,9 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
   }
 
-  protected NamedList<Object> requestWithBaseUrl(
-      String baseUrl, SolrRequest<?> solrRequest, String collection)
+  @Override
+  public NamedList<Object> requestWithBaseUrlNl(
+      String baseUrl, String collection, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException {
     PreparedRequest pReq = prepareRequest(solrRequest, collection, baseUrl);
     HttpResponse<InputStream> response = null;
@@ -203,7 +206,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   @Override
   public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
-    return requestWithBaseUrl(null, solrRequest, collection);
+    return requestWithBaseUrlNl(null, collection, solrRequest);
   }
 
   protected PreparedRequest prepareRequest(
@@ -551,6 +554,27 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   @Override
   public HttpSolrClientBuilderBase<?, ?> builder() {
     return new HttpJdkSolrClient.Builder().withHttpClient(this);
+  }
+
+  @Override
+  protected LBSolrClient getLBSolrClient() {
+    return new LBSolrClient(List.of()) {
+
+      @Override
+      protected SolrClient getClient(Endpoint endpoint) {
+        return HttpJdkSolrClient.this;
+      }
+
+      @Override
+      public ResponseParser getParser() {
+        return HttpJdkSolrClient.this.getParser();
+      }
+
+      @Override
+      public RequestWriter getRequestWriter() {
+        return HttpJdkSolrClient.this.getRequestWriter();
+      }
+    };
   }
 
   public static class Builder
