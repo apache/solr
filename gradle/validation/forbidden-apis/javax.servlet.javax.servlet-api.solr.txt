@@ -15,17 +15,17 @@
 
 @defaultMessage Servlet API method is parsing request parameters without using the correct encoding if no extra configuration is given in the servlet container
 
-javax.servlet.ServletRequest#getParameter(**) 
-javax.servlet.ServletRequest#getParameterMap(**) 
-javax.servlet.ServletRequest#getParameterNames(**) 
-javax.servlet.ServletRequest#getParameterValues(**) 
+jakarta.servlet.ServletRequest#getParameter(**)
+jakarta.servlet.ServletRequest#getParameterMap(**)
+jakarta.servlet.ServletRequest#getParameterNames(**)
+jakarta.servlet.ServletRequest#getParameterValues(**)
 
-javax.servlet.http.HttpServletRequest#getSession() @ Servlet API getter has side effect of creating sessions
+jakarta.servlet.http.HttpServletRequest#getSession() @ Servlet API getter has side effect of creating sessions
 
 @defaultMessage Servlet API method is broken and slow in some environments (e.g., Jetty's UTF-8 readers)
 
-javax.servlet.ServletRequest#getReader()
-javax.servlet.ServletResponse#getWriter()
-javax.servlet.ServletInputStream#readLine(**) 
-javax.servlet.ServletOutputStream#print(**)
-javax.servlet.ServletOutputStream#println(**)
+jakarta.servlet.ServletRequest#getReader()
+jakarta.servlet.ServletResponse#getWriter()
+jakarta.servlet.ServletInputStream#readLine(**)
+jakarta.servlet.ServletOutputStream#print(**)
+jakarta.servlet.ServletOutputStream#println(**)
