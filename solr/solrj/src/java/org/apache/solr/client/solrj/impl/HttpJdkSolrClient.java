@@ -557,7 +557,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   }
 
   @Override
-  protected LBSolrClient getLBSolrClient() {
+  protected LBSolrClient createLBSolrClient() {
     return new LBSolrClient(List.of()) {
 
       @Override

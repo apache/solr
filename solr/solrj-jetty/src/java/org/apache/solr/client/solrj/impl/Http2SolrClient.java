@@ -656,7 +656,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
   }
 
   @Override
-  protected LBSolrClient getLBSolrClient() {
+  protected LBSolrClient createLBSolrClient() {
     return new LBHttp2SolrClient.Builder<>(this).build();
   }
 

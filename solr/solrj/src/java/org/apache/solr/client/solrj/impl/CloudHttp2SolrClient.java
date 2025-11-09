@@ -476,7 +476,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     protected LBSolrClient createOrGetLbClient(HttpSolrClientBase myClient) {
-      return myClient.getLBSolrClient();
+      return myClient.createLBSolrClient();
     }
   }
 }

@@ -106,7 +106,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
   public abstract HttpSolrClientBuilderBase<?, ?> builder();
 
   // very experimental
-  protected abstract LBSolrClient getLBSolrClient();
+  protected abstract LBSolrClient createLBSolrClient();
 
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
