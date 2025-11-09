@@ -122,11 +122,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
     if (httpBasedCloudSolrClient != null) {
-      try {
-        httpBasedCloudSolrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      httpBasedCloudSolrClient.close();
     }
     httpBasedCloudSolrClient = null;
 

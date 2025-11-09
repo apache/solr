@@ -155,25 +155,13 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   public static void tearDownAfterClass() throws Exception {
 
     if (httpJettyBasedCloudSolrClient != null) {
-      try {
-        httpJettyBasedCloudSolrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      httpJettyBasedCloudSolrClient.close();
     }
     if (httpJdkBasedCloudSolrClient != null) {
-      try {
-        httpJdkBasedCloudSolrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      httpJdkBasedCloudSolrClient.close();
     }
     if (zkBasedCloudSolrClient != null) {
-      try {
-        zkBasedCloudSolrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      zkBasedCloudSolrClient.close();
     }
 
     shutdownCluster();

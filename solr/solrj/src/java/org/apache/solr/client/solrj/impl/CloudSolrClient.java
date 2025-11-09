@@ -233,7 +233,7 @@ public abstract class CloudSolrClient extends SolrClient {
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     if (this.threadPool != null && !ExecutorUtil.isShutdown(this.threadPool)) {
       ExecutorUtil.shutdownAndAwaitTermination(this.threadPool);
       this.threadPool = null;

@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -30,6 +29,7 @@ import org.apache.solr.client.solrj.impl.SolrZkClientTimeout.SolrZkClientTimeout
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,8 +126,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       }
       return stateProvider;
     } catch (Exception e) {
-      closeMyClientIfNeeded();
-      throw (e);
+      close();
+      throw e;
     }
   }
 
@@ -136,7 +136,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     try {
       return new Http2ClusterStateProvider<>(solrUrls, httpClient);
     } catch (Exception e) {
-      closeMyClientIfNeeded();
+      close(); // doesn't throw
       throw new RuntimeException(
           "Couldn't initialize a HttpClusterStateProvider (is/are the "
               + "Solr server(s), "
@@ -146,23 +146,14 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
   }
 
-  private void closeMyClientIfNeeded() {
-    try {
-      if (clientIsInternal && myClient != null) {
-        myClient.close();
-      }
-    } catch (Exception e) {
-      throw new RuntimeException("Exception on closing myClient", e);
-    }
-  }
-
   @Override
-  public void close() throws IOException {
-    stateProvider.close();
-    lbClient.close();
+  public void close() {
+    IOUtils.closeQuietly(stateProvider);
+    IOUtils.closeQuietly(lbClient);
 
-    closeMyClientIfNeeded();
-
+    if (clientIsInternal) {
+      IOUtils.closeQuietly(myClient);
+    }
     super.close();
   }
 
