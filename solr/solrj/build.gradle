@@ -36,16 +36,19 @@ dependencies {
 
   compileOnly libs.stephenc.jcip.annotations
 
+  // ideally would be only testRuntime scope but it's not worth it
   testImplementation project(":solr:solrj-jetty")
   testImplementation libs.eclipse.jetty.client
 
+  // TODO eliminate!
   testImplementation libs.apache.httpcomponents.httpclient
   testImplementation libs.apache.httpcomponents.httpcore
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
+  testImplementation project(':solr:solrj') // duh; why must we specify this?
 
-  // ideally ZK centric tests move to solrj-zookeeper but sometimes we depend on ZK here anyway
+  // ideally would be only testRuntime scope but it's not worth it
   testImplementation project(':solr:solrj-zookeeper')
   testImplementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
@@ -65,6 +68,7 @@ dependencies {
 
   testImplementation libs.jakarta.servlet.api
 
+  testImplementation libs.eclipse.jetty.http
   testImplementation libs.eclipse.jetty.server
   testImplementation libs.eclipse.jetty.ee10.servlet
   testImplementation libs.eclipse.jetty.ee10.webapp
@@ -162,13 +166,6 @@ configurations {
     canBeConsumed = true
     canBeResolved = false
     extendsFrom testImplementation, testRuntimeOnly
-    attributes {
-      attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, Category.LIBRARY))
-      attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
-      attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling, Bundling.EXTERNAL))
-      attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
-      attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, JavaVersion.current().majorVersion.toInteger())
-    }
   }
 }
 

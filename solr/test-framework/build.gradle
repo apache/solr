@@ -32,12 +32,12 @@ dependencies {
 
   api project(':solr:core')
   api project(':solr:solrj')
-  api project(':solr:solrj-jetty')
   api project(':solr:api')
+  implementation project(':solr:solrj-jetty')
   implementation project(':solr:solrj-zookeeper')
 
   api libs.apache.lucene.testframework
-  implementation libs.apache.lucene.core
+  api libs.apache.lucene.core // sadly must be on compile scope due to LuceneTestCase API referring
   implementation libs.apache.lucene.queries
   implementation libs.apache.lucene.suggest
 

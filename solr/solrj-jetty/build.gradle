@@ -21,7 +21,6 @@ description = 'Solrj-Jetty - SolrJ clients using Jetty HttpClient'
 
 dependencies {
   api project(':solr:solrj')
-  implementation project(':solr:api')
 
   implementation libs.slf4j.api
 
@@ -37,33 +36,18 @@ dependencies {
   testImplementation project(':solr:core')
   testImplementation(project(path: ":solr:solrj", configuration: "tests"))
 
-  testImplementation libs.apache.lucene.core
   testImplementation libs.apache.lucene.testframework
 
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
 
-  testImplementation libs.commonsio.commonsio
-  testImplementation libs.fasterxml.jackson.dataformat.cbor
-
-  testImplementation libs.jakarta.servlet.api
-
-  testImplementation libs.eclipse.jetty.server
   testImplementation libs.eclipse.jetty.ee10.servlet
-  testImplementation libs.eclipse.jetty.ee10.webapp
-  testRuntimeOnly(libs.eclipse.jetty.alpnjavaserver, {
-    exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
-  })
-  testImplementation libs.eclipse.jetty.session
-  testImplementation(libs.mockito.core, {
-    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
-  })
+
   testRuntimeOnly(libs.mockito.subclass, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
   testRuntimeOnly(libs.apache.log4j.slf4j2impl, {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
-  testImplementation libs.fasterxml.jackson.core.core
 }
