@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
@@ -93,7 +94,7 @@ public class ServletFixtures {
     public static Integer errorCode = null;
     public static String lastMethod = null;
     public static String url = null;
-    public static HashMap<String, String> headers = null;
+    public static HashMap<String, String> headers = null; // lowercase keys!
     public static Map<String, String[]> parameters = null;
     public static String queryString = null;
     public static Cookie[] cookies = null;
@@ -138,7 +139,7 @@ public class ServletFixtures {
       headers = new HashMap<>();
       while (headerNames.hasMoreElements()) {
         final String name = headerNames.nextElement();
-        headers.put(name, req.getHeader(name));
+        headers.put(name.toLowerCase(Locale.ROOT), req.getHeader(name));
       }
     }
 
