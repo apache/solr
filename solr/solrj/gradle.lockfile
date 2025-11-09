@@ -131,6 +131,7 @@ org.apache.yetus:audience-annotations:0.12.0=permitTestUnusedDeclared
 org.apache.zookeeper:zookeeper-jute:3.9.4=apiHelperTestFixtures,jarValidation,permitTestUnusedDeclared,testCompileClasspath,testFixturesCompileClasspath,testFixturesRuntimeClasspath,testRuntimeClasspath
 org.apache.zookeeper:zookeeper:3.9.4=apiHelperTestFixtures,jarValidation,permitTestUnusedDeclared,testCompileClasspath,testFixturesCompileClasspath,testFixturesRuntimeClasspath,testRuntimeClasspath
 org.apiguardian:apiguardian-api:1.1.2=apiHelperTestFixtures,jarValidation,testFixturesRuntimeClasspath,testRuntimeClasspath
+org.checkerframework:checker-qual:3.33.0=spotless865458226
 org.codehaus.woodstox:stax2-api:4.2.2=apiHelperTestFixtures,jarValidation,testFixturesRuntimeClasspath,testRuntimeClasspath
 org.eclipse.jetty.ee10:jetty-ee10-servlet:12.0.27=apiHelperTestFixtures,jarValidation,testCompileClasspath,testFixturesCompileClasspath,testFixturesRuntimeClasspath,testRuntimeClasspath
 org.eclipse.jetty.ee10:jetty-ee10-webapp:12.0.27=apiHelperTestFixtures,jarValidation,testCompileClasspath,testFixturesCompileClasspath,testFixturesRuntimeClasspath,testRuntimeClasspath
