@@ -209,12 +209,6 @@ def checkAllJARs(topDir, gitRevision, version):
 
     for file in files:
       if file.lower().endswith('.jar'):
-        if ((normRoot.endswith('/modules/extraction/lib') and (file.startswith('jakarta.activation-') or file.startswith('jakarta.xml')))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))
-            or (normRoot.endswith('/server/solr-webapp/webapp/WEB-INF/lib') and file.startswith('jakarta.'))
-            or (normRoot.endswith('/server/lib/ext') and file.startswith('jetty-servlet-api-'))):
-          print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
-          continue
         fullPath = '%s/%s' % (root, file)
         noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
         if file.lower().find('solr') != -1:
