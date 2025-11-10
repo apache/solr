@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 @LogLevel("org.eclipse.jetty.client=DEBUG;org.eclipse.jetty.util=DEBUG")
 @SolrTestCaseJ4.SuppressSSL
 public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
+  // nocommit rename
 
   public void testSystemPropertyFlag() {
     System.setProperty("solr.http1", "true");

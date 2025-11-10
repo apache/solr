@@ -35,7 +35,6 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -51,7 +50,6 @@ import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -558,23 +556,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
   @Override
   protected LBSolrClient createLBSolrClient() {
-    return new LBSolrClient(List.of()) {
-
-      @Override
-      protected SolrClient getClient(Endpoint endpoint) {
-        return HttpJdkSolrClient.this;
-      }
-
-      @Override
-      public ResponseParser getParser() {
-        return HttpJdkSolrClient.this.getParser();
-      }
-
-      @Override
-      public RequestWriter getRequestWriter() {
-        return HttpJdkSolrClient.this.getRequestWriter();
-      }
-    };
+    return new LBSolrClient.Builder<>(this).build();
   }
 
   public static class Builder

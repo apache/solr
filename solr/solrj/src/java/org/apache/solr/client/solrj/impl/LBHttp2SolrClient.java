@@ -20,51 +20,30 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.util.Arrays;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.MDC;
 
-/** A {@link LBSolrClient} using Jetty {@code HttpClient}. */
-public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClient {
-  // nocommit rename to LBJettySolrClient and ditch the parameterized type
+/** A {@link LBSolrClient} adding {@link #requestAsync(Req)}. */
+public abstract class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClient {
+  // nocommit rename to LBAsyncSolrClient and ditch the parameterized type
 
   protected final C solrClient;
 
-  @SuppressWarnings("unchecked")
-  private LBHttp2SolrClient(Builder<?> builder) {
-    super(Arrays.asList(builder.solrEndpoints));
-    this.solrClient = (C) builder.solrClient;
-    this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
-    this.defaultCollection = builder.defaultCollection;
+  protected LBHttp2SolrClient(Builder<C> builder) {
+    super(builder);
+    this.solrClient = builder.getSolrClient();
   }
 
   @Override
   protected SolrClient getClient(Endpoint endpoint) {
     return solrClient;
-  }
-
-  @Override
-  public ResponseParser getParser() {
-    return solrClient.getParser();
-  }
-
-  @Override
-  public RequestWriter getRequestWriter() {
-    return solrClient.getRequestWriter();
-  }
-
-  public Set<String> getUrlParamNames() {
-    return solrClient.getUrlParamNames();
   }
 
   /**
@@ -158,10 +137,9 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
       RetryListener listener) {
     String baseUrl = endpoint.toString();
     rsp.server = baseUrl;
-    final var client = (Http2SolrClient) getClient(endpoint);
     try {
       CompletableFuture<NamedList<Object>> future =
-          client.requestWithBaseUrl(baseUrl, (c) -> c.requestAsync(req.getRequest()));
+          requestAsyncWithUrl(getClient(endpoint), baseUrl, req.getRequest());
       future.whenComplete(
           (result, throwable) -> {
             if (!future.isCompletedExceptionally()) {
@@ -172,10 +150,14 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
           });
       return future;
     } catch (SolrServerException | IOException e) {
-      // Unreachable, since 'requestWithBaseUrl' above is running the request asynchronously
+      // Unreachable, since 'requestAsyncWithUrl' above is running the request asynchronously
       throw new RuntimeException(e);
     }
   }
+
+  protected abstract CompletableFuture<NamedList<Object>> requestAsyncWithUrl(
+      SolrClient client, String baseUrl, SolrRequest<?> request)
+      throws SolrServerException, IOException;
 
   private void onSuccessfulRequest(
       NamedList<Object> result,
@@ -235,45 +217,6 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
       }
     } catch (Throwable e) {
       listener.onFailure(new SolrServerException(e), false);
-    }
-  }
-
-  public static class Builder<C extends HttpSolrClientBase> {
-
-    private final C solrClient;
-    private final LBSolrClient.Endpoint[] solrEndpoints;
-    private long aliveCheckIntervalMillis =
-        TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
-    protected String defaultCollection;
-
-    public Builder(C solrClient, Endpoint... endpoints) {
-      this.solrClient = solrClient;
-      this.solrEndpoints = endpoints;
-    }
-
-    /**
-     * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
-     * this to set that interval
-     *
-     * @param aliveCheckInterval how often to ping for aliveness
-     */
-    public Builder<C> setAliveCheckInterval(int aliveCheckInterval, TimeUnit unit) {
-      if (aliveCheckInterval <= 0) {
-        throw new IllegalArgumentException(
-            "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
-      }
-      this.aliveCheckIntervalMillis = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
-      return this;
-    }
-
-    /** Sets a default for core or collection based requests. */
-    public Builder<C> withDefaultCollection(String defaultCoreOrCollection) {
-      this.defaultCollection = defaultCoreOrCollection;
-      return this;
-    }
-
-    public LBHttp2SolrClient<C> build() {
-      return new LBHttp2SolrClient<C>(this);
     }
   }
 }

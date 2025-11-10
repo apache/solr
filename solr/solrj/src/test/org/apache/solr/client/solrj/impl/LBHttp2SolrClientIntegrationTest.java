@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
  */
 @LogLevel("org.apache.solr.client.solrj.impl=DEBUG")
 public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
+  // nocommit rename to LBSolrClientIntegrationTest.  Doesn't test async
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -124,7 +125,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
               .withIdleTimeout(2000, TimeUnit.MILLISECONDS)
               .build();
       var lbClient =
-          new LBHttp2SolrClient.Builder<>(delegateClient, baseSolrEndpoints)
+          new LBSolrClient.Builder<>(delegateClient, baseSolrEndpoints)
               .withDefaultCollection(solr[0].getDefaultCollection())
               .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
               .build();
@@ -137,7 +138,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
               .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT)
               .build();
       var lbClient =
-          new LBHttp2SolrClient.Builder<>(delegateClient, baseSolrEndpoints)
+          new LBSolrClient.Builder<>(delegateClient, baseSolrEndpoints)
               .withDefaultCollection(solr[0].getDefaultCollection())
               .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
               .build();
@@ -316,10 +317,10 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
 
   private static class LBClientHolder implements AutoCloseable {
 
-    final LBHttp2SolrClient<?> lbClient;
+    final LBSolrClient lbClient;
     final HttpSolrClientBase delegate;
 
-    LBClientHolder(LBHttp2SolrClient<?> lbClient, HttpSolrClientBase delegate) {
+    LBClientHolder(LBSolrClient lbClient, HttpSolrClientBase delegate) {
       this.lbClient = lbClient;
       this.delegate = delegate;
     }

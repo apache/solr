@@ -35,6 +35,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
+  // nocommit rename
 
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 

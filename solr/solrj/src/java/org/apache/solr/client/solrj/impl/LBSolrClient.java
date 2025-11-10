@@ -168,6 +168,54 @@ public abstract class LBSolrClient extends SolrClient {
     solrQuery.setDistrib(false);
   }
 
+  public static class Builder<C extends HttpSolrClientBase> {
+
+    private final C solrClient;
+    private final Endpoint[] solrEndpoints;
+    private long aliveCheckIntervalMillis =
+        TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
+    protected String defaultCollection;
+
+    public Builder(C solrClient, Endpoint... endpoints) {
+      this.solrClient = solrClient;
+      this.solrEndpoints = endpoints;
+    }
+
+    /**
+     * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
+     * this to set that interval
+     *
+     * @param aliveCheckInterval how often to ping for aliveness
+     */
+    public Builder<C> setAliveCheckInterval(int aliveCheckInterval, TimeUnit unit) {
+      if (aliveCheckInterval <= 0) {
+        throw new IllegalArgumentException(
+            "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
+      }
+      this.aliveCheckIntervalMillis = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
+      return this;
+    }
+
+    /** Sets a default for core or collection based requests. */
+    public Builder<C> withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
+      return this;
+    }
+
+    public C getSolrClient() {
+      return solrClient;
+    }
+
+    public LBSolrClient build() {
+      return new LBSolrClient(this) {
+        @Override
+        protected SolrClient getClient(Endpoint endpoint) {
+          return solrClient;
+        }
+      };
+    }
+  }
+
   /**
    * A Solr endpoint for {@link LBSolrClient} to include in its load-balancing
    *
@@ -459,7 +507,15 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
-  public LBSolrClient(List<Endpoint> solrEndpoints) {
+  protected LBSolrClient(Builder<?> builder) {
+    this(Arrays.asList(builder.solrEndpoints));
+    this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
+    this.defaultCollection = builder.defaultCollection;
+    this.requestWriter = builder.solrClient.getRequestWriter();
+    this.parser = builder.solrClient.getParser();
+  }
+
+  protected LBSolrClient(List<Endpoint> solrEndpoints) {
     if (!solrEndpoints.isEmpty()) {
       for (Endpoint s : solrEndpoints) {
         EndpointWrapper wrapper = createServerWrapper(s);

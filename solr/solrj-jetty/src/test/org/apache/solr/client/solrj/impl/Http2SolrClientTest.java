@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Test;
 
 public class Http2SolrClientTest extends HttpSolrClientTestBase {
+  // nocommit rename
 
   @Override
   protected String expectedUserAgent() {

@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
+import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -657,7 +658,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   @Override
   protected LBSolrClient createLBSolrClient() {
-    return new LBHttp2SolrClient.Builder<>(this).build();
+    return new LBJettySolrClient.Builder(this).build();
   }
 
   @Override
