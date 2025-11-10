@@ -43,6 +43,7 @@ import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -499,8 +500,8 @@ public class SolrXmlConfig {
     int hostPort =
         parseInt("hostPort", required("solrcloud", "hostPort", removeValue(nl, "hostPort")));
     if (hostPort <= 0) {
-      // Default to the port that jetty is listening on, or 8983 if that is not provided.
-      hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
+      // Default to the port that Solr is listening on, or 8983 if that is not provided.
+      hostPort = EnvUtils.getPropertyAsInteger("solr.port.listen", 8983);
     }
     String hostName = required("solrcloud", "host", removeValue(nl, "host"));
 

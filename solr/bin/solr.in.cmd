@@ -85,7 +85,7 @@ REM to monitor the JVM hosting Solr; set to "false" to disable that behavior
 REM (false is recommended in production environments)
 REM set ENABLE_REMOTE_JMX_OPTS=false
 
-REM The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
+REM The script will use SOLR_PORT_LISTEN+10000 for the RMI_PORT or you can set it here
 REM set RMI_PORT=18983
 
 REM Anything you add to the SOLR_OPTS variable will be included in the java
@@ -117,7 +117,7 @@ REM Enables jetty request log for all requests
 REM set SOLR_REQUESTLOG_ENABLED=true
 
 REM Sets the port Solr binds to, default is 8983
-REM set SOLR_PORT=8983
+REM set SOLR_PORT_LISTEN=8983
 
 REM Sets the network interface the Solr binds to. To prevent administrators from
 REM accidentally exposing Solr more widely than intended, this defaults to 127.0.0.1.
@@ -125,7 +125,7 @@ REM Administrators should think carefully about their deployment environment and
 REM set this value as narrowly as required before going to production. In
 REM environments where security is not a concern, 0.0.0.0 can be used to allow
 REM Solr to accept connections on all network interfaces.
-REM set SOLR_JETTY_HOST=127.0.0.1
+REM set SOLR_HOST_BIND=127.0.0.1
 REM Sets the network interface the Embedded ZK binds to.
 REM set SOLR_ZOOKEEPER_EMBEDDED_HOST=127.0.0.1
 

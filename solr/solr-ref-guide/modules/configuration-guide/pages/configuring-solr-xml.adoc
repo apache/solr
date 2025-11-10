@@ -41,7 +41,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
 
   <solrcloud>
 
-    <str name="host">${host:}</str>
+    <str name="host">${solr.host.advertise:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
 
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
@@ -397,7 +397,7 @@ For example, if the Solr node is running behind a proxy or in a cloud environmen
 `hostPort` is the port that the Solr instance wants other nodes to contact it at.
 +
 In the default `solr.xml` file, this is set to `${solr.port.advertise:0}`.
-If no port is passed via the `solr.xml` (i.e., `0`), then Solr will default to the port that jetty is listening on, defined by `${jetty.port}`.
+If no port is passed via the `solr.xml` (i.e., `0`), then Solr will default to the port that jetty is listening on, defined by `${solr.port.listen}`.
 
 `leaderVoteWait`::
 +

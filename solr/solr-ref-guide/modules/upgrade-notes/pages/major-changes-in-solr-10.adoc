@@ -37,6 +37,15 @@ This compatibility safeguard can be toggled with "SOLR_CLOUD_DOWNGRADE_ENABLED".
 
 Minimum Java version for Solr 10.x is Java 21.
 
+== Solr Jetty parameters
+
+The previous `SOLR_JETTY_HOST` environment variable and `-Dsolr.jetty.host` System Property are deprecated and will be removed in a future release. Please update your configuration to use `SOLR_HOST_BIND` and `-Dsolr.host.bind` instead.
+
+The previous `SOLR_HOST` and 'host' are deprecated and now use `SOLR_HOST_ADVERTISE` and `solr.host.advertise`.
+
+The previous `jetty.port` is deprecated and now use `solr.port.listen`.
+
+
 === Solr CLI and Scripts
 
 The Solr CLI has gone through some significant renovations to reduce technical debt, and now functions more consistently and predictably. Most notably, CLI commands now use unix-style options, e.g. `--help` instead of `-help`.
@@ -187,9 +196,10 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
 
-=== Upgrade to Jetty 12.x
+=== Upgrade to Jetty 12.x and Jakarta namespace
 
 Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-life support. Jetty 12.x requires Java 17 or newer and is fully compatible with Solr's new minimum requirement of Java 21. This upgrade brings support for modern HTTP protocols and adopts the Jakarta EE 10 namespace. For more details, see https://webtide.com/jetty-12-has-arrived/.
+This migration marks the point at which Solr no longer includes _any_ JAR with "javax" in it -- the Jakarta migration is complete.
 
 === OpenTelemetry
 

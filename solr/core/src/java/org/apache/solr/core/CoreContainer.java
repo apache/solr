@@ -911,17 +911,17 @@ public class CoreContainer {
     Path dataHome =
         cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
 
-    solrMetricsContext.observableLongGauge(
+    solrMetricsContext.observableDoubleGauge(
         "solr_disk_space",
         "Disk metrics for Solr's data home directory (" + dataHome + ")",
         measurement -> {
           try {
             var fileStore = Files.getFileStore(dataHome);
             measurement.record(
-                fileStore.getTotalSpace(),
+                MetricUtils.bytesToMegabytes(fileStore.getTotalSpace()),
                 containerAttrs.toBuilder().put(TYPE_ATTR, "total_space").build());
             measurement.record(
-                fileStore.getUsableSpace(),
+                MetricUtils.bytesToMegabytes(fileStore.getUsableSpace()),
                 containerAttrs.toBuilder().put(TYPE_ATTR, "usable_space").build());
           } catch (IOException e) {
             throw new SolrException(
@@ -930,7 +930,7 @@ public class CoreContainer {
                 e);
           }
         },
-        OtelUnit.BYTES);
+        OtelUnit.MEGABYTES);
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
     fieldCacheBean.initializeMetrics(
@@ -938,13 +938,13 @@ public class CoreContainer {
 
     // setup executor to load cores in parallel
     coreLoadExecutor =
-        MetricUtils.instrumentedExecutorService(
+        solrMetricsContext.instrumentedExecutorService(
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
                 new SolrNamedThreadFactory("coreLoadExecutor")),
-            solrMetricsContext,
-            SolrInfoBean.Category.CONTAINER,
-            "coreLoadExecutor");
+            "solr_node_executor",
+            "coreLoadExecutor",
+            SolrInfoBean.Category.CONTAINER);
 
     coreSorter =
         loader.newInstance(

@@ -72,10 +72,10 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
           metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
       GaugeSnapshot tasksRunning =
           SolrMetricTestUtils.getMetricSnapshot(
-              GaugeSnapshot.class, metrics, "solr_executor_tasks_running");
+              GaugeSnapshot.class, metrics, "solr_node_executor_tasks_running");
       CounterSnapshot taskCounters =
           SolrMetricTestUtils.getMetricSnapshot(
-              CounterSnapshot.class, metrics, "solr_executor_tasks");
+              CounterSnapshot.class, metrics, "solr_node_executor_tasks");
 
       GaugeDataPointSnapshot runningTasks = tasksRunning.getDataPoints().getFirst();
       CounterDataPointSnapshot submittedTasks = getCounterData(taskCounters, "submitted");
@@ -100,10 +100,10 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
           metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
       GaugeSnapshot tasksRunning =
           SolrMetricTestUtils.getMetricSnapshot(
-              GaugeSnapshot.class, metrics, "solr_executor_tasks_running");
+              GaugeSnapshot.class, metrics, "solr_node_executor_tasks_running");
       CounterSnapshot taskCounters =
           SolrMetricTestUtils.getMetricSnapshot(
-              CounterSnapshot.class, metrics, "solr_executor_tasks");
+              CounterSnapshot.class, metrics, "solr_node_executor_tasks");
 
       GaugeDataPointSnapshot runningTasks = tasksRunning.getDataPoints().getFirst();
       CounterDataPointSnapshot submittedTasks = getCounterData(taskCounters, "submitted");
@@ -134,7 +134,10 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
       HistogramSnapshot taskTimers =
           metrics.stream()
               .filter(
-                  m -> m.getMetadata().getPrometheusName().startsWith("solr_executor_task_times"))
+                  m ->
+                      m.getMetadata()
+                          .getPrometheusName()
+                          .startsWith("solr_node_executor_task_times"))
               .findFirst()
               .map(HistogramSnapshot.class::cast)
               .get();
@@ -168,10 +171,10 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
           metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
       GaugeSnapshot sizeGauges =
           SolrMetricTestUtils.getMetricSnapshot(
-              GaugeSnapshot.class, metrics, "solr_executor_thread_pool_size");
+              GaugeSnapshot.class, metrics, "solr_node_executor_thread_pool_size");
       GaugeSnapshot taskGauges =
           SolrMetricTestUtils.getMetricSnapshot(
-              GaugeSnapshot.class, metrics, "solr_executor_thread_pool_tasks");
+              GaugeSnapshot.class, metrics, "solr_node_executor_thread_pool_tasks");
 
       GaugeDataPointSnapshot poolSize = getGaugeData(sizeGauges, "size");
       GaugeDataPointSnapshot corePoolSize = getGaugeData(sizeGauges, "core");
@@ -210,10 +213,10 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
           metricsContext.getMetricManager().getPrometheusMetricReader(REGISTRY_NAME).collect();
       GaugeSnapshot taskGauges =
           SolrMetricTestUtils.getMetricSnapshot(
-              GaugeSnapshot.class, metrics, "solr_executor_fork_join_pool_tasks");
+              GaugeSnapshot.class, metrics, "solr_node_executor_fork_join_pool_tasks");
       GaugeSnapshot threadGauges =
           SolrMetricTestUtils.getMetricSnapshot(
-              GaugeSnapshot.class, metrics, "solr_executor_fork_join_pool_threads");
+              GaugeSnapshot.class, metrics, "solr_node_executor_fork_join_pool_threads");
       GaugeDataPointSnapshot stolenTasks = getGaugeData(taskGauges, "stolen");
       GaugeDataPointSnapshot queuedTasks = getGaugeData(taskGauges, "queued");
 
@@ -229,8 +232,8 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
   }
 
   private static ExecutorService testExecutor(String name, ExecutorService exec) {
-    return MetricUtils.instrumentedExecutorService(
-        exec, metricsContext, SolrInfoBean.Category.ADMIN, name);
+    return metricsContext.instrumentedExecutorService(
+        exec, "solr_node_executor", name, SolrInfoBean.Category.ADMIN);
   }
 
   private static CounterDataPointSnapshot getCounterData(CounterSnapshot snapshot, String type) {
