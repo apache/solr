@@ -25,7 +25,7 @@ import org.apache.http.util.EntityUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.util.SolrJettyTestRule;

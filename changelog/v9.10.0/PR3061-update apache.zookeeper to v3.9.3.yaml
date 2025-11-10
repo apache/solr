@@ -1,0 +1,7 @@
+title: Update apache.zookeeper to v3.9.3
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3061
+  url: https://github.com/apache/solr/pull/3061

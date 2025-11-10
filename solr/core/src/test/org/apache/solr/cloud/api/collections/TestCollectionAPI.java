@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -640,7 +640,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("collection", "notAnAliasOrCollection");
       request =
           new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
-      request.setPath("/admin/collections");
 
       // SOLR-12938 - this should still cause an exception
       try {
@@ -666,9 +665,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("wt", "json");
       var request =
           new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
-      request.setResponseParser(new NoOpResponseParser("json"));
-      NamedList<Object> rsp = client.request(request);
-      String actualResponse = (String) rsp.get("response");
+      request.setResponseParser(new InputStreamResponseParser("json"));
+      NamedList<Object> res = client.request(request);
+      String actualResponse = InputStreamResponseParser.consumeResponseToString(res);
 
       Map<String, Object> result = mapper.readValue(actualResponse, Map.class);
 
@@ -1258,11 +1257,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void missingParamsError(CloudSolrClient client, ModifiableSolrParams origParams)
       throws IOException, SolrServerException {
 
-    GenericSolrRequest request;
     try {
-      request =
+      var request =
           new GenericSolrRequest(
-              METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, origParams);
+              METHOD.POST, "/admin/collections", SolrRequestType.ADMIN, origParams);
       client.request(request);
       fail("Should have thrown a SolrException due to lack of a required parameter.");
     } catch (SolrException se) {
@@ -1352,7 +1350,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("numShards", "1");
       params.set(CollectionAdminParams.PER_REPLICA_STATE, "False");
       var request =
-          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
+          new GenericSolrRequest(METHOD.POST, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);

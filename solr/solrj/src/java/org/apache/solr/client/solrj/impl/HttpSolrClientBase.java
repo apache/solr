@@ -57,8 +57,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
   /** The URL of the Solr server. */
   protected final String serverBaseUrl;
 
-  protected final long idleTimeoutMillis;
-
   protected final long requestTimeoutMillis;
 
   protected final Set<String> urlParamNames;
@@ -85,11 +83,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
     } else {
       this.serverBaseUrl = null;
     }
-    if (builder.idleTimeoutMillis != null) {
-      this.idleTimeoutMillis = builder.idleTimeoutMillis;
-    } else {
-      this.idleTimeoutMillis = -1;
-    }
+    this.requestTimeoutMillis = builder.getRequestTimeoutMillis();
     this.basicAuthAuthorizationStr = builder.basicAuthAuthorizationStr;
     if (builder.requestWriter != null) {
       this.requestWriter = builder.requestWriter;
@@ -98,17 +92,14 @@ public abstract class HttpSolrClientBase extends SolrClient {
       this.parser = builder.responseParser;
     }
     this.defaultCollection = builder.defaultCollection;
-    if (builder.requestTimeoutMillis != null) {
-      this.requestTimeoutMillis = builder.requestTimeoutMillis;
-    } else {
-      this.requestTimeoutMillis = -1;
-    }
     if (builder.urlParamNames != null) {
       this.urlParamNames = builder.urlParamNames;
     } else {
       this.urlParamNames = Set.of();
     }
   }
+
+  public abstract HttpSolrClientBuilderBase<?, ?> builder();
 
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
@@ -122,13 +113,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   protected RequestWriter getRequestWriter() {
     return requestWriter;
-  }
-
-  // TODO: Remove this for 10.0, there is a typo in the method name
-  @Deprecated(since = "9.8", forRemoval = true)
-  protected ModifiableSolrParams initalizeSolrParams(
-      SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    return initializeSolrParams(solrRequest, parserToUse);
   }
 
   protected ModifiableSolrParams initializeSolrParams(
@@ -232,13 +216,11 @@ public abstract class HttpSolrClientBase extends SolrClient {
       }
 
       Object error = rsp == null ? null : rsp.get("error");
-      if (rsp != null && error == null && processor instanceof NoOpResponseParser) {
-        error = rsp.get("response");
-      }
+
       if (error != null
           && (String.valueOf(getObjectByPath(error, true, errPath))
               .endsWith("ExceptionWithErrObject"))) {
-        throw BaseHttpSolrClient.RemoteExecutionException.create(urlExceptionMessage, rsp);
+        throw RemoteExecutionException.create(urlExceptionMessage, rsp);
       }
       if (httpStatus != 200 && !isV2Api) {
         NamedList<String> metadata = null;
@@ -394,10 +376,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   public ResponseParser getParser() {
     return parser;
-  }
-
-  public long getIdleTimeout() {
-    return idleTimeoutMillis;
   }
 
   public Set<String> getUrlParamNames() {

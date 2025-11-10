@@ -21,11 +21,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -39,12 +41,12 @@ import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
@@ -871,9 +873,15 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     query.set(CommonParams.WT, "json");
 
     req = new QueryRequest(query);
-    req.setResponseParser(new NoOpResponseParser("json"));
+    req.setResponseParser(new InputStreamResponseParser("json"));
     NamedList<Object> resp = client.request(req);
     String raw = (String) resp.get("response");
+    try (InputStream responseStream =
+        (InputStream) resp.get(InputStreamResponseParser.STREAM_KEY)) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      responseStream.transferTo(baos);
+      raw = baos.toString(StandardCharsets.UTF_8);
+    }
 
     // Check that the response parses as JSON
     JSONParser parser = new JSONParser(raw);
@@ -885,13 +893,17 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertTrue(raw.indexOf('"' + rawXml + '"') > 0); // quoted xml
 
     // Check raw XML Output
-    req.setResponseParser(new NoOpResponseParser("xml"));
     query.set("fl", "id,json_s:[json],xml_s:[xml]");
     query.set(CommonParams.WT, "xml");
     req = new QueryRequest(query);
-    req.setResponseParser(new NoOpResponseParser("xml"));
+    req.setResponseParser(new InputStreamResponseParser("xml"));
     resp = client.request(req);
-    raw = (String) resp.get("response");
+    try (InputStream responseStream =
+        (InputStream) resp.get(InputStreamResponseParser.STREAM_KEY)) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      responseStream.transferTo(baos);
+      raw = baos.toString(StandardCharsets.UTF_8);
+    }
 
     // Check that we get raw xml and json is escaped
     assertTrue(raw.indexOf('>' + rawJson + '<') > 0); // escaped

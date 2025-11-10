@@ -54,10 +54,8 @@ public class CoreDescriptor {
   public static final String CORE_SCHEMA = "schema";
   public static final String CORE_SHARD = "shard";
   public static final String CORE_COLLECTION = "collection";
-  public static final String CORE_ROLES = "roles";
   public static final String CORE_PROPERTIES = "properties";
   public static final String CORE_LOADONSTARTUP = "loadOnStartup";
-  public static final String CORE_TRANSIENT = "transient";
   public static final String CORE_NODE_NAME = "coreNodeName";
   public static final String CORE_CONFIGSET = "configSet";
   public static final String CORE_CONFIGSET_PROPERTIES = "configSetProperties";
@@ -90,7 +88,6 @@ public class CoreDescriptor {
           CORE_SCHEMA, "schema.xml",
           CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME,
           CORE_DATADIR, "data" + FileSystems.getDefault().getSeparator(),
-          CORE_TRANSIENT, "false",
           CORE_LOADONSTARTUP, "true");
 
   private static final List<String> requiredProperties = List.of(CORE_NAME);
@@ -105,14 +102,11 @@ public class CoreDescriptor {
           CORE_PROPERTIES,
           CORE_CONFIGSET_PROPERTIES,
           CORE_LOADONSTARTUP,
-          CORE_TRANSIENT,
           CORE_CONFIGSET,
           // cloud props
           CORE_SHARD,
           CORE_COLLECTION,
-          CORE_ROLES,
-          CORE_NODE_NAME,
-          CloudDescriptor.NUM_SHARDS);
+          CORE_NODE_NAME);
 
   private final CloudDescriptor cloudDesc;
 
@@ -339,11 +333,6 @@ public class CoreDescriptor {
   public boolean isLoadOnStartup() {
     String stringValue = coreProperties.getProperty(CORE_LOADONSTARTUP, "true");
     return Boolean.parseBoolean(stringValue);
-  }
-
-  public boolean isTransient() {
-    String stringValue = coreProperties.getProperty(CORE_TRANSIENT, "false");
-    return PropertiesUtil.toBoolean(stringValue);
   }
 
   public String getUlogDir() {

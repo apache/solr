@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.junit.Test;
 
 public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
@@ -69,7 +70,7 @@ public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
     }
 
     try (CloudSolrClient client =
-        (new CloudSolrClient.Builder(new ArrayList<>(hosts), Optional.ofNullable(clientChroot))
+        (new CloudHttp2SolrClient.Builder(new ArrayList<>(hosts), Optional.ofNullable(clientChroot))
             .build())) {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
           ZkClientClusterStateProvider.from(client)) {
@@ -113,6 +114,6 @@ public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
   public void testBadChroot() {
     final List<String> zkHosts = new ArrayList<>();
     zkHosts.add("host1:2181");
-    new CloudSolrClient.Builder(zkHosts, Optional.of("foo")).build();
+    new CloudHttp2SolrClient.Builder(zkHosts, Optional.of("foo")).build();
   }
 }

@@ -23,7 +23,7 @@ import java.util.Set;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -69,20 +69,6 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
     assertTrue(nl.getName(2).endsWith("_solr"));
     assertEquals("solrcloud", ((NamedList) nl.get(nl.getName(1))).get("mode"));
     assertEquals(nl.getName(2), ((NamedList) nl.get(nl.getName(2))).get("node"));
-  }
-
-  @Test
-  public void proxyMetricsHandlerAllNodes() throws IOException, SolrServerException {
-    MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
-    GenericSolrRequest req =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params);
-    SimpleSolrResponse rsp = req.process(solrClient, null);
-    NamedList<Object> nl = rsp.getResponse();
-    assertEquals(3, nl.size());
-    assertTrue(nl.getName(1).endsWith("_solr"));
-    assertTrue(nl.getName(2).endsWith("_solr"));
-    assertNotNull(((NamedList) nl.get(nl.getName(1))).get("metrics"));
   }
 
   @Test(expected = SolrException.class)

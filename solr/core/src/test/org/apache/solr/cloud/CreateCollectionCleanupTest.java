@@ -50,13 +50,12 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
           + "  <solrcloud>\n"
           + "    <str name=\"host\">127.0.0.1</str>\n"
           + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
-          + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
+          + "    <int name=\"zkClientTimeout\">${solr.zookeeper.client.timeout:30000}</int>\n"
           + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
           + "    <int name=\"leaderVoteWait\">10000</int>\n"
           + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
           + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
           + "    <int name=\"createCollectionWaitTimeTillActive\">${createCollectionWaitTimeTillActive:10}</int>\n"
-          + "    <str name=\"distributedClusterStateUpdates\">${solr.distributedClusterStateUpdates:false}</str> \n"
           + "  </solrcloud>\n"
           + "  \n"
           + "</solr>\n";
@@ -67,7 +66,6 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(CLOUD_SOLR_XML_WITH_10S_CREATE_COLL_WAIT)
-        .useOtherCollectionConfigSetExecution()
         .configure();
   }
 

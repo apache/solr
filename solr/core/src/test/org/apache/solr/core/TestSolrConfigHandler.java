@@ -122,7 +122,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
     createJettyAndHarness(
         tmpSolrHome,
@@ -153,8 +153,6 @@ public class TestSolrConfigHandler extends RestTestBase {
     MapWriter confMap = getRespMap("/config", harness);
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/luke"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/system"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/mbeans"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/plugins"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/file"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/ping"), null));
 
@@ -165,26 +163,26 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(harness, "/config", payload);
 
     MapWriter m = getRespMap("/config/overlay", harness);
-    assertEquals("100", m._getStr("overlay/props/updateHandler/autoCommit/maxDocs", null));
-    assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime", null));
+    assertEquals("100", m._getStr("overlay/props/updateHandler/autoCommit/maxDocs"));
+    assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime"));
 
     m = getRespMap("/config/updateHandler", harness);
-    assertNotNull(m._get("config/updateHandler/commitWithin/softCommit", null));
-    assertNotNull(m._get("config/updateHandler/autoCommit/maxDocs", null));
-    assertNotNull(m._get("config/updateHandler/autoCommit/maxTime", null));
+    assertNotNull(m._get("config/updateHandler/commitWithin/softCommit"));
+    assertNotNull(m._get("config/updateHandler/autoCommit/maxDocs"));
+    assertNotNull(m._get("config/updateHandler/autoCommit/maxTime"));
 
     m = getRespMap("/config", harness);
     assertNotNull(m);
 
-    assertEquals("100", m._getStr("config/updateHandler/autoCommit/maxDocs", null));
-    assertEquals("10", m._getStr("config/updateHandler/autoCommit/maxTime", null));
+    assertEquals("100", m._getStr("config/updateHandler/autoCommit/maxDocs"));
+    assertEquals("10", m._getStr("config/updateHandler/autoCommit/maxTime"));
 
     payload = "{\n" + " 'unset-property' :  'updateHandler.autoCommit.maxDocs' \n" + " }";
     runConfigCommand(harness, "/config", payload);
 
     m = getRespMap("/config/overlay", harness);
-    assertNull(m._get("overlay/props/updateHandler/autoCommit/maxDocs", null));
-    assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime", null));
+    assertNull(m._get("overlay/props/updateHandler/autoCommit/maxDocs"));
+    assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime"));
   }
 
   public void testUserProp() throws Exception {
@@ -197,13 +195,13 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(harness, "/config", payload);
 
     MapWriter m = getRespMap("/config/overlay", harness); // .get("overlay");
-    assertEquals(m._get("overlay/userProps/my.custom.variable.a", null), "MODIFIEDA");
-    assertEquals(m._get("overlay/userProps/my.custom.variable.b", null), "MODIFIEDB");
+    assertEquals(m._get("overlay/userProps/my.custom.variable.a"), "MODIFIEDA");
+    assertEquals(m._get("overlay/userProps/my.custom.variable.b"), "MODIFIEDB");
 
     m = getRespMap("/dump?json.nl=map&initArgs=true", harness); // .get("initArgs");
 
-    assertEquals("MODIFIEDA", m._get("initArgs/defaults/a", null));
-    assertEquals("MODIFIEDB", m._get("initArgs/defaults/b", null));
+    assertEquals("MODIFIEDA", m._get("initArgs/defaults/a"));
+    assertEquals("MODIFIEDB", m._get("initArgs/defaults/b"));
   }
 
   public void testReqHandlerAPIs() throws Exception {
@@ -1012,14 +1010,15 @@ public class TestSolrConfigHandler extends RestTestBase {
   public void testCacheDisableSolrConfig() throws Exception {
     RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
     restTestHarness.setServerProvider(() -> getBaseUrl());
-    MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
-    assertNotNull(
-        confMap._get(
-            asList("metrics", "solr.core.collection1", "CACHE.searcher.fieldValueCache"), null));
+    String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
+    assertTrue(
+        "fieldValueCache metrics should be present",
+        prometheusMetrics.contains("name=\"fieldValueCache\""));
     // Here documentCache is disabled at initialization in SolrConfig
-    assertNull(
-        confMap._get(
-            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+    assertFalse(
+        "documentCache metrics should be absent",
+        prometheusMetrics.contains("name=\"documentCache\""));
+
     restTestHarness.setServerProvider(oldProvider);
   }
 
@@ -1029,13 +1028,13 @@ public class TestSolrConfigHandler extends RestTestBase {
     String payload = "{'set-property' : { 'query.documentCache.size': 399} }";
     runConfigCommand(restTestHarness, "/config", payload);
     MapWriter overlay = getRespMap("/config/overlay", restTestHarness);
-    assertEquals("399", overlay._getStr("overlay/props/query/documentCache/size", null));
+    assertEquals("399", overlay._getStr("overlay/props/query/documentCache/size"));
     // Setting size only will not enable the cache
     restTestHarness.setServerProvider(() -> getBaseUrl());
-    MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
-    assertNull(
-        confMap._get(
-            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+
+    String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
+    assertFalse(prometheusMetrics.contains("cache_name=\"documentCache\""));
+
     restTestHarness.setServerProvider(oldProvider);
   }
 
@@ -1045,20 +1044,19 @@ public class TestSolrConfigHandler extends RestTestBase {
     String payload = "{'set-property' : { 'query.documentCache.enabled': true} }";
     runConfigCommand(restTestHarness, "/config", payload);
     restTestHarness.setServerProvider(() -> getBaseUrl());
-    MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
-    assertNotNull(
-        confMap._get(
-            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+
+    String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
+    assertTrue(prometheusMetrics.contains("name=\"documentCache\""));
 
     // Disabling Cache
     payload = "{ 'set-property' : { 'query.documentCache.enabled': false } }";
     restTestHarness.setServerProvider(oldProvider);
+
     runConfigCommand(restTestHarness, "/config", payload);
     restTestHarness.setServerProvider(() -> getBaseUrl());
-    confMap = getRespMap("/admin/metrics", restTestHarness);
-    assertNull(
-        confMap._get(
-            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+
+    prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
+    assertFalse(prometheusMetrics.contains("name=\"documentCache\""));
 
     restTestHarness.setServerProvider(oldProvider);
   }

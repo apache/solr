@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
@@ -59,6 +61,9 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.SolrPortAwareCookieSpecFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -97,6 +102,28 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
         Thread.sleep(5000);
       } catch (InterruptedException ignored) {
       }
+    }
+  }
+
+  public static class SlowStreamServlet extends HttpServlet {
+
+    public static final int PACKET_MS = 500;
+
+    @Override
+    @SuppressForbidden(reason = "don't forbid in tests")
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+      String countStr = req.getParameter("count");
+      IntStream.range(0, countStr == null ? 10 : Integer.parseInt(countStr))
+          .forEach(
+              i -> {
+                try {
+                  Thread.sleep(PACKET_MS);
+                  resp.getOutputStream().write(String.valueOf(i).getBytes(StandardCharsets.UTF_8));
+                  resp.getOutputStream().flush();
+                } catch (IOException | InterruptedException e) {
+                  throw new RuntimeException(e);
+                }
+              });
     }
   }
 
@@ -201,6 +228,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
             .withServlet(new ServletHolder(RedirectServlet.class), "/redirect/*")
             .withServlet(new ServletHolder(SlowServlet.class), "/slow/*")
             .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
+            .withServlet(new ServletHolder(SlowStreamServlet.class), "/slowStream/*")
             .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }

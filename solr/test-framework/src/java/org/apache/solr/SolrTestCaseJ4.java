@@ -81,12 +81,12 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
@@ -112,6 +112,7 @@ import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoresLocator;
 import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
@@ -174,9 +175,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY =
       "solr.tests.mergePolicyFactory";
 
-  public static final String TEST_URL_ALLOW_LIST =
-      "solr.tests." + AllowListUrlChecker.URL_ALLOW_LIST;
-
+  public static final String TEST_URL_ALLOW_LIST = "solr.tests.security.allow.urls";
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000; // default socket connection timeout in ms
@@ -266,7 +265,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     // non-null after calling setupTestCases()
     initAndGetDataDir();
 
-    System.setProperty("solr.zkclienttimeout", "90000");
+    System.setProperty("solr.zookeeper.client.timeout", "90000");
 
     System.setProperty("solr.httpclient.retries", "1");
     System.setProperty("solr.retries.on.forward", "1");
@@ -274,12 +273,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
-    System.setProperty("enable.update.log", Boolean.toString(usually()));
+    System.setProperty("solr.index.updatelog.enabled", Boolean.toString(usually()));
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.http.disableCookies", Boolean.toString(rarely()));
+    System.setProperty("solr.metrics.jvm.enabled", "false");
+    System.setProperty("solr.metrics.otlpExporterInterval", "1000");
 
     startTrackingSearchers();
     ignoreException("ignore_exception");
@@ -296,6 +297,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     ExecutorUtil.resetThreadLocalProviders();
+    OpenTelemetryConfigurator.resetForTest();
   }
 
   @AfterClass
@@ -323,7 +325,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("zookeeper.forceSync");
       System.clearProperty("jetty.testMode");
       System.clearProperty("tests.shardhandler.randomSeed");
-      System.clearProperty("enable.update.log");
+      System.clearProperty("solr.index.updatelog.enabled");
       System.clearProperty("useCompoundFile");
       System.clearProperty(URL_SCHEME);
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
@@ -1864,9 +1866,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     values.forEach(
         (s, o) -> {
           if (o instanceof String) {
-            assertEquals(o, rsp.getResponse()._getStr(s, null));
+            assertEquals(o, rsp.getResponse()._getStr(s));
           } else {
-            assertEquals(o, rsp.getResponse()._get(s, null));
+            assertEquals(o, rsp.getResponse()._get(s));
           }
         });
   }
@@ -2569,10 +2571,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  /**
-   * A variant of {@link org.apache.solr.client.solrj.impl.CloudLegacySolrClient.Builder} that will
-   * randomize some internal settings.
-   */
+  /** A variant of {@code CloudSolrClient.Builder} that will randomize some internal settings. */
   @Deprecated
   public static class RandomizingCloudSolrClientBuilder extends CloudLegacySolrClient.Builder {
 
@@ -2785,13 +2784,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemSetPropertySolrDisableUrlAllowList(String value) {
-    System.setProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST, value);
+  protected static void systemSetPropertyEnableUrlAllowList(boolean value) {
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, String.valueOf(value));
   }
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemClearPropertySolrDisableUrlAllowList() {
-    System.clearProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST);
+  protected static void systemClearPropertySolrEnableUrlAllowList() {
+    System.clearProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST);
   }
 
   @SafeVarargs
@@ -2872,7 +2871,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.TrieLongField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.TrieDoubleField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.TrieDateField");
-      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Enum.class, "solr.EnumField");
 
       System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
     } else {
@@ -2885,7 +2883,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.LongPointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.DoublePointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.DatePointField");
-      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Enum.class, "solr.EnumFieldType");
 
       System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
     }

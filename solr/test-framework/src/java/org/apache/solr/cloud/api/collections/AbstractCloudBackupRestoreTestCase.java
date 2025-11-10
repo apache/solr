@@ -31,9 +31,9 @@ import java.util.TreeMap;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -78,12 +78,12 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   @BeforeClass
   public static void createCluster() throws Exception {
     docsSeed = random().nextLong();
-    System.setProperty("solr.allowPaths", "*");
+    System.setProperty("solr.security.allow.paths", "*");
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
-    System.clearProperty("solr.allowPaths");
+    System.clearProperty("solr.security.allow.paths");
   }
 
   /**

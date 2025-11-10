@@ -20,7 +20,7 @@ package org.apache.solr.api;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
@@ -106,11 +106,11 @@ public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     assertEquals(
         SingletonNoConfig.class.getName(),
-        rsp._getStr("/plugin/" + SingletonNoConfig.NAME + "/class", null));
+        rsp._getStr("/plugin/" + SingletonNoConfig.NAME + "/class"));
 
     assertEquals(
         SingletonWithConfig.class.getName(),
-        rsp._getStr("/plugin/" + SingletonWithConfig.NAME + "/class", null));
+        rsp._getStr("/plugin/" + SingletonWithConfig.NAME + "/class"));
   }
 
   /** Verify that the Edit Apis are not available for plugins declared in solr.xml */
@@ -125,7 +125,7 @@ public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
     try {
       req.process(cluster.getSolrClient());
       fail("Expected a 404 response code because the Edit Apis are not registered");
-    } catch (BaseHttpSolrClient.RemoteExecutionException e) {
+    } catch (RemoteExecutionException e) {
       assertEquals(
           "Expected a HTTP 404 response code because the /cluster/plugin API should not be registered",
           404,

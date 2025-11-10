@@ -24,4 +24,5 @@ import org.apache.solr.ui.utils.AppComponentContext
 class DefaultLoggingComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
-) : LoggingComponent, AppComponentContext by componentContext
+) : LoggingComponent,
+    AppComponentContext by componentContext

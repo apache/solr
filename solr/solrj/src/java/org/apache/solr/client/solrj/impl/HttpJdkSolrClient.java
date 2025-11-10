@@ -34,6 +34,7 @@ import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -86,12 +87,18 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
   protected HttpJdkSolrClient(String serverBaseUrl, HttpJdkSolrClient.Builder builder) {
     super(serverBaseUrl, builder);
+    HttpClient.Builder b = HttpClient.newBuilder();
 
     HttpClient.Redirect followRedirects =
         Boolean.TRUE.equals(builder.followRedirects)
             ? HttpClient.Redirect.NORMAL
             : HttpClient.Redirect.NEVER;
-    HttpClient.Builder b = HttpClient.newBuilder().followRedirects(followRedirects);
+    b.followRedirects(followRedirects);
+
+    b.connectTimeout(Duration.of(builder.getConnectionTimeoutMillis(), ChronoUnit.MILLIS));
+    // note: idle timeout isn't used for the JDK client
+    // note: request timeout is set per request
+
     if (builder.sslContext != null) {
       b.sslContext(builder.sslContext);
     }
@@ -113,7 +120,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
     b.executor(this.executor);
 
-    if (builder.useHttp1_1) {
+    if (builder.shouldUseHttp1_1()) {
       this.forceHttp11 = true;
       b.version(HttpClient.Version.HTTP_1_1);
     }
@@ -199,7 +206,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return requestWithBaseUrl(null, solrRequest, collection);
   }
 
-  private PreparedRequest prepareRequest(
+  protected PreparedRequest prepareRequest(
       SolrRequest<?> solrRequest, String collection, String overrideBaseUrl)
       throws SolrServerException, IOException {
     checkClosed();
@@ -336,7 +343,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return new PreparedRequest(reqb, contentWritingFuture);
   }
 
-  private static class PreparedRequest {
+  protected static class PreparedRequest {
     Future<?> contentWritingFuture;
     HttpRequest.Builder reqb;
 
@@ -373,24 +380,34 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     if (forceHttp11 || url == null || url.toLowerCase(Locale.ROOT).startsWith("https://")) {
       return true;
     }
-    return maybeTryHeadRequestSync(url);
-  }
-
-  protected volatile boolean headRequested; // must be threadsafe
-  private boolean headSucceeded; // must be threadsafe
-
-  private synchronized boolean maybeTryHeadRequestSync(String url) {
-    if (headRequested) {
-      return headSucceeded;
-    }
-
     URI uriNoQueryParams;
     try {
-      uriNoQueryParams = new URI(url);
+      var uriWithParams = new URI(url);
+      uriNoQueryParams =
+          new URI(
+              uriWithParams.getScheme(),
+              uriWithParams.getUserInfo(),
+              uriWithParams.getHost(),
+              uriWithParams.getPort(),
+              uriWithParams.getPath() == null ? "" : uriWithParams.getPath(),
+              null,
+              null);
     } catch (URISyntaxException e) {
       // If the url is invalid, let a subsequent request try again.
       return false;
     }
+    return maybeTryHeadRequestSync(uriNoQueryParams);
+  }
+
+  protected final Map<URI, Boolean> headSucceededByBaseUri =
+      new HashMap<>(); // use only in synchronized method
+
+  private synchronized boolean maybeTryHeadRequestSync(URI uriNoQueryParams) {
+    Boolean headSucceeded = headSucceededByBaseUri.get(uriNoQueryParams);
+    if (headSucceeded != null) {
+      return headSucceeded;
+    }
+
     HttpRequest.Builder headReqB =
         HttpRequest.newBuilder(uriNoQueryParams)
             .method("HEAD", HttpRequest.BodyPublishers.noBody())
@@ -400,7 +417,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       httpClient.send(headReqB.build(), HttpResponse.BodyHandlers.discarding());
       headSucceeded = true;
     } catch (IOException ioe) {
-      log.warn("Could not issue HEAD request to {} ", url, ioe);
+      log.warn("Could not issue HEAD request to {} ", uriNoQueryParams, ioe);
       headSucceeded = false;
     } catch (InterruptedException ie) {
       Thread.currentThread().interrupt();
@@ -408,7 +425,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     } finally {
 
       // The HEAD request is tried only once.  All future requests will skip this check.
-      headRequested = true;
+      headSucceededByBaseUri.put(uriNoQueryParams, headSucceeded);
 
       if (!headSucceeded) {
         log.info("All unencrypted POST requests with a chunked body will use http/1.1");
@@ -419,11 +436,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   }
 
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
-    if (requestTimeoutMillis > 0) {
-      reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
-    } else if (idleTimeoutMillis > 0) {
-      reqb.timeout(Duration.of(idleTimeoutMillis, ChronoUnit.MILLIS));
-    }
+    reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
     reqb.header("User-Agent", USER_AGENT);
     setBasicAuthHeader(solrRequest, reqb);
     Map<String, String> headers = solrRequest.getHeaders();
@@ -535,6 +548,11 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
         .collect(Collectors.joining(", "));
   }
 
+  @Override
+  public HttpSolrClientBuilderBase<?, ?> builder() {
+    return new HttpJdkSolrClient.Builder().withHttpClient(this);
+  }
+
   public static class Builder
       extends HttpSolrClientBuilderBase<HttpJdkSolrClient.Builder, HttpJdkSolrClient> {
 
@@ -553,13 +571,19 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
     @Override
     public HttpJdkSolrClient build() {
-      if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
-        idleTimeoutMillis = (long) HttpClientUtil.DEFAULT_SO_TIMEOUT;
-      }
-      if (connectionTimeoutMillis == null) {
-        connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
-      }
       return new HttpJdkSolrClient(baseSolrUrl, this);
+    }
+
+    @Override
+    public Builder withHttpClient(HttpJdkSolrClient httpSolrClient) {
+      super.withHttpClient(httpSolrClient);
+      if (this.executor == null) {
+        this.executor = httpSolrClient.executor;
+      }
+      if (this.sslContext == null) {
+        this.sslContext = httpSolrClient.httpClient.sslContext();
+      }
+      return this;
     }
 
     /**

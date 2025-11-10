@@ -87,7 +87,6 @@ public class SolrRequestParsers {
   private final boolean enableRemoteStreams;
   private final boolean enableStreamBody;
   private StandardRequestParser standard;
-  private boolean handleSelect = true;
 
   /**
    * Default instance for e.g. admin requests. Limits to 2 MB uploads and does not allow remote
@@ -104,18 +103,18 @@ public class SolrRequestParsers {
       multipartUploadLimitKB = formUploadLimitKB = Integer.MAX_VALUE;
       enableRemoteStreams = false;
       enableStreamBody = false;
-      handleSelect = false;
+
     } else {
       multipartUploadLimitKB = globalConfig.getMultipartUploadLimitKB();
 
       formUploadLimitKB = globalConfig.getFormUploadLimitKB();
 
       // security risks; disabled by default
-      enableRemoteStreams = Boolean.getBoolean("solr.enableRemoteStreaming");
-      enableStreamBody = Boolean.getBoolean("solr.enableStreamBody");
+      enableRemoteStreams = Boolean.getBoolean("solr.requests.streaming.remote.enabled");
+      enableStreamBody = Boolean.getBoolean("solr.requests.streaming.body.enabled");
 
       // Let this filter take care of /select?xxx format
-      handleSelect = globalConfig.isHandleSelect();
+
     }
     init(multipartUploadLimitKB, formUploadLimitKB);
   }
@@ -123,7 +122,7 @@ public class SolrRequestParsers {
   private SolrRequestParsers() {
     enableRemoteStreams = false;
     enableStreamBody = false;
-    handleSelect = false;
+
     init(Integer.MAX_VALUE, Integer.MAX_VALUE);
   }
 
@@ -516,14 +515,6 @@ public class SolrRequestParsers {
         "URLDecoder: Invalid digit (" + ((char) b) + ") in escape (%) pattern");
   }
 
-  public boolean isHandleSelect() {
-    return handleSelect;
-  }
-
-  public void setHandleSelect(boolean handleSelect) {
-    this.handleSelect = handleSelect;
-  }
-
   public boolean isEnableRemoteStreams() {
     return enableRemoteStreams;
   }
@@ -736,7 +727,9 @@ public class SolrRequestParsers {
         // Protect container owned streams from being closed by us, see SOLR-8933
         in =
             FastInputStream.wrap(
-                in == null ? new CloseShieldInputStream(req.getInputStream()) : in);
+                in == null
+                    ? new CloseShieldInputStream(req.getInputStream())
+                    : new CloseShieldInputStream(in));
 
         final long bytesRead = parseFormDataContent(in, maxLength, charset, map, false);
         if (bytesRead == 0L && totalLength > 0L) {

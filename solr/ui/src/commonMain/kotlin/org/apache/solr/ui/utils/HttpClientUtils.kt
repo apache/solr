@@ -18,18 +18,27 @@
 package org.apache.solr.ui.utils
 
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.providers.BasicAuthCredentials
+import io.ktor.client.plugins.auth.providers.basic
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.http.Url
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import org.apache.solr.ui.domain.AuthOption
 
 /**
  * Function that returns a simple HTTP client that is preconfigured with a base
  * URL.
  */
-fun getDefaultClient() = HttpClient {
+fun getDefaultClient(
+    url: Url = Url("http://127.0.0.1:8983/"),
+    block: HttpClientConfig<*>.() -> Unit = {},
+) = HttpClient {
     defaultRequest {
-        url("http://localhost:8983/")
+        url(url.toString())
     }
 
     install(ContentNegotiation) {
@@ -37,7 +46,36 @@ fun getDefaultClient() = HttpClient {
             Json {
                 ignoreUnknownKeys = true
                 allowSpecialFloatingPointValues = true
-            }
+            },
         )
+    }
+
+    block()
+}
+
+fun getHttpClientWithAuthOption(option: AuthOption) = when (option) {
+    is AuthOption.None -> getDefaultClient(option.url)
+    is AuthOption.BasicAuthOption -> getHttpClientWithCredentials(
+        url = option.url,
+        realm = option.realm,
+        username = option.username,
+        password = option.password,
+    )
+}
+
+fun getHttpClientWithCredentials(
+    username: String,
+    password: String,
+    url: Url = Url("http://127.0.0.1:8983/"),
+    realm: String? = null,
+) = getDefaultClient(url) {
+    install(Auth) {
+        basic {
+            credentials { BasicAuthCredentials(username, password) }
+            // Always include the credentials, because we are accessing protected endpoints from a
+            // not protected asset (web-assembly app)
+            sendWithoutRequest { true }
+            this.realm = realm
+        }
     }
 }

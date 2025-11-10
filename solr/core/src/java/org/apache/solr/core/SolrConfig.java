@@ -53,7 +53,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -127,8 +126,6 @@ public class SolrConfig implements MapSerializable {
   private int multipartUploadLimitKB;
 
   private int formUploadLimitKB;
-
-  private boolean handleSelect;
 
   private final SolrRequestParsers solrRequestParsers;
 
@@ -267,12 +264,12 @@ public class SolrConfig implements MapSerializable {
       indexConfig = new SolrIndexConfig(get("indexConfig"), null);
 
       booleanQueryMaxClauseCount =
-          get("query").get("maxBooleanClauses").intVal(BooleanQuery.getMaxClauseCount());
+          get("query").get("maxBooleanClauses").intVal(IndexSearcher.getMaxClauseCount());
       if (IndexSearcher.getMaxClauseCount() < booleanQueryMaxClauseCount) {
         log.warn(
             "solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} and will have no effect {}",
             booleanQueryMaxClauseCount,
-            BooleanQuery.getMaxClauseCount(),
+            IndexSearcher.getMaxClauseCount(),
             "set 'maxBooleanClauses' in solr.xml to increase global limit");
       }
       prefixQueryMinPrefixLength =
@@ -304,6 +301,9 @@ public class SolrConfig implements MapSerializable {
       queryResultCacheConfig =
           CacheConfig.getConfig(
               this, get("query").get("queryResultCache"), "query/queryResultCache");
+      featureVectorCacheConfig =
+          CacheConfig.getConfig(
+              this, get("query").get("featureVectorCache"), "query/featureVectorCache");
       documentCacheConfig =
           CacheConfig.getConfig(this, get("query").get("documentCache"), "query/documentCache");
       CacheConfig conf =
@@ -362,8 +362,6 @@ public class SolrConfig implements MapSerializable {
       if (requestParsersNode.attr("enableStreamBody") != null) {
         log.warn("Ignored deprecated enableStreamBody in config; use sys-prop");
       }
-
-      handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
 
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
@@ -667,6 +665,7 @@ public class SolrConfig implements MapSerializable {
   public final CacheConfig queryResultCacheConfig;
   public final CacheConfig documentCacheConfig;
   public final CacheConfig fieldValueCacheConfig;
+  public final CacheConfig featureVectorCacheConfig;
   public final Map<String, CacheConfig> userCacheConfigs;
   // SolrIndexSearcher - more...
   public final boolean useFilterForSortedQuery;
@@ -959,10 +958,6 @@ public class SolrConfig implements MapSerializable {
     return formUploadLimitKB;
   }
 
-  public boolean isHandleSelect() {
-    return handleSelect;
-  }
-
   @Override
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (znodeVersion > -1) result.put(ZNODEVER, znodeVersion);
@@ -1007,10 +1002,14 @@ public class SolrConfig implements MapSerializable {
     }
 
     addCacheConfig(
-        m, filterCacheConfig, queryResultCacheConfig, documentCacheConfig, fieldValueCacheConfig);
+        m,
+        filterCacheConfig,
+        queryResultCacheConfig,
+        documentCacheConfig,
+        fieldValueCacheConfig,
+        featureVectorCacheConfig);
     m = new LinkedHashMap<>();
     result.put("requestDispatcher", m);
-    m.put("handleSelect", handleSelect);
     if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig);
     m.put(
         "requestParsers",

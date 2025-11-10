@@ -21,8 +21,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 
 import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -79,6 +78,8 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrPaths;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -263,10 +264,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected List<Long> startingVersions;
 
   // metrics
-  protected Gauge<Integer> bufferedOpsGauge;
-  protected Meter applyingBufferedOpsMeter;
-  protected Meter replayOpsMeter;
-  protected Meter copyOverOldUpdatesMeter;
+  protected AttributedLongCounter applyingBufferedOpsCounter;
+  protected AttributedLongCounter replayOpsCounter;
+  protected AttributedLongCounter copyOverOldUpdatesCounter;
+  protected List<AutoCloseable> toClose;
   protected SolrMetricsContext solrMetricsContext;
 
   public static class LogPtr {
@@ -451,8 +452,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             getTlogDir(),
             id);
       }
-      core.getCoreMetricManager()
-          .registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+      core.getCoreMetricManager().registerMetricProducer(this, Attributes.empty());
 
       String reResolved = resolveDataDir(core);
       if (dataDir == null || !dataDir.equals(reResolved)) {
@@ -498,7 +498,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         trackDeleteByQuery(q, version);
       }
     }
-    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+    core.getCoreMetricManager().registerMetricProducer(this, Attributes.empty());
   }
 
   protected final void maybeClearLog(SolrCore core) {
@@ -627,42 +627,89 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    final List<AutoCloseable> observables = new ArrayList<>();
     solrMetricsContext = parentContext.getChildContext(this);
-    bufferedOpsGauge =
-        () -> {
-          if (state == State.BUFFERING) {
-            if (bufferTlog == null) return 0;
-            // numRecords counts header as a record
-            return bufferTlog.numRecords() - 1;
-          }
-          if (tlog == null) {
-            return 0;
-          } else if (state == State.APPLYING_BUFFERED) {
-            // numRecords counts header as a record
-            return tlog.numRecords()
-                - 1
-                - recoveryInfo.adds
-                - recoveryInfo.deleteByQuery
-                - recoveryInfo.deletes
-                - recoveryInfo.errors.get();
-          } else {
-            return 0;
-          }
-        };
 
-    solrMetricsContext.gauge(bufferedOpsGauge, true, "ops", scope, "buffered");
-    solrMetricsContext.gauge(() -> logs.size(), true, "logs", scope, "replay", "remaining");
-    solrMetricsContext.gauge(() -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
-    applyingBufferedOpsMeter = solrMetricsContext.meter("ops", scope, "applyingBuffered");
-    replayOpsMeter = solrMetricsContext.meter("ops", scope, "replay");
-    copyOverOldUpdatesMeter = solrMetricsContext.meter("ops", scope, "copyOverOldUpdates");
-    solrMetricsContext.gauge(() -> state.getValue(), true, "state", scope);
+    var baseAttributes =
+        attributes.toBuilder().put(CATEGORY_ATTR, SolrInfoBean.Category.TLOG.toString()).build();
+
+    observables.add(
+        solrMetricsContext.observableLongGauge(
+            "solr_core_update_log_buffered_ops",
+            "The current number of buffered operations",
+            (observableLongMeasurement ->
+                observableLongMeasurement.record(computeBufferedOps(), baseAttributes))));
+
+    observables.add(
+        solrMetricsContext.observableLongGauge(
+            "solr_core_update_log_replay_logs_remaining",
+            "The current number of tlogs remaining to be replayed",
+            (observableLongMeasurement -> {
+              observableLongMeasurement.record(logs.size(), baseAttributes);
+            })));
+
+    observables.add(
+        solrMetricsContext.observableLongGauge(
+            "solr_core_update_log_size_remaining",
+            "The total size in bytes of all tlogs remaining to be replayed",
+            (observableLongMeasurement -> {
+              observableLongMeasurement.record(getTotalLogsSize(), baseAttributes);
+            }),
+            OtelUnit.BYTES));
+
+    toClose = Collections.unmodifiableList(observables);
+
+    observables.add(
+        solrMetricsContext.observableLongGauge(
+            "solr_core_update_log_state",
+            "The current state of the update log. Replaying (0), buffering (1), applying buffered (2), active (3)",
+            (observableLongMeasurement -> {
+              observableLongMeasurement.record(state.getValue(), baseAttributes);
+            })));
+
+    applyingBufferedOpsCounter =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_core_update_log_applied_buffered_ops",
+                "Total number of buffered operations applied"),
+            baseAttributes);
+
+    replayOpsCounter =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_core_update_log_replay_ops", "Total number of log replay operations"),
+            baseAttributes);
+
+    copyOverOldUpdatesCounter =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_core_update_log_old_updates_copied",
+                "Total number of updates copied from previous tlog or last tlog to a new tlog"),
+            baseAttributes);
   }
 
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
+  }
+
+  private long computeBufferedOps() {
+    return switch (state) {
+        // numRecords counts header as a record
+      case BUFFERING -> (bufferTlog == null ? 0 : bufferTlog.numRecords() - 1);
+      case APPLYING_BUFFERED -> {
+        if (tlog == null) yield 0;
+        // numRecords counts header as a record
+        yield tlog.numRecords()
+            - 1
+            - recoveryInfo.adds
+            - recoveryInfo.deleteByQuery
+            - recoveryInfo.deletes
+            - recoveryInfo.errors.get();
+      }
+      default -> 0;
+    };
   }
 
   /**
@@ -746,7 +793,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   public long getLastLogId() {
-    if (id != -1) return id;
+    return id == -1 ? scanLastLogId(tlogFiles) : id;
+  }
+
+  static long scanLastLogId(String[] tlogFiles) {
     if (tlogFiles.length == 0) return -1;
     String last = tlogFiles[tlogFiles.length - 1];
     return Long.parseLong(last.substring(TLOG_NAME.length() + 1));
@@ -1503,7 +1553,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    *     over
    */
   public void copyOverOldUpdates(long commitVersion, TransactionLog oldTlog) {
-    copyOverOldUpdatesMeter.mark();
+    copyOverOldUpdatesCounter.inc();
 
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams());
     TransactionLog.LogReader logReader = null;
@@ -1592,10 +1642,45 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
+  /**
+   * Ensures a transaction log is ready. It is either the current one, or a new one. This method
+   * must be called with the synchronization monitor on this {@link UpdateLog}.
+   */
   protected void ensureLog() {
     if (tlog == null) {
-      String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
-      tlog = newTransactionLog(tlogDir.resolve(newLogName), globalStrings, false);
+      Path newLogPath;
+      int numAttempts = 0;
+      while (true) {
+        String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
+        newLogPath = tlogDir.resolve(newLogName);
+        // We expect that the log file does not exist since id is designed to give the index of the
+        // next transaction log to create. But in very rare cases, the log files listed in the
+        // init() method may be stale here (file system delay?), and id may point to an existing
+        // file.
+        if (!Files.exists(newLogPath)) {
+          break;
+        }
+        // If the "new" log file already exists, refresh the log list and recompute id.
+        // Ideally we would want to include the missing log in the old logs tracking (see init()),
+        // but the init() method is not designed to be executed twice. Given that in the rare cases
+        // we have seen this missing log, the log was always empty (file size 0), then we simply
+        // refresh log list and update the id.
+        try {
+          log.error(
+              "New transaction log already exists {} size={}, skipping it",
+              newLogPath,
+              Files.size(newLogPath));
+        } catch (IOException e) {
+          log.error("New transaction log already exists {} size unknown, skipping it", newLogPath);
+        }
+        if (++numAttempts >= 2) {
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR, "Cannot recover from already existing logs");
+        }
+        tlogFiles = getLogList(tlogDir);
+        id = scanLastLogId(tlogFiles) + 1; // add 1 since we create a new log
+      }
+      tlog = newTransactionLog(newLogPath, globalStrings, false);
     }
   }
 
@@ -1657,6 +1742,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     } catch (IOException e) {
       log.warn("exception releasing tlog dir", e);
+    } finally {
+      IOUtils.closeQuietly(toClose);
     }
   }
 
@@ -2249,9 +2336,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               throw rsp.getException();
             }
             if (state == State.REPLAYING) {
-              replayOpsMeter.mark();
+              replayOpsCounter.inc();
             } else if (state == State.APPLYING_BUFFERED) {
-              applyingBufferedOpsMeter.mark();
+              applyingBufferedOpsCounter.inc();
             } else {
               // XXX should not happen?
             }

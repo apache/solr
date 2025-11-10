@@ -1,0 +1,11 @@
+title: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since
+  the beginning?) in which its collection state cache was not being used, resulting
+  in many extra requests to Solr for cluster information.
+type: changed
+authors:
+- name: Aparna Suresh
+- name: shalin
+- name: David Smiley
+links:
+- name: SOLR-14985
+  url: https://issues.apache.org/jira/browse/SOLR-14985
